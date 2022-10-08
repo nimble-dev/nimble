@@ -90,9 +90,9 @@ buildMCMC <- nimbleFunction(
         mvSaved <- modelValues(model)
         
         if(getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast') && length(conf$samplerConfs)) {
-            ## put all posterior_predictive and posterior_predictive_branch samplers at the end
+            ## put all posterior_predictive  samplers at the end
             samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
-            postPredSamplerBool <- grepl('^posterior_predictive', samplerNames)
+            postPredSamplerBool <- grepl('^posterior_predictive$', samplerNames)
             ppSamplerInd <- which(postPredSamplerBool)
             regularSamplerInd <- which(!postPredSamplerBool)
             if(length(ppSamplerInd) && length(regularSamplerInd) && (max(regularSamplerInd) > min(ppSamplerInd))) {

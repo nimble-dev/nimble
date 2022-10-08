@@ -386,7 +386,7 @@ test_that("getConditionallyIndependentSets works for tweaked pump model", {
                         c('theta[1]', 'theta[2]')))  
 })
 
-test_that('getNodeNames and getDependencies with with predictiveNode and predictiveBranchPointNode options', {
+test_that('getNodeNames and getDependencies with predictiveNode options', {
     
     code <- nimbleCode({
         a ~ dnorm(0, 1)
@@ -398,25 +398,19 @@ test_that('getNodeNames and getDependencies with with predictiveNode and predict
     })
 
     Rmodel <- nimbleModel(code)
-
+    
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), 1L)
     expect_identical(Rmodel$getPredictiveNodeIDs(), 1:length(Rmodel$getNodeNames()))
-    expect_identical(Rmodel$getPredictiveBranchPointNodeIDs(), 1L)
-
     expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), character())
-    ##expect_identical(Rmodel$getNodeNames(includePredictiveBranchPoints = FALSE), Rmodel$expandNodeNames(c('b', 'c', 'd')))
     expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), Rmodel$getNodeNames())
-    expect_identical(Rmodel$getNodeNames(predictiveBranchPointsOnly = TRUE), 'a')
 
     Rmodel$resetData()
     Rmodel$setData(list(b=1:8, c=1:8, d=1:8))
-
+    
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), integer())
     expect_identical(Rmodel$getPredictiveNodeIDs(), integer())
-    expect_identical(Rmodel$getPredictiveBranchPointNodeIDs(), integer())
-
     expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), Rmodel$getNodeNames())
-    ##expect_identical(Rmodel$getNodeNames(includePredictiveBranchPoints = FALSE), Rmodel$getNodeNames())
     expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), character())
-    expect_identical(Rmodel$getNodeNames(predictiveBranchPointsOnly = TRUE), character())
 
     Rmodel$resetData()
     Rmodel$setData(list(
@@ -424,64 +418,29 @@ test_that('getNodeNames and getDependencies with with predictiveNode and predict
                c = rep(c(0, NA, 0, NA), each = 2),
                d = rep(c(0, NA), 4)))
 
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), as.integer(c(9, 13)))
     expect_identical(Rmodel$getPredictiveNodeIDs(), as.integer(c(9, 13, 17, 19, 21, 23, 25)))
-    expect_identical(Rmodel$getPredictiveBranchPointNodeIDs(), as.integer(c(9, 13)))
+    expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), setdiff(Rmodel$getNodeNames(), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveNodeIDs()]))
+    expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveNodeIDs()])
 
-    expect_identical(Rmodel$getNodeNames(includePredictive = FALSE),
-                     setdiff(Rmodel$getNodeNames(), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveNodeIDs()]))
-    ##expect_identical(Rmodel$getNodeNames(includePredictiveBranchPoints = FALSE),
-    ##                 setdiff(Rmodel$getNodeNames(), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveBranchPointNodeIDs()]))
-    expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE),
-                     Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveNodeIDs()])
-    expect_identical(Rmodel$getNodeNames(predictiveBranchPointsOnly = TRUE),
-                     Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveBranchPointNodeIDs()])
+    expect_identical(Rmodel$getDependencies('a', includePredictive = FALSE), Rmodel$expandNodeNames(c('a', 'b[1:7]')))
+    expect_identical(Rmodel$getDependencies('a', predictiveOnly = TRUE), 'b[8]')
 
-    expect_identical(Rmodel$getDependencies('a', includePredictive = FALSE),
-                     Rmodel$expandNodeNames(c('a', 'b[1:7]')))
-    ##expect_identical(Rmodel$getDependencies('a', includePredictiveBranchPoints = FALSE),
-    ##                 Rmodel$expandNodeNames(c('a', 'b[1:7]')))
-    expect_identical(Rmodel$getDependencies('a', predictiveOnly = TRUE),
-                     'b[8]')
-    expect_identical(Rmodel$getDependencies('a', predictiveBranchPointsOnly = TRUE),
-                     'b[8]')
+    expect_identical(Rmodel$getDependencies('b', includePredictive = FALSE), Rmodel$expandNodeNames(c('b[1:7]', 'c[1:3]', 'c[5:7]')))
+    expect_identical(Rmodel$getDependencies('b', predictiveOnly = TRUE), c('b[8]', 'c[4]', 'c[8]'))
 
-    expect_identical(Rmodel$getDependencies('b', includePredictive = FALSE),
-                     Rmodel$expandNodeNames(c('b[1:7]', 'c[1:3]', 'c[5:7]')))
-    ##expect_identical(Rmodel$getDependencies('b', includePredictiveBranchPoints = FALSE),
-    ##                 Rmodel$expandNodeNames(c('b[1:7]', 'c[1:3]', 'c[5:8]')))
-    expect_identical(Rmodel$getDependencies('b', predictiveOnly = TRUE),
-                     c('b[8]', 'c[4]', 'c[8]'))
-    expect_identical(Rmodel$getDependencies('b', predictiveBranchPointsOnly = TRUE),
-                     c('b[8]', 'c[4]'))
+    expect_identical(Rmodel$getDependencies('c', includePredictive = FALSE), Rmodel$expandNodeNames(c('c[1:3]', 'c[5:7]', 'd[1]', 'd[3]', 'd[5]', 'd[7]')))
+    expect_identical(Rmodel$getDependencies('c', predictiveOnly = TRUE), c('c[4]', 'c[8]', 'd[2]', 'd[4]', 'd[6]', 'd[8]'))
 
-    expect_identical(Rmodel$getDependencies('c', includePredictive = FALSE),
-                     Rmodel$expandNodeNames(c('c[1:3]', 'c[5:7]', 'd[1]', 'd[3]', 'd[5]', 'd[7]')))
-    ##expect_identical(Rmodel$getDependencies('c', includePredictiveBranchPoints = FALSE),
-    ##                 Rmodel$expandNodeNames(c('c[1:3]', 'c[5:8]', 'd[1:8]')))
-    expect_identical(Rmodel$getDependencies('c', predictiveOnly = TRUE),
-                     c('c[4]', 'c[8]', 'd[2]', 'd[4]', 'd[6]', 'd[8]'))
-    expect_identical(Rmodel$getDependencies('c', predictiveBranchPointsOnly = TRUE),
-                     c('c[4]'))
-
-    expect_identical(Rmodel$getDependencies('d', includePredictive = FALSE),
-                     c('d[1]', 'd[3]', 'd[5]', 'd[7]'))
-    ##expect_identical(Rmodel$getDependencies('d', includePredictiveBranchPoints = FALSE),
-    ##                 Rmodel$expandNodeNames('d[1:8]'))
-    expect_identical(Rmodel$getDependencies('d', predictiveOnly = TRUE),
-                     c('d[2]', 'd[4]', 'd[6]', 'd[8]'))
-    expect_identical(Rmodel$getDependencies('d', predictiveBranchPointsOnly = TRUE),
-                     character())
+    expect_identical(Rmodel$getDependencies('d', includePredictive = FALSE), c('d[1]', 'd[3]', 'd[5]', 'd[7]'))
+    expect_identical(Rmodel$getDependencies('d', predictiveOnly = TRUE), c('d[2]', 'd[4]', 'd[6]', 'd[8]'))
 
     Rmodel$resetData()
 
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), 1L)
     expect_identical(Rmodel$getPredictiveNodeIDs(), 1:length(Rmodel$getNodeNames()))
-    expect_identical(Rmodel$getPredictiveBranchPointNodeIDs(), 1L)
-
     expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), character())
-    ##expect_identical(Rmodel$getNodeNames(includePredictiveBranchPoints = FALSE), Rmodel$expandNodeNames(c('b', 'c', 'd')))
     expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), Rmodel$getNodeNames())
-    expect_identical(Rmodel$getNodeNames(predictiveBranchPointsOnly = TRUE), 'a')
-
 })
 
 options(warn = RwarnLevel)

@@ -30,8 +30,8 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   name = 'ANY', 		#character
                                   isDataVars = 'ANY', #list           ## list with the dimensions of isData_vars
                                   isDataEnv = 'ANY',	#environment      ## environment holding 'logical' objects, with isData flags
-                                  predictiveNodeIDs = 'ANY',                  ## numeric vector giving the graph IDs of predictive nodes
-                                  predictiveBranchPointNodeIDs = 'ANY',       ## numeric vector giving the graph IDs of predictive branch point nodes
+                                  predictiveNodeIDs = 'ANY',          ## integer vector giving the graph IDs of predictive nodes
+                                  predictiveRootNodeIDs = 'ANY',      ## integer vector giving the graph IDs of predictive root nodes
                                   classEnvironment = 'ANY', # environment in which the reference classes will be defined
                                   origData = 'ANY',
                                   origInits = 'ANY',
@@ -379,8 +379,6 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
                                                           topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE,
                                                           includePredictive = TRUE, predictiveOnly = FALSE,
-                                                          ##includePredictiveBranchPoints = TRUE,   ## I think this argument is unnecessary -DT
-                                                          predictiveBranchPointsOnly = FALSE,
                                                           returnType = 'names', returnScalarComponents = FALSE) {
                                       '
 Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
@@ -406,8 +404,6 @@ endOnly: Logical argument specifying whether to return only end nodes from the h
 includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
 
 predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
-
-predictiveBranchPointsOnly: Logical argument specifying whether to return only predictive branch points (nodes the model for which themselves and all downstream nodes are posterior predictive nodes) from the hierarchical model structure.
 
 returnType: Character argument specific type object returned. Options are \'names\' (returns character vector) and \'ids\' (returns numeric graph IDs for model)
 
@@ -440,8 +436,6 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       
                                       if(!includePredictive)         validValues <- safeUpdateValidValues(validValues, idsVec_exclude = predictiveNodeIDs)
                                       if(predictiveOnly)             validValues <- safeUpdateValidValues(validValues, idsVec_only    = predictiveNodeIDs)
-                                      ##if(!includePredictiveBranchPoints)   validValues <- safeUpdateValidValues(validValues, idsVec_exclude = predictiveBranchPointNodeIDs)   ## I think this argument is unnecessary -DT
-                                      if(predictiveBranchPointsOnly)       validValues <- safeUpdateValidValues(validValues, idsVec_only    = predictiveBranchPointNodeIDs)
                                       if(topOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$top_IDs)
                                       if(latentOnly)                    validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$latent_IDs)
                                       if(endOnly)                       validValues <- safeUpdateValidValues(validValues, idsVec_only = modelDef$maps$end_IDs)
@@ -546,14 +540,14 @@ Details: This function merely reorders its input argument.  This may be importan
                                   init_isDataEnv = function() {
                                       ## initializes the 'isDataEnv' to logical arrays of 'FALSE', based on dimensions in 'isDataVars' object
                                       list2env(lapply(isDataVars, nimble:::createDefault_isDataObj), isDataEnv)
-                                      ## at the time of initializing the isDataEnv, also set predictiveNodeIDs and predictiveBranchPointNodeIDs:
+                                      ## at the time of initializing the isDataEnv, also set predictiveNodeIDs and predictiveRootNodeIDs
                                       ##setPredictiveNodeIDs()
                                       if(!getNimbleOption('determinePredictiveNodesInModel')) {
-                                          predictiveNodeIDs <<- integer()
-                                          predictiveBranchPointNodeIDs <<- integer()
+                                          predictiveNodeIDs     <<- integer()
+                                          predictiveRootNodeIDs <<- integer()
                                       } else {
-                                          predictiveNodeIDs <<- as.integer(getNodeNames(stochOnly = TRUE, returnType = 'ids'))
-                                          predictiveBranchPointNodeIDs <<- as.integer(getNodeNames(stochOnly = TRUE, topOnly = TRUE, returnType = 'ids'))
+                                          predictiveNodeIDs     <<- as.integer(getNodeNames(stochOnly = TRUE,                 returnType = 'ids'))
+                                          predictiveRootNodeIDs <<- as.integer(getNodeNames(stochOnly = TRUE, topOnly = TRUE, returnType = 'ids'))
                                       }
                                   },
 
@@ -657,52 +651,51 @@ Details: If a provided value (or the current value in the model when only a name
 
                                   setPredictiveNodeIDs = function() {
                                       if(!getNimbleOption('determinePredictiveNodesInModel')) {
-                                          predictiveNodeIDs <<- numeric()
-                                          predictiveBranchPointNodeIDs <<- numeric()
+                                          predictiveNodeIDs     <<- integer()
+                                          predictiveRootNodeIDs <<- integer()
                                           return()
                                       }
-                                      ## re-determine all current predictive nodes,
-                                      ## and also the branch points of departure of entirely non-data node networks.
-                                      ## call these points of departure from the main model: predictive branch point nodes.
-                                      predNodeIDs <- numeric()
-                                      predBranchPointNodeIDs <- numeric()
+                                      ## determine all current predictive and predictive root nodes in the model
+                                      predNodeIDs <- integer()
+                                      predRootNodeIDs <- integer()
                                       stochNonDataIDs <- getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
                                       anyPredictiveNodes <- any(isEndNode(stochNonDataIDs))
                                       if(anyPredictiveNodes) {
                                           ## for starters, all stochNonData nodes, which are end nodes, are predictive nodes
                                           ## (these don't get included, otherwise):
                                           predNodeIDs <- stochNonDataIDs[isEndNode(stochNonDataIDs)]
-                                          ## now, find all potential (candidate) predictive branch nodes:
-                                          candidateBranchNodeIDs <- stochNonDataIDs[!isEndNode(stochNonDataIDs)]
+                                          ## now, find all potential (candidate) non-end predictive nodes:
+                                          candidateNonEndPredNodeIDs <- stochNonDataIDs[!isEndNode(stochNonDataIDs)]
                                           dataNodeIDs <- getNodeNames(dataOnly = TRUE, returnType = 'ids')
                                           dataNodeParentIDs <- expandNodeNames(getParents(dataNodeIDs, stochOnly = TRUE), returnType = 'ids')
-                                          ## remove from candidate branch nodes all direct parents of data nodes:
-                                          candidateBranchNodeIDs <- setdiff(candidateBranchNodeIDs, dataNodeParentIDs)
-                                          nCandidate <- length(candidateBranchNodeIDs)
+                                          ## remove from candidate non-end predictive nodes all direct parents of data nodes:
+                                          candidateNonEndPredNodeIDs <- setdiff(candidateNonEndPredNodeIDs, dataNodeParentIDs)
+                                          nCandidate <- length(candidateNonEndPredNodeIDs)
                                           nextCandInd <- 1
                                           while(nextCandInd <= nCandidate) {
-                                              thisCandNodeID <- as.numeric(candidateBranchNodeIDs[nextCandInd])
+                                              thisCandNodeID <- as.numeric(candidateNonEndPredNodeIDs[nextCandInd])
                                               stochDownstreamNoSelfIDs <- getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
                                               ## skip candidate nodes that have any downstream data nodes:
                                               if(length(intersect(stochDownstreamNoSelfIDs, dataNodeIDs)) > 0)   { nextCandInd <- nextCandInd + 1;   next }
-                                              ## found predictive branch point node:
-                                              predBranchPointNodeIDs <- c(predBranchPointNodeIDs, thisCandNodeID)
-                                              ## everything downstream from (and including) branch node is a predictive node:
+                                              ## found a predictive root node:
+                                              predRootNodeIDs <- c(predRootNodeIDs, thisCandNodeID)
+                                              ## everything downstream from (and including) this root node are predictive nodes:
                                               predNodeIDs <- c(predNodeIDs, thisCandNodeID, stochDownstreamNoSelfIDs)
-                                              ## update candidateBranchNodeIDs, removing downstream stochastic dependencies of this branch node from the candidate set:
-                                              candidateBranchNodeIDs <- candidateBranchNodeIDs[-(1:nextCandInd)]
-                                              candidateBranchNodeIDs <- setdiff(candidateBranchNodeIDs, stochDownstreamNoSelfIDs)
-                                              nCandidate <- length(candidateBranchNodeIDs)
+                                              ## remove all downstream dependencies of this node from the candidate set,
+                                              ## which are already marked as being predictive nodes:
+                                              candidateNonEndPredNodeIDs <- candidateNonEndPredNodeIDs[-(1:nextCandInd)]
+                                              candidateNonEndPredNodeIDs <- setdiff(candidateNonEndPredNodeIDs, stochDownstreamNoSelfIDs)
+                                              nCandidate <- length(candidateNonEndPredNodeIDs)
                                               nextCandInd <- 1
                                           }
                                       }
                                       ## set into the model object's fields:
-                                      predictiveNodeIDs <<- as.integer(sort(unique(predNodeIDs)))       ## can contain duplicates
-                                      predictiveBranchPointNodeIDs <<- as.integer(predBranchPointNodeIDs)
+                                      predictiveNodeIDs     <<- as.integer(sort(unique(predNodeIDs)))       ## can contain duplicates
+                                      predictiveRootNodeIDs <<- as.integer(sort(unique(predRootNodeIDs)))
                                   },
 
-                                  getPredictiveNodeIDs            = function() return(predictiveNodeIDs),
-                                  getPredictiveBranchPointNodeIDs = function() return(predictiveBranchPointNodeIDs),
+                                  getPredictiveNodeIDs     = function() return(predictiveNodeIDs),
+                                  getPredictiveRootNodeIDs = function() return(predictiveRootNodeIDs),
 
                                   testDataFlags = function() {
                                       ## this function tests for *mixed* T/F flags in the isData flag of all nodes.
@@ -933,7 +926,7 @@ returnScalarComponents: If FALSE (default), multivariate nodes are returned as f
 
 Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
 
-By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other branches that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble\'s model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
+By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other dependent networks of nodes that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble\'s model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
 
 There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
 
@@ -947,8 +940,6 @@ Return value: List of nodes that are in conditionally independent sets.  Within 
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
                                       includePredictive = getNimbleOption('getDependenciesIncludesPredictiveNodes'), predictiveOnly = FALSE,
-                                      ## includePredictiveBranchPoints = getNimbleOption('getDependenciesIncludesPredictiveNodes'),   ## I think this argument is unnecessary -DT
-                                      predictiveBranchPointsOnly = FALSE,
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
 '
@@ -973,8 +964,6 @@ dataOnly: Logical argument specifying whether to return only \'data\' nodes.  De
 includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default value is controled by the nimble system option \'getDependenciesIncludesPredictiveNodes\', which itself has a default value of TRUE.
 
 predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
-
-predictiveBranchPointsOnly: Logical argument specifying whether to return only predictive branch points (nodes in the model for which themselves and all downstream nodes are posterior predictive nodes).  Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
@@ -1025,8 +1014,6 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       if(dataOnly)           depIDs <- depIDs[isDataFromGraphID(depIDs)]
                                       if(!includePredictive)    depIDs <- setdiff(  depIDs, predictiveNodeIDs)
                                       if(predictiveOnly)        depIDs <- intersect(depIDs, predictiveNodeIDs)
-                                      ##if(!includePredictiveBranchPoints)  depIDs <- setdiff(  depIDs, predictiveBranchPointNodeIDs)   ## I think this argument is unnecessary -DT
-                                      if(predictiveBranchPointsOnly)      depIDs <- intersect(depIDs, predictiveBranchPointNodeIDs)
 
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
@@ -1635,7 +1622,7 @@ whyInvalid <- function(value) {
 #' This allows the givenNodes to include only stochastic nodes.  Say
 #' we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent
 #' node.  B is a deterministic node.  By default, B is considered
-#' given.  Otherwise, other branches that depend on B would be grouped
+#' given.  Otherwise, other dependent networks of nodes that that depend on B would be grouped
 #' in the same output set as C, but this is usually what is wanted.
 #' Any use of the resulting output must ensure that B is calculated when
 #' necessary, as usual with nimble's model-generic programming.  To

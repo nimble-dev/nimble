@@ -17,7 +17,7 @@ sampler_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
-### posterior_predictive sampler for trailing stoch. nodes #########
+### posterior_predictive sampler for trailing non-data networks ####
 ####################################################################
 
 #' @rdname samplers
@@ -27,43 +27,16 @@ sampler_posterior_predictive <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
-        calcNodes <- model$getDependencies(target, includePredictive = TRUE)
+        simNodes  <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE)
+        calcNodes <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE, stochOnly = TRUE)
         ## checks
         if(!all(model$expandNodeNames(target) %in% model$getNodeNames(predictiveOnly = TRUE)))
             stop('posterior_predictive sampler should not be assigned to non-posterior-predictive nodes')
     },
     run = function() {
-        model$simulate(target)
-        model$calculate(calcNodes)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-    },
-    methods = list(
-        reset = function() { }
-    )
-)
-
-
-
-####################################################################
-### posterior_predictive_branch trailing non-data branches #########
-####################################################################
-
-#' @rdname samplers
-#' @export
-sampler_posterior_predictive_branch <- nimbleFunction(
-    name = 'sampler_posterior_predictive_branch',
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        ## node list generation
-        calcNodes <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE)
-        ## checks
-        if(!all(model$expandNodeNames(target) %in% model$getNodeNames(predictiveOnly = TRUE)))
-            stop('posterior_predictive_branch sampler should not be assigned to non-posterior-predictive-branch-point nodes')
-    },
-    run = function() {
-        model$simulate(calcNodes)
-        model$calculate(calcNodes)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        model$simulate(simNodes)     ## simulate values of all downstream dependent nodes (stoch and determ both)
+        model$calculate(calcNodes)   ## update logProbs of dependent stochastic nodes
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = simNodes, logProb = TRUE)
     },
     methods = list(
         reset = function() { }
@@ -2431,15 +2404,13 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using the Chinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and can only be used when the prior for the concentration parameter is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
 #' 
-#' @section posterior_predictive and posterior_predictive_branch samplers:
+#' @section posterior_predictive sampler:
 #'
-#' The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
+#' The posterior_predictive sampler operates only on posterior predictive (trailing, non-data) stochastic nodes.  Note that such nodes play no role in inference of model parameters, but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 #'
-#' The posterior_predictive sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of a posterior_predictive sampler to any non-terminal node will result in invalid posterior inferences.  The posterior_predictive sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.
+#' The posterior_predictive sampler functions by simulating new values for all downstream (dependent) nodes using their prior distributions, as well as updating the associated model probabilities.  A posterior_predictive sampler will automatically be assigned to all trailing non-data stochastic nodes in a model, or when possible, to any node at a point in the model after which all downstream (dependent) stochastic nodes are non-data.
 #'
-#' Closely related, the posterior_predictive_branch is only appropriate for nodes for which all downstream (dependent) nodes are non-data; that is, the branch beginning from that node is a jointly posterior predictive network of nodes.  This sampler operates by calling the simulate method of all nodes in this downstream (non-data) network, which serves to improve MCMC mixing of the posterior predictive branch.
-#'
-#' The posterior_predictive and posterior_predictive_branch samplers accept no control list arguments.
+#' The posterior_predictive sampler accepts no control list arguments.
 #'
 #' @section RJ_fixed_prior sampler:
 #'
@@ -2459,7 +2430,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical posterior_predictive posterior_predictive_branch RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_posterior_predictive sampler_posterior_predictive_branch sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
+#' @aliases sampler binary categorical posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():

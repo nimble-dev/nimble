@@ -16,8 +16,8 @@ nimbleOptions(MCMCprogressBar = FALSE)
 ## MCMC orderSamplersPosteriorPredictiveLast - save current setting
 nimbleReorderPPsamplersSetting <- getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast')
 
-## MCMC use posteriorPredictiveBranch sampler - save current setting
-nimblePPBranchSamplerSetting <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
+## MCMC use usePosteriorPredictiveSampler - save current setting
+nimbleUsePosteriorPredictiveSamplerSetting <- getNimbleOption('MCMCusePosteriorPredictiveSampler')
 
 ## MCMC calculation include predictive dependencies - save current setting
 nimbleUsePredictiveDependenciesSetting <- nimbleOptions('MCMCusePredictiveDependenciesInCalculations')
@@ -425,7 +425,7 @@ test_that('beta-binom conjugacy setup', {
 
 test_that('various conjugacies setup', {
     nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)
-    nimbleOptions(MCMCjointlySamplePredictiveBranches = FALSE)
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = FALSE)
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     code <- nimbleCode({
         x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
@@ -444,13 +444,13 @@ test_that('various conjugacies setup', {
         kLogNorm[1] <- 0
     })
 
-    sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.371834934033851, 2.036442813764752, 2.247416118159410, 2.537131924778210, 2.382184991769738, 2.653737836857812, 2.934255734970981, 3.007873553270551),
-                      c = c(0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.003846483017887228, 0.006269117826484087, 0.009183580181658716, 0.009183580181658716, 0.006361841408434201, 0.006361841408434201))
-    
+    sampleVals = list(x = c(3.9505561655, 2.0475815875, 1.6434823847, 1.3639509750, 1.2026040395, 0.7809965060, 1.0238211270, 0.9245529610, 0.7592556898, 0.4670729702),
+                      c = c(0.015855585146, 0.010426702596, 0.010426702596, 0.014013991556, 0.001477657554, 0.001477657554, 0.001477657554, 0.001477657554, 0.001477657554, 0.006195021298))
+
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
     nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = nimbleReorderPPsamplersSetting)
-    nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSetting)
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = nimbleUsePosteriorPredictiveSamplerSetting)
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })
 
@@ -2310,10 +2310,8 @@ test_that('cc_checkLinearity behaves correctly with constants', {
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dmnorm_dmnorm_multiplicative')
 })
 
-test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
-    nimblePPBranchSamplerSettingTemp <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
-    nimbleOptions(MCMCjointlySamplePredictiveBranches = TRUE)
-    expect_true(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
+test_that('MCMC assigns posterior_predictive sampler correctly', {
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = TRUE)
     code <- nimbleCode({
         tau ~ dgamma(0.1, 0.1)
         x[1] ~ dnorm(0, tau)
@@ -2338,8 +2336,7 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dgamma_dnorm_identity',
                       rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 8),
-                      'posterior_predictive',
-                      'posterior_predictive_branch')))
+                      rep('posterior_predictive', 2))))
     y <- c(1:(N/2), rep(NA, N/2))
     data <- list(y = y)
     Rmodel <- nimbleModel(code, constants, data, inits)
@@ -2347,13 +2344,13 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dgamma_dnorm_identity',
                       rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 5),
-                      'posterior_predictive_branch')))
+                      'posterior_predictive')))
     y <- rep(NA, N)
     data <- list(y = y)
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
-                    'posterior_predictive_branch'))
+                    'posterior_predictive'))
     y <- c(NA, NA, NA, NA, 4, NA, NA, NA, NA, NA)
     data <- list(y = y)
     Rmodel <- nimbleModel(code, constants, data, inits)
@@ -2361,8 +2358,7 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dgamma_dnorm_identity',
                       rep('conjugate_dnorm_dnorm_identity_dnorm_multiplicative', 5),
-                      rep('posterior_predictive', 4),
-                      'posterior_predictive_branch')))
+                      rep('posterior_predictive', 5))))
     ##
     code <- nimbleCode({
         a ~ dnorm(0, 1)
@@ -2373,28 +2369,26 @@ test_that('MCMC assigned posterior_predictive_branch sampler correctly', {
     })
     Rmodel <- nimbleModel(code)
     conf <- configureMCMC(Rmodel, print = FALSE)
-    expect_true(sapply(conf$getSamplers(), function(x) x$name) == 'posterior_predictive_branch')
+    expect_true(sapply(conf$getSamplers(), function(x) x$name) == 'posterior_predictive')
     Rmodel <- nimbleModel(code, data = list(y = 1))
     conf <- configureMCMC(Rmodel, print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dnorm_dnorm_identity',
-                      rep('posterior_predictive_branch', 2))))
+                      rep('posterior_predictive', 2))))
     Rmodel <- nimbleModel(code, data = list(y = 1))
     conf <- configureMCMC(Rmodel, nodes = c('a', 'b[1]', 'c'), print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dnorm_dnorm_identity',
-                      rep('posterior_predictive_branch', 1))))
+                      'posterior_predictive')))
     Rmodel <- nimbleModel(code, data = list(y = 1))
     conf <- configureMCMC(Rmodel, nodes = c('a', 'b[1]', 'b[2]'), print = FALSE)
     expect_true(all(sapply(conf$getSamplers(), function(x) x$name) ==
                     c('conjugate_dnorm_dnorm_identity',
                       rep('conjugate_dnorm_dnorm_additive', 2))))
-    nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = nimbleUsePosteriorPredictiveSamplerSetting)
 })
 
-test_that('posterior_predictive_branch sampler updates node log-probs', {
-    nimblePPBranchSamplerSettingTemp <- getNimbleOption('MCMCjointlySamplePredictiveBranches')
-    ##
+test_that('posterior_predictive sampler updates model logProbs', {
     code <- nimbleCode({
         a ~ dnorm(0, 1)
         y ~ dexp(a^2+1)
@@ -2406,25 +2400,23 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
     inits <- list(a = 0, b = 1, c = 1)
     Rmodel <- nimbleModel(code, constants, data, inits)
     ##
-    nimbleOptions(MCMCjointlySamplePredictiveBranches = FALSE)
-    expect_false(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = FALSE)
     conf <- configureMCMC(Rmodel)
     Rmcmc <- buildMCMC(conf)
     expect_true(conf$getSamplers('a')[[1]]$name == 'RW')
     expect_true(conf$getSamplers('b')[[1]]$name == 'conjugate_dnorm_dnorm_identity')
-    expect_true(conf$getSamplers('c')[[1]]$name == 'posterior_predictive')
-    expect_true(all(Rmcmc$samplerFunctions[[3]]$calcNodes == 'c'))
+    expect_true(conf$getSamplers('c')[[1]]$name == 'RW')
     ##
-    nimbleOptions(MCMCjointlySamplePredictiveBranches = TRUE)
-    expect_true(nimbleOptions('MCMCjointlySamplePredictiveBranches'))
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = TRUE)
     conf <- configureMCMC(Rmodel)
     Rmcmc <- buildMCMC(conf)
     expect_true(conf$getSamplers('a')[[1]]$name == 'RW')
-    expect_true(conf$getSamplers('b')[[1]]$name == 'posterior_predictive_branch')
+    expect_true(conf$getSamplers('b')[[1]]$name == 'posterior_predictive')
     expect_true(all(Rmcmc$samplerFunctions[[2]]$calcNodes == c('b', 'c')))
     ##
     compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
-    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    Cmodel <- compiledList$model
+    Cmcmc <- compiledList$mcmc
     set.seed(0)
     Rmcmc$run(10)
     set.seed(0)
@@ -2437,7 +2429,7 @@ test_that('posterior_predictive_branch sampler updates node log-probs', {
         expect_equal(cLP, Cmodel$calculate(node))
         expect_equal(rLP, cLP)
     }
-    nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSettingTemp)
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = nimbleUsePosteriorPredictiveSamplerSetting)
 })
 
 test_that('asymptotic agreement of samplers, using MCMCusePredictiveDependenciesInCalculations option', {
@@ -2515,7 +2507,8 @@ test_that('asymptotic agreement of samplers, using MCMCusePredictiveDependencies
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })
 
-test_that('reordering of posterior_predictive and posterior_predictive_branch samplers to the end', {
+test_that('reordering of posterior_predictive samplers to the end', {
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = TRUE)
     code <- nimbleCode({
         mu ~ dnorm(0, 1)
         pp ~ dnorm(mu, 1)
@@ -2531,7 +2524,7 @@ test_that('reordering of posterior_predictive and posterior_predictive_branch sa
     conf <- configureMCMC(Rmodel)
     ## configureMCMC should already have reordered PP samplers last (expect_true):
     samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
-    ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
+    ppSamplerInd <- which(samplerNames == 'posterior_predictive')
     otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
     expect_true(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
     ##
@@ -2539,7 +2532,7 @@ test_that('reordering of posterior_predictive and posterior_predictive_branch sa
     conf$addSampler('x[1]', 'slice')
     ## now, there are PP samplers that are not last (expect_false):
     samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
-    ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
+    ppSamplerInd <- which(samplerNames == 'posterior_predictive')
     otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
     expect_false(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
     if(!getNimbleOption('MCMCusePredictiveDependenciesInCalculations')) {
@@ -2549,10 +2542,11 @@ test_that('reordering of posterior_predictive and posterior_predictive_branch sa
         nimbleOptions(verbose = nimbleVerboseSetting)
         ## now, all PP samplers should be last (expect_true):
         samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
-        ppSamplerInd <- which(grepl('^posterior_predictive', samplerNames))
+        ppSamplerInd <- which(samplerNames == 'posterior_predictive')
         otherSamplerInd <- which(!grepl('^posterior_predictive', samplerNames))
         expect_true(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
     }
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = nimbleUsePosteriorPredictiveSamplerSetting)
 })
 
 test_that('mcmc_determineCalcAndCopyNodes works correctly in different situations', {
@@ -2572,22 +2566,14 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
     conf <- configureMCMC(Rmodel)
     Rmcmc <- buildMCMC(conf)
-    expect_true(all(sapply(conf$samplerConfs, `[[`, 'name') == c(rep('conjugate_dnorm_dnorm_identity', 2), 'posterior_predictive_branch')))
+    expect_true(all(sapply(conf$samplerConfs, `[[`, 'name') == c(rep('conjugate_dnorm_dnorm_identity', 2), 'posterior_predictive')))
     expect_true(all(sapply(conf$samplerConfs, `[[`, 'target') == c('a', 'b', 'ppb')))
     expect_true(all(Rmcmc$samplerFunctions[[1]]$calcNodes == c('a', 'b')))
     expect_true(all(Rmcmc$samplerFunctions[[2]]$calcNodes == c('b', 'y')))
     ##
-    getDependenciesPPoption_current <- nimbleOptions('getDependenciesIncludesPredictiveNodes')
     conf <- configureMCMC(Rmodel)
     conf$addSampler('a', 'posterior_predictive')
     expect_error(Rmcmc <- buildMCMC(conf))
-    expect_identical(nimbleOptions('getDependenciesIncludesPredictiveNodes'), getDependenciesPPoption_current)
-    ##
-    getDependenciesPPoption_current <- nimbleOptions('getDependenciesIncludesPredictiveNodes')
-    conf <- configureMCMC(Rmodel)
-    conf$addSampler('a', 'posterior_predictive_branch')
-    expect_error(Rmcmc <- buildMCMC(conf))
-    expect_identical(nimbleOptions('getDependenciesIncludesPredictiveNodes'), getDependenciesPPoption_current)
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     conf <- configureMCMC(Rmodel, nodes = NULL)
@@ -2631,6 +2617,7 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
 })
 
 test_that('mcmc_determineCalcAndCopyNodes works correctly in different situations', {
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = TRUE)
     code <- nimbleCode({
         x[1] ~ dnorm(0, 1)
         for(i in 2:10) x[i] ~ dnorm(x[i-1], 1)
@@ -2639,21 +2626,19 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     conf <- configureMCMC(Rmodel)
     expect_identical(conf$getUnsampledNodes(), character())
     conf$removeSamplers()
-    expect_identical(length(conf$getUnsampledNodes()), 10L)
+    expect_identical(conf$getUnsampledNodes(), paste0('x[', 1:10, ']'))
     conf$addSampler('x[3]', 'posterior_predictive')
-    expect_identical(conf$getUnsampledNodes(), paste0('x[', c(1:2, 4:10), ']'))
-    conf$addSampler('x[3]', 'posterior_predictive_branch')
     expect_identical(conf$getUnsampledNodes(), paste0('x[', 1:2, ']'))
     conf$addSampler('x[1]', 'RW')
     expect_identical(conf$getUnsampledNodes(), 'x[2]')
-    conf$addSampler('x[1]', 'posterior_predictive_branch')
+    conf$addSampler('x[1]', 'posterior_predictive')
     expect_identical(conf$getUnsampledNodes(), character())
     conf$removeSamplers()
     Rmodel$setData(x = c(rep(NA,5), rep(0,5)))
     expect_identical(conf$getUnsampledNodes(), paste0('x[', 1:5, ']'))
     conf$addSampler(c('x[1]', 'x[3]'), 'RW_block')
     expect_identical(conf$getUnsampledNodes(), paste0('x[', c(2,4,5), ']'))
-    nimbleOptions(MCMCwarnUnsampledStochasticNodes = nimbleWarnUnsampledNodesSetting)
+    nimbleOptions(MCMCusePosteriorPredictiveSampler = nimbleUsePosteriorPredictiveSamplerSetting)
 })
 
 sink(NULL)
@@ -2670,4 +2655,3 @@ if(!generatingGoldFile) {
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
-nimbleOptions(MCMCjointlySamplePredictiveBranches = nimblePPBranchSamplerSetting)
