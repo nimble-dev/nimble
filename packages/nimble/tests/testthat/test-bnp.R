@@ -2940,7 +2940,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     {muTilde[i] ~ dnorm(0, 1)}
     z ~ dnorm(muTilde[1], 1)
   })
-  m <- nimbleModel(code, data = data, constants = const, inits = inits)
+  m <- nimbleModel(code, data = c(data, list(z = 0)), constants = const, inits = inits)
   conf <- configureMCMC(m)
   expect_error(mcmc <- buildMCMC(conf), "Only the variables being clustered")
 
