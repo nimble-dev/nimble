@@ -720,7 +720,7 @@ This function also has the side effect of resetting the sampler execution orderi
             if(class(e) == 'try-error') {
                 samplerConfs <<- samplerConfs_save
                 samplerExecutionOrder <<- samplerExecutionOrder_save
-                errorMessage <- sub('^Error.+: ', '', e[1])
+                errorMessage <- sub('^Error.+?: ', '', e[1])
                 stop(errorMessage)
             }
         },
