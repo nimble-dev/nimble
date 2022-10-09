@@ -1510,8 +1510,8 @@ test_that('RW_multinomial sampler', {
     
     mcmcTestConfig <- configureMCMC(cModelTest, print = nimbleOptions('verbose'))
     samplers <- mcmcTestConfig$getSamplers()
-    test_that('assign RW_multinomial sampler', expect_equal(samplers[[1]]$name, 'RW_multinomial'))
-    test_that('assign RW_multinomial sampler', expect_equal(samplers[[2]]$name, 'RW_multinomial'))
+    expect_equal(samplers[[1]]$name, 'RW_multinomial')
+    expect_equal(samplers[[2]]$name, 'RW_multinomial')
     mcmcTest  <- buildMCMC(mcmcTestConfig)
     cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
     
