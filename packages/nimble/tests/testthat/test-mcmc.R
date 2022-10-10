@@ -1467,12 +1467,12 @@ test_that('binary sampler handles out of bounds', {
     set.seed(0)
     Rmcmc$run(100)
     Rsamples <- as.matrix(Rmcmc$mvSamples)
-    test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Rsamples) == 1)))
+    expect_true(all(as.numeric(Rsamples) == 1))
     
     set.seed(0)
     Cmcmc$run(100)
     Csamples <- as.matrix(Cmcmc$mvSamples)
-    test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Csamples) == 1)))
+    expect_true(all(as.numeric(Csamples) == 1))
 })
     
     ## testing the RW_multinomial sampler
