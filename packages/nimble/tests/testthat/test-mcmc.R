@@ -2638,7 +2638,6 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     expect_identical(conf$getUnsampledNodes(), paste0('x[', 1:5, ']'))
     conf$addSampler(c('x[1]', 'x[3]'), 'RW_block')
     expect_identical(conf$getUnsampledNodes(), paste0('x[', c(2,4,5), ']'))
-    nimbleOptions(MCMCusePosteriorPredictiveSampler = nimbleUsePosteriorPredictiveSamplerSetting)
 })
 
 sink(NULL)
