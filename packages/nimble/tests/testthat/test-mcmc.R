@@ -1978,40 +1978,40 @@ test_that('checkConjugacy corner case when linear scale is identically zero', {
 })
 
 test_that('cc_checkScalar operates correctly', {
-    expect_true(cc_checkScalar(quote(lambda)))
-    expect_true(cc_checkScalar(quote(lambda*eta)))
-    expect_true(cc_checkScalar(quote(exp(lambda))))
-    expect_true(cc_checkScalar(quote(5+exp(lambda[2]))))
+    expect_true(nimble:::cc_checkScalar(quote(lambda)))
+    expect_true(nimble:::cc_checkScalar(quote(lambda*eta)))
+    expect_true(nimble:::cc_checkScalar(quote(exp(lambda))))
+    expect_true(nimble:::cc_checkScalar(quote(5+exp(lambda[2]))))
 
-    expect_false(cc_checkScalar(quote(exp(lambda[2:3]))))
-    expect_false(cc_checkScalar(quote(lambda[1:2,1:2])))
-    expect_false(cc_checkScalar(quote(lambda[1:2,1:2]/eta)))
-    expect_false(cc_checkScalar(quote(eta*(theta*lambda[1:2,1:2]))))
-    expect_false(cc_checkScalar(quote(lambda[1:2,1:2,1:5])))
+    expect_false(nimble:::cc_checkScalar(quote(exp(lambda[2:3]))))
+    expect_false(nimble:::cc_checkScalar(quote(lambda[1:2,1:2])))
+    expect_false(nimble:::cc_checkScalar(quote(lambda[1:2,1:2]/eta)))
+    expect_false(nimble:::cc_checkScalar(quote(eta*(theta*lambda[1:2,1:2]))))
+    expect_false(nimble:::cc_checkScalar(quote(lambda[1:2,1:2,1:5])))
 
-    expect_true(cc_checkScalar(quote(lambda[xi[i]])))
-    expect_true(cc_checkScalar(quote(lambda[xi[i],xi[j]])))
-    expect_false(cc_checkScalar(quote(lambda[xi[i]:3])))
-    expect_false(cc_checkScalar(quote(lambda[xi[i]:3,2])))
+    expect_true(nimble:::cc_checkScalar(quote(lambda[xi[i]])))
+    expect_true(nimble:::cc_checkScalar(quote(lambda[xi[i],xi[j]])))
+    expect_false(nimble:::cc_checkScalar(quote(lambda[xi[i]:3])))
+    expect_false(nimble:::cc_checkScalar(quote(lambda[xi[i]:3,2])))
 
     ## Ideally this case would evaluate to TRUE, but we would
     ## have to handle knowing output dims of user-defined fxns.
-    expect_false(cc_checkScalar(quote(sum(lambda[1:5]))))
-    expect_false(cc_checkScalar(quote(foo(lambda))))
+    expect_false(nimble:::cc_checkScalar(quote(sum(lambda[1:5]))))
+    expect_false(nimble:::cc_checkScalar(quote(foo(lambda))))
 
 })
 
 test_that('cc_stripExpr operates correctly', {
     expr <- 'coeff * (log(value) - offset) * taulog'
-    expect_identical(deparse(cc_stripExpr(parse(text = 'coeff^2 * tau')[[1]], TRUE, TRUE)),
+    expect_identical(deparse(nimble:::cc_stripExpr(parse(text = 'coeff^2 * tau')[[1]], TRUE, TRUE)),
                  '1 * tau')
-    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], TRUE, TRUE)),
+    expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], TRUE, TRUE)),
                  '(log(value)) * taulog')
-    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], TRUE, FALSE)),
+    expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], TRUE, FALSE)),
                  'coeff * (log(value)) * taulog')
-    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], FALSE, TRUE)),
+    expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], FALSE, TRUE)),
                  '(log(value) - offset) * taulog')
-    expect_identical(deparse(cc_stripExpr(parse(text = expr)[[1]], FALSE, FALSE)),
+    expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], FALSE, FALSE)),
                  expr)
 })
 
@@ -2177,67 +2177,67 @@ test_that("realized conjugacy links are working", {
 test_that('cc_checkLinearity and cc_replace01 unit tests', {
     target <- 'b'
     code <- quote(b)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = 0, scale = 1))
 
     code <- quote(0+b)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = 0+1i, scale = 1))
     
     code <- quote(1*b)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = 0, scale = 1+1i))
     
     code <- quote(b+a)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = quote(a), scale = 1))
     
     
     code <- quote(b*3)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = 0, scale = 3))
     
     code <- quote(a+phi*b)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = quote(a), scale = quote(phi)))
 
     code <- quote(a+phi*(3+b))
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = quote(a+phi*3), scale = quote(phi)))
 
     code <- quote(b/phi)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = 0, scale = quote(1/phi)))
 
     code <- quote((b+a)/phi)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = quote(a/phi), scale = quote(1/phi)))
 
     code <- quote((phi+a)/b)
-    expect_identical(cc_checkLinearity(code, target), NULL)
+    expect_identical(nimble:::cc_checkLinearity(code, target), NULL)
 
     code <- quote(b+b)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = 0, scale = 2))
 
     code <- quote(a+d)
-    expect_identical(cc_checkLinearity(code, target),
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = quote(a+d), scale = 0))
 
     code <- quote(b*(2*b))
-    expect_identical(cc_checkLinearity(code, target), NULL)
+    expect_identical(nimble:::cc_checkLinearity(code, target), NULL)
 
     code <- quote(-b)
-    expect_identical(cc_checkLinearity(code, target), 
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = 0, scale = -1))
     
     code <- quote(b-(a-b))
-    expect_identical(cc_checkLinearity(code, target), 
+    expect_identical(nimble:::cc_checkLinearity(code, target),
                      list(offset = quote(-a), scale = 2))
 
     code <- quote(0+1*b)
     ## quote((0+1i)+(1+1i)*b) doesn't work so need deparse().
-    codeReplaced <- cc_replace01(code)
+    codeReplaced <- nimble:::cc_replace01(code)
     expect_identical(codeReplaced[[2]], 0+1i)
     expect_identical(codeReplaced[[3]][[2]], 1+1i)
     expect_identical(deparse(codeReplaced),
@@ -2245,7 +2245,7 @@ test_that('cc_checkLinearity and cc_replace01 unit tests', {
     
     code <- quote(d/(0+1*b[3*a+0]))
     ## quote((0+1i)+(1+1i)*b) doesn't work so need deparse().
-    expect_identical(deparse(cc_replace01(code)),
+    expect_identical(deparse(nimble:::cc_replace01(code)),
                      "d/(0+1i + (1+1i) * b[3 * a + (0+1i)])")
 })
 
