@@ -2537,9 +2537,10 @@ test_that('reordering of posterior_predictive samplers to the end', {
     expect_false(all(sapply(ppSamplerInd, function(ind) all(ind > otherSamplerInd))))
     if(!getNimbleOption('MCMCusePredictiveDependenciesInCalculations')) {
         ## should issue a message, about reordering samplers:
+        nimbleVerboseSetting_current <- nimbleOptions('verbose')
         nimbleOptions(verbose = TRUE)
         expect_message(Rmcmc <- buildMCMC(conf))
-        nimbleOptions(verbose = nimbleVerboseSetting)
+        nimbleOptions(verbose = nimbleVerboseSetting_current)
         ## now, all PP samplers should be last (expect_true):
         samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
         ppSamplerInd <- which(samplerNames == 'posterior_predictive')
