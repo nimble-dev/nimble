@@ -1465,11 +1465,6 @@ test_that('binary sampler handles out of bounds', {
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
     
     set.seed(0)
-    Rmcmc$run(100)
-    Rsamples <- as.matrix(Rmcmc$mvSamples)
-    expect_true(all(as.numeric(Rsamples) == 1))
-    
-    set.seed(0)
     Cmcmc$run(100)
     Csamples <- as.matrix(Cmcmc$mvSamples)
     expect_true(all(as.numeric(Csamples) == 1))
