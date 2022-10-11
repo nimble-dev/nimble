@@ -6,7 +6,6 @@ on:
       - main
       - master
       - devel
-      - remove_ppb
   pull_request:
     branches:
       - main
