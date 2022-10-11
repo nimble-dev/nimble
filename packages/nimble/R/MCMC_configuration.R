@@ -83,6 +83,7 @@ MCMCconf <- setRefClass(
         samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
         unsampledNodes      = 'ANY',
+        postPredSamplerDownstreamNodes = 'ANY',
         ##namedSamplerLabelMaker = 'ANY',  ## usage long since deprecated (Dec 2020)
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
@@ -480,6 +481,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 }
             }
             
+            setUnsampledNodes()
             if(print)   printSamplers(byType = TRUE)   ##show()    ##printSamplers()
         },
 
@@ -859,16 +861,21 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     for(j in seq_along(uniNodesListByVar)) {
                         theseNodes <- uniNodesListByVar[[j]]
                         isIndexedVector <- grepl("\\[", theseNodes)
-                        if((sum(isIndexedVector)!=0) && (sum(isIndexedVector)!=length(isIndexedVector))) warning(paste0('improper assignment of samplers: ', removeIndexing(theseNodes[1])), call. = FALSE)
-                        isIndexed <- isIndexedVector[1]
-                        if(isIndexed) { numElements <- length(theseNodes)
-                                        sTag <- ifelse(numElements>1, 's', '')
-                                        cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
-                        } else { if(length(theseNodes) == 1) cat(paste0(indent, theseNodes))
-                                 if(length(theseNodes) >  1 & length(unique(theseNodes)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
-                                 if(length(theseNodes) >  1) cat(paste0(indent, theseNodes[1], '  (', length(theseNodes), ')'))
+
+                        theseNodesIndexed <- theseNodes[isIndexedVector]
+                        if(length(theseNodesIndexed)) {
+                            numElements <- length(theseNodesIndexed)
+                            sTag <- ifelse(numElements > 1, 's', '')
+                            cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')\n'))
                         }
-                        cat('\n') }
+                        theseNodesNotIndexed <- theseNodes[!isIndexedVector]
+                        if(length(theseNodesNotIndexed)) {
+                            if(length(theseNodesNotIndexed) == 1) cat(paste0(indent, theseNodesNotIndexed))
+                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
+                            if(length(theseNodesNotIndexed) >  1) cat(paste0(indent, theseNodesNotIndexed[1], '  (', length(theseNodesNotIndexed), ')'))
+                            cat('\n')
+                        }
+                    }
                 }
                 if(length(multivariateList) > 0) {   ## multivariate samplers:
                     multiLengthGToneBool <- sapply(multivariateList, length) > 1
@@ -1173,8 +1180,9 @@ Details: See the initialize() function
             samplerTargetNodes <- model$expandNodeNames(unlist(lapply(samplerConfs, `[[`, 'target')))
             samplerNames <- sapply(samplerConfs, `[[`, 'name')
             postPredSamplerInd <- which(samplerNames == 'posterior_predictive')
-            postPredSamplerTargetNodes <- if(length(postPredSamplerInd)) unlist(lapply(samplerConfs[postPredSamplerInd], `[[`, 'target')) else character()
+            postPredSamplerTargetNodes <- if(length(postPredSamplerInd)) model$expandNodeNames(unlist(lapply(samplerConfs[postPredSamplerInd], `[[`, 'target'))) else character()
             postPredSamplerNodesSampled <- model$getDependencies(postPredSamplerTargetNodes, stochOnly = TRUE, downstream = TRUE, includePredictive = TRUE)
+            postPredSamplerDownstreamNodes <<- setdiff(postPredSamplerNodesSampled, postPredSamplerTargetNodes)
             allNodesBeingSampled <- unique(c(samplerTargetNodes, postPredSamplerNodesSampled))
             unsampledNodes <<- setdiff(model$getNodeNames(stochOnly = TRUE, includeData = FALSE), allNodesBeingSampled)
         },
@@ -1185,21 +1193,31 @@ Details: See the initialize() function
         },
         
         warnUnsampledNodes = function() {
-            setUnsampledNodes()
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
                 sTag <- if(numUnsampled > 1) 's' else ''
                 message(paste0('[Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
             }
         },
-        
+
+        printComments = function() {
+            setUnsampledNodes()
+            anyComments <-
+                length(postPredSamplerDownstreamNodes) ||
+                (getNimbleOption('MCMCwarnUnsampledStochasticNodes') && length(unsampledNodes))
+            if(anyComments) {
+                cat('===== Comments =====\n')
+                if(length(postPredSamplerDownstreamNodes))   message('[Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler')
+                if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
+            }
+        },
+
         show = function() {
             cat('===== Monitors =====\n')
             printMonitors()
             cat('===== Samplers =====\n')
-            if(length(samplerConfs) == 0) cat('(no samplers assigned)\n')
-            printSamplers(byType = TRUE)
-            if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
+            if(length(samplerConfs)) printSamplers(byType = TRUE) else cat('(no samplers assigned)\n')
+            printComments()
         }
     )
 )
