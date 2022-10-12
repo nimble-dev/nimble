@@ -121,7 +121,7 @@ buildMCMC <- nimbleFunction(
                 samplingPredictiveNode <- if(any(conf$model$modelDef$nodeName2GraphIDs(conf$samplerConfs[[i]]$targetAsScalar, FALSE) %in% conf$model$getPredictiveNodeIDs())) TRUE else FALSE
                 if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = getDependenciesIncludesPredictiveNodes_save)
                 samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
-                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes =  getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
             }},
             silent = TRUE
         )
