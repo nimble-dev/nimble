@@ -2,17 +2,23 @@ BUG FIXES
 
 USER LEVEL CHANGES
 
--- For MCMC configuration addSampler method, changed name of the scalarComponents argument to expandComponents.
+-- Changed the `scalarComponents` argument of the `addSampler` method of MCMC configuration objects to `expandComponents`.
 
 -- New `default` argument added for the `addSampler` method of MCMC configuration objects.  When `default = TRUE`, default samplers (conjugate, or otherwise) will be added to the specified nodes.  The addition of this argument provides an entry point to the logic of default sampler determination and assignment, without creating a new MCMC configuration object.
 
 -- New `nodes` argument added for the `addSampler` method of MCMC configuration objects.  Nodes specified in `nodes` automatically undergo expansion according to `expandNodeNames` prior to sampler assignment, allowing for easier assignment of samplers to multiple nodes.
 
--- Addition of arguments `includePredictive`, `predictiveOnly`, and `predictiveBranchPointsOnly` arguments to `getNodeNames` and `getDependencies` methods of model objects, which control the handling of predictive node in the model.
+-- Automatic determination of "predictive" model nodes, which are all stochastic non-data nodes which have no data nodes anywhere in their downstream dependencies.  Tracking of predictive nodes is done automatically, but maybe be disabled using `nimbleOptions(determinePredictiveNodesInModel = FALSE)`.
 
--- New package option `MCMCusePredictiveDependenciesInCalculations` which controls whether MCMC samplers condition on posterior predictive nodes (and posterior predictive branch point nodes) when calculating the acceptance probabilities of proposed transitions.  Default is FALSE.
+-- New arguments `includePredictive` (default value TRUE) and `predictiveOnly` (default value FALSE), for both the `getNodeNames` and the `getDependencies` methods of model objects.  These specify whether any predictive nodes are included in the results, and whether only predictive nodes are included, respecitively.
 
--- New package option `MCMCorderPosteriorPredictiveSamplersLast` which controls whether MCMC samplers are automatically reordered, to make all posterior predictive samplers operate last.  Doing so, posterior predictive samples are generated conditional on the other other values in the MCMC sample.  Default is TRUE.
+-- MCMC samplers, by default, will now exclude predictive dependencies from internal sampler calculations.  This can be reverted to the old behaviour of including predictive dependencies in calculations using `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)`.
+
+-- Removal of the `posterior_predictive_branch` sampler.  Filling the same role, the `posterior_predictive` sampler now updates all nodes downstream of its `target` node.  Assignment of the `posterior_predictive` sampler happens automatically during MCMC configuration, unless `nimbleOptions(MCMCusePosteriorPredictiveSampler = FALSE)`.
+
+-- At the time of `buildMCMC`, all `posterior_predictive` samplers are automatically reordered to operate last among all samplers.  Doing so, posterior predictive samples are generated conditional on the other other values in the MCMC sample.  This reodering can be disabled using `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
+
+-- The MCMC confiuration object will issue a warning message if there are stochastic non-data nodes which will not undergo MCMC sampling.  This warning can be disabled using `nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)`.
 
 
                             CHANGES IN VERSION 0.12.2 (February 2022)
