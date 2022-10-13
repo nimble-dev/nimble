@@ -1196,7 +1196,7 @@ Details: See the initialize() function
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
                 sTag <- if(numUnsampled > 1) 's' else ''
-                message(paste0('[Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
+                message(paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
             }
         },
 
@@ -1207,7 +1207,7 @@ Details: See the initialize() function
                 (getNimbleOption('MCMCwarnUnsampledStochasticNodes') && length(unsampledNodes))
             if(anyComments) {
                 cat('===== Comments =====\n')
-                if(length(postPredSamplerDownstreamNodes))   message('[Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler')
+                if(length(postPredSamplerDownstreamNodes))   message('  [Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler')
                 if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
             }
         },
