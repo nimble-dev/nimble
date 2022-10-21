@@ -57,8 +57,8 @@ sampler_binary <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -104,8 +104,8 @@ sampler_categorical <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
         k <- length(model$getParam(target, 'prob'))
         probs <- numeric(k)
@@ -175,8 +175,8 @@ sampler_RW <- nimbleFunction(
         scale               <- extractControlElement(control, 'scale',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -323,8 +323,8 @@ sampler_RW_block <- nimbleFunction(
         tries               <- extractControlElement(control, 'tries',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccList$calcNodes; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodesNoSelf
         finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
         if(!is.integer(finalTargetIndex) | length(finalTargetIndex) != 1 | is.na(finalTargetIndex[1]))   stop('problem with target node in RW_block sampler')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
@@ -532,8 +532,8 @@ sampler_slice <- nimbleFunction(
         eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
         widthOriginal <- width
         timesRan      <- 0
@@ -693,8 +693,8 @@ sampler_ess <- nimbleFunction(
         eps <- 1e-15
         ## node list generation
         target <- model$expandNodeNames(target)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodes
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         Pi <- pi
         d <- length(model$expandNodeNames(target, returnScalarComponents = TRUE))
@@ -772,8 +772,8 @@ sampler_AF_slice <- nimbleFunction(
         eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch   # not used: calcNodesNoSelf
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccList$calcNodes; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodesNoSelf
         finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
         if(!is.integer(finalTargetIndex) | length(finalTargetIndex) != 1 | is.na(finalTargetIndex[1]))   stop('problem with target node in AF_slice sampler')
         calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
@@ -1280,8 +1280,8 @@ sampler_RW_dirichlet <- nimbleFunction(
         scaleOriginal       <- extractControlElement(control, 'scale',               1)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodesNoSelf <- ccLst$calcNodesNoSelf; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodes
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes
         ## numeric value generation
         d <- length(targetAsScalar)
         thetaVec         <- rep(0, d)
@@ -1369,8 +1369,8 @@ sampler_RW_wishart <- nimbleFunction(
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        calcNodes <- ccLst$calcNodes; copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodesNoSelf
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccList$calcNodes; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodesNoSelf
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0

@@ -51,8 +51,8 @@ decide <- function(logMetropolisRatio) {
 decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
     setup = function(model, mvSaved, target, calcNodes) {
-        ccLst <- mcmc_determineCalcAndCopyNodes(model, target)
-        copyNodesDeterm <- ccLst$copyNodesDeterm; copyNodesStoch <- ccLst$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
@@ -462,14 +462,14 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
     copyNodesDeterm <- copyNodes[!isStochCopyNodes]
     copyNodesStoch <- copyNodes[isStochCopyNodes]
     ##
-    ccLst <- list(
+    ccList <- list(
         calcNodes = calcNodes,
         calcNodesNoSelf = calcNodesNoSelf,
         ##calcNodesPPomitted = calcNodesPPomitted,
         copyNodesDeterm = copyNodesDeterm,
         copyNodesStoch = copyNodesStoch
     )
-    return(ccLst)
+    return(ccList)
 }
 
 
