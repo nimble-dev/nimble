@@ -2,7 +2,7 @@ BUG FIXES
 
 USER LEVEL CHANGES
 
--- Changed the `scalarComponents` argument of the `addSampler` method of MCMC configuration objects to `expandComponents`.
+-- Changed the `scalarComponents` argument of the `addSampler` method of MCMC configuration objects to `expandTarget`.
 
 -- New `default` argument added for the `addSampler` method of MCMC configuration objects.  When `default = TRUE`, default samplers (conjugate, or otherwise) will be added to the specified nodes.  The addition of this argument provides an entry point to the logic of default sampler determination and assignment, without creating a new MCMC configuration object.
 
