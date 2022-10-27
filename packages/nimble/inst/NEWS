@@ -1,4 +1,5 @@
-BUG FIXES
+                            CHANGES IN VERSION 0.13.0 (November 2022)
+
 
 USER LEVEL CHANGES
 
@@ -8,6 +9,11 @@ USER LEVEL CHANGES
 
 -- New `nodes` argument added for the `addSampler` method of MCMC configuration objects.  Nodes specified in `nodes` automatically undergo expansion according to `expandNodeNames` prior to sampler assignment, allowing for easier assignment of samplers to multiple nodes.
 
+BUG FIXES
+
+DEVELOPER LEVEL CHANGES
+
+-- Removed use of bitwise `|` and `&` operators in C++ code, per CRAN request.
 
                             CHANGES IN VERSION 0.12.2 (February 2022)
 
