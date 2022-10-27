@@ -156,7 +156,7 @@ double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double d
   double *xptr, *cholptr;
   NimArr<2, double> xCopy, cholCopy;
   int p = x.dim()[0];
-  if((x.dim()[1] != p) | (chol.dim()[0] != p) | (chol.dim()[1] != p)) {
+  if((x.dim()[1] != p) || (chol.dim()[0] != p) || (chol.dim()[1] != p)) {
     _nimble_global_output<<"Error in nimArr_dwish_chol: some dimensions are not right\n";
     nimble_print_to_R(_nimble_global_output);
   }
@@ -186,7 +186,7 @@ void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double d
   if(!ans.isMap()) {
     ans.setSize(p, p);
   } else {
-    if((ans.dim()[0] != p) | (ans.dim()[1] != p)) {
+    if((ans.dim()[0] != p) || (ans.dim()[1] != p)) {
       _nimble_global_output<<"Error in nimArr_rwish_chol: ans sizes do not match chol.\n";
       nimble_print_to_R(_nimble_global_output);
     }
@@ -203,7 +203,7 @@ double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, doubl
   double *xptr, *cholptr;
   NimArr<2, double> xCopy, cholCopy;
   int p = x.dim()[0];
-  if((x.dim()[1] != p) | (chol.dim()[0] != p) | (chol.dim()[1] != p)) {
+  if((x.dim()[1] != p) || (chol.dim()[0] != p) || (chol.dim()[1] != p)) {
     _nimble_global_output<<"Error in nimArr_dinvwish_chol: some dimensions are not right\n";
     nimble_print_to_R(_nimble_global_output);
   }
@@ -233,7 +233,7 @@ void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, doubl
   if(!ans.isMap()) {
     ans.setSize(p, p);
   } else {
-    if((ans.dim()[0] != p) | (ans.dim()[1] != p)) {
+    if((ans.dim()[0] != p) || (ans.dim()[1] != p)) {
       _nimble_global_output<<"Error in nimArr_rinvwish_chol: ans sizes do not match chol.\n";
       nimble_print_to_R(_nimble_global_output);
     }
@@ -260,7 +260,7 @@ double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<
     nimble_print_to_R(_nimble_global_output);
   }
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
-  if((chol.dim()[0] != n) | (chol.dim()[1] != n)) {
+  if((chol.dim()[0] != n) || (chol.dim()[1] != n)) {
     _nimble_global_output<<"Error in nimArr_dmnorm_chol: chol does not match size size of x.\n";
     nimble_print_to_R(_nimble_global_output);
   }
@@ -312,7 +312,7 @@ double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<2, d
     nimble_print_to_R(_nimble_global_output);
   }
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
-  if((chol.dim()[0] != n) | (chol.dim()[1] != n)) {
+  if((chol.dim()[0] != n) || (chol.dim()[1] != n)) {
     _nimble_global_output<<"Error in nimArr_dmvt_chol: chol does not match size size of x.\n";
     nimble_print_to_R(_nimble_global_output);
   }
@@ -358,7 +358,7 @@ double nimArr_dlkj_corr_cholesky(NimArr<2, double> &x, double eta, int p, int gi
   NimArr<2, double> xCopy;
   xptr = nimArrCopyIfNeeded<2, double>(x, xCopy).getPtr();
 
-  if((x.dim()[0] != p) | (x.dim()[1] != p)) {
+  if((x.dim()[0] != p) || (x.dim()[1] != p)) {
     _nimble_global_output<<"Error in nimArr_dlkj_corr_cholesky: some dimensions are not right\n";
     nimble_print_to_R(_nimble_global_output);
   }
@@ -377,7 +377,7 @@ void nimArr_rlkj_corr_cholesky(NimArr<2, double> &ans, double eta, int p) {
   if(!ans.isMap()) {
     ans.setSize(p, p);
   } else {
-    if((ans.dim()[0] != p) | (ans.dim()[1] != p)) {
+    if((ans.dim()[0] != p) || (ans.dim()[1] != p)) {
       _nimble_global_output<<"Error in nimArr_rlkj_corr_cholesky: ans sizes do not match p.\n";
       nimble_print_to_R(_nimble_global_output);
     }

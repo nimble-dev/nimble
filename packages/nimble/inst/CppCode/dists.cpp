@@ -81,7 +81,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   }
 
   // determinant of x using Cholesky:
-  if(overwrite_inputs & (int) scale_param)  // if !scale_param we need x below
+  if(overwrite_inputs && (int) scale_param)  // if !scale_param we need x below
     xChol = x;
   else {
     xChol = new double[p*p];
@@ -133,7 +133,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       delete [] xCopy;
   }
 
-  if(!(overwrite_inputs & (int) scale_param))
+  if(!(overwrite_inputs && (int) scale_param))
     delete [] xChol;
 
     // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster

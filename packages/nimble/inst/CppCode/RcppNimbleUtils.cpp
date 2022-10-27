@@ -295,7 +295,7 @@ SEXP getNRow(SEXP Sextptr){
 /* This copies the values from SextptrFrom into SextptrTo. It takes values from rowsFrom and copies
 into rowsTo */
 SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SEXP rowsTo){
-    if(!R_ExternalPtrAddr(SextptrFrom) | !R_ExternalPtrAddr(SextptrFrom)) {
+    if(!R_ExternalPtrAddr(SextptrFrom) || !R_ExternalPtrAddr(SextptrFrom)) {
         PRINTF("Error: Sextptr is not a valid external pointer\n");
         return(returnStatus(false));
     }
@@ -312,7 +312,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
   NimVecType *typePtrTo = static_cast< NimVecType* >(R_ExternalPtrAddr(SextptrTo));
   nimType vecTypeTo = (*typePtrTo).getNimType();
 
-  if((vecTypeFrom == DOUBLE) & (vecTypeTo == DOUBLE)){
+  if((vecTypeFrom == DOUBLE) && (vecTypeTo == DOUBLE)){
 	  VecNimArrBase<double> *matPtrFrom = static_cast< VecNimArrBase<double>* >(typePtrFrom);
 	  VecNimArrBase<double> *matPtrTo = static_cast< VecNimArrBase<double>* >(typePtrTo );
 	  int k = LENGTH(rowsFrom);
@@ -326,7 +326,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 	  int ncTo = 0;
     
 	  for(int i = 0; i < k; i++){
-	  if((indexFrom[i] > sizeFrom) | (indexFrom[i] <= 0))
+	  if((indexFrom[i] > sizeFrom) || (indexFrom[i] <= 0))
 	    {
 	    _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexFrom[i] << " sizeFrom = " << sizeFrom << "\n";
 	    nimble_print_to_R(_nimble_global_output);
@@ -334,7 +334,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 	      PRINTF("Warning: partial copy completed before error discovered!\n");
 	    return(returnStatus(false) );
     	}
-  	if((indexTo[i] > sizeTo) | (indexTo[i] <=0))
+  	if((indexTo[i] > sizeTo) || (indexTo[i] <=0))
   	  {
 	    _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexTo[i] << " sizeTo = "<< sizeTo << "\n";
 	    nimble_print_to_R(_nimble_global_output);
@@ -360,7 +360,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
   	return(returnStatus(true) );
   }
 
-  if((vecTypeFrom == INT) & (vecTypeTo == INT)){
+  if((vecTypeFrom == INT) && (vecTypeTo == INT)){
 	  VecNimArrBase<int> *matPtrFrom = static_cast< VecNimArrBase<int>* >(typePtrFrom);
 	  VecNimArrBase<int> *matPtrTo = static_cast< VecNimArrBase<int>* >(typePtrTo );
 	  int k = LENGTH(rowsFrom);
@@ -374,7 +374,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 	  int ncTo = 0;
     
 	  for(int i = 0; i < k; i++){
-	  if((indexFrom[i] > sizeFrom) | (indexFrom[i] <= 0))
+	  if((indexFrom[i] > sizeFrom) || (indexFrom[i] <= 0))
 	    {
 	    _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexFrom[i] << " sizeFrom = " << sizeFrom << "\n";
 	    nimble_print_to_R(_nimble_global_output);
@@ -382,7 +382,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 	      PRINTF("Warning: partial copy completed before error discovered!\n");
 	    return(returnStatus(false) );
     	}
-  	if((indexTo[i] > sizeTo) | (indexTo[i] <=0))
+  	if((indexTo[i] > sizeTo) || (indexTo[i] <=0))
   	  {
   	  _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexTo[i] << " sizeTo = "<< sizeTo << "\n";
 	  nimble_print_to_R(_nimble_global_output);
@@ -688,7 +688,7 @@ void SEXP_2_NimArrDouble (SEXP rValues, NimArrBase<double> &NimArrDbl){
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = REAL(rValues)[i];
   }
-  else if(Rf_isInteger(rValues) | Rf_isLogical(rValues) ) {
+  else if(Rf_isInteger(rValues) || Rf_isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = INTEGER(rValues)[i];
   }
@@ -705,7 +705,7 @@ void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
     return;		
   }
   
-  if(Rf_isInteger(rValues) | Rf_isLogical(rValues) ) {
+  if(Rf_isInteger(rValues) || Rf_isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrInt[i] = INTEGER(rValues)[i];
   }
@@ -727,7 +727,7 @@ void SEXP_2_NimArrBool (SEXP rValues, NimArrBase<bool> &NimArrBl){
   }
 
   // In R, Logical is represented as integer
-  if(Rf_isInteger(rValues) | Rf_isLogical(rValues)) {
+  if(Rf_isInteger(rValues) || Rf_isLogical(rValues)) {
     for(int i = 0; i < rLength; i++)
       NimArrBl[i] = INTEGER(rValues)[i];
   }
@@ -776,7 +776,7 @@ void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
       NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
       int nimNumDims = (*nimBase).numDims();
       if(nimNumDims != sexpNumDims) {
-	if((LENGTH(rValues) != (*nimBase).size()) & 
+	if((LENGTH(rValues) != (*nimBase).size()) && 
 	   (sexpNumDims != 1)){
 	  PRINTF("Incorrect number of dimensions in copying\n");
 	  return;
@@ -798,7 +798,7 @@ void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
 	  return;
 	}
       }
-      if((resize) & (nimNumDims == sexpNumDims))
+      if((resize) && (nimNumDims == sexpNumDims))
 	(*nimBase).setSize(sexpDims);
       SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
     }
