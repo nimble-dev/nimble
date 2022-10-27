@@ -1,4 +1,5 @@
-BUG FIXES
+                            CHANGES IN VERSION 0.13.0 (November 2022)
+
 
 USER LEVEL CHANGES
 
@@ -19,6 +20,14 @@ USER LEVEL CHANGES
 -- At the time of `buildMCMC`, all `posterior_predictive` samplers are automatically reordered to operate last among all samplers.  Doing so, posterior predictive samples are generated conditional on the other other values in the MCMC sample.  This reodering can be disabled using `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
 
 -- The MCMC confiuration object will issue a warning message if there are stochastic non-data nodes which will not undergo MCMC sampling.  This warning can be disabled using `nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)`.
+
+
+BUG FIXES
+
+
+DEVELOPER LEVEL CHANGES
+
+-- Removed use of bitwise `|` and `&` operators in C++ code, per CRAN request.
 
 
                             CHANGES IN VERSION 0.12.2 (February 2022)

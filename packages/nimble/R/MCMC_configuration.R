@@ -719,7 +719,7 @@ This function also has the side effect of resetting the sampler execution orderi
             removeSamplers(m$target, m$nodes)   ## both unnamed arguments accepted as ... argument
             e <- try(addSampler(...), silent = TRUE)   ## pass all arguments along to addSampler
             ## if an error occurred in addSampler, then restore original samplerConfs
-            if(class(e) == 'try-error') {
+            if(inherits(e, 'try-error')) {
                 samplerConfs <<- samplerConfs_save
                 samplerExecutionOrder <<- samplerExecutionOrder_save
                 errorMessage <- sub('^Error.+?: ', '', e[1])
