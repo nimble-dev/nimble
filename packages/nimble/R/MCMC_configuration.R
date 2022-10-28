@@ -226,18 +226,27 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 ## controlled by system option: MCMCusePosteriorPredictiveSampler
                 nodesForPosteriorPredictiveSampler <- character()
                 if(getNimbleOption('MCMCusePosteriorPredictiveSampler')) {
-                    predictiveNodeIDs <- model$getPredictiveNodeIDs()
                     predictiveNodeIDsToSample <- numeric()
-                    for(nid in predictiveNodeIDs) {
+                    predictiveNodeIDs <- model$getPredictiveNodeIDs()
+                    predictiveNodeIDsToCheck <- intersect(predictiveNodeIDs, nodeIDsOrig)    ## only check predictive nodes which are slated for sampling
+                    nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheck)
+                    nextPredNodeInd <- 1
+                    while(nextPredNodeInd <= nPredictiveNodesToCheck) {
+                        nid <- as.numeric(predictiveNodeIDsToCheck[nextPredNodeInd])
                         downstreamNoSelfIDs <- model$getDependencies(nid, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
                         ## quick reality check:
                         if(!all(downstreamNoSelfIDs %in% predictiveNodeIDs))   stop('something went wrong')
                         ## skip nodes if the entire downstream network wasn't slated for sampling:
-                        if(!all(c(nid, downstreamNoSelfIDs) %in% nodeIDsOrig))   next
+                        if(!all(c(nid, downstreamNoSelfIDs) %in% nodeIDsOrig))   { nextPredNodeInd <- nextPredNodeInd + 1;   next }
                         ## found a posterior predictive node to sample:
                         predictiveNodeIDsToSample <- c(predictiveNodeIDsToSample, nid)
                         ## remove all downstream nodes from the nodeIDs for future sampler assignment:
                         nodeIDs <- setdiff(nodeIDs, downstreamNoSelfIDs)
+                        ## remove all downstream dependencies of this node from the set of predictive nodes to check:
+                        predictiveNodeIDsToCheck <- predictiveNodeIDsToCheck[-(1:nextPredNodeInd)]
+                        predictiveNodeIDsToCheck <- setdiff(predictiveNodeIDsToCheck, downstreamNoSelfIDs)
+                        nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheck)
+                        nextPredNodeInd <- 1
                     }
                     ## convert back to node names:
                     nodes <- model$modelDef$maps$graphID_2_nodeName[nodeIDs]
