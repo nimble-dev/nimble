@@ -63,7 +63,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                      },
                                      ## buildPointAtAll adds a cppFunctionDef for pointAtAll to the functionDefs field.  This consists of lines like one__over_sqrt_tau__between = &(values->one__over_sqrt_tau__between_Vec[i]);  These point each model variable at the corresponding element of a modelValues object.
                                      buildPointAtAll = function() {
-                                         template = quote( {NAME = cppReference( values %->% VECNAME[i] ) } )[[2]]
+                                         template = quote( {NAME = cppReference( values_ %->% VECNAME[i_] ) } )[[2]]
 
                                          numVars <- length(Rnames2CppNames)
                                          codeLines <- vector('list', length = numVars)
@@ -74,11 +74,12 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                                                    VECNAME = as.name(makeVecName(Rnames2CppNames[[iNN]])) ) )
                                              }
                                          }
+                                         browser()
                                          newFun <- cppFunctionDef(name = 'pointAtAll',
                                                                   returnType = cppVoid(),
                                                                
-                                                                  args = list(cppVar(ptr = 1, baseType = CmodelValuesClassName, name = 'values'),
-                                                                      cppInt('i')),
+                                                                  args = list(cppVar(ptr = 1, baseType = CmodelValuesClassName, name = 'values_'),
+                                                                      cppInt('i_')),
                                                                   code = cppCodeBlock( code = putCodeLinesInBrackets(codeLines)))
                                          functionDefs[['pointAtAll']] <<- newFun
                                      },
