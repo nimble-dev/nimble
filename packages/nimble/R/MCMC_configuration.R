@@ -229,25 +229,33 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     predictiveNodeIDsToSample <- numeric()
                     predictiveNodeIDs <- model$getPredictiveNodeIDs()
                     predictiveNodeIDsToCheck <- intersect(predictiveNodeIDs, nodeIDsOrig)    ## only check predictive nodes which are slated for sampling
-                    nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheck)
+                    isEndNodeBool <- model$isEndNode(predictiveNodeIDsToCheck)
+                    predictiveNodeIDsToCheckEnd <- predictiveNodeIDsToCheck[isEndNodeBool]
+                    predictiveNodeIDsToCheckNonEnd <- predictiveNodeIDsToCheck[!isEndNodeBool]
+                    ## the following while-loop checks downstream dependencies of *non-end* predictive nodes
+                    nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheckNonEnd)   ## only loop over and check *non-end* predictive nodes
                     nextPredNodeInd <- 1
                     while(nextPredNodeInd <= nPredictiveNodesToCheck) {
-                        nid <- as.numeric(predictiveNodeIDsToCheck[nextPredNodeInd])
+                        nid <- as.numeric(predictiveNodeIDsToCheckNonEnd[nextPredNodeInd])
                         downstreamNoSelfIDs <- model$getDependencies(nid, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
                         ## quick reality check:
                         if(!all(downstreamNoSelfIDs %in% predictiveNodeIDs))   stop('predictive node IDs in model appear to be set wrong')
                         ## skip nodes if the entire downstream network wasn't slated for sampling:
                         if(!all(c(nid, downstreamNoSelfIDs) %in% nodeIDsOrig))   { nextPredNodeInd <- nextPredNodeInd + 1;   next }
-                        ## found a posterior predictive node to sample:
+                        ## found a posterior predictive (non-end) node to sample:
                         predictiveNodeIDsToSample <- c(predictiveNodeIDsToSample, nid)
                         ## remove all downstream nodes from the nodeIDs for future sampler assignment:
                         nodeIDs <- setdiff(nodeIDs, downstreamNoSelfIDs)
-                        ## remove all downstream dependencies of this node from the set of predictive nodes to check:
-                        predictiveNodeIDsToCheck <- predictiveNodeIDsToCheck[-(1:nextPredNodeInd)]
-                        predictiveNodeIDsToCheck <- setdiff(predictiveNodeIDsToCheck, downstreamNoSelfIDs)
-                        nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheck)
+                        ## remove up-to-and-including this node from the set of predictive (non-end) nodes to check:
+                        predictiveNodeIDsToCheckNonEnd <- predictiveNodeIDsToCheckNonEnd[-(1:nextPredNodeInd)]
+                        ## remove all downstream dependencies of this node from *both* sets (end, and non-end) of predictive nodes:
+                        predictiveNodeIDsToCheckEnd    <- setdiff(predictiveNodeIDsToCheckEnd,    downstreamNoSelfIDs)
+                        predictiveNodeIDsToCheckNonEnd <- setdiff(predictiveNodeIDsToCheckNonEnd, downstreamNoSelfIDs)
+                        nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheckNonEnd)
                         nextPredNodeInd <- 1
                     }
+                    ## now, any remaining *end* predictive nodes should necessarily receive posterior_predictive samplers:
+                    predictiveNodeIDsToSample <- c(predictiveNodeIDsToSample, predictiveNodeIDsToCheckEnd)
                     ## convert back to node names:
                     nodes <- model$modelDef$maps$graphID_2_nodeName[nodeIDs]
                     nodesForPosteriorPredictiveSampler <- model$modelDef$maps$graphID_2_nodeName[predictiveNodeIDsToSample]
