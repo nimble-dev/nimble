@@ -235,7 +235,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                         nid <- as.numeric(predictiveNodeIDsToCheck[nextPredNodeInd])
                         downstreamNoSelfIDs <- model$getDependencies(nid, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
                         ## quick reality check:
-                        if(!all(downstreamNoSelfIDs %in% predictiveNodeIDs))   stop('something went wrong')
+                        if(!all(downstreamNoSelfIDs %in% predictiveNodeIDs))   stop('predictive node IDs in model appear to be set wrong')
                         ## skip nodes if the entire downstream network wasn't slated for sampling:
                         if(!all(c(nid, downstreamNoSelfIDs) %in% nodeIDsOrig))   { nextPredNodeInd <- nextPredNodeInd + 1;   next }
                         ## found a posterior predictive node to sample:
