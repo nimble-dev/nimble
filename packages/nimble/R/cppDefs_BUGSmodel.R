@@ -74,7 +74,6 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                                                    VECNAME = as.name(makeVecName(Rnames2CppNames[[iNN]])) ) )
                                              }
                                          }
-                                         browser()
                                          newFun <- cppFunctionDef(name = 'pointAtAll',
                                                                   returnType = cppVoid(),
                                                                
