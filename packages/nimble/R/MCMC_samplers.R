@@ -2236,7 +2236,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
 #'
 #' @param model (uncompiled) model on which the MCMC is to be run
-#' 
 #' @param mvSaved \code{modelValues} object to be used to store MCMC samples
 #' @param target node(s) on which the sampler will be used
 #' @param control named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
