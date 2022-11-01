@@ -350,7 +350,6 @@ mcmc_processMonitorNames <- function(model, nodes) {
     isLogProbName <- grepl('^logProb_', nodes)
     expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
     origLogProbNames <- nodes[isLogProbName]
-    if(sum(isLogProbName)) browser()
     expandedLogProbNames <- character()
     if(length(origLogProbNames) > 0) {
         nodeName_fromLogProbName <- gsub('^logProb_', '', origLogProbNames)
