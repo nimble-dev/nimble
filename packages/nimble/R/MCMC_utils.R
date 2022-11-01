@@ -347,13 +347,13 @@ samplesSummary <- function(samples, round) {
 
 ## weed out missing indices from the monitors
 mcmc_processMonitorNames <- function(model, nodes) {
-    browser()
     isLogProbName <- grepl('^logProb_', nodes)
     expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
     origLogProbNames <- nodes[isLogProbName]
+    if(sum(isLogProbName)) browser()
     expandedLogProbNames <- character()
     if(length(origLogProbNames) > 0) {
-        nodeName_fromLogProbName <- gsub('logProb_', '', origLogProbNames)
+        nodeName_fromLogProbName <- gsub('^logProb_', '', origLogProbNames)
         expandedLogProbNames <- model$modelDef$nodeName2LogProbName(nodeName_fromLogProbName)
     }
     return(c(expandedNodeNames, expandedLogProbNames))
