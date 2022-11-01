@@ -87,18 +87,17 @@ calc_E_llk_gen = nimbleFunction(
 
 
 ## helper function to extract ranges of nodes to be maximized
-getMCEMRanges <- nimbleFunction(name = 'getMCEMRanges',
- setup = function(model, maxNodes, buffer){
+getMCEMRanges <- function(model, maxNodes, buffer) {
     low_limits = rep(-Inf, length(maxNodes) ) 
     hi_limits  = rep(Inf,  length(maxNodes) )
     nodes <- model$expandNodeNames(maxNodes)
     for(i in seq_along(nodes)) {
-      low_limits[i] = model$getBound(nodes[i], 'lower') + abs(buffer)
-      hi_limits[i]  = model$getBound(nodes[i], 'upper')  - abs(buffer)
+        low_limits[i] = model$getBound(nodes[i], 'lower') + abs(buffer)
+        hi_limits[i]  = model$getBound(nodes[i], 'upper')  - abs(buffer)
     }
     return(list(low_limits, hi_limits))
-  }
-)
+}
+
 
 #' Builds an MCEM algorithm from a given NIMBLE model
 #' 

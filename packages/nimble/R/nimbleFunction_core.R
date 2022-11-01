@@ -81,6 +81,9 @@ nimbleFunction <- function(setup         = NULL,
                            where         = getNimbleFunctionEnvironment()
                            ) {
     force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
+
+    if(missing(run) && missing(methods))
+        stop("nimbleFunction: either 'run' function or 'methods' must be provided.")
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
     if(is.null(setup)) {
