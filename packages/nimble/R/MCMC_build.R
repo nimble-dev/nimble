@@ -85,13 +85,51 @@ buildMCMC <- nimbleFunction(
         else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
 
         enableWAIC <- conf$enableWAIC
-        
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
+        
+        if(getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast') && length(conf$samplerConfs)) {
+            ## put all posterior_predictive  samplers at the end
+            samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
+            postPredSamplerBool <- grepl('^posterior_predictive$', samplerNames)
+            ppSamplerInd <- which(postPredSamplerBool)
+            regularSamplerInd <- which(!postPredSamplerBool)
+            if(length(ppSamplerInd) && length(regularSamplerInd) && (max(regularSamplerInd) > min(ppSamplerInd))) {
+                messageIfVerbose('  [Note] Reordering posterior_predictive samplers to execute last')
+                exOrder <- conf$samplerExecutionOrder
+                if((length(exOrder)!=length(conf$samplerConfs)) || !all(exOrder==1:length(conf$samplerConfs))) stop('Halting, rather than reordering samplers in the presence of a modified sampler execution order.  If a modified execution order is needed, then: (1) reorder posterior predictive samplers to be last in the MCMC configuration printSamplers method output, (2) set the desired sampler execution order, and (3) run buildMCMC.')
+                conf$samplerConfs <- conf$samplerConfs[c(regularSamplerInd, ppSamplerInd)]
+            }
+        }
+
+        if(getNimbleOption('MCMCwarnUnsampledStochasticNodes')) {
+            conf$setUnsampledNodes()
+            conf$warnUnsampledNodes()
+        }
+        
+        ## build sampler functions.
+        ## save current values of 'getDependenciesIncludesPredictiveNodes' system option, then temporarily
+        ## change its value to that of 'MCMCusePredictiveDependenciesInCalculations'
+        getDependenciesIncludesPredictiveNodes_save <- getNimbleOption('getDependenciesIncludesPredictiveNodes')
+        nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        for(i in seq_along(conf$samplerConfs))
-            samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+        e <- try({
+            for(i in seq_along(conf$samplerConfs)) {
+                ## caveat: if this sampler is sampling a predictive node, then revert the 'getDependenciesIncludesPredictiveNodes'
+                ## setting back to its original value, for creation of this sampler.
+                samplingPredictiveNode <- if(any(conf$model$modelDef$nodeName2GraphIDs(conf$samplerConfs[[i]]$targetAsScalar, FALSE) %in% conf$model$getPredictiveNodeIDs())) TRUE else FALSE
+                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = TRUE)
+                samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+            }},
+            silent = TRUE
+        )
+        ## regardless whether an error occurred during sampler building, restore the original system option value:
+        nimbleOptions(getDependenciesIncludesPredictiveNodes = getDependenciesIncludesPredictiveNodes_save)
+        ## if an error occurred during sampler building, then quit here:
+        if(class(e) == 'try-error')   { errorMessage <- sub('^Error.+?: ', '', e[1]); stop(errorMessage) }
+        
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
         monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)

@@ -66,6 +66,8 @@ calcCrossVal <- function(i,
           conf$addSampler(target=sConf$target, type=sConf$samplerFunction, control=sConf$control, silent=TRUE)
       }
   }
+  MCMCwarnUnsampledStochasticNodes_current <- nimbleOptions('MCMCwarnUnsampledStochasticNodes')
+  nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)
   if(!silent){
     modelMCMC <- buildMCMC(modelMCMCConf)
     C.modelMCMC <- compileNimble(modelMCMC,
@@ -78,6 +80,7 @@ calcCrossVal <- function(i,
                                    project = newModel, dirName = dirName))
       silentNull <- suppressMessages(C.modelMCMC$run(niter, progressBar = FALSE))
   }
+  nimbleOptions(MCMCwarnUnsampledStochasticNodes = MCMCwarnUnsampledStochasticNodes_current)
   leaveOutNamesExpanded <- newModel$expandNodeNames(leaveOutNames, returnScalarComponents = TRUE)
   MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNamesExpanded, drop = FALSE]
   sampNum <- dim(MCMCout)[1]

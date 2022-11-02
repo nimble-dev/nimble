@@ -51,22 +51,20 @@ decide <- function(logMetropolisRatio) {
 decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
     setup = function(model, mvSaved, target, calcNodes) {
-        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
-        isStochCalcNodesNoSelf <- model$isStoch(calcNodesNoSelf)   ## should be made faster
-        calcNodesNoSelfDeterm <- calcNodesNoSelf[!isStochCalcNodesNoSelf]
-        calcNodesNoSelfStoch <- calcNodesNoSelf[isStochCalcNodesNoSelf]
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
         jump <- decide(logMHR)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         } else {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfDeterm, logProb = FALSE)
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesNoSelfStoch, logProbOnly = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         }
         returnType(logical())
         return(jump)
@@ -427,6 +425,54 @@ mcmc_createRmodelObject <- function(model, inits, nchains, setSeed, code, consta
     }
     return(Rmodel)
 }
+
+
+## create the lists of calcNodes and copyNodes for use in MCMC samplers
+mcmc_determineCalcAndCopyNodes <- function(model, target) {
+    targetExpanded <- model$expandNodeNames(target)
+    modelPredictiveNodes <- model$getNodeNames(predictiveOnly = TRUE)
+    targetExpandedPPbool <- targetExpanded %in% modelPredictiveNodes
+    targetAllPP <- all(targetExpandedPPbool)
+    targetAnyPP <- any(targetExpandedPPbool)
+    ## if a particular sampler is assigned *jointly to PP and non-PP* nodes, then we're going to bail
+    ## out and quit, if the option MCMCusePredictiveDependenciesInCalculations == FALSE.
+    ## this is an extreme corner-case, which I think will lead to problems.
+    if(targetAnyPP && !targetAllPP && !getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+        stop('cannot assign samplers jointly to posterior predictive (PP) nodes and non-PP nodes, when MCMCusePredictiveDependenciesInCalculations option is FALSE', call. = FALSE)
+    ## if the sampler calling this, itself, is operating exclusively on posterior predictive nodes,
+    ## then regardless of how the rest of the model is being sampled (w.r.t. inclusion of posterior predictive nodes),
+    ## we'll include 'self' and all stochastic dependencies (the full markov blanket) in the calculations,
+    ## which necessarily are taking place entirely within a posterior predictive network of nodes.
+    ## this should lead to correct behaviour (consistent samples and joint posteriors) in all cases.
+    if(targetAllPP) {
+        ## when sampler is operating only on posterior predictive nodes,
+        ## then always include all predictive dependencies:
+        calcNodes <- model$getDependencies(target, includePredictive = TRUE)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePredictive = TRUE)
+        ##calcNodesPPomitted <- character()
+    } else {
+        ## usual case:
+        calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        ##calcNodesPPomitted <- setdiff(model$getDependencies(target, includePredictive = TRUE), calcNodes)
+    }
+    ## copyNodes:
+    copyNodes <- model$getDependencies(target, self = FALSE)
+    isStochCopyNodes <- model$isStoch(copyNodes)
+    copyNodesDeterm <- copyNodes[!isStochCopyNodes]
+    copyNodesStoch <- copyNodes[isStochCopyNodes]
+    ##
+    ccList <- list(
+        calcNodes = calcNodes,
+        calcNodesNoSelf = calcNodesNoSelf,
+        ##calcNodesPPomitted = calcNodesPPomitted,
+        copyNodesDeterm = copyNodesDeterm,
+        copyNodesStoch = copyNodesStoch
+    )
+    return(ccList)
+}
+
+
 
 
 

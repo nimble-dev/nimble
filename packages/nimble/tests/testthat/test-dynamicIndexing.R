@@ -285,9 +285,9 @@ test_that("Testing normal-normal-IG multi-index multi-conjugacy detection with d
     m = nimbleModel(code, data = list(y = array(rnorm(2*2*3), c(2,3,2))),
                     inits = list(k1 = rep(0,2)))
     conf <- configureMCMC(m)
-    expect_match(conf$getSamplers()[[3]]$name, "conjugate_dnorm_dnorm",
+    expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
                  info = "failed to detect normal-normal conjugacy")
-    expect_match(conf$getSamplers()[[13]]$name, "conjugate_dinvgamma_dnorm",
+    expect_match(conf$getSamplers()[[5]]$name, "conjugate_dinvgamma_dnorm",
                  info = "failed to detect invgamma-normal conjugacy")
 })
 

@@ -385,6 +385,63 @@ test_that("getConditionallyIndependentSets works for tweaked pump model", {
                         'theta[7]', 'theta[8]', 'theta[9]', 'theta[10]',
                         c('theta[1]', 'theta[2]')))  
 })
+
+test_that('getNodeNames and getDependencies with predictiveNode options', {
     
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        for(i in 1:8) {
+            b[i] ~ dnorm(a, 1)
+            c[i] ~ dnorm(b[i], 1)
+            d[i] ~ dnorm(c[i], 1)
+        }
+    })
+
+    Rmodel <- nimbleModel(code)
+    
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), 1L)
+    expect_identical(Rmodel$getPredictiveNodeIDs(), 1:length(Rmodel$getNodeNames()))
+    expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), character())
+    expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), Rmodel$getNodeNames())
+
+    Rmodel$resetData()
+    Rmodel$setData(list(b=1:8, c=1:8, d=1:8))
+    
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), integer())
+    expect_identical(Rmodel$getPredictiveNodeIDs(), integer())
+    expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), Rmodel$getNodeNames())
+    expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), character())
+
+    Rmodel$resetData()
+    Rmodel$setData(list(
+               b = rep(c(0, NA), each = 4),
+               c = rep(c(0, NA, 0, NA), each = 2),
+               d = rep(c(0, NA), 4)))
+
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), as.integer(c(9, 13)))
+    expect_identical(Rmodel$getPredictiveNodeIDs(), as.integer(c(9, 13, 17, 19, 21, 23, 25)))
+    expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), setdiff(Rmodel$getNodeNames(), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveNodeIDs()]))
+    expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), Rmodel$modelDef$maps$graphID_2_nodeName[Rmodel$getPredictiveNodeIDs()])
+
+    expect_identical(Rmodel$getDependencies('a', includePredictive = FALSE), Rmodel$expandNodeNames(c('a', 'b[1:7]')))
+    expect_identical(Rmodel$getDependencies('a', predictiveOnly = TRUE), 'b[8]')
+
+    expect_identical(Rmodel$getDependencies('b', includePredictive = FALSE), Rmodel$expandNodeNames(c('b[1:7]', 'c[1:3]', 'c[5:7]')))
+    expect_identical(Rmodel$getDependencies('b', predictiveOnly = TRUE), c('b[8]', 'c[4]', 'c[8]'))
+
+    expect_identical(Rmodel$getDependencies('c', includePredictive = FALSE), Rmodel$expandNodeNames(c('c[1:3]', 'c[5:7]', 'd[1]', 'd[3]', 'd[5]', 'd[7]')))
+    expect_identical(Rmodel$getDependencies('c', predictiveOnly = TRUE), c('c[4]', 'c[8]', 'd[2]', 'd[4]', 'd[6]', 'd[8]'))
+
+    expect_identical(Rmodel$getDependencies('d', includePredictive = FALSE), c('d[1]', 'd[3]', 'd[5]', 'd[7]'))
+    expect_identical(Rmodel$getDependencies('d', predictiveOnly = TRUE), c('d[2]', 'd[4]', 'd[6]', 'd[8]'))
+
+    Rmodel$resetData()
+
+    expect_identical(Rmodel$getPredictiveRootNodeIDs(), 1L)
+    expect_identical(Rmodel$getPredictiveNodeIDs(), 1:length(Rmodel$getNodeNames()))
+    expect_identical(Rmodel$getNodeNames(includePredictive = FALSE), character())
+    expect_identical(Rmodel$getNodeNames(predictiveOnly = TRUE), Rmodel$getNodeNames())
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

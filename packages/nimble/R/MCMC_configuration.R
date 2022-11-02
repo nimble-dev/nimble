@@ -82,6 +82,8 @@ MCMCconf <- setRefClass(
         samplerConfs        = 'ANY',
         samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
+        unsampledNodes      = 'ANY',
+        postPredSamplerDownstreamNodes = 'ANY',
         ##namedSamplerLabelMaker = 'ANY',  ## usage long since deprecated (Dec 2020)
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
@@ -203,57 +205,62 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 collapse=', ')) }    ## ensure all target node(s) are stochastic
             }
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
+            if(getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast')) {
+                postPredBool <- nodes %in% model$getNodeNames(predictiveOnly = TRUE)
+                nodes <- c(nodes[!postPredBool], nodes[postPredBool])  ## put posterior predictive nodes at the end
+            }
 
             if(!useNewConfigureMCMC) {
                 if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }
-                isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
             } else {
-                ## determine node branch points of any trailing model branches of entirely non-data nodes.
-                ## call these posterior predictive branch nodes - they'll get a posterior_predictive_branch sampler.
                 ## convert to node IDs:
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 nodeIDsOrig <- nodeIDs
-                posteriorPredictiveBranchNodes <- character()
-                anyPPnodes <- any(model$isEndNode(model$getNodeNames(stochOnly = TRUE, includeData = FALSE)))
-                ## DT: decided I didn't like this additional output message below;
-                ##     this isn't the nimbleModel() function, afterall.
-                ##if(!getNimbleOption('MCMCjointlySamplePredictiveBranches') & anyPPnodes) {
-                ##    message('Detected presense of posterior predictive model nodes.  If many predictive nodes exist in a trailing jointly posterior predictive network, then MCMC sampling of these posterior predictive nodes may be improved by enabling the NIMBLE package option \'MCMCjointlySamplePredictiveBranches\' prior to configuring the MCMC algorithm.')
-                ##}
-                if(getNimbleOption('MCMCjointlySamplePredictiveBranches') & anyPPnodes) {
-                    stochNonDataIDs <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
-                    ## all potential (candidate) posterior predictive branch nodes:
-                    candidateNodeIDs <- stochNonDataIDs[!model$isEndNode(stochNonDataIDs)]
-                    dataNodeIDs <- model$getNodeNames(dataOnly = TRUE, returnType = 'ids')
-                    dataNodeParentIDs <- model$expandNodeNames(model$getParents(dataNodeIDs, stochOnly = TRUE), returnType = 'ids')
-                    ## remove from candidate nodes all direct parents of data nodes:
-                    candidateNodeIDs <- setdiff(candidateNodeIDs, dataNodeParentIDs)
-                    nCandidate <- length(candidateNodeIDs)
-                    nextCandInd <- 1
-                    posteriorPredictiveBranchNodeIDs <- numeric()
-                    while(nextCandInd <= nCandidate) {
-                        thisCandNodeID <- as.numeric(candidateNodeIDs[nextCandInd])
-                        stochDownstreamNoSelfIDs <- model$getDependencies(thisCandNodeID, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
-                        ## skip candidate nodes that have any downstream data nodes:
-                        if(length(intersect(stochDownstreamNoSelfIDs, dataNodeIDs)) > 0)   { nextCandInd <- nextCandInd + 1;   next }
-                        ## skip candidate nodes for which the entire resulting branch wasn't going to be sampled:
-                        if(!all(c(thisCandNodeID, stochDownstreamNoSelfIDs) %in% nodeIDsOrig))   { nextCandInd <- nextCandInd + 1;   next }
-                        ## found a posterior predictive branch node:
-                        posteriorPredictiveBranchNodeIDs <- c(posteriorPredictiveBranchNodeIDs, thisCandNodeID)
-                        ## remove stochastic nodes which are within this branch from the nodeIDs to be assigned samplers:
-                        nodeIDs <- setdiff(nodeIDs, stochDownstreamNoSelfIDs)
-                        ## update candidateNodeIDs, removing downstream stochastic dependencies of this branch node from the candidate set:
-                        candidateNodeIDs <- candidateNodeIDs[-(1:nextCandInd)]
-                        candidateNodeIDs <- setdiff(candidateNodeIDs, stochDownstreamNoSelfIDs)
-                        nCandidate <- length(candidateNodeIDs)
-                        nextCandInd <- 1
+                
+                ## determine which posterior predictive nodes should be sampled with posterior_predictive sampler.
+                ## this requires some care, because it's only those nodes for which all
+                ## downstream dependents are also slated for sampling.
+                ## upon finding one, the root node and all downstream dependents are then
+                ## removed from the set of node (ids) for later sampler assignment.
+                ## controlled by system option: MCMCusePosteriorPredictiveSampler
+                nodesForPosteriorPredictiveSampler <- character()
+                if(getNimbleOption('MCMCusePosteriorPredictiveSampler')) {
+                    predictiveNodeIDsToSample <- numeric()
+                    predictiveNodeIDs <- model$getPredictiveNodeIDs()
+                    predictiveNodeIDsToCheck <- intersect(predictiveNodeIDs, nodeIDsOrig)    ## only check predictive nodes which are slated for sampling
+                    isEndNodeBool <- model$isEndNode(predictiveNodeIDsToCheck)
+                    predictiveNodeIDsToCheckEnd <- predictiveNodeIDsToCheck[isEndNodeBool]
+                    predictiveNodeIDsToCheckNonEnd <- predictiveNodeIDsToCheck[!isEndNodeBool]
+                    ## the following while-loop checks downstream dependencies of *non-end* predictive nodes
+                    nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheckNonEnd)   ## only loop over and check *non-end* predictive nodes
+                    nextPredNodeInd <- 1
+                    while(nextPredNodeInd <= nPredictiveNodesToCheck) {
+                        nid <- as.numeric(predictiveNodeIDsToCheckNonEnd[nextPredNodeInd])
+                        downstreamNoSelfIDs <- model$getDependencies(nid, self = FALSE, stochOnly = TRUE, downstream = TRUE, returnType = 'ids')
+                        ## quick reality check:
+                        if(!all(downstreamNoSelfIDs %in% predictiveNodeIDs))   stop('predictive node IDs in model appear to be set wrong')
+                        ## skip nodes if the entire downstream network wasn't slated for sampling:
+                        if(!all(c(nid, downstreamNoSelfIDs) %in% nodeIDsOrig))   { nextPredNodeInd <- nextPredNodeInd + 1;   next }
+                        ## found a posterior predictive (non-end) node to sample:
+                        predictiveNodeIDsToSample <- c(predictiveNodeIDsToSample, nid)
+                        ## remove all downstream nodes from the nodeIDs for future sampler assignment:
+                        nodeIDs <- setdiff(nodeIDs, downstreamNoSelfIDs)
+                        ## remove up-to-and-including this node from the set of predictive (non-end) nodes to check:
+                        predictiveNodeIDsToCheckNonEnd <- predictiveNodeIDsToCheckNonEnd[-(1:nextPredNodeInd)]
+                        ## remove all downstream dependencies of this node from *both* sets (end, and non-end) of predictive nodes:
+                        predictiveNodeIDsToCheckEnd    <- setdiff(predictiveNodeIDsToCheckEnd,    downstreamNoSelfIDs)
+                        predictiveNodeIDsToCheckNonEnd <- setdiff(predictiveNodeIDsToCheckNonEnd, downstreamNoSelfIDs)
+                        nPredictiveNodesToCheck <- length(predictiveNodeIDsToCheckNonEnd)
+                        nextPredNodeInd <- 1
                     }
+                    ## now, any remaining *end* predictive nodes should necessarily receive posterior_predictive samplers:
+                    predictiveNodeIDsToSample <- c(predictiveNodeIDsToSample, predictiveNodeIDsToCheckEnd)
                     ## convert back to node names:
-                    nodes <- model$expandNodeNamesFromGraphIDs(nodeIDs)
-                    posteriorPredictiveBranchNodes <- model$expandNodeNamesFromGraphIDs(posteriorPredictiveBranchNodeIDs)
+                    nodes <- model$modelDef$maps$graphID_2_nodeName[nodeIDs]
+                    nodesForPosteriorPredictiveSampler <- model$modelDef$maps$graphID_2_nodeName[predictiveNodeIDsToSample]
                 }
-                isEndNode <-  model$isEndNode(nodeIDs) ## isEndNode can be modified later to avoid adding names when input is IDs
+                
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
                 nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
                 nodeDeclID_2_nodes <- split(nodes, nodeDeclIDs)
@@ -330,11 +337,9 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                             nodeLength <- length(nodeScalarComponents)
                         }
                     }
-                    ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-                    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive', control = controlDefaultsArg);     next }
 
-                    ## if nodes is a branch point of a network of entirely non-data nodes, assign 'posterior_predictive_branch' sampler
-                    if(node %in% posteriorPredictiveBranchNodes) { addSampler(target = node, type = 'posterior_predictive_branch', control = controlDefaultsArg);     next }
+                    ## if node is the root of a posterior predictive (entirely non-data) network of nodes, assign 'posterior_predictive' sampler
+                    if(node %in% nodesForPosteriorPredictiveSampler) { addSampler(target = node, type = 'posterior_predictive', control = controlDefaultsArg);     next }
                     
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
@@ -493,6 +498,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 }
             }
             
+            setUnsampledNodes()
             if(print)   printSamplers(byType = TRUE)   ##show()    ##printSamplers()
         },
 
@@ -733,7 +739,7 @@ This function also has the side effect of resetting the sampler execution orderi
             if(inherits(e, 'try-error')) {
                 samplerConfs <<- samplerConfs_save
                 samplerExecutionOrder <<- samplerExecutionOrder_save
-                errorMessage <- sub('^Error.+: ', '', e[1])
+                errorMessage <- sub('^Error.+?: ', '', e[1])
                 stop(errorMessage)
             }
         },
@@ -841,8 +847,8 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                 cat(paste0(info, "\n"))
             }
             if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
-                cat('These sampler functions have a modified order of execution.\n')
-                cat('To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
+                message('\n  [Note] Samplers have a modified order of execution.')
+                message('  [Note] To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
             }
             return(invisible(NULL))
         },
@@ -872,16 +878,21 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     for(j in seq_along(uniNodesListByVar)) {
                         theseNodes <- uniNodesListByVar[[j]]
                         isIndexedVector <- grepl("\\[", theseNodes)
-                        if((sum(isIndexedVector)!=0) && (sum(isIndexedVector)!=length(isIndexedVector))) warning(paste0('improper assignment of samplers: ', removeIndexing(theseNodes[1])), call. = FALSE)
-                        isIndexed <- isIndexedVector[1]
-                        if(isIndexed) { numElements <- length(theseNodes)
-                                        sTag <- ifelse(numElements>1, 's', '')
-                                        cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')'))
-                        } else { if(length(theseNodes) == 1) cat(paste0(indent, theseNodes))
-                                 if(length(theseNodes) >  1 & length(unique(theseNodes)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
-                                 if(length(theseNodes) >  1) cat(paste0(indent, theseNodes[1], '  (', length(theseNodes), ')'))
+
+                        theseNodesIndexed <- theseNodes[isIndexedVector]
+                        if(length(theseNodesIndexed)) {
+                            numElements <- length(theseNodesIndexed)
+                            sTag <- ifelse(numElements > 1, 's', '')
+                            cat(paste0(indent, theseUniVars[j], '[]  (', numElements, ' element', sTag, ')\n'))
                         }
-                        cat('\n') }
+                        theseNodesNotIndexed <- theseNodes[!isIndexedVector]
+                        if(length(theseNodesNotIndexed)) {
+                            if(length(theseNodesNotIndexed) == 1) cat(paste0(indent, theseNodesNotIndexed))
+                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
+                            if(length(theseNodesNotIndexed) >  1) cat(paste0(indent, theseNodesNotIndexed[1], '  (', length(theseNodesNotIndexed), ')'))
+                            cat('\n')
+                        }
+                    }
                 }
                 if(length(multivariateList) > 0) {   ## multivariate samplers:
                     multiLengthGToneBool <- sapply(multivariateList, length) > 1
@@ -1181,13 +1192,49 @@ Details: See the initialize() function
             if(ind == 1) mvSamples1Conf <<- thisModelValuesConf
             if(ind == 2) mvSamples2Conf <<- thisModelValuesConf     	
         },
+        
+        setUnsampledNodes = function() {
+            samplerTargetNodes <- model$expandNodeNames(unlist(lapply(samplerConfs, `[[`, 'target')))
+            samplerNames <- sapply(samplerConfs, `[[`, 'name')
+            postPredSamplerInd <- which(samplerNames == 'posterior_predictive')
+            postPredSamplerTargetNodes <- if(length(postPredSamplerInd)) model$expandNodeNames(unlist(lapply(samplerConfs[postPredSamplerInd], `[[`, 'target'))) else character()
+            postPredSamplerNodesSampled <- model$getDependencies(postPredSamplerTargetNodes, stochOnly = TRUE, downstream = TRUE, includePredictive = TRUE)
+            postPredSamplerDownstreamNodes <<- setdiff(postPredSamplerNodesSampled, postPredSamplerTargetNodes)
+            allNodesBeingSampled <- unique(c(samplerTargetNodes, postPredSamplerNodesSampled))
+            unsampledNodes <<- setdiff(model$getNodeNames(stochOnly = TRUE, includeData = FALSE), allNodesBeingSampled)
+        },
+        
+        getUnsampledNodes = function() {
+            setUnsampledNodes()
+            return(unsampledNodes)
+        },
+        
+        warnUnsampledNodes = function() {
+            if(length(unsampledNodes)) {
+                numUnsampled <- length(unsampledNodes)
+                sTag <- if(numUnsampled > 1) 's' else ''
+                message(paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
+            }
+        },
+
+        printComments = function() {
+            setUnsampledNodes()
+            anyComments <-
+                length(postPredSamplerDownstreamNodes) ||
+                (getNimbleOption('MCMCwarnUnsampledStochasticNodes') && length(unsampledNodes))
+            if(anyComments) {
+                cat('===== Comments =====\n')
+                if(length(postPredSamplerDownstreamNodes))   message('  [Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler')
+                if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
+            }
+        },
 
         show = function() {
             cat('===== Monitors =====\n')
             printMonitors()
             cat('===== Samplers =====\n')
-            if(length(samplerConfs) == 0) cat('(no samplers assigned)\n')
-            printSamplers(byType = TRUE)
+            if(length(samplerConfs)) printSamplers(byType = TRUE) else cat('(no samplers assigned)\n')
+            printComments()
         }
     )
 )

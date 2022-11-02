@@ -2744,8 +2744,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits2)
   conf <- configureMCMC(m)
+  mcmc <- buildMCMC(conf)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_silent(mcmc <- buildMCMC(conf))
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[2, ", 1:n, "]"))
@@ -2940,7 +2940,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     {muTilde[i] ~ dnorm(0, 1)}
     z ~ dnorm(muTilde[1], 1)
   })
-  m <- nimbleModel(code, data = data, constants = const, inits = inits)
+  m <- nimbleModel(code, data = c(data, list(z = 0)), constants = const, inits = inits)
   conf <- configureMCMC(m)
   expect_error(mcmc <- buildMCMC(conf), "Only the variables being clustered")
 
@@ -3027,8 +3027,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   inits2$muTilde <- rnorm(n+1)
   m <- nimbleModel(code, data = data, constants = const, inits = inits2)
   conf <- configureMCMC(m)
+  mcmc <- buildMCMC(conf)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_silent(mcmc <- buildMCMC(conf))
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
@@ -4345,8 +4345,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_identical(cn$clusterNodes[[1]], c(t(array(nodes, c(n, 2, J))[,2,])))
   expect_identical(cn$numNodesPerCluster, as.integer(J))
   expect_silent(conf <- configureMCMC(model, print = FALSE))
+  mcmc <- buildMCMC(conf)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_silent(mcmc <- buildMCMC(conf))
   crpSampler <- mcmc$samplerFunctions[[crpIndex]]
   expect_equal(crpSampler$sampler, "CRP_conjugate_dnorm_dnorm")
   expect_identical(crpSampler$nObsPerClusID, J)
