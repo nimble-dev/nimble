@@ -9,6 +9,8 @@
 
 - New `nodes` argument added for the `addSampler` method of MCMC configuration objects.  Nodes specified in `nodes` automatically undergo expansion according to `expandNodeNames` prior to sampler assignment, allowing for easier assignment of samplers to multiple nodes.
 
+- `rcar_normal` issues an informative error message when invoked from the R command line.
+
 ## BUG FIXES
 
 ## DEVELOPER LEVEL CHANGES
