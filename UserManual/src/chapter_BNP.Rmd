@@ -149,7 +149,7 @@ inits <- list(thetatilde = rnorm(constants$M, 0, 10),
 modelRandEff <- nimbleModel(code, constants, data, inits)
 ```
 
-Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as `thetaTilde[z[i], j]`, instead of a single mean. 
+Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as `thetaTilde[z[i], j]`, instead of a single mean. This allows group-specific parameters to also vary across the repeated mesasurements.
 
 As before, the model can be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha-mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP.
 
