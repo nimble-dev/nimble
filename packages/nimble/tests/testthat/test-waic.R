@@ -632,7 +632,7 @@ test_that("use of extra burnin of online WAIC", {
 
     expect_equal(waic1, waic2)
     expect_equal(waic1, waic3)
-}
+})
 
 
 nimbleOptions(verbose = nimbleVerboseSetting)
