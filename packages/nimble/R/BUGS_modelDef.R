@@ -310,7 +310,8 @@ modelDefClass$methods(checkUnusedConstants = function(code, constants) {
         constantsInCode <- names(constantsEnv) %in% all.vars(code)
         if(!all(constantsInCode)) 
             for(constName in names(constantsEnv)[!constantsInCode])
-                messageIfVerbose("  [Note] '", constName, "' is provided in 'constants' but not used in the model code and is being ignored.") 
+                messageIfVerbose("  [Note] '", constName,
+                "' is provided in 'constants' but not used in the model code and is being ignored.") 
     }
 })
 
