@@ -112,8 +112,11 @@ buildWAIC <- nimbleFunction(
         marginalizeNodes    <- extractControlElement(control, 'marginalizeNodes',    NULL)
         niterMarginal       <- extractControlElement(control, 'niterMarginal',       1000)
         convergenceSet      <- extractControlElement(control, 'convergenceSet',      NULL)
+        nburnin_extra       <- extractControlElement(control, 'nburnin_extra',      0)
 
-        setupOutputs(online, thin)
+        setupOutputs(online, thin, nburnin_extra)
+
+        if(nburnin_extra < 0) stop("buildWAIC: 'nburnin_extra' must be non-negative.")
         
         ## Partition of data nodes. By default one data node per group.
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
@@ -306,6 +309,7 @@ buildWAIC <- nimbleFunction(
             output$marginal <- marginal
             output$thin <- thin
             output$online <- online
+            output$nburnin_extra <- nburnin_extra
 
             if(marginal) {
                 output$niterMarginal <- niterMarginal
@@ -613,6 +617,12 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
 #' only on thinned samples (default is \code{FALSE}). Likely only useful for
 #' reducing computation when using marginal WAIC.
 #'
+#' \code{nburnin_extra}: Additional number of pre-thinning MCMC iterations
+#' to discard before calculating online WAIC. This number is discarded in
+#' addition to the usual MCMC burnin, \code{nburnin}. The purpose of this
+#' option is to allow a user to retain some samples for inspection without
+#' having those samples used for online WAIC calculation (default = 0).
+#' 
 #' @section Extracting WAIC:
 #'
 #' The calculated WAIC and related quantities can be obtained in various ways

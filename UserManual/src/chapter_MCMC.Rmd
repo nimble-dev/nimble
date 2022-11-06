@@ -701,7 +701,7 @@ NIMBLE implements RJMCMC for variable selection using a univariate normal distri
   - If the inclusion probabilities are assumed known, then RJMCMC may be used with regular model code, i.e. model code written without heed to variable selection.
   - If the inclusion probability is a parameter in the model, perhaps with its own prior, then RJMCMC requires that indicator variables be written in the model code.  The indicator variables will be sampled using RJMCMC, but otherwise they are like any other nodes in the model.
   
-The steps to set up variable selection using RJCMCM are:
+The steps to set up variable selection using RJMCMC are:
 
   1. Write the model with indicator variables if needed.
   2. Configure the MCMC as usual with `configureMCMC`.

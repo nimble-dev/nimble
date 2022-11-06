@@ -110,6 +110,7 @@ buildMCMC <- nimbleFunction(
            waicFun[[1]] <- buildWAIC(model, mvSaved, conf$controlWAIC)
            onlineWAIC <- waicFun[[1]]$online 
            thinWAIC <- waicFun[[1]]$thin
+           nburnin_extraWAIC <- waicFun[[1]]$nburnin_extra
         } else {
             if(enableWAIC) {  
                 ## Setup for original (offline) WAIC prior to v. 0.12.0, namely cWAIC with no grouping capability.
@@ -203,7 +204,7 @@ buildMCMC <- nimbleFunction(
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
                 }
-                if(enableWAIC & onlineWAIC) {
+                if(enableWAIC && onlineWAIC && iter > nburnin + nburnin_extraWAIC) {
                     if (!thinWAIC) {
                         waicFun[[1]]$updateStats()
                     } else if (sampleNumber %% thinToUseVec[1] == 0){ 
