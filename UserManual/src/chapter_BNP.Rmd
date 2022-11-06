@@ -115,7 +115,7 @@ The BNP functionality in NIMBLE was extended in version 0.10.0 to more general m
 
 The following example illustrates how to use NIMBLE in a random effects model with repeated measurements per subject using a DP prior for the distribution of the subject's random effects. The model is given by
 
-$$ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2,)\hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, $$
+$$ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2), \hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, $$
 
 $$ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), $$
 
