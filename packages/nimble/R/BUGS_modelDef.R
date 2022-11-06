@@ -72,6 +72,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  
                                  ## the following are all run, in this order, by setupModel():
                                  setModelValuesClassName        = function() {},
+                                 checkUnusedConstants           = function() {},
                                  assignBUGScode                 = function() {},
                                  assignConstants                = function() {},
                                  assignDimensions               = function() {},
@@ -133,6 +134,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     options(scipen = 1000000)
     on.exit(options(scipen = scipen))
     if(debug) browser()
+    checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(nimbleOptions("enableModelMacros")) code <- codeProcessModelMacros(code)
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
@@ -300,9 +302,23 @@ codeProcessModelMacros <- function(code,
     code
 }
 
+modelDefClass$methods(checkUnusedConstants = function(code, constants) {
+    constantsEnv <<- new.env()
+    if(length(constants) > 0) {
+        if(!is.list(constants) || is.null(names(constants))) stop('constants argument must be a named list')
+        list2env(constants, constantsEnv)
+        constantsInCode <- names(constantsEnv) %in% all.vars(code)
+        if(!all(constantsInCode)) 
+            for(constName in names(constantsEnv)[!constantsInCode])
+                messageIfVerbose("  [Note] '", constName,
+                "' is provided in 'constants' but not used in the model code and is being ignored.") 
+    }
+})
+
 modelDefClass$methods(setModelValuesClassName = function() {
     modelValuesClassName <<- paste0(Rname2CppName(name), '_MV_', nimbleUniqueID())
 })
+
 modelDefClass$methods(assignBUGScode = function(code) {
     ## uses 'code' argument, assigns field: BUGScode
     BUGScode <<- nf_changeNimKeywords(code)
@@ -313,11 +329,6 @@ modelDefClass$methods(assignConstants = function(constants) {
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
-        ## Need to do check before we process if-then-else, so comment out for now.
-        ## constantsInCode <- names(constantsEnv) %in% all.vars(BUGScode)
-        ## if(!all(constantsInCode)) 
-        ##     for(constName in names(constantsEnv)[!constantsInCode])
-        ##         message("  [Note] '", constName, "' is provided in 'constants' but not used in the model code and is being ignored.") 
         constantsList <<- constants
         constantsNamesList <<- lapply(ls(constants), as.name)
         constantLengths <- unlist(lapply(constants, length))
