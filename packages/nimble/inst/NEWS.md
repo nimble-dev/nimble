@@ -6,10 +6,15 @@
 - Thoroughly revampled handling of predictive nodes in MCMC sampling. If MCMC results identical to previous versions of NIMBLE are needed in models with posterior predictive nodes, set `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` and `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
 
     -- MCMC samplers, by default, will now exclude predictive dependencies from internal sampler calculations.  This can be reverted to the old behaviour of including predictive dependencies in calculations using `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)`.
+    
     -- At the time of `buildMCMC`, all `posterior_predictive` samplers are automatically reordered to operate last among all samplers. Doing so, posterior predictive samples are generated conditional on the other values in the MCMC sample.  This reodering can be disabled using `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)` (but doing so without also setting `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` could result in samples that are invalid in terms of the joint posterior distribution (but with valid samples marginally).
+    
     -- Removal of the `posterior_predictive_branch` sampler.  Filling the same role, the `posterior_predictive` sampler now updates all nodes downstream of its `target` node.  Assignment of the `posterior_predictive` sampler happens automatically during MCMC configuration, unless `nimbleOptions(MCMCusePosteriorPredictiveSampler = FALSE)`.
+    
     -- Automatic determination of "predictive" model nodes, which are all stochastic non-data nodes that have no data nodes anywhere in their downstream dependencies. Tracking of predictive nodes is done automatically, but maybe be disabled using `nimbleOptions(determinePredictiveNodesInModel = FALSE)`.
+
     -- New arguments `includePredictive` (default value `TRUE`) and `predictiveOnly` (default value `FALSE`), for both the `getNodeNames` and the `getDependencies` methods of model objects.  These specify whether any predictive nodes are included in the results, and whether only predictive nodes are included, respectively.
+    
     -- The MCMC confiuration object will issue a warning message if there are stochastic non-data nodes which will not undergo MCMC sampling.  This warning can be disabled using `nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)`.
 
 - For MCMC configuration `addSampler` method, changed name of the `scalarComponents` argument to `expandComponents` (PR #1215).
