@@ -5,9 +5,9 @@
                           "\nFor more information on NIMBLE and a User Manual,",
                           "\nplease visit https://R-nimble.org.",
                           "\n\nNote for advanced users who have written their own MCMC samplers:",
-                          "\n\tAs of version 0.13.0, NIMBLE's protocol for handling posterior",
-                          "\npredictive nodes has changed in a way that could affect user-defined",
-                          "\nsamplers in some situations. Please see Section 15.5.1 of the User Manual."
+                          "\n  As of version 0.13.0, NIMBLE's protocol for handling posterior",
+                          "\n  predictive nodes has changed in a way that could affect user-defined",
+                          "\n  samplers in some situations. Please see Section 15.5.1 of the User Manual."
                           )
 }
 

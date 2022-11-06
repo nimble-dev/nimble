@@ -24,16 +24,23 @@
 
 - Add `replaceSamplers` method to MCMC configuration objects to simplify modifying how a node is sampled (PR #1222).
 
+- Convert `NEWS` to Markdown format for proper rendering in browser (issue #1231).
+
+- Indicate model code producing warnings about unknown nimbleFunctions (issue #370).
+
 ## BUG FIXES
 
 - Avoid error occurring when a model variable name starts with "logProb" (PR #1240).
 
 - Prevent infinite recursion in particular cases in conjugacy checking (PR #1228).
 
+- Fix bug in simulating from `dcar_normal` nodes when multiple nodes passed to simulate (issue #1238).
+
 - Fixed error message about duplicate node declarations (PR #1233).
 
 - Fix another issue with long variable names (PR #1217).
 
+- Fix warning related to `dataNodes` in WAIC. 
 
 ## DEVELOPER LEVEL CHANGES
 
