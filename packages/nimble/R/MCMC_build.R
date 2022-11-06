@@ -121,6 +121,7 @@ buildMCMC <- nimbleFunction(
             } else waicFun[[1]] <- buildDummyWAIC()
             onlineWAIC <- FALSE
             thinWAIC <- FALSE
+            nburnin_extraWAIC <- 0
         }
     },
     
@@ -204,7 +205,7 @@ buildMCMC <- nimbleFunction(
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
                 }
-                if(enableWAIC && onlineWAIC && iter > nburnin + nburnin_extraWAIC) {
+                if(enableWAIC & onlineWAIC & iter > nburnin + nburnin_extraWAIC) {
                     if (!thinWAIC) {
                         waicFun[[1]]$updateStats()
                     } else if (sampleNumber %% thinToUseVec[1] == 0){ 
