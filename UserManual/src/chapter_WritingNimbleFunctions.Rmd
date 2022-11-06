@@ -614,7 +614,10 @@ If you define it in a function (which would generally be the case if you are usi
 ```{r, eval=FALSE}
 assign('sampler_yourSampler', sampler_yourSampler, envir = .GlobalEnv)
 ```
-        
+
+### User-defined samplers and posterior predictive nodes
+
+As of version 0.13.0, NIMBLE's handling of posterior predictive nodes in MCMC sampling has changed in order to improve MCMC mixing. Samplers for nodes that are not posterior predictive nodes no longer condition on the values of the posterior predictive nodes. This is done by turning off posterior predictive nodes as dependencies in the use of `getDependencies` when building an MCMC. This behavior will also pertain to user-defined samplers, without problems in most cases. However if a user-defined sampler manually specifies dependencies (not recommended), one could create an invalid MCMC if the handling of dependencies in the user-defined sampler is different than the new handling of dependencies in NIMBLE's samplers. To revert to NIMBLE's earlier handling of posterior predictive nodes as regular nodes that are sampled in the same fashion as any other nodes, one can set the NIMBLE option `MCMCusePredictiveDependenciesInCalculations` to `TRUE`. In addition, for full reproducibility with respect to versions of NIMBLE before 0.13.0, one can set the NIMBLE option `MCMCorderPosteriorPredictiveSamplersLast` to `FALSE` to revert to the ordering of samplers used in previous versions of NIMBLE, avoiding the new handling that puts all posterior predictive samplers last in the ordering of samplers within an iteration.
         
 ## Copying nimbleFunctions (and NIMBLE models)
 
