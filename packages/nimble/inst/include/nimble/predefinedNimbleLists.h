@@ -136,6 +136,7 @@ class waicDetailsList : public NamedObjects, public pointedToBase {
   double niterMarginal;
   bool thin;
   bool online;
+  double nburnin_extra;
   NimArr<1, double> WAIC_partialMC;
   NimArr<1, double> lppd_partialMC;
   NimArr<1, double> pWAIC_partialMC;
