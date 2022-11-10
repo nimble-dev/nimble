@@ -3,7 +3,7 @@
 
 ## USER LEVEL CHANGES
 
-- Thoroughly revamped handling of predictive nodes in MCMC sampling. If MCMC 
+- Thoroughly revamp handling of predictive nodes in MCMC sampling. If MCMC 
 results identical to previous versions of NIMBLE are needed in models with 
 posterior predictive nodes, set 
 `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` 
@@ -52,16 +52,16 @@ addition to standard MCMC burnin) before calculating online WAIC, thereby
 allowing inspection of initial samples without forcing them to be used for WAIC
 (PR #1244).
 
-- For MCMC configuration `addSampler` method, changed name of the 
+- For MCMC configuration `addSampler` method, change name of the 
 `scalarComponents` argument to `expandComponents` (PR #1215).
 
-- New `default` argument added for the `addSampler` method of MCMC configuration
+- Add new `default` argument for the `addSampler` method of MCMC configuration
 objects.  When `default = TRUE`, default samplers (conjugate, or otherwise) will
 be added to the specified nodes.  The addition of this argument provides an 
 entry point to the logic of default sampler determination and assignment, 
 without creating a new MCMC configuration object (PR #1215).
 
-- New `nodes` argument added for the `addSampler` method of MCMC configuration
+- Add new `nodes` argument for the `addSampler` method of MCMC configuration
 objects.  Nodes specified in `nodes` automatically undergo expansion according
 to `expandNodeNames` prior to sampler assignment, allowing for easier assignment
 of samplers to multiple nodes (PR #1215).
@@ -93,7 +93,7 @@ modifying how a node is sampled (PR #1222).
 - Fix bug in simulating from `dcar_normal` nodes when multiple nodes passed to
 simulate (issue #1238).
 
-- Fixed error message about duplicate node declarations (PR #1233).
+- Fix error message about duplicate node declarations (PR #1233).
 
 - Fix another issue with long variable names (PR #1217).
 
@@ -101,9 +101,9 @@ simulate (issue #1238).
 
 ## DEVELOPER LEVEL CHANGES
 
-- Removed use of bitwise `|` and `&` operators in C++ code, per CRAN request.
+- Remove use of bitwise `|` and `&` operators in C++ code, per CRAN request.
 
-- Refactored `nimbleMCMC` to pull out model creation (PR #1223).
+- Refactor `nimbleMCMC` to pull out model creation (PR #1223).
 
 - Fix an issue with nested `nimbleList`s on MacOS (PR #1213).
 
