@@ -799,7 +799,8 @@ sampler_AF_slice <- nimbleFunction(
         widthIndicatorVec  <- rep(1, d)       # indicator of which widths are still adapting
         ## checks
         if(d <= 1)                         stop('AF_slice sampler must be used on at least two target nodes')
-        if(class(widthVec) != 'numeric')   stop('sliceWidths must be a numeric vector')
+        if(!inherits(widthVec, 'numeric') && !inherits(widthVec, 'integer'))
+            stop('sliceWidths must be a numeric vector')
         if(length(widthVec) != d)          stop('sliceWidths must have length = ', d)
     },
     run = function() {
