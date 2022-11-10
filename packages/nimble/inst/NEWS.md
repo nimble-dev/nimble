@@ -105,6 +105,8 @@ simulate (issue #1238).
 
 - Refactored `nimbleMCMC` to pull out model creation (PR #1223).
 
+- Fix an issue with nested `nimbleList`s on MacOS (PR #1213).
+
 #                            CHANGES IN VERSION 0.12.2 (February 2022)
 
 ## BUG FIXES

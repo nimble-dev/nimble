@@ -629,7 +629,8 @@ User-defined samplers that determine dependencies using `getDependencies` should
 There are several new NIMBLE system options available to take control of the behavior just described.
 
  - `getDependenciesIncludesPredictiveNodes` determines whether posterior predictive nodes are included in results of `getDependencies`. This defaults to `TRUE`, so that outside of building samplers, the behavior of `getDependencies` should be identical to previous versions of NIMBLE.
- - `MCMCusePredictiveDependenciesInCalculations` gives the value to which \\ `getDependenciesIncludesPredictiveNodes` will be set while building samplers. This defaults to `FALSE`.
+ - `MCMCusePredictiveDependenciesInCalculations` gives the value to which   
+   `getDependenciesIncludesPredictiveNodes` will be set while building samplers. This defaults to `FALSE`.
  - `MCMCorderPosteriorPredictiveSamplersLast` determines whether posterior predictive samplers are moved to the end of the sampler list. This default to `TRUE`. Behavior prior to version 0.13.0 corresponds to `FALSE`.
 
 Here are some examples of how to use these options:

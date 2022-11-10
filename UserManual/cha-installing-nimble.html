@@ -430,6 +430,7 @@ div.csl-indent {
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -527,28 +528,24 @@ but we want to hear about any and help resolve them.</p>
 <p>The following are some troubleshooting tips that have helped users in some situations.</p>
 <p>For Windows:</p>
 <ul>
-<li>Be sure you have set <code>PATH</code> when installing Rtools (see instructions above in the Windows installation section). Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</li>
-</ul>
+<li><p>Be sure you have set <code>PATH</code> when installing Rtools (see instructions above in the Windows installation section). Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</p>
 <div class="sourceCode" id="cb75"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb75-1"><a href="cha-installing-nimble.html#cb75-1" aria-hidden="true" tabindex="-1"></a>path <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)</span>
 <span id="cb75-2"><a href="cha-installing-nimble.html#cb75-2" aria-hidden="true" tabindex="-1"></a>newPath <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">Rtools</span><span class="sc">\\</span><span class="st">bin;C:</span><span class="sc">\\</span><span class="st">Rtools</span><span class="sc">\\</span><span class="st">mingw_64</span><span class="sc">\\</span><span class="st">bin;&quot;</span>,</span>
-<span id="cb75-3"><a href="cha-installing-nimble.html#cb75-3" aria-hidden="true" tabindex="-1"></a>                 path, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
-<span id="cb75-4"><a href="cha-installing-nimble.html#cb75-4" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">PATH =</span> newPath) </span></code></pre></div>
-<ul>
-<li>Be sure the <code>Rtools.exe</code> version matches the R version.</li>
-<li>Try re-installing <code>Rtools</code> followed by re-installing NIMBLE.</li>
-<li>If you’re using Rtools40, make sure you are using a newer version or RStudio (at least 1.2.5042).</li>
-<li>If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the <code>lib</code> argument to <code>install.packages</code>.</li>
-<li>In the past we’ve heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to <code>RHOME</code>. We think this problem has been resolved.</li>
-<li>We’ve also heard reports from Windows users of problems when R is installed on a network drive. A work-around is to install locally in a directory on a drive physically on the machine.</li>
+<span id="cb75-3"><a href="cha-installing-nimble.html#cb75-3" aria-hidden="true" tabindex="-1"></a>             path, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb75-4"><a href="cha-installing-nimble.html#cb75-4" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">PATH =</span> newPath) </span></code></pre></div></li>
+<li><p>Be sure the <code>Rtools.exe</code> version matches the R version.</p></li>
+<li><p>Try re-installing <code>Rtools</code> followed by re-installing NIMBLE.</p></li>
+<li><p>If you’re using Rtools40, make sure you are using a newer version or RStudio (at least 1.2.5042).</p></li>
+<li><p>If there are filesystem or permissions issues, it is possible to install NIMBLE in a local directory using the <code>lib</code> argument to <code>install.packages</code>.</p></li>
+<li><p>In the past we’ve heard reports from Windows users of problems when their filesystem involved a space in a directory name in the path to <code>RHOME</code>. We think this problem has been resolved.</p></li>
+<li><p>We’ve also heard reports from Windows users of problems when R is installed on a network drive. A work-around is to install locally in a directory on a drive physically on the machine.</p></li>
 </ul>
 <p>For MacOS:</p>
 <ul>
-<li>Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.</li>
-<li>Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:</li>
-</ul>
-<div class="sourceCode" id="cb76"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb76-1"><a href="cha-installing-nimble.html#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="ex">xcode-select</span> <span class="at">--install</span></span></code></pre></div>
-<ul>
-<li>If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</li>
+<li><p>Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.</p></li>
+<li><p>Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:</p>
+<div class="sourceCode" id="cb76"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb76-1"><a href="cha-installing-nimble.html#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="ex">xcode-select</span> <span class="at">--install</span></span></code></pre></div></li>
+<li><p>If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</p></li>
 </ul>
 <p>All operating systems:</p>
 <ul>
@@ -573,11 +570,11 @@ if you want to use a different (e.g., newer) version.</p>
 e.g. <code>/usr/include</code> and <code>/usr/local/include</code> for the header file <code>Eigen/Dense</code>.
 You can specify a particular location in either of two ways:</p>
 <ol style="list-style-type: decimal">
-<li>Set the environment variable <code>EIGEN_DIR</code> before installing the R package, for example: <code>export EIGEN_DIR=/usr/include/eigen3</code> in the bash shell.</li>
-<li>Use
-<code>R CMD INSTALL --configure-args='--with-eigen=/path/to/eigen' nimble_VERSION.tar.gz</code>
-or
-<code>install.packages("nimble", configure.args = "--with-eigen=/path/to/eigen")</code></li>
+<li><p>Set the environment variable <code>EIGEN_DIR</code> before installing the R package, for example: <code>export EIGEN_DIR=/usr/include/eigen3</code> in the bash shell.</p></li>
+<li><p>Use</p>
+<div class="sourceCode" id="cb77"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb77-1"><a href="cha-installing-nimble.html#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL <span class="at">--configure-args</span><span class="op">=</span><span class="st">&#39;--with-eigen=/path/to/eigen&#39;</span> nimble_VERSION.tar.gz</span></code></pre></div>
+<p>or</p>
+<div class="sourceCode" id="cb78"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb78-1"><a href="cha-installing-nimble.html#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">&quot;nimble&quot;</span><span class="ex">,</span> configure.args = <span class="st">&quot;--with-eigen=/path/to/eigen&quot;</span><span class="kw">)</span></span></code></pre></div></li>
 </ol>
 <p>In these cases, the directory should be the full path to the directory that
 contains the Eigen directory, e.g., <code>/usr/include/eigen3</code>. It is not the full path to the Eigen
@@ -592,7 +589,7 @@ library - <em>libnimble.so</em>. This single instance of the library is then lin
 with the code for each generated model. In contrast, the default for Windows and MacOS
 is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage.
 If one would like to enable the linkable library in place of the static library (do this only on MacOS and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
-<div class="sourceCode" id="cb77"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb77-1"><a href="cha-installing-nimble.html#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL <span class="at">--configure-args</span><span class="op">=</span><span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</span></code></pre></div>
+<div class="sourceCode" id="cb79"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb79-1"><a href="cha-installing-nimble.html#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL <span class="at">--configure-args</span><span class="op">=</span><span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</span></code></pre></div>
 </div>
 <div id="sec:blas" class="section level3 hasAnchor" number="4.5.3">
 <h3><span class="header-section-number">4.5.3</span> BLAS and LAPACK<a href="cha-installing-nimble.html#sec:blas" class="anchor-section" aria-label="Anchor link to header"></a></h3>
