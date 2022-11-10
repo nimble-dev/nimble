@@ -67,6 +67,12 @@ of Monte Carlo samples needed for stable calculation of WAIC.
 \code{thin}: Logical value for specifying whether to do WAIC calculations
 only on thinned samples (default is \code{FALSE}). Likely only useful for
 reducing computation when using marginal WAIC.
+
+\code{nburnin_extra}: Additional number of pre-thinning MCMC iterations
+to discard before calculating online WAIC. This number is discarded in
+addition to the usual MCMC burnin, \code{nburnin}. The purpose of this
+option is to allow a user to retain some samples for inspection without
+having those samples used for online WAIC calculation (default = 0).
 }
 
 \section{Extracting WAIC}{

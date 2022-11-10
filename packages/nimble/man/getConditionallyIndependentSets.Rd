@@ -46,7 +46,7 @@ counted as given nodes.  This is relevant only for parent nodes.
 This allows the givenNodes to include only stochastic nodes.  Say
 we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent
 node.  B is a deterministic node.  By default, B is considered
-given.  Otherwise, other branches that depend on B would be grouped
+given.  Otherwise, other dependent networks of nodes that that depend on B would be grouped
 in the same output set as C, but this is usually what is wanted.
 Any use of the resulting output must ensure that B is calculated when
 necessary, as usual with nimble's model-generic programming.  To

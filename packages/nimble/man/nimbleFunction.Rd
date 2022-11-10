@@ -6,7 +6,8 @@
 \usage{
 nimbleFunction(
   setup = NULL,
-  run = function() { },
+  run = function() {
+ },
   methods = list(),
   globalSetup = NULL,
   contains = NULL,

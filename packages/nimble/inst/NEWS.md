@@ -3,47 +3,95 @@
 
 ## USER LEVEL CHANGES
 
-- Thoroughly revamped handling of predictive nodes in MCMC sampling. If MCMC results identical to previous versions of NIMBLE are needed in models with posterior predictive nodes, set `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` and `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
+- Thoroughly revamped handling of predictive nodes in MCMC sampling. If MCMC 
+results identical to previous versions of NIMBLE are needed in models with 
+posterior predictive nodes, set 
+`nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` 
+and `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
 
-    -- MCMC samplers, by default, will now exclude predictive dependencies from internal sampler calculations.  This can be reverted to the old behavior of including predictive dependencies in calculations using `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)`.
+    -- MCMC samplers, by default, will now exclude predictive dependencies 
+    from internal sampler calculations.  This can be reverted to the old behavior
+    of including predictive dependencies in calculations using 
+    `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)`.
     
-    -- At the time of `buildMCMC`, all `posterior_predictive` samplers are automatically reordered to operate last among all samplers. Doing so, posterior predictive samples are generated conditional on the other values in the MCMC sample.  This reordering can be disabled using `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)` (but doing so without also setting `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` could result in samples that are invalid in terms of the joint posterior distribution (but with valid samples marginally).
+    -- At the time of `buildMCMC`, all `posterior_predictive` samplers are
+    automatically reordered to operate last among all samplers. Doing so, 
+    posterior predictive samples are generated conditional on the other values
+    in the MCMC sample.  This reordering can be disabled using 
+    `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)` 
+    (but doing so without also setting 
+    `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` could
+    result in samples that are invalid in terms of the joint posterior 
+    distribution (but with valid samples marginally).
     
-    -- Removal of the `posterior_predictive_branch` sampler.  Filling the same role, the `posterior_predictive` sampler now updates all nodes downstream of its `target` node.  Assignment of the `posterior_predictive` sampler happens automatically during MCMC configuration, unless `nimbleOptions(MCMCusePosteriorPredictiveSampler = FALSE)`.
+    -- Removal of the `posterior_predictive_branch` sampler.  Filling the same
+    role, the `posterior_predictive` sampler now updates all nodes downstream 
+    of its `target` node.  Assignment of the `posterior_predictive` sampler 
+    happens automatically during MCMC configuration, unless 
+    `nimbleOptions(MCMCusePosteriorPredictiveSampler = FALSE)`.
     
-    -- Automatic determination of "predictive" model nodes, which are all stochastic non-data nodes that have no data nodes anywhere in their downstream dependencies. Tracking of predictive nodes is done automatically, but maybe be disabled using `nimbleOptions(determinePredictiveNodesInModel = FALSE)`.
+    -- Automatic determination of "predictive" model nodes, which are all
+    stochastic non-data nodes that have no data nodes anywhere in their 
+    downstream dependencies. Tracking of predictive nodes is done 
+    automatically, but maybe be disabled using 
+    `nimbleOptions(determinePredictiveNodesInModel = FALSE)`.
 
-    -- New arguments `includePredictive` (default value `TRUE`) and `predictiveOnly` (default value `FALSE`), for both the `getNodeNames` and the `getDependencies` methods of model objects.  These specify whether any predictive nodes are included in the results, and whether only predictive nodes are included, respectively.
+    -- New arguments `includePredictive` (default value `TRUE`) and 
+    `predictiveOnly` (default value `FALSE`), for both the `getNodeNames`
+    and the `getDependencies` methods of model objects.  These specify whether
+    any predictive nodes are included in the results, and whether only 
+    predictive nodes are included, respectively.
     
-    -- The MCMC configuration object will issue a warning message if there are stochastic non-data nodes which will not undergo MCMC sampling.  This warning can be disabled using `nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)`.
+    -- The MCMC configuration object will issue a warning message if there are
+    stochastic non-data nodes which will not undergo MCMC sampling.  This 
+    warning can be disabled using 
+    `nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)`.
 
-- Add option to WAIC system (via `controlWAIC`) to allow additional burnin (in addition to standard MCMC burnin) before calculating online WAIC, thereby allowing inspection of initial samples without forcing them to be used for WAIC (PR #1244).
+- Add option to WAIC system (via `controlWAIC`) to allow additional burnin (in 
+addition to standard MCMC burnin) before calculating online WAIC, thereby 
+allowing inspection of initial samples without forcing them to be used for WAIC
+(PR #1244).
 
-- For MCMC configuration `addSampler` method, changed name of the `scalarComponents` argument to `expandComponents` (PR #1215).
+- For MCMC configuration `addSampler` method, changed name of the 
+`scalarComponents` argument to `expandComponents` (PR #1215).
 
-- New `default` argument added for the `addSampler` method of MCMC configuration objects.  When `default = TRUE`, default samplers (conjugate, or otherwise) will be added to the specified nodes.  The addition of this argument provides an entry point to the logic of default sampler determination and assignment, without creating a new MCMC configuration object (PR #1215).
+- New `default` argument added for the `addSampler` method of MCMC configuration
+objects.  When `default = TRUE`, default samplers (conjugate, or otherwise) will
+be added to the specified nodes.  The addition of this argument provides an 
+entry point to the logic of default sampler determination and assignment, 
+without creating a new MCMC configuration object (PR #1215).
 
-- New `nodes` argument added for the `addSampler` method of MCMC configuration objects.  Nodes specified in `nodes` automatically undergo expansion according to `expandNodeNames` prior to sampler assignment, allowing for easier assignment of samplers to multiple nodes (PR #1215).
+- New `nodes` argument added for the `addSampler` method of MCMC configuration
+objects.  Nodes specified in `nodes` automatically undergo expansion according
+to `expandNodeNames` prior to sampler assignment, allowing for easier assignment
+of samplers to multiple nodes (PR #1215).
 
-- `rcar_normal` issues an informative error message when invoked from the R command line (PR #1243).
+- `rcar_normal` issues an informative error message when invoked from the R 
+command line (PR #1243).
 
 - Warn users of unused constants during model building (PR #1242).
 
-- Add `replaceSamplers` method to MCMC configuration objects to simplify modifying how a node is sampled (PR #1222).
+- Add `replaceSamplers` method to MCMC configuration objects to simplify 
+modifying how a node is sampled (PR #1222).
 
-- Convert `NEWS` to Markdown format for proper rendering in browser (issue #1231).
+- Convert `NEWS` to Markdown format for proper rendering in browser 
+(issue #1231).
 
-- Indicate model code that produces warnings about unknown nimbleFunctions (issue #370).
+- Indicate model code that produces warnings about unknown nimbleFunctions
+(issue #370).
 
 ## BUG FIXES
 
-- Avoid error occurring when a model variable name starts with "logProb" (PR #1240).
+- Avoid error occurring when a model variable name starts with "logProb"
+(PR #1240).
 
 - Avoid error occurring when a model variable is named "i" (PR #1239).
 
-- Prevent infinite recursion in particular cases in conjugacy checking (PR #1228).
+- Prevent infinite recursion in particular cases in conjugacy checking 
+(PR #1228).
 
-- Fix bug in simulating from `dcar_normal` nodes when multiple nodes passed to simulate (issue #1238).
+- Fix bug in simulating from `dcar_normal` nodes when multiple nodes passed to
+simulate (issue #1238).
 
 - Fixed error message about duplicate node declarations (PR #1233).
 
@@ -61,31 +109,47 @@
 
 ## BUG FIXES
 
-- Fix bug in Bayesian nonparametrics (BNP) functionality that gives incorrect MCMC results with the dCRP distribution when the parameters of the mixture components (i.e., the clusters) have hyperparameters (i.e., the base measure parameters) that are unknown and sampled during the MCMC (PR #1202).
+- Fix bug in Bayesian nonparametrics (BNP) functionality that gives incorrect 
+MCMC results with the dCRP distribution when the parameters of the mixture 
+components (i.e., the clusters) have hyperparameters (i.e., the base measure 
+parameters) that are unknown and sampled during the MCMC (PR #1202).
 
-- Error trap a similar case to the bug just above that would cause incorrect reversible jump MCMC sampling when a parameter being moved into/out of the model has an unknown hyperparameter (PR #1193). 
+- Error trap a similar case to the bug just above that would cause incorrect 
+reversible jump MCMC sampling when a parameter being moved into/out of the 
+model has an unknown hyperparameter (PR #1193). 
 
-- Fix a bug preventing setup of conjugate sampler for dwishart or dinvwishart nodes when using dynamic indexing (PR #1200).
+- Fix a bug preventing setup of conjugate sampler for dwishart or dinvwishart nodes 
+when using dynamic indexing (PR #1200).
 
-- Fix a bug preventing use of truncation bounds specified via `data` or `constants` (PR #1209).
+- Fix a bug preventing use of truncation bounds specified via `data` or `constants`
+(PR #1209).
 
-- Fix a bug preventing MCMC sampling with the LKJ prior for 2x2 matrices (PR #1195).
+- Fix a bug preventing MCMC sampling with the LKJ prior for 2x2 matrices 
+(PR #1195).
 
-- Fix a bug in the ordering used by the setSamplers method of MCMC configuration objects, occuring when the samplers are specified as a vector of node or variable names (PR #1178).
+- Fix a bug in the ordering used by the setSamplers method of MCMC configuration 
+objects, occuring when the samplers are specified as a vector of node or 
+variable names (PR #1178).
 
-- Fix a bug in `runCrossValidate` affecting extraction of multivariate nodes (PR #1206).
+- Fix a bug in `runCrossValidate` affecting extraction of multivariate nodes 
+(PR #1206).
 
-- Fix a bug producing incorrect subset assignment into logical vectors in nimbleFunction code (PR #1205).
+- Fix a bug producing incorrect subset assignment into logical vectors in 
+nimbleFunction code (PR #1205).
 
-- Fix a bug preventing use of `nimbleExternalCall` with a constant expression (PR #1204).
+- Fix a bug preventing use of `nimbleExternalCall` with a constant expression 
+(PR #1204).
 
-- Fix a bug preventing use of recursion in nimbleFunctions without setup code (PR #1203).
+- Fix a bug preventing use of recursion in nimbleFunctions without setup code 
+(PR #1203).
 
 - Fix a bug in handling `nimSeq` default `by` value (PR # 1199).
 
-- Fix a bug in name mangling affecting certain long names of lifted nodes (PR #1192).
+- Fix a bug in name mangling affecting certain long names of lifted nodes 
+(PR #1192).
 
-- Fix access to member data more than two dimensions in a nested nimbleFunction (PR #1046).
+- Fix access to member data more than two dimensions in a nested nimbleFunction
+(PR #1046).
 
 ## DEVELOPER LEVEL CHANGES
 

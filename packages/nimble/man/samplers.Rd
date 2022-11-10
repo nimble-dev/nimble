@@ -3,7 +3,6 @@
 \name{sampler_BASE}
 \alias{sampler_BASE}
 \alias{sampler_posterior_predictive}
-\alias{sampler_posterior_predictive_branch}
 \alias{sampler_binary}
 \alias{sampler_categorical}
 \alias{sampler_RW}
@@ -26,7 +25,6 @@
 \alias{binary}
 \alias{categorical}
 \alias{posterior_predictive}
-\alias{posterior_predictive_branch}
 \alias{RW}
 \alias{RW_block}
 \alias{RW_multinomial}
@@ -58,8 +56,6 @@
 sampler_BASE()
 
 sampler_posterior_predictive(model, mvSaved, target, control)
-
-sampler_posterior_predictive_branch(model, mvSaved, target, control)
 
 sampler_binary(model, mvSaved, target, control)
 
@@ -391,16 +387,16 @@ The CRP sampler is designed for fitting models involving Dirichlet process mixtu
 The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using the Chinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and can only be used when the prior for the concentration parameter is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
 }
 
-\section{posterior_predictive and posterior_predictive_branch samplers}{
+\section{posterior_predictive sampler}{
 
 
-The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
+The posterior_predictive sampler operates only on posterior predictive stochastic nodes. A posterior predictive node is a node that is not itself data and has no data nodes in its entire downstream (descendant) dependency network. Note that such nodes play no role in inference for model parameters but have often been included in BUGS models to make predictions, including for posterior predictive checks. As of version 0.13.0, NIMBLE samples model parameters without conditioning on the posterior predictive nodes and samples conditionally from the posterior predictive nodes as the last step of each MCMC iteration.
 
-The posterior_predictive sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of a posterior_predictive sampler to any non-terminal node will result in invalid posterior inferences.  The posterior_predictive sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.
+(Also note that NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic (posterior predictive) nodes have been included in BUGS models, they are not needed when using NIMBLE.)
 
-Closely related, the posterior_predictive_branch is only appropriate for nodes for which all downstream (dependent) nodes are non-data; that is, the branch beginning from that node is a jointly posterior predictive network of nodes.  This sampler operates by calling the simulate method of all nodes in this downstream (non-data) network, which serves to improve MCMC mixing of the posterior predictive branch.
+The posterior_predictive sampler functions by simulating new values for all downstream (dependent) nodes using their conditional distributions, as well as updating the associated model probabilities.  A posterior_predictive sampler will automatically be assigned to all trailing non-data stochastic nodes in a model, or when possible, to any node at a point in the model after which all downstream (dependent) stochastic nodes are non-data.
 
-The posterior_predictive and posterior_predictive_branch samplers accept no control list arguments.
+The posterior_predictive sampler accepts no control list arguments.
 }
 
 \section{RJ_fixed_prior sampler}{

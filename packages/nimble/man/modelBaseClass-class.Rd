@@ -113,7 +113,7 @@ returnScalarComponents: If FALSE (default), multivariate nodes are returned as f
 
 Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
 
-By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other branches that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble's model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
+By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other dependent networks of nodes that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble's model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
 
 There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
 
@@ -127,6 +127,8 @@ Return value: List of nodes that are in conditionally independent sets.  Within 
   stochOnly = FALSE,
   includeData = TRUE,
   dataOnly = FALSE,
+  includePredictive = getNimbleOption("getDependenciesIncludesPredictiveNodes"),
+  predictiveOnly = FALSE,
   includeRHSonly = FALSE,
   downstream = FALSE,
   returnType = "names",
@@ -148,6 +150,10 @@ stochOnly: Logical argument specifying whether to return only stochastic nodes. 
 includeData: Logical argument specifying whether to include 'data' nodes (set via nimbleModel or the setData method).  Default is TRUE.
 
 dataOnly: Logical argument specifying whether to return only 'data' nodes.  Default is FALSE.
+
+includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data). Used primarily to exclude predictive node calculations when setting up MCMC samplers on model parameters. Default value is controlled by the NIMBLE system option `getDependenciesIncludesPredictiveNodes`, which itself has a default value of `TRUE`.
+
+predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
@@ -211,6 +217,8 @@ Details: See documentation for member method getDependencies.}
   topOnly = FALSE,
   latentOnly = FALSE,
   endOnly = FALSE,
+  includePredictive = TRUE,
+  predictiveOnly = FALSE,
   returnType = "names",
   returnScalarComponents = FALSE
 )}}{Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
@@ -232,6 +240,10 @@ topOnly: Logical argument specifying whether to return only top-level nodes from
 latentOnly: Logical argument specifying whether to return only latent (mid-level) nodes from the hierarchical model structure.
 
 endOnly: Logical argument specifying whether to return only end nodes from the hierarchical model structure.
+
+includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
+
+predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data) from the hierarchical model structure.
 
 returnType: Character argument specific type object returned. Options are 'names' (returns character vector) and 'ids' (returns numeric graph IDs for model)
 

@@ -21,7 +21,6 @@ configureMCMC(
   print = getNimbleOption("verbose"),
   autoBlock = FALSE,
   oldConf,
-  warnNoSamplerAssigned = TRUE,
   ...
 )
 }
@@ -67,8 +66,6 @@ The default value is an empty character vector, i.e. no values will be recorded.
 \item{autoBlock}{A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.}
 
 \item{oldConf}{An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch}
-
-\item{warnNoSamplerAssigned}{A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.}
 
 \item{...}{Additional named control list elements for default samplers, or additional arguments to be passed to the \code{\link{autoBlock}} function when \code{autoBlock = TRUE}}
 }
