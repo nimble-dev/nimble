@@ -5,7 +5,7 @@ bookdown::gitbook:
       before: |
         <img src="./nimble-icon.png"
              width=100>
-        <li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
+        <li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.13.0</a></li>
         <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
         <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
       after: |

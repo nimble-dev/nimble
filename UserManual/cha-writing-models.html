@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 5 Writing models in NIMBLE’s dialect of BUGS | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.26 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 5 Writing models in NIMBLE’s dialect of BUGS | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
-  
   <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
@@ -48,30 +47,33 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 <style type="text/css">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(title);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -80,9 +82,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -115,6 +117,28 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -131,17 +155,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.13.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
 <li class="divider"></li>
 <li class="part"><span><b>I Introduction</b></span></li>
-<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a><ul>
+<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a>
+<ul>
 <li class="chapter" data-level="1.1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#sec:what-is-nimble"><i class="fa fa-check"></i><b>1.1</b> What does NIMBLE do?</a></li>
 <li class="chapter" data-level="1.2" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#how-to-use-this-manual"><i class="fa fa-check"></i><b>1.2</b> How to use this manual</a></li>
 </ul></li>
-<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a><ul>
+<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a>
+<ul>
 <li class="chapter" data-level="2.1" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:brief-example"><i class="fa fa-check"></i><b>2.1</b> A brief example</a></li>
 <li class="chapter" data-level="2.2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-model"><i class="fa fa-check"></i><b>2.2</b> Creating a model</a></li>
 <li class="chapter" data-level="2.3" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:compiling-model"><i class="fa fa-check"></i><b>2.3</b> Compiling the model</a></li>
@@ -151,21 +177,25 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="2.7" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:running-mcem"><i class="fa fa-check"></i><b>2.7</b> Running MCEM</a></li>
 <li class="chapter" data-level="2.8" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-your-own"><i class="fa fa-check"></i><b>2.8</b> Creating your own functions</a></li>
 </ul></li>
-<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a><ul>
+<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a>
+<ul>
 <li class="chapter" data-level="3.1" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#nimble-adopts-and-extends-the-bugs-language-for-specifying-models"><i class="fa fa-check"></i><b>3.1</b> NIMBLE adopts and extends the BUGS language for specifying models</a></li>
 <li class="chapter" data-level="3.2" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-lang-writ"><i class="fa fa-check"></i><b>3.2</b> nimbleFunctions for writing algorithms</a></li>
 <li class="chapter" data-level="3.3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-algor-libr"><i class="fa fa-check"></i><b>3.3</b> The NIMBLE algorithm library</a></li>
 </ul></li>
-<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
+<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a>
+<ul>
 <li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
-<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
+<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a>
+<ul>
 <li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
 <li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
 <li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
 </ul></li>
 <li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
 <li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
-<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a>
+<ul>
 <li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
 <li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
 <li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
@@ -173,13 +203,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 </ul></li>
 <li class="part"><span><b>II Models in NIMBLE</b></span></li>
-<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a><ul>
-<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a><ul>
+<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a>
+<ul>
 <li class="chapter" data-level="5.1.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#supported-features-of-bugs-and-jags"><i class="fa fa-check"></i><b>5.1.1</b> Supported features of BUGS and JAGS</a></li>
 <li class="chapter" data-level="5.1.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:extensions-bugs"><i class="fa fa-check"></i><b>5.1.2</b> NIMBLE’s Extensions to BUGS and JAGS</a></li>
 <li class="chapter" data-level="5.1.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:not-yet-supported"><i class="fa fa-check"></i><b>5.1.3</b> Not-yet-supported features of BUGS and JAGS</a></li>
 </ul></li>
-<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a><ul>
+<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a>
+<ul>
 <li class="chapter" data-level="5.2.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#declaring-stochastic-and-deterministic-nodes"><i class="fa fa-check"></i><b>5.2.1</b> Declaring stochastic and deterministic nodes</a></li>
 <li class="chapter" data-level="5.2.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:more-kinds-bugs"><i class="fa fa-check"></i><b>5.2.2</b> More kinds of BUGS declarations</a></li>
 <li class="chapter" data-level="5.2.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:vectorized-versus-scalar-declarations"><i class="fa fa-check"></i><b>5.2.3</b> Vectorized versus scalar declarations</a></li>
@@ -189,13 +222,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a><ul>
-<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a><ul>
+<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a>
+<ul>
 <li class="chapter" data-level="6.1.1" data-path="cha-building-models.html"><a href="cha-building-models.html#using-nimblemodel-to-create-a-model"><i class="fa fa-check"></i><b>6.1.1</b> Using <em>nimbleModel</em> to create a model</a></li>
 <li class="chapter" data-level="6.1.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:readBUGSmodel"><i class="fa fa-check"></i><b>6.1.2</b> Creating a model from standard BUGS and JAGS input files</a></li>
 <li class="chapter" data-level="6.1.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sub:multiple-instances"><i class="fa fa-check"></i><b>6.1.3</b> Making multiple instances from the same model definition</a></li>
 </ul></li>
-<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a><ul>
+<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a>
+<ul>
 <li class="chapter" data-level="6.2.1" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:what-are-nodes-and-variables"><i class="fa fa-check"></i><b>6.2.1</b> What are variables and nodes?</a></li>
 <li class="chapter" data-level="6.2.2" data-path="cha-building-models.html"><a href="cha-building-models.html#determining-the-nodes-and-variables-in-a-model"><i class="fa fa-check"></i><b>6.2.2</b> Determining the nodes and variables in a model</a></li>
 <li class="chapter" data-level="6.2.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:accessing-nodes"><i class="fa fa-check"></i><b>6.2.3</b> Accessing nodes</a></li>
@@ -206,15 +242,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
 </ul></li>
 <li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
-<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
+<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a>
+<ul>
 <li class="chapter" data-level="7.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:nimbleMCMC"><i class="fa fa-check"></i><b>7.1</b> One-line invocation of MCMC: <em>nimbleMCMC</em></a></li>
-<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a><ul>
+<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a>
+<ul>
 <li class="chapter" data-level="7.2.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:default-mcmc-conf"><i class="fa fa-check"></i><b>7.2.1</b> Default MCMC configuration</a></li>
 <li class="chapter" data-level="7.2.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:customizing-mcmc-conf"><i class="fa fa-check"></i><b>7.2.2</b> Customizing the MCMC configuration</a></li>
 </ul></li>
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
-<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
+<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a>
+<ul>
 <li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
 <li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
 <li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
@@ -222,11 +261,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
 <li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
-<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a><ul>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a>
+<ul>
 <li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.9.1</b> Using indicator variables</a></li>
 <li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.9.2</b> Without indicator variables</a></li>
 </ul></li>
-<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.10</b> Samplers provided with NIMBLE</a><ul>
+<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.10</b> Samplers provided with NIMBLE</a>
+<ul>
 <li class="chapter" data-level="7.10.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.10.1</b> Conjugate (‘Gibbs’) samplers</a></li>
 <li class="chapter" data-level="7.10.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.10.2</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
 <li class="chapter" data-level="7.10.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.10.3</b> Particle MCMC sampler</a></li>
@@ -235,51 +276,64 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.12</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.13</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a><ul>
-<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a><ul>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
+<ul>
 <li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
 <li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
 </ul></li>
-<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a><ul>
+<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a>
+<ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a><ul>
-<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a><ul>
+<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a>
+<ul>
 <li class="chapter" data-level="9.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>9.1.1</b> Specification and density</a></li>
 <li class="chapter" data-level="9.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>9.1.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a><ul>
+<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a>
+<ul>
 <li class="chapter" data-level="9.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>9.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="9.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>9.2.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a><ul>
+<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a>
+<ul>
 <li class="chapter" data-level="9.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>9.3.1</b> Initial values</a></li>
 <li class="chapter" data-level="9.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>9.3.2</b> Zero-neighbor regions</a></li>
 <li class="chapter" data-level="9.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>9.3.3</b> Zero-mean constraint</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a><ul>
+<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a>
+<ul>
 <li class="chapter" data-level="10.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>10.1</b> Bayesian nonparametric mixture models</a></li>
-<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
+<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a>
+<ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
 <li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
-<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
+<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a>
+<ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
 <li class="chapter" data-level="10.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>10.3.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a><ul>
+<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a>
+<ul>
 <li class="chapter" data-level="10.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>10.4.1</b> Sampling CRP models</a></li>
 <li class="chapter" data-level="10.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>10.4.2</b> Sampling stick-breaking models</a></li>
 </ul></li>
 </ul></li>
 <li class="part"><span><b>IV Programming with NIMBLE</b></span></li>
 <li class="chapter" data-level="" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i>Overview</a></li>
-<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a><ul>
+<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a>
+<ul>
 <li class="chapter" data-level="11.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>11.1</b> Introduction to simple nimbleFunctions</a></li>
-<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a><ul>
+<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a>
+<ul>
 <li class="chapter" data-level="11.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>11.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
 <li class="chapter" data-level="11.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>11.2.2</b> Basic operations</a></li>
 <li class="chapter" data-level="11.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>11.2.3</b> Math and linear algebra</a></li>
@@ -290,7 +344,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
 <li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
 </ul></li>
-<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a><ul>
+<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
+<ul>
 <li class="chapter" data-level="11.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>11.3.1</b> nimbleList data structures</a></li>
 <li class="chapter" data-level="11.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>11.3.2</b> How numeric types work</a></li>
 </ul></li>
@@ -299,49 +354,61 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
 <li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a><ul>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a>
+<ul>
 <li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
-<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a><ul>
+<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
+<ul>
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a><ul>
-<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a><ul>
+<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a>
+<ul>
 <li class="chapter" data-level="13.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>13.1.1</b> Determining the nodes in a model</a></li>
 <li class="chapter" data-level="13.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>13.1.2</b> Understanding lifted nodes</a></li>
 <li class="chapter" data-level="13.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>13.1.3</b> Determining dependencies in a model</a></li>
 </ul></li>
-<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a><ul>
+<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a>
+<ul>
 <li class="chapter" data-level="13.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>13.2.1</b> Getting distributional information about a node</a></li>
 <li class="chapter" data-level="13.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>13.2.2</b> Getting information about a distribution</a></li>
 <li class="chapter" data-level="13.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>13.2.3</b> Getting distribution parameter values for a node</a></li>
 <li class="chapter" data-level="13.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>13.2.4</b> Getting distribution bounds for a node</a></li>
 </ul></li>
-<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a><ul>
+<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a>
+<ul>
 <li class="chapter" data-level="13.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>13.3.1</b> Core model operations: calculation and simulation</a></li>
 <li class="chapter" data-level="13.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>13.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
 <li class="chapter" data-level="13.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>13.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a><ul>
-<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a><ul>
+<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a>
+<ul>
 <li class="chapter" data-level="14.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>14.1.1</b> Creating modelValues objects</a></li>
 <li class="chapter" data-level="14.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>14.1.2</b> Accessing contents of modelValues</a></li>
 </ul></li>
-<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a><ul>
+<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a>
+<ul>
 <li class="chapter" data-level="14.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>14.2.1</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a><ul>
+<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a>
+<ul>
 <li class="chapter" data-level="15.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>15.1</b> Overview</a></li>
 <li class="chapter" data-level="15.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>15.2</b> Using and compiling nimbleFunctions</a></li>
-<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a><ul>
+<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a>
+<ul>
 <li class="chapter" data-level="15.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>15.3.1</b> Useful tools for setup functions</a></li>
 <li class="chapter" data-level="15.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>15.3.2</b> Accessing and modifying numeric values from setup</a></li>
 <li class="chapter" data-level="15.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>15.3.3</b> Determining numeric types in nimbleFunctions</a></li>
 <li class="chapter" data-level="15.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>15.3.4</b> Control of setup outputs</a></li>
 </ul></li>
-<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a><ul>
+<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a>
+<ul>
 <li class="chapter" data-level="15.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>15.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
 <li class="chapter" data-level="15.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>15.4.2</b> Getting and setting variable and node values</a></li>
 <li class="chapter" data-level="15.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>15.4.3</b> Getting parameter values and node bounds</a></li>
@@ -353,14 +420,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>15.4.9</b> Character objects</a></li>
 <li class="chapter" data-level="15.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>15.4.10</b> User-defined data structures</a></li>
 </ul></li>
-<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a></li>
+<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a>
+<ul>
+<li class="chapter" data-level="15.5.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#user-defined-samplers-and-posterior-predictive-nodes"><i class="fa fa-check"></i><b>15.5.1</b> User-defined samplers and posterior predictive nodes</a></li>
+</ul></li>
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -378,15 +447,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha-writing-models" class="section level1">
-<h1><span class="header-section-number">Chapter 5</span> Writing models in NIMBLE’s dialect of BUGS</h1>
+<div id="cha-writing-models" class="section level1 hasAnchor" number="5">
+<h1><span class="header-section-number">Chapter 5</span> Writing models in NIMBLE’s dialect of BUGS<a href="cha-writing-models.html#cha-writing-models" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>Models in NIMBLE are written using a variation on the BUGS language.
 From BUGS code, NIMBLE creates a model object. This chapter
 describes NIMBLE’s version of BUGS. The next chapter explains how to
 build and manipulate model objects.
 <!---  With NIMBLE you can also define your own distributions and functions for use in BUGS code; discussion of this functionality is deferred to Chapter \@ref(cha-user-defined) as it requires the use of nimbleFunctions.  --></p>
-<div id="sec:supp-feat-bugs" class="section level2">
-<h2><span class="header-section-number">5.1</span> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</h2>
+<div id="sec:supp-feat-bugs" class="section level2 hasAnchor" number="5.1">
+<h2><span class="header-section-number">5.1</span> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS<a href="cha-writing-models.html#sec:supp-feat-bugs" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Many users will come to NIMBLE with some familiarity with WinBUGS,
 OpenBUGS, or JAGS, so we start by summarizing how NIMBLE is similar to
 and different from those before documenting NIMBLE’s version of BUGS
@@ -394,8 +463,8 @@ more completely. In general, NIMBLE aims to be compatible with the
 original BUGS language and also JAGS’ version. However, at this
 point, there are some features not supported by NIMBLE, and there are
 some extensions that are planned but not implemented.</p>
-<div id="supported-features-of-bugs-and-jags" class="section level3">
-<h3><span class="header-section-number">5.1.1</span> Supported features of BUGS and JAGS</h3>
+<div id="supported-features-of-bugs-and-jags" class="section level3 hasAnchor" number="5.1.1">
+<h3><span class="header-section-number">5.1.1</span> Supported features of BUGS and JAGS<a href="cha-writing-models.html#supported-features-of-bugs-and-jags" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <ol style="list-style-type: decimal">
 <li>Stochastic and deterministic<a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a> node declarations.</li>
 <li>Most univariate and multivariate distributions.</li>
@@ -407,8 +476,8 @@ some extensions that are planned but not implemented.</p>
 notation and <code>dinterval</code>.</li>
 </ol>
 </div>
-<div id="sec:extensions-bugs" class="section level3">
-<h3><span class="header-section-number">5.1.2</span> NIMBLE’s Extensions to BUGS and JAGS</h3>
+<div id="sec:extensions-bugs" class="section level3 hasAnchor" number="5.1.2">
+<h3><span class="header-section-number">5.1.2</span> NIMBLE’s Extensions to BUGS and JAGS<a href="cha-writing-models.html#sec:extensions-bugs" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE extends the BUGS language in the following ways:</p>
 <ol style="list-style-type: decimal">
 <li>User-defined functions and distributions – written as nimbleFunctions – can be used in model code. See Chapter <a href="cha-user-defined.html#cha-user-defined">12</a>.</li>
@@ -426,8 +495,8 @@ distributions (e.g., <code>dmnorm</code>) cannot be expressions (but an expressi
 <li>As of Version 0.6-6 we now support stochastic/dynamic indexes. More specifically in earlier versions all indexes needed to be constants. Now indexes can be other nodes or functions of other nodes. For a given dimension of a node being indexed, if the index is not constant, it must be a scalar value. So expressions such as <code>mu[k[i], 3]</code> or <code>mu[k[i], 1:3]</code> or <code>mu[k[i], j[i]]</code> are allowed, but not <code>mu[k[i]:(k[i]+1)]</code>. Nested dynamic indexes such as <code>mu[k[j[i]]]</code> are also allowed.</li>
 </ol>
 </div>
-<div id="sec:not-yet-supported" class="section level3">
-<h3><span class="header-section-number">5.1.3</span> Not-yet-supported features of BUGS and JAGS</h3>
+<div id="sec:not-yet-supported" class="section level3 hasAnchor" number="5.1.3">
+<h3><span class="header-section-number">5.1.3</span> Not-yet-supported features of BUGS and JAGS<a href="cha-writing-models.html#sec:not-yet-supported" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>In this release, the following are not supported.</p>
 <ol style="list-style-type: decimal">
 <li>The appearance of the same node on the left-hand side of both a
@@ -445,13 +514,13 @@ x be provided when the model object is created (via <code>nimbleModel</code>).</
 </ol>
 </div>
 </div>
-<div id="writing-models" class="section level2">
-<h2><span class="header-section-number">5.2</span> Writing models</h2>
+<div id="writing-models" class="section level2 hasAnchor" number="5.2">
+<h2><span class="header-section-number">5.2</span> Writing models<a href="cha-writing-models.html#writing-models" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Here we introduce NIMBLE’s version of BUGS. The WinBUGS, OpenBUGS and
 JAGS manuals are also useful resources for writing BUGS models,
 including many examples.</p>
-<div id="declaring-stochastic-and-deterministic-nodes" class="section level3">
-<h3><span class="header-section-number">5.2.1</span> Declaring stochastic and deterministic nodes</h3>
+<div id="declaring-stochastic-and-deterministic-nodes" class="section level3 hasAnchor" number="5.2.1">
+<h3><span class="header-section-number">5.2.1</span> Declaring stochastic and deterministic nodes<a href="cha-writing-models.html#declaring-stochastic-and-deterministic-nodes" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>BUGS is a declarative language for graphical (or hierarchical) models.
 Most programming languages are imperative, which means a series of
 commands will be executed in the order they are written. A
@@ -464,68 +533,66 @@ a <em>vertex</em>) holds one value, which may be a scalar or a vector.
 <em>Edges</em> define the relationships between nodes. A huge variety
 of statistical models can be thought of as graphs.</p>
 <p>Here is the code to define and create a simple linear regression model with four observations.</p>
-<div class="sourceCode" id="cb78"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb78-1" title="1"><span class="kw">library</span>(nimble)</a>
-<a class="sourceLine" id="cb78-2" title="2">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb78-3" title="3">    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb78-4" title="4">    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb78-5" title="5">    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb78-6" title="6">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {</a>
-<a class="sourceLine" id="cb78-7" title="7">        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]</a>
-<a class="sourceLine" id="cb78-8" title="8">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)</a>
-<a class="sourceLine" id="cb78-9" title="9">    }</a>
-<a class="sourceLine" id="cb78-10" title="10">})</a>
-<a class="sourceLine" id="cb78-11" title="11"></a>
-<a class="sourceLine" id="cb78-12" title="12">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">rnorm</span>(<span class="dv">4</span>)))</a>
-<a class="sourceLine" id="cb78-13" title="13"></a>
-<a class="sourceLine" id="cb78-14" title="14"><span class="kw">library</span>(igraph)</a>
-<a class="sourceLine" id="cb78-15" title="15"></a>
-<a class="sourceLine" id="cb78-16" title="16">layout &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">ncol =</span> <span class="dv">2</span>, <span class="dt">byrow =</span> <span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb78-17" title="17">   <span class="co"># These seem to be rescaled to fit in the plot area,</span></a>
-<a class="sourceLine" id="cb78-18" title="18">   <span class="co"># so I&#39;ll just use 0-100 as the scale</span></a>
-<a class="sourceLine" id="cb78-19" title="19">                 <span class="dt">data =</span> <span class="kw">c</span>(<span class="dv">33</span>, <span class="dv">100</span>,</a>
-<a class="sourceLine" id="cb78-20" title="20">                          <span class="dv">66</span>, <span class="dv">100</span>,</a>
-<a class="sourceLine" id="cb78-21" title="21">                          <span class="dv">50</span>, <span class="dv">0</span>, <span class="co"># first three are parameters</span></a>
-<a class="sourceLine" id="cb78-22" title="22">                          <span class="dv">15</span>, <span class="dv">50</span>, <span class="dv">35</span>, <span class="dv">50</span>, <span class="dv">55</span>, <span class="dv">50</span>, <span class="dv">75</span>, <span class="dv">50</span>, <span class="co"># x&#39;s</span></a>
-<a class="sourceLine" id="cb78-23" title="23">                          <span class="dv">20</span>, <span class="dv">75</span>, <span class="dv">40</span>, <span class="dv">75</span>, <span class="dv">60</span>, <span class="dv">75</span>, <span class="dv">80</span>, <span class="dv">75</span>, <span class="co"># predicted.y&#39;s</span></a>
-<a class="sourceLine" id="cb78-24" title="24">                          <span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">45</span>, <span class="dv">25</span>, <span class="dv">65</span>, <span class="dv">25</span>, <span class="dv">85</span>, <span class="dv">25</span>) <span class="co"># y&#39;s</span></a>
-<a class="sourceLine" id="cb78-25" title="25">                 )</a>
-<a class="sourceLine" id="cb78-26" title="26"></a>
-<a class="sourceLine" id="cb78-27" title="27">sizes &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">45</span>, <span class="dv">30</span>, <span class="dv">30</span>,</a>
-<a class="sourceLine" id="cb78-28" title="28">           <span class="kw">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>),</a>
-<a class="sourceLine" id="cb78-29" title="29">           <span class="kw">rep</span>(<span class="dv">50</span>, <span class="dv">4</span>),</a>
-<a class="sourceLine" id="cb78-30" title="30">           <span class="kw">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>))</a>
-<a class="sourceLine" id="cb78-31" title="31"></a>
-<a class="sourceLine" id="cb78-32" title="32">edge.color &lt;-<span class="st"> &quot;black&quot;</span></a>
-<a class="sourceLine" id="cb78-33" title="33">    <span class="co"># c(</span></a>
-<a class="sourceLine" id="cb78-34" title="34">    <span class="co"># rep(&quot;green&quot;, 8),</span></a>
-<a class="sourceLine" id="cb78-35" title="35">    <span class="co"># rep(&quot;red&quot;, 4),</span></a>
-<a class="sourceLine" id="cb78-36" title="36">    <span class="co"># rep(&quot;blue&quot;, 4),</span></a>
-<a class="sourceLine" id="cb78-37" title="37">    <span class="co"># rep(&quot;purple&quot;, 4))</span></a>
-<a class="sourceLine" id="cb78-38" title="38">stoch.color &lt;-<span class="st"> &quot;deepskyblue2&quot;</span></a>
-<a class="sourceLine" id="cb78-39" title="39">det.color &lt;-<span class="st"> &quot;orchid3&quot;</span></a>
-<a class="sourceLine" id="cb78-40" title="40">rhs.color &lt;-<span class="st"> &quot;gray73&quot;</span></a>
-<a class="sourceLine" id="cb78-41" title="41">fill.color &lt;-<span class="st"> </span><span class="kw">c</span>(</a>
-<a class="sourceLine" id="cb78-42" title="42">    <span class="kw">rep</span>(stoch.color, <span class="dv">3</span>),</a>
-<a class="sourceLine" id="cb78-43" title="43">    <span class="kw">rep</span>(rhs.color, <span class="dv">4</span>),</a>
-<a class="sourceLine" id="cb78-44" title="44">    <span class="kw">rep</span>(det.color, <span class="dv">4</span>),</a>
-<a class="sourceLine" id="cb78-45" title="45">    <span class="kw">rep</span>(stoch.color, <span class="dv">4</span>)</a>
-<a class="sourceLine" id="cb78-46" title="46">)</a>
-<a class="sourceLine" id="cb78-47" title="47"></a>
-<a class="sourceLine" id="cb78-48" title="48"></a>
-<a class="sourceLine" id="cb78-49" title="49"><span class="kw">plot</span>(model<span class="op">$</span>graph, <span class="dt">vertex.shape =</span> <span class="st">&quot;crectangle&quot;</span>,</a>
-<a class="sourceLine" id="cb78-50" title="50">     <span class="dt">vertex.size =</span> sizes,</a>
-<a class="sourceLine" id="cb78-51" title="51">     <span class="dt">vertex.size2 =</span> <span class="dv">20</span>,</a>
-<a class="sourceLine" id="cb78-52" title="52">     <span class="dt">layout =</span> layout,</a>
-<a class="sourceLine" id="cb78-53" title="53">     <span class="dt">vertex.label.cex =</span> <span class="fl">3.0</span>,</a>
-<a class="sourceLine" id="cb78-54" title="54">     <span class="dt">vertex.color =</span> fill.color,</a>
-<a class="sourceLine" id="cb78-55" title="55">     <span class="dt">edge.width =</span> <span class="dv">3</span>,</a>
-<a class="sourceLine" id="cb78-56" title="56">     <span class="dt">asp =</span> <span class="fl">0.5</span>,</a>
-<a class="sourceLine" id="cb78-57" title="57">     <span class="dt">edge.color =</span> edge.color)</a></code></pre></div>
+<div class="sourceCode" id="cb78"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb78-1"><a href="cha-writing-models.html#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nimble)</span>
+<span id="cb78-2"><a href="cha-writing-models.html#cb78-2" aria-hidden="true" tabindex="-1"></a>mc <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb78-3"><a href="cha-writing-models.html#cb78-3" aria-hidden="true" tabindex="-1"></a>    intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb78-4"><a href="cha-writing-models.html#cb78-4" aria-hidden="true" tabindex="-1"></a>    slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb78-5"><a href="cha-writing-models.html#cb78-5" aria-hidden="true" tabindex="-1"></a>    sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb78-6"><a href="cha-writing-models.html#cb78-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb78-7"><a href="cha-writing-models.html#cb78-7" aria-hidden="true" tabindex="-1"></a>        predicted.y[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope <span class="sc">*</span> x[i]</span>
+<span id="cb78-8"><a href="cha-writing-models.html#cb78-8" aria-hidden="true" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(predicted.y[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb78-9"><a href="cha-writing-models.html#cb78-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb78-10"><a href="cha-writing-models.html#cb78-10" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb78-11"><a href="cha-writing-models.html#cb78-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-12"><a href="cha-writing-models.html#cb78-12" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(mc, <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">rnorm</span>(<span class="dv">4</span>)))</span>
+<span id="cb78-13"><a href="cha-writing-models.html#cb78-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-14"><a href="cha-writing-models.html#cb78-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb78-15"><a href="cha-writing-models.html#cb78-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-16"><a href="cha-writing-models.html#cb78-16" aria-hidden="true" tabindex="-1"></a>layout <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">ncol =</span> <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb78-17"><a href="cha-writing-models.html#cb78-17" aria-hidden="true" tabindex="-1"></a>   <span class="co"># These seem to be rescaled to fit in the plot area,</span></span>
+<span id="cb78-18"><a href="cha-writing-models.html#cb78-18" aria-hidden="true" tabindex="-1"></a>   <span class="co"># so I&#39;ll just use 0-100 as the scale</span></span>
+<span id="cb78-19"><a href="cha-writing-models.html#cb78-19" aria-hidden="true" tabindex="-1"></a>                 <span class="at">data =</span> <span class="fu">c</span>(<span class="dv">33</span>, <span class="dv">100</span>,</span>
+<span id="cb78-20"><a href="cha-writing-models.html#cb78-20" aria-hidden="true" tabindex="-1"></a>                          <span class="dv">66</span>, <span class="dv">100</span>,</span>
+<span id="cb78-21"><a href="cha-writing-models.html#cb78-21" aria-hidden="true" tabindex="-1"></a>                          <span class="dv">50</span>, <span class="dv">0</span>, <span class="co"># first three are parameters</span></span>
+<span id="cb78-22"><a href="cha-writing-models.html#cb78-22" aria-hidden="true" tabindex="-1"></a>                          <span class="dv">15</span>, <span class="dv">50</span>, <span class="dv">35</span>, <span class="dv">50</span>, <span class="dv">55</span>, <span class="dv">50</span>, <span class="dv">75</span>, <span class="dv">50</span>, <span class="co"># x&#39;s</span></span>
+<span id="cb78-23"><a href="cha-writing-models.html#cb78-23" aria-hidden="true" tabindex="-1"></a>                          <span class="dv">20</span>, <span class="dv">75</span>, <span class="dv">40</span>, <span class="dv">75</span>, <span class="dv">60</span>, <span class="dv">75</span>, <span class="dv">80</span>, <span class="dv">75</span>, <span class="co"># predicted.y&#39;s</span></span>
+<span id="cb78-24"><a href="cha-writing-models.html#cb78-24" aria-hidden="true" tabindex="-1"></a>                          <span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">45</span>, <span class="dv">25</span>, <span class="dv">65</span>, <span class="dv">25</span>, <span class="dv">85</span>, <span class="dv">25</span>) <span class="co"># y&#39;s</span></span>
+<span id="cb78-25"><a href="cha-writing-models.html#cb78-25" aria-hidden="true" tabindex="-1"></a>                 )</span>
+<span id="cb78-26"><a href="cha-writing-models.html#cb78-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-27"><a href="cha-writing-models.html#cb78-27" aria-hidden="true" tabindex="-1"></a>sizes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">45</span>, <span class="dv">30</span>, <span class="dv">30</span>,</span>
+<span id="cb78-28"><a href="cha-writing-models.html#cb78-28" aria-hidden="true" tabindex="-1"></a>           <span class="fu">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>),</span>
+<span id="cb78-29"><a href="cha-writing-models.html#cb78-29" aria-hidden="true" tabindex="-1"></a>           <span class="fu">rep</span>(<span class="dv">50</span>, <span class="dv">4</span>),</span>
+<span id="cb78-30"><a href="cha-writing-models.html#cb78-30" aria-hidden="true" tabindex="-1"></a>           <span class="fu">rep</span>(<span class="dv">20</span>, <span class="dv">4</span>))</span>
+<span id="cb78-31"><a href="cha-writing-models.html#cb78-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-32"><a href="cha-writing-models.html#cb78-32" aria-hidden="true" tabindex="-1"></a>edge.color <span class="ot">&lt;-</span> <span class="st">&quot;black&quot;</span></span>
+<span id="cb78-33"><a href="cha-writing-models.html#cb78-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># c(</span></span>
+<span id="cb78-34"><a href="cha-writing-models.html#cb78-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># rep(&quot;green&quot;, 8),</span></span>
+<span id="cb78-35"><a href="cha-writing-models.html#cb78-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># rep(&quot;red&quot;, 4),</span></span>
+<span id="cb78-36"><a href="cha-writing-models.html#cb78-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># rep(&quot;blue&quot;, 4),</span></span>
+<span id="cb78-37"><a href="cha-writing-models.html#cb78-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># rep(&quot;purple&quot;, 4))</span></span>
+<span id="cb78-38"><a href="cha-writing-models.html#cb78-38" aria-hidden="true" tabindex="-1"></a>stoch.color <span class="ot">&lt;-</span> <span class="st">&quot;deepskyblue2&quot;</span></span>
+<span id="cb78-39"><a href="cha-writing-models.html#cb78-39" aria-hidden="true" tabindex="-1"></a>det.color <span class="ot">&lt;-</span> <span class="st">&quot;orchid3&quot;</span></span>
+<span id="cb78-40"><a href="cha-writing-models.html#cb78-40" aria-hidden="true" tabindex="-1"></a>rhs.color <span class="ot">&lt;-</span> <span class="st">&quot;gray73&quot;</span></span>
+<span id="cb78-41"><a href="cha-writing-models.html#cb78-41" aria-hidden="true" tabindex="-1"></a>fill.color <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb78-42"><a href="cha-writing-models.html#cb78-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rep</span>(stoch.color, <span class="dv">3</span>),</span>
+<span id="cb78-43"><a href="cha-writing-models.html#cb78-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rep</span>(rhs.color, <span class="dv">4</span>),</span>
+<span id="cb78-44"><a href="cha-writing-models.html#cb78-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rep</span>(det.color, <span class="dv">4</span>),</span>
+<span id="cb78-45"><a href="cha-writing-models.html#cb78-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rep</span>(stoch.color, <span class="dv">4</span>)</span>
+<span id="cb78-46"><a href="cha-writing-models.html#cb78-46" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb78-47"><a href="cha-writing-models.html#cb78-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-48"><a href="cha-writing-models.html#cb78-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-49"><a href="cha-writing-models.html#cb78-49" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(model<span class="sc">$</span>graph, <span class="at">vertex.shape =</span> <span class="st">&quot;crectangle&quot;</span>,</span>
+<span id="cb78-50"><a href="cha-writing-models.html#cb78-50" aria-hidden="true" tabindex="-1"></a>     <span class="at">vertex.size =</span> sizes,</span>
+<span id="cb78-51"><a href="cha-writing-models.html#cb78-51" aria-hidden="true" tabindex="-1"></a>     <span class="at">vertex.size2 =</span> <span class="dv">20</span>,</span>
+<span id="cb78-52"><a href="cha-writing-models.html#cb78-52" aria-hidden="true" tabindex="-1"></a>     <span class="at">layout =</span> layout,</span>
+<span id="cb78-53"><a href="cha-writing-models.html#cb78-53" aria-hidden="true" tabindex="-1"></a>     <span class="at">vertex.label.cex =</span> <span class="fl">3.0</span>,</span>
+<span id="cb78-54"><a href="cha-writing-models.html#cb78-54" aria-hidden="true" tabindex="-1"></a>     <span class="at">vertex.color =</span> fill.color,</span>
+<span id="cb78-55"><a href="cha-writing-models.html#cb78-55" aria-hidden="true" tabindex="-1"></a>     <span class="at">edge.width =</span> <span class="dv">3</span>,</span>
+<span id="cb78-56"><a href="cha-writing-models.html#cb78-56" aria-hidden="true" tabindex="-1"></a>     <span class="at">asp =</span> <span class="fl">0.5</span>,</span>
+<span id="cb78-57"><a href="cha-writing-models.html#cb78-57" aria-hidden="true" tabindex="-1"></a>     <span class="at">edge.color =</span> edge.color)</span></code></pre></div>
 <div class="figure"><span style="display:block;" id="fig:linearRegressionGraph"></span>
-<img src="NimbleUserManual_files/figure-html/linearRegressionGraph-1.png" alt="Graph of a linear regression model" width="1920" />
-<p class="caption">
-Figure 5.1: Graph of a linear regression model
-</p>
+<embed src="NimbleUserManual_files/figure-latex/linearRegressionGraph-1.pdf" />
+<p class="caption">Figure 5.1: Graph of a linear regression model</p>
 </div>
 <p>The graph representing the model is
 shown in Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>. Each observation,
@@ -536,15 +603,15 @@ value is a node whose edges say how it is calculated from <code>slope</code>,
 <code>intercept</code>, and one value of an explanatory variable, <code>x[i]</code>,
 which are each nodes.</p>
 <p>This graph is created from the following BUGS code:</p>
-<div class="sourceCode" id="cb79"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb79-1" title="1">{</a>
-<a class="sourceLine" id="cb79-2" title="2">    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb79-3" title="3">    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb79-4" title="4">    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb79-5" title="5">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {</a>
-<a class="sourceLine" id="cb79-6" title="6">        predicted.y[i] &lt;-<span class="st"> </span>intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i]</a>
-<a class="sourceLine" id="cb79-7" title="7">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(predicted.y[i], <span class="dt">sd =</span> sigma)</a>
-<a class="sourceLine" id="cb79-8" title="8">    }</a>
-<a class="sourceLine" id="cb79-9" title="9">}</a></code></pre></div>
+<div class="sourceCode" id="cb79"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb79-1"><a href="cha-writing-models.html#cb79-1" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb79-2"><a href="cha-writing-models.html#cb79-2" aria-hidden="true" tabindex="-1"></a>    intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb79-3"><a href="cha-writing-models.html#cb79-3" aria-hidden="true" tabindex="-1"></a>    slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb79-4"><a href="cha-writing-models.html#cb79-4" aria-hidden="true" tabindex="-1"></a>    sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb79-5"><a href="cha-writing-models.html#cb79-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb79-6"><a href="cha-writing-models.html#cb79-6" aria-hidden="true" tabindex="-1"></a>        predicted.y[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope <span class="sc">*</span> x[i]</span>
+<span id="cb79-7"><a href="cha-writing-models.html#cb79-7" aria-hidden="true" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(predicted.y[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb79-8"><a href="cha-writing-models.html#cb79-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb79-9"><a href="cha-writing-models.html#cb79-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>In this code, stochastic relationships are declared with ‘<span class="math inline">\(\sim\)</span>’
 and deterministic relationships are declared with ‘<code>&lt;-</code>’. For
 example, each <code>y[i]</code> follows a normal distribution with mean
@@ -558,48 +625,48 @@ Figure <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a>, and 
 the everything gets drawn in the end. Available distributions, default and alternative
 parameterizations, and functions are listed in Section <a href="cha-writing-models.html#subsec:dists-and-functions">5.2.4</a>.</p>
 <p>An equivalent graph can be created by this BUGS code:</p>
-<div class="sourceCode" id="cb80"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb80-1" title="1">{</a>
-<a class="sourceLine" id="cb80-2" title="2">    intercept <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb80-3" title="3">    slope <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb80-4" title="4">    sigma <span class="op">~</span><span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb80-5" title="5">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>) {</a>
-<a class="sourceLine" id="cb80-6" title="6">        y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(intercept <span class="op">+</span><span class="st"> </span>slope <span class="op">*</span><span class="st"> </span>x[i], <span class="dt">sd =</span> sigma)</a>
-<a class="sourceLine" id="cb80-7" title="7">    }</a>
-<a class="sourceLine" id="cb80-8" title="8">}</a></code></pre></div>
+<div class="sourceCode" id="cb80"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb80-1"><a href="cha-writing-models.html#cb80-1" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb80-2"><a href="cha-writing-models.html#cb80-2" aria-hidden="true" tabindex="-1"></a>    intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb80-3"><a href="cha-writing-models.html#cb80-3" aria-hidden="true" tabindex="-1"></a>    slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb80-4"><a href="cha-writing-models.html#cb80-4" aria-hidden="true" tabindex="-1"></a>    sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb80-5"><a href="cha-writing-models.html#cb80-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb80-6"><a href="cha-writing-models.html#cb80-6" aria-hidden="true" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept <span class="sc">+</span> slope <span class="sc">*</span> x[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb80-7"><a href="cha-writing-models.html#cb80-7" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb80-8"><a href="cha-writing-models.html#cb80-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>In this case, the <code>predicted.y[i]</code> nodes in Figure
 <a href="cha-writing-models.html#fig:linearRegressionGraph">5.1</a> will be created automatically by
 NIMBLE and will have a different name, generated by NIMBLE.</p>
 </div>
-<div id="sec:more-kinds-bugs" class="section level3">
-<h3><span class="header-section-number">5.2.2</span> More kinds of BUGS declarations</h3>
+<div id="sec:more-kinds-bugs" class="section level3 hasAnchor" number="5.2.2">
+<h3><span class="header-section-number">5.2.2</span> More kinds of BUGS declarations<a href="cha-writing-models.html#sec:more-kinds-bugs" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Here are some examples of valid lines of BUGS code. This code does
 not describe a sensible or complete model, and it includes some
 arbitrary indices (e.g. <code>mvx[8:10, i]</code>) to illustrate flexibility.
 Instead the purpose of each line is to illustrate a feature of
 NIMBLE’s version of BUGS.</p>
-<div class="sourceCode" id="cb81"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb81-1" title="1">{</a>
-<a class="sourceLine" id="cb81-2" title="2">    <span class="co"># 1. normal distribution with BUGS parameter order</span></a>
-<a class="sourceLine" id="cb81-3" title="3">    x <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, tau) </a>
-<a class="sourceLine" id="cb81-4" title="4">    <span class="co"># 2. normal distribution with a named parameter</span></a>
-<a class="sourceLine" id="cb81-5" title="5">    y <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">*</span><span class="st"> </span>c, <span class="dt">sd =</span> sigma) </a>
-<a class="sourceLine" id="cb81-6" title="6">    <span class="co"># 3. For-loop and nested indexing</span></a>
-<a class="sourceLine" id="cb81-7" title="7">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb81-8" title="8">        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M[i]) {</a>
-<a class="sourceLine" id="cb81-9" title="9">            z[i,j] <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(r[ blockID[i] ]) </a>
-<a class="sourceLine" id="cb81-10" title="10">        }</a>
-<a class="sourceLine" id="cb81-11" title="11">    }</a>
-<a class="sourceLine" id="cb81-12" title="12">    <span class="co"># 4. multivariate distribution with arbitrary indexing</span></a>
-<a class="sourceLine" id="cb81-13" title="13">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>) </a>
-<a class="sourceLine" id="cb81-14" title="14">        mvx[<span class="dv">8</span><span class="op">:</span><span class="dv">10</span>, i] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mvMean[<span class="dv">3</span><span class="op">:</span><span class="dv">5</span>], <span class="dt">cov =</span> mvCov[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, i])</a>
-<a class="sourceLine" id="cb81-15" title="15">    <span class="co"># 5. User-provided distribution</span></a>
-<a class="sourceLine" id="cb81-16" title="16">    w <span class="op">~</span><span class="st"> </span><span class="kw">dMyDistribution</span>(<span class="dt">hello =</span> x, <span class="dt">world =</span> y) </a>
-<a class="sourceLine" id="cb81-17" title="17">    <span class="co"># 6. Simple deterministic node</span></a>
-<a class="sourceLine" id="cb81-18" title="18">    d1 &lt;-<span class="st"> </span>a <span class="op">+</span><span class="st"> </span>b</a>
-<a class="sourceLine" id="cb81-19" title="19">    <span class="co"># 7. Vector deterministic node with matrix multiplication</span></a>
-<a class="sourceLine" id="cb81-20" title="20">    d2[] &lt;-<span class="st"> </span>A[ , ] <span class="op">%*%</span><span class="st"> </span>mvMean[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>] </a>
-<a class="sourceLine" id="cb81-21" title="21">    <span class="co"># 8. Deterministic node with user-provided function</span></a>
-<a class="sourceLine" id="cb81-22" title="22">    d3 &lt;-<span class="st"> </span><span class="kw">foo</span>(x, <span class="dt">hooray =</span> y) </a>
-<a class="sourceLine" id="cb81-23" title="23">}</a></code></pre></div>
+<div class="sourceCode" id="cb81"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb81-1"><a href="cha-writing-models.html#cb81-1" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb81-2"><a href="cha-writing-models.html#cb81-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 1. normal distribution with BUGS parameter order</span></span>
+<span id="cb81-3"><a href="cha-writing-models.html#cb81-3" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">~</span> <span class="fu">dnorm</span>(a <span class="sc">+</span> b <span class="sc">*</span> c, tau) </span>
+<span id="cb81-4"><a href="cha-writing-models.html#cb81-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 2. normal distribution with a named parameter</span></span>
+<span id="cb81-5"><a href="cha-writing-models.html#cb81-5" aria-hidden="true" tabindex="-1"></a>    y <span class="sc">~</span> <span class="fu">dnorm</span>(a <span class="sc">+</span> b <span class="sc">*</span> c, <span class="at">sd =</span> sigma) </span>
+<span id="cb81-6"><a href="cha-writing-models.html#cb81-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 3. For-loop and nested indexing</span></span>
+<span id="cb81-7"><a href="cha-writing-models.html#cb81-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb81-8"><a href="cha-writing-models.html#cb81-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M[i]) {</span>
+<span id="cb81-9"><a href="cha-writing-models.html#cb81-9" aria-hidden="true" tabindex="-1"></a>            z[i,j] <span class="sc">~</span> <span class="fu">dexp</span>(r[ blockID[i] ]) </span>
+<span id="cb81-10"><a href="cha-writing-models.html#cb81-10" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb81-11"><a href="cha-writing-models.html#cb81-11" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb81-12"><a href="cha-writing-models.html#cb81-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 4. multivariate distribution with arbitrary indexing</span></span>
+<span id="cb81-13"><a href="cha-writing-models.html#cb81-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) </span>
+<span id="cb81-14"><a href="cha-writing-models.html#cb81-14" aria-hidden="true" tabindex="-1"></a>        mvx[<span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>, i] <span class="sc">~</span> <span class="fu">dmnorm</span>(mvMean[<span class="dv">3</span><span class="sc">:</span><span class="dv">5</span>], <span class="at">cov =</span> mvCov[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, i])</span>
+<span id="cb81-15"><a href="cha-writing-models.html#cb81-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 5. User-provided distribution</span></span>
+<span id="cb81-16"><a href="cha-writing-models.html#cb81-16" aria-hidden="true" tabindex="-1"></a>    w <span class="sc">~</span> <span class="fu">dMyDistribution</span>(<span class="at">hello =</span> x, <span class="at">world =</span> y) </span>
+<span id="cb81-17"><a href="cha-writing-models.html#cb81-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 6. Simple deterministic node</span></span>
+<span id="cb81-18"><a href="cha-writing-models.html#cb81-18" aria-hidden="true" tabindex="-1"></a>    d1 <span class="ot">&lt;-</span> a <span class="sc">+</span> b</span>
+<span id="cb81-19"><a href="cha-writing-models.html#cb81-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 7. Vector deterministic node with matrix multiplication</span></span>
+<span id="cb81-20"><a href="cha-writing-models.html#cb81-20" aria-hidden="true" tabindex="-1"></a>    d2[] <span class="ot">&lt;-</span> A[ , ] <span class="sc">%*%</span> mvMean[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>] </span>
+<span id="cb81-21"><a href="cha-writing-models.html#cb81-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 8. Deterministic node with user-provided function</span></span>
+<span id="cb81-22"><a href="cha-writing-models.html#cb81-22" aria-hidden="true" tabindex="-1"></a>    d3 <span class="ot">&lt;-</span> <span class="fu">foo</span>(x, <span class="at">hooray =</span> y) </span>
+<span id="cb81-23"><a href="cha-writing-models.html#cb81-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>When a variable appears only on the right-hand side, it can be provided via <code>constants</code> (in which case it can never be changed) or via <code>data</code> or <code>inits</code>, as discussed in Chapter <a href="cha-building-models.html#cha-building-models">6</a>.</p>
 <p>Notes on the comment-numbered lines are:</p>
 <ol style="list-style-type: decimal">
@@ -621,8 +688,8 @@ multiplication in R’s syntax.</li>
 <li><code>d3</code> is a deterministic node using a user-provided
 function. See Chapter <a href="cha-user-defined.html#cha-user-defined">12</a>.</li>
 </ol>
-<div id="sec:indexing" class="section level4">
-<h4><span class="header-section-number">5.2.2.1</span> More about indexing</h4>
+<div id="sec:indexing" class="section level4 hasAnchor" number="5.2.2.1">
+<h4><span class="header-section-number">5.2.2.1</span> More about indexing<a href="cha-writing-models.html#sec:indexing" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>Examples of allowed indexing include:</p>
 <ul>
 <li><code>x[i]</code> # a single index</li>
@@ -649,31 +716,31 @@ a <span class="math inline">\(1 \times 3\)</span> matrix. More about indexing an
 discussed in Section <a href="cha-RCfunctions.html#sec:manag-dimens-sizes">11.3.2.7</a>.</p>
 </div>
 </div>
-<div id="subsec:vectorized-versus-scalar-declarations" class="section level3">
-<h3><span class="header-section-number">5.2.3</span> Vectorized versus scalar declarations</h3>
+<div id="subsec:vectorized-versus-scalar-declarations" class="section level3 hasAnchor" number="5.2.3">
+<h3><span class="header-section-number">5.2.3</span> Vectorized versus scalar declarations<a href="cha-writing-models.html#subsec:vectorized-versus-scalar-declarations" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Suppose you need nodes <code>logY[i]</code> that should be the log of the
 corresponding <code>Y[i]</code>, say for <code>i</code> from 1 to 10. Conventionally
 this would be created with a for loop:</p>
-<div class="sourceCode" id="cb82"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb82-1" title="1">{</a>
-<a class="sourceLine" id="cb82-2" title="2">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">10</span>) {</a>
-<a class="sourceLine" id="cb82-3" title="3">        logY[i] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[i])</a>
-<a class="sourceLine" id="cb82-4" title="4">    }</a>
-<a class="sourceLine" id="cb82-5" title="5">}</a></code></pre></div>
+<div class="sourceCode" id="cb82"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb82-1"><a href="cha-writing-models.html#cb82-1" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb82-2"><a href="cha-writing-models.html#cb82-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb82-3"><a href="cha-writing-models.html#cb82-3" aria-hidden="true" tabindex="-1"></a>        logY[i] <span class="ot">&lt;-</span> <span class="fu">log</span>(Y[i])</span>
+<span id="cb82-4"><a href="cha-writing-models.html#cb82-4" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb82-5"><a href="cha-writing-models.html#cb82-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Since NIMBLE supports R-like algebraic expressions, an alternative in
 NIMBLE’s dialect of BUGS is to use a vectorized declaration like this:</p>
-<div class="sourceCode" id="cb83"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb83-1" title="1">{</a>
-<a class="sourceLine" id="cb83-2" title="2">    logY[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>] &lt;-<span class="st"> </span><span class="kw">log</span>(Y[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>])</a>
-<a class="sourceLine" id="cb83-3" title="3">}</a></code></pre></div>
+<div class="sourceCode" id="cb83"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb83-1"><a href="cha-writing-models.html#cb83-1" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb83-2"><a href="cha-writing-models.html#cb83-2" aria-hidden="true" tabindex="-1"></a>    logY[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>] <span class="ot">&lt;-</span> <span class="fu">log</span>(Y[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>])</span>
+<span id="cb83-3"><a href="cha-writing-models.html#cb83-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>There is an important difference between the models that are created by the
 above two methods. The first creates 10 scalar nodes, <code>logY[1]</code>
 <span class="math inline">\(,\ldots,\)</span> <code>logY[10]</code>. The second creates one vector node,
 <code>logY[1:10]</code>. If each <code>logY[i]</code> is used separately by an algorithm, it may be more efficient computationally if they are declared as scalars. If they are all used together,
 it will often make sense to declare them as a vector.</p>
 </div>
-<div id="subsec:dists-and-functions" class="section level3">
-<h3><span class="header-section-number">5.2.4</span> Available distributions</h3>
-<div id="subsec:distributions" class="section level4">
-<h4><span class="header-section-number">5.2.4.1</span> Distributions</h4>
+<div id="subsec:dists-and-functions" class="section level3 hasAnchor" number="5.2.4">
+<h3><span class="header-section-number">5.2.4</span> Available distributions<a href="cha-writing-models.html#subsec:dists-and-functions" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="subsec:distributions" class="section level4 hasAnchor" number="5.2.4.1">
+<h4><span class="header-section-number">5.2.4.1</span> Distributions<a href="cha-writing-models.html#subsec:distributions" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>NIMBLE supports most of the distributions allowed in BUGS and
 JAGS. Table <a href="cha-writing-models.html#tab:distributions">5.1</a> lists the distributions that are
 currently supported, with their default parameterizations, which match
@@ -1059,8 +1126,8 @@ is denoted by <span class="math inline">\(x\)</span>.</caption>
 </tr>
 </tbody>
 </table>
-<div id="improper-distributions" class="section level5">
-<h5><span class="header-section-number">5.2.4.1.1</span> Improper distributions</h5>
+<div id="improper-distributions" class="section level5 hasAnchor" number="5.2.4.1.1">
+<h5><span class="header-section-number">5.2.4.1.1</span> Improper distributions<a href="cha-writing-models.html#improper-distributions" class="anchor-section" aria-label="Anchor link to header"></a></h5>
 <p>Note that <code>dcar_normal</code>, <code>dflat</code> and <code>dhalfflat</code> specify improper prior distributions
 and should only be used when the posterior distribution of the model is known to be proper.
 Also for these distributions, the density function returns the unnormalized density
@@ -1068,11 +1135,11 @@ and the simulation function returns <code>NaN</code> so these distributions
 are not appropriate for algorithms that need to simulate from the
 prior or require proper (normalized) densities.</p>
 </div>
-<div id="lkj-distribution-for-correlation-matrices" class="section level5">
-<h5><span class="header-section-number">5.2.4.1.2</span> LKJ distribution for correlation matrices</h5>
+<div id="lkj-distribution-for-correlation-matrices" class="section level5 hasAnchor" number="5.2.4.1.2">
+<h5><span class="header-section-number">5.2.4.1.2</span> LKJ distribution for correlation matrices<a href="cha-writing-models.html#lkj-distribution-for-correlation-matrices" class="anchor-section" aria-label="Anchor link to header"></a></h5>
 <p>NIMBLE provides the LKJ distribution via <code>dlkj_corr_cholesky</code>
-for correlation matrices, discussed in Section 24 of <span class="citation">Stan Development Team (<a href="references.html#ref-Stan_Lang_Fun_2021">2021</a><a href="references.html#ref-Stan_Lang_Fun_2021">a</a>)</span> and based on
-<span class="citation">Lewandowski, Kurowicka, and Joe (<a href="references.html#ref-Lewandowski_etal_2009">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
+for correlation matrices, discussed in Section 24 of <span class="citation">Stan Development Team (<a href="cha-progr-with-models.html#ref-Stan_Lang_Fun_2021" role="doc-biblioref">2021a</a>)</span> and based on
+<span class="citation">Lewandowski, Kurowicka, and Joe (<a href="cha-progr-with-models.html#ref-Lewandowski_etal_2009" role="doc-biblioref">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
 MCMC fitting perspective) over other prior distributions for correlation
 or covariance matrices such as the inverse Wishart distribution.</p>
 <p>For computational efficiency, the distribution is on the Cholesky factor
@@ -1080,12 +1147,12 @@ of the correlation matrix rather than the correlation matrix itself. As a result
 in a model involves a bit of care, including efficiently creating a covariance matrix from the
 correlation matrix and a set of standard deviations.</p>
 <p>Here is some example code illustrating how to use the distribution in a model.</p>
-<div class="sourceCode" id="cb84"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb84-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb84-2" title="2">    Ustar[<span class="dv">1</span><span class="op">:</span>p,<span class="dv">1</span><span class="op">:</span>p] <span class="op">~</span><span class="st"> </span><span class="kw">dlkj_corr_cholesky</span>(<span class="fl">1.3</span>, p)</a>
-<a class="sourceLine" id="cb84-3" title="3">    U[<span class="dv">1</span><span class="op">:</span>p,<span class="dv">1</span><span class="op">:</span>p] &lt;-<span class="st"> </span><span class="kw">uppertri_mult_diag</span>(Ustar[<span class="dv">1</span><span class="op">:</span>p, <span class="dv">1</span><span class="op">:</span>p], sds[<span class="dv">1</span><span class="op">:</span>p])</a>
-<a class="sourceLine" id="cb84-4" title="4">    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>n)  </a>
-<a class="sourceLine" id="cb84-5" title="5">        y[i, <span class="dv">1</span><span class="op">:</span>p] <span class="op">~</span><span class="st"> </span><span class="kw">dmnorm</span>(mu[<span class="dv">1</span><span class="op">:</span>p], <span class="dt">cholesky =</span> U[<span class="dv">1</span><span class="op">:</span>p, <span class="dv">1</span><span class="op">:</span>p], <span class="dt">prec_param =</span> <span class="dv">0</span>)</a>
-<a class="sourceLine" id="cb84-6" title="6">})</a></code></pre></div>
+<div class="sourceCode" id="cb84"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb84-1"><a href="cha-writing-models.html#cb84-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb84-2"><a href="cha-writing-models.html#cb84-2" aria-hidden="true" tabindex="-1"></a>    Ustar[<span class="dv">1</span><span class="sc">:</span>p,<span class="dv">1</span><span class="sc">:</span>p] <span class="sc">~</span> <span class="fu">dlkj_corr_cholesky</span>(<span class="fl">1.3</span>, p)</span>
+<span id="cb84-3"><a href="cha-writing-models.html#cb84-3" aria-hidden="true" tabindex="-1"></a>    U[<span class="dv">1</span><span class="sc">:</span>p,<span class="dv">1</span><span class="sc">:</span>p] <span class="ot">&lt;-</span> <span class="fu">uppertri_mult_diag</span>(Ustar[<span class="dv">1</span><span class="sc">:</span>p, <span class="dv">1</span><span class="sc">:</span>p], sds[<span class="dv">1</span><span class="sc">:</span>p])</span>
+<span id="cb84-4"><a href="cha-writing-models.html#cb84-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n)  </span>
+<span id="cb84-5"><a href="cha-writing-models.html#cb84-5" aria-hidden="true" tabindex="-1"></a>        y[i, <span class="dv">1</span><span class="sc">:</span>p] <span class="sc">~</span> <span class="fu">dmnorm</span>(mu[<span class="dv">1</span><span class="sc">:</span>p], <span class="at">cholesky =</span> U[<span class="dv">1</span><span class="sc">:</span>p, <span class="dv">1</span><span class="sc">:</span>p], <span class="at">prec_param =</span> <span class="dv">0</span>)</span>
+<span id="cb84-6"><a href="cha-writing-models.html#cb84-6" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
 <p>Note that we need to take the upper triangular Cholesky factor (<code>Ustar</code>) of the correlation matrix
 and convert it to the upper triangular Cholesky factor of a covariance matrix (<code>U</code>), based on a vector of
 standard deviations (<code>sds</code>), and use that in the parameterization of
@@ -1095,19 +1162,19 @@ computationally efficient than the template above.</p>
 <p>The template uses a user-defined nimbleFunction to efficiently combine the
 Cholesky of the correlation matrix with a vector of standard deviations to produce the
 Cholesky of the covariance matrix. That function is given here:</p>
-<div class="sourceCode" id="cb85"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb85-1" title="1">uppertri_mult_diag &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
-<a class="sourceLine" id="cb85-2" title="2">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">mat =</span> <span class="kw">double</span>(<span class="dv">2</span>), <span class="dt">vec =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {</a>
-<a class="sourceLine" id="cb85-3" title="3">        <span class="kw">returnType</span>(<span class="kw">double</span>(<span class="dv">2</span>))</a>
-<a class="sourceLine" id="cb85-4" title="4">        p &lt;-<span class="st"> </span><span class="kw">length</span>(vec)</a>
-<a class="sourceLine" id="cb85-5" title="5">        out &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dt">nrow =</span> p, <span class="dt">ncol =</span> p, <span class="dt">init =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb85-6" title="6">        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>p)</a>
-<a class="sourceLine" id="cb85-7" title="7">            out[ , i] &lt;-<span class="st"> </span>mat[ , i] <span class="op">*</span><span class="st"> </span>vec[i]</a>
-<a class="sourceLine" id="cb85-8" title="8">        <span class="kw">return</span>(out)</a>
-<a class="sourceLine" id="cb85-9" title="9">    })</a></code></pre></div>
+<div class="sourceCode" id="cb85"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb85-1"><a href="cha-writing-models.html#cb85-1" aria-hidden="true" tabindex="-1"></a>uppertri_mult_diag <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb85-2"><a href="cha-writing-models.html#cb85-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">mat =</span> <span class="fu">double</span>(<span class="dv">2</span>), <span class="at">vec =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb85-3"><a href="cha-writing-models.html#cb85-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">2</span>))</span>
+<span id="cb85-4"><a href="cha-writing-models.html#cb85-4" aria-hidden="true" tabindex="-1"></a>        p <span class="ot">&lt;-</span> <span class="fu">length</span>(vec)</span>
+<span id="cb85-5"><a href="cha-writing-models.html#cb85-5" aria-hidden="true" tabindex="-1"></a>        out <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">nrow =</span> p, <span class="at">ncol =</span> p, <span class="at">init =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb85-6"><a href="cha-writing-models.html#cb85-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>p)</span>
+<span id="cb85-7"><a href="cha-writing-models.html#cb85-7" aria-hidden="true" tabindex="-1"></a>            out[ , i] <span class="ot">&lt;-</span> mat[ , i] <span class="sc">*</span> vec[i]</span>
+<span id="cb85-8"><a href="cha-writing-models.html#cb85-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(out)</span>
+<span id="cb85-9"><a href="cha-writing-models.html#cb85-9" aria-hidden="true" tabindex="-1"></a>    })</span></code></pre></div>
 </div>
 </div>
-<div id="subsec:alternative-params" class="section level4">
-<h4><span class="header-section-number">5.2.4.2</span> Alternative parameterizations for distributions</h4>
+<div id="subsec:alternative-params" class="section level4 hasAnchor" number="5.2.4.2">
+<h4><span class="header-section-number">5.2.4.2</span> Alternative parameterizations for distributions<a href="cha-writing-models.html#subsec:alternative-params" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>NIMBLE allows one to specify distributions in model code using a
 variety of parameterizations, including the BUGS
 parameterizations. Available parameterizations are listed in Table <a href="cha-writing-models.html#tab:parameterizations">5.2</a>.
@@ -1471,8 +1538,8 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <!---  [F is easy to add as it has R functions] --></p>
 </div>
 </div>
-<div id="subsec:BUGS-lang-fxns" class="section level3">
-<h3><span class="header-section-number">5.2.5</span> Available BUGS language functions</h3>
+<div id="subsec:BUGS-lang-fxns" class="section level3 hasAnchor" number="5.2.5">
+<h3><span class="header-section-number">5.2.5</span> Available BUGS language functions<a href="cha-writing-models.html#subsec:BUGS-lang-fxns" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Tables <a href="cha-writing-models.html#tab:functions">5.4</a>-<a href="cha-writing-models.html#tab:functionsMatrix">5.5</a> show the available operators and functions.
 <!---\@ref(tab:functions)-\@ref(tab:functionsMatrix) 
 Hard-coding these as not clear how to have tables here and in Chapter 11 use same source files but numbered distinctly
@@ -2017,8 +2084,8 @@ provided in NIMBLE.</caption>
 <!---  [NOTE: JAGS source package has the Tex files for Martyn's manual, so we can copy the table formatting - s doc/manual/jags_user_manual.md] -->
 <p>See Section <a href="cha-user-defined.html#sec:user-functions">12.1</a> to learn how to use nimbleFunctions to write new functions for use in BUGS code.</p>
 </div>
-<div id="subsec:BUGS-link" class="section level3">
-<h3><span class="header-section-number">5.2.6</span> Available link functions</h3>
+<div id="subsec:BUGS-link" class="section level3 hasAnchor" number="5.2.6">
+<h3><span class="header-section-number">5.2.6</span> Available link functions<a href="cha-writing-models.html#subsec:BUGS-link" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE allows the link functions listed in Table <a href="cha-writing-models.html#tab:links">5.6</a>.</p>
 <table>
 <caption><span id="tab:links">Table 5.6: </span> Link functions.</caption>
@@ -2074,11 +2141,11 @@ to the following two declarations:</p>
 <p>where <code>expit</code> is the inverse of <code>logit</code>.</p>
 <p>Note that NIMBLE does not provide an automatic way of initializing the additional node (<code>logit_p[i]</code> in this case), which is a parent node of the explicit node (<code>p[i]</code>), without explicitly referring to the additional node by the name that NIMBLE generates.</p>
 </div>
-<div id="subsec:trunc" class="section level3">
-<h3><span class="header-section-number">5.2.7</span> Truncation, censoring, and constraints</h3>
+<div id="subsec:trunc" class="section level3 hasAnchor" number="5.2.7">
+<h3><span class="header-section-number">5.2.7</span> Truncation, censoring, and constraints<a href="cha-writing-models.html#subsec:trunc" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE provides three ways to declare boundaries on the value of a variable, each for different situations. We introduce these and comment on their relationships to related features of JAGS and BUGS. The three methods are:</p>
-<div id="truncation" class="section level4">
-<h4><span class="header-section-number">5.2.7.1</span> Truncation</h4>
+<div id="truncation" class="section level4 hasAnchor" number="5.2.7.1">
+<h4><span class="header-section-number">5.2.7.1</span> Truncation<a href="cha-writing-models.html#truncation" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>Either of the following forms,</p>
 <pre><code>x ~ dnorm(0, sd = 10) T(0, a)
 x ~ T(dnorm(0, sd = 10), 0, a)</code></pre>
@@ -2086,11 +2153,11 @@ x ~ T(dnorm(0, sd = 10), 0, a)</code></pre>
 <code>a</code> (inclusive of 0 and <code>a</code>). Either boundary may be omitted or may be another node, such as <code>a</code> in this example. The first form is compatible with JAGS, but in NIMBLE it can only be used when reading code from a text file. When writing model code in R, the second version must be used.</p>
 <p>Truncation means the possible values of <code>x</code> are limited a priori, hence the probability density of <code>x</code> must be normalized<a href="#fn16" class="footnote-ref" id="fnref16"><sup>16</sup></a>. In this example it would be the normal probability density divided by its integral from 0 to <code>a</code>. Like JAGS, NIMBLE also provides <code>I</code> as a synonym for <code>T</code> to accommodate older BUGS code, but <code>T</code> is preferred because it disambiguates multiple usages of <code>I</code> in BUGS.</p>
 </div>
-<div id="censoring" class="section level4">
-<h4><span class="header-section-number">5.2.7.2</span> Censoring</h4>
+<div id="censoring" class="section level4 hasAnchor" number="5.2.7.2">
+<h4><span class="header-section-number">5.2.7.2</span> Censoring<a href="cha-writing-models.html#censoring" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>Censoring refers to the situation where one datum gives the lower or upper bound on an unobserved random variable. This is common in survival analysis, when for an individual still surviving at the end of a study, the age of death is not known and hence is ‘censored’ (right-censoring). NIMBLE adopts JAGS syntax for censoring, as follows:</p>
-<div class="sourceCode" id="cb87"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb87-1" title="1">censored[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinterval</span>(t[i], c[i])</a>
-<a class="sourceLine" id="cb87-2" title="2">t[i] <span class="op">~</span><span class="st"> </span><span class="kw">dweib</span>(r, mu[i])</a></code></pre></div>
+<div class="sourceCode" id="cb87"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb87-1"><a href="cha-writing-models.html#cb87-1" aria-hidden="true" tabindex="-1"></a>censored[i] <span class="sc">~</span> <span class="fu">dinterval</span>(t[i], c[i])</span>
+<span id="cb87-2"><a href="cha-writing-models.html#cb87-2" aria-hidden="true" tabindex="-1"></a>t[i] <span class="sc">~</span> <span class="fu">dweib</span>(r, mu[i])</span></code></pre></div>
 <p>In the case of right-censoring, <code>censored[i]</code> should be given as <code>data</code> with a value of 1 if
 <code>t[i]</code> is right-censored (<code>t[i] &gt; c[i]</code>) and 0 if it is
 observed. The data vector for <code>t</code> should have <code>NA</code> (indicating
@@ -2115,12 +2182,12 @@ and <code>t[i]</code> to <code>NA</code>.</p>
 as <code>data</code> with known values. Otherwise, the node may be simulated during initialization in some algorithms (e.g., MCMC) and thereby establish a permanent, perhaps unintended, constraint.</p>
 <p>Censoring differs from truncation because censoring an observation involves bounds on a random variable that could have taken any value, while in truncation we know a priori that a datum could not have occurred outside the truncation range.</p>
 </div>
-<div id="constraints-and-ordering" class="section level4">
-<h4><span class="header-section-number">5.2.7.3</span> Constraints and ordering</h4>
+<div id="constraints-and-ordering" class="section level4 hasAnchor" number="5.2.7.3">
+<h4><span class="header-section-number">5.2.7.3</span> Constraints and ordering<a href="cha-writing-models.html#constraints-and-ordering" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>NIMBLE provides a more general way to enforce constraints using <code>dconstraint(cond)</code>. For example, we could specify that the sum of <code>mu1</code> and <code>mu2</code> must be positive like this:</p>
-<div class="sourceCode" id="cb88"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb88-1" title="1">mu1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </a>
-<a class="sourceLine" id="cb88-2" title="2">mu2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </a>
-<a class="sourceLine" id="cb88-3" title="3">constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( mu1 <span class="op">+</span><span class="st"> </span>mu2 <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span> )</a></code></pre></div>
+<div class="sourceCode" id="cb88"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb88-1"><a href="cha-writing-models.html#cb88-1" aria-hidden="true" tabindex="-1"></a>mu1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
+<span id="cb88-2"><a href="cha-writing-models.html#cb88-2" aria-hidden="true" tabindex="-1"></a>mu2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
+<span id="cb88-3"><a href="cha-writing-models.html#cb88-3" aria-hidden="true" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( mu1 <span class="sc">+</span> mu2 <span class="sc">&gt;</span> <span class="dv">0</span> )</span></code></pre></div>
 <p>with <code>constraint_data</code> set (as <code>data</code>) to 1. This is
 equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 + \mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>.
 <!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. --></p>
@@ -2134,21 +2201,21 @@ would make it hard for an MCMC or optimization to move through the
 parameter space (such as equality constraints that involve two or more
 parameters). For such restrictive constraints, general purpose
 algorithms that are not tailored to the constraints may fail or be inefficient. If constraints are used, it will generally be wise to ensure the model is initialized with values that satisfy them.</p>
-<div id="ordering" class="section level5">
-<h5><span class="header-section-number">5.2.7.3.1</span> Ordering</h5>
+<div id="ordering" class="section level5 hasAnchor" number="5.2.7.3.1">
+<h5><span class="header-section-number">5.2.7.3.1</span> Ordering<a href="cha-writing-models.html#ordering" class="anchor-section" aria-label="Anchor link to header"></a></h5>
 <p>To specify an ordering of parameters, such as <span class="math inline">\(\alpha_1 &lt;= \alpha_2 &lt;= \alpha_3\)</span> one can use <code>dconstraint</code> as follows:</p>
-<div class="sourceCode" id="cb89"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb89-1" title="1">constraint_data <span class="op">~</span><span class="st"> </span><span class="kw">dconstraint</span>( alpha1 <span class="op">&lt;=</span><span class="st"> </span>alpha2 <span class="op">&amp;</span><span class="st"> </span>alpha2 <span class="op">&lt;=</span><span class="st"> </span>alpha3 )</a></code></pre></div>
+<div class="sourceCode" id="cb89"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb89-1"><a href="cha-writing-models.html#cb89-1" aria-hidden="true" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( alpha1 <span class="sc">&lt;=</span> alpha2 <span class="sc">&amp;</span> alpha2 <span class="sc">&lt;=</span> alpha3 )</span></code></pre></div>
 <p>Note that unlike in BUGS, one cannot specify prior ordering using syntax such as</p>
-<div class="sourceCode" id="cb90"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb90-1" title="1">alpha[<span class="dv">1</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(, alpha[<span class="dv">2</span>])</a>
-<a class="sourceLine" id="cb90-2" title="2">alpha[<span class="dv">2</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])</a>
-<a class="sourceLine" id="cb90-3" title="3">alpha[<span class="dv">3</span>] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">I</span>(alpha[<span class="dv">2</span>], )</a></code></pre></div>
+<div class="sourceCode" id="cb90"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb90-1"><a href="cha-writing-models.html#cb90-1" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(, alpha[<span class="dv">2</span>])</span>
+<span id="cb90-2"><a href="cha-writing-models.html#cb90-2" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">2</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])</span>
+<span id="cb90-3"><a href="cha-writing-models.html#cb90-3" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">3</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(alpha[<span class="dv">2</span>], )</span></code></pre></div>
 <p>as this does not represent a directed acyclic graph.
 <!---  TODO: CHRIS, WOULDN'T THIS WORK WITH `alpha[1] $\sim$ dnorm(0, 1)`?  DOES BUGS REALLY ALLOW THIS NON-DAG? 
 % PERRY, JAGS manual indicates the above is allowed in BUGS. Are you asking if it would work in NIMBLE with alpha1~dnorm(0,1) -- no because alpha2 still depends on alpha3 and vice versa --></p>
 <p>Also note that specifying prior ordering using <code>T(,)</code> can result in possibly unexpected results. For example:</p>
-<div class="sourceCode" id="cb91"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb91-1" title="1">alpha1 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb91-2" title="2">alpha2 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha1, )</a>
-<a class="sourceLine" id="cb91-3" title="3">alpha3 <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="kw">T</span>(alpha2, )</a></code></pre></div>
+<div class="sourceCode" id="cb91"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb91-1"><a href="cha-writing-models.html#cb91-1" aria-hidden="true" tabindex="-1"></a>alpha1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb91-2"><a href="cha-writing-models.html#cb91-2" aria-hidden="true" tabindex="-1"></a>alpha2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">T</span>(alpha1, )</span>
+<span id="cb91-3"><a href="cha-writing-models.html#cb91-3" aria-hidden="true" tabindex="-1"></a>alpha3 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">T</span>(alpha2, )</span></code></pre></div>
 <p>will enforce <code>alpha1</code> <span class="math inline">\(\le\)</span> <code>alpha2</code> <span class="math inline">\(\le\)</span> <code>alpha3</code>, but it does not treat the three parameters symmetrically. Instead it puts a marginal prior on <code>alpha1</code> that is standard normal and then constrains <code>alpha2</code> and <code>alpha3</code> to follow truncated normal distributions. This is not equivalent to a symmetric prior on the three <code>alpha</code>s that assigns zero probability density when values are not in order.</p>
 <p>NIMBLE does not support the JAGS <code>sort</code> syntax.</p>
 
@@ -2161,21 +2228,21 @@ algorithms that are not tailored to the constraints may fail or be inefficient. 
 <div class="footnotes">
 <hr />
 <ol start="10">
-<li id="fn10"><p>NIMBLE calls non-stochastic nodes ‘deterministic’, whereas BUGS calls them ‘logical’. NIMBLE uses ‘logical’ in the way R does, to refer to boolean (TRUE/FALSE) variables.<a href="cha-writing-models.html#fnref10" class="footnote-back">↩</a></p></li>
-<li id="fn11"><p>But beware of the possibility of needing to set values for ‘lifted’ nodes created by NIMBLE.<a href="cha-writing-models.html#fnref11" class="footnote-back">↩</a></p></li>
+<li id="fn10"><p>NIMBLE calls non-stochastic nodes ‘deterministic’, whereas BUGS calls them ‘logical’. NIMBLE uses ‘logical’ in the way R does, to refer to boolean (TRUE/FALSE) variables.<a href="cha-writing-models.html#fnref10" class="footnote-back">↩︎</a></p></li>
+<li id="fn11"><p>But beware of the possibility of needing to set values for ‘lifted’ nodes created by NIMBLE.<a href="cha-writing-models.html#fnref11" class="footnote-back">↩︎</a></p></li>
 <li id="fn12"><p>Technically, a
-<em>directed acyclic graph</em><a href="cha-writing-models.html#fnref12" class="footnote-back">↩</a></p></li>
+<em>directed acyclic graph</em><a href="cha-writing-models.html#fnref12" class="footnote-back">↩︎</a></p></li>
 <li id="fn13"><p>In <code>nimbleFunctions</code>, as
 explained in later chapters, square brackets with blank indices are
-not necessary for multivariate objects.<a href="cha-writing-models.html#fnref13" class="footnote-back">↩</a></p></li>
+not necessary for multivariate objects.<a href="cha-writing-models.html#fnref13" class="footnote-back">↩︎</a></p></li>
 <li id="fn14"><p>Note that the same distributions are available
 for writing <code>nimbleFunction</code>s, but in that case the default
 parameterizations and function names match R’s when possible. Please
 see Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">11.2.4</a> for how to use distributions
-in <code>nimbleFunctions</code>.<a href="cha-writing-models.html#fnref14" class="footnote-back">↩</a></p></li>
+in <code>nimbleFunctions</code>.<a href="cha-writing-models.html#fnref14" class="footnote-back">↩︎</a></p></li>
 <li id="fn15"><p>Usually this is the parameterization in the
-<code>Rmath</code> header of R’s C implementation of distributions.<a href="cha-writing-models.html#fnref15" class="footnote-back">↩</a></p></li>
-<li id="fn16"><p>NIMBLE uses the CDF and inverse CDF (quantile) functions of a distribution to do this; in some cases if one uses truncation to include only the extreme tail of a distribution, numerical difficulties can arise.<a href="cha-writing-models.html#fnref16" class="footnote-back">↩</a></p></li>
+<code>Rmath</code> header of R’s C implementation of distributions.<a href="cha-writing-models.html#fnref15" class="footnote-back">↩︎</a></p></li>
+<li id="fn16"><p>NIMBLE uses the CDF and inverse CDF (quantile) functions of a distribution to do this; in some cases if one uses truncation to include only the extreme tail of a distribution, numerical difficulties can arise.<a href="cha-writing-models.html#fnref16" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
             </section>

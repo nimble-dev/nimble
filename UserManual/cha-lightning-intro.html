@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 2 Lightning introduction | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.26 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 2 Lightning introduction | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
-  
   <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
@@ -48,30 +47,33 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 <style type="text/css">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(title);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -80,9 +82,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -115,6 +117,28 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -131,17 +155,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.13.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
 <li class="divider"></li>
 <li class="part"><span><b>I Introduction</b></span></li>
-<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a><ul>
+<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a>
+<ul>
 <li class="chapter" data-level="1.1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#sec:what-is-nimble"><i class="fa fa-check"></i><b>1.1</b> What does NIMBLE do?</a></li>
 <li class="chapter" data-level="1.2" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#how-to-use-this-manual"><i class="fa fa-check"></i><b>1.2</b> How to use this manual</a></li>
 </ul></li>
-<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a><ul>
+<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a>
+<ul>
 <li class="chapter" data-level="2.1" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:brief-example"><i class="fa fa-check"></i><b>2.1</b> A brief example</a></li>
 <li class="chapter" data-level="2.2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-model"><i class="fa fa-check"></i><b>2.2</b> Creating a model</a></li>
 <li class="chapter" data-level="2.3" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:compiling-model"><i class="fa fa-check"></i><b>2.3</b> Compiling the model</a></li>
@@ -151,21 +177,25 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="2.7" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:running-mcem"><i class="fa fa-check"></i><b>2.7</b> Running MCEM</a></li>
 <li class="chapter" data-level="2.8" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-your-own"><i class="fa fa-check"></i><b>2.8</b> Creating your own functions</a></li>
 </ul></li>
-<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a><ul>
+<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a>
+<ul>
 <li class="chapter" data-level="3.1" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#nimble-adopts-and-extends-the-bugs-language-for-specifying-models"><i class="fa fa-check"></i><b>3.1</b> NIMBLE adopts and extends the BUGS language for specifying models</a></li>
 <li class="chapter" data-level="3.2" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-lang-writ"><i class="fa fa-check"></i><b>3.2</b> nimbleFunctions for writing algorithms</a></li>
 <li class="chapter" data-level="3.3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-algor-libr"><i class="fa fa-check"></i><b>3.3</b> The NIMBLE algorithm library</a></li>
 </ul></li>
-<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
+<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a>
+<ul>
 <li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
-<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
+<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a>
+<ul>
 <li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
 <li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
 <li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
 </ul></li>
 <li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
 <li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
-<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a>
+<ul>
 <li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
 <li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
 <li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
@@ -173,13 +203,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 </ul></li>
 <li class="part"><span><b>II Models in NIMBLE</b></span></li>
-<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a><ul>
-<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a><ul>
+<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a>
+<ul>
 <li class="chapter" data-level="5.1.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#supported-features-of-bugs-and-jags"><i class="fa fa-check"></i><b>5.1.1</b> Supported features of BUGS and JAGS</a></li>
 <li class="chapter" data-level="5.1.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:extensions-bugs"><i class="fa fa-check"></i><b>5.1.2</b> NIMBLE’s Extensions to BUGS and JAGS</a></li>
 <li class="chapter" data-level="5.1.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:not-yet-supported"><i class="fa fa-check"></i><b>5.1.3</b> Not-yet-supported features of BUGS and JAGS</a></li>
 </ul></li>
-<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a><ul>
+<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a>
+<ul>
 <li class="chapter" data-level="5.2.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#declaring-stochastic-and-deterministic-nodes"><i class="fa fa-check"></i><b>5.2.1</b> Declaring stochastic and deterministic nodes</a></li>
 <li class="chapter" data-level="5.2.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:more-kinds-bugs"><i class="fa fa-check"></i><b>5.2.2</b> More kinds of BUGS declarations</a></li>
 <li class="chapter" data-level="5.2.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:vectorized-versus-scalar-declarations"><i class="fa fa-check"></i><b>5.2.3</b> Vectorized versus scalar declarations</a></li>
@@ -189,13 +222,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a><ul>
-<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a><ul>
+<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a>
+<ul>
 <li class="chapter" data-level="6.1.1" data-path="cha-building-models.html"><a href="cha-building-models.html#using-nimblemodel-to-create-a-model"><i class="fa fa-check"></i><b>6.1.1</b> Using <em>nimbleModel</em> to create a model</a></li>
 <li class="chapter" data-level="6.1.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:readBUGSmodel"><i class="fa fa-check"></i><b>6.1.2</b> Creating a model from standard BUGS and JAGS input files</a></li>
 <li class="chapter" data-level="6.1.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sub:multiple-instances"><i class="fa fa-check"></i><b>6.1.3</b> Making multiple instances from the same model definition</a></li>
 </ul></li>
-<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a><ul>
+<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a>
+<ul>
 <li class="chapter" data-level="6.2.1" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:what-are-nodes-and-variables"><i class="fa fa-check"></i><b>6.2.1</b> What are variables and nodes?</a></li>
 <li class="chapter" data-level="6.2.2" data-path="cha-building-models.html"><a href="cha-building-models.html#determining-the-nodes-and-variables-in-a-model"><i class="fa fa-check"></i><b>6.2.2</b> Determining the nodes and variables in a model</a></li>
 <li class="chapter" data-level="6.2.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:accessing-nodes"><i class="fa fa-check"></i><b>6.2.3</b> Accessing nodes</a></li>
@@ -206,15 +242,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
 </ul></li>
 <li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
-<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
+<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a>
+<ul>
 <li class="chapter" data-level="7.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:nimbleMCMC"><i class="fa fa-check"></i><b>7.1</b> One-line invocation of MCMC: <em>nimbleMCMC</em></a></li>
-<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a><ul>
+<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a>
+<ul>
 <li class="chapter" data-level="7.2.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:default-mcmc-conf"><i class="fa fa-check"></i><b>7.2.1</b> Default MCMC configuration</a></li>
 <li class="chapter" data-level="7.2.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:customizing-mcmc-conf"><i class="fa fa-check"></i><b>7.2.2</b> Customizing the MCMC configuration</a></li>
 </ul></li>
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
-<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
+<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a>
+<ul>
 <li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
 <li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
 <li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
@@ -222,11 +261,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
 <li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
-<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a><ul>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a>
+<ul>
 <li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.9.1</b> Using indicator variables</a></li>
 <li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.9.2</b> Without indicator variables</a></li>
 </ul></li>
-<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.10</b> Samplers provided with NIMBLE</a><ul>
+<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.10</b> Samplers provided with NIMBLE</a>
+<ul>
 <li class="chapter" data-level="7.10.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.10.1</b> Conjugate (‘Gibbs’) samplers</a></li>
 <li class="chapter" data-level="7.10.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.10.2</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
 <li class="chapter" data-level="7.10.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.10.3</b> Particle MCMC sampler</a></li>
@@ -235,51 +276,64 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.12</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.13</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a><ul>
-<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a><ul>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
+<ul>
 <li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
 <li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
 </ul></li>
-<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a><ul>
+<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a>
+<ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a><ul>
-<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a><ul>
+<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a>
+<ul>
 <li class="chapter" data-level="9.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>9.1.1</b> Specification and density</a></li>
 <li class="chapter" data-level="9.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>9.1.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a><ul>
+<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a>
+<ul>
 <li class="chapter" data-level="9.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>9.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="9.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>9.2.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a><ul>
+<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a>
+<ul>
 <li class="chapter" data-level="9.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>9.3.1</b> Initial values</a></li>
 <li class="chapter" data-level="9.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>9.3.2</b> Zero-neighbor regions</a></li>
 <li class="chapter" data-level="9.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>9.3.3</b> Zero-mean constraint</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a><ul>
+<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a>
+<ul>
 <li class="chapter" data-level="10.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>10.1</b> Bayesian nonparametric mixture models</a></li>
-<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
+<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a>
+<ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
 <li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
-<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
+<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a>
+<ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
 <li class="chapter" data-level="10.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>10.3.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a><ul>
+<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a>
+<ul>
 <li class="chapter" data-level="10.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>10.4.1</b> Sampling CRP models</a></li>
 <li class="chapter" data-level="10.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>10.4.2</b> Sampling stick-breaking models</a></li>
 </ul></li>
 </ul></li>
 <li class="part"><span><b>IV Programming with NIMBLE</b></span></li>
 <li class="chapter" data-level="" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i>Overview</a></li>
-<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a><ul>
+<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a>
+<ul>
 <li class="chapter" data-level="11.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>11.1</b> Introduction to simple nimbleFunctions</a></li>
-<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a><ul>
+<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a>
+<ul>
 <li class="chapter" data-level="11.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>11.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
 <li class="chapter" data-level="11.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>11.2.2</b> Basic operations</a></li>
 <li class="chapter" data-level="11.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>11.2.3</b> Math and linear algebra</a></li>
@@ -290,7 +344,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
 <li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
 </ul></li>
-<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a><ul>
+<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
+<ul>
 <li class="chapter" data-level="11.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>11.3.1</b> nimbleList data structures</a></li>
 <li class="chapter" data-level="11.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>11.3.2</b> How numeric types work</a></li>
 </ul></li>
@@ -299,49 +354,61 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
 <li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a><ul>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a>
+<ul>
 <li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
-<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a><ul>
+<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
+<ul>
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a><ul>
-<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a><ul>
+<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a>
+<ul>
 <li class="chapter" data-level="13.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>13.1.1</b> Determining the nodes in a model</a></li>
 <li class="chapter" data-level="13.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>13.1.2</b> Understanding lifted nodes</a></li>
 <li class="chapter" data-level="13.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>13.1.3</b> Determining dependencies in a model</a></li>
 </ul></li>
-<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a><ul>
+<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a>
+<ul>
 <li class="chapter" data-level="13.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>13.2.1</b> Getting distributional information about a node</a></li>
 <li class="chapter" data-level="13.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>13.2.2</b> Getting information about a distribution</a></li>
 <li class="chapter" data-level="13.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>13.2.3</b> Getting distribution parameter values for a node</a></li>
 <li class="chapter" data-level="13.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>13.2.4</b> Getting distribution bounds for a node</a></li>
 </ul></li>
-<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a><ul>
+<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a>
+<ul>
 <li class="chapter" data-level="13.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>13.3.1</b> Core model operations: calculation and simulation</a></li>
 <li class="chapter" data-level="13.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>13.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
 <li class="chapter" data-level="13.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>13.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a><ul>
-<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a><ul>
+<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a>
+<ul>
 <li class="chapter" data-level="14.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>14.1.1</b> Creating modelValues objects</a></li>
 <li class="chapter" data-level="14.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>14.1.2</b> Accessing contents of modelValues</a></li>
 </ul></li>
-<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a><ul>
+<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a>
+<ul>
 <li class="chapter" data-level="14.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>14.2.1</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a><ul>
+<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a>
+<ul>
 <li class="chapter" data-level="15.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>15.1</b> Overview</a></li>
 <li class="chapter" data-level="15.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>15.2</b> Using and compiling nimbleFunctions</a></li>
-<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a><ul>
+<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a>
+<ul>
 <li class="chapter" data-level="15.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>15.3.1</b> Useful tools for setup functions</a></li>
 <li class="chapter" data-level="15.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>15.3.2</b> Accessing and modifying numeric values from setup</a></li>
 <li class="chapter" data-level="15.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>15.3.3</b> Determining numeric types in nimbleFunctions</a></li>
 <li class="chapter" data-level="15.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>15.3.4</b> Control of setup outputs</a></li>
 </ul></li>
-<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a><ul>
+<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a>
+<ul>
 <li class="chapter" data-level="15.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>15.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
 <li class="chapter" data-level="15.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>15.4.2</b> Getting and setting variable and node values</a></li>
 <li class="chapter" data-level="15.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>15.4.3</b> Getting parameter values and node bounds</a></li>
@@ -353,14 +420,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>15.4.9</b> Character objects</a></li>
 <li class="chapter" data-level="15.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>15.4.10</b> User-defined data structures</a></li>
 </ul></li>
-<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a></li>
+<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a>
+<ul>
+<li class="chapter" data-level="15.5.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#user-defined-samplers-and-posterior-predictive-nodes"><i class="fa fa-check"></i><b>15.5.1</b> User-defined samplers and posterior predictive nodes</a></li>
+</ul></li>
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
 <li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
 <li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
-<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
       </nav>
@@ -378,10 +447,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha-lightning-intro" class="section level1">
-<h1><span class="header-section-number">Chapter 2</span> Lightning introduction</h1>
-<div id="sec:brief-example" class="section level2">
-<h2><span class="header-section-number">2.1</span> A brief example</h2>
+<div id="cha-lightning-intro" class="section level1 hasAnchor" number="2">
+<h1><span class="header-section-number">Chapter 2</span> Lightning introduction<a href="cha-lightning-intro.html#cha-lightning-intro" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<div id="sec:brief-example" class="section level2 hasAnchor" number="2.1">
+<h2><span class="header-section-number">2.1</span> A brief example<a href="cha-lightning-intro.html#sec:brief-example" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Here we’ll give a simple example of building a model and running some algorithms on the model, as well as creating our own user-specified algorithm. The goal is to give you a sense for what one can do in the system. Later sections will provide more detail.</p>
 <p>We’ll use the <em>pump</em> model example from BUGS<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>. We could load the model
 from the standard BUGS example file formats (Section <a href="cha-building-models.html#sec:readBUGSmodel">6.1.2</a>), but instead we’ll show
@@ -400,36 +469,36 @@ provides to combine R and NIMBLE.</li>
 designated nodes of any model.</li>
 </ol>
 </div>
-<div id="sec:creating-model" class="section level2">
-<h2><span class="header-section-number">2.2</span> Creating a model</h2>
+<div id="sec:creating-model" class="section level2 hasAnchor" number="2.2">
+<h2><span class="header-section-number">2.2</span> Creating a model<a href="cha-lightning-intro.html#sec:creating-model" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>First we define the model code, its constants, data, and initial
 values for MCMC.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">pumpCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({ </a>
-<a class="sourceLine" id="cb1-2" title="2">  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N){</a>
-<a class="sourceLine" id="cb1-3" title="3">      theta[i] <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(alpha,beta)</a>
-<a class="sourceLine" id="cb1-4" title="4">      lambda[i] &lt;-<span class="st"> </span>theta[i]<span class="op">*</span>t[i]</a>
-<a class="sourceLine" id="cb1-5" title="5">      x[i] <span class="op">~</span><span class="st"> </span><span class="kw">dpois</span>(lambda[i])</a>
-<a class="sourceLine" id="cb1-6" title="6">  }</a>
-<a class="sourceLine" id="cb1-7" title="7">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dexp</span>(<span class="fl">1.0</span>)</a>
-<a class="sourceLine" id="cb1-8" title="8">  beta <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>)</a>
-<a class="sourceLine" id="cb1-9" title="9">})</a>
-<a class="sourceLine" id="cb1-10" title="10"></a>
-<a class="sourceLine" id="cb1-11" title="11">pumpConsts &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>,</a>
-<a class="sourceLine" id="cb1-12" title="12">                   <span class="dt">t =</span> <span class="kw">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,</a>
-<a class="sourceLine" id="cb1-13" title="13">                       <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))</a>
-<a class="sourceLine" id="cb1-14" title="14"></a>
-<a class="sourceLine" id="cb1-15" title="15">pumpData &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))</a>
-<a class="sourceLine" id="cb1-16" title="16"></a>
-<a class="sourceLine" id="cb1-17" title="17">pumpInits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">1</span>, <span class="dt">beta =</span> <span class="dv">1</span>,</a>
-<a class="sourceLine" id="cb1-18" title="18">                  <span class="dt">theta =</span> <span class="kw">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="op">$</span>N))</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="cha-lightning-intro.html#cb1-1" aria-hidden="true" tabindex="-1"></a>pumpCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({ </span>
+<span id="cb1-2"><a href="cha-lightning-intro.html#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb1-3"><a href="cha-lightning-intro.html#cb1-3" aria-hidden="true" tabindex="-1"></a>      theta[i] <span class="sc">~</span> <span class="fu">dgamma</span>(alpha,beta)</span>
+<span id="cb1-4"><a href="cha-lightning-intro.html#cb1-4" aria-hidden="true" tabindex="-1"></a>      lambda[i] <span class="ot">&lt;-</span> theta[i]<span class="sc">*</span>t[i]</span>
+<span id="cb1-5"><a href="cha-lightning-intro.html#cb1-5" aria-hidden="true" tabindex="-1"></a>      x[i] <span class="sc">~</span> <span class="fu">dpois</span>(lambda[i])</span>
+<span id="cb1-6"><a href="cha-lightning-intro.html#cb1-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-7"><a href="cha-lightning-intro.html#cb1-7" aria-hidden="true" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">1.0</span>)</span>
+<span id="cb1-8"><a href="cha-lightning-intro.html#cb1-8" aria-hidden="true" tabindex="-1"></a>  beta <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>)</span>
+<span id="cb1-9"><a href="cha-lightning-intro.html#cb1-9" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb1-10"><a href="cha-lightning-intro.html#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="cha-lightning-intro.html#cb1-11" aria-hidden="true" tabindex="-1"></a>pumpConsts <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>,</span>
+<span id="cb1-12"><a href="cha-lightning-intro.html#cb1-12" aria-hidden="true" tabindex="-1"></a>                   <span class="at">t =</span> <span class="fu">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,</span>
+<span id="cb1-13"><a href="cha-lightning-intro.html#cb1-13" aria-hidden="true" tabindex="-1"></a>                       <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))</span>
+<span id="cb1-14"><a href="cha-lightning-intro.html#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="cha-lightning-intro.html#cb1-15" aria-hidden="true" tabindex="-1"></a>pumpData <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))</span>
+<span id="cb1-16"><a href="cha-lightning-intro.html#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="cha-lightning-intro.html#cb1-17" aria-hidden="true" tabindex="-1"></a>pumpInits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">beta =</span> <span class="dv">1</span>,</span>
+<span id="cb1-18"><a href="cha-lightning-intro.html#cb1-18" aria-hidden="true" tabindex="-1"></a>                  <span class="at">theta =</span> <span class="fu">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="sc">$</span>N))</span></code></pre></div>
 <p>Here <code>x[i]</code> is the number of failures recorded during a time
 duration of length <code>t[i]</code> for the <code>i</code><span class="math inline">\(^{th}\)</span> pump.
 <code>theta[i]</code> is a failure rate, and the goal is estimate parameters
 <code>alpha</code> and <code>beta</code>. Now let’s create the model and look at some of its nodes.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,</a>
-<a class="sourceLine" id="cb2-2" title="2">                    <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits)</a>
-<a class="sourceLine" id="cb2-3" title="3"></a>
-<a class="sourceLine" id="cb2-4" title="4">pump<span class="op">$</span><span class="kw">getNodeNames</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="cha-lightning-intro.html#cb2-1" aria-hidden="true" tabindex="-1"></a>pump <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> pumpCode, <span class="at">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="at">constants =</span> pumpConsts,</span>
+<span id="cb2-2"><a href="cha-lightning-intro.html#cb2-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> pumpData, <span class="at">inits =</span> pumpInits)</span>
+<span id="cb2-3"><a href="cha-lightning-intro.html#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="cha-lightning-intro.html#cb2-4" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">getNodeNames</span>()</span></code></pre></div>
 <pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
 ##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
 ##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
@@ -441,16 +510,16 @@ duration of length <code>t[i]</code> for the <code>i</code><span class="math inl
 ## [25] &quot;x[2]&quot;                &quot;x[3]&quot;                &quot;x[4]&quot;               
 ## [28] &quot;x[5]&quot;                &quot;x[6]&quot;                &quot;x[7]&quot;               
 ## [31] &quot;x[8]&quot;                &quot;x[9]&quot;                &quot;x[10]&quot;</code></pre>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">pump<span class="op">$</span>x</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="cha-lightning-intro.html#cb4-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>x</span></code></pre></div>
 <pre><code>##  [1]  5  1  5 14  3 19  1  1  4 22</code></pre>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">pump<span class="op">$</span>logProb_x</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="cha-lightning-intro.html#cb6-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>logProb_x</span></code></pre></div>
 <pre><code>##  [1]  -2.998011  -1.118924  -1.882686  -2.319466  -4.254550 -20.739651
 ##  [7]  -2.358795  -2.358795  -9.630645 -48.447798</code></pre>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">pump<span class="op">$</span>alpha</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="cha-lightning-intro.html#cb8-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>alpha</span></code></pre></div>
 <pre><code>## [1] 1</code></pre>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1">pump<span class="op">$</span>theta</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="cha-lightning-intro.html#cb10-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>theta</span></code></pre></div>
 <pre><code>##  [1] 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1</code></pre>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">pump<span class="op">$</span>lambda</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="cha-lightning-intro.html#cb12-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>lambda</span></code></pre></div>
 <pre><code>##  [1]  9.430  1.570  6.290 12.600  0.524  3.140  0.105  0.105  0.210  1.050</code></pre>
 <p>Notice that in the list of nodes, NIMBLE has introduced a new node,
 <code>lifted_d1_over_beta</code>. We call this a ‘lifted’ node. Like R,
@@ -462,12 +531,10 @@ they exist, but you shouldn’t need to worry about them.</p>
 <p>Thanks to the plotting capabilities of the <code>igraph</code> package that
 NIMBLE uses to represent the directed acyclic graph, we can plot the
 model (Figure 2.1).</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">pump<span class="op">$</span><span class="kw">plotGraph</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="cha-lightning-intro.html#cb14-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">plotGraph</span>()</span></code></pre></div>
 <div class="figure"><span style="display:block;" id="fig:plotPump"></span>
-<img src="NimbleUserManual_files/figure-html/plotPump-1.png" alt="Directed Acyclic Graph plot of the pump model, thanks to the igraph package" width="720" />
-<p class="caption">
-Figure 2.1: Directed Acyclic Graph plot of the pump model, thanks to the igraph package
-</p>
+<embed src="NimbleUserManual_files/figure-latex/plotPump-1.pdf" />
+<p class="caption">Figure 2.1: Directed Acyclic Graph plot of the pump model, thanks to the igraph package</p>
 </div>
 <p>You are in control of the model. By default, <code>nimbleModel</code> does
 its best to initialize a model, but let’s say you want to
@@ -483,39 +550,39 @@ model are up to date. First we show how
 to use the model’s <code>getDependencies</code> method to query information
 about its graph.
 <!---  TODO: the logic here is a bit weird - we say we want to know all parents of theta are initialized by our code actually finds dependencies of alpha+beta not parents of theta --></p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1"><span class="co"># Show all dependencies of alpha and beta terminating in stochastic nodes</span></a>
-<a class="sourceLine" id="cb15-2" title="2">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="cha-lightning-intro.html#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Show all dependencies of alpha and beta terminating in stochastic nodes</span></span>
+<span id="cb15-2"><a href="cha-lightning-intro.html#cb15-2" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>))</span></code></pre></div>
 <pre><code>##  [1] &quot;alpha&quot;               &quot;beta&quot;                &quot;lifted_d1_over_beta&quot;
 ##  [4] &quot;theta[1]&quot;            &quot;theta[2]&quot;            &quot;theta[3]&quot;           
 ##  [7] &quot;theta[4]&quot;            &quot;theta[5]&quot;            &quot;theta[6]&quot;           
 ## [10] &quot;theta[7]&quot;            &quot;theta[8]&quot;            &quot;theta[9]&quot;           
 ## [13] &quot;theta[10]&quot;</code></pre>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1"><span class="co"># Now show only the deterministic dependencies</span></a>
-<a class="sourceLine" id="cb17-2" title="2">pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="cha-lightning-intro.html#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Now show only the deterministic dependencies</span></span>
+<span id="cb17-2"><a href="cha-lightning-intro.html#cb17-2" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="at">determOnly =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <pre><code>## [1] &quot;lifted_d1_over_beta&quot;</code></pre>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="co"># Check that the lifted node was initialized. </span></a>
-<a class="sourceLine" id="cb19-2" title="2">pump[[<span class="st">&quot;lifted_d1_over_beta&quot;</span>]] <span class="co"># It was.</span></a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="cha-lightning-intro.html#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check that the lifted node was initialized. </span></span>
+<span id="cb19-2"><a href="cha-lightning-intro.html#cb19-2" aria-hidden="true" tabindex="-1"></a>pump[[<span class="st">&quot;lifted_d1_over_beta&quot;</span>]] <span class="co"># It was.</span></span></code></pre></div>
 <pre><code>## [1] 1</code></pre>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="co"># Now let&#39;s simulate new theta values</span></a>
-<a class="sourceLine" id="cb21-2" title="2"><span class="kw">set.seed</span>(<span class="dv">1</span>) <span class="co"># This makes the simulations here reproducible</span></a>
-<a class="sourceLine" id="cb21-3" title="3">pump<span class="op">$</span><span class="kw">simulate</span>(<span class="st">&quot;theta&quot;</span>)</a>
-<a class="sourceLine" id="cb21-4" title="4">pump<span class="op">$</span>theta   <span class="co"># the new theta values</span></a></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="cha-lightning-intro.html#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Now let&#39;s simulate new theta values</span></span>
+<span id="cb21-2"><a href="cha-lightning-intro.html#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>) <span class="co"># This makes the simulations here reproducible</span></span>
+<span id="cb21-3"><a href="cha-lightning-intro.html#cb21-3" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">simulate</span>(<span class="st">&quot;theta&quot;</span>)</span>
+<span id="cb21-4"><a href="cha-lightning-intro.html#cb21-4" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>theta   <span class="co"># the new theta values</span></span></code></pre></div>
 <pre><code>##  [1] 0.15514136 1.88240160 1.80451250 0.83617765 1.22254365 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="co"># lambda and logProb_x haven&#39;t been re-calculated yet</span></a>
-<a class="sourceLine" id="cb23-2" title="2">pump<span class="op">$</span>lambda <span class="co"># these are the same values as above</span></a></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="cha-lightning-intro.html#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># lambda and logProb_x haven&#39;t been re-calculated yet</span></span>
+<span id="cb23-2"><a href="cha-lightning-intro.html#cb23-2" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>lambda <span class="co"># these are the same values as above</span></span></code></pre></div>
 <pre><code>##  [1]  9.430  1.570  6.290 12.600  0.524  3.140  0.105  0.105  0.210  1.050</code></pre>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1">pump<span class="op">$</span>logProb_x</a></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="cha-lightning-intro.html#cb25-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>logProb_x</span></code></pre></div>
 <pre><code>##  [1]  -2.998011  -1.118924  -1.882686  -2.319466  -4.254550 -20.739651
 ##  [7]  -2.358795  -2.358795  -9.630645 -48.447798</code></pre>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1">pump<span class="op">$</span><span class="kw">getLogProb</span>(<span class="st">&quot;x&quot;</span>) <span class="co"># The sum of logProb_x</span></a></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="cha-lightning-intro.html#cb27-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">getLogProb</span>(<span class="st">&quot;x&quot;</span>) <span class="co"># The sum of logProb_x</span></span></code></pre></div>
 <pre><code>## [1] -96.10932</code></pre>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" title="1">pump<span class="op">$</span><span class="kw">calculate</span>(pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;theta&quot;</span>)))</a></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="cha-lightning-intro.html#cb29-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">calculate</span>(pump<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="fu">c</span>(<span class="st">&quot;theta&quot;</span>)))</span></code></pre></div>
 <pre><code>## [1] -262.204</code></pre>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" title="1">pump<span class="op">$</span>lambda  <span class="co"># Now they have.</span></a></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="cha-lightning-intro.html#cb31-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>lambda  <span class="co"># Now they have.</span></span></code></pre></div>
 <pre><code>##  [1]  14.6298299  29.5537051 113.5038360 105.3583839   6.4061287  36.3723548
 ##  [7]   1.0395209   0.3227420   0.1987001   1.6506161</code></pre>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" title="1">pump<span class="op">$</span>logProb_x</a></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="cha-lightning-intro.html#cb33-1" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>logProb_x</span></code></pre></div>
 <pre><code>##  [1]  -6.002009 -26.167496 -94.632145 -65.346457  -2.626123  -7.429868
 ##  [7]  -1.000761  -1.453644  -9.840589 -39.096527</code></pre>
 <p>Notice that the first <code>getDependencies</code> call returned dependencies
@@ -527,22 +594,22 @@ simulating into <code>theta</code>, we can see that <code>lambda</code> and the 
 probabilities of <code>x</code> still reflect the old values of <code>theta</code>, so
 we <code>calculate</code> them and then see that they have been updated.</p>
 </div>
-<div id="sec:compiling-model" class="section level2">
-<h2><span class="header-section-number">2.3</span> Compiling the model</h2>
+<div id="sec:compiling-model" class="section level2 hasAnchor" number="2.3">
+<h2><span class="header-section-number">2.3</span> Compiling the model<a href="cha-lightning-intro.html#sec:compiling-model" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Next we compile the model, which means generating C++ code, compiling
 that code, and loading it back into R with an object that can be used just
 like the uncompiled model. The values in the compiled model will be
 initialized from those of the original model in R, but
 the original and compiled models are distinct objects so any
 subsequent changes in one will not be reflected in the other.</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb35-1" title="1">Cpump &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pump)</a>
-<a class="sourceLine" id="cb35-2" title="2">Cpump<span class="op">$</span>theta</a></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="cha-lightning-intro.html#cb35-1" aria-hidden="true" tabindex="-1"></a>Cpump <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(pump)</span>
+<span id="cb35-2"><a href="cha-lightning-intro.html#cb35-2" aria-hidden="true" tabindex="-1"></a>Cpump<span class="sc">$</span>theta</span></code></pre></div>
 <pre><code>##  [1] 0.15514136 1.88240160 1.80451250 0.83617765 1.22254365 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
 <p>Note that the compiled model is used when running any NIMBLE algorithms via C++, so the model needs to be compiled before (or at the same time as) any compilation of algorithms, such as the compilation of the MCMC done in the next section.</p>
 </div>
-<div id="sec:intro-runMCMC" class="section level2">
-<h2><span class="header-section-number">2.4</span> One-line invocation of MCMC</h2>
+<div id="sec:intro-runMCMC" class="section level2 hasAnchor" number="2.4">
+<h2><span class="header-section-number">2.4</span> One-line invocation of MCMC<a href="cha-lightning-intro.html#sec:intro-runMCMC" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The most direct approach to invoking NIMBLE’s MCMC engine is using the
 <code>nimbleMCMC</code> function. This function would generally take the code,
 data, constants, and initial values as input, but it can also accept the (compiled or uncompiled)
@@ -552,15 +619,15 @@ returning posterior samples, posterior summary statistics,
 and/or WAIC values.</p>
 <p>For example, to execute two MCMC chains of 10,000 samples each, and
 return samples, summary statistics, and WAIC values:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" title="1">mcmc.out &lt;-<span class="st"> </span><span class="kw">nimbleMCMC</span>(<span class="dt">code =</span> pumpCode, <span class="dt">constants =</span> pumpConsts,</a>
-<a class="sourceLine" id="cb37-2" title="2">                       <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits,</a>
-<a class="sourceLine" id="cb37-3" title="3">                       <span class="dt">nchains =</span> <span class="dv">2</span>, <span class="dt">niter =</span> <span class="dv">10000</span>,</a>
-<a class="sourceLine" id="cb37-4" title="4">                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>,</a>
-<a class="sourceLine" id="cb37-5" title="5">                       <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="cha-lightning-intro.html#cb37-1" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(<span class="at">code =</span> pumpCode, <span class="at">constants =</span> pumpConsts,</span>
+<span id="cb37-2"><a href="cha-lightning-intro.html#cb37-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">data =</span> pumpData, <span class="at">inits =</span> pumpInits,</span>
+<span id="cb37-3"><a href="cha-lightning-intro.html#cb37-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">niter =</span> <span class="dv">10000</span>,</span>
+<span id="cb37-4"><a href="cha-lightning-intro.html#cb37-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">summary =</span> <span class="cn">TRUE</span>, <span class="at">WAIC =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb37-5"><a href="cha-lightning-intro.html#cb37-5" aria-hidden="true" tabindex="-1"></a>                       <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))</span></code></pre></div>
 <pre><code>##   [Warning] There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.</code></pre>
-<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb39-1" title="1"><span class="kw">names</span>(mcmc.out)</a></code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="cha-lightning-intro.html#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(mcmc.out)</span></code></pre></div>
 <pre><code>## [1] &quot;samples&quot; &quot;summary&quot; &quot;WAIC&quot;</code></pre>
-<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" title="1">mcmc.out<span class="op">$</span>summary</a></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="cha-lightning-intro.html#cb41-1" aria-hidden="true" tabindex="-1"></a>mcmc.out<span class="sc">$</span>summary</span></code></pre></div>
 <pre><code>## $chain1
 ##                 Mean     Median    St.Dev.   95%CI_low 95%CI_upp
 ## alpha     0.69804352 0.65835063 0.27037676 0.287898244 1.3140461
@@ -605,7 +672,7 @@ return samples, summary statistics, and WAIC values:</p>
 ## theta[8]  0.89487822 0.70761105 0.73007484 0.07211191 2.8067373
 ## theta[9]  1.57604083 1.44719278 0.76035931 0.46374515 3.3866706
 ## theta[10] 1.98932800 1.96195345 0.42352979 1.24334249 2.9068229</code></pre>
-<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb43-1" title="1">mcmc.out<span class="op">$</span>WAIC  </a></code></pre></div>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="cha-lightning-intro.html#cb43-1" aria-hidden="true" tabindex="-1"></a>mcmc.out<span class="sc">$</span>WAIC  </span></code></pre></div>
 <pre><code>## nimbleList object of type waicList
 ## Field &quot;WAIC&quot;:
 ## [1] 48.69896
@@ -618,8 +685,8 @@ details about using <code>nimbleMCMC</code>.</p>
 <p>Note that the WAIC value varies depending on what quantities are treated
 as parameters. See Section <a href="cha-mcmc.html#sec:WAIC">7.7</a> or <code>help(waic)</code> for more details.</p>
 </div>
-<div id="sec:creating-mcmc" class="section level2">
-<h2><span class="header-section-number">2.5</span> Creating, compiling and running a basic MCMC configuration</h2>
+<div id="sec:creating-mcmc" class="section level2 hasAnchor" number="2.5">
+<h2><span class="header-section-number">2.5</span> Creating, compiling and running a basic MCMC configuration<a href="cha-lightning-intro.html#sec:creating-mcmc" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>At this point we have initial values for all of the nodes in the model,
 and we have both the original and compiled versions of the model. As a first algorithm
 to try on our model, let’s use NIMBLE’s default MCMC. Note that conjugate relationships are detected for all nodes except for
@@ -627,7 +694,7 @@ to try on our model, let’s use NIMBLE’s default MCMC. Note that conjugate re
 <!--- ^[We haven't set up conjugate relationships for an 
 %  exponential yet.] -->
 <!---  footnote is true but not relevant as there is not a conj relationship for alpha in a gamma-distributed dependency --></p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb45-1" title="1">pumpConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pump, <span class="dt">print =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="cha-lightning-intro.html#cb45-1" aria-hidden="true" tabindex="-1"></a>pumpConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(pump, <span class="at">print =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <pre><code>## ===== Monitors =====
 ## thin = 1: alpha, beta
 ## ===== Samplers =====
@@ -636,64 +703,64 @@ to try on our model, let’s use NIMBLE’s default MCMC. Note that conjugate re
 ## conjugate sampler (11)
 ##   - beta
 ##   - theta[]  (10 elements)</code></pre>
-<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb47-1" title="1">pumpConf<span class="op">$</span><span class="kw">addMonitors</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>, <span class="st">&quot;theta&quot;</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="cha-lightning-intro.html#cb47-1" aria-hidden="true" tabindex="-1"></a>pumpConf<span class="sc">$</span><span class="fu">addMonitors</span>(<span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>, <span class="st">&quot;theta&quot;</span>))</span></code></pre></div>
 <pre><code>## thin = 1: alpha, beta, theta</code></pre>
-<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb49-1" title="1">pumpMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpConf)</a>
-<a class="sourceLine" id="cb49-2" title="2">CpumpMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMCMC, <span class="dt">project =</span> pump)</a>
-<a class="sourceLine" id="cb49-3" title="3"></a>
-<a class="sourceLine" id="cb49-4" title="4">niter &lt;-<span class="st"> </span><span class="dv">1000</span></a>
-<a class="sourceLine" id="cb49-5" title="5"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb49-6" title="6">samples &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(CpumpMCMC, <span class="dt">niter =</span> niter)</a>
-<a class="sourceLine" id="cb49-7" title="7"></a>
-<a class="sourceLine" id="cb49-8" title="8"><span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="dt">mai =</span> <span class="kw">c</span>(.<span class="dv">6</span>, <span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>))</a>
-<a class="sourceLine" id="cb49-9" title="9"><span class="kw">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
-<a class="sourceLine" id="cb49-10" title="10">     <span class="dt">ylab =</span> <span class="kw">expression</span>(alpha))</a>
-<a class="sourceLine" id="cb49-11" title="11"><span class="kw">plot</span>(samples[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
-<a class="sourceLine" id="cb49-12" title="12">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
-<a class="sourceLine" id="cb49-13" title="13"><span class="kw">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], samples[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">xlab =</span> <span class="kw">expression</span>(alpha),</a>
-<a class="sourceLine" id="cb49-14" title="14">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
-<a class="sourceLine" id="cb49-15" title="15"><span class="kw">plot</span>(samples[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
-<a class="sourceLine" id="cb49-16" title="16">     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-1.png" width="672" /></p>
-<div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb50-1" title="1"><span class="kw">acf</span>(samples[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></a>
-<a class="sourceLine" id="cb50-2" title="2"><span class="kw">acf</span>(samples[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-2.png" width="672" /></p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="cha-lightning-intro.html#cb49-1" aria-hidden="true" tabindex="-1"></a>pumpMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(pumpConf)</span>
+<span id="cb49-2"><a href="cha-lightning-intro.html#cb49-2" aria-hidden="true" tabindex="-1"></a>CpumpMCMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(pumpMCMC, <span class="at">project =</span> pump)</span>
+<span id="cb49-3"><a href="cha-lightning-intro.html#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="cha-lightning-intro.html#cb49-4" aria-hidden="true" tabindex="-1"></a>niter <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb49-5"><a href="cha-lightning-intro.html#cb49-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb49-6"><a href="cha-lightning-intro.html#cb49-6" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(CpumpMCMC, <span class="at">niter =</span> niter)</span>
+<span id="cb49-7"><a href="cha-lightning-intro.html#cb49-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-8"><a href="cha-lightning-intro.html#cb49-8" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="at">mai =</span> <span class="fu">c</span>(.<span class="dv">6</span>, .<span class="dv">4</span>, .<span class="dv">1</span>, .<span class="dv">2</span>))</span>
+<span id="cb49-9"><a href="cha-lightning-intro.html#cb49-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
+<span id="cb49-10"><a href="cha-lightning-intro.html#cb49-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(alpha))</span>
+<span id="cb49-11"><a href="cha-lightning-intro.html#cb49-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samples[ , <span class="st">&quot;beta&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
+<span id="cb49-12"><a href="cha-lightning-intro.html#cb49-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(beta))</span>
+<span id="cb49-13"><a href="cha-lightning-intro.html#cb49-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samples[ , <span class="st">&quot;alpha&quot;</span>], samples[ , <span class="st">&quot;beta&quot;</span>], <span class="at">xlab =</span> <span class="fu">expression</span>(alpha),</span>
+<span id="cb49-14"><a href="cha-lightning-intro.html#cb49-14" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(beta))</span>
+<span id="cb49-15"><a href="cha-lightning-intro.html#cb49-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samples[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
+<span id="cb49-16"><a href="cha-lightning-intro.html#cb49-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(theta[<span class="dv">1</span>]))</span></code></pre></div>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump-1.pdf" /><!-- --></p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="cha-lightning-intro.html#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(samples[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></span>
+<span id="cb50-2"><a href="cha-lightning-intro.html#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(samples[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></span></code></pre></div>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump-2.pdf" /><!-- --></p>
 <p>Notice the posterior correlation between <code>alpha</code> and <code>beta</code>.
 A measure of the mixing for each is the
 autocorrelation for each parameter, shown by the <code>acf</code> plots.</p>
 </div>
-<div id="sec:customizing-mcmc" class="section level2">
-<h2><span class="header-section-number">2.6</span> Customizing the MCMC</h2>
+<div id="sec:customizing-mcmc" class="section level2 hasAnchor" number="2.6">
+<h2><span class="header-section-number">2.6</span> Customizing the MCMC<a href="cha-lightning-intro.html#sec:customizing-mcmc" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Let’s add an adaptive
 block sampler on <code>alpha</code> and <code>beta</code> jointly and see if that
 improves the mixing.</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb51-1" title="1">pumpConf<span class="op">$</span><span class="kw">addSampler</span>(<span class="dt">target =</span> <span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="dt">type =</span> <span class="st">&quot;RW_block&quot;</span>,</a>
-<a class="sourceLine" id="cb51-2" title="2">                    <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">adaptInterval =</span> <span class="dv">100</span>))</a>
-<a class="sourceLine" id="cb51-3" title="3">                                     </a>
-<a class="sourceLine" id="cb51-4" title="4">pumpMCMC2 &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpConf)</a>
-<a class="sourceLine" id="cb51-5" title="5"></a>
-<a class="sourceLine" id="cb51-6" title="6"><span class="co"># need to reset the nimbleFunctions in order to add the new MCMC</span></a>
-<a class="sourceLine" id="cb51-7" title="7">CpumpNewMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMCMC2, <span class="dt">project  =</span> pump,</a>
-<a class="sourceLine" id="cb51-8" title="8">                              <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb51-9" title="9"></a>
-<a class="sourceLine" id="cb51-10" title="10"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb51-11" title="11">CpumpNewMCMC<span class="op">$</span><span class="kw">run</span>(niter)</a></code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb51-1"><a href="cha-lightning-intro.html#cb51-1" aria-hidden="true" tabindex="-1"></a>pumpConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>, <span class="st">&quot;beta&quot;</span>), <span class="at">type =</span> <span class="st">&quot;RW_block&quot;</span>,</span>
+<span id="cb51-2"><a href="cha-lightning-intro.html#cb51-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">control =</span> <span class="fu">list</span>(<span class="at">adaptInterval =</span> <span class="dv">100</span>))</span>
+<span id="cb51-3"><a href="cha-lightning-intro.html#cb51-3" aria-hidden="true" tabindex="-1"></a>                                     </span>
+<span id="cb51-4"><a href="cha-lightning-intro.html#cb51-4" aria-hidden="true" tabindex="-1"></a>pumpMCMC2 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(pumpConf)</span>
+<span id="cb51-5"><a href="cha-lightning-intro.html#cb51-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-6"><a href="cha-lightning-intro.html#cb51-6" aria-hidden="true" tabindex="-1"></a><span class="co"># need to reset the nimbleFunctions in order to add the new MCMC</span></span>
+<span id="cb51-7"><a href="cha-lightning-intro.html#cb51-7" aria-hidden="true" tabindex="-1"></a>CpumpNewMCMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(pumpMCMC2, <span class="at">project  =</span> pump,</span>
+<span id="cb51-8"><a href="cha-lightning-intro.html#cb51-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">resetFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb51-9"><a href="cha-lightning-intro.html#cb51-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-10"><a href="cha-lightning-intro.html#cb51-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb51-11"><a href="cha-lightning-intro.html#cb51-11" aria-hidden="true" tabindex="-1"></a>CpumpNewMCMC<span class="sc">$</span><span class="fu">run</span>(niter)</span></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb53-1" title="1">samplesNew &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(CpumpNewMCMC<span class="op">$</span>mvSamples)</a>
-<a class="sourceLine" id="cb53-2" title="2"></a>
-<a class="sourceLine" id="cb53-3" title="3"><span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="dt">mai =</span> <span class="kw">c</span>(.<span class="dv">6</span>, <span class="fl">.4</span>, <span class="fl">.1</span>, <span class="fl">.2</span>))</a>
-<a class="sourceLine" id="cb53-4" title="4"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
-<a class="sourceLine" id="cb53-5" title="5">     <span class="dt">ylab =</span> <span class="kw">expression</span>(alpha))</a>
-<a class="sourceLine" id="cb53-6" title="6"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
-<a class="sourceLine" id="cb53-7" title="7">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
-<a class="sourceLine" id="cb53-8" title="8"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="dt">xlab =</span> <span class="kw">expression</span>(alpha),</a>
-<a class="sourceLine" id="cb53-9" title="9">     <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))</a>
-<a class="sourceLine" id="cb53-10" title="10"><span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</a>
-<a class="sourceLine" id="cb53-11" title="11">     <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-1.png" width="672" /></p>
-<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb54-1" title="1"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></a>
-<a class="sourceLine" id="cb54-2" title="2"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></a></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-2.png" width="672" /></p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb53-1"><a href="cha-lightning-intro.html#cb53-1" aria-hidden="true" tabindex="-1"></a>samplesNew <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(CpumpNewMCMC<span class="sc">$</span>mvSamples)</span>
+<span id="cb53-2"><a href="cha-lightning-intro.html#cb53-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-3"><a href="cha-lightning-intro.html#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="at">mai =</span> <span class="fu">c</span>(.<span class="dv">6</span>, .<span class="dv">4</span>, .<span class="dv">1</span>, .<span class="dv">2</span>))</span>
+<span id="cb53-4"><a href="cha-lightning-intro.html#cb53-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
+<span id="cb53-5"><a href="cha-lightning-intro.html#cb53-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(alpha))</span>
+<span id="cb53-6"><a href="cha-lightning-intro.html#cb53-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
+<span id="cb53-7"><a href="cha-lightning-intro.html#cb53-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(beta))</span>
+<span id="cb53-8"><a href="cha-lightning-intro.html#cb53-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samplesNew[ , <span class="st">&quot;alpha&quot;</span>], samplesNew[ , <span class="st">&quot;beta&quot;</span>], <span class="at">xlab =</span> <span class="fu">expression</span>(alpha),</span>
+<span id="cb53-9"><a href="cha-lightning-intro.html#cb53-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(beta))</span>
+<span id="cb53-10"><a href="cha-lightning-intro.html#cb53-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(samplesNew[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
+<span id="cb53-11"><a href="cha-lightning-intro.html#cb53-11" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(theta[<span class="dv">1</span>]))</span></code></pre></div>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump2-1.pdf" /><!-- --></p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="cha-lightning-intro.html#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(samplesNew[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></span>
+<span id="cb54-2"><a href="cha-lightning-intro.html#cb54-2" aria-hidden="true" tabindex="-1"></a><span class="fu">acf</span>(samplesNew[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></span></code></pre></div>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump2-2.pdf" /><!-- --></p>
 <p>We can see that the block sampler has decreased the
 autocorrelation for both <code>alpha</code> and <code>beta</code>. Of course these
 are just short runs, and what we are really interested in is the
@@ -702,16 +769,16 @@ the point of this example.</p>
 <p>Once you learn the MCMC system, you can write your own samplers and
 include them. The entire system is written in nimbleFunctions.</p>
 </div>
-<div id="sec:running-mcem" class="section level2">
-<h2><span class="header-section-number">2.7</span> Running MCEM</h2>
+<div id="sec:running-mcem" class="section level2 hasAnchor" number="2.7">
+<h2><span class="header-section-number">2.7</span> Running MCEM<a href="cha-lightning-intro.html#sec:running-mcem" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>NIMBLE is a system for working with algorithms, not just an MCMC engine. So let’s try maximizing the marginal likelihood for <code>alpha</code> and <code>beta</code> using Monte Carlo Expectation Maximization<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>.</p>
-<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb55-1" title="1">pump2 &lt;-<span class="st"> </span>pump<span class="op">$</span><span class="kw">newModel</span>()</a>
-<a class="sourceLine" id="cb55-2" title="2"></a>
-<a class="sourceLine" id="cb55-3" title="3">box =<span class="st"> </span><span class="kw">list</span>( <span class="kw">list</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="kw">c</span>(<span class="dv">0</span>, <span class="ot">Inf</span>)))</a>
-<a class="sourceLine" id="cb55-4" title="4"></a>
-<a class="sourceLine" id="cb55-5" title="5">pumpMCEM &lt;-<span class="st"> </span><span class="kw">buildMCEM</span>(<span class="dt">model =</span> pump2, <span class="dt">latentNodes =</span> <span class="st">&quot;theta[1:10]&quot;</span>,</a>
-<a class="sourceLine" id="cb55-6" title="6">                      <span class="dt">boxConstraints =</span> box)</a>
-<a class="sourceLine" id="cb55-7" title="7">pumpMLE &lt;-<span class="st"> </span>pumpMCEM<span class="op">$</span><span class="kw">run</span>()</a></code></pre></div>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="cha-lightning-intro.html#cb55-1" aria-hidden="true" tabindex="-1"></a>pump2 <span class="ot">&lt;-</span> pump<span class="sc">$</span><span class="fu">newModel</span>()</span>
+<span id="cb55-2"><a href="cha-lightning-intro.html#cb55-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-3"><a href="cha-lightning-intro.html#cb55-3" aria-hidden="true" tabindex="-1"></a>box <span class="ot">=</span> <span class="fu">list</span>( <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="fu">c</span>(<span class="dv">0</span>, <span class="cn">Inf</span>)))</span>
+<span id="cb55-4"><a href="cha-lightning-intro.html#cb55-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-5"><a href="cha-lightning-intro.html#cb55-5" aria-hidden="true" tabindex="-1"></a>pumpMCEM <span class="ot">&lt;-</span> <span class="fu">buildMCEM</span>(<span class="at">model =</span> pump2, <span class="at">latentNodes =</span> <span class="st">&quot;theta[1:10]&quot;</span>,</span>
+<span id="cb55-6"><a href="cha-lightning-intro.html#cb55-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">boxConstraints =</span> box)</span>
+<span id="cb55-7"><a href="cha-lightning-intro.html#cb55-7" aria-hidden="true" tabindex="-1"></a>pumpMLE <span class="ot">&lt;-</span> pumpMCEM<span class="sc">$</span><span class="fu">run</span>()</span></code></pre></div>
 <pre><code>## Iteration Number: 1.
 ## Current number of MCMC iterations: 1000.
 ## Parameter Estimates: 
@@ -735,12 +802,12 @@ include them. The entire system is written in nimbleFunctions.</p>
 ## Parameter Estimates: 
 ##     alpha      beta 
 ## 0.8226618 1.2602452 
-## Convergence Criterion: 0.0004201048.</code></pre>
-<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb57-1" title="1">pumpMLE</a></code></pre></div>
+## Convergence Criterion: 0.0004201045.</code></pre>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="cha-lightning-intro.html#cb57-1" aria-hidden="true" tabindex="-1"></a>pumpMLE</span></code></pre></div>
 <pre><code>##     alpha      beta 
 ## 0.8226618 1.2602452</code></pre>
 <p>Both estimates are within 0.01 of the values reported by
-<span class="citation">George, Makov, and Smith (<a href="references.html#ref-George_Makov_Smith_1993">1993</a>)</span><a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.
+<span class="citation">George, Makov, and Smith (<a href="cha-progr-with-models.html#ref-George_Makov_Smith_1993" role="doc-biblioref">1993</a>)</span><a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.
 <!---
 [George, E.I., Makov, U.E. \& Smith,
 A.F.M. 1993. Conjugate likelihood
@@ -749,31 +816,31 @@ A.F.M. 1993. Conjugate likelihood
 <!---  Their numbers were accidentally swapped in Table 2.}.   -->
 Some discrepancy is to be expected since it is a Monte Carlo algorithm.</p>
 </div>
-<div id="sec:creating-your-own" class="section level2">
-<h2><span class="header-section-number">2.8</span> Creating your own functions</h2>
+<div id="sec:creating-your-own" class="section level2 hasAnchor" number="2.8">
+<h2><span class="header-section-number">2.8</span> Creating your own functions<a href="cha-lightning-intro.html#sec:creating-your-own" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Now let’s see an example of writing our own algorithm and using it on
 the model. We’ll do something simple: simulating multiple values for a
 designated set of nodes and calculating every part of the model that
 depends on them. More details on programming in NIMBLE are in Part IV.</p>
 <p>Here is our <em>nimbleFunction</em>:</p>
-<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb59-1" title="1">simNodesMany &lt;-<span class="st"> </span><span class="kw">nimbleFunction</span>(</a>
-<a class="sourceLine" id="cb59-2" title="2">    <span class="dt">setup =</span> <span class="cf">function</span>(model, nodes) {</a>
-<a class="sourceLine" id="cb59-3" title="3">        mv &lt;-<span class="st"> </span><span class="kw">modelValues</span>(model)</a>
-<a class="sourceLine" id="cb59-4" title="4">        deps &lt;-<span class="st"> </span>model<span class="op">$</span><span class="kw">getDependencies</span>(nodes)</a>
-<a class="sourceLine" id="cb59-5" title="5">        allNodes &lt;-<span class="st"> </span>model<span class="op">$</span><span class="kw">getNodeNames</span>()</a>
-<a class="sourceLine" id="cb59-6" title="6">    },</a>
-<a class="sourceLine" id="cb59-7" title="7">    <span class="dt">run =</span> <span class="cf">function</span>(<span class="dt">n =</span> <span class="kw">integer</span>()) {</a>
-<a class="sourceLine" id="cb59-8" title="8">        <span class="kw">resize</span>(mv, n)</a>
-<a class="sourceLine" id="cb59-9" title="9">        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>n) {</a>
-<a class="sourceLine" id="cb59-10" title="10">            model<span class="op">$</span><span class="kw">simulate</span>(nodes)</a>
-<a class="sourceLine" id="cb59-11" title="11">            model<span class="op">$</span><span class="kw">calculate</span>(deps)</a>
-<a class="sourceLine" id="cb59-12" title="12">            <span class="kw">copy</span>(<span class="dt">from =</span> model, <span class="dt">nodes =</span> allNodes,</a>
-<a class="sourceLine" id="cb59-13" title="13">                 <span class="dt">to =</span> mv, <span class="dt">rowTo =</span> i, <span class="dt">logProb =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb59-14" title="14">        }</a>
-<a class="sourceLine" id="cb59-15" title="15">    })</a>
-<a class="sourceLine" id="cb59-16" title="16"></a>
-<a class="sourceLine" id="cb59-17" title="17">simNodesTheta1to5 &lt;-<span class="st"> </span><span class="kw">simNodesMany</span>(pump, <span class="st">&quot;theta[1:5]&quot;</span>)</a>
-<a class="sourceLine" id="cb59-18" title="18">simNodesTheta6to10 &lt;-<span class="st"> </span><span class="kw">simNodesMany</span>(pump, <span class="st">&quot;theta[6:10]&quot;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="cha-lightning-intro.html#cb59-1" aria-hidden="true" tabindex="-1"></a>simNodesMany <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb59-2"><a href="cha-lightning-intro.html#cb59-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model, nodes) {</span>
+<span id="cb59-3"><a href="cha-lightning-intro.html#cb59-3" aria-hidden="true" tabindex="-1"></a>        mv <span class="ot">&lt;-</span> <span class="fu">modelValues</span>(model)</span>
+<span id="cb59-4"><a href="cha-lightning-intro.html#cb59-4" aria-hidden="true" tabindex="-1"></a>        deps <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(nodes)</span>
+<span id="cb59-5"><a href="cha-lightning-intro.html#cb59-5" aria-hidden="true" tabindex="-1"></a>        allNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getNodeNames</span>()</span>
+<span id="cb59-6"><a href="cha-lightning-intro.html#cb59-6" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb59-7"><a href="cha-lightning-intro.html#cb59-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">n =</span> <span class="fu">integer</span>()) {</span>
+<span id="cb59-8"><a href="cha-lightning-intro.html#cb59-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">resize</span>(mv, n)</span>
+<span id="cb59-9"><a href="cha-lightning-intro.html#cb59-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb59-10"><a href="cha-lightning-intro.html#cb59-10" aria-hidden="true" tabindex="-1"></a>            model<span class="sc">$</span><span class="fu">simulate</span>(nodes)</span>
+<span id="cb59-11"><a href="cha-lightning-intro.html#cb59-11" aria-hidden="true" tabindex="-1"></a>            model<span class="sc">$</span><span class="fu">calculate</span>(deps)</span>
+<span id="cb59-12"><a href="cha-lightning-intro.html#cb59-12" aria-hidden="true" tabindex="-1"></a>            <span class="fu">copy</span>(<span class="at">from =</span> model, <span class="at">nodes =</span> allNodes,</span>
+<span id="cb59-13"><a href="cha-lightning-intro.html#cb59-13" aria-hidden="true" tabindex="-1"></a>                 <span class="at">to =</span> mv, <span class="at">rowTo =</span> i, <span class="at">logProb =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb59-14"><a href="cha-lightning-intro.html#cb59-14" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb59-15"><a href="cha-lightning-intro.html#cb59-15" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb59-16"><a href="cha-lightning-intro.html#cb59-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-17"><a href="cha-lightning-intro.html#cb59-17" aria-hidden="true" tabindex="-1"></a>simNodesTheta1to5 <span class="ot">&lt;-</span> <span class="fu">simNodesMany</span>(pump, <span class="st">&quot;theta[1:5]&quot;</span>)</span>
+<span id="cb59-18"><a href="cha-lightning-intro.html#cb59-18" aria-hidden="true" tabindex="-1"></a>simNodesTheta6to10 <span class="ot">&lt;-</span> <span class="fu">simNodesMany</span>(pump, <span class="st">&quot;theta[6:10]&quot;</span>)</span></code></pre></div>
 <p>Here are a few things to notice about the nimbleFunction.</p>
 <ol style="list-style-type: decimal">
 <li>The <code>setup</code> function is written in R. It creates relevant
@@ -810,23 +877,23 @@ generated R reference class with fields (member data) for the results of the
 <p>By the way, <code>simNodesMany</code> is very similar to a standard
 <code>nimbleFunction</code> provided with NIMBLE, <code>simNodesMV</code>.</p>
 <p>Now let’s execute this nimbleFunction in R, before compiling it.</p>
-<div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb60-1" title="1"><span class="kw">set.seed</span>(<span class="dv">1</span>)  <span class="co"># make the calculation repeatable</span></a>
-<a class="sourceLine" id="cb60-2" title="2">pump<span class="op">$</span>alpha &lt;-<span class="st"> </span>pumpMLE[<span class="dv">1</span>]</a>
-<a class="sourceLine" id="cb60-3" title="3">pump<span class="op">$</span>beta &lt;-<span class="st"> </span>pumpMLE[<span class="dv">2</span>]</a>
-<a class="sourceLine" id="cb60-4" title="4"><span class="co"># make sure to update deterministic dependencies of the altered nodes</span></a>
-<a class="sourceLine" id="cb60-5" title="5">pump<span class="op">$</span><span class="kw">calculate</span>(pump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb60-1"><a href="cha-lightning-intro.html#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)  <span class="co"># make the calculation repeatable</span></span>
+<span id="cb60-2"><a href="cha-lightning-intro.html#cb60-2" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>alpha <span class="ot">&lt;-</span> pumpMLE[<span class="dv">1</span>]</span>
+<span id="cb60-3"><a href="cha-lightning-intro.html#cb60-3" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span>beta <span class="ot">&lt;-</span> pumpMLE[<span class="dv">2</span>]</span>
+<span id="cb60-4"><a href="cha-lightning-intro.html#cb60-4" aria-hidden="true" tabindex="-1"></a><span class="co"># make sure to update deterministic dependencies of the altered nodes</span></span>
+<span id="cb60-5"><a href="cha-lightning-intro.html#cb60-5" aria-hidden="true" tabindex="-1"></a>pump<span class="sc">$</span><span class="fu">calculate</span>(pump<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="at">determOnly =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
 <pre><code>## [1] 0</code></pre>
-<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb62-1" title="1">saveTheta &lt;-<span class="st"> </span>pump<span class="op">$</span>theta</a>
-<a class="sourceLine" id="cb62-2" title="2">simNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span class="dv">10</span>)</a>
-<a class="sourceLine" id="cb62-3" title="3">simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb62-1"><a href="cha-lightning-intro.html#cb62-1" aria-hidden="true" tabindex="-1"></a>saveTheta <span class="ot">&lt;-</span> pump<span class="sc">$</span>theta</span>
+<span id="cb62-2"><a href="cha-lightning-intro.html#cb62-2" aria-hidden="true" tabindex="-1"></a>simNodesTheta1to5<span class="sc">$</span><span class="fu">run</span>(<span class="dv">10</span>)</span>
+<span id="cb62-3"><a href="cha-lightning-intro.html#cb62-3" aria-hidden="true" tabindex="-1"></a>simNodesTheta1to5<span class="sc">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span></code></pre></div>
 <pre><code>## [[1]]
-##  [1] 0.21829875 1.93210969 0.62296551 0.34197266 3.45729601 1.15835525
+##  [1] 0.21829875 1.93210970 0.62296551 0.34197267 3.45729603 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154
 ## 
 ## [[2]]
-##  [1] 0.82759981 0.08784057 0.34414959 0.29521943 0.14183505 1.15835525
+##  [1] 0.82759982 0.08784057 0.34414959 0.29521943 0.14183505 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
-<div class="sourceCode" id="cb64"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb64-1" title="1">simNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb64"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb64-1"><a href="cha-lightning-intro.html#cb64-1" aria-hidden="true" tabindex="-1"></a>simNodesTheta1to5<span class="sc">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span></code></pre></div>
 <pre><code>## [[1]]
 ##  [1] -10.250111 -26.921849 -25.630612 -15.594173 -11.217566  -7.429868
 ##  [7]  -1.000761  -1.453644  -9.840589 -39.096527
@@ -842,26 +909,26 @@ for <code>theta</code> and the log probabilities of <code>x</code>. Notice that
 <code>theta[6:10]</code> and the corresponding log probabilities for <code>x[6:10]</code> are unchanged because the nodes being simulated are only
 <code>theta[1:5]</code>. In R, this function runs slowly.</p>
 <p>Finally, let’s compile the function and run that version.</p>
-<div class="sourceCode" id="cb66"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb66-1" title="1">CsimNodesTheta1to5 &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(simNodesTheta1to5,</a>
-<a class="sourceLine" id="cb66-2" title="2">                                    <span class="dt">project  =</span> pump, <span class="dt">resetFunctions =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb66-3" title="3">Cpump<span class="op">$</span>alpha &lt;-<span class="st"> </span>pumpMLE[<span class="dv">1</span>]</a>
-<a class="sourceLine" id="cb66-4" title="4">Cpump<span class="op">$</span>beta &lt;-<span class="st"> </span>pumpMLE[<span class="dv">2</span>]</a>
-<a class="sourceLine" id="cb66-5" title="5">Cpump<span class="op">$</span><span class="kw">calculate</span>(Cpump<span class="op">$</span><span class="kw">getDependencies</span>(<span class="kw">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="dt">determOnly =</span> <span class="ot">TRUE</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb66"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb66-1"><a href="cha-lightning-intro.html#cb66-1" aria-hidden="true" tabindex="-1"></a>CsimNodesTheta1to5 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(simNodesTheta1to5,</span>
+<span id="cb66-2"><a href="cha-lightning-intro.html#cb66-2" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">project  =</span> pump, <span class="at">resetFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb66-3"><a href="cha-lightning-intro.html#cb66-3" aria-hidden="true" tabindex="-1"></a>Cpump<span class="sc">$</span>alpha <span class="ot">&lt;-</span> pumpMLE[<span class="dv">1</span>]</span>
+<span id="cb66-4"><a href="cha-lightning-intro.html#cb66-4" aria-hidden="true" tabindex="-1"></a>Cpump<span class="sc">$</span>beta <span class="ot">&lt;-</span> pumpMLE[<span class="dv">2</span>]</span>
+<span id="cb66-5"><a href="cha-lightning-intro.html#cb66-5" aria-hidden="true" tabindex="-1"></a>Cpump<span class="sc">$</span><span class="fu">calculate</span>(Cpump<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="fu">c</span>(<span class="st">&quot;alpha&quot;</span>,<span class="st">&quot;beta&quot;</span>), <span class="at">determOnly =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
 <pre><code>## [1] 0</code></pre>
-<div class="sourceCode" id="cb68"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb68-1" title="1">Cpump<span class="op">$</span>theta &lt;-<span class="st"> </span>saveTheta</a>
-<a class="sourceLine" id="cb68-2" title="2"></a>
-<a class="sourceLine" id="cb68-3" title="3"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb68-4" title="4">CsimNodesTheta1to5<span class="op">$</span><span class="kw">run</span>(<span class="dv">10</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb68"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb68-1"><a href="cha-lightning-intro.html#cb68-1" aria-hidden="true" tabindex="-1"></a>Cpump<span class="sc">$</span>theta <span class="ot">&lt;-</span> saveTheta</span>
+<span id="cb68-2"><a href="cha-lightning-intro.html#cb68-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb68-3"><a href="cha-lightning-intro.html#cb68-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb68-4"><a href="cha-lightning-intro.html#cb68-4" aria-hidden="true" tabindex="-1"></a>CsimNodesTheta1to5<span class="sc">$</span><span class="fu">run</span>(<span class="dv">10</span>)</span></code></pre></div>
 <pre><code>## NULL</code></pre>
-<div class="sourceCode" id="cb70"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb70-1" title="1">CsimNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb70"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb70-1"><a href="cha-lightning-intro.html#cb70-1" aria-hidden="true" tabindex="-1"></a>CsimNodesTheta1to5<span class="sc">$</span>mv[[<span class="st">&quot;theta&quot;</span>]][<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span></code></pre></div>
 <pre><code>## [[1]]
-##  [1] 0.21829875 1.93210969 0.62296551 0.34197266 3.45729601 1.15835525
+##  [1] 0.21829875 1.93210970 0.62296551 0.34197267 3.45729603 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154
 ## 
 ## [[2]]
-##  [1] 0.82759981 0.08784057 0.34414959 0.29521943 0.14183505 1.15835525
+##  [1] 0.82759982 0.08784057 0.34414959 0.29521943 0.14183505 1.15835525
 ##  [7] 0.99001994 0.30737332 0.09461909 0.15720154</code></pre>
-<div class="sourceCode" id="cb72"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb72-1" title="1">CsimNodesTheta1to5<span class="op">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a></code></pre></div>
+<div class="sourceCode" id="cb72"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb72-1"><a href="cha-lightning-intro.html#cb72-1" aria-hidden="true" tabindex="-1"></a>CsimNodesTheta1to5<span class="sc">$</span>mv[[<span class="st">&quot;logProb_x&quot;</span>]][<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span></code></pre></div>
 <pre><code>## [[1]]
 ##  [1] -10.250111 -26.921849 -25.630612 -15.594173 -11.217566  -2.782156
 ##  [7]  -1.042151  -1.004362  -1.894675  -3.081102
@@ -879,9 +946,9 @@ seed, we got identical results for <code>theta[1:5]</code> and their dependencie
 <hr />
 <ol start="3">
 <li id="fn3"><p>The data set
-describes failure rates of some pumps.<a href="cha-lightning-intro.html#fnref3" class="footnote-back">↩</a></p></li>
-<li id="fn4"><p>Note that for this model, one could analytically integrate over <code>theta</code> and then numerically maximize the resulting marginal likelihood.<a href="cha-lightning-intro.html#fnref4" class="footnote-back">↩</a></p></li>
-<li id="fn5"><p>Table 2 of the paper accidentally swapped the two estimates.<a href="cha-lightning-intro.html#fnref5" class="footnote-back">↩</a></p></li>
+describes failure rates of some pumps.<a href="cha-lightning-intro.html#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>Note that for this model, one could analytically integrate over <code>theta</code> and then numerically maximize the resulting marginal likelihood.<a href="cha-lightning-intro.html#fnref4" class="footnote-back">↩︎</a></p></li>
+<li id="fn5"><p>Table 2 of the paper accidentally swapped the two estimates.<a href="cha-lightning-intro.html#fnref5" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
             </section>

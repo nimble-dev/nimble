@@ -190,7 +190,7 @@ Here we illustrate how to use NIMBLE for the example described in section \@ref(
 
 $$ y_i \mid \boldsymbol{\theta}^{\star}, {\boldsymbol{\sigma}^{\star}}^2, z_i \overset{ind}{\sim} N({{\theta}^{\star}}_{z_i}, {{\sigma}^2}^{\star}_{z_i}),\hspace{0.5cm}  i = 1, \ldots, N, $$
 $$ z_i \sim \mbox{Categorical}(\boldsymbol{w}),\hspace{0.5cm}  i = 1, \ldots, N, $$
-$$ \boldsymbol{z} \sim \mbox{Discrete}(\boldsymbol{w}), \hspace{0.5cm} v_l\overset{iid}{\sim} \mbox{Beta}(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, $$
+$$v_l\overset{iid}{\sim} \mbox{Beta}(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, $$
 $$ \alpha \sim \mbox{Gamma}(1, 1),$$
 $${\theta}^{\star}_l \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}{{\sigma}^2}^{\star}_l  \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} l=1, \ldots, L.$$
 
