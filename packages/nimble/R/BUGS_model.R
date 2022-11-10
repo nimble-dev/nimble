@@ -961,7 +961,7 @@ includeData: Logical argument specifying whether to include \'data\' nodes (set 
 
 dataOnly: Logical argument specifying whether to return only \'data\' nodes.  Default is FALSE.
 
-includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default value is controled by the nimble system option \'getDependenciesIncludesPredictiveNodes\', which itself has a default value of TRUE.
+includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data). Used primarily to exclude predictive node calculations when setting up MCMC samplers on model parameters. Default value is controlled by the NIMBLE system option `getDependenciesIncludesPredictiveNodes`, which itself has a default value of `TRUE`.
 
 predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
 
