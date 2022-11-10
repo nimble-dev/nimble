@@ -15,6 +15,10 @@ directions <- 'Directions:
 4. Review changes this script has made to the predefinedNimbleLists.* files.
 5. Revert the temporary change to GENERATE_STATIC_CODE from step 2,
    and reinstall nimble.
+6. If desired (default = yes), manually update
+   inst/include/nimble/dynamicRegistrations.h to have entries for the three
+   new SEXP-returning functions for each predefined nimbleList.
+   See examples in that file.
 '
 
 how_to_add_a_new_predefined_nimbleList <- 'How to:
