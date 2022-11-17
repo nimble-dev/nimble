@@ -1316,7 +1316,7 @@ If you define it in a function (which would generally be the case if you are usi
 <ul>
 <li>If you want to have MCMC samplers condition on posterior predictive nodes, do <code>nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)</code>.</li>
 <li>If you want to get identical MCMC samplers, including their ordering, as in versions prior to 0.13.0, do <code>nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)</code> and <code>nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)</code>.</li>
-<li>If you want to experiment with the behavior of <code>getDependencies</code> when ignoring posterior predictive nodes, do nimbleOptions(getDependenciesIncludesPredictiveNodes = FALSE).</li>
+<li>If you want to experiment with the behavior of <code>getDependencies</code> when ignoring posterior predictive nodes, do <code>nimbleOptions(getDependenciesIncludesPredictiveNodes = FALSE)</code>.</li>
 </ul>
 </div>
 </div>
