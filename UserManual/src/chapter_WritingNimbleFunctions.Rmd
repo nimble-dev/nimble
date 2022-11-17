@@ -637,7 +637,7 @@ Here are some examples of how to use these options:
 
  - If you want to have MCMC samplers condition on posterior predictive nodes, do `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)`.
  - If you want to get identical MCMC samplers, including their ordering, as in versions prior to 0.13.0, do `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` and `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
- - If you want to experiment with the behavior of `getDependencies` when ignoring posterior predictive nodes, do nimbleOptions(getDependenciesIncludesPredictiveNodes = FALSE).
+ - If you want to experiment with the behavior of `getDependencies` when ignoring posterior predictive nodes, do `nimbleOptions(getDependenciesIncludesPredictiveNodes = FALSE)`.
         
 ## Copying nimbleFunctions (and NIMBLE models)
 
