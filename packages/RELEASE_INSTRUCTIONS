@@ -116,6 +116,8 @@ copy to /web/R-nimble/wordpress/html_manual
 on nature.b.e:
 tar -xvzf tmp.tgz; rm -rf tmp.tgz
 
+post examples as run on new version to /web/R-nimble/wordpress/nimbleExamples
+
 go to website: R-nimble.org/login and login 
 
 note that to make a new blog post or modify pages, need to 
@@ -142,8 +144,6 @@ send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (
 *****************
 reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed Plugins 
 *****************
-
-post examples as run on new version
 
 make sure to merge devel into master branch
 
