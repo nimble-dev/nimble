@@ -2648,10 +2648,17 @@ test_that('cannot assign sampler jointly to PP and non-PP nodes', {
     inits <- list(a = 0, b = 1, c = 1)
     Rmodel <- nimbleModel(code, constants, data, inits)
     ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
     conf <- configureMCMC(Rmodel, nodes = NULL)
-    expect_error(conf$addSampler(c('a', 'b'), type = 'RW_block'))
-    expect_error(conf$addSampler(c('a'), type = 'RW_block'), NA)
-    expect_error(conf$addSampler(c('b', 'c'), type = 'RW_block'), NA)
+    conf$addSampler(c('a', 'b'), type = 'RW_block')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler(c('a', 'b'), type = 'RW_block')
+    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })
 
 
