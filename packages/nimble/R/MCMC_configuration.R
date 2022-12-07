@@ -679,12 +679,6 @@ Invisibly returns a list of the current sampler configurations, which are sample
             '
 For internal use only
 '
-            ## if option MCMCusePredictiveDependenciesInCalculations = FALSE, disallowed assignment of joint samplers to *both* PP and non-PP nodes:
-            targetOneExpanded <- model$expandNodeNames(targetOne)
-            targetOneComponentIsPP <- model$modelDef$nodeName2GraphIDs(targetOneExpanded) %in% model$getPredictiveNodeIDs()
-            if(any(targetOneComponentIsPP) && !all(targetOneComponentIsPP) && !getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
-                stop('Cannot assign a joint sampler to simultaneously update both posterior predictive and non-posterior predictive nodes, when nimble option MCMCusePredictiveDependenciesInCalculations = FALSE')
-            ## add new sampler to list of samplerConfs:
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
