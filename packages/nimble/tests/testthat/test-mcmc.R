@@ -2636,6 +2636,25 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     expect_identical(conf$getUnsampledNodes(), paste0('x[', c(2,4,5), ']'))
 })
 
+test_that('cannot assign sampler jointly to PP and non-PP nodes', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        y ~ dexp(a^2+1)
+        b ~ dnorm(a, 1)
+        c ~ dnorm(b, 1)
+    })
+    constants <- list()
+    data <- list(y = 3)
+    inits <- list(a = 0, b = 1, c = 1)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    expect_error(conf$addSampler(c('a', 'b'), type = 'RW_block'))
+    expect_error(conf$addSampler(c('a'), type = 'RW_block'), NA)
+    expect_error(conf$addSampler(c('b', 'c'), type = 'RW_block'), NA)
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
