@@ -153,8 +153,8 @@ print: A logical argument specifying whether to print the montiors and samplers.
             monitors2 <<- character()
             addMonitors( monitors,  print = FALSE)
             addMonitors2(monitors2, print = FALSE)
-            thin  <<- thin
-            thin2 <<- thin2
+            setThin( thin,  print = FALSE)
+            setThin2(thin2, print = FALSE)
             enableWAIC <<- enableWAIC
             controlWAIC <<- controlWAIC
             samplerConfs <<- list()
@@ -1128,7 +1128,7 @@ Details: See the initialize() function
             return(monitors2)
         },
 
-        setThin  = function(thin, print = TRUE) {
+        setThin  = function(thin, print = TRUE, ind = 1) {
             '
 Sets the value of thin.
 
@@ -1140,7 +1140,10 @@ print: A logical argument specifying whether to print all current monitors (defa
 
 Details: See the initialize() function
             '
-            thin <<- thin
+            if(thin < 1)              stop('cannot use thin < 1', call. = FALSE)
+            if(thin != floor(thin))   stop('cannot use non-integer thin', call. = FALSE)
+            if(ind == 1)   thin  <<- thin
+            if(ind == 2)   thin2 <<- thin
             if(print && nimbleOptions('verbose')) printMonitors()
             return(invisible(NULL))
         },
@@ -1156,9 +1159,7 @@ print: A logical argument specifying whether to print all current monitors (defa
 
 Details: See the initialize() function
             '
-            thin2 <<- thin2
-            if(print && nimbleOptions('verbose')) printMonitors()
-            return(invisible(NULL))
+            setThin(thin = thin2, print = print, ind = 2)
         },
 
         getMvSamplesConf  = function(ind = 1){
