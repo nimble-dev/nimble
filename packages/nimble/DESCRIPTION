@@ -15,7 +15,7 @@ Description: A system for writing hierarchical statistical models largely
     arbitrary other kinds of model-generic algorithms as well. A full User Manual is
     available at <https://r-nimble.org>.
 Version: 0.13.1
-Date: 2022-11-16
+Date: 2022-12-13
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
     person("Perry", "de Valpine", role = "aut"),
