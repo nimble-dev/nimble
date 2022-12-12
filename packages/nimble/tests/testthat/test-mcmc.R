@@ -2676,7 +2676,7 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
         u ~ dnorm(wdet, 1)
     })
 
-    n <- 3
+    n <- 4
     m <- nimbleModel(code, data = list(y = rnorm(n)), constants = list(n = n))
 
     conf <- configureMCMC(m)
@@ -2733,7 +2733,7 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
         us ~ dnorm(wdet[1], 1)    
     })
 
-    n <- 3
+    n <- 4
     m <- nimbleModel(code, data = list(y = matrix(rnorm(n*2), n, 2)), constants = list(n = n))
 
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
@@ -2745,7 +2745,7 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
 
     expect_identical(mcmc$samplerFunctions[[which(targets == 'tau')]]$calcNodesNoSelf,
                      c("pr[1:2, 1:2]","lifted_chol_oPpr_oB1to2_comma_1to2_cB_cP[1:2, 1:2]",
-                       "y[1, 1:2]", "y[2, 1:2]" , "y[3, 1:2]"))
+                       paste0("y[", 1:n, ", 1:2]")))
     expect_identical(mcmc$samplerFunctions[[which(targets == 'mu[3, 1:2]')]]$calcNodesDepStage,
                      c("y[3, 1:2]"))
     expect_identical(mcmc$samplerFunctions[[which(targets == 'w[1, 1:2]')]]$simNodes,
