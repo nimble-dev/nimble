@@ -109,30 +109,38 @@ buildMCMC <- nimbleFunction(
         }
         
         ## build sampler functions.
-        ## save current values of 'getDependenciesIncludesPredictiveNodes' system option, then temporarily
-        ## change its value to that of 'MCMCusePredictiveDependenciesInCalculations'
-        getDependenciesIncludesPredictiveNodes_save <- getNimbleOption('getDependenciesIncludesPredictiveNodes')
-        nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        e <- try({
-            for(i in seq_along(conf$samplerConfs)) {
-                ## if option MCMCusePredictiveDependenciesInCalculations = FALSE, disallowed assignment of joint samplers to *both* PP and non-PP nodes:
-                targetScalarComponentsIsPP <- conf$model$modelDef$nodeName2GraphIDs(conf$samplerConfs[[i]]$targetAsScalar) %in% conf$model$getPredictiveNodeIDs()
-                samplingPredictiveNode <- isTRUE(any(targetScalarComponentsIsPP))
-                if(samplingPredictiveNode && !all(targetScalarComponentsIsPP) && !getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
-                    stop('Cannot assign a joint sampler to simultaneously update both posterior predictive and non-posterior predictive nodes, when nimble option MCMCusePredictiveDependenciesInCalculations = FALSE')
-                ## caveat: if this sampler is sampling a predictive node, then revert the 'getDependenciesIncludesPredictiveNodes'
-                ## setting back to its original value, for creation of this sampler.
-                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = TRUE)
+
+        predictiveNodeIDs <- conf$model$getPredictiveNodeIDs()
+        if(length(predictiveNodeIDs)) {
+            ## save current values of 'getDependenciesIncludesPredictiveNodes' system option, then temporarily
+            ## change its value to that of 'MCMCusePredictiveDependenciesInCalculations'
+            getDependenciesIncludesPredictiveNodes_save <- getNimbleOption('getDependenciesIncludesPredictiveNodes')
+            nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+
+            e <- try({
+                for(i in seq_along(conf$samplerConfs)) {
+                    ## if option MCMCusePredictiveDependenciesInCalculations = FALSE, disallowed assignment of joint samplers to *both* PP and non-PP nodes:
+                    targetScalarComponentsIsPP <- conf$model$modelDef$nodeName2GraphIDs(conf$samplerConfs[[i]]$targetAsScalar) %in% predictiveNodeIDs
+                    samplingPredictiveNode <- isTRUE(any(targetScalarComponentsIsPP))
+                    if(samplingPredictiveNode && !all(targetScalarComponentsIsPP) && !getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+                        stop('Cannot assign a joint sampler to simultaneously update both posterior predictive and non-posterior predictive nodes, when nimble option MCMCusePredictiveDependenciesInCalculations = FALSE')
+                    ## caveat: if this sampler is sampling a predictive node, then revert the 'getDependenciesIncludesPredictiveNodes'
+                    ## setting back to its original value, for creation of this sampler.
+                    if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = TRUE)
+                    samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+                    if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
+                }},
+                silent = TRUE
+                )
+            ## regardless whether an error occurred during sampler building, restore the original system option value:
+            nimbleOptions(getDependenciesIncludesPredictiveNodes = getDependenciesIncludesPredictiveNodes_save)
+            ## if an error occurred during sampler building, then quit here:
+            if(inherits(e, 'try-error'))   { errorMessage <- sub('^Error.+?: ', '', e[1]); stop(errorMessage) }
+        } else {
+            for(i in seq_along(conf$samplerConfs))
                 samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
-                if(samplingPredictiveNode)   nimbleOptions(getDependenciesIncludesPredictiveNodes = getNimbleOption('MCMCusePredictiveDependenciesInCalculations'))
-            }},
-            silent = TRUE
-        )
-        ## regardless whether an error occurred during sampler building, restore the original system option value:
-        nimbleOptions(getDependenciesIncludesPredictiveNodes = getDependenciesIncludesPredictiveNodes_save)
-        ## if an error occurred during sampler building, then quit here:
-        if(inherits(e, 'try-error'))   { errorMessage <- sub('^Error.+?: ', '', e[1]); stop(errorMessage) }
+        }
         
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
