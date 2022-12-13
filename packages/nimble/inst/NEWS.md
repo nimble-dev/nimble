@@ -1,5 +1,11 @@
-#                            CHANGES IN VERSION 0.13.0 (November 2022)
+#                            CHANGES IN VERSION 0.13.1 (December 2022) 
 
+## BUG FIXES
+
+- Fix bug in MCMC sampler inclusion/exclusion of predictive nodes from
+  target node dependencies (PR #1248).
+
+#                            CHANGES IN VERSION 0.13.0 (November 2022)
 
 ## USER LEVEL CHANGES
 

@@ -2636,6 +2636,154 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     expect_identical(conf$getUnsampledNodes(), paste0('x[', c(2,4,5), ']'))
 })
 
+test_that('cannot assign sampler jointly to PP and non-PP nodes', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        y ~ dexp(a^2+1)
+        b ~ dnorm(a, 1)
+        c ~ dnorm(b, 1)
+    })
+    Rmodel <- nimbleModel(code, data = list(y = 3))
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler(c('a', 'b'), type = 'RW_block')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    Rmodel$resetData()
+    Rmodel$setData(list(y = 3, c = 3))
+    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+    Rmodel$resetData()
+    Rmodel$setData(list(y = 3))
+    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    ##
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
+})
+
+test_that('Check MCMC sampler dependencies with and without predictive nodes included', {
+    ## scalar case
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i] ~ dnorm(mu[i], sd = sigma)
+            mu[i] ~ dnorm(0, 1)
+            z[i] ~ dnorm(y[i], 1)
+            w[i] ~ dnorm(mu[i], sd = sigma)
+        }
+        sigma ~ dunif(0, 10)
+        wdet <- w[1] + 2
+        u ~ dnorm(wdet, 1)
+    })
+
+    n <- 4
+    m <- nimbleModel(code, data = list(y = rnorm(n)), constants = list(n = n))
+
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    targets <- sapply(conf$getSamplers(), function(x) x$target)
+
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'mu[1]')]]$calcNodes,
+                     c('mu[1]','y[1]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'mu[3]')]]$calcNodes,
+                     c('mu[3]','y[3]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'sigma')]]$calcNodesNoSelf, paste0('y[', 1:n, ']'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'w[1]')]]$simNodes,
+                     c('w[1]', 'wdet', 'u'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'w[3]')]]$simNodes,
+                     c('w[3]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'z[3]')]]$simNodes,
+                     c('z[3]'))
+
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    targets <- sapply(conf$getSamplers(), function(x) x$target)
+
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'mu[1]')]]$calcNodes,
+                     c('mu[1]','y[1]','w[1]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'mu[3]')]]$calcNodes,
+                     c('mu[3]','y[3]','w[3]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'sigma')]]$calcNodesNoSelf,
+                     c(paste0('y[', 1:n, ']'), paste0('w[', 1:n, ']')))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'w[1]')]]$simNodes,
+                     c('w[1]', 'wdet', 'u'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'w[3]')]]$simNodes,
+                     c('w[3]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'z[3]')]]$simNodes,
+                     c('z[3]'))
+    
+    ## mixed case
+
+    code <- nimbleCode({
+        pr[1:2,1:2] <- tau*pr0[1:2,1:2]
+        for(i in 1:n) {
+            y[i,1:2] ~ dmnorm(mu[i,1:2], pr[1:2,1:2])
+            mu[i,1:2] ~ dmnorm(zeros[1:2], pr0[1:2,1:2])
+            z[i,1:2] ~ dmnorm(y[i,1:2], pr0[1:2,1:2])
+            zs[i] ~ dnorm(y[i,1], 1)
+            w[i,1:2] ~ dmnorm(mu[i,1:2], pr[1:2,1:2])
+            ws[i] ~ dnorm(mu[i,1], 1)
+        }
+        tau ~ dunif(0, 10)
+        wdet[1:2] <- w[1,1:2] + 2
+        u[1:2] ~ dmnorm(wdet[1:2], pr[1:2,1:2])
+        us ~ dnorm(wdet[1], 1)    
+    })
+
+    n <- 4
+    m <- nimbleModel(code, data = list(y = matrix(rnorm(n*2), n, 2)), constants = list(n = n))
+
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    targets <- sapply(conf$getSamplers(), function(x) x$target)
+
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'tau')]]$calcNodesNoSelf,
+                     c("pr[1:2, 1:2]","lifted_chol_oPpr_oB1to2_comma_1to2_cB_cP[1:2, 1:2]",
+                       paste0("y[", 1:n, ", 1:2]")))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'mu[3, 1:2]')]]$calcNodesDepStage,
+                     c("y[3, 1:2]"))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'w[1, 1:2]')]]$simNodes,
+                     c('w[1, 1:2]','wdet[1:2]','us','u[1:2]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'ws[1]')]]$simNodes,
+                     c('ws[1]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'z[3, 1:2]')]]$simNodes,
+                     c('z[3, 1:2]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'zs[3]')]]$simNodes,
+                     c('zs[3]'))
+
+
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+
+    targets <- sapply(conf$getSamplers(), function(x) x$target)
+
+    expect_identical(sort(mcmc$samplerFunctions[[which(targets == 'tau')]]$calcNodesNoSelf),
+                     c("lifted_chol_oPpr_oB1to2_comma_1to2_cB_cP[1:2, 1:2]","pr[1:2, 1:2]", "u[1:2]",
+                       paste0("w[", 1:n, ", 1:2]"), paste0("y[", 1:n, ", 1:2]")))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'mu[3, 1:2]')]]$calcNodesDepStage,
+                     c("ws[3]", "y[3, 1:2]", "w[3, 1:2]"))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'w[1, 1:2]')]]$simNodes,
+                     c('w[1, 1:2]','wdet[1:2]','us','u[1:2]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'ws[1]')]]$simNodes,
+                     c('ws[1]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'z[3, 1:2]')]]$simNodes,
+                     c('z[3, 1:2]'))
+    expect_identical(mcmc$samplerFunctions[[which(targets == 'zs[3]')]]$simNodes,
+                     c('zs[3]'))
+
+    nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
