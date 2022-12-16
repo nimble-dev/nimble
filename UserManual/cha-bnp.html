@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 10 Bayesian nonparametric models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.26 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 10 Bayesian nonparametric models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
-  
   <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
@@ -48,30 +47,33 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 <style type="text/css">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(title);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -80,9 +82,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -115,6 +117,28 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
 
 <link rel="stylesheet" href="style.css" type="text/css" />
 </head>
@@ -131,17 +155,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.12.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.13.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
 <li class="divider"></li>
 <li class="part"><span><b>I Introduction</b></span></li>
-<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a><ul>
+<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a>
+<ul>
 <li class="chapter" data-level="1.1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#sec:what-is-nimble"><i class="fa fa-check"></i><b>1.1</b> What does NIMBLE do?</a></li>
 <li class="chapter" data-level="1.2" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#how-to-use-this-manual"><i class="fa fa-check"></i><b>1.2</b> How to use this manual</a></li>
 </ul></li>
-<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a><ul>
+<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a>
+<ul>
 <li class="chapter" data-level="2.1" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:brief-example"><i class="fa fa-check"></i><b>2.1</b> A brief example</a></li>
 <li class="chapter" data-level="2.2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-model"><i class="fa fa-check"></i><b>2.2</b> Creating a model</a></li>
 <li class="chapter" data-level="2.3" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:compiling-model"><i class="fa fa-check"></i><b>2.3</b> Compiling the model</a></li>
@@ -151,21 +177,25 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="2.7" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:running-mcem"><i class="fa fa-check"></i><b>2.7</b> Running MCEM</a></li>
 <li class="chapter" data-level="2.8" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-your-own"><i class="fa fa-check"></i><b>2.8</b> Creating your own functions</a></li>
 </ul></li>
-<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a><ul>
+<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a>
+<ul>
 <li class="chapter" data-level="3.1" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#nimble-adopts-and-extends-the-bugs-language-for-specifying-models"><i class="fa fa-check"></i><b>3.1</b> NIMBLE adopts and extends the BUGS language for specifying models</a></li>
 <li class="chapter" data-level="3.2" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-lang-writ"><i class="fa fa-check"></i><b>3.2</b> nimbleFunctions for writing algorithms</a></li>
 <li class="chapter" data-level="3.3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-algor-libr"><i class="fa fa-check"></i><b>3.3</b> The NIMBLE algorithm library</a></li>
 </ul></li>
-<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
+<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a>
+<ul>
 <li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
-<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
+<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a>
+<ul>
 <li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
 <li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
 <li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
 </ul></li>
 <li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
 <li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
-<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a>
+<ul>
 <li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
 <li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
 <li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
@@ -173,13 +203,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </ul></li>
 </ul></li>
 <li class="part"><span><b>II Models in NIMBLE</b></span></li>
-<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a><ul>
-<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a><ul>
+<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a>
+<ul>
 <li class="chapter" data-level="5.1.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#supported-features-of-bugs-and-jags"><i class="fa fa-check"></i><b>5.1.1</b> Supported features of BUGS and JAGS</a></li>
 <li class="chapter" data-level="5.1.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:extensions-bugs"><i class="fa fa-check"></i><b>5.1.2</b> NIMBLE’s Extensions to BUGS and JAGS</a></li>
 <li class="chapter" data-level="5.1.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:not-yet-supported"><i class="fa fa-check"></i><b>5.1.3</b> Not-yet-supported features of BUGS and JAGS</a></li>
 </ul></li>
-<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a><ul>
+<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a>
+<ul>
 <li class="chapter" data-level="5.2.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#declaring-stochastic-and-deterministic-nodes"><i class="fa fa-check"></i><b>5.2.1</b> Declaring stochastic and deterministic nodes</a></li>
 <li class="chapter" data-level="5.2.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:more-kinds-bugs"><i class="fa fa-check"></i><b>5.2.2</b> More kinds of BUGS declarations</a></li>
 <li class="chapter" data-level="5.2.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:vectorized-versus-scalar-declarations"><i class="fa fa-check"></i><b>5.2.3</b> Vectorized versus scalar declarations</a></li>
@@ -189,13 +222,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a><ul>
-<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a><ul>
+<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a>
+<ul>
 <li class="chapter" data-level="6.1.1" data-path="cha-building-models.html"><a href="cha-building-models.html#using-nimblemodel-to-create-a-model"><i class="fa fa-check"></i><b>6.1.1</b> Using <em>nimbleModel</em> to create a model</a></li>
 <li class="chapter" data-level="6.1.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:readBUGSmodel"><i class="fa fa-check"></i><b>6.1.2</b> Creating a model from standard BUGS and JAGS input files</a></li>
 <li class="chapter" data-level="6.1.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sub:multiple-instances"><i class="fa fa-check"></i><b>6.1.3</b> Making multiple instances from the same model definition</a></li>
 </ul></li>
-<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a><ul>
+<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a>
+<ul>
 <li class="chapter" data-level="6.2.1" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:what-are-nodes-and-variables"><i class="fa fa-check"></i><b>6.2.1</b> What are variables and nodes?</a></li>
 <li class="chapter" data-level="6.2.2" data-path="cha-building-models.html"><a href="cha-building-models.html#determining-the-nodes-and-variables-in-a-model"><i class="fa fa-check"></i><b>6.2.2</b> Determining the nodes and variables in a model</a></li>
 <li class="chapter" data-level="6.2.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:accessing-nodes"><i class="fa fa-check"></i><b>6.2.3</b> Accessing nodes</a></li>
@@ -206,15 +242,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
 </ul></li>
 <li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
-<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
+<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a>
+<ul>
 <li class="chapter" data-level="7.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:nimbleMCMC"><i class="fa fa-check"></i><b>7.1</b> One-line invocation of MCMC: <em>nimbleMCMC</em></a></li>
-<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a><ul>
+<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a>
+<ul>
 <li class="chapter" data-level="7.2.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:default-mcmc-conf"><i class="fa fa-check"></i><b>7.2.1</b> Default MCMC configuration</a></li>
 <li class="chapter" data-level="7.2.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:customizing-mcmc-conf"><i class="fa fa-check"></i><b>7.2.2</b> Customizing the MCMC configuration</a></li>
 </ul></li>
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
-<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
+<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a>
+<ul>
 <li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.5.1</b> Rerunning versus restarting an MCMC</a></li>
 <li class="chapter" data-level="7.5.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
 <li class="chapter" data-level="7.5.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.5.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
@@ -222,11 +261,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
 <li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
 <li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
-<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a><ul>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.9</b> Variable selection using Reversible Jump MCMC</a>
+<ul>
 <li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.9.1</b> Using indicator variables</a></li>
 <li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.9.2</b> Without indicator variables</a></li>
 </ul></li>
-<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.10</b> Samplers provided with NIMBLE</a><ul>
+<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.10</b> Samplers provided with NIMBLE</a>
+<ul>
 <li class="chapter" data-level="7.10.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.10.1</b> Conjugate (‘Gibbs’) samplers</a></li>
 <li class="chapter" data-level="7.10.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.10.2</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
 <li class="chapter" data-level="7.10.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.10.3</b> Particle MCMC sampler</a></li>
@@ -235,51 +276,64 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.12</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.13</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a><ul>
-<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a><ul>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
+<ul>
 <li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
 <li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
 </ul></li>
-<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a><ul>
+<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a>
+<ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a><ul>
-<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a><ul>
+<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a>
+<ul>
 <li class="chapter" data-level="9.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>9.1.1</b> Specification and density</a></li>
 <li class="chapter" data-level="9.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>9.1.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a><ul>
+<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a>
+<ul>
 <li class="chapter" data-level="9.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>9.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="9.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>9.2.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a><ul>
+<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a>
+<ul>
 <li class="chapter" data-level="9.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>9.3.1</b> Initial values</a></li>
 <li class="chapter" data-level="9.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>9.3.2</b> Zero-neighbor regions</a></li>
 <li class="chapter" data-level="9.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>9.3.3</b> Zero-mean constraint</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a><ul>
+<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a>
+<ul>
 <li class="chapter" data-level="10.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>10.1</b> Bayesian nonparametric mixture models</a></li>
-<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
+<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a>
+<ul>
 <li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
 <li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
 <li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
 </ul></li>
-<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
+<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a>
+<ul>
 <li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
 <li class="chapter" data-level="10.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>10.3.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a><ul>
+<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a>
+<ul>
 <li class="chapter" data-level="10.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>10.4.1</b> Sampling CRP models</a></li>
 <li class="chapter" data-level="10.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>10.4.2</b> Sampling stick-breaking models</a></li>
 </ul></li>
 </ul></li>
 <li class="part"><span><b>IV Programming with NIMBLE</b></span></li>
 <li class="chapter" data-level="" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i>Overview</a></li>
-<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a><ul>
+<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a>
+<ul>
 <li class="chapter" data-level="11.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>11.1</b> Introduction to simple nimbleFunctions</a></li>
-<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a><ul>
+<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a>
+<ul>
 <li class="chapter" data-level="11.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>11.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
 <li class="chapter" data-level="11.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>11.2.2</b> Basic operations</a></li>
 <li class="chapter" data-level="11.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>11.2.3</b> Math and linear algebra</a></li>
@@ -290,7 +344,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
 <li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
 </ul></li>
-<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a><ul>
+<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
+<ul>
 <li class="chapter" data-level="11.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>11.3.1</b> nimbleList data structures</a></li>
 <li class="chapter" data-level="11.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>11.3.2</b> How numeric types work</a></li>
 </ul></li>
@@ -299,49 +354,61 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
 <li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a><ul>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a>
+<ul>
 <li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
-<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a><ul>
+<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
+<ul>
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a><ul>
-<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a><ul>
+<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a>
+<ul>
 <li class="chapter" data-level="13.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>13.1.1</b> Determining the nodes in a model</a></li>
 <li class="chapter" data-level="13.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>13.1.2</b> Understanding lifted nodes</a></li>
 <li class="chapter" data-level="13.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>13.1.3</b> Determining dependencies in a model</a></li>
 </ul></li>
-<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a><ul>
+<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a>
+<ul>
 <li class="chapter" data-level="13.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>13.2.1</b> Getting distributional information about a node</a></li>
 <li class="chapter" data-level="13.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>13.2.2</b> Getting information about a distribution</a></li>
 <li class="chapter" data-level="13.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>13.2.3</b> Getting distribution parameter values for a node</a></li>
 <li class="chapter" data-level="13.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>13.2.4</b> Getting distribution bounds for a node</a></li>
 </ul></li>
-<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a><ul>
+<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a>
+<ul>
 <li class="chapter" data-level="13.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>13.3.1</b> Core model operations: calculation and simulation</a></li>
 <li class="chapter" data-level="13.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>13.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
 <li class="chapter" data-level="13.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>13.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a><ul>
-<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a><ul>
+<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a>
+<ul>
 <li class="chapter" data-level="14.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>14.1.1</b> Creating modelValues objects</a></li>
 <li class="chapter" data-level="14.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>14.1.2</b> Accessing contents of modelValues</a></li>
 </ul></li>
-<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a><ul>
+<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a>
+<ul>
 <li class="chapter" data-level="14.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>14.2.1</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a><ul>
+<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a>
+<ul>
 <li class="chapter" data-level="15.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>15.1</b> Overview</a></li>
 <li class="chapter" data-level="15.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>15.2</b> Using and compiling nimbleFunctions</a></li>
-<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a><ul>
+<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a>
+<ul>
 <li class="chapter" data-level="15.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>15.3.1</b> Useful tools for setup functions</a></li>
 <li class="chapter" data-level="15.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>15.3.2</b> Accessing and modifying numeric values from setup</a></li>
 <li class="chapter" data-level="15.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>15.3.3</b> Determining numeric types in nimbleFunctions</a></li>
 <li class="chapter" data-level="15.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>15.3.4</b> Control of setup outputs</a></li>
 </ul></li>
-<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a><ul>
+<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a>
+<ul>
 <li class="chapter" data-level="15.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>15.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
 <li class="chapter" data-level="15.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>15.4.2</b> Getting and setting variable and node values</a></li>
 <li class="chapter" data-level="15.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>15.4.3</b> Getting parameter values and node bounds</a></li>
@@ -353,7 +420,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="15.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>15.4.9</b> Character objects</a></li>
 <li class="chapter" data-level="15.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>15.4.10</b> User-defined data structures</a></li>
 </ul></li>
-<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a></li>
+<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a>
+<ul>
+<li class="chapter" data-level="15.5.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#user-defined-samplers-and-posterior-predictive-nodes"><i class="fa fa-check"></i><b>15.5.1</b> User-defined samplers and posterior predictive nodes</a></li>
+</ul></li>
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
@@ -378,41 +448,41 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="cha-bnp" class="section level1">
-<h1><span class="header-section-number">Chapter 10</span> Bayesian nonparametric models</h1>
-<div id="sec:bnpmixtures" class="section level2">
-<h2><span class="header-section-number">10.1</span> Bayesian nonparametric mixture models</h2>
-<p>NIMBLE provides support for Bayesian nonparametric (BNP) mixture modeling. The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures <span class="citation">(Ferguson <a href="references.html#ref-ferguson_73">1973</a>, <a href="references.html#ref-ferguson_74">1974</a>; Lo <a href="references.html#ref-lo_84">1984</a>; Escobar <a href="references.html#ref-escobar_94">1994</a>; Escobar and West <a href="references.html#ref-escobar_west_95">1995</a>)</span>. More specifically, a DP mixture model takes the form</p>
+<div id="cha-bnp" class="section level1 hasAnchor" number="10">
+<h1><span class="header-section-number">Chapter 10</span> Bayesian nonparametric models<a href="cha-bnp.html#cha-bnp" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<div id="sec:bnpmixtures" class="section level2 hasAnchor" number="10.1">
+<h2><span class="header-section-number">10.1</span> Bayesian nonparametric mixture models<a href="cha-bnp.html#sec:bnpmixtures" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>NIMBLE provides support for Bayesian nonparametric (BNP) mixture modeling. The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures <span class="citation">(<a href="references.html#ref-ferguson_73" role="doc-biblioref">Ferguson 1973</a>, <a href="references.html#ref-ferguson_74" role="doc-biblioref">1974</a>; <a href="references.html#ref-lo_84" role="doc-biblioref">Lo 1984</a>; <a href="references.html#ref-escobar_94" role="doc-biblioref">Escobar 1994</a>; <a href="references.html#ref-escobar_west_95" role="doc-biblioref">Escobar and West 1995</a>)</span>. More specifically, a DP mixture model takes the form</p>
 <p><span class="math display">\[y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta),\]</span>
 <span class="math display">\[G \mid \alpha, G_0 \sim  DP(\alpha, G_0),\]</span></p>
 <p>where <span class="math inline">\(h(\cdot \mid \theta)\)</span> is a suitable kernel with parameter <span class="math inline">\(\theta\)</span>, and <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(G_0\)</span> are the concentration and baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to the model above.</p>
-<p>When the random measure <span class="math inline">\(G\)</span> is integrated out from the model, the DP mixture model can be written using latent or membership variables, <span class="math inline">\(z_i\)</span>, following a Chinese Restaurant Process (CRP) distribution <span class="citation">(Blackwell and MacQueen <a href="references.html#ref-blackwell_mcqueen_73">1973</a>)</span>, discussed in Section <a href="cha-bnp.html#sec:crp">10.2</a>. The model takes the form</p>
+<p>When the random measure <span class="math inline">\(G\)</span> is integrated out from the model, the DP mixture model can be written using latent or membership variables, <span class="math inline">\(z_i\)</span>, following a Chinese Restaurant Process (CRP) distribution <span class="citation">(<a href="references.html#ref-blackwell_mcqueen_73" role="doc-biblioref">Blackwell and MacQueen 1973</a>)</span>, discussed in Section <a href="cha-bnp.html#sec:crp">10.2</a>. The model takes the form</p>
 <p><span class="math display">\[y_i \mid \tilde{\boldsymbol{\theta}}, z_i \overset{ind}{\sim} h(\cdot \mid \tilde{\theta}_{z_i}),\]</span>
 <span class="math display">\[\boldsymbol{z}\mid \alpha \sim \mbox{CRP}(\alpha),\hspace{0.5cm}  \tilde{\theta}_j \overset{iid}{\sim}G_0,\]</span>
 where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP distribution with concentration parameter <span class="math inline">\(\alpha\)</span>.</p>
-<p>If a stick-breaking representation <span class="citation">(Sethuraman <a href="references.html#ref-sethuraman_94">1994</a>)</span>, discussed in section <a href="cha-bnp.html#sec:sb">10.3</a>, is assumed for the random measure <span class="math inline">\(G\)</span>, then the model takes the form</p>
+<p>If a stick-breaking representation <span class="citation">(<a href="references.html#ref-sethuraman_94" role="doc-biblioref">Sethuraman 1994</a>)</span>, discussed in section <a href="cha-bnp.html#sec:sb">10.3</a>, is assumed for the random measure <span class="math inline">\(G\)</span>, then the model takes the form</p>
 <p><span class="math display">\[y_i \mid {\boldsymbol{\theta}}^{\star}, \boldsymbol{v} \overset{ind}{\sim} \sum_{l=1}^{\infty}\left\{ v_l\prod_{m&lt;l}(1-v_m)\right\} h(\cdot \mid {\theta}_l^{\star}),\]</span>
 <span class="math display">\[v_l \mid \alpha \overset{iid}{\sim} Beta(1, \alpha),\hspace{0.5cm}  {\theta}_l^{\star} \overset{iid}{\sim}G_0.\]</span></p>
 <p>More general representations of the random measure can be specify by considering <span class="math inline">\(v_l \mid \nu_l, \alpha_l \overset{ind}{\sim} Beta(\nu_l, \alpha_l)\)</span>. Finite dimensional approximations can be obtained by truncating the infinite sum to have <span class="math inline">\(L\)</span> components.</p>
 <p>Different representations of DP mixtures lead to different computational algorithms. NIMBLE supports sampling algorithms based on the CRP representation, as well as on the stick-breaking representation. NIMBLE includes definitions of structures required to implement the CRP and stick-breaking distributions, and the associated MCMC algorithms.</p>
 </div>
-<div id="sec:crp" class="section level2">
-<h2><span class="header-section-number">10.2</span> Chinese Restaurant Process model</h2>
+<div id="sec:crp" class="section level2 hasAnchor" number="10.2">
+<h2><span class="header-section-number">10.2</span> Chinese Restaurant Process model<a href="cha-bnp.html#sec:crp" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The CRP is a distribution over the space of partitions of positive integers and is implemented in NIMBLE as the <code>dCRP</code> distribution. More details for using this distribution are available using <code>help(CRP)</code>.</p>
 <p>The CRP can be described as a stochastic process in which customers arrive at a restaurant, potentially with an infinite number of tables. Each customer sits at an empty or occupied table according to probabilities that depend on the number of customers in the occupied tables. Thus, the CRP partitions the set of customers, through their assignment to tables in the restaurant.</p>
-<div id="specification-and-density-2" class="section level3">
-<h3><span class="header-section-number">10.2.1</span> Specification and density</h3>
+<div id="specification-and-density-2" class="section level3 hasAnchor" number="10.2.1">
+<h3><span class="header-section-number">10.2.1</span> Specification and density<a href="cha-bnp.html#specification-and-density-2" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE parametrizes the <code>dCRP</code> distribution by a concentration parameter and a size parameter.</p>
-<div id="specification-2" class="section level4">
-<h4><span class="header-section-number">10.2.1.1</span> Specification</h4>
+<div id="specification-2" class="section level4 hasAnchor" number="10.2.1.1">
+<h4><span class="header-section-number">10.2.1.1</span> Specification<a href="cha-bnp.html#specification-2" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>The <code>dCRP</code> distribution is specified in NIMBLE for a membership vector <code>z</code> as</p>
 <p><code>z[1:N] ~ dCRP(conc, size)</code></p>
 <p>The <code>conc</code> parameter is the concentration parameter of the CRP, controlling the probability of a customer sitting on a new table, i.e., creating a new cluster. The <code>size</code> parameter defines the size of the set of integers to be partitioned.</p>
 <p>The <code>conc</code> parameter is a positive real value that can be treated as known or unknown. When a gamma prior is assumed for the <code>conc</code> parameter, a specialized sampler is assigned. See more on this in section <a href="cha-bnp.html#sec:mcmcdcrp">10.4.1</a>.</p>
 <p>The <code>size</code> parameter is a positive integer that has to be fixed and equal to the length of vector <code>z</code>. It defines the set of consecutive integers from <code>1</code> to <code>N</code> to be partitioned. Each element in <code>z</code> can be an integer from <code>1</code> to <code>N</code>, and repetitions are allowed.</p>
 </div>
-<div id="density-2" class="section level4">
-<h4><span class="header-section-number">10.2.1.2</span> Density</h4>
+<div id="density-2" class="section level4 hasAnchor" number="10.2.1.2">
+<h4><span class="header-section-number">10.2.1.2</span> Density<a href="cha-bnp.html#density-2" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>The CRP distribution partitions the set of positive integers <span class="math inline">\({1, \ldots, N}\)</span>, into <span class="math inline">\(N^{\star} \leq N\)</span> disjoint subsets, indicating to which subset each element belongs. For instance, if <span class="math inline">\(N=6\)</span>, the set <span class="math inline">\(\{1, 2, 3, 4, 5, 6 \}\)</span> can be partitioned into the subsets <span class="math inline">\(S_1=\{1, 2, 6\}\)</span>, <span class="math inline">\(S_2=\{4, 5\}\)</span>, and <span class="math inline">\(S_3=\{3\}\)</span>. Note that <span class="math inline">\(N^{\star} =3\)</span>, and this is one partition from out of 203 possibilities. The CRP-distributed vector <span class="math inline">\(\boldsymbol{z}\)</span> encodes this partition and its observed values would be <span class="math inline">\((1, 1, 3, 2, 2, 1)\)</span>, for this example. In mixture modeling, this indicates that observations 1, 2, and 6 belong to cluster 1, observations 4 and 5 to cluster 2, and observation 3 to cluster 3. Note that this representation is not unique, vector <span class="math inline">\((2, 2, 1, 3, 3, 2)\)</span> encodes the same partition.</p>
 <p>The joint probability function of <span class="math inline">\(z=(z_1, \ldots, z_N)\)</span>, with concentration parameter <span class="math inline">\(\alpha\)</span>, is given by</p>
 <p><span class="math display">\[p(\boldsymbol{z} \mid \alpha) \propto \frac{\Gamma{(\alpha)}}{\Gamma{(\alpha + n)}} \alpha^{N^{\star}(\boldsymbol{z})}\prod_{k=1}^{N^{\star}(\boldsymbol{z})}\Gamma(m_{k}(\boldsymbol{z})),\]</span></p>
@@ -422,132 +492,133 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 <p>Note that the probability of creating a new cluster is proportional to <span class="math inline">\(\alpha\)</span>: the larger the concentration parameter, the more clusters are created.</p>
 </div>
 </div>
-<div id="sec:excrp" class="section level3">
-<h3><span class="header-section-number">10.2.2</span> Example</h3>
+<div id="sec:excrp" class="section level3 hasAnchor" number="10.2.2">
+<h3><span class="header-section-number">10.2.2</span> Example<a href="cha-bnp.html#sec:excrp" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>The following example illustrates how to use NIMBLE to perform single density estimation for real-valued data, under a BNP approach, using the <code>dCRP</code> distribution. (Note that the BNP approach is also often used to perform density estimation on random effects.) The model is given by</p>
-<p><span class="math display">\[ y_i \mid \tilde{\boldsymbol{\theta}}, \tilde{\boldsymbol{\sigma}}^2, z_i \overset{ind}{\sim} N(\tilde{\theta}_{z_i}, \tilde{\sigma}^2_{z_i},)\hspace{0.5cm} i = 1, \ldots, N, \]</span>
+<p><span class="math display">\[ y_i \mid \tilde{\boldsymbol{\theta}}, \tilde{\boldsymbol{\sigma}}^2, z_i \overset{ind}{\sim} N(\tilde{\theta}_{z_i}, \tilde{\sigma}^2_{z_i}), \hspace{0.5cm} i = 1, \ldots, N, \]</span>
 <span class="math display">\[ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), \]</span>
 <span class="math display">\[ \tilde{\theta}_j \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}\tilde{\sigma}^2_j \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} j=1, \ldots, M. \]</span></p>
-<div class="sourceCode" id="cb214"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb214-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb214-2" title="2">  z[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dCRP</span>(alpha, <span class="dt">size =</span> N)</a>
-<a class="sourceLine" id="cb214-3" title="3">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb214-4" title="4">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M) {</a>
-<a class="sourceLine" id="cb214-5" title="5">    thetatilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb214-6" title="6">    s2tilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb214-7" title="7">  }</a>
-<a class="sourceLine" id="cb214-8" title="8">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) </a>
-<a class="sourceLine" id="cb214-9" title="9">    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetatilde[z[i]], <span class="dt">var =</span> s2tilde[z[i]])  </a>
-<a class="sourceLine" id="cb214-10" title="10">})</a>
-<a class="sourceLine" id="cb214-11" title="11"></a>
-<a class="sourceLine" id="cb214-12" title="12"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb214-13" title="13">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">100</span>, <span class="dt">M =</span> <span class="dv">50</span>)</a>
-<a class="sourceLine" id="cb214-14" title="14">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">-5</span>, <span class="kw">sqrt</span>(<span class="dv">3</span>)), <span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">4</span>))))</a>
-<a class="sourceLine" id="cb214-15" title="15">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), </a>
-<a class="sourceLine" id="cb214-16" title="16">              <span class="dt">s2tilde =</span> <span class="kw">rinvgamma</span>(constants<span class="op">$</span>M, <span class="dv">1</span>, <span class="dv">1</span>), </a>
-<a class="sourceLine" id="cb214-17" title="17">              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),</a>
-<a class="sourceLine" id="cb214-18" title="18">              <span class="dt">alpha  =</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb214-19" title="19">model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
+<div class="sourceCode" id="cb216"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb216-1"><a href="cha-bnp.html#cb216-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb216-2"><a href="cha-bnp.html#cb216-2" aria-hidden="true" tabindex="-1"></a>  z[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dCRP</span>(alpha, <span class="at">size =</span> N)</span>
+<span id="cb216-3"><a href="cha-bnp.html#cb216-3" aria-hidden="true" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb216-4"><a href="cha-bnp.html#cb216-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M) {</span>
+<span id="cb216-5"><a href="cha-bnp.html#cb216-5" aria-hidden="true" tabindex="-1"></a>    thetatilde[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">var =</span> <span class="dv">100</span>)</span>
+<span id="cb216-6"><a href="cha-bnp.html#cb216-6" aria-hidden="true" tabindex="-1"></a>    s2tilde[i] <span class="sc">~</span> <span class="fu">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb216-7"><a href="cha-bnp.html#cb216-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb216-8"><a href="cha-bnp.html#cb216-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) </span>
+<span id="cb216-9"><a href="cha-bnp.html#cb216-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(thetatilde[z[i]], <span class="at">var =</span> s2tilde[z[i]])  </span>
+<span id="cb216-10"><a href="cha-bnp.html#cb216-10" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb216-11"><a href="cha-bnp.html#cb216-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb216-12"><a href="cha-bnp.html#cb216-12" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb216-13"><a href="cha-bnp.html#cb216-13" aria-hidden="true" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">100</span>, <span class="at">M =</span> <span class="dv">50</span>)</span>
+<span id="cb216-14"><a href="cha-bnp.html#cb216-14" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">c</span>(<span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="sc">-</span><span class="dv">5</span>, <span class="fu">sqrt</span>(<span class="dv">3</span>)), <span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="fu">sqrt</span>(<span class="dv">4</span>))))</span>
+<span id="cb216-15"><a href="cha-bnp.html#cb216-15" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">thetatilde =</span> <span class="fu">rnorm</span>(constants<span class="sc">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), </span>
+<span id="cb216-16"><a href="cha-bnp.html#cb216-16" aria-hidden="true" tabindex="-1"></a>              <span class="at">s2tilde =</span> <span class="fu">rinvgamma</span>(constants<span class="sc">$</span>M, <span class="dv">1</span>, <span class="dv">1</span>), </span>
+<span id="cb216-17"><a href="cha-bnp.html#cb216-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">z =</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">size =</span> constants<span class="sc">$</span>N, <span class="at">replace =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb216-18"><a href="cha-bnp.html#cb216-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">alpha  =</span> <span class="dv">1</span>)</span>
+<span id="cb216-19"><a href="cha-bnp.html#cb216-19" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span></code></pre></div>
 <p>The model can be fitted through MCMC sampling. NIMBLE will assign a specialized sampler to update <code>z</code> and <code>alpha</code>. See Chapter <a href="cha-mcmc.html#cha-mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcdcrp">10.4.1</a> for details on MCMC sampling of the CRP.</p>
 <p>One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, <span class="math inline">\(N^{\star}\)</span>, has to be fixed. One safe option is to set this number to <span class="math inline">\(N\)</span>, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that <span class="math inline">\(N^{\star} &lt; N\)</span>. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large <span class="math inline">\(N\)</span>. In an effort to mitigate these inefficiencies, we allow the user to set <span class="math inline">\(N^{\star} = M\)</span>, with <span class="math inline">\(M&lt;N\)</span>, as seen in the example above. However, if this number is too small and is exceeded in any iteration a warning is issued.</p>
 </div>
-<div id="sec:extensionscrp" class="section level3">
-<h3><span class="header-section-number">10.2.3</span> Extensions</h3>
+<div id="sec:extensionscrp" class="section level3 hasAnchor" number="10.2.3">
+<h3><span class="header-section-number">10.2.3</span> Extensions<a href="cha-bnp.html#sec:extensionscrp" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant.</p>
 <p>The following example illustrates how to use NIMBLE in a random effects model with repeated measurements per subject using a DP prior for the distribution of the subject’s random effects. The model is given by</p>
-<p><span class="math display">\[ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2,)\hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, \]</span></p>
+<p><span class="math display">\[ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2), \hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, \]</span></p>
 <p><span class="math display">\[ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), \]</span></p>
-<p><span class="math display">\[ \tilde{\theta}_m \overset{iid}{\sim} N(0, 100),  \hspace{0.2cm} m=1, \ldots, M, \hspace{0.5cm} {\sigma}^2 \sim InvGamma(1, 1). \]</span></p>
+<p><span class="math display">\[ \tilde{\theta}_m \overset{iid}{\sim} N(0, 100),  \hspace{0.2cm} m=1, \ldots, M, \hspace{0.5cm} {\sigma}^2 \sim \mbox{InvGamma}(1, 1). \]</span></p>
 <p>The corresponding NIMBLE code is</p>
-<div class="sourceCode" id="cb215"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb215-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb215-2" title="2">  z[<span class="dv">1</span><span class="op">:</span>N] <span class="op">~</span><span class="st"> </span><span class="kw">dCRP</span>(alpha, <span class="dt">size =</span> N)</a>
-<a class="sourceLine" id="cb215-3" title="3">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb215-4" title="4">  sigma2 <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb215-5" title="5">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>M) {</a>
-<a class="sourceLine" id="cb215-6" title="6">    thetatilde[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>) </a>
-<a class="sourceLine" id="cb215-7" title="7">  }</a>
-<a class="sourceLine" id="cb215-8" title="8">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb215-9" title="9">    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>J) {</a>
-<a class="sourceLine" id="cb215-10" title="10">      y[i, j] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetatilde[z[i]], <span class="dt">var =</span> sigma2)</a>
-<a class="sourceLine" id="cb215-11" title="11">    }</a>
-<a class="sourceLine" id="cb215-12" title="12">  }</a>
-<a class="sourceLine" id="cb215-13" title="13">})</a>
-<a class="sourceLine" id="cb215-14" title="14"></a>
-<a class="sourceLine" id="cb215-15" title="15"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb215-16" title="16">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>, <span class="dt">J =</span> <span class="dv">5</span>, <span class="dt">M =</span> <span class="dv">5</span>)</a>
-<a class="sourceLine" id="cb215-17" title="17">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">matrix</span>(<span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">-25</span>, <span class="dv">1</span>), <span class="kw">rnorm</span>(<span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">1</span>)), <span class="dt">ncol=</span>constants<span class="op">$</span>J,</a>
-<a class="sourceLine" id="cb215-18" title="18">                        <span class="dt">nrow=</span>constants<span class="op">$</span>N, <span class="dt">byrow=</span><span class="ot">TRUE</span>))</a>
-<a class="sourceLine" id="cb215-19" title="19">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), </a>
-<a class="sourceLine" id="cb215-20" title="20">              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),</a>
-<a class="sourceLine" id="cb215-21" title="21">              <span class="dt">alpha  =</span> <span class="dv">1</span>,</a>
-<a class="sourceLine" id="cb215-22" title="22">              <span class="dt">sigma2 =</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb215-23" title="23">modelRandEff &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
-<p>Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as <code>thetaTilde[z[i], j]</code>, instead of a single mean.</p>
+<div class="sourceCode" id="cb217"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb217-1"><a href="cha-bnp.html#cb217-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb217-2"><a href="cha-bnp.html#cb217-2" aria-hidden="true" tabindex="-1"></a>  z[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dCRP</span>(alpha, <span class="at">size =</span> N)</span>
+<span id="cb217-3"><a href="cha-bnp.html#cb217-3" aria-hidden="true" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb217-4"><a href="cha-bnp.html#cb217-4" aria-hidden="true" tabindex="-1"></a>  sigma2 <span class="sc">~</span> <span class="fu">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb217-5"><a href="cha-bnp.html#cb217-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M) {</span>
+<span id="cb217-6"><a href="cha-bnp.html#cb217-6" aria-hidden="true" tabindex="-1"></a>    thetatilde[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">var =</span> <span class="dv">100</span>) </span>
+<span id="cb217-7"><a href="cha-bnp.html#cb217-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb217-8"><a href="cha-bnp.html#cb217-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb217-9"><a href="cha-bnp.html#cb217-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>J) {</span>
+<span id="cb217-10"><a href="cha-bnp.html#cb217-10" aria-hidden="true" tabindex="-1"></a>      y[i, j] <span class="sc">~</span> <span class="fu">dnorm</span>(thetatilde[z[i]], <span class="at">var =</span> sigma2)</span>
+<span id="cb217-11"><a href="cha-bnp.html#cb217-11" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb217-12"><a href="cha-bnp.html#cb217-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb217-13"><a href="cha-bnp.html#cb217-13" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb217-14"><a href="cha-bnp.html#cb217-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb217-15"><a href="cha-bnp.html#cb217-15" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb217-16"><a href="cha-bnp.html#cb217-16" aria-hidden="true" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>, <span class="at">J =</span> <span class="dv">5</span>, <span class="at">M =</span> <span class="dv">5</span>)</span>
+<span id="cb217-17"><a href="cha-bnp.html#cb217-17" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fu">rnorm</span>(<span class="dv">25</span>, <span class="sc">-</span><span class="dv">25</span>, <span class="dv">1</span>), <span class="fu">rnorm</span>(<span class="dv">25</span>, <span class="dv">25</span>, <span class="dv">1</span>)), <span class="at">ncol=</span>constants<span class="sc">$</span>J,</span>
+<span id="cb217-18"><a href="cha-bnp.html#cb217-18" aria-hidden="true" tabindex="-1"></a>                        <span class="at">nrow=</span>constants<span class="sc">$</span>N, <span class="at">byrow=</span><span class="cn">TRUE</span>))</span>
+<span id="cb217-19"><a href="cha-bnp.html#cb217-19" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">thetatilde =</span> <span class="fu">rnorm</span>(constants<span class="sc">$</span>M, <span class="dv">0</span>, <span class="dv">10</span>), </span>
+<span id="cb217-20"><a href="cha-bnp.html#cb217-20" aria-hidden="true" tabindex="-1"></a>              <span class="at">z =</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">size =</span> constants<span class="sc">$</span>N, <span class="at">replace =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb217-21"><a href="cha-bnp.html#cb217-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">alpha  =</span> <span class="dv">1</span>,</span>
+<span id="cb217-22"><a href="cha-bnp.html#cb217-22" aria-hidden="true" tabindex="-1"></a>              <span class="at">sigma2 =</span> <span class="dv">1</span>)</span>
+<span id="cb217-23"><a href="cha-bnp.html#cb217-23" aria-hidden="true" tabindex="-1"></a>modelRandEff <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span></code></pre></div>
+<p>Alternatively, each subject could have a vector of parameters being clustered. For example in the model above one could instead specify a vector of means, such as <code>thetaTilde[z[i], j]</code>, instead of a single mean. This allows group-specific parameters to also vary across the repeated mesasurements.</p>
 <p>As before, the model can be fitted through MCMC sampling. NIMBLE will assign a specialized sampler to update <code>z</code> and <code>alpha</code>. See Chapter <a href="cha-mcmc.html#cha-mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcdcrp">10.4.1</a> for details on MCMC sampling of the CRP.</p>
 </div>
 </div>
-<div id="sec:sb" class="section level2">
-<h2><span class="header-section-number">10.3</span> Stick-breaking model</h2>
+<div id="sec:sb" class="section level2 hasAnchor" number="10.3">
+<h2><span class="header-section-number">10.3</span> Stick-breaking model<a href="cha-bnp.html#sec:sb" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>In NIMBLE, weights defined by sequentially breaking a stick, as in the stick-breaking process, are implemented as the <code>stick_breaking</code> link function. More details for using this function are available using <code>help(stick_breaking)</code>.</p>
-<div id="specification-and-function" class="section level3">
-<h3><span class="header-section-number">10.3.1</span> Specification and function</h3>
+<div id="specification-and-function" class="section level3 hasAnchor" number="10.3.1">
+<h3><span class="header-section-number">10.3.1</span> Specification and function<a href="cha-bnp.html#specification-and-function" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE parametrizes the <code>stick_breaking</code> function by vector of values in <span class="math inline">\((0,1)\)</span>.</p>
-<div id="function" class="section level4">
-<h4><span class="header-section-number">10.3.1.1</span> Function</h4>
+<div id="function" class="section level4 hasAnchor" number="10.3.1.1">
+<h4><span class="header-section-number">10.3.1.1</span> Function<a href="cha-bnp.html#function" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>The weights <span class="math inline">\((w_1, \ldots, w_L)\)</span> follow a finite stick-breaking construction if</p>
 <p><span class="math display">\[ \hspace{-2cm} w_1  = v_1, \]</span>
 <span class="math display">\[ \hspace{2.2cm} w_l  =  v_l\prod_{m&lt;l}(1-v_m),l=2,\ldots,L-1 \]</span>
 <span class="math display">\[ \hspace{-0.4cm} w_L  =  \prod_{m&lt;L}(1-v_m).\]</span></p>
 <p>for <span class="math inline">\(v_l \in [0,1], l=1,\ldots,L-1\)</span>.</p>
 </div>
-<div id="specification-3" class="section level4">
-<h4><span class="header-section-number">10.3.1.2</span> Specification</h4>
+<div id="specification-3" class="section level4 hasAnchor" number="10.3.1.2">
+<h4><span class="header-section-number">10.3.1.2</span> Specification<a href="cha-bnp.html#specification-3" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>The <code>stick_breaking</code> function is specified in NIMBLE for a vector <code>w</code> of probabilities as</p>
 <p><code>w[1:L] &lt;- stick_breaking(v[1:(L-1)])</code></p>
 <p>The argument <code>v</code> is a vector of values between 0 and 1 defining the sequential breaking points of the stick after removing the previous portions already broken off. It is of length <span class="math inline">\(L-1\)</span>, implicitly assuming that its last component is equal to 1.</p>
 <p>In order to complete the definition of the weights in the stick-breaking representation of <span class="math inline">\(G\)</span>, a prior distribution on <span class="math inline">\((0,1)\)</span> should to be assumed for <span class="math inline">\(v_l\)</span>, <span class="math inline">\(l =1, \ldots, L-1\)</span>, for instance a beta prior.</p>
 </div>
 </div>
-<div id="sec:exsb" class="section level3">
-<h3><span class="header-section-number">10.3.2</span> Example</h3>
+<div id="sec:exsb" class="section level3 hasAnchor" number="10.3.2">
+<h3><span class="header-section-number">10.3.2</span> Example<a href="cha-bnp.html#sec:exsb" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Here we illustrate how to use NIMBLE for the example described in section <a href="cha-bnp.html#sec:excrp">10.2.2</a>, but considering a stick-breaking representation for <span class="math inline">\(G\)</span>. The model is given by</p>
 <p><span class="math display">\[ y_i \mid \boldsymbol{\theta}^{\star}, {\boldsymbol{\sigma}^{\star}}^2, z_i \overset{ind}{\sim} N({{\theta}^{\star}}_{z_i}, {{\sigma}^2}^{\star}_{z_i}),\hspace{0.5cm}  i = 1, \ldots, N, \]</span>
-<span class="math display">\[ \boldsymbol{z} \sim Discrete(\boldsymbol{w}), \hspace{0.5cm} v_l\overset{iid}{\sim} Beta(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, \]</span>
+<span class="math display">\[ z_i \sim \mbox{Categorical}(\boldsymbol{w}),\hspace{0.5cm}  i = 1, \ldots, N, \]</span>
+<span class="math display">\[v_l\overset{iid}{\sim} \mbox{Beta}(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, \]</span>
 <span class="math display">\[ \alpha \sim \mbox{Gamma}(1, 1),\]</span>
 <span class="math display">\[{\theta}^{\star}_l \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}{{\sigma}^2}^{\star}_l  \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} l=1, \ldots, L.\]</span></p>
 <p>where <span class="math inline">\(w_1=v_1\)</span>, <span class="math inline">\(w_l=v_l \prod_{m&lt;l}(1-v_m)\)</span>, for <span class="math inline">\(l=1, \ldots, L-1\)</span>, and <span class="math inline">\(w_L=\prod_{m&lt;L}(1-v_m).\)</span></p>
-<div class="sourceCode" id="cb216"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb216-1" title="1">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({</a>
-<a class="sourceLine" id="cb216-2" title="2">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>(L<span class="dv">-1</span>)){</a>
-<a class="sourceLine" id="cb216-3" title="3">    v[i] <span class="op">~</span><span class="st"> </span><span class="kw">dbeta</span>(<span class="dv">1</span>, alpha)</a>
-<a class="sourceLine" id="cb216-4" title="4">  }</a>
-<a class="sourceLine" id="cb216-5" title="5">  alpha <span class="op">~</span><span class="st"> </span><span class="kw">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb216-6" title="6">  w[<span class="dv">1</span><span class="op">:</span>L] &lt;-<span class="st"> </span><span class="kw">stick_breaking</span>(v[<span class="dv">1</span><span class="op">:</span>(L<span class="dv">-1</span>)])</a>
-<a class="sourceLine" id="cb216-7" title="7">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>L) {</a>
-<a class="sourceLine" id="cb216-8" title="8">    thetastar[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">var =</span> <span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb216-9" title="9">    s2star[i] <span class="op">~</span><span class="st"> </span><span class="kw">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb216-10" title="10">  }</a>
-<a class="sourceLine" id="cb216-11" title="11">  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>N) {</a>
-<a class="sourceLine" id="cb216-12" title="12">    z[i] <span class="op">~</span><span class="st"> </span><span class="kw">dcat</span>(w[<span class="dv">1</span><span class="op">:</span>L])</a>
-<a class="sourceLine" id="cb216-13" title="13">    y[i] <span class="op">~</span><span class="st"> </span><span class="kw">dnorm</span>(thetastar[z[i]], <span class="dt">var =</span> s2star[z[i]])  </a>
-<a class="sourceLine" id="cb216-14" title="14">  }</a>
-<a class="sourceLine" id="cb216-15" title="15">})</a>
-<a class="sourceLine" id="cb216-16" title="16"></a>
-<a class="sourceLine" id="cb216-17" title="17"><span class="kw">set.seed</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb216-18" title="18">constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">100</span>, <span class="dt">L=</span><span class="dv">50</span>)</a>
-<a class="sourceLine" id="cb216-19" title="19">data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">-5</span>, <span class="kw">sqrt</span>(<span class="dv">3</span>)), <span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">4</span>))))</a>
-<a class="sourceLine" id="cb216-20" title="20">inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetastar =</span> <span class="kw">rnorm</span>(constants<span class="op">$</span>L, <span class="dv">0</span>, <span class="dv">100</span>), </a>
-<a class="sourceLine" id="cb216-21" title="21">              <span class="dt">s2star =</span> <span class="kw">rinvgamma</span>(constants<span class="op">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>), </a>
-<a class="sourceLine" id="cb216-22" title="22">              <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>, <span class="dt">size =</span> constants<span class="op">$</span>N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),</a>
-<a class="sourceLine" id="cb216-23" title="23">              <span class="dt">v  =</span> <span class="kw">rbeta</span>(constants<span class="op">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>),</a>
-<a class="sourceLine" id="cb216-24" title="24">              <span class="dt">alpha =</span> <span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb216-25" title="25">modelSB &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</a></code></pre></div>
+<div class="sourceCode" id="cb218"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb218-1"><a href="cha-bnp.html#cb218-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb218-2"><a href="cha-bnp.html#cb218-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(L<span class="dv">-1</span>)){</span>
+<span id="cb218-3"><a href="cha-bnp.html#cb218-3" aria-hidden="true" tabindex="-1"></a>    v[i] <span class="sc">~</span> <span class="fu">dbeta</span>(<span class="dv">1</span>, alpha)</span>
+<span id="cb218-4"><a href="cha-bnp.html#cb218-4" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb218-5"><a href="cha-bnp.html#cb218-5" aria-hidden="true" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb218-6"><a href="cha-bnp.html#cb218-6" aria-hidden="true" tabindex="-1"></a>  w[<span class="dv">1</span><span class="sc">:</span>L] <span class="ot">&lt;-</span> <span class="fu">stick_breaking</span>(v[<span class="dv">1</span><span class="sc">:</span>(L<span class="dv">-1</span>)])</span>
+<span id="cb218-7"><a href="cha-bnp.html#cb218-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>L) {</span>
+<span id="cb218-8"><a href="cha-bnp.html#cb218-8" aria-hidden="true" tabindex="-1"></a>    thetastar[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">var =</span> <span class="dv">100</span>)</span>
+<span id="cb218-9"><a href="cha-bnp.html#cb218-9" aria-hidden="true" tabindex="-1"></a>    s2star[i] <span class="sc">~</span> <span class="fu">dinvgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb218-10"><a href="cha-bnp.html#cb218-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb218-11"><a href="cha-bnp.html#cb218-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb218-12"><a href="cha-bnp.html#cb218-12" aria-hidden="true" tabindex="-1"></a>    z[i] <span class="sc">~</span> <span class="fu">dcat</span>(w[<span class="dv">1</span><span class="sc">:</span>L])</span>
+<span id="cb218-13"><a href="cha-bnp.html#cb218-13" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(thetastar[z[i]], <span class="at">var =</span> s2star[z[i]])  </span>
+<span id="cb218-14"><a href="cha-bnp.html#cb218-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb218-15"><a href="cha-bnp.html#cb218-15" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb218-16"><a href="cha-bnp.html#cb218-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb218-17"><a href="cha-bnp.html#cb218-17" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb218-18"><a href="cha-bnp.html#cb218-18" aria-hidden="true" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">100</span>, <span class="at">L=</span><span class="dv">50</span>)</span>
+<span id="cb218-19"><a href="cha-bnp.html#cb218-19" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">c</span>(<span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="sc">-</span><span class="dv">5</span>, <span class="fu">sqrt</span>(<span class="dv">3</span>)), <span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="fu">sqrt</span>(<span class="dv">4</span>))))</span>
+<span id="cb218-20"><a href="cha-bnp.html#cb218-20" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">thetastar =</span> <span class="fu">rnorm</span>(constants<span class="sc">$</span>L, <span class="dv">0</span>, <span class="dv">100</span>), </span>
+<span id="cb218-21"><a href="cha-bnp.html#cb218-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">s2star =</span> <span class="fu">rinvgamma</span>(constants<span class="sc">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>), </span>
+<span id="cb218-22"><a href="cha-bnp.html#cb218-22" aria-hidden="true" tabindex="-1"></a>              <span class="at">z =</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">size =</span> constants<span class="sc">$</span>N, <span class="at">replace =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb218-23"><a href="cha-bnp.html#cb218-23" aria-hidden="true" tabindex="-1"></a>              <span class="at">v  =</span> <span class="fu">rbeta</span>(constants<span class="sc">$</span>L, <span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb218-24"><a href="cha-bnp.html#cb218-24" aria-hidden="true" tabindex="-1"></a>              <span class="at">alpha =</span> <span class="dv">1</span>)</span>
+<span id="cb218-25"><a href="cha-bnp.html#cb218-25" aria-hidden="true" tabindex="-1"></a>modelSB <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span></code></pre></div>
 <p>The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update <code>v</code>. See Chapter <a href="cha-mcmc.html#cha-mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcsb">10.4.2</a> for details on MCMC sampling of the stick-breaking weights.</p>
 </div>
 </div>
-<div id="mcmc-sampling-of-bnp-models" class="section level2">
-<h2><span class="header-section-number">10.4</span> MCMC sampling of BNP models</h2>
-<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">10.2.2</a> and <a href="cha-bnp.html#sec:exsb">10.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(Neal <a href="references.html#ref-neal_2000">2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_2001">2001</a>)</span> and <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002">2002</a>)</span>.</p>
-<div id="sec:mcmcdcrp" class="section level3">
-<h3><span class="header-section-number">10.4.1</span> Sampling CRP models</h3>
+<div id="mcmc-sampling-of-bnp-models" class="section level2 hasAnchor" number="10.4">
+<h2><span class="header-section-number">10.4</span> MCMC sampling of BNP models<a href="cha-bnp.html#mcmc-sampling-of-bnp-models" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">10.2.2</a> and <a href="cha-bnp.html#sec:exsb">10.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(<a href="references.html#ref-neal_2000" role="doc-biblioref">R. Neal 2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Hemant Ishwaran and James (<a href="references.html#ref-ishwaran_2001" role="doc-biblioref">2001</a>)</span> and <span class="citation">H. Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002" role="doc-biblioref">2002</a>)</span>.</p>
+<div id="sec:mcmcdcrp" class="section level3 hasAnchor" number="10.4.1">
+<h3><span class="header-section-number">10.4.1</span> Sampling CRP models<a href="cha-bnp.html#sec:mcmcdcrp" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE’s MCMC engine provides specialized samplers for the <code>dCRP</code> distribution, updating each component of the membership vector sequentially. Internally, the sampler is assigned based on inspection of the model structure, evaluating conjugacy between the mixture kernel and the baseline distribution, as follows:</p>
 <ol style="list-style-type: decimal">
 <li>A conjugate sampler in the case of the baseline distribution being conjugate for the mixture kernel.</li>
@@ -673,14 +744,14 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 </tr>
 </tbody>
 </table>
-<p>To reduce computation and improve mixing, we only sample the parameters of the clusters (e.g., <span class="math inline">\(\tilde{theta}_j\)</span> in <a href="cha-bnp.html#sec:excrp">10.2.2</a> when the associated cluster is occupied, using the <code>CRP_cluster_wrapper</code> sampler, which wraps around an underlying actual sampler. In addition, this approach requires that any sampler assigned to parameters of the base measure, <span class="math inline">\(G_0\)</span>, (i.e., unknown parameters in the prior for <span class="math inline">\(\tilde{theta}_j\)</span>) ignore cluster parameters associated with clusters that are not occupied, since their current values are meaningless. We assign a special slice sampler that determines the occupied clusters in any given iteration, called <code>slice_CRP_base_param</code>. Note that if you choose to use a different sampler for the base measure parameters, you should also avoid using the <code>CRP_cluster_wrapper</code> sampler.</p>
-<p>Finally, a specialized sampler is assigned to the <code>conc</code> hyper parameter when a gamma hyper prior is assigned, see section 6 in <span class="citation">Escobar and West (<a href="references.html#ref-escobar_west_95">1995</a>)</span> for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.</p>
-<div id="initial-values-1" class="section level4">
-<h4><span class="header-section-number">10.4.1.1</span> Initial values</h4>
+<p>To reduce computation and improve mixing, we only sample the parameters of the clusters (e.g., <span class="math inline">\(\tilde{\theta}_j\)</span> in <a href="cha-bnp.html#sec:excrp">10.2.2</a> when the associated cluster is occupied, using the <code>CRP_cluster_wrapper</code> sampler, which wraps around an underlying actual sampler. In addition, this approach requires that any sampler assigned to parameters of the base measure, <span class="math inline">\(G_0\)</span>, (i.e., unknown parameters in the prior for <span class="math inline">\(\tilde{\theta}_j\)</span>) ignore cluster parameters associated with clusters that are not occupied, since their current values are meaningless. We assign a special slice sampler that determines the occupied clusters in any given iteration, called <code>slice_CRP_base_param</code>. Note that if you choose to use a different sampler for the base measure parameters, you should also avoid using the <code>CRP_cluster_wrapper</code> sampler.</p>
+<p>Finally, a specialized sampler is assigned to the <code>conc</code> hyper parameter when a gamma hyper prior is assigned, see section 6 in <span class="citation">Escobar and West (<a href="references.html#ref-escobar_west_95" role="doc-biblioref">1995</a>)</span> for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.</p>
+<div id="initial-values-1" class="section level4 hasAnchor" number="10.4.1.1">
+<h4><span class="header-section-number">10.4.1.1</span> Initial values<a href="cha-bnp.html#initial-values-1" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>Valid initial values should be provided for all elements of the process specified by a CRP structure before running the MCMC. A simple and safe choice for <code>z</code> is to provide a sample of size <code>N</code>, the same as its length, of values between 1 and some reasonable number of clusters (less than or equal to the length of <code>z</code>), with replacement, as done in the preceding CRP example. For the concentration parameter, a safe initial value is 1.</p>
 </div>
-<div id="sampling-the-random-measure" class="section level4">
-<h4><span class="header-section-number">10.4.1.2</span> Sampling the random measure</h4>
+<div id="sampling-the-random-measure" class="section level4 hasAnchor" number="10.4.1.2">
+<h4><span class="header-section-number">10.4.1.2</span> Sampling the random measure<a href="cha-bnp.html#sampling-the-random-measure" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>In BNP models, it is oftenly of interest to make inference about the unknown measure <span class="math inline">\(G\)</span>. NIMBLE provides the <code>getSamplesDPmeasure</code> sampler to generate posterior samples of the random measure <span class="math inline">\(G\)</span> when a CRP structure is involved in the model.</p>
 <p>The <code>getSamplesDPmeasure</code> function has two arguments: <code>MCMC</code> and <code>epsilon</code>.</p>
 <p>The <code>MCMC</code> argument is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (or clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the <code>monitors</code> argument when configuring the MCMC to ensure these variables are monitored.</p>
@@ -689,27 +760,27 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 <p>Posterior samples of the random measure <span class="math inline">\(G\)</span> are (almost surely) of the form <span class="math inline">\(\sum_{l=1}^{\infty}w_l\delta_{\theta_l}\)</span>, where <span class="math inline">\(\delta_{\theta}\)</span> is the Dirac measure at <span class="math inline">\(\theta\)</span>, <span class="math inline">\(w_l\)</span> are stick-breaking weights, and <span class="math inline">\(\theta_l\)</span> are atoms (or point masses). The variables that define the stick-breaking weights are iid <span class="math inline">\(Beta(1, \alpha + N)\)</span> distributed, where <span class="math inline">\(\alpha\)</span> is the concentration parameter of the CRP distribution and <span class="math inline">\(N\)</span> is the sample size. Independently, the atoms, <span class="math inline">\(\theta_l\)</span>, are iid and follow a distribution of the form</p>
 <p><span class="math display">\[(\alpha+N)^{-1}\sum_{k=1}^{N^{\star}(\boldsymbol{z})}m_k(\boldsymbol{z})\delta_{\{\tilde{\theta}_k\}} + \alpha(\alpha+N)^{-1}G_0,\]</span></p>
 <p>where <span class="math inline">\(G_0\)</span> is the prior baseline distribution, and <span class="math inline">\(\boldsymbol{z}\)</span> and <span class="math inline">\(\tilde{\theta}_k\)</span> are posterior samples of the labeling vector and cluster parameters, respectively. Their values, together with the values of <span class="math inline">\(\alpha\)</span> (if random) are obtained from the MCMC’s output. Expressions <span class="math inline">\(m_k(\boldsymbol{z})\)</span> and <span class="math inline">\(N^{\star}(\boldsymbol{z})\)</span> are defined as in section <a href="cha-bnp.html#sec:crp">10.2</a>.</p>
-<p>The <code>getsamplesDPmeasure</code> function provides samples of a truncated version of the infinite mixture to a level <span class="math inline">\(L\)</span>. The truncation level <span class="math inline">\(L\)</span> is such that the tail probability left from the approximation is at most <code>epsilon</code>, denoted <span class="math inline">\(\epsilon\)</span>. The following relationship determines the truncation level: <span class="math inline">\(L = \log(\epsilon) / \log[(\alpha+N) / (\alpha + N +1)]\)</span>. The value of <span class="math inline">\(L\)</span> varies at each iteration of the MCMC’s output when <span class="math inline">\(\alpha\)</span> is random, while it is the same at each iteration when <span class="math inline">\(\alpha\)</span> is fixed. For more details about sampling the random measure and its truncation level see <span class="citation">Gelfand and Kottas (<a href="references.html#ref-gelfand_2002">2002</a>)</span>.</p>
+<p>The <code>getsamplesDPmeasure</code> function provides samples of a truncated version of the infinite mixture to a level <span class="math inline">\(L\)</span>. The truncation level <span class="math inline">\(L\)</span> is such that the tail probability left from the approximation is at most <code>epsilon</code>, denoted <span class="math inline">\(\epsilon\)</span>. The following relationship determines the truncation level: <span class="math inline">\(L = \log(\epsilon) / \log[(\alpha+N) / (\alpha + N +1)]\)</span>. The value of <span class="math inline">\(L\)</span> varies at each iteration of the MCMC’s output when <span class="math inline">\(\alpha\)</span> is random, while it is the same at each iteration when <span class="math inline">\(\alpha\)</span> is fixed. For more details about sampling the random measure and its truncation level see <span class="citation">Gelfand and Kottas (<a href="references.html#ref-gelfand_2002" role="doc-biblioref">2002</a>)</span>.</p>
 <p>Because of the discrete nature of the atom’s distribution, the stick-breaking representation truncated to a level <span class="math inline">\(L\)</span> will generally have repeated values. Therefore, in order to reduce the output’s dimensionality, the stick-breaking weights of identical atoms are added up. This results in samples of <span class="math inline">\(G\)</span> that have only the ‘unique’ atoms in <span class="math inline">\(\{\theta_l\}_{l=1}^L\)</span>.</p>
 <p>The following code exemplifies how to generate samples from <span class="math inline">\(G\)</span> after defining the model as in Section <a href="cha-bnp.html#sec:excrp">10.2.2</a>.</p>
-<div class="sourceCode" id="cb217"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb217-1" title="1">cmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(model)</a>
-<a class="sourceLine" id="cb217-2" title="2"></a>
-<a class="sourceLine" id="cb217-3" title="3">monitors &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&#39;z&#39;</span>, <span class="st">&#39;thetatilde&#39;</span>, <span class="st">&#39;s2tilde&#39;</span> , <span class="st">&#39;alpha&#39;</span>)</a>
-<a class="sourceLine" id="cb217-4" title="4">modelConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(model, <span class="dt">monitors =</span> monitors)</a>
-<a class="sourceLine" id="cb217-5" title="5">modelMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(modelConf)</a>
-<a class="sourceLine" id="cb217-6" title="6"></a>
-<a class="sourceLine" id="cb217-7" title="7">cmodelMCMC &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(modelMCMC, <span class="dt">project =</span> model)</a>
-<a class="sourceLine" id="cb217-8" title="8">cmodelMCMC<span class="op">$</span><span class="kw">run</span>(<span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb217-9" title="9"></a>
-<a class="sourceLine" id="cb217-10" title="10">samplesG &lt;-<span class="st"> </span><span class="kw">getSamplesDPmeasure</span>(cmodelMCMC)</a></code></pre></div>
+<div class="sourceCode" id="cb219"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb219-1"><a href="cha-bnp.html#cb219-1" aria-hidden="true" tabindex="-1"></a>cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
+<span id="cb219-2"><a href="cha-bnp.html#cb219-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb219-3"><a href="cha-bnp.html#cb219-3" aria-hidden="true" tabindex="-1"></a>monitors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;z&#39;</span>, <span class="st">&#39;thetatilde&#39;</span>, <span class="st">&#39;s2tilde&#39;</span> , <span class="st">&#39;alpha&#39;</span>)</span>
+<span id="cb219-4"><a href="cha-bnp.html#cb219-4" aria-hidden="true" tabindex="-1"></a>modelConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(model, <span class="at">monitors =</span> monitors)</span>
+<span id="cb219-5"><a href="cha-bnp.html#cb219-5" aria-hidden="true" tabindex="-1"></a>modelMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(modelConf)</span>
+<span id="cb219-6"><a href="cha-bnp.html#cb219-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb219-7"><a href="cha-bnp.html#cb219-7" aria-hidden="true" tabindex="-1"></a>cmodelMCMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(modelMCMC, <span class="at">project =</span> model)</span>
+<span id="cb219-8"><a href="cha-bnp.html#cb219-8" aria-hidden="true" tabindex="-1"></a>cmodelMCMC<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1000</span>)</span>
+<span id="cb219-9"><a href="cha-bnp.html#cb219-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb219-10"><a href="cha-bnp.html#cb219-10" aria-hidden="true" tabindex="-1"></a>samplesG <span class="ot">&lt;-</span> <span class="fu">getSamplesDPmeasure</span>(cmodelMCMC)</span></code></pre></div>
 </div>
 </div>
-<div id="sec:mcmcsb" class="section level3">
-<h3><span class="header-section-number">10.4.2</span> Sampling stick-breaking models</h3>
+<div id="sec:mcmcsb" class="section level3 hasAnchor" number="10.4.2">
+<h3><span class="header-section-number">10.4.2</span> Sampling stick-breaking models<a href="cha-bnp.html#sec:mcmcsb" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE’s MCMC engine provides specialized samplers for the
 beta-distributed random variables that are the arguments to the stick-breaking function, updating each component of the weight vector sequentially. The sampler is assigned based on inspection of the model structure. Specifically, the specialized sampler is assigned when the membership vector has a categorical distribution, its weights are defined by a stick-breaking function, and the vector defining the weights follows a beta distribution.</p>
-<div id="initial-values-2" class="section level4">
-<h4><span class="header-section-number">10.4.2.1</span> Initial values</h4>
+<div id="initial-values-2" class="section level4 hasAnchor" number="10.4.2.1">
+<h4><span class="header-section-number">10.4.2.1</span> Initial values<a href="cha-bnp.html#initial-values-2" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>Valid initial values should be provided for all elements of the stick-breaking function and membership variable before running the MCMC. A simple and safe choice for <span class="math inline">\(z\)</span> is to provide a sample of size <span class="math inline">\(N\)</span>, of values between 1 and some value less than <span class="math inline">\(L\)</span>, with replacement, as done in the preceding stick-breaking example. For the stick variables, safe initial values can be simulated from a beta distribution.</p>
 
 </div>

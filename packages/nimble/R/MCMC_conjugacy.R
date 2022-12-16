@@ -1136,7 +1136,9 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansionsNode = NULL) {
+cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansionsNode = NULL, prevExpr = NULL) {
+    ## prevents an infinite-recursion case, where structureExpr(EXPR) is repeatedly processed, indefinitely (DT Aug 2022):
+    if(!is.null(prevExpr) && identical(expr, prevExpr)) return(expr)
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
@@ -1169,7 +1171,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                         ## sapply business gets rid of () at end of index expression
                         newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
                         for(i in seq_along(newExpr)[-1])
-                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
                         return(newExpr)
                     }
                 }  ## else continue with processing as in non-dynamic index case
@@ -1198,7 +1200,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
         return(newExpr)
     }
     if(is.call(expr)) {
@@ -1361,8 +1363,15 @@ cc_checkLinearity <- function(expr, targetNode) {
         return(list(offset = cc_replace01(expr), scale = 0))  
     }
 
-    ## expr is exactly the targetNode
-    if(identical(targetNode, safeDeparse(expr, warn = TRUE)))
+    ## Check if expr is exactly the targetNode.
+    
+    ## `deparse()` may return multiple lines, which will cause `FALSE` here.
+    ## That should always be correct as multiple lines would only occur
+    ## when `expr` is not a node name. It's possible one could have a node name
+    ## with many indices and large integers as indices (e.g., x[13434, 1342352,...])
+    ## but to get to a length that would get deparsed to multiple lines
+    ## would entail a gigantic object.
+    if(identical(targetNode, deparse(expr)))
         return(list(offset = 0, scale = 1))
 
     if(!is.call(expr))   stop('cc_checkLinearity: expression is not a call object')

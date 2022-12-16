@@ -395,6 +395,7 @@ waicDetailsList <- nimbleList(
         nimbleType('niterMarginal', 'double', 0),
         nimbleType('thin', 'logical', 0),
         nimbleType('online', 'logical', 0),
+        nimbleType('nburnin_extra', 'double', 0),
 
         ## values for shorter MC runs to assess convergence for marginal calculation
         nimbleType('WAIC_partialMC', 'double', 1),

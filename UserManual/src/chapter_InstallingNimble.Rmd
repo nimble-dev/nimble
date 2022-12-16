@@ -100,12 +100,12 @@ The following are some troubleshooting tips that have helped users in some situa
 For Windows:
 
   - Be sure you have set `PATH` when installing Rtools (see instructions above in the Windows installation section).  Alternatively, one can set the `PATH` manually using syntax similar to this (after changing  `C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin` to be appropriate for your system):
-```{r, eval=FALSE}
-path <- Sys.getenv('PATH')
-newPath <- paste("C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin;",
+    ```{r, eval=FALSE}
+    path <- Sys.getenv('PATH')
+    newPath <- paste("C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin;",
                  path, sep = "")
-Sys.setenv(PATH = newPath) 
-```      
+    Sys.setenv(PATH = newPath) 
+    ```      
   - Be sure the `Rtools.exe` version matches the R version.
   - Try re-installing `Rtools` followed by re-installing NIMBLE.
   - If you're using Rtools40, make sure you are using a newer version or RStudio (at least 1.2.5042).
@@ -117,9 +117,9 @@ For MacOS:
 
   - Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.
   - Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:
-```{bash, eval=FALSE}
-xcode-select --install
-```
+    ```{bash, eval=FALSE}
+    xcode-select --install
+    ```
   - If multiple C++ compilers are present on a system, be sure the `PATH` will find the right one.
 
 All operating systems:
@@ -148,9 +148,15 @@ You can specify a particular location in either of two ways:
 
   1. Set the environment variable `EIGEN_DIR` before installing the R package, for example: `export EIGEN_DIR=/usr/include/eigen3` in the bash shell.
   2. Use
-     `R CMD INSTALL --configure-args='--with-eigen=/path/to/eigen' nimble_VERSION.tar.gz`
+  
+     ```bash
+     R CMD INSTALL --configure-args='--with-eigen=/path/to/eigen' nimble_VERSION.tar.gz
+     ```
      or
-     `install.packages("nimble", configure.args = "--with-eigen=/path/to/eigen")`
+     
+     ```bash
+     install.packages("nimble", configure.args = "--with-eigen=/path/to/eigen")
+     ```
     
 In these cases, the directory should be the full path to the directory that
 contains the Eigen directory, e.g., `/usr/include/eigen3`. It is not the full path to the Eigen

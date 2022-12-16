@@ -606,5 +606,34 @@ test_that("warning for multiple layers of latent nodes", {
 
 })
 
+test_that("use of extra burnin of online WAIC", {
+    code <- nimbleCode({
+        y ~ dnorm(mu, 1)
+        mu ~ dnorm(0, 1)
+    })
+
+    m <- nimbleModel(code, data = list(y = 0), inits = list(mu = 1))
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(m, enableWAIC = TRUE)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out1 <- runMCMC(cmcmc, niter = 500, nburnin = 100)
+    waic1 <- cmcmc$getWAIC()
+
+    cm$mu <- 1
+    set.seed(1)
+    out2 <- runMCMC(cmcmc, niter = 500, nburnin = 50)
+    waic2 <- cmcmc$getWAIC()
+
+    cm$mu <- 1
+    set.seed(1)
+    out3 <- runMCMC(cmcmc, niter = 500, nburnin = 50)
+    waic3 <- calculateWAIC(cmcmc, nburnin = 50)
+
+    expect_equal(waic1, waic2)
+    expect_equal(waic1, waic3)
+})
+
+
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

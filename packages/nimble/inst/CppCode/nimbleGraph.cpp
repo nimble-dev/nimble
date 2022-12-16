@@ -180,7 +180,7 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
   PRINTF("numNodes %i\n", numNodes);
   PRINTF("numEdges %i\n", numEdges);
 #endif
-  if((numEdges != edgesTo.size()) | (numEdges != edgesFrom2ParentExprIDs.size()) | (numNodes != types.size()) | (numNodes != names.size())) {
+  if((numEdges != edgesTo.size()) || (numEdges != edgesFrom2ParentExprIDs.size()) || (numNodes != types.size()) || (numNodes != names.size())) {
     PRINTF("Something is not the right size\n");
     return;
   }
@@ -223,7 +223,7 @@ bool nimbleGraph::anyStochDependenciesOneNode(vector<int> &anyStochDependencies,
   }
   int i(0);
   /* Check type of children without recursing.  If any are STOCH, answer is true */
-  while((i < numChildren) & (!thisHasAstochDep)) {
+  while((i < numChildren) && (!thisHasAstochDep)) {
     if(thisGraphNode->children[i]->type == STOCH) {
       thisHasAstochDep = true;
     }
@@ -236,7 +236,7 @@ bool nimbleGraph::anyStochDependenciesOneNode(vector<int> &anyStochDependencies,
   }
   /* all children were not STOCH, so now recurse through children */
   i = 0;
-  while((i < numChildren) & (!thisHasAstochDep)) {
+  while((i < numChildren) && (!thisHasAstochDep)) {
     thisChildNode = thisGraphNode->children[i];
     if(anyStochDependenciesOneNode(anyStochDependencies, thisChildNode->CgraphID)) {
       thisHasAstochDep = true;
@@ -272,7 +272,7 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int Cgra
     return(false);
   }
   int i(0);
-  while((i < numParents) & (!thisHasAstochParent)) {
+  while((i < numParents) && (!thisHasAstochParent)) {
     if(thisGraphNode->parents[i]->type == STOCH) {
       thisHasAstochParent = true;
     }
@@ -283,7 +283,7 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int Cgra
     return(true);
   }
   i = 0;
-  while((i < numParents) & (!thisHasAstochParent)) {
+  while((i < numParents) && (!thisHasAstochParent)) {
     thisParentNode = thisGraphNode->parents[i];
     if(anyStochParentsOneNode(anyStochParents, thisParentNode->CgraphID)) {
       thisHasAstochParent = true;
@@ -398,7 +398,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 #ifdef _DEBUG_GETDEPS
       PRINTF("  Node %i was already touched.\n", thisGraphNodeID);
 #endif
-      if((thisGraphNode->type == STOCH) & !downstream) {
+      if((thisGraphNode->type == STOCH) && !downstream) {
 	/* In this case the input node was already touched, so it is a dependency */
 	/* of something earlier on the input list.  But since it was on the input list */
 	/* we still need to get its dependencies.  But if downstream is TRUE (==1), then */
@@ -466,7 +466,7 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps,
     else
       deps.push_back(thisChildNode->CgraphID); /* LHSINFERRED nodes used to be included here and stripped in R before final return, but there was a bug stripping "split" nodes that have %.s% notation, so now LHSINFERRED are not returned. */
     thisChildNode->touched = true;
-    if(downstream | (thisChildNode->type != STOCH)) {
+    if(downstream || (thisChildNode->type != STOCH)) {
 #ifdef _DEBUG_GETDEPS
       PRINTF("          Recursing into child node %i\n", thisChildCgraphID);
 #endif
@@ -607,7 +607,7 @@ void nimbleGraph::getParentsOneNode(vector<int> &deps,
       deps.push_back(thisParentNode->CgraphID); 
     thisParentNode->touched = true;
     if(recurse || lhsi) { // left-hand-side-inferred over-rides recurse == false because lhsi nodes are "invisible"
-      if(upstream | (thisParentNode->type != STOCH)) {
+      if(upstream || (thisParentNode->type != STOCH)) {
 	getParentsOneNode(deps, tempDeps, thisParentCgraphID, upstream, recursionDepth + 1, recurse);
       }
     }

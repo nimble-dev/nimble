@@ -274,6 +274,15 @@ test_that('CAR conjugacy checking new skipExpansionsNode system', {
     expect_true(all(round(as.numeric(Csamples[10,Rcolnames]),8) == expectedSamples))
 })
 
+test_that('rcar_normal errors out from uncompiled command line execution', {
+    adj <- c(2, 1,3, 2,4, 3)
+    weights <- adj/adj
+    num <- c(1, 2, 2, 1)
+    expect_error(rcar_normal(n = 1,  adj, weights, num))
+    model <- 4
+    expect_error(rcar_normal(n = 1,  adj, weights, num))
+})
+
 
 
 

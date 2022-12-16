@@ -1027,7 +1027,14 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
     ## since initializeModel() will call this simulate method if there are any NA's present,
     ## (which is allowed for island components), which over-writes all the other valid initial values.
     ##return(rep(NaN, length(num)))
-    currentValues <- eval(quote(model[[nodes]]), parent.frame(3))
+
+    ## issue 1238: this fails if `nodes` has more than the CAR node
+    ## currentValues <- eval(quote(model[[nodes]]), parent.frame(3))
+    e <- try(m <- get('model', parent.frame(2)), silent = TRUE)
+    if(inherits(e, 'try-error') || !is.model(m)) stop('The car_normal distribution is improper, and cannot be used to simulate process values.  See help(dcar_normal) for details.', call. = FALSE)
+    nodeName <- eval(quote(model$modelDef$declInfo[[declIDs[i]]]$targetNodeName),parent.frame(2))
+    currentValues <- eval(substitute(model[[nodeName]], list(nodeName = nodeName)),
+                          parent.frame(2))
     return(currentValues)
 }
 

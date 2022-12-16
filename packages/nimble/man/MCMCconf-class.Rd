@@ -30,6 +30,17 @@ See documentation below for method initialize() for details of creating an MCMCc
 \section{Methods}{
 
 \describe{
+\item{\code{addDefaultSampler(
+  nodes = character(),
+  control = list(),
+  useConjugacy = getNimbleOption("MCMCuseConjugacy"),
+  onlyRW = FALSE,
+  onlySlice = FALSE,
+  multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
+  print = TRUE,
+  ...
+)}}{For internal use.  Adds default MCMC samplers to the specified nodes.}
+
 \item{\code{addMonitors(..., ind = 1, print = TRUE)}}{Adds variables to the list of monitors.
 
 Arguments:
@@ -53,35 +64,60 @@ Details: See the initialize() function
             }
 
 \item{\code{addSampler(
-  target,
+  target = character(),
   type = "RW",
   control = list(),
-  print = FALSE,
+  print = NULL,
   name,
-  scalarComponents = FALSE,
+  scalarComponents,
+  expandTarget = FALSE,
   silent = FALSE,
+  nodes = character(),
+  default = FALSE,
+  useConjugacy = getNimbleOption("MCMCuseConjugacy"),
+  onlyRW = FALSE,
+  onlySlice = FALSE,
+  multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   ...
 )}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
 
 Arguments:
 
-target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  This argument is required.
+target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  For univariate samplers, only a single target node should be provided (unless `expandTarget` = TRUE).  For multivariate samplers, one instance of the multivariate sampler will be assigned to all nodes specified.  Only one of the 'target' or 'nodes' argument should be provided.
 
-type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type='newSamplerType', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the 'name' argument may also be supplied to provide a meaningful name for this sampler.  The default value is 'RW' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if 'target' specifies more than one target node.
+type: When 'default' is FALSE, specifies the type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type='newSamplerType', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the 'name' argument may also be supplied to provide a meaningful name for this sampler.  The default value is 'RW' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if 'target' specifies more than one target node (unless 'expandTarget' is TRUE).  This argument is not used when the 'default' argument is TRUE.
 
-control: A list of control arguments specific to the sampler function. These will override those specified in the control list argument to configureMCMC().
+control: An optional list of control arguments to sampler functions.  These will override those specified in the control list argument to configureMCMC.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given. For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements 'adaptive', 'adaptInterval', 'scale'. The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC or addSampler) are contained in the setup code of each sampling algorithm.
 
-print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
+print: Logical argument, specifying whether to print the details of newly added samplers.
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If 'name' is not provided, the 'type' argument is used to generate the sampler name.
 
-scalarComponents: Logical argument, indicating whether the specified sampler 'type' should be assigned independently to each scalar (univariate) component of the specified 'target' node or variable.  This option should only be specified as TRUE when the sampler 'type' specifies a univariate sampler.
+scalarComponents: Deprecated, and replaced by the 'expandTarget' argument, which operates identically by expanding the 'target' argument.  The 'scalarComponents' argument may be removed in a future release.
+
+expandTarget: Logical argument, indicating whether to expand the 'target' argument to separate all constitutent model nodes.  In this case, samplers will be assigned independently to each node component of 'target'.  That is, distinct instances of the specified sampler will be assigned to each of the nodes which comprise 'target'.  If 'target' is comprised of multiple univariate nodes, then a univariate sampler should be specified, and similarly when 'target' expands to one or more multivariate nodes, then a multivariate sampler should be specified.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
+nodes: Identical to the 'target' argument, with the exception that 'nodes' always undergo expansion.  Only one of the 'target' or 'nodes' argument should be provided.
+
+default: Logical argument, with default value FALSE.  When FALSE, the 'type' argument dictates what sampling algorithm is assigned to the specified nodes.  When TRUE, default samplers will be assigned to the specified nodes following the same logic as the configureMCMC method, and also using the 'useConjugacy', 'onlyRW', 'onlySlice' and 'multivariateNodesAsScalars' arguments.
+
+useConjugacy: Logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.  This argument is only used when the 'default' argument is TRUE.
+
+onlyRW: Logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler, and terminal nodes are assigned a posterior_predictive sampler.  This argument is only used when the 'default' argument is TRUE.
+
+onlySlice: Logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.  This argument is only used when the 'default' argument is TRUE.
+
+multivariateNodesAsScalars: Logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.  This argument is only used when the 'default' argument is TRUE.
+
 ...: Additional named arguments passed through ... will be used as additional control list elements.
 
-Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
+Details:
+
+Samplers will be assigned to nodes specified by either the 'target' or the 'nodes' argument.  The 'target' argument does not undergo expansion, unless 'expandTarget' is TRUE.  Providing the 'target' argument is useful for assigning a univariate sampler to a single univariate node, or assigning a single block sampler to a group of univariate nodes.  In contrast, the 'nodes' argument always undergoes expansion, to sepearate it into its constituent model nodes.  Then, multiple samplers are added to each constituent model node.  Providing 'target' along with 'expandTarget' = TRUE is functionally the same as providing the 'nodes' argument, which is added as a convenience for adding multiple samplers.  Both 'target' and 'nodes' should not be simultaneously provided.
+
+Samplers are added added to the end of the list of samplers for this MCMCconf object, and do not replace any exisiting samplers.  Samplers are removed using the removeSamplers method.
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.}
 
@@ -135,7 +171,6 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
   controlWAIC = list(),
-  warnNoSamplerAssigned = TRUE,
   print = TRUE,
   ...
 )}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
@@ -177,8 +212,6 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 controlWAIC A named list of inputs that control the behavior of the WAIC calculation, passed as the 'control' input to 'buildWAIC'. See 'help(waic)`.
 
-warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
-
 print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.}
@@ -219,15 +252,25 @@ byType: A logical argument, specifying whether the nodes being sampled should be
 
 \item{\code{removeSamplers(..., ind, print = FALSE)}}{Removes one or more samplers from an MCMCconf object.
 
-Arguments:
-
 This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
+
+Arguments:
 
 ...: Character node names or numeric indices.  Character node names specify the node names for samplers to remove, or numeric indices can provide the indices of samplers to remove.
 
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose 'target' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).}
+
+\item{\code{replaceSampler(...)}}{Alias for replaceSamplers method}
+
+\item{\code{replaceSamplers(...)}}{Replaces one or more samplers from an MCMCconf object with newly specified sampler(s).  Operation and arguments are identical to the 'addSampler' method, with the additional side effect of first removing any existing samplers which operate on the specified node(s).
+
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
+
+See 'addSamplers' for a description of the arguments.
+
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the newly specified set of samplers, sequentially, executing each sampler once.}
 
 \item{\code{resetMonitors()}}{Resets the current monitors and monitors2 lists to nothing.
 

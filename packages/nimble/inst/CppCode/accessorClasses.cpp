@@ -1111,7 +1111,7 @@ void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int snDim, con
   int Rindexing(1); // assume indexing comes in R form (Starting at 1).  output does not depend on indexing.
   int offset = 0;
   int currentStride = 1;
-  if((nDim > 0) & (varAndInds.indices.size() == 0)) {
+  if((nDim > 0) && (varAndInds.indices.size() == 0)) {
     if(sizes.size() == 0) output.sizes.push_back(1); else output.sizes = sizes;
     output.strides.push_back(1);
     if(nDim > 1) {
@@ -1376,7 +1376,7 @@ void cAddAccessor(Many* mPtr, Single* sPtr, bool addAtEnd, int index){
 		(*mPtr).varAccessors.push_back(sPtr);
 		return;
 	}
-	if((index >= size) | (index < 0)){
+	if((index >= size) || (index < 0)){
 		PRINTF("Invalid index passed to addAccessor\n");
 		return;
 	}

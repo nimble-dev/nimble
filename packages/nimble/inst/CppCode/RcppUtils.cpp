@@ -45,7 +45,7 @@ void multivarTestCall(double *x, int n) {
 vector<int> getSEXPdims(SEXP Sx) {
   if(!Rf_isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
   if(!Rf_isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
-  if(!Rf_isArray(Sx) & !Rf_isMatrix(Sx)) {
+  if(!Rf_isArray(Sx) && !Rf_isMatrix(Sx)) {
     vector<int> ans; 
     ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
   }
@@ -606,7 +606,7 @@ SEXP fastMatrixInsert(SEXP matrixInto, SEXP matrix, SEXP rowStart, SEXP colStart
 	int cRowStart = INTEGER(rowStart)[0] - 1;
 	int cColStart = INTEGER(colStart)[0] - 1;
 	
-	if((I + cRowStart > Iinto) | (J + cColStart > Jinto)){
+	if((I + cRowStart > Iinto) || (J + cColStart > Jinto)){
 		UNPROTECT(2);
 		PRINTF("Matrix copying not allowed for given indices\n");
 		return(R_NilValue);
@@ -807,7 +807,7 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
   while(!done) {
     iColon   = restOfInput.find_first_of(':');
     iComma   = restOfInput.find_first_of(',');
-    if((iColon < iBracket) & (iColon < iComma)) { // next is a colon expr like 2:5
+    if((iColon < iBracket) && (iColon < iComma)) { // next is a colon expr like 2:5
       firstNum = nimble_stoi(restOfInput);
       iNextStart = iColon + 1;
       restOfInput = restOfInput.substr(iNextStart);

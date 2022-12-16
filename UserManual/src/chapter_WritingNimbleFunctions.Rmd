@@ -614,7 +614,30 @@ If you define it in a function (which would generally be the case if you are usi
 ```{r, eval=FALSE}
 assign('sampler_yourSampler', sampler_yourSampler, envir = .GlobalEnv)
 ```
-        
+
+### User-defined samplers and posterior predictive nodes
+
+As of version 0.13.0, NIMBLE's handling of posterior predictive nodes in MCMC sampling has changed in order to improve MCMC mixing. Samplers for nodes that are not posterior predictive nodes no longer condition on the values of the posterior predictive nodes. This is done by two changes:
+
+ - turning off posterior predictive nodes as dependencies in the use of `getDependencies` when building an MCMC, and
+ - moving all posterior predictive samplers to be last in the order of samplers used in an MCMC iteration.
+ 
+The first change calls for careful consideration when writing new samplers. It is done by making `buildMCMC` set a NIMBLE system option (described below) that tells `getDependencies` to ignore posterior predictive nodes (defined as nodes that are themselves not data and have no data nodes in their entire downstream (descendant) dependency network) before it builds the samplers (i.e., runs the setup code of each sampler). That way, the setup code of all samplers that use `getDependencies` will automatically comply with the new system.
+
+User-defined samplers that determine dependencies using `getDependencies` should automatically work in the new system (although it is worth checking). However if a user-defined sampler manually specifies dependencies, and if those dependencies include posterior predictive nodes, the MCMC results could be incorrect. Whether incorrect results occur could depend on other parts of the model structure connected to node(s) sampled by the user-defined sampler (i.e., the target node(s)) and/or posterior predictive nodes. Therefore, it is strongly recommended that all user-defined samplers rely on `getDependencies` to determine which nodes depend on the target node(s).
+
+There are several new NIMBLE system options available to take control of the behavior just described.
+
+ - `getDependenciesIncludesPredictiveNodes` determines whether posterior predictive nodes are included in results of `getDependencies`. This defaults to `TRUE`, so that outside of building samplers, the behavior of `getDependencies` should be identical to previous versions of NIMBLE.
+ - `MCMCusePredictiveDependenciesInCalculations` gives the value to which   
+   `getDependenciesIncludesPredictiveNodes` will be set while building samplers. This defaults to `FALSE`.
+ - `MCMCorderPosteriorPredictiveSamplersLast` determines whether posterior predictive samplers are moved to the end of the sampler list. This default to `TRUE`. Behavior prior to version 0.13.0 corresponds to `FALSE`.
+
+Here are some examples of how to use these options:
+
+ - If you want to have MCMC samplers condition on posterior predictive nodes, do `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)`.
+ - If you want to get identical MCMC samplers, including their ordering, as in versions prior to 0.13.0, do `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` and `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
+ - If you want to experiment with the behavior of `getDependencies` when ignoring posterior predictive nodes, do `nimbleOptions(getDependenciesIncludesPredictiveNodes = FALSE)`.
         
 ## Copying nimbleFunctions (and NIMBLE models)
 

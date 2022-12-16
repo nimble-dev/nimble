@@ -912,7 +912,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             ## if it can be called only in R but not all contents are replaceable, generate error:
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName, envir))
-                    stop("R function '", funName,"' does not exist.")
+                    stop("R function '", funName,"' in the code '", safeDeparse(code), "' does not exist.")
                 if(funName == ":") ## dynamic indexing in a vector of indices
                     stop("Dynamic indexing found in a vector of indices, ", safeDeparse(code), ". Only scalar indices, such as 'idx' in 'x[idx]', can be dynamic. One can instead use dynamic indexing in a vector of indices inside a nimbleFunction.") 
                 unreplaceable <-
@@ -921,7 +921,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                            )
                 stop("R function '",
                      funName,
-                     "' has arguments that cannot be evaluated; either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ",
+                     "' has arguments that cannot be evaluated in the code '", safeDeparse(code), "'. Either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ",
                      paste(unreplaceable, collapse = ","),
                      ".")
             }

@@ -747,6 +747,7 @@ void waicDetailsList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_niterMarginal;
   SEXP S_thin;
   SEXP S_online;
+  SEXP S_nburnin_extra;
   SEXP S_WAIC_partialMC;
   SEXP S_lppd_partialMC;
   SEXP S_pWAIC_partialMC;
@@ -768,6 +769,9 @@ void waicDetailsList::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S_online =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("online")));
+  PROTECT(S_nburnin_extra =
+              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                                Rf_install("nburnin_extra")));
   PROTECT(S_WAIC_partialMC =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("WAIC_partialMC")));
@@ -793,6 +797,7 @@ void waicDetailsList::copyFromSEXP(SEXP S_nimList_) {
   niterMarginal = SEXP_2_double(S_niterMarginal);
   thin = SEXP_2_bool(S_thin);
   online = SEXP_2_bool(S_online);
+  nburnin_extra = SEXP_2_double(S_nburnin_extra);
   SEXP_2_NimArr<1>(S_WAIC_partialMC, WAIC_partialMC);
   SEXP_2_NimArr<1>(S_lppd_partialMC, lppd_partialMC);
   SEXP_2_NimArr<1>(S_pWAIC_partialMC, pWAIC_partialMC);
@@ -808,6 +813,7 @@ SEXP waicDetailsList::copyToSEXP() {
   SEXP S_niterMarginal;
   SEXP S_thin;
   SEXP S_online;
+  SEXP S_nburnin_extra;
   SEXP S_WAIC_partialMC;
   SEXP S_lppd_partialMC;
   SEXP S_pWAIC_partialMC;
@@ -822,6 +828,7 @@ SEXP waicDetailsList::copyToSEXP() {
     PROTECT(S_niterMarginal = double_2_SEXP(niterMarginal));
     PROTECT(S_thin = bool_2_SEXP(thin));
     PROTECT(S_online = bool_2_SEXP(online));
+    PROTECT(S_nburnin_extra = double_2_SEXP(nburnin_extra));
     PROTECT(S_WAIC_partialMC = NimArr_2_SEXP<1>(WAIC_partialMC));
     PROTECT(S_lppd_partialMC = NimArr_2_SEXP<1>(lppd_partialMC));
     PROTECT(S_pWAIC_partialMC = NimArr_2_SEXP<1>(pWAIC_partialMC));
@@ -837,6 +844,8 @@ SEXP waicDetailsList::copyToSEXP() {
     Rf_defineVar(Rf_install("thin"), S_thin,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("online"), S_online,
+                 PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    Rf_defineVar(Rf_install("nburnin_extra"), S_niterMarginal,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("WAIC_partialMC"), S_WAIC_partialMC,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
@@ -874,6 +883,7 @@ void waicDetailsList::copyFromRobject(SEXP Robject) {
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("niterMarginal");
   COPY_LOGICAL_SCALAR_FROM_R_OBJECT("thin");
   COPY_LOGICAL_SCALAR_FROM_R_OBJECT("online");
+  COPY_DOUBLE_SCALAR_FROM_R_OBJECT("nburnin_extra");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("WAIC_partialMC");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("lppd_partialMC");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("pWAIC_partialMC");
@@ -890,6 +900,7 @@ waicDetailsList::waicDetailsList() {
   namedObjects["niterMarginal"] = &niterMarginal;
   namedObjects["thin"] = &thin;
   namedObjects["online"] = &online;
+  namedObjects["nburnin_extra"] = &nburnin_extra;
   namedObjects["WAIC_partialMC"] = &WAIC_partialMC;
   namedObjects["lppd_partialMC"] = &lppd_partialMC;
   namedObjects["pWAIC_partialMC"] = &pWAIC_partialMC;

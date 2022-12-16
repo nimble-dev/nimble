@@ -173,7 +173,7 @@ void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x,  bool symmetric, 
 				sorted_eigVecs.col(i) = solver2.eigenvectors().real().col(sortIndices[i].second);
 				for(int j = 0; j<x.rows(); j++){
 					if(solver2.eigenvectors().imag()(j, sortIndices[i].second) != 0){
-						_nimble_global_output <<"Run-time warning: matrix matrix used in call to nimEigen() has a complex valued eigenvector."<<"\n"; nimble_print_to_R(_nimble_global_output);
+						_nimble_global_output <<"Run-time warning: matrix used in call to nimEigen() has a complex valued eigenvector."<<"\n"; nimble_print_to_R(_nimble_global_output);
 						sorted_eigVecs(j, i) = NAN;
 					}
 				}
