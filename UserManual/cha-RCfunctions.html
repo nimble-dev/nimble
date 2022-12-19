@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.26 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.30 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -155,7 +155,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.13.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 0.13.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -1540,14 +1540,14 @@ and will be re-sized for the result.</li>
 <h4><span class="header-section-number">11.3.2.8</span> Size warnings and the potential for crashes<a href="cha-RCfunctions.html#sec:size-warn-potent" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>For matrix algebra, NIMBLE cannot ensure perfect behavior because
 sizes are not known until run time. Therefore, it is possible for you
-to write code that will crash your R session. In Version 0.13.0, NIMBLE
+to write code that will crash your R session. In Version 0.13.1, NIMBLE
 attempts to issue a warning if sizes are not compatible, but it does not
 halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication,
 NIMBLE will output a warning that the number of rows of <code>M1</code> does not
 match the number of columns of <code>M2</code>. After that warning the statement
 will be executed and may result in a crash. Another easy way to write
 code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to
-prevent crashes, but in Version 0.13.0 we limit ourselves to trying to provide
+prevent crashes, but in Version 0.13.1 we limit ourselves to trying to provide
 useful information.</p>
 </div>
 </div>
@@ -1682,7 +1682,7 @@ gitbook.start({
     var script = document.createElement("script");
     script.type = "text/javascript";
     var src = "true";
-    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
     if (location.protocol !== "file:")
       if (/^https?:/.test(src))
         src = src.replace(/^https?:/, '');
