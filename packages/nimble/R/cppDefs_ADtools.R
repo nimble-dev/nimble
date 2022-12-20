@@ -5,6 +5,8 @@
 ## The model will contain an ADproxyModel
 ## and then the nodeFunction setup code will extract it.
 ## The model interface will population the proxy model's CobjectInterface
+
+#' @export
 ADproxyModelClass <- setRefClass(
     'ADproxyModelClass',
     fields = list(

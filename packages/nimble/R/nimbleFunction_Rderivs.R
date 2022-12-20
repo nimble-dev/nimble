@@ -111,8 +111,7 @@ nimDerivs <- function(call = NA,
   ans
 }
 
-calcDerivs_hessian <- function(func, X, n, deriv_package = "pracma") {
-    use_pracma <- deriv_package == "pracma"
+calcDerivs_hessian <- function(func, X, n) { # deriv_package = "pracma"
     if(missing(n)) {
         check <- func(X)
         n <- length(check)
@@ -121,19 +120,20 @@ calcDerivs_hessian <- function(func, X, n, deriv_package = "pracma") {
     outHess <- array(NA, dim = c(p, p, n))
     for(i in 1:n) {
         wrapped_func <- function(X) as.numeric(func(X))[i]
-        if(use_pracma)
-            outHess[, , i] <- pracma::hessian(wrapped_func, X)
-        else
-            outHess[, , i] <- numDeriv::hessian(wrapped_func, X)
+        ## We can't import both pracma::hessian and numDeriv::hessian,
+        ## as R CMD INSTALL gives
+        ## Warning: replacing previous import ‘pracma::hessian’ by ‘numDeriv::hessian’ when loading ‘nimble’
+        outHess[, , i] <- pracma::hessian(wrapped_func, X)
+        ## if(deriv_package == "pracma")
+        ##     outHess[, , i] <- pracma::hessian(wrapped_func, X)
+        ## else
+        ##     outHess[, , i] <- hessian(wrapped_func, X)
     }
     outHess
 }
 
-calcDerivs_internal <- function(func, X, order, resultIndices ) {
-    if(!require('numDeriv'))
-        stop("The 'numDeriv' package must be installed to use derivatives in
-         uncompiled nimbleFunctions.")
-
+calcDerivs_internal <- function(func, X, order, resultIndices) { # deriv_package = "pracma"
+    deriv_package <- "pracma"  # fixed given can't import both pracma and numDeriv hessian()
     hessianFlag <- 2 %in% order
     jacobianFlag <- 1 %in% order
     ## When called for a model$calculate, valueFlag will always be 0 here
@@ -162,32 +162,31 @@ calcDerivs_internal <- function(func, X, order, resultIndices ) {
             outVal <- func(X)
             returnType_scalar <- length(outVal) == 1
         }
-
-        use_pracma <- requireNamespace("pracma")
-        if(!use_pracma) {
-            message("Install package pracma for more accurate numerical Hessians in uncompiled (R) execution (experimental).")
-        }
         
         if (returnType_scalar) {
+            ## We can't import both pracma::hessian and numDeriv::hessian,
+            ## as R CMD INSTALL gives
+            ## Warning: replacing previous import ‘pracma::hessian’ by ‘numDeriv::hessian’ when loading ‘nimble’
+            hess <- pracma::hessian(func, X)
             ## numDeriv's hessian() only works for scalar-valued functions
-            if(use_pracma) {
-                hess <- pracma::hessian(func, X)
-            } else {
-                hess <- numDeriv::hessian(func, X)
-            }
+            ## if(deriv_package == "pracma") {
+            ##     hess <- pracma::hessian(func, X)
+            ## } else {
+            ##     hess <- hessian(func, X)
+            ## }
             outHess <- array(NA, dim = c(dim(hess)[1], dim(hess)[2], 1))
             outHess[,,1]  <- hess
             if(jacobianFlag) outGrad <- jacobian(func, X)
             if(valueFlag && is.null(outVal)) outVal <- func(X)
         } else {
             ## If hessians are requested for a non-scalar valued function,
-            ## derivatives taken using numDeriv's genD() function.  After that,
+            ## derivatives taken using pracma or numDeriv's genD() function.  After that,
             ## we extract the various derivative elements and arrange them properly.
-            if(use_pracma) {
+            if(deriv_package == "pracma") {
                 value <- func(X)
                 if(valueFlag && is.null(outVal)) outVal <- value
                 if(jacobianFlag) outGrad <- jacobian(func, X)
-                outHess <- calcDerivs_hessian(func, X, n = length(value), deriv_package = "pracma") 
+                outHess <- calcDerivs_hessian(func, X, n = length(value)) 
             } else {
                 derivList <- genD(func, X)
                 if(valueFlag && is.null(outVal)) outVal <- derivList$f0
@@ -245,7 +244,7 @@ nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCal
     
     if(deparse(derivFxnCall[[1]]) == 'calculate'){
         ## calculate(model, nodes) format
-        derivFxnCall <- match.call(nimble:::calculate, derivFxnCall)
+        derivFxnCall <- match.call(calculate, derivFxnCall)
         model <- eval(derivFxnCall[['model']], envir = fxnEnv)
         nodes <- eval(derivFxnCall[['nodes']], envir = fxnEnv)
         if(is.null(nodes))
@@ -272,7 +271,7 @@ nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCal
     ## a different order than expandNodeNames.  (It shouldn't, but values() and values()<-
     ## have implementations that are hard to follow.)
 
-    wrt_unique_names <- unique(.Call(nimble:::parseVar, wrt))
+    wrt_unique_names <- unique(.Call(parseVar, wrt))
     if(!all(wrt_unique_names %in% model$getVarNames())){
         stop('Error:  the wrt argument to nimDerivs() contains variable names that are not
          in the model.')
@@ -325,11 +324,11 @@ nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCal
     ## If value is being returned, we recalculate at the end, using func.  This restores any wrt nodes that
     ## may have been perturbed during finite-element derivatives as well as updating all nodes
     if(!valueFlag) {
-        wrtVars <- unique(.Call(nimble:::parseVar, wrt))
-        calcNodeVars <- unique(.Call(nimble:::parseVar, nodes))
+        wrtVars <- unique(.Call(parseVar, wrt))
+        calcNodeVars <- unique(.Call(parseVar, nodes))
                                         # determine any stochastic nodes and include their logProb nodes
         anyStoch_calcNodeVars <- unlist(lapply(calcNodeVars, function(x) model$getVarInfo(x)$anyStoch))
-        logProbVars <- nimble:::makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
+        logProbVars <- makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
         varsToRestore <- c(union(wrtVars, calcNodeVars), logProbVars)
         savedVars <- new.env()
     } else {
@@ -384,7 +383,7 @@ nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFx
     ## a different order than expandNodeNames.  (It shouldn't, but values() and values()<-
     ## have implementations that are hard to follow.)
 
-    wrt_unique_names <- unique(.Call(nimble:::parseVar, wrt))
+    wrt_unique_names <- unique(.Call(parseVar, wrt))
     if(!all(wrt_unique_names %in% model$getVarNames())){
         stop('Error:  the wrt argument to nimDerivs() contains variable names that are not
          in the model.')
@@ -437,11 +436,11 @@ nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFx
     ## If value is being returned, we recalculate at the end, using func.  This restores any wrt nodes that
     ## may have been perturbed during finite-element derivatives as well as updating all nodes
     if(!valueFlag) {
-        wrtVars <- unique(.Call(nimble:::parseVar, wrt))
-        calcNodeVars <- unique(.Call(nimble:::parseVar, nodes))
+        wrtVars <- unique(.Call(parseVar, wrt))
+        calcNodeVars <- unique(.Call(parseVar, nodes))
                                         # determine any stochastic nodes and include their logProb nodes
         anyStoch_calcNodeVars <- unlist(lapply(calcNodeVars, function(x) model$getVarInfo(x)$anyStoch))
-        logProbVars <- nimble:::makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
+        logProbVars <- makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
         varsToRestore <- c(union(wrtVars, calcNodeVars), logProbVars)
         savedVars <- new.env()
     } else {
@@ -507,7 +506,7 @@ nimDerivs_nf_charwrt <- function(derivFxn,
   ## ordered by fxnArgs
   unique_dims <- sapply(fxnArgs,
                  function(x) 
-                     nimble:::dimOrLength(x))
+                     dimOrLength(x))
 
   ## Get product of dimensions, which we call size
   ## ordered by fxnArgs
@@ -529,7 +528,7 @@ nimDerivs_nf_charwrt <- function(derivFxn,
       ## Below, x represents the input argument to func
       this_unique_wrt_string <- wrt_unique_name_strings[i]
       ##
-      dims <- nimble:::dimOrLength(fxnArgs[[this_unique_wrt_string]])
+      dims <- dimOrLength(fxnArgs[[this_unique_wrt_string]])
       ##
       assign(this_unique_wrt_string, array(1:prod(dims), dim = dims), envir = eval_env)
       
@@ -745,7 +744,7 @@ nimDerivs_nf <- function(call = NA,
       }
       
       if(e$restoreInfo$currentDepth == 1) {
-          rm(restoreInfo, pos = e)
+          rm('restoreInfo', pos = e)
       } else {
           e$restoreInfo$currentDepth <- e$restoreInfo$currentDepth - 1
       }
@@ -770,7 +769,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## Get names of wrt args with indexing removed.
     ## wrtArgNames <- sapply(wrtArgs, function(x){strsplit(x, '\\[')[[1]][1]})
     wrtArgParsed <- lapply(wrtArgs, function(x) {
-        pvl <- .Call(nimble:::makeParsedVarList, x)[[2]][[2]]
+        pvl <- .Call(makeParsedVarList, x)[[2]][[2]]
         if(is.name(pvl))
             list(argName = deparse(pvl),
                  argIndices = NULL)
@@ -858,7 +857,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
                                                           wrtArgs[i]))
            ##argIndices <- eval(parse(text = sub('\\]', '', sub('^[a-z]*\\[',
           ##'', wrtArgs[i]))))
-          if(nimble:::is.blank(wrtArgParsed[[i]]$argIndices[[1]]))
+          if(is.blank(wrtArgParsed[[i]]$argIndices[[1]]))
               argIndices <- 1:fxnArgsTotalSizes[wrtArgNames[i]]
           else {
               argIndices <- eval(wrtArgParsed[[i]]$argIndices[[1]])
@@ -887,7 +886,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
                                                           'argument to ',
                                                           'nimDerivs(): ',
                                                           wrtArgs[i]))
-          if(nimble:::is.blank(wrtArgParsed[[i]]$argIndices[[1]]))
+          if(is.blank(wrtArgParsed[[i]]$argIndices[[1]]))
               argIndicesRows <- 1:fxnArgsDimSizes[[wrtArgNames[i]]][1]
           else {
               argIndicesRows <- eval(wrtArgParsed[[i]]$argIndices[[1]])
@@ -896,7 +895,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
                               ' was provided in wrt argument: ',
                               wrtArgs[i], ' for derivatives of ', fxnName))
           }
-          if(nimble:::is.blank(wrtArgParsed[[i]]$argIndices[[2]]))
+          if(is.blank(wrtArgParsed[[i]]$argIndices[[2]]))
               argIndicesCols <- 1:fxnArgsDimSizes[[wrtArgNames[i]]][2]
           else { 
               argIndicesCols <- eval(wrtArgParsed[[i]]$argIndices[[2]])

@@ -2083,7 +2083,7 @@ getImmediateParentNodes <- function(nodes, model) {
   
   edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
   fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
-  edgesTo2From <<- split(maps$edgesFrom, fedgesTo)
+  edgesTo2From <- split(maps$edgesFrom, fedgesTo)
   nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
   fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
   fromNodes <- maps$graphID_2_nodeName[fromIDs]

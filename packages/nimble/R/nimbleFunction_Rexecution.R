@@ -1284,13 +1284,11 @@ nimOptim_model <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS",
         values(model, wrt) <- par
         model$calculate(nodes)
     }
-    gr = "NULL"
     if(use.gr) {
-        require(numDeriv)
-        gr = function(par) {
+        gr <-  function(par) {
             numDeriv::grad(fn, par)
         }
-    }
+    } else gr <- "NULL"
     control$fnscale <- -1
     nimOptim(par = par, fn = fn, gr = gr,
              method = method, lower = lower, upper = upper,

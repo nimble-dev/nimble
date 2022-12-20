@@ -76,10 +76,10 @@ nimOneLaplace1D <- nimbleFunction(
     }
     
     ## Update and constant nodes for obtaining derivatives using AD
-    inner_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
     
@@ -562,10 +562,10 @@ nimOneLaplace <- nimbleFunction(
       optStart <- optimStart
     }
     ## Update and constant nodes info for obtaining derivatives using AD
-    inner_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
 
@@ -1138,7 +1138,7 @@ buildLaplace <- nimbleFunction(
     if(reProvided && warn) {
       reCheck <- setdiff(reNodesDefault, randomEffectsNodes)
       if(length(reCheck)) {
-        errorNodes <- paste0(head(reCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(utils::head(reCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some random effects (latent states) in the model that look\n",
                        "like they should be included in randomEffectsNodes for Laplace approximation\n",
@@ -1149,7 +1149,7 @@ buildLaplace <- nimbleFunction(
       }
       reCheck <- setdiff(randomEffectsNodes, reNodesDefault)
       if(length(reCheck)) {
-        errorNodes <- paste0(head(reCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(utils::head(reCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some randomEffectsNodes provided that look like\n",
                        "they are not needed for Laplace approximation for the\n",
@@ -1170,7 +1170,7 @@ buildLaplace <- nimbleFunction(
     if(calcProvided  && warn) {
       calcCheck <- setdiff(calcNodesDefault, calcNodes)
       if(length(calcCheck)) {
-        errorNodes <- paste0(head(calcCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(utils::head(calcCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some model nodes that look like they should be\n",
                        "included in the calcNodes for Laplace approximation over\n",
@@ -1181,7 +1181,7 @@ buildLaplace <- nimbleFunction(
       }
       calcCheck <- setdiff(calcNodes, calcNodesDefault)
       if(length(calcCheck)) {
-        errorNodes <- paste0(head(calcCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(utils::head(calcCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some calcNodes provided that look like\n",
                        "they are not needed for Laplace approximation over\n",

@@ -1,11 +1,3 @@
-
-
-## Is it ok to have this next line in here??
-## It seems to be needed for package to build.
-## -DT May 2020
-## 2/25/22: Merging devel into ADoak.  This should be removable.
-# nimbleOptions(experimentalEnableDerivs = TRUE)
-
 #' Automated transformations of model nodes to unconstrained scales
 #'
 #' ADD DETAILS
