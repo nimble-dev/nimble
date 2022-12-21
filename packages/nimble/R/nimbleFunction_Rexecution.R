@@ -26,6 +26,8 @@ ADbreak <- function(x) x
 #' but tracked only with respect to a, such that b might be any (positive, 0, or negative) integer.
 #' This contrasts with pow(a, b) (equivalent to a^b), which requires b > 0 if derivatives will be
 #' tracked, even if they will only be requested with respect to a.
+#' 
+#' @export
 pow_int <- function(a, b) a^round(b) # b should be integer.  rounding it makes finite-element derivatives 0, as needed.
 
 #' NIMBLE language functions for R-like vector construction
@@ -1277,6 +1279,12 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     return(nimResult)
 }
 
+
+#' Interface for optimizing model logProb with respect to parameters
+#'
+#' For internal use.
+#' 
+#' @export
 nimOptim_model <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS",
                            lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {
     par <- values(model, wrt)
