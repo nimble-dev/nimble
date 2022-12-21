@@ -1433,8 +1433,6 @@ buildLaplace <- nimbleFunction(
 #'
 #' Builds a Laplace approximation algorithm for a given NIMBLE model. 
 #' 
-#' @name laplace
-#'
 #' @param model an uncompiled NIMBLE model object.
 #' @param paramNodes a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.
 #' @param randomEffectsNodes a character vector of names of latent nodes to integrate out using the Laplace approximation; defaults to latent nodes that depend on \code{paramNodes}.
@@ -1511,6 +1509,10 @@ buildLaplace <- nimbleFunction(
 #'}
 #' @author Wei Zhang, Perry de Valpine
 #' 
+#' @name laplace
+#'
+#' @aliases Laplace
+#' 
 #' @examples 
 #' pumpCode <- nimbleCode({ 
 #'   for (i in 1:N){
@@ -1528,7 +1530,8 @@ buildLaplace <- nimbleFunction(
 #'                     data = pumpData, inits = pumpInits, buildDerivs = TRUE)
 #' # Build Laplace approximation
 #' pumpLaplace <- buildLaplace(pump)
-#' #' \dontrun{
+#' 
+#' \dontrun{
 #' # Compile the model
 #' Cpump <- compileNimble(pump)
 #' CpumpLaplace <- compileNimble(pumpLaplace, project = pump)
