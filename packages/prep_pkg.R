@@ -155,7 +155,10 @@ importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
                  "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile",
-                 "parallel, mclapply")
+                 "parallel, mclapply",
+                 "pracma, hessian",
+                 "numDeriv, genD, grad, jacobian"
+                 )
 ##                 "R2WinBUGS, bugs",
 ##                 "rjags, jags.model",
 ##                 "rjags, coda.samples",

@@ -1430,30 +1430,23 @@ buildLaplace <- nimbleFunction(
 )
 
 #' Laplace approximation
-#' 
+#'
 #' Builds a Laplace approximation algorithm for a given NIMBLE model. 
 #' 
 #' @name laplace
 #'
 #' @param model an uncompiled NIMBLE model object.
-#' @param paramNodes a character vector of names of parameter nodes in the model; 
-#' default to top-level stochastic nodes.
-#' @param randomEffectsNodes a character vector of names of latent nodes to integrate out using the Laplace approximation; 
-#' default to latent nodes that depend on \code{paramNodes}.
-#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value; 
-#' default to \code{model$geteDependencies(randomEffectsNodes)}. 
-#' There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. 
-#' These will be included in calculations automatically.
-#' @param optimControl a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. 
-#' Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.
-#' @param optimMethod optimization method to be used in \code{optim} for the inner optimization. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}.
-#' See 'Details' of \code{\link{optim}}.Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". 
-#' By default, method "\code{CG}" is used for \code{nimOneLaplace1D} and "\code{BFGS}" for \code{nimOneLaplace}.
-#' @param optimStart choice of start values for the inner optimization. This could be \code{"last"}, \code{"last.best"}, or a vector of user provided values.
-#' \code{"last"} means the latest random effects values left in the model will be used. 
-#' \code{"last.best"} means the latest random effects values corresponding to currently the largest Laplace likelihood will be used.
-#' By default, the initial random effects values will be used for all inner optimizations.   
-#' @param control a named list (for \code{buildLaplace} only) that includes the following components:
+#' @param paramNodes a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.
+#' @param randomEffectsNodes a character vector of names of latent nodes to integrate out using the Laplace approximation; defaults to latent nodes that depend on \code{paramNodes}.
+#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value; defaults to \code{model$geteDependencies(randomEffectsNodes)}. There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.
+#' @param optimControl a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.
+#' @param optimMethod optimization method to be used in \code{optim} for the inner optimization. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}}.Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By default, method "\code{CG}" is used for \code{nimOneLaplace1D} and "\code{BFGS}" for \code{nimOneLaplace}.
+#' @param optimStart choice of start values for the inner optimization. This could be \code{"last"}, \code{"last.best"}, or a vector of user provided values. \code{"last"} means the latest random effects values left in the model will be used. \code{"last.best"} means the latest random effects values corresponding to currently the largest Laplace likelihood will be used. By default, the initial random effects values will be used for all inner optimizations.   
+#' @param control a named list (for \code{buildLaplace} only) that controls the behavior of the Laplace approximation. See \code{control} section below.
+#'
+#' @section \code{control} list:
+#' 
+#' \code{buildLaplace} accepts the following control list elements:
 #' \itemize{
 #'   \item \code{split}. If TRUE (default), \code{randomEffectsNodes} will be split into conditionally independent sets if possible.
 #'         If FALSE, \code{randomEffectsNodes} will be handled as a multivariate block.
@@ -1467,11 +1460,11 @@ buildLaplace <- nimbleFunction(
 #'         See 'Details' of \code{\link{optim}} for further information.
 #' }
 #'
-#' @section \code{Laplace_BASE}
+#' @section \code{Laplace_BASE}:
 #' 
-#' Laplace base class, which is needed by including \code{contains = Laplace_BASE} for declaring a list of nimbleFunctions each for a single Laplace approximation.
+#' Laplace base class, upon which specific Laplace algorithm classes are based by including \code{contains = Laplace_BASE}. This declares a list of nimbleFunctions for a single Laplace approximation.
 #'
-#' @section \code{nimOneLaplace1D}
+#' @section \code{nimOneLaplace1D}:
 #' 
 #' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains only one scalar node.
 #' To use this function, one has to accurately provide inputs for all the arguments. 
@@ -1487,14 +1480,14 @@ buildLaplace <- nimbleFunction(
 #'   \item \code{gr_Laplace3(p)}. Gradient of \code{Laplace3} w.r.t. parameters evaluated at the parameter value \code{p}.
 #' }
 #' 
-#' @section \code{nimOneLaplace}
+#' @section \code{nimOneLaplace}:
 #' 
 #' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains more than one scalar node.
 #' To use this function, one has to accurately provide inputs for all the arguments. 
 #' 
 #' The methods generated by this function are the same as \code{nimOneLaplace1D}. 
 #' 
-#' @section \code{buildLaplace}
+#' @section \code{buildLaplace}:
 #' 
 #' The main function for constructing the Laplace approximation for a given model. One only needs to provide a NIMBLE model object and then the function
 #' will determine inputs for \code{paramNodes}, \code{randomEffectsNodes}, and \code{calcNodes} and then construct the Laplace algorithm. 
@@ -1516,7 +1509,8 @@ buildLaplace <- nimbleFunction(
 #'   \item \code{derivsInverseTransform(pTransform, order)}. Derivative of the inverse transformation w.r.t. transformed parameters at \code{pTransform}. Derivative order is given by \code{order}.
 #'   \item \code{summary(res)}. Summarize the maximum likelihood estimation results, given object \code{res} that is returned by \code{LaplaceMLE}. This function generates a list of original parameter names, estimates, and standard errors.  
 #'}
-#'
+#' @author Wei Zhang, Perry de Valpine
+#' 
 #' @examples 
 #' pumpCode <- nimbleCode({ 
 #'   for (i in 1:N){
@@ -1542,4 +1536,5 @@ buildLaplace <- nimbleFunction(
 #' res <- CpumpLaplace$LaplaceMLE(c(0.1, 0.1))
 #' summ <- CpumpLaplace$summary(res)
 #' }
-#' 
+#'
+NULL
