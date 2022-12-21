@@ -1433,6 +1433,8 @@ buildLaplace <- nimbleFunction(
 #' 
 #' Builds a Laplace approximation algorithm for a given NIMBLE model. 
 #' 
+#' @name laplace
+#'
 #' @param model an uncompiled NIMBLE model object.
 #' @param paramNodes a character vector of names of parameter nodes in the model; 
 #' default to top-level stochastic nodes.
@@ -1464,8 +1466,6 @@ buildLaplace <- nimbleFunction(
 #'   \item \code{outOptimControl}. A list of control parameters for maximizing the Laplace log-likelihood using \code{optim}. 
 #'         See 'Details' of \code{\link{optim}} for further information.
 #' }
-#'
-#' @name laplace
 #'
 #' @section \code{Laplace_BASE}
 #' 
@@ -1532,13 +1532,14 @@ buildLaplace <- nimbleFunction(
 #' pumpInits <- list(alpha = 0.1, beta = 0.1, theta = rep(0.1, pumpConsts$N))
 #' pump <- nimbleModel(code = pumpCode, name = "pump", constants = pumpConsts, 
 #'                     data = pumpData, inits = pumpInits, buildDerivs = TRUE)
-#' # Compile the model
-#' Cpump <- compileNimble(pump)
 #' # Build Laplace approximation
 #' pumpLaplace <- buildLaplace(pump)
+#' #' \dontrun{
+#' # Compile the model
+#' Cpump <- compileNimble(pump)
 #' CpumpLaplace <- compileNimble(pumpLaplace, project = pump)
 #' # Calculate MLEs
 #' res <- CpumpLaplace$LaplaceMLE(c(0.1, 0.1))
 #' summ <- CpumpLaplace$summary(res)
-#' 
+#' }
 #' 

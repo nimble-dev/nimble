@@ -16,6 +16,7 @@ nimbleModel(
   check = getNimbleOption("checkModel"),
   calculate = TRUE,
   name = NULL,
+  buildDerivs = getNimbleOption("buildModelDerivs"),
   userEnv = parent.frame()
 )
 }
@@ -41,6 +42,8 @@ nimbleModel(
 \item{calculate}{logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.}
 
 \item{name}{optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.}
+
+\item{buildDerivs}{logical indicating whether to build derivative capabilities for the model.}
 
 \item{userEnv}{environment in which if-then-else statements in BUGS code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only}
 }

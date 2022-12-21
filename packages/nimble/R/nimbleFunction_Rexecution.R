@@ -13,7 +13,7 @@
 #' @export
 ADbreak <- function(x) x
 
-#' @name pow_int
+#' Power function for integer-valued exponent
 #'
 #' pow function with exponent required to be integer
 #'

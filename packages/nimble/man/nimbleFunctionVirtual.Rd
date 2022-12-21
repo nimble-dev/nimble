@@ -9,7 +9,8 @@ nimbleFunctionVirtual(
   run = function() {
  },
   methods = list(),
-  name = NA
+  name = NA,
+  methodControl = list()
 )
 }
 \arguments{
