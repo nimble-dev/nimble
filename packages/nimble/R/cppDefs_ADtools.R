@@ -7,6 +7,7 @@
 ## The model interface will population the proxy model's CobjectInterface
 
 #' @export
+#' @exportClass
 ADproxyModelClass <- setRefClass(
     'ADproxyModelClass',
     fields = list(

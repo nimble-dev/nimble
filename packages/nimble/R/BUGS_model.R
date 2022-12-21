@@ -1522,7 +1522,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
         ), where = where),
         list(FIELDS = allFields,
              ADPROXYLINE = if(isTRUE(modelDef$buildDerivs))
-                               quote(ADproxyModel <<- nimble:::ADproxyModelClass(.self))
+                               quote(ADproxyModel <<- ADproxyModelClass(.self))
                            else
                                NULL
              )))
