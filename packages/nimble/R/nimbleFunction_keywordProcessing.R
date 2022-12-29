@@ -2059,6 +2059,7 @@ nimDerivsInfoClass_output_init_impl <- function(.self,
   NULL
 }
 
+#' @export
 makeDerivsInfo <- function(model,
                            wrtNodes,
                            calcNodes,
