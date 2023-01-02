@@ -1280,11 +1280,7 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
 }
 
 
-#' Interface for optimizing model logProb with respect to parameters
-#'
-#' For internal use.
-#' 
-#' @export
+## Interface for optimizing model logProb with respect to parameters
 nimOptim_model <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS",
                            lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {
     par <- values(model, wrt)

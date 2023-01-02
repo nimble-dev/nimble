@@ -1,6 +1,7 @@
 #' Automated transformations of model nodes to unconstrained scales
 #'
-#' ADD DETAILS
+#' @param model A nimble model object.
+#' @param nodes Vector of node names to which automated transformation will e applied.
 #' 
 #' @author Daniel Turek
 #' @export

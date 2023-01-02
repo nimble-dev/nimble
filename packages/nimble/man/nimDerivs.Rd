@@ -21,19 +21,13 @@ all arguments to \code{nimFxn}.}
 corresponding to whether the function value, Jacobian, and Hessian should be
  returned respectively.  Defaults to \code{c(0, 1, 2)}.}
 
-\item{model}{(optional) for derivatives of a nimbleFunction that involves model
+\item{model}{(optional) for derivatives of a nimbleFunction that involves model.}
+
+\item{...}{additional arguments intended for internal use only.
+
 calculations, the uncompiled model that is used. This is needed in order
 to be able to correctly restore values into the model when \code{order} does not
 include 0 (or in all cases when double-taping).}
-
-\item{dropArgs}{a vector of integers specifying any arguments to 
-\code{nimFxn} that derivatives should not be taken with respect to.  For 
-example, \code{dropArgs = 2} means that the second argument to \code{nimFxn}
-will not have derivatives taken with respect to it.  Defaults to an empty
-vector.}
-
-\item{silent}{a logical argument that determines whether warnings will be
-displayed.}
 }
 \value{
 a \code{nimbleList} with elements \code{value}, \code{jacobian},

@@ -17,22 +17,17 @@ nimDerivs_dummy <- nimbleFunction(
 #' @param call a call to a \code{nimbleFunction} method with arguments
 #' included.  Can also be a call to  \code{model$calculate(nodes)}, or to 
 #' \code{calculate(model, nodes)}.
-#' @param order an integer vector with values within the set {0, 1, 2}, 
-#' corresponding to whether the function value, Jacobian, and Hessian should be
-#'  returned respectively.  Defaults to \code{c(0, 1, 2)}.
-#' @param dropArgs a vector of integers specifying any arguments to 
-#' \code{nimFxn} that derivatives should not be taken with respect to.  For 
-#' example, \code{dropArgs = 2} means that the second argument to \code{nimFxn}
-#' will not have derivatives taken with respect to it.  Defaults to an empty
-#' vector. 
 #' @param wrt a character vector of either: names of function arguments 
 #' (if taking derivatives of a \code{nimbleFunction} method), or node names 
 #' (if taking derivatives of \code{model$calculate(nodes)}) to take derivatives 
 #' with respect to.  If left empty, derivatives will be taken with respect to 
 #' all arguments to \code{nimFxn}.
-#' @param silent a logical argument that determines whether warnings will be
-#' displayed.
-#' @param model (optional) for derivatives of a nimbleFunction that involves model
+#' @param order an integer vector with values within the set {0, 1, 2}, 
+#' corresponding to whether the function value, Jacobian, and Hessian should be
+#'  returned respectively.  Defaults to \code{c(0, 1, 2)}.
+#' @param model (optional) for derivatives of a nimbleFunction that involves model.
+#' @param ... additional arguments intended for internal use only.
+#' 
 #' calculations, the uncompiled model that is used. This is needed in order
 #' to be able to correctly restore values into the model when \code{order} does not
 #' include 0 (or in all cases when double-taping).
@@ -105,7 +100,8 @@ nimDerivs <- function(call = NA,
       ans <- nimDerivs_model( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv )
   } else {
       if(model_calcNodes_case) {
-          ans <- nimDerivs_calcNodes( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv, model = cModel, nodes = calcNodes)
+          stop("nimDerivs: invalid case.")
+          ## ans <- nimDerivs_calcNodes( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv, model = cModel, nodes = calcNodes)
       } else ans <- nimDerivs_nf( order = order, wrt = wrt, derivFxnCall = derivFxnCall, fxnEnv = fxnEnv, model = model )
   }
   ans

@@ -6,8 +6,13 @@
 \usage{
 parameterTransform(model, nodes)
 }
+\arguments{
+\item{model}{A nimble model object.}
+
+\item{nodes}{Vector of node names to which automated transformation will e applied.}
+}
 \description{
-ADD DETAILS
+Automated transformations of model nodes to unconstrained scales
 }
 \author{
 Daniel Turek

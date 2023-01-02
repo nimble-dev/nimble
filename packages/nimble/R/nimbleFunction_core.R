@@ -8,7 +8,8 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 #' @param contains Not yet functional
 #' @param run      A NIMBLE function that will only be used to inspect its argument types and returnType.
 #' @param methods  An optional named list of NIMBLE functions that will also only be used for inspecting argument types and returnTypes.
-#' @param name     An optional name used internally by the NIMBLE compiled.  This is usually omitted and NIMBLE provides one.
+#' @param name     An optional name used internally by the NIMBLE compiler.  This is usually omitted and NIMBLE provides one.
+#' @param methodControl An optional list that allows specification of methods with defaults. 
 #'
 #' @author NIMBLE development team
 #'

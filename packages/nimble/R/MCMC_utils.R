@@ -403,12 +403,6 @@ mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
 }
 
 
-
-#' Create model object using arguments provided to nimbleMCMC or runMCMC
-#' 
-#' For internal use only
-#' 
-#' @export
 mcmc_createModelObject <- function(model, inits, nchains, setSeed, code, constants, data, dimensions, check) {
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
