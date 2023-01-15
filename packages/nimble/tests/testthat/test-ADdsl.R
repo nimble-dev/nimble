@@ -1,13 +1,10 @@
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 EDopt <- nimbleOptions("enableDerivs")
 BMDopt <- nimbleOptions("buildModelDerivs")
 nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
 
-nimbleOptions(showCompilerOutput = FALSE)
 context("Testing of derivatives for distributions and dsl functions")
-
-
 
 # tested:
 # 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
@@ -379,8 +376,8 @@ lapply(distributionArgsList, function(x){
                                  methods = list(
                                      method1 = methodFun
                                  ),
-                                 buildDerivs = list('method1'))
-        testADDistribution(thisNf, x$argsValues,
+                                 buildDerivs = list(method1 = list())) 
+        test_ADDistribution(thisNf, x$argsValues,
                            x$distnName)
     })
 })

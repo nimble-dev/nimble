@@ -1477,51 +1477,6 @@ calcNodesForDerivs <- nimbleFunction(
     buildDerivs = 'run')
 
 
-## Tests taking derivatives of calls to model$calculate(nodes) (or equivalently calculate(model, nodes))
-## Arguments:
-##   model:         The uncompiled nimbleModel object to use in the call to calculate(model, nodes).
-##   name:          The name of the model being tested.
-##   calcNodeNames: A list, each element of which should be a character vector.   List elements  
-##                  will be iterated through, and each element will be used as the 'nodes' argument
-##                  in the call to calculate(model, nodes).
-##   wrt:           A list, each element of which should be a character vector.  List elements will be iterated
-##                  through, and each element will be used as the 'wrt' argument in a call to nimDerivs(calculate(model, nodes), wrt)
-##   testR:         A logical argument.  If TRUE, the R version of nimDerivs will be checked for correct derivative calculations.
-##                  This is accomplished by comparing derivatives calculated using the chain rule to derivatives of a function that
-##                  wraps a call to calculate(model, nodes).
-##   testCompiled:  A logical argument.  Currently only checks whether the model can compile.
-##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
-##   verbose:       A logical argument.  Currently serves no purpose.
-test_ADModelCalculate_nick <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testCompiled = TRUE, tolerance = .001,  verbose = TRUE, gc = FALSE){
-  temporarilyAssignInGlobalEnv(model)  
-
-  if(testCompiled){
-    expect_message(cModel <- compileNimble(model))
-  }
-  for(i in seq_along(calcNodeNames)){
-    for(j in seq_along(wrt)){
-      test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes ', i, 
-                      'and wrt ', j), {
-                        wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
-                        if(testCompiled){
-                          print(calcNodeNames[[i]])
-                          print(wrt[[j]])
-                          testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
-                            if(gc) gc()
-                            expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
-                            if(gc) gc()
-                            cDerivs <- ctestFunctionInstance$run()
-                          if(0 %in% order) expect_equal(wrapperDerivs$value, cDerivs$value, tolerance = tolerance)
-                          if(1 %in% order) expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian, tolerance = tolerance)
-                          if(2 %in% order) expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)
-                        }
-                      })
-    }
-  }
-}
-
-## Chris' version of test_ADModelCalculate
 ## By default test a standardized set of {wrt, calcNodes} pairs representing common use cases (MAP, max lik, EB),
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = NULL, calcNodes = NULL, wrt = NULL,
@@ -2541,7 +2496,7 @@ makeADDistributionMethodTestList <- function(distnList){
   return(ansList)
 }
 
-testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
+test_ADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
     ADfun <- ADfunGen()
     CADfun <- compileNimble(ADfun)
     for(iArg in seq_along(argsList)){
