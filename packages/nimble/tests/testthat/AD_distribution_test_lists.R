@@ -607,15 +607,13 @@ distn_tests <- unlist(
   lapply(distn_params_log_1, make_distribution_fun_AD_test),
   recursive = FALSE
 )
-debug(make_AD_test2)
-debug(make_distribution_fun_AD_test)
+
 set.seed(456)
 distn_tests2 <- unlist(
   lapply(distn_params_log_1, make_distribution_fun_AD_test, maker = make_AD_test2),
   recursive = FALSE
 )
-debug(test_AD2)
-# 
+
 ADtestEnv$RCrelTol <- c(1e-12, 1e-6, 1e-2)
 resetTols()
 lapply(distn_tests2[137:144], test_AD2)

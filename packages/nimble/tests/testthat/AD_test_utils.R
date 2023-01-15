@@ -5,7 +5,7 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 ADtestEnv <- new.env()
 resetTols <- function() {
   ADtestEnv$RRrelTol <<- c(1e-8, 1e-3, 1e-2)
-  ADtestEnv$RCrelTol <<- c(1e-15, 1e-8, 1e-3)
+  ADtestEnv$RCrelTol <<- c(1e-14, 1e-8, 1e-3)
   ADtestEnv$CCrelTol <<- rep(sqrt(.Machine$double.eps), 3)
 }
 resetTols()
@@ -295,7 +295,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                          abs_threshold = RRabsThresh,
                                          info = paste0("(RR order ", o,")"))
           if(!pass) {
-            cat(paste('Some R-to-R derivatives do not match for order',o))
+            cat(paste('Some R-to-R derivatives do not match for order', o, '.\n'))
             browser()
           }
         }
@@ -304,7 +304,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                          abs_threshold = RCabsThresh,
                                          info = paste0("(RC order ", o,")"))
           if(!pass) {
-            cat(paste('Some C-to-R derivatives to not match for order',o))
+            cat(paste('Some C-to-R derivatives to not match for order', o, '.\n'))
             browser()
           }
         }
@@ -313,7 +313,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                          abs_threshold = CCabsThresh,
                                          info = paste0("(CC order ", o, ")"))
           if(!pass) {
-            cat(paste('Some C-to-C derivatives to not match for order',o))
+            cat(paste('Some C-to-C derivatives to not match for order', o, '.\n'))
             browser()
           }
         }

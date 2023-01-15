@@ -41,7 +41,6 @@ nimbleOptions(allowDynamicIndexing = FALSE)
 ## Add test for lkj_chol
 ## Are there others that are needed now?
 
-undebug(make_AD_test2)
 
 normDistTests <- list(
   make_AD_test2('dnorm', c(x='double()', mean='double()', sd='double()'),
@@ -54,7 +53,7 @@ normDistTests <- list(
                 inputs = list(record = c(x = 1.2, mean = 0.8, sd = 0.3, log = 1),
                               test   = c(x = 1.1, mean = 0.9, sd = 0.5, log = 0)))
 )
-lapply(normDistTests, test_AD2)
+result <- lapply(normDistTests, test_AD2, verbose = FALSE)
 
 grunif <- function(min, max) function(size) runif(size, min, max)
 
@@ -71,7 +70,7 @@ betaDistTests <- list(
 )
 # PROBLEM: Set tols
 # WILL NOT WORK AT X = 0
-lapply(betaDistTests, test_AD2)
+result <- lapply(betaDistTests, test_AD2, verbose = FALSE)
 
 nimbleOptions(enableDerivs= EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

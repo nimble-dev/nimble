@@ -53,7 +53,7 @@ op <- list(
   args = list(arg1 = quote(double(1))),
   outputType = quote(double())
 )
-debugonce(make_AD_test2)
+
 matMultTest_pieces <- make_AD_test2(op = op, argTypes = argTypes, includeModelArgs = TRUE)
 
 matMultTest <- nimbleFunction(

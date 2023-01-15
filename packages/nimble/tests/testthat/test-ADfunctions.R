@@ -264,46 +264,45 @@ test_that('Derivatives with c() work correctly.',
 
 ## from AD_math_test_lists.R
 ## See notes there on Spring 2022 update to "version 2" with f(g(x)) and g(f(x)) test variantes as well
-test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
-test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 ADtestEnv$RCrelTol <- c(1e-15, 1e-6, 1e-2)
-test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 
 
 
-test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 ADtestEnv$RCrelTol <- c(1e-12, 1e-5, 1e-3)
-test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 ADtestEnv$RCrelTol <- c(1e-12, 1e-5, 1e-3)
-test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 
 
-test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
-test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures)
-test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
 resetTols()
 
-test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures)
+test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 ## STOPPED HERE
 
-test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures)
-test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures)
-test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
-test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures)
+test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
+test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
 
 ## from AD_distribution_test_lists.R
-test_AD_batch(distn_tests,  knownFailures = AD_knownFailures) ## dcat are knownFailures.  
-debug(test_AD)
+test_AD_batch(distn_tests,  knownFailures = AD_knownFailures, verbose = FALSE) ## dcat are knownFailures.  
 
-test_AD_batch(distn_tests[9])#,  knownFailures = AD_knownFailures) ## dcat are knownFailures.  
-test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
+test_AD_batch(distn_tests[9], verbose = FALSE)#,  knownFailures = AD_knownFailures) ## dcat are knownFailures.  
+test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures, verbose = FALSE) ## dmulti fails, perhaps in regular compilation too?
 ## test_AD_batch(distn_tests[15:148],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
 ## test_AD_batch(distn_tests[39:64]) ## ddexp was in knownFailures.  Now it's ok.
 ## test_AD_batch(distn_tests[65:148]) ## There is a problem in sqrtinvgamma with scale, vectorized
@@ -315,7 +314,7 @@ test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures) ## dmulti f
 ## test_AD_batch(distn_tests[148]) ## dwish fails
 
 
-test_AD_batch(distn_with_log_tests,  knownFailures = AD_knownFailures)
+test_AD_batch(distn_with_log_tests,  knownFailures = AD_knownFailures, verbose = FALSE)
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
