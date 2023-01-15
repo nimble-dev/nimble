@@ -1,10 +1,14 @@
 Files: R/*
-Copyright: Copyright (C) 2014-2022 the NIMBLE authors.
+Copyright: Copyright (C) 2014-2023 the NIMBLE authors.
 License: BSD_3_clause
 
 Files: CppCode/* include/nimble/*
-Copyright: Copyright (C) 2014-2022 the NIMBLE authors, unless otherwise stated.
+Copyright: Copyright (C) 2014-2023 the NIMBLE authors, unless otherwise stated.
 License: GPL (>=2)
+
+Files: inst/cppad/*
+Copyright: Copyright (C) 2003-2022 Bradley M. Bell
+License: Eclipse Public License Version 2.0
 
 Files: inst/include/Eigen/SparseLU inst/include/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h
 inst/include/Eigen/src/SparseLU/SparseLU_column_bmod.h inst/include/Eigen/src/SparseLU/SparseLU_panel_bmod.h
