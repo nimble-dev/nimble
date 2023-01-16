@@ -108,6 +108,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                                       
                                    for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                    if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
+
+                                   returnInvisible <- FALSE
                                    if(returnArgsAsList) {
                                      ansReturnName <- substitute(ans$return, list())
                                      argNamesAssign <- if(length(argNames) > 0) paste0('\"',argNames, '\"') else character(0)
@@ -120,8 +122,10 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      ansReturnName <- substitute(ans, list())
                                      if(length(argNames)+!returnVoid > 0 & !returnVoid)
                                        namesAssign <- parse(text = paste0('ans <- ans[[',length(argNames)+!returnVoid,']]'), keep.source = FALSE)[[1]]
-                                     else
-                                       namesAssign <- quote(ans <- invisible(NULL))
+                                     else {
+                                         namesAssign <- quote(ans <- NULL)
+                                         returnInvisible <- TRUE
+                                     }
                                    }
                                    
                                    argNamesCall = argNames
@@ -152,13 +156,17 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      bodyCode <- substitute({
                                        if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
                                        if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
-                                       ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
-                                                                               DOTSELFNAME = includeDotSelf))
+                                       ans <- DOTCALL; NAMESASSIGN; RETURN}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
+                                                                                  DOTSELFNAME = includeDotSelf,
+                                                                                  RETURN = if(returnInvisible) quote(invisible(ans)) else quote(ans)
+                                                                                  ))
                                    else
                                      bodyCode <- substitute({
                                        if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
-                                       ans <- DOTCALL; NAMESASSIGN;ans}, 
-                                       list(DOTCALL = dotCall,  NAMESASSIGN = namesAssign))
+                                       ans <- DOTCALL; NAMESASSIGN; RETURN}, 
+                                       list(DOTCALL = dotCall,  NAMESASSIGN = namesAssign,
+                                            RETURN = if(returnInvisible) quote(invisible(ans)) else quote(ans)
+                                            ))
                                    funCode[[3]] <- bodyCode
                                    funCode[[4]] <- NULL
                                    if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
