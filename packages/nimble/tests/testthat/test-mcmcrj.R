@@ -146,13 +146,13 @@ test_that("Check passing node vector - no indicator", {
   mConf <- configureMCMC(m)
 
   ## no error
-  expect_error(configureRJ(mConf, c("beta"), prior = 0.5), NA)
+  expect_no_error(configureRJ(mConf, c("beta"), prior = 0.5))
   
   mConf <- configureMCMC(m)
-  expect_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), prior = 0.5), NA)
+  expect_no_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), prior = 0.5))
   
   mConf <- configureMCMC(m)
-  expect_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), prior = c(0.5, 0.2)), NA)
+  expect_no_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), prior = c(0.5, 0.2)))
 })
 
 
@@ -472,10 +472,10 @@ test_that("Check passing node vector - indicator", {
   mConf <- configureMCMC(m)
   
   ## no error
-  expect_error(configureRJ(mConf, targetNodes = "beta", indicatorNodes = "z"), NA)
+  expect_no_error(configureRJ(mConf, targetNodes = "beta", indicatorNodes = "z"))
   
   mConf <- configureMCMC(m)
-  expect_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), indicatorNodes = c("z[1]", "z[2:4]")), NA)
+  expect_no_error(configureRJ(mConf, c("beta[1]", "beta[2:4]"), indicatorNodes = c("z[1]", "z[2:4]")))
   
   ## throws error
   mConf <- configureMCMC(m)
@@ -506,7 +506,7 @@ test_that("Bails out for non-constant target node hyperparameters", {
     Rmodel <- nimbleModel(code)
 
     conf <- configureMCMC(Rmodel)
-    expect_error(configureRJ(conf, targetNodes = 'beta1', indicatorNodes = 'z'), NA)
+    expect_no_error(configureRJ(conf, targetNodes = 'beta1', indicatorNodes = 'z'))
 
     conf <- configureMCMC(Rmodel)
     expect_error(configureRJ(conf, targetNodes = 'beta2', indicatorNodes = 'z'))
@@ -515,7 +515,7 @@ test_that("Bails out for non-constant target node hyperparameters", {
     expect_error(configureRJ(conf, targetNodes = 'beta3', indicatorNodes = 'z'))
 
     conf <- configureMCMC(Rmodel)
-    expect_error(configureRJ(conf, targetNodes = 'beta1', priorProb = 0.5, NA))
+    expect_no_error(configureRJ(conf, targetNodes = 'beta1', priorProb = 0.5))
 
     conf <- configureMCMC(Rmodel)
     expect_error(configureRJ(conf, targetNodes = 'beta2', priorProb = 0.5))

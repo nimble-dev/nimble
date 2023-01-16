@@ -2602,7 +2602,7 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     conf <- configureMCMC(Rmodel, nodes = NULL)
     conf$addSampler(c('a', 'b', 'pp1'), 'RW_block')
-    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    expect_no_error(Rmcmc <- buildMCMC(conf))
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
     conf <- configureMCMC(Rmodel, nodes = NULL)
@@ -2652,12 +2652,12 @@ test_that('cannot assign sampler jointly to PP and non-PP nodes', {
     ##
     Rmodel$resetData()
     Rmodel$setData(list(y = 3, c = 3))
-    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    expect_no_error(Rmcmc <- buildMCMC(conf))
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     Rmodel$resetData()
     Rmodel$setData(list(y = 3))
-    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    expect_no_error(Rmcmc <- buildMCMC(conf))
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })
