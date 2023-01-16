@@ -563,9 +563,11 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
 #' 
 #' @details
 #'
-#' To use WAIC, set \code{enableWAIC = TRUE} when configuring or (if not using
-#' \code{configureMCMC} building an MCMC) and set \code{WAIC = TRUE} when
-#' calling \code{nimbleMCMC} and optionally when calling \code{runMCMC}.
+#' To obtain WAIC, set \code{WAIC = TRUE} in nimbleMCMC. If using a more
+#' customized workflow, set \code{enableWAIC = TRUE} in \code{configureMCMC}
+#' or (if skipping \code{configureMCMC}) in \code{buildMCMC}, followed by
+#' setting \code{WAIC = TRUE} in \code{runMCMC}, if using runMCMC to manage
+#' sample generation.
 #'
 #' By default, NIMBLE calculates WAIC using an online algorithm that updates
 #' required summary statistics at each post-burnin iteration of the MCMC.
