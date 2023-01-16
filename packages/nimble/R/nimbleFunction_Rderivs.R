@@ -172,7 +172,7 @@ calcDerivs_internal <- function(func, X, order, resultIndices) { # deriv_package
             ## }
             outHess <- array(NA, dim = c(dim(hess)[1], dim(hess)[2], 1))
             outHess[,,1]  <- hess
-            if(jacobianFlag) outGrad <- jacobian(func, X)
+            if(jacobianFlag) outGrad <- numDeriv::jacobian(func, X)
             if(valueFlag && is.null(outVal)) outVal <- func(X)
         } else {
             ## If hessians are requested for a non-scalar valued function,
@@ -181,10 +181,10 @@ calcDerivs_internal <- function(func, X, order, resultIndices) { # deriv_package
             if(deriv_package == "pracma") {
                 value <- func(X)
                 if(valueFlag && is.null(outVal)) outVal <- value
-                if(jacobianFlag) outGrad <- jacobian(func, X)
+                if(jacobianFlag) outGrad <- numDeriv::jacobian(func, X)
                 outHess <- calcDerivs_hessian(func, X, n = length(value)) 
             } else {
-                derivList <- genD(func, X)
+                derivList <- numDeriv::genD(func, X)
                 if(valueFlag && is.null(outVal)) outVal <- derivList$f0
                 if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
                 outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2],
@@ -204,7 +204,7 @@ calcDerivs_internal <- function(func, X, order, resultIndices) { # deriv_package
         ## If jacobians are requested, derivatives taken using numDeriv's jacobian()
         ## function.
         if(valueFlag) outVal <- func(X)
-        outGrad <- jacobian(func, X)
+        outGrad <- numDeriv::jacobian(func, X)
     } else if(valueFlag)
         outVal <- func(X)
 
