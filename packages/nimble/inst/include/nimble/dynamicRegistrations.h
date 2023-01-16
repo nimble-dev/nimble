@@ -141,13 +141,13 @@ R_CallMethodDef CallEntries[] = {
   FUN(NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
   FUN(NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
 
-  FUN(new_waicList, 0),
-  FUN(waicList_castPtrPtrToNamedObjectsPtrSEXP, 1),
-  FUN(waicList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  FUN(new_waicNimbleList, 0),
+  FUN(waicNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(waicNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
   
-  FUN(new_waicDetailsList, 0),
-  FUN(waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP, 1),
-  FUN(waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  FUN(new_waicDetailsNimbleList, 0),
+  FUN(waicDetailsNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
 
   {NULL, NULL, 0}
 };

@@ -636,7 +636,7 @@ SEXP NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   return (Sans);
 }
 
-void waicList::copyFromSEXP(SEXP S_nimList_) {
+void waicNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S__dot_xData;
   SEXP S_WAIC;
   SEXP S_lppd;
@@ -656,7 +656,7 @@ void waicList::copyFromSEXP(SEXP S_nimList_) {
   pWAIC = SEXP_2_double(S_pWAIC);
   UNPROTECT(7);
 }
-SEXP waicList::copyToSEXP() {
+SEXP waicNimbleList::copyToSEXP() {
   SEXP S__dot_xData;
   SEXP S_WAIC;
   SEXP S_lppd;
@@ -678,24 +678,24 @@ SEXP waicList::copyToSEXP() {
   }
   return (RObjectPointer);
 }
-void waicList::createNewSEXP() {
+void waicNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("waicList"));
+  SET_STRING_ELT(S_listName, 0, Rf_mkChar("waicNimbleList"));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
   RObjectPointer = S_newNimList;
   UNPROTECT(2);
 }
-void waicList::resetFlags() { RCopiedFlag = false; }
-void waicList::copyFromRobject(SEXP Robject) {
+void waicNimbleList::resetFlags() { RCopiedFlag = false; }
+void waicNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("WAIC");
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("lppd");
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("pWAIC");
   UNPROTECT(5);
 }
-waicList::waicList() {
+waicNimbleList::waicNimbleList() {
   RCopiedFlag = false;
   RObjectPointer = NULL;
   namedObjects["WAIC"] = &WAIC;
@@ -705,37 +705,37 @@ waicList::waicList() {
   namedObjects["RCopiedFlag"] = &RCopiedFlag;
 }
 
-SEXP new_waicList() {
-  nimSmartPtr<waicList> *ptrToSmartPtr;
-  waicList *newObj;
+SEXP new_waicNimbleList() {
+  nimSmartPtr<waicNimbleList> *ptrToSmartPtr;
+  waicNimbleList *newObj;
   SEXP SptrToSmartPtr;
   SEXP Sans;
-  newObj = new waicList;
-  ptrToSmartPtr = new nimSmartPtr<waicList>;
+  newObj = new waicNimbleList;
+  ptrToSmartPtr = new nimSmartPtr<waicNimbleList>;
   ptrToSmartPtr->setPtrFromT(newObj);
   PROTECT(SptrToSmartPtr =
               R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
-  PROTECT(Sans = waicList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  PROTECT(Sans = waicNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
   UNPROTECT(2);
   return (Sans);
 }
 
-SEXP waicList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
+SEXP waicNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
   return (R_MakeExternalPtr(
-      dynamic_cast<NamedObjects *>(reinterpret_cast<waicList *>(
+      dynamic_cast<NamedObjects *>(reinterpret_cast<waicNimbleList *>(
           *static_cast<void **>(R_ExternalPtrAddr(input)))),
       R_NilValue, R_NilValue));
 }
 
-SEXP waicList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
+SEXP waicNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   nimSmartPtrBase *ptrToSmartPtrBase;
-  nimSmartPtr<waicList> *ptrToSmartPtr;
+  nimSmartPtr<waicNimbleList> *ptrToSmartPtr;
   void *ptrToPtr;
   SEXP SptrToSmartPtrBase;
   SEXP SptrToPtr;
   SEXP Sans;
   ptrToSmartPtr =
-      static_cast<nimSmartPtr<waicList> *>(R_ExternalPtrAddr(input));
+      static_cast<nimSmartPtr<waicNimbleList> *>(R_ExternalPtrAddr(input));
   ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase *>(ptrToSmartPtr);
   ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
   PROTECT(SptrToSmartPtrBase =
@@ -748,7 +748,7 @@ SEXP waicList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   return (Sans);
 }
 
-void waicDetailsList::copyFromSEXP(SEXP S_nimList_) {
+void waicDetailsNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S__dot_xData;
   SEXP S_marginal;
   SEXP S_niterMarginal;
@@ -814,7 +814,7 @@ void waicDetailsList::copyFromSEXP(SEXP S_nimList_) {
   SEXP_2_NimArr<1>(S_pWAIC_elements, pWAIC_elements);
   UNPROTECT(23);
 }
-SEXP waicDetailsList::copyToSEXP() {
+SEXP waicDetailsNimbleList::copyToSEXP() {
   SEXP S__dot_xData;
   SEXP S_marginal;
   SEXP S_niterMarginal;
@@ -874,17 +874,17 @@ SEXP waicDetailsList::copyToSEXP() {
   }
   return (RObjectPointer);
 }
-void waicDetailsList::createNewSEXP() {
+void waicDetailsNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("waicDetailsList"));
+  SET_STRING_ELT(S_listName, 0, Rf_mkChar("waicDetailsNimbleList"));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
   RObjectPointer = S_newNimList;
   UNPROTECT(2);
 }
-void waicDetailsList::resetFlags() { RCopiedFlag = false; }
-void waicDetailsList::copyFromRobject(SEXP Robject) {
+void waicDetailsNimbleList::resetFlags() { RCopiedFlag = false; }
+void waicDetailsNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_LOGICAL_SCALAR_FROM_R_OBJECT("marginal");
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("niterMarginal");
@@ -900,7 +900,7 @@ void waicDetailsList::copyFromRobject(SEXP Robject) {
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("pWAIC_elements");
   UNPROTECT(13);
 }
-waicDetailsList::waicDetailsList() {
+waicDetailsNimbleList::waicDetailsNimbleList() {
   RCopiedFlag = false;
   RObjectPointer = NULL;
   namedObjects["marginal"] = &marginal;
@@ -919,38 +919,38 @@ waicDetailsList::waicDetailsList() {
   namedObjects["RCopiedFlag"] = &RCopiedFlag;
 }
 
-SEXP new_waicDetailsList() {
-  nimSmartPtr<waicDetailsList> *ptrToSmartPtr;
-  waicDetailsList *newObj;
+SEXP new_waicDetailsNimbleList() {
+  nimSmartPtr<waicDetailsNimbleList> *ptrToSmartPtr;
+  waicDetailsNimbleList *newObj;
   SEXP SptrToSmartPtr;
   SEXP Sans;
-  newObj = new waicDetailsList;
-  ptrToSmartPtr = new nimSmartPtr<waicDetailsList>;
+  newObj = new waicDetailsNimbleList;
+  ptrToSmartPtr = new nimSmartPtr<waicDetailsNimbleList>;
   ptrToSmartPtr->setPtrFromT(newObj);
   PROTECT(SptrToSmartPtr =
               R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
   PROTECT(
-      Sans = waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+      Sans = waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
   UNPROTECT(2);
   return (Sans);
 }
 
-SEXP waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
+SEXP waicDetailsNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
   return (R_MakeExternalPtr(
-      dynamic_cast<NamedObjects *>(reinterpret_cast<waicDetailsList *>(
+      dynamic_cast<NamedObjects *>(reinterpret_cast<waicDetailsNimbleList *>(
           *static_cast<void **>(R_ExternalPtrAddr(input)))),
       R_NilValue, R_NilValue));
 }
 
-SEXP waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
+SEXP waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   nimSmartPtrBase *ptrToSmartPtrBase;
-  nimSmartPtr<waicDetailsList> *ptrToSmartPtr;
+  nimSmartPtr<waicDetailsNimbleList> *ptrToSmartPtr;
   void *ptrToPtr;
   SEXP SptrToSmartPtrBase;
   SEXP SptrToPtr;
   SEXP Sans;
   ptrToSmartPtr =
-      static_cast<nimSmartPtr<waicDetailsList> *>(R_ExternalPtrAddr(input));
+      static_cast<nimSmartPtr<waicDetailsNimbleList> *>(R_ExternalPtrAddr(input));
   ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase *>(ptrToSmartPtr);
   ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
   PROTECT(SptrToSmartPtrBase =

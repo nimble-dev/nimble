@@ -109,7 +109,7 @@ extern "C" SEXP NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
 extern "C" SEXP NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
-class waicList : public NamedObjects, public pointedToBase {
+class waicNimbleList : public NamedObjects, public pointedToBase {
  public:
   double WAIC;
   double lppd;
@@ -121,16 +121,16 @@ class waicList : public NamedObjects, public pointedToBase {
   void createNewSEXP();
   void resetFlags();
   void copyFromRobject(SEXP Robject);
-  waicList();
+  waicNimbleList();
 };
 
-extern "C" SEXP new_waicList();
+extern "C" SEXP new_waicNimbleList();
 
-extern "C" SEXP waicList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+extern "C" SEXP waicNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
-extern "C" SEXP waicList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+extern "C" SEXP waicNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
-class waicDetailsList : public NamedObjects, public pointedToBase {
+class waicDetailsNimbleList : public NamedObjects, public pointedToBase {
  public:
   bool marginal;
   double niterMarginal;
@@ -151,13 +151,13 @@ class waicDetailsList : public NamedObjects, public pointedToBase {
   void createNewSEXP();
   void resetFlags();
   void copyFromRobject(SEXP Robject);
-  waicDetailsList();
+  waicDetailsNimbleList();
 };
 
-extern "C" SEXP new_waicDetailsList();
+extern "C" SEXP new_waicDetailsNimbleList();
 
-extern "C" SEXP waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+extern "C" SEXP waicDetailsNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
-extern "C" SEXP waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+extern "C" SEXP waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
 #endif  // __NIMBLE_PREDEFINEDNIMBLELISTS_H
