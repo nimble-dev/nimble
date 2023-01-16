@@ -732,14 +732,14 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
-  message(paste0("   [Note] Operator pow may cause derivative problems with negative arguments.  If the exponent is guaranteed to be an integer, use pow_int insted."), call.=FALSE)
+  message("   [Note] Operator pow may cause derivative problems with negative arguments.  If the exponent is guaranteed to be an integer, use pow_int insted.", call. = FALSE)
   invisible(NULL)
 }
 
 modifyForAD_matmult <- function(code, symTab, workEnv) {
   if(isTRUE(nimbleOptions("useADmatMultAtomic")))
     if(length(code$args)==2)  ## something is wrong if there are not 2 args
-      if(!(isEigScalar(code$args[[1]]) | isEigScalar(code$args[[2]]))) ## are both non-scalar?
+      if(!(isEigScalar(code$args[[1]]) || isEigScalar(code$args[[2]]))) ## are both non-scalar?
         code$name <- 'nimDerivs_matmult'
   invisible(NULL)
 }

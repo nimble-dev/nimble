@@ -819,14 +819,14 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices (or constant vectors, which are not allowed)
                     if(!nimbleOptions()$allowDynamicIndexing) {
-                        warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ",
+                        message("  [Note] It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: `",
                                 safeDeparse(code),
-                                ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
+                                "`. Please set `nimbleOptions(allowDynamicIndexing = TRUE)`.")
                         dynamicIndexParent <- code[[2]]
                     } else {
                         if(isTRUE(nimbleOptions("doADerrorTraps")))
                           if(isTRUE(buildDerivs))
-                            warning("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing.  Please set 'nimbleOptions(buildDerivs = FALSE)' to proceed with this model.")
+                            message("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing (found in `", safeDeparse(code), "`).  Please set 'nimbleOptions(buildDerivs = FALSE)' to proceed with this model.")
                       
                         if(any(
                             sapply(contentsCode,

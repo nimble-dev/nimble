@@ -279,8 +279,7 @@ nf_getBaseClassMethods <- function(methodList, contains) {
     }
     if(reqd) {
       if(!provided)
-        messageIfVerbose(
-          paste0("  [Warning] method ", mn, " is required from the contains (base) class, but was not provided."))
+        messageIfVerbose("  [Warning] method ", mn, " is required from the contains (base) class, but was not provided.")
     }
   }
   methodList

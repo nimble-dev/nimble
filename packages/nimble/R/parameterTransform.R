@@ -144,15 +144,13 @@ parameterTransform <- nimbleFunction(
                         if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound, which cannot be used in parameterTransform.')
                         if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound, which cannot be used in parameterTransform.')
                     } else {   ## some other distribution with finite support
-                        message('parameterTransform is not familiar with the ', dist, ' distribution of node ', node, '.')
-                        message('It will require the upper and lower bounds of the ', dist, ' distribution to be constant.')
-                        message('If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
+                        message('  [Warning] `parameterTransform` system cannot process the ', dist, ' distribution of node ', node, '.\n         The upper and lower bounds of the ', dist, ' distribution must be constant.\n         If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
                     }
                     transformType[i] <- 5L
                     transformData[i,DATA1] <- bounds[1]               ## formerly lowerBound
                     transformData[i,DATA2] <- bounds[2] - bounds[1]   ## formerly range
                     next }
-                stop(paste0('parameterTransform doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
+                stop(paste0('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
             } else {   ## multivariate
                 if(dist %in% c('dmnorm', 'dmvt')) {               ## 6: multivariate {normal, t}
                     transformType[i] <- 6L

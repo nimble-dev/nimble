@@ -1216,7 +1216,7 @@ Details: See the initialize() function
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
                 sTag <- if(numUnsampled > 1) 's' else ''
-                message(paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
+                message('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag)
             }
         },
 

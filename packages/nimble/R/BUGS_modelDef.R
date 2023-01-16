@@ -508,11 +508,11 @@ checkADsupportForDistribution <- function(code, userEnv) {
     dist <- as.character(code[[3]][[1]])
     if(dist %in% c("T", "I")) {
         dist <- as.character(code[[3]][[2]][[1]])
-        message("   [Note] Truncation via 'T' or 'I' is not supported for derivatives.  This model cannot be compiled.")
+        message("   [Note] Truncation via 'T' or 'I' is not supported for derivatives. This model cannot be compiled.")
     }
     supported <- TRUE
     if(dist %in% callsNotAllowedInAD)
-        message("   [Note] Distribution ", dist, " does not have support for derivatives.  This model cannot be compiled.")
+        message("   [Note] Distribution ", dist, " does not have support for derivatives. This model cannot be compiled.")
     else {
         if(!dist %in% distributions$namesVector) {
             dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput

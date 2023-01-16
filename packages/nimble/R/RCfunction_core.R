@@ -127,7 +127,7 @@ nfMethodRC <- setRefClass(
                        nf_checkDSLcode_derivs(code, names(arguments), callsNotAllowedInAD)
                    if((isFALSE(buildDerivs) || is.null(buildDerivs)) &&
                       'nimDerivs' %in% all.names(code))
-                       message("  [Note] Detected use of `nimDerivs` in a function or method for which `buildDerivs` has not been requested.")
+                       message("  [Note] Detected use of `nimDerivs` in a function or method for which `buildDerivs` has not been requested. This nimbleFunction cannot be compiled.")
                 }
             }
             generateTemplate() ## used for argument matching
