@@ -1912,30 +1912,29 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
         quote(structureExpr(z[1] * exp(w * beta[1]), a + z[2] * (d + w * beta[2]))),
         'beta[2]')
     expect_identical(is.list(output), TRUE)  ## should be a list with scale/offset
-    
 })
 
 
 test_that('MCMC with logProb variable being monitored builds and compiles.', {
-  cat('===== Starting MCMC test of logProb variable monitoring =====')
-  code <- nimbleCode({
-    prob[1] <- p
-    prob[2] <- 1-p
-    x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
-    y      ~ dbinom(   size = N, prob = p)
-  })
-  set.seed(0)
-  N <- 100
-  p <- 0.3
-  x1 <- rbinom(1, size=N, prob=p)
-  x2 <- N - x1
-  inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
-  Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
-  Cmodel <- compileNimble(Rmodel)
-  expect_silent(conf <- configureMCMC(Rmodel, monitors = 'logProb_y'))
-  expect_silent(Rmcmc  <- buildMCMC(conf))
-  expect_silent(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
-  Cmcmc$run(10)
+    cat('===== Starting MCMC test of logProb variable monitoring =====')
+    code <- nimbleCode({
+        prob[1] <- p
+        prob[2] <- 1-p
+        x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
+        y      ~ dbinom(   size = N, prob = p)
+    })
+    set.seed(0)
+    N <- 100
+    p <- 0.3
+    x1 <- rbinom(1, size=N, prob=p)
+    x2 <- N - x1
+    inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
+    Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
+    Cmodel <- compileNimble(Rmodel)
+    expect_silent(conf <- configureMCMC(Rmodel, monitors = 'logProb_y'))
+    expect_silent(Rmcmc  <- buildMCMC(conf))
+    expect_silent(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
+    Cmcmc$run(10)
 })
 
 test_that('slice sampler bails out of loop', {
