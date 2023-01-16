@@ -276,17 +276,19 @@ interrupt waiting to be handled, the process will stop and return control to R.
 NIMBLE provides a `nimOptim` function that partially implement's R's
 `optim` function with some minor differences.  `nimOptim` supports
 optimization methods 'Nelder-Mead', 'BFGS', 'CG', 'L-BFGS-B', but does
-not support methods 'SANN' and 'Brent'. NIMBLE's `nimOptim` supports
-gradients using user-provided functions if available or finite differences
-otherwise, but it does not currently support Hessian computations. Currently
-`nimOptim` does not support extra parameters to the function being optimized
-(via `\dots`), but a work-around is to create a new `nimbleFunction` that
-binds those fixed parameters. Finally, `nimOptim` requires a `nimbleList`
+not support methods 'SANN' and 'Brent'. NIMBLE's `nimOptim` allows gradients
+to be supplied using user-provided functions if available or finite differences
+otherwise. Currently `nimOptim` does not support extra parameters to the
+function being optimized (via `\dots`), but a work-around is to create a
+new `nimbleFunction` that binds those fixed parameters.
+Finally, `nimOptim` requires a `nimbleList`
 datatype for the `control` parameter, whereas R's `optim` uses a simple R
 `list`. To define the `control` parameter, create a default value with
-the `nimOptimDefaultControl` function, and set any desired fields. For
-example usage, see the unit tests in
-[tests/test-optim.R](https://github.com/nimble-dev/nimble/blob/master/packages/nimble/tests/testthat/test-optim.R).
+the `nimOptimDefaultControl` function, and set any desired fields.
+
+`nimOptim` cannot currently produce the Hessian matrix as part of the output.
+
+See `help(nimOptim)` for details, including example usage. 
 
 ### 'nim' synonyms for some functions {#sec:altern-keyw-some}
 
