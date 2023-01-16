@@ -28,7 +28,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
     virtual <- TRUE
     if(is.na(name)) name <- nf_refClassLabelMaker()
     className <- name
-    ## We make this look like a nimbleFunction in relevants ways for compilation
+    ## We make this look like a nimbleFunction in relevant ways for compilation
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     methodList <- lapply(methodList, nfMethodRC, check = FALSE)
     generatorFunction <- function() {}
@@ -113,7 +113,7 @@ nimbleFunction <- function(setup         = NULL,
                 names = buildDerivs)
         }
     } else if(!isTRUE(nimbleOptions('enableDerivs'))
-              && length(buildDerivs)>0)
+              && length(buildDerivs) > 0)
         stop('To build nimbleFunction derivatives, you must first set "nimbleOptions(enableDerivs = TRUE)".')
     origMethodList <- methodList
     methodList <- list()

@@ -122,9 +122,13 @@ nfMethodRC <- setRefClass(
 
             if(check && "package:nimble" %in% search()) {
                 nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments), where)
-                if(isTRUE(nimbleOptions("doADerrorTraps")))
-                   if(!isFALSE(buildDerivs) & !is.null(buildDerivs))
+                if(isTRUE(nimbleOptions("doADerrorTraps"))) {
+                   if(!isFALSE(buildDerivs) && !is.null(buildDerivs))
                        nf_checkDSLcode_derivs(code, names(arguments), callsNotAllowedInAD)
+                   if((isFALSE(buildDerivs) || is.null(buildDerivs)) &&
+                      'nimDerivs' %in% all.names(code))
+                       message("  [Note] Detected use of `nimDerivs` in a function or method for which `buildDerivs` has not been requested.")
+                }
             }
             generateTemplate() ## used for argument matching
             removeAndSetReturnType(check = check)
@@ -235,7 +239,7 @@ nf_checkDSLcode_derivs <- function(code, args, calls_not_allowed) {
                      c(all.vars(code), args))
     problem_calls <- calls[ calls %in% calls_not_allowed ]
     if(length(problem_calls)) {
-        message("  [Note] Detected use of function(s) that are not supported for derivative tracking in a function or method for which buildDerivs has been requested: ", paste(unique(problem_calls), collapse = ", "), ".")
+        message("  [Note] Detected use of function(s) that are not supported for derivative tracking in a function or method for which `buildDerivs` has been requested: ", paste(unique(problem_calls), collapse = ", "), ".")
     }
     NULL
 }
