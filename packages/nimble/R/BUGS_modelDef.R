@@ -536,8 +536,8 @@ checkForDeterministicDorR <- function(code) {
             dFunsUser <- get('namesVector', nimbleUserNamespace$distributions)
             drFuns <- c(drFuns, dFunsUser, paste0("r", stripPrefix(dFunsUser)))
         }
-        if(as.character(code[[3]][[1]]) %in% drFuns)
-            warning("Model includes deterministic assignment using '<-' of the result of a density ('d') or simulation ('r') calculation. This is likely not what you intended in: ", safeDeparse(code), ".")
+        if(as.character(code[[3]][[1]]) %in% c(drFuns, "T", "I"))
+            message("  [Warning] Model includes deterministic assignment using '<-' of the result of a density ('d') or simulation ('r') calculation. This is likely not what you intended in: ", safeDeparse(code), ".")
     }
     return(NULL)
 }
