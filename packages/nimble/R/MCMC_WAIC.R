@@ -3,9 +3,9 @@ waicClass_base <- nimbleFunctionVirtual(
     methods = list(
         reset = function() {},
         updateStats = function() {},
-        get = function() { returnType(waicList()) },
-        getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsList()) },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { returnType(waicList()) }
+        get = function() { returnType(waicNimbleList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsNimbleList()) },
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { returnType(waicNimbleList()) }
     )
 )
 
@@ -17,9 +17,9 @@ buildDummyWAIC <- nimbleFunction(
     methods = list(
         reset = function() {},
         updateStats = function() {},
-        get = function() { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) },
-        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
+        get = function() { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsNimbleList()) },
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) }
     )
 )
 
@@ -45,7 +45,7 @@ buildOfflineWAIC <- nimbleFunction(
     methods = list(
         reset = function() {},
         updateStats = function() {},
-        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsNimbleList()) },
         calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) {
             nburninPostThinning <- ceiling(nburnin/thin)
             numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
@@ -78,18 +78,18 @@ buildOfflineWAIC <- nimbleFunction(
             if(is.nan(WAIC)) cat('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.\n')
             finalized <<- TRUE
 
-            returnType(waicList())
+            returnType(waicNimbleList())
             return(get())
         },
         get = function() {
             ## Extract WAIC summary information.
-            returnType(waicList())
+            returnType(waicNimbleList())
             ## Ideally we would call finalize if needed, but to mimic old offline behavior,
             ## we need to pass in nburnin, and finalize method for online WAIC doesn't
             ## take arguments.
             if(!finalized)
                 stop("Please execute the 'calculateWAIC' method of the offline WAIC object before running 'get'.")
-            output <- waicList$new()
+            output <- waicNimbleList$new()
 
             output$WAIC <- WAIC
             output$lppd <- lppd
@@ -100,7 +100,7 @@ buildOfflineWAIC <- nimbleFunction(
     )
 )
 
-## waicList and waicDetailsList definitions are in nimbleList_core.R.
+## waicNimbleList and waicDetailsNimbleList definitions are in nimbleList_core.R.
 
 buildWAIC <- nimbleFunction(
     name = 'waicClass',
@@ -281,7 +281,7 @@ buildWAIC <- nimbleFunction(
         },
         get = function() {
             ## Extract WAIC summary information.
-            returnType(waicList())
+            returnType(waicNimbleList())
             if(!finalized)
                 finalize()
             if(mcmcIter > 1) {
@@ -290,7 +290,7 @@ buildWAIC <- nimbleFunction(
                     cat("  [Warning] There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.\n" )
                 }
             }
-            output <- waicList$new()
+            output <- waicNimbleList$new()
             
             output$WAIC <- WAIC[lengthConvCheck]
             output$lppd <- lppd[lengthConvCheck]
@@ -300,11 +300,11 @@ buildWAIC <- nimbleFunction(
         },
         getDetails = function(returnElements = logical(default = FALSE)) {
             ## Extract WAIC detailed information.
-            returnType(waicDetailsList())
+            returnType(waicDetailsNimbleList())
             if(!finalized)
                 finalize()
 
-            output <- waicDetailsList$new()
+            output <- waicDetailsNimbleList$new()
             
             output$marginal <- marginal
             output$thin <- thin
@@ -342,7 +342,7 @@ buildWAIC <- nimbleFunction(
             logProbMat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
             finalized <<- FALSE
         },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) }
     )
 )
 

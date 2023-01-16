@@ -354,9 +354,9 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
                                   nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
 
 
-#' waicList definition
+#' waicNimbleList definition
 #' 
-#' \code{waicList} definition for the \code{nimbleList} type returned by WAIC
+#' \code{waicNimbleList} definition for the \code{nimbleList} type returned by WAIC
 #' computation.
 #'
 #' @details
@@ -367,18 +367,18 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #'
 #' @export
 #' 
-waicList <- nimbleList(
+waicNimbleList <- nimbleList(
     list(
         nimbleType('WAIC', 'double', 0),
         nimbleType('lppd', 'double', 0),
         nimbleType('pWAIC', 'double', 0)
-    ), name = 'waicList',
+    ), name = 'waicNimbleList',
     predefined = TRUE
 )
     
-#' waicDetailsList definition
+#' waicDetailsNimbleList definition
 #' 
-#' \code{waicDetailsList} definition for the \code{nimbleList} type returned by WAIC
+#' \code{waicDetailsNimbleList} definition for the \code{nimbleList} type returned by WAIC
 #' computation.
 #'
 #' @details
@@ -389,7 +389,7 @@ waicList <- nimbleList(
 #'
 #' @export
 #' 
-waicDetailsList <- nimbleList(
+waicDetailsNimbleList <- nimbleList(
     list(
         nimbleType('marginal', 'logical', 0),
         nimbleType('niterMarginal', 'double', 0),
@@ -408,7 +408,7 @@ waicDetailsList <- nimbleList(
         nimbleType('lppd_elements', 'double', 1),
         nimbleType('pWAIC_elements', 'double', 1)
 
-    ), name = 'waicDetailsList',
+    ), name = 'waicDetailsNimbleList',
     predefined = TRUE
 )
 

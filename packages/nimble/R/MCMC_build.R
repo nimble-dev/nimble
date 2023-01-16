@@ -301,21 +301,21 @@ buildMCMC <- nimbleFunction(
             return(result$WAIC)
         },
         getWAIC = function() {
-            returnType(waicList())
+            returnType(waicNimbleList())
             if(enableWAIC) {
                 return(waicFun[[1]]$get())
             } else {
                 print("WAIC was disabled based on the 'enableWAIC = FALSE'. You may be able to use the \'calculateWAIC\' function.")
-                return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA))
+                return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA))
             }
         },
         getWAICdetails = function(returnElements = logical(default = FALSE)) {
-            returnType(waicDetailsList())
+            returnType(waicDetailsNimbleList())
             if(enableWAIC & onlineWAIC) {
                 return(waicFun[[1]]$getDetails(returnElements))
             } else {
                 print("WAIC details are only available when using online WAIC. Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
-                return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE))
+                return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE))
             }
         }
     )
