@@ -18,7 +18,7 @@ buildDummyWAIC <- nimbleFunction(
         reset = function() {},
         updateStats = function() {},
         get = function() { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) },
-        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsNimbleList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE, nburnin_extra = 0));  returnType(waicDetailsNimbleList()) },
         calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) }
     )
 )
@@ -45,7 +45,7 @@ buildOfflineWAIC <- nimbleFunction(
     methods = list(
         reset = function() {},
         updateStats = function() {},
-        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsNimbleList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE, nburnin_extra = 0));  returnType(waicDetailsNimbleList()) },
         calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) {
             nburninPostThinning <- ceiling(nburnin/thin)
             numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
@@ -660,6 +660,9 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
 #' \code{thin}: Whether WAIC was calculated based only on thinned samples.
 #' 
 #' \code{online}: Whether WAIC was calculated during MCMC sampling.
+#'
+#' \code{nburnin_extra}: Number of additional iterations discarded as burnin,
+#' in addition to original MCMC burnin.
 #' 
 #' \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}: The
 #' computed marginal WAIC, lppd, and pWAIC based on fewer Monte Carlo

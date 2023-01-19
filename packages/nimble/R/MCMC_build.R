@@ -315,7 +315,7 @@ buildMCMC <- nimbleFunction(
                 return(waicFun[[1]]$getDetails(returnElements))
             } else {
                 print("WAIC details are only available when using online WAIC. Online WAIC was disabled based on the 'onlineWAIC' element of WAIC control list.")
-                return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE))
+                return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE, nburnin_extra = 0))
             }
         }
     )
