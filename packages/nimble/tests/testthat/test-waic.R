@@ -92,7 +92,7 @@ test_that("voter model WAIC is accurate", {
   Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
   Cvotermcmc$run(50000)
   expect_output(waic <- Cvotermcmc$getWAIC()$WAIC,
-                 "There are individual pWAIC values that are greater than 0.4")
+                 "individual pWAIC values that are greater than 0.4")
   expect_lt(abs(waic - 87.2), 2.0)
   
   ## additional testing of validity of monitored nodes below
@@ -273,8 +273,8 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     set.seed(1)
     out3 <- runMCMC(cmcmc, niter = 1000, nchains = 3, WAIC = TRUE, inits = inits, perChainWAIC = TRUE)
     waic3 <- cmcmc$calculateWAIC()
-    expect_identical(out3$WAIC[3], waic3)
-    expect_identical(out3$WAIC[1], waic1)
+    expect_identical(out3$WAIC, waic3)
+    expect_identical(out3$perChainWAIC[1], waic1)
 
 })
 
@@ -630,7 +630,7 @@ test_that("use of extra burnin of online WAIC", {
     out3 <- runMCMC(cmcmc, niter = 500, nburnin = 50)
     waic3 <- calculateWAIC(cmcmc, nburnin = 50)
 
-    expect_equal(waic1, waic2)
+    expect_gt(abs(waic1$WAIC - waic2$WAIC), .01)
     expect_equal(waic1, waic3)
 })
 
