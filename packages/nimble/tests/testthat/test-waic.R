@@ -244,7 +244,7 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     expect_equal(waic2$WAIC, waic1)
     expect_identical(c(waic2$WAIC, waic2$lppd, waic2$pWAIC), c(out2$WAIC$WAIC, out2$WAIC$lppd, out2$WAIC$pWAIC))
 
-    waic2full <- cmcmc$getWAICdetails(returnElements = TRUE)
+    expect_silent(waic2full <- cmcmc$getWAICdetails(returnElements = TRUE))
     expect_identical(waic2full$thin, FALSE)
     expect_identical(waic2full$online, TRUE)
     expect_identical(waic2full$marginal, FALSE)

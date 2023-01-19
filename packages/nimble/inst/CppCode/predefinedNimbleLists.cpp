@@ -852,7 +852,7 @@ SEXP waicDetailsNimbleList::copyToSEXP() {
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("online"), S_online,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("nburnin_extra"), S_niterMarginal,
+    Rf_defineVar(Rf_install("nburnin_extra"), S_nburnin_extra,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("WAIC_partialMC"), S_WAIC_partialMC,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
