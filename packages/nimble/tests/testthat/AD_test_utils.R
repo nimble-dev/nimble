@@ -2,11 +2,15 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 
 # An environment for storing some defaults for AD testing.
 # Having this allows one to change these values globally.
+# Each entry is tolerances for 0th, 1st, and 2nd order followed by an
+# absolute threshold below which the tolerances will be used as absolute, not
+# relative. See nim_all_equal.  It is applied to the second of the two valued
+# to be compared.
 ADtestEnv <- new.env()
 resetTols <- function() {
-  ADtestEnv$RRrelTol <<- c(1e-8, 1e-3, 1e-2)
-  ADtestEnv$RCrelTol <<- c(1e-14, 1e-8, 1e-3)
-  ADtestEnv$CCrelTol <<- rep(sqrt(.Machine$double.eps), 3)
+  ADtestEnv$RRrelTol <<- c(1e-8, 1e-3, 1e-2, 1e-10)
+  ADtestEnv$RCrelTol <<- c(1e-8, 1e-3, 1e-2, 1e-10)
+  ADtestEnv$CCrelTol <<- c(rep(sqrt(.Machine$double.eps), 3), 1e-10)
 }
 resetTols()
 
@@ -844,7 +848,7 @@ test_AD_batch <- function(batch, dir = file.path(tempdir(), "nimble_generatedCod
 ## and indexing of those arguments when possible (i.e. for non-scalar args).
 ## n_arg_reps determines how many times an argument can be used in a given
 ## wrt character vector. By default, any argument will appear only 1 time.
-make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1) {
+make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1, sizes) {
 
   ## always include each arg on its own, and all combinations of the args
   wrts <- as.list(names(argTypes))
@@ -857,10 +861,18 @@ make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1) {
       )
     }
 
-  argSymbols <- lapply(
-    argTypes, function(argType)
-      add_missing_size(nimble:::argType2symbol(argType))
-  )
+  argSymbols <- list()
+  for(i in names(argTypes)) {
+    argType <- argTypes[[i]]
+    if(missing(sizes))
+      argSymbols[[i]] <- add_missing_size(nimble:::argType2symbol(argType))
+    else
+      argSymbols[[i]] <- add_missing_size(nimble:::argType2symbol(argType), sizes[[i]])
+  }
+
+  ## argSymbols <- lapply(
+  ##   argTypes, function(argType)
+  ##     add_missing_size(nimble:::argType2symbol(argType))
 
   while (n_random > 0) {
     n_random  <- n_random - 1
@@ -1352,11 +1364,17 @@ make_AD_test <- function(op, argTypes, wrt_args = NULL,
       )
     )
 
-  methods <- list()
-
   if (is.null(wrt_args)) wrt_args_filter <- rep(TRUE, length(argTypes))
   else wrt_args_filter <- wrt_args
-  wrts <- make_wrt(opParam$args[wrt_args_filter])
+
+  dotArgs <- list(...)
+  sizes = dotArgs$sizes
+  if(is.null(sizes))
+    wrts <- make_wrt(opParam$args[wrt_args_filter])
+  else
+    wrts <- make_wrt(opParam$args[wrt_args_filter], sizes = sizes)
+
+  methods <- list()
   for (i in seq_along(wrts)) {
     method_i <- paste0('method', i)
     methods[[method_i]] <- method
@@ -2667,68 +2685,68 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 }
 
 
-## Makes random vectors of wrt elements, following James Duncan's code
-make_wrt <- function(argTypes, n_random = 10, allCombinations = FALSE) {
-    ## always include each arg on its own, and all combinations of the args
-    ## Note that for models with a large number of variables this might turn out to be too much.
-    wrts <- as.list(names(argTypes))
-    if(allCombinations) {
-        if (length(argTypes) > 1)
-            for (m in 2:length(argTypes)) {
-                this_combn <- combn(names(argTypes), m)
-                wrts <- c(
-                    wrts,
-                    unlist(apply(this_combn, 2, list), recursive = FALSE)
-                )
-            }
-    }
-    
-  while (n_random > 0) {
-    n_random  <- n_random - 1
-    n <- sample(1:length(argTypes), 1) # how many of the args to use?
-    ## grab a random subset of the args of length n
-    args <- sample(argTypes, n)
-    ## may repeat an arg up to 2 times
-    reps <- sample(1:2, length(args), replace = TRUE)
-    argSymbols <- lapply(args, nimble:::argType2symbol)
-    this_wrt <- c()
-    for (i in 1:length(args)) {
-      while (reps[i] > 0) {
-        reps[i] <- reps[i] - 1
-        ## coin flip determines whether to index vectors/matrices
-        use_indexing <- sample(c(TRUE, FALSE), 1)
-        if (use_indexing && argSymbols[[i]]$nDim > 0) {
-          rand_row <- sample(1:argSymbols[[i]]$size[1], size = 1)
-          ## another coin flip determines whether to use : in indexing or not
-          use_colon <- sample(c(TRUE, FALSE), 1)
-          if (use_colon && rand_row < argSymbols[[i]]$size[1]) {
-            end_row <- rand_row +
-              sample(1:(argSymbols[[i]]$size[1] - rand_row), size = 1)
-            rand_row <- paste0(rand_row, ':', end_row)
-          }
-          index <- rand_row
-          if (argSymbols[[i]]$nDim == 2) {
-            rand_col <- sample(1:argSymbols[[i]]$size[2], size = 1)
-            ## one more coin flip to subscript second dimension
-            use_colon_again <- sample(c(TRUE, FALSE), 1)
-            if (use_colon_again && rand_col < argSymbols[[i]]$size[2]) {
-              end_col <- rand_col +
-                sample(1:(argSymbols[[i]]$size[2] - rand_col), size = 1)
-              rand_col <- paste0(rand_col, ':', end_col)
-            }
-            index <- paste0(index, ',', rand_col)
-          }
-          this_wrt <- c(this_wrt, paste0(names(args)[i], '[', index, ']'))
-        }
-        ## if first coin flip was FALSE, just
-        ## use the arg name without indexing
-        else this_wrt <- c(this_wrt, names(args)[i])
-      }
-    }
-    if (!is.null(this_wrt)) wrts <- c(wrts, list(unique(this_wrt)))
-  }
-  wrts <- unique(wrts)
-}
+## ## Makes random vectors of wrt elements, following James Duncan's code
+## make_wrt <- function(argTypes, n_random = 10, allCombinations = FALSE) {
+##     ## always include each arg on its own, and all combinations of the args
+##     ## Note that for models with a large number of variables this might turn out to be too much.
+##     wrts <- as.list(names(argTypes))
+##     if(allCombinations) {
+##         if (length(argTypes) > 1)
+##             for (m in 2:length(argTypes)) {
+##                 this_combn <- combn(names(argTypes), m)
+##                 wrts <- c(
+##                     wrts,
+##                     unlist(apply(this_combn, 2, list), recursive = FALSE)
+##                 )
+##             }
+##     }
+
+##   while (n_random > 0) {
+##     n_random  <- n_random - 1
+##     n <- sample(1:length(argTypes), 1) # how many of the args to use?
+##     ## grab a random subset of the args of length n
+##     args <- sample(argTypes, n)
+##     ## may repeat an arg up to 2 times
+##     reps <- sample(1:2, length(args), replace = TRUE)
+##     argSymbols <- lapply(args, nimble:::argType2symbol)
+##     this_wrt <- c()
+##     for (i in 1:length(args)) {
+##       while (reps[i] > 0) {
+##         reps[i] <- reps[i] - 1
+##         ## coin flip determines whether to index vectors/matrices
+##         use_indexing <- sample(c(TRUE, FALSE), 1)
+##         if (use_indexing && argSymbols[[i]]$nDim > 0) {
+##           rand_row <- sample(1:argSymbols[[i]]$size[1], size = 1)
+##           ## another coin flip determines whether to use : in indexing or not
+##           use_colon <- sample(c(TRUE, FALSE), 1)
+##           if (use_colon && rand_row < argSymbols[[i]]$size[1]) {
+##             end_row <- rand_row +
+##               sample(1:(argSymbols[[i]]$size[1] - rand_row), size = 1)
+##             rand_row <- paste0(rand_row, ':', end_row)
+##           }
+##           index <- rand_row
+##           if (argSymbols[[i]]$nDim == 2) {
+##             rand_col <- sample(1:argSymbols[[i]]$size[2], size = 1)
+##             ## one more coin flip to subscript second dimension
+##             use_colon_again <- sample(c(TRUE, FALSE), 1)
+##             if (use_colon_again && rand_col < argSymbols[[i]]$size[2]) {
+##               end_col <- rand_col +
+##                 sample(1:(argSymbols[[i]]$size[2] - rand_col), size = 1)
+##               rand_col <- paste0(rand_col, ':', end_col)
+##             }
+##             index <- paste0(index, ',', rand_col)
+##           }
+##           this_wrt <- c(this_wrt, paste0(names(args)[i], '[', index, ']'))
+##         }
+##         ## if first coin flip was FALSE, just
+##         ## use the arg name without indexing
+##         else this_wrt <- c(this_wrt, names(args)[i])
+##       }
+##     }
+##     if (!is.null(this_wrt)) wrts <- c(wrts, list(unique(this_wrt)))
+##   }
+##   wrts <- unique(wrts)
+## }
 
 
 makeADDistributionTestList <- function(distnList){

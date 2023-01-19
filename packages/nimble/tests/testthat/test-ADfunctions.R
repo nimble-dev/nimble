@@ -258,6 +258,125 @@ test_that('Derivatives with c() work correctly.',
 }
 )
 
+## Dirichlet with log argument
+dirch_test_log <- make_AD_test2(
+  op = list(
+    name = "ddirch manual using additive log-ratio transformation",
+    opParam = list(name = "ddirch manual"),
+    # X = Xtrans = log(Xorig_i / Xorig_n), i = 1... n-1
+    # Xorig[1:n-1] = exp(Xtrans)
+    # Xorig[n] = 1/(1+sum(Xorig[1:n-1]))
+    expr = quote({
+      Xorig_1_nm1_over_Xn <- exp(x)
+      Xorig_n <- 1/(1 + sum(Xorig_1_nm1_over_Xn))
+      Xorig <- c(Xorig_1_nm1_over_Xn * Xorig_n, Xorig_n)
+      out <- ddirch(x = Xorig, alpha=alpha, log = log)
+    }),
+    args = list(
+      x = quote(double(1)),
+      alpha = quote(double(1)),
+      log = quote(double())
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', alpha='double(1)', log='double()'),
+  wrt = c('x', 'alpha'),
+  inputs = list(record = list(x = c(log(.2/.5), log(.3/.5)), alpha = c(2, 4, 4), log = 1),
+                test   = list(x = c(log(.4/.45), log(.15/.45)), alpha = c(3, 2, 5), log = 0)))
+
+dirch_test_out <- test_AD2(dirch_test_log)
+
+
+## Dirichlet without log argument
+dirch_test_fixedlog <- make_AD_test2(
+  op = list(
+    name = "ddirch manual using additive log-ratio transformation",
+    opParam = list(name = "ddirch manual"),
+    # X = Xtrans = log(Xorig_i / Xorig_n), i = 1... n-1
+    # Xorig[1:n-1] = exp(Xtrans)
+    # Xorig[n] = 1/(1+sum(Xorig[1:n-1]))
+    expr = quote({
+      Xorig_1_nm1_over_Xn <- exp(x)
+      Xorig_n <- 1/(1 + sum(Xorig_1_nm1_over_Xn))
+      Xorig <- c(Xorig_1_nm1_over_Xn * Xorig_n, Xorig_n)
+      out <- ddirch(x = Xorig, alpha=alpha, log = 1)
+    }),
+    args = list(
+      x = quote(double(1)),
+      alpha = quote(double(1))
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', alpha='double(1)'),
+  wrt = c('x', 'alpha'),
+  inputs = list(record = list(x = c(log(.2/.5), log(.3/.5)), alpha = c(2, 4, 4)),
+                test   = list(x = c(log(.4/.45), log(.15/.45)), alpha = c(3, 2, 5))))
+
+dirch_test_out <- test_AD2(dirch_test_fixedlog)
+
+## Wishart
+## Testing Wishart is tricky because both x and cholesky are
+## matrices and also because not all elements are indendent
+makeARcov <- function(n, rho, sigma) {
+  s2 <- sigma^2
+  ans <- matrix(nrow = n, ncol = n)
+  for(i in 1:n) {
+    for(j in 1:i) {
+      ans[i,j] <- ans[j,i] <- s2 * rho^(abs(i-j))
+    }
+  }
+  ans
+}
+set.seed(123)
+cholRec <- chol(makeARcov(4, .6, 2))
+cholTest <- chol(makeARcov(4, .55, 3))
+
+wRec <- rwish_chol(1, cholRec, df = 7, scale_param = FALSE)
+wTest <- rwish_chol(1, cholTest, df = 7, scale_param = FALSE)
+
+cholRecTri <- cholRec[ upper.tri(cholRec, TRUE)]
+cholTestTri <-cholTest[ upper.tri(cholTest, TRUE)]
+
+wRecTri <- wRec[ upper.tri(wRec, TRUE) ]
+wTestTri <- wRec[ upper.tri(wTest, TRUE) ]
+
+wish_test_log <- make_AD_test2(
+  op = list(
+    name = "dwish_chol manual",
+    opParam = list(name = "dwish_chol manual"),
+    expr = quote({
+      # populate 2D matrices from the vectors
+      # created from upper triangular values.
+      x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
+      chol2D <- nimMatrix(nrow = 4, ncol = 4, init = FALSE)
+      i <- 1L
+      j <- 1L
+      indOrig <- 1L
+      for(j in 1:4) {
+        for(i in 1:j) {
+          x2D[i,j] <- x2D[j,i] <- x[indOrig]
+          chol2D[i,j] <- chol[indOrig]  # chol2D does not need lower triangular entries
+          indOrig <- indOrig + 1
+        }
+      }
+      out <- dwish_chol(x = x2D, cholesky=chol2D, df = df, log = log)
+    }),
+    args = list(
+      x = quote(double(1)),
+      chol = quote(double(1)),
+      df = quote(double()),
+      log = quote(double())
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', chol='double(1)', df = 'double()', log='double()'),
+  wrt = c('x', 'chol'),
+  inputs = list(record = list(x = wRecTri, chol = cholRecTri, df = 7, log = 0),
+                test   = list(x = wTestTri, chol = cholTestTri, df = 8, log = 1)),
+)
+
+wish_test_out <- test_AD2(wish_test_log)
+
 #######################
 ## run all of the tests
 #######################
@@ -282,7 +401,6 @@ ADtestEnv$RCrelTol <- c(1e-12, 1e-5, 1e-3)
 test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 
-
 test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
 test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
@@ -295,6 +413,9 @@ test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures,
 
 test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
+
+test_AD_batch(squareMatrixOpTests[9], verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
+
 test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
 
@@ -313,6 +434,42 @@ test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures, verbose = F
 ## test_AD_batch(distn_tests[147]) 
 ## test_AD_batch(distn_tests[148]) ## dwish fails
 
+
+resetTols()
+iTests <- which(grepl("^binom_base", names(distn_tests2)))
+# cat breaks
+iTests <- which(grepl("^multi_no_size", names(distn_tests2)))
+iTests <- which(grepl("^multi_with_size", names(distn_tests2)))
+iTests <- which(grepl("^nbinom_base", names(distn_tests2)))
+iTests <- which(grepl("^pois_base", names(distn_tests2)))
+iTests <- which(grepl("^beta_base", names(distn_tests2)))
+iTests <- which(grepl("^chisq_base", names(distn_tests2)))
+iTests <- which(grepl("^dexp", names(distn_tests2)))
+iTests <- which(grepl("^exp", names(distn_tests2)))
+iTests <- which(grepl("^gamma", names(distn_tests2)))
+iTests <- which(grepl("^invgamma", names(distn_tests2)))
+iTests <- which(grepl("^sqrtinvgamma", names(distn_tests2)))
+iTests <- which(grepl("^lnorm", names(distn_tests2)))
+iTests <- which(grepl("^logis", names(distn_tests2)))
+iTests <- which(grepl("^norm", names(distn_tests2)))
+iTests <- which(grepl("^t_", names(distn_tests2)))
+iTests <- which(grepl("^unif", names(distn_tests2)))
+iTests <- which(grepl("^weibull", names(distn_tests2)))
+# Dirichlet has a separate test above
+iTests <- which(grepl("^mnorm", names(distn_tests2)))
+iTests <- which(grepl("^mvt", names(distn_tests2))) # has tolerance problems for 5 numbers 35x35 Hessian
+# Wishart has a separate test above.
+iTests
+#testResults <- lapply(distn_tests2[iTests], test_AD2)
+testResults <- lapply(distn_with_log_tests2[iTests], test_AD2)
+
+testResults <- lapply(distn_with_log_tests2, test_AD2)
+
+
+lapply(distn_tests2[8], test_AD2)
+lapply(distn_tests2[137:144], test_AD2)
+lapply(distn_tests2, test_AD2)
+test_AD2(distn_tests2[[3]])
 
 test_AD_batch(distn_with_log_tests,  knownFailures = AD_knownFailures, verbose = FALSE)
 

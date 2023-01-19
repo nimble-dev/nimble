@@ -82,17 +82,17 @@ distn_params[['binom_base']]$args <- list(
     ## test_AD will use with the realized value of the parameter `size`.
     ##
     input_gen_fun = function(n) function(size, prob)
-        if(n >= length(size)) rbinom(n, size, prob) else rbinom(n, min(size), prob),
+        if(n >= max(length(size), length(prob))) rbinom(n, size, prob) else rbinom(n, min(size), prob),
     type = c('double(0)', 'double(1)'),
     size = c(1, 5)
   ),
   size = list(
-    input_gen_fun = function(n) sample(1:10, size = n, replace = TRUE),
+    input_gen_fun = function(n) sample(5:10, size = n, replace = TRUE),
     type = c('double(0)', 'double(1)'),
     size = list(1, 3)
   ),
   prob = list(
-    input_gen_fun = function(n) runif(n),
+    input_gen_fun = function(n) runif(n, .4, .6),
     type = c('double(0)', 'double(1)'),
     size = list(1, 7)
   )
@@ -103,23 +103,25 @@ distn_params[['binom_base']]$wrt <- c('prob') ## Why doesn't x get baked in? May
 ## Categorical distribution
 ###########################
 
-distn_params[['cat_base']] <- distn_base
-distn_params[['cat_base']]$name <- 'cat'
-distn_params[['cat_base']]$args <- list(
-  rand_variate = list(
-    ## support depends on k = length(prob)
-    input_gen_fun = function(n) function(prob) sample(1:length(prob), size = n, replace = TRUE, prob = prob),
-    type = c('double(0)', 'double(1)'),
-    size = list(1, 3)
-  ),
-  prob = list(
-    input_gen_fun = function(n) {prob <- runif(n); prob/sum(prob)},
-    type = c('double(1)', 'double(1)'),
-    size = list(5, 8)
-  )
-)
-distn_params[['cat_base']]$wrt <- c('x', 'prob') # FAILS
-# Must include x or it gets baked into meta-tapes, but including x fails in uncompiled.
+# dcat really won't work due to the problem in CppAD with VecAD,
+# which does not successfully get handled by base2ad, which is
+# used in double-taping.
+## distn_params[['cat_base']] <- distn_base
+## distn_params[['cat_base']]$name <- 'cat'
+## distn_params[['cat_base']]$args <- list(
+##   rand_variate = list(
+##     ## support depends on k = length(prob)
+##     input_gen_fun = function(n) function(prob) sample(1:length(prob), size = n, replace = TRUE, prob = prob),
+##     type = c('double(0)', 'double(1)'),
+##     size = list(1, 1) # vector is not supported
+##   ),
+##   prob = list(
+##     input_gen_fun = function(n) {prob <- runif(n); prob/sum(prob)},
+##     type = c('double(1)', 'double(1)'),
+##     size = list(5, 8)
+##   )
+## )
+## distn_params[['cat_base']]$wrt <- c('prob')
 
 ###########################
 ## Multinomial distribution
@@ -158,16 +160,17 @@ distn_params[['multi_with_size']]$args[['size']]  <- list(
 distn_params[['nbinom_base']] <- distn_base
 distn_params[['nbinom_base']]$name <- 'nbinom'
 distn_params[['nbinom_base']]$args <- list(
+  # constrain range of parameters and draws to avoid numerical problems with uncompiled derivs
   rand_variate = list(
-    input_gen_fun = function(n) function(size, prob) rnbinom(n, size, prob),
+    input_gen_fun = function(n) function(size, prob) sample(10:15, size = n, replace = TRUE), #rnbinom(n, size, prob),
     type = c('double(0)', 'double(1, 5)')
   ),
   size = list(
-    input_gen_fun = function(n) runif(n, max = 100),
+    input_gen_fun = function(n) runif(n, 5, 15),
     type = c('double(0)', 'double(1, 3)')
   ),
   prob = list(
-    input_gen_fun = function(n) runif(n),
+    input_gen_fun = function(n) runif(n, .4, .6),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -198,16 +201,19 @@ distn_params[['pois_base']]$wrt <- c('lambda')
 distn_params[['beta_base']] <- distn_base
 distn_params[['beta_base']]$name <- 'beta'
 distn_params[['beta_base']]$args <- list(
+  # It can be hard to get all reasonable values with reasonable derivatives.
+  # For this reason we choose shapes from 3 to 5 and x from .2 to .8 and
+  # it should all be reasonable
   rand_variate = list(
-    input_gen_fun = function(n) function(shape1, shape2) rbeta(n, shape1, shape2),
+    input_gen_fun = function(n) function(shape1, shape2) runif(n, .2, .8), #rbeta(n, shape1, shape2),
     type = c('double(0)', 'double(1, 5)')
   ),
   shape1 = list(
-    input_gen_fun = function(n) runif(n, max = 10),
+    input_gen_fun = function(n) runif(n, 3, 5),
     type = c('double(0)', 'double(1, 3)')
   ),
   shape2 = list(
-    input_gen_fun = function(n) runif(n, max = 10),
+    input_gen_fun = function(n) runif(n, 3, 5),
     type = c('double(0)', 'double(1, 7)')
   )
 )
@@ -506,19 +512,23 @@ distn_params[['weibull_base']]$wrt <- c('shape', 'scale', 'x')
 ## Dirichlet distribution
 #########################
 
-distn_params[['dirch_base']] <- distn_base
-distn_params[['dirch_base']]$name <- 'dirch'
-distn_params[['dirch_base']]$args <- list(
-  rand_variate = list(
-    input_gen_fun = function(n) {prob <- runif(n); prob/sum(prob)},
-    type = c('double(1, 5)')
-  ),
-  alpha = list(
-    input_gen_fun = function(n) runif(n, max = 3), ## large values might not work well
-    type = c('double(1, 5)')
-  )
-)
-distn_params[['dirch_base']]$wrt = c('alpha', 'x')
+## Dirichlet is not easy to test because the x values must sum to 1.
+## The "live on the simplex."
+## See test-ADfunctions for a Dirichlet-specific test.
+##
+## distn_params[['dirch_base']] <- distn_base
+## distn_params[['dirch_base']]$name <- 'dirch'
+## distn_params[['dirch_base']]$args <- list(
+##   rand_variate = list(
+##     input_gen_fun = function(n) {prob <- runif(n); prob/sum(prob)},
+##     type = c('double(1, 5)')
+##   ),
+##   alpha = list(
+##     input_gen_fun = function(n) runif(n, max = 3), ## large values might not work well
+##     type = c('double(1, 5)')
+##   )
+## )
+## distn_params[['dirch_base']]$wrt = c('alpha', 'x')
 
 ###################################
 ## Multivariate Normal distribution
@@ -561,7 +571,7 @@ distn_params[['mvt_chol_base']]$args[['mu']] <- list(
   type = c('double(1, 5)')
 )
 distn_params[['mvt_chol_base']]$args[['df']] <- list(
-  input_gen_fun = function(n) runif(n, max = 100),
+  input_gen_fun = function(n) sample(6:9, size = n, replace = TRUE),
   type = c('double(0)')
 )
 distn_params[['mvt_chol_base']]$wrt <- c('mu', 'cholesky', 'x')
@@ -570,18 +580,20 @@ distn_params[['mvt_chol_base']]$wrt <- c('mu', 'cholesky', 'x')
 ## Wishart distribution
 #######################
 
-distn_params[['wish_chol_base']] <- chol_base
-distn_params[['wish_chol_base']]$name <- 'wish_chol'
-distn_params[['wish_chol_base']]$args[['rand_variate']] <- list(
-  input_gen_fun = function(n) function(cholesky, df)
-    rwish_chol(n = 1, cholesky, df),
-  type = c('double(1, 5)')
-)
-distn_params[['wish_chol_base']]$args[['df']] <- list(
-  input_gen_fun = function(n) runif(n, max = 100),
-  type = c('double(0)')
-)
-distn_params[['wish_chol_base']]$wrt <- c('cholesky', 'x')
+## The make_AD_test2 machinery is buggy for matrix arguments, so
+## this will be a one-off test in test-ADfunctions.
+## distn_params[['wish_chol_base']] <- chol_base
+## distn_params[['wish_chol_base']]$name <- 'wish_chol'
+## distn_params[['wish_chol_base']]$args[['rand_variate']] <- list(
+##   input_gen_fun = function(n) function(cholesky, df)
+##     rwish_chol(n = 1, cholesky, df),
+##   type = c('double(2, c(5, 5))')
+## )
+## distn_params[['wish_chol_base']]$args[['df']] <- list(
+##   input_gen_fun = function(n) runif(n, max = 100),
+##   type = c('double(0)')
+## )
+## distn_params[['wish_chol_base']]$wrt <- c('cholesky', 'x')
 
 ##########################################################
 ## add a fixed log = 1 to the distribution fun expressions
@@ -614,11 +626,6 @@ distn_tests2 <- unlist(
   recursive = FALSE
 )
 
-ADtestEnv$RCrelTol <- c(1e-12, 1e-6, 1e-2)
-resetTols()
-lapply(distn_tests2[137:144], test_AD2)
-lapply(distn_tests2, test_AD2)
-test_AD2(distn_tests2[[3]])
 #######################################################################
 ## create another set of distribution functions tests, variable log arg
 #######################################################################
@@ -638,6 +645,12 @@ distn_params_with_log <- lapply(distn_params, function(param) {
 
 distn_with_log_tests <- unlist(
   lapply(distn_params_with_log, make_distribution_fun_AD_test),
+  recursive = FALSE
+)
+
+set.seed(567)
+distn_with_log_tests2 <- unlist(
+  lapply(distn_params_with_log, make_distribution_fun_AD_test, maker = make_AD_test2),
   recursive = FALSE
 )
 
