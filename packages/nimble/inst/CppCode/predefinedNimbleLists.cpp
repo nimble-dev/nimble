@@ -812,7 +812,7 @@ void waicDetailsNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP_2_NimArr<1>(S_WAIC_elements, WAIC_elements);
   SEXP_2_NimArr<1>(S_lppd_elements, lppd_elements);
   SEXP_2_NimArr<1>(S_pWAIC_elements, pWAIC_elements);
-  UNPROTECT(23);
+  UNPROTECT(25);
 }
 SEXP waicDetailsNimbleList::copyToSEXP() {
   SEXP S__dot_xData;
@@ -852,7 +852,7 @@ SEXP waicDetailsNimbleList::copyToSEXP() {
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("online"), S_online,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("nburnin_extra"), S_niterMarginal,
+    Rf_defineVar(Rf_install("nburnin_extra"), S_nburnin_extra,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("WAIC_partialMC"), S_WAIC_partialMC,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
@@ -870,7 +870,7 @@ SEXP waicDetailsNimbleList::copyToSEXP() {
     Rf_defineVar(Rf_install("pWAIC_elements"), S_pWAIC_elements,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(23);
+    UNPROTECT(25);
   }
   return (RObjectPointer);
 }
