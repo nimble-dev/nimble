@@ -222,3 +222,124 @@ test_that("Warning messages work for checking if a user-defined distribution sup
                      grepl("derivatives", msgs)))
 
 })
+
+test_that("Warning message works for buildDerivs not set for methods being differentiated.", {
+
+    expect_silent(
+        derivs_nf <- nimbleFunction(
+            setup = function(model, with_respect_to_nodes, calc_nodes) {},
+            run = function(order = integer(1),
+                           reset = logical(0, default=FALSE)) {
+                ans <- nimDerivs(model$calculate(calc_nodes), wrt = with_respect_to_nodes,
+                                 order = order, reset = reset)
+                return(ans)
+                returnType(ADNimbleList())
+            }
+        )
+    )
+    
+    expect_silent(
+        ADfun1 <- nimbleFunction(
+            setup = function(){},
+            run = function(y = double(1)) {
+                outList <- derivs(testMethod(y), wrt = c('x'))
+                returnType(ADNimbleList())
+                return(outList)
+            },
+            methods = list(
+                testMethod = function(x = double(1, 2)) {
+                    out <- dnorm(x[1],0,1)
+                    returnType(double())
+                    return(out)
+                }
+            ), buildDerivs = 'testMethod'
+        )
+    )
+
+    expect_silent(
+        ADfun1 <- nimbleFunction(
+            setup = function(){},
+            run = function(y = double(1)) {
+                outList <- derivs(testMethod(y), wrt = c('x'))
+                returnType(ADNimbleList())
+                return(outList)
+            },
+            methods = list(
+                testMethod = function(x = double(1, 2)) {
+                    out <- dnorm(x[1],0,1)
+                    returnType(double())
+                    return(out)
+                }
+            ), buildDerivs = list(testMethod = list(ignore = 'foo'))
+        )
+    )
+
+    expect_message(
+        ADfun1 <- nimbleFunction(
+            setup = function(){},
+            run = function(y = double(1)) {
+                outList <- derivs(testMethod(y), wrt = c('x'))
+                returnType(ADNimbleList())
+                return(outList)
+            },
+            methods = list(
+                testMethod = function(x = double(1, 2)) {
+                    out <- dnorm(x[1],0,1)
+                    returnType(double())
+                    return(out)
+                }
+            )
+        ),
+        "Detected use of `nimDerivs`")
+
+    expect_message(
+        ADfun1 <- nimbleFunction(
+            setup = function(){},
+            run = function(y = double(1)) {
+                outList <- derivs(testMethod(y), wrt = c('x'))
+                returnType(ADNimbleList())
+                return(outList)
+            },
+            methods = list(
+                testMethod = function(x = double(1, 2)) {
+                    out <- dnorm(x[1],0,1)
+                    returnType(double())
+                    return(out)
+                }
+            ), buildDerivs = 'run'
+        ),
+        "Detected use of `nimDerivs`")
+    
+    expect_message(
+        ADfun1 <- nimbleFunction(
+            setup = function(){},
+            run = function(y = double(1)) {
+                outList <- derivs(testMethod(y), wrt = c('x'))
+                returnType(ADNimbleList())
+                return(outList)
+            },
+            methods = list(
+                testMethod = function(x = double(1, 2)) {
+                    out <- dnorm(x[1],0,1)
+                    returnType(double())
+                    return(out)
+                }
+            ), buildDerivs = list(run = list(ignore = 'foo'))
+        ),
+        "Detected use of `nimDerivs`")
+})
+
+
+test_that("Incorrect use of buildDerivs=TRUE in nimbleFunction with setup.", {
+    expect_error(
+        nf_sqrt <- nimbleFunction(
+            setup = function() {},
+            run = function(x = double(1)) {
+                return(sqrt(x))
+                returnType(double(1))
+            },
+            buildDerivs = TRUE
+        ), "'buildDerivs' cannot be 'TRUE' when a setup function is provided"
+    )
+})
+
