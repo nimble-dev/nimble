@@ -1069,7 +1069,14 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
                                               if(any(!is.na(inits[[i]][dataVals])))
                                                   messageIfVerbose("  [Note] Ignoring non-NA values in inits for data nodes: ", names(inits)[[i]], ".")
-                                          } else  .self[[names(inits)[i]]] <- inits[[i]]
+                                          } else {
+                                              inputDim <- nimbleInternalFunctions$dimOrLength(inits[[i]])
+                                              varInfo <- .self$modelDef$varInfo[[names(inits)[i]]]
+                                              if(length(inputDim) != varInfo$nDim ||
+                                                 any(inputDim != varInfo$maxs))
+                                                  message("  [Warning] Incorrect size or dimension of initial value for '", names(inits)[i], "'.\n         Initial value will not be used in compiled model.")
+                                              .self[[names(inits)[i]]] <- inits[[i]]
+                                          }
                                       }
                                   },
                                   checkConjugacy = function(nodeVector, restrictLink = NULL) {
