@@ -1324,7 +1324,6 @@ test_that("nimbleList test use of [[", {
             doubleVector <- numeric(2, 1)
             newList1 <- testListDef1$new(nlVector = doubleVector, nlMatrix = doubleMatrix)
             newList1[['nlScalar']] <- doubleScalar
-            newList1[[nm]] <- doubleScalar
             returnType(testListDef1())
             return(newList1)
         }
