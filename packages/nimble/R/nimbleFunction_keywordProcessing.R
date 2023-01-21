@@ -516,6 +516,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
 doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
     processor = function(code, nfProc){
+        callerCode <- code[[2]]
         if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
         possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList', 'symbolNimbleList')
         class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
