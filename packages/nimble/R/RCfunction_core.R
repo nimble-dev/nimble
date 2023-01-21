@@ -247,9 +247,9 @@ nf_checkDSLcode_buildDerivs <- function(code, buildDerivs) {
     derivsLocn <- which(codeNames %in% c('derivs', 'nimDerivs'))
     if(length(derivsLocn)) {
         for(i in seq_along(derivsLocn)) {
-            if(!(length(codeNames) >= derivsLocn+3 && codeNames[derivsLocn+1] == '$'
-                && codeNames[derivsLocn+3] == 'calculate') {
-                methodName <- codeNames[derivsLocn+1]
+            if(!(length(codeNames) >= derivsLocn[i]+3 && codeNames[derivsLocn[i]+1] == '$'
+                && codeNames[derivsLocn[i]+3] == 'calculate')) {
+                methodName <- codeNames[derivsLocn[i]+1]
                 if(isFALSE(buildDerivs) || !length(buildDerivs) || is.null(buildDerivs) ||
                     (is.character(buildDerivs) && !methodName %in% buildDerivs) ||
                    (is.list(buildDerivs) && !methodName %in% names(buildDerivs)))
