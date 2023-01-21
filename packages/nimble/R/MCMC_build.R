@@ -196,9 +196,9 @@ buildMCMC <- nimbleFunction(
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##samplerExecutionOrder = integer(1, default = -1)
-        nburnin               = integer(default =  0),
-        thin                  = integer(default = -1),
-        thin2                 = integer(default = -1),
+        nburnin               = double(default =  0),
+        thin                  = double(default = -1),
+        thin2                 = double(default = -1),
         resetWAIC             = logical(default = TRUE)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
@@ -206,6 +206,10 @@ buildMCMC <- nimbleFunction(
         thinToUseVec <<- thinFromConfVec
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2
+        for(iThin in 1:2) {
+            if(thinToUseVec[iThin] < 1)   stop('cannot use thin < 1')
+            if(thinToUseVec[iThin] != floor(thinToUseVec[iThin]))   stop('cannot use non-integer thin')
+        }
         my_initializeModel$run()
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
