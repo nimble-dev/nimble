@@ -373,12 +373,11 @@ buildWAIC <- nimbleFunction(
 #' @details
 #'
 #' The ability to calculate WAIC post hoc after all MCMC sampling has been done
-#' has certain advantages (e.g., allowing a user to exclude additional burnin
-#' samples beyond that specified initially for the MCMC) in addition to
-#' providing compatibility with versions of NIMBLE before 0.12.0. This
-#' functionality includes the ability to call the \code{calculateWAIC} function
-#' on an MCMC object or matrix of samples after running an MCMC and without
-#' setting up the MCMC initially to use WAIC.
+#' has certain advantages (e.g., allowing a user to calculate WAIC from MCMC 
+#' chains run separately) in addition to providing compatibility with versions
+#' of NIMBLE before 0.12.0. This functionality includes the ability to call
+#' the \code{calculateWAIC} function on an MCMC object or matrix of samples
+#' after running an MCMC and without setting up the MCMC initially to use WAIC.
 #'
 #' Important: The necessary variables to compute WAIC (all stochastic parent
 #' nodes of the data nodes) must have been monitored when setting up the MCMC.
