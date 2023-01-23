@@ -1174,7 +1174,16 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                         # check dimensions based on empirical size of variables
                                                   if(!identical(dims[toCheck], distDims[toCheck])) {
                                                       mismatches <- which(dims[toCheck] != distDims[toCheck])
-                                                      stop("Dimension of distribution argument(s) '", paste(names(mismatches), collapse = ","), "' does not match required dimension(s) for the distribution '", dist, "'. Necessary dimension(s) are ", paste(distDims[toCheck][mismatches], collapse = ","), ".", ifelse(any(distDims[toCheck][mismatches] == 1), " You may need to ensure that you have explicit vectors and not one-row or one-column matrices.", ""))
+                                                      valueMismatch <- which('value' %in% names(mismatches))
+                                                      if(length(valueMismatch))  ## Catch this first and refer to node name rather than 'value' (NCT issue 397)
+                                                          stop("Dimension of '", nimble:::safeDeparse(declInfo$targetExpr),
+                                                               "' does not match required dimension for the distribution '", dist,
+                                                               "'. Necessary dimension is ", paste(distDims[toCheck][valueMismatch], collapse = ","), ".")
+                                                      stop("Dimension of distribution argument(s) '", paste(names(mismatches), collapse = ","),
+                                                           "' does not match required dimension(s) for the distribution '", dist, "'. Necessary dimension(s) are ",
+                                                           paste(distDims[toCheck][mismatches], collapse = ","), ".",
+                                                           ifelse(any(distDims[toCheck][mismatches] == 1),
+                                                                  " You may need to ensure that you have explicit vectors and not one-row or one-column matrices.", ""))
                                                   }
 
                                         # check sizes
