@@ -764,7 +764,7 @@ sampler_AF_slice <- nimbleFunction(
         widthVec               <- extractControlElement(control, 'sliceWidths',              'oneVec')
         maxSteps               <- extractControlElement(control, 'sliceMaxSteps',            100)
         adaptFactorMaxIter     <- extractControlElement(control, 'sliceAdaptFactorMaxIter',  15000)
-        adaptFactorInterval    <- extractControlElement(control, 'sliceAdaptFactorInterval', 1000)
+        adaptFactorInterval    <- extractControlElement(control, 'sliceAdaptFactorInterval', 200)
         adaptWidthMaxIter      <- extractControlElement(control, 'sliceAdaptWidthMaxIter',   512)
         adaptWidthTolerance    <- extractControlElement(control, 'sliceAdaptWidthTolerance', 0.1)
         maxContractions        <- extractControlElement(control, 'maxContractions',          1000)
