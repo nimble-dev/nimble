@@ -1074,7 +1074,7 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               varInfo <- .self$modelDef$varInfo[[names(inits)[i]]]
                                               mismatch <- FALSE
                                               if(length(inputDim) == 1 && inputDim == 1) {  # scalar could be scalar or vector of length 1
-                                                  if(!(varInfo$nDim == 0 || (varInfo$nDim == 1 && varInfo$maxs == 1)))
+                                                  if(!(varInfo$nDim == 0 || (varInfo$nDim > 0 && identical(varInfo$maxs, rep(1, varInfo$nDim)))))
                                                       mismatch <- TRUE
                                               } else {
                                                   if(length(inputDim) != varInfo$nDim || any(inputDim != varInfo$maxs))
