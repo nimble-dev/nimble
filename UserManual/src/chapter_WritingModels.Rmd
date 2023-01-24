@@ -55,12 +55,12 @@ NIMBLE extends the BUGS language in the following ways:
   1. More general constraints can be declared using `dconstraint`, which extends the concept of JAGS' `dinterval`.
   1. Link functions can be used in stochastic, as well as deterministic, declarations.^[But beware of the possibility of needing to set values for 'lifted' nodes created by NIMBLE.]
   1. Data values can be reset, and which parts of a model are flagged as data can be changed, allowing one model to be used for different data sets without rebuilding the model each time.
-  1. As of Version 0.6-6 we now support stochastic/dynamic indexes. More specifically in earlier versions all indexes needed to be constants. Now indexes can be other nodes or functions of other nodes. For a given dimension of a node being indexed, if the index is not constant, it must be a scalar value. So expressions such as `mu[k[i], 3]` or `mu[k[i], 1:3]` or `mu[k[i], j[i]]` are allowed, but not `mu[k[i]:(k[i]+1)]`. Nested dynamic indexes such as `mu[k[j[i]]]` are also allowed. 
+  1. One can use stochastic/dynamic indexes, i.e., indexes can be other nodes or functions of other nodes. For a given dimension of a node being indexed, if the index is not constant, it must be a scalar value. So expressions such as `mu[k[i], 3]` or `mu[k[i], 1:3]` or `mu[k[i], j[i]]` are allowed, but not `mu[k[i]:(k[i]+1)]`^[In some cases, one can write a nimbleFunction to achieve the desired result, such as replacing `sum(mu[start[i]:end[i]])` with a nimbleFunction that takes `mu`, `start[i]`, and `end[i]` as arguments and does the needed summation.] Nested dynamic indexes such as `mu[k[j[i]]]` are also allowed.
   
   
-### Not-yet-supported features of BUGS and JAGS {#sec:not-yet-supported}
+### Not-supported features of BUGS and JAGS {#sec:not-yet-supported}
 
-In this release, the following are not supported.
+The following are not supported.
 
 
   1. The appearance of the same node on the left-hand side of both a
@@ -75,7 +75,8 @@ In this release, the following are not supported.
   and if the dimensions of the variable are not clearly defined in
   other declarations, NIMBLE currently requires that the dimensions of
   x be provided when the model object is created (via `nimbleModel`).
-
+  1. Use of non-sequential indexes in the definition of a for loop. JAGS allows syntax such as `for(i in expr)` when `expr` evaluates to an integer vector. In NIMBLE one can use the work-around of defining a constant vector, say `k`, and using `k[i]` in the body of the for loop.
+  1. Use of non-sequential indexes to subset variables. JAGS allows syntax such as `sum(mu[expr])` when `expr` evaluates to an integer vector. In NIMBLE one can use the work-around of defining a nimbleFunction that takes `mu` and the index vector as arguments and does the calculation of interest.
 
 ## Writing models
 
