@@ -309,7 +309,7 @@ modify_on_match(powOpTests2, '', 'input_gen_funs', function(x) runif(x, .5, 1.5)
 # TO-DO: Add matrix^scalar case above
 
 # This is a little delicated and should be explained in the manual.
-# pow_int should still be given a double as a second argument it will
+# pow_int should still be given a double as a second argument or it will
 # not end up flowing through the derivatives system correctly.
 # There could be a crash, or, worse, incorrect results when the value is baked in.
 pow_int_OpTests2 <- list(

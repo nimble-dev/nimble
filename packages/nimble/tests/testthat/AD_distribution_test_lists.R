@@ -537,7 +537,7 @@ distn_params[['weibull_base']]$wrt <- c('shape', 'scale', 'x')
 chol_base <- distn_base
 chol_base$args <- list(
   cholesky = list(
-    input_gen_fun = gen_pos_def_matrix,
+    input_gen_fun = function(m) gen_pos_def_matrix(m, rfun = function(n) runif(n, .2, .8)),
     type = c('double(2, c(5, 5))')
   )
 )

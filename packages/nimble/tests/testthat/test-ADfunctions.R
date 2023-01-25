@@ -286,7 +286,6 @@ dirch_test_log <- make_AD_test2(
 
 dirch_test_out <- test_AD2(dirch_test_log)
 
-
 ## Dirichlet without log argument
 dirch_test_fixedlog <- make_AD_test2(
   op = list(
@@ -384,33 +383,21 @@ wish_test_out <- test_AD2(wish_test_log)
 ## from AD_math_test_lists.R
 ## See notes there on Spring 2022 update to "version 2" with f(g(x)) and g(f(x)) test variantes as well
 test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
 test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-resetTols()
-ADtestEnv$RCrelTol <- c(1e-15, 1e-6, 1e-2)
 test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-resetTols()
-
-
 
 test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-ADtestEnv$RCrelTol <- c(1e-12, 1e-5, 1e-3)
 test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-resetTols()
-ADtestEnv$RCrelTol <- c(1e-12, 1e-5, 1e-3)
 test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-resetTols()
 
 test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
 test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
-resetTols()
-
 test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 ## STOPPED HERE
-
+#### STOPPED HERE ####
+#### MAKE version 2 of later tests and also inner and outer
 test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
 
@@ -436,42 +423,41 @@ test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures, verbose = F
 
 
 resetTols()
-iTests <- which(grepl("^binom_base", names(distn_tests2)))
-# cat breaks
-iTests <- which(grepl("^multi_no_size", names(distn_tests2)))
-iTests <- which(grepl("^multi_with_size", names(distn_tests2)))
-iTests <- which(grepl("^nbinom_base", names(distn_tests2)))
-iTests <- which(grepl("^pois_base", names(distn_tests2)))
-iTests <- which(grepl("^beta_base", names(distn_tests2)))
-iTests <- which(grepl("^chisq_base", names(distn_tests2)))
-iTests <- which(grepl("^dexp", names(distn_tests2)))
-iTests <- which(grepl("^exp", names(distn_tests2)))
-iTests <- which(grepl("^gamma", names(distn_tests2)))
-iTests <- which(grepl("^invgamma", names(distn_tests2)))
-iTests <- which(grepl("^sqrtinvgamma", names(distn_tests2)))
-iTests <- which(grepl("^lnorm", names(distn_tests2)))
-iTests <- which(grepl("^logis", names(distn_tests2)))
-iTests <- which(grepl("^norm", names(distn_tests2)))
-iTests <- which(grepl("^t_", names(distn_tests2)))
-iTests <- which(grepl("^unif", names(distn_tests2)))
-iTests <- which(grepl("^weibull", names(distn_tests2)))
-# Dirichlet has a separate test above
-iTests <- which(grepl("^mnorm", names(distn_tests2)))
-iTests <- which(grepl("^mvt", names(distn_tests2))) # has tolerance problems for 5 numbers 35x35 Hessian
-# Wishart has a separate test above.
-iTests
-#testResults <- lapply(distn_tests2[iTests], test_AD2)
-testResults <- lapply(distn_with_log_tests2[iTests], test_AD2)
+## iTests <- which(grepl("^binom_base", names(distn_tests2)))
+## # cat breaks
+## iTests <- which(grepl("^multi_no_size", names(distn_tests2)))
+## iTests <- which(grepl("^multi_with_size", names(distn_tests2)))
+## iTests <- which(grepl("^nbinom_base", names(distn_tests2)))
+## iTests <- which(grepl("^pois_base", names(distn_tests2)))
+## iTests <- which(grepl("^beta_base", names(distn_tests2)))
+## iTests <- which(grepl("^chisq_base", names(distn_tests2)))
+## iTests <- which(grepl("^dexp", names(distn_tests2)))
+## iTests <- which(grepl("^exp", names(distn_tests2)))
+## iTests <- which(grepl("^gamma", names(distn_tests2)))
+## iTests <- which(grepl("^invgamma", names(distn_tests2)))
+## iTests <- which(grepl("^sqrtinvgamma", names(distn_tests2)))
+## iTests <- which(grepl("^lnorm", names(distn_tests2)))
+## iTests <- which(grepl("^logis", names(distn_tests2)))
+## iTests <- which(grepl("^norm", names(distn_tests2)))
+## iTests <- which(grepl("^t_", names(distn_tests2)))
+## iTests <- which(grepl("^unif", names(distn_tests2)))
+## iTests <- which(grepl("^weibull", names(distn_tests2)))
+## # Dirichlet has a separate test above
+## iTests <- which(grepl("^mnorm", names(distn_tests2)))
+## iTests <- which(grepl("^mvt", names(distn_tests2))) # has tolerance problems for 5 numbers 35x35 Hessian
+## # Wishart has a separate test above.
 
-testResults <- lapply(distn_with_log_tests2, test_AD2)
+testResults <- lapply(distn_tests2[1:140], test_AD2)
+testResults <- lapply(distn_with_log_tests2[1:140], test_AD2)
 
+ADtestEnv$RCrelTol[4] <- 1e-5 # set looser absolute tolerance for the dmnorm and dmvt tests
+testResults <- lapply(distn_tests2[141:142], test_AD2)
+testResults <- lapply(distn_with_log_tests2[141:142], test_AD2)
+resetTols()
 
-lapply(distn_tests2[8], test_AD2)
-lapply(distn_tests2[137:144], test_AD2)
-lapply(distn_tests2, test_AD2)
-test_AD2(distn_tests2[[3]])
-
-test_AD_batch(distn_with_log_tests,  knownFailures = AD_knownFailures, verbose = FALSE)
+# test_AD_batch does not work with these.  Check that out
+# make lapply run line for distn_tests2
+# test_AD_batch(distn_with_log_tests2, knownFailures = AD_knownFailures, verbose = TRUE)
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

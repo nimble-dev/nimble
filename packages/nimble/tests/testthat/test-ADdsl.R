@@ -385,3 +385,19 @@ lapply(distributionArgsList, function(x){
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
+
+do_test <- function(x){
+    test_that(paste0('AD for distribution ', x$distnName),
+    {
+        runFun <- gen_runFunCore(makeADDistributionTestList(x))
+        methodFun <- gen_runFunCore(makeADDistributionMethodTestList(x))
+        thisNf <- nimbleFunction(setup = function(){},
+                                 run = runFun,
+                                 methods = list(
+                                     method1 = methodFun
+                                 ),
+                                 buildDerivs = list(method1 = list()))
+        test_ADDistribution(thisNf, x$argsValues,
+                           x$distnName)
+    })
+}
