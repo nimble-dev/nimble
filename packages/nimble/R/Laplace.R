@@ -60,7 +60,7 @@ nimOneLaplace1D <- nimbleFunction(
     ## the inner log-likelihood (paramNodes fixed) w.r.t. randomEffectsNodes.
     re_indices_inner <- as.numeric(c(1, -1))
     p_and_re_indices <- as.numeric(1:(npar + 1))
-
+    
     ## Set up start values for the inner optimization of Laplace approximation
     if(identical(optimStart, "last")) {
       startID <- 1
@@ -76,16 +76,16 @@ nimOneLaplace1D <- nimbleFunction(
     }
     
     ## Update and constant nodes for obtaining derivatives using AD
-    inner_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
     
     ## Automated transformation for random effects to ensure range of (-Inf, Inf) 
     reTrans <- parameterTransform(model, randomEffectsNodes)
-
+    
     ## The following are used for caching values and gradient in the Laplace3 system
     Laplace3_saved_value <- numeric(1)
     Laplace3_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
@@ -178,8 +178,9 @@ nimOneLaplace1D <- nimbleFunction(
         return(optRes)
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod, control = optimControl)
-      if(optRes$convergence != 0)
+      if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
+      }
       return(optRes)
       returnType(optimResultNimbleList())
     },
@@ -197,8 +198,9 @@ nimOneLaplace1D <- nimbleFunction(
         return(optRes)
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod, control = optimControl)
-      if(optRes$convergence != 0)
+      if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
+      }
       return(optRes)
       returnType(optimResultNimbleList())
     },
@@ -375,10 +377,10 @@ nimOneLaplace1D <- nimbleFunction(
       gr_logdetNegHess_wrt_p_v <- numeric(value = ans$value[(ind):(ind + npar - 1)], length = npar)
       ind <- ind + npar
       gr_logdetNegHess_wrt_re_v <- ans$value[ind]
-
+      
       Laplace_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
       Laplace3_saved_value <<- Laplace_value
-
+      
       gr_Laplace_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
       Laplace3_saved_gr <<- gr_Laplace_v
       return(ans$value)
@@ -406,7 +408,7 @@ nimOneLaplace1D <- nimbleFunction(
       return(Laplace3_saved_gr)
       returnType(double(1))
     },
-    ## Laplace approximation 2: double taping with separate components
+    ## Laplace approximation 2: double tapping with separate components
     Laplace2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
@@ -417,10 +419,6 @@ nimOneLaplace1D <- nimbleFunction(
       logdetNegHessian <- logdetNegHess(p, reTransform)
       ## Laplace approximation
       ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
-      ## if(record_intermediates_for_checking) {
-      ##   Lap_logdetNegHess_s <<- logdetNegHessian
-      ##   Lap_opt_val_s <<- maxValue
-      ## }
       if(ans > max_Laplace) {
         max_Laplace <<- ans
         max_Laplace_saved_re_value <<- max_inner_logLik_saved_par
@@ -428,7 +426,7 @@ nimOneLaplace1D <- nimbleFunction(
       return(ans)
       returnType(double())
     },
-    ## Laplace approximation 1: single taping with separate components
+    ## Laplace approximation 1: single tapping with separate components
     Laplace1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
@@ -458,21 +456,8 @@ nimOneLaplace1D <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)[1]
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)[,1]
-      ## if(record_intermediates_for_checking) {
-      ##   gr_Lap_negHessian_s <<- negHessian
-      ##   gr_Lap_grlogdetNegHesswrtp_s <<- grlogdetNegHesswrtp
-      ##   gr_Lap_grlogdetNegHesswrtre_s <<- grlogdetNegHesswrtre
-      ##   gr_Lap_hesslogLikwrtpre_s <<- hesslogLikwrtpre
-      ##   gr_Lap_gr_joint_logLik_wrt_p_s <<- gr_joint_logLik_wrt_p(p, reTransform)
-      ## }
       p1 <- gr_joint_logLik_wrt_p(p, reTransform)
       ans <- p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
-      ## print( p1 )
-      ## print( grlogdetNegHesswrtp )
-      ## print( hesslogLikwrtpre)
-      ## print( grlogdetNegHesswrtre)
-      ## print( negHessian)
-      ## print(ans )
       return(ans)
       returnType(double(1))
     },
@@ -488,26 +473,26 @@ nimOneLaplace1D <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1]
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]
-      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) -
+      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
         0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
       return(ans)
       returnType(double(1))
     }
   ),
   buildDerivs = list(inner_logLik                             = list(),
-                      joint_logLik                            = list(),
-                      gr_joint_logLik_wrt_re                  = list(),
-                      negHess                                 = list(),
-                      logdetNegHess                           = list(), 
-                      gr_inner_logLik_internal                = list(),
-                      gr_joint_logLik_wrt_p_internal          = list(),
-                      gr_joint_logLik_wrt_re_internal         = list(),
-                      hess_joint_logLik_wrt_p_wrt_re_internal = list(),
-                      negHess_internal                        = list(),
-                      gr_logdetNegHess_wrt_p_internal         = list(),
-                      gr_logdetNegHess_wrt_re_internal        = list(),
-                      joint_logLik_with_grad_and_hess         = list(ignore = c("i","j")),
-                      joint_logLik_with_higher_derivs         = list())
+                     joint_logLik                            = list(),
+                     gr_joint_logLik_wrt_re                  = list(),
+                     negHess                                 = list(),
+                     logdetNegHess                           = list(), 
+                     gr_inner_logLik_internal                = list(),
+                     gr_joint_logLik_wrt_p_internal          = list(),
+                     gr_joint_logLik_wrt_re_internal         = list(),
+                     hess_joint_logLik_wrt_p_wrt_re_internal = list(),
+                     negHess_internal                        = list(),
+                     gr_logdetNegHess_wrt_p_internal         = list(),
+                     gr_logdetNegHess_wrt_re_internal        = list(),
+                     joint_logLik_with_grad_and_hess         = list(ignore = c("i","j")),
+                     joint_logLik_with_higher_derivs         = list())
 ) ## End of nimOneLaplace1D
 
 
@@ -562,13 +547,13 @@ nimOneLaplace <- nimbleFunction(
       optStart <- optimStart
     }
     ## Update and constant nodes info for obtaining derivatives using AD
-    inner_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
-
+    
     ## The following are used for caching values and gradient in the Laplace3 system
     Laplace3_saved_value <- -Inf #numeric(1)
     Laplace3_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
@@ -582,14 +567,9 @@ nimOneLaplace <- nimbleFunction(
     ## Record the maximum Laplace loglikelihood value for obtaining inner optimization start values
     max_Laplace <- -Inf 
     max_Laplace_saved_re_value <- if(nreTrans > 1) numeric(nreTrans) else as.numeric(c(1, -1))
-
+    
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE
-    num_times <- 11
-    times <- rep(0, num_times)
-    num_inner_times <- 1000
-    i_inner_time <- 1
-    inner_logLik_times <- rep(0, num_inner_times)
     update_once <- TRUE
     gr_inner_update_once <- TRUE
     gr_inner_logLik_force_update <- TRUE
@@ -600,17 +580,6 @@ nimOneLaplace <- nimbleFunction(
   },
   run = function(){},
   methods = list(
-    get_times = function() {
-      return(times)
-      returnType(double(1))
-    },
-    reset_times = function() {
-      times <<- rep(0, num_times)
-      inner_logLik_times <<- rep(0, num_inner_times)
-    },
-    add_time = function(t = double(), i = integer()) {
-      times[i] <<- times[i] + t
-    },
     fix_one_vec = function(x = double(1)) {
       if(length(x) == 2) {
         if(x[2] == -1) {
@@ -679,13 +648,10 @@ nimOneLaplace <- nimbleFunction(
     },
     ## Double taping for efficiency
     gr_inner_logLik = function(reTransform = double(1)) {
-      t10 <- run.time({
       ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = reTrans_indices_inner, order = 0, model = model,
                     updateNodes = inner_updateNodes, constantNodes = inner_constantNodes,
                     do_update = gr_inner_logLik_force_update | gr_inner_update_once)
-      })
       gr_inner_update_once <<- FALSE
-      add_time(t10, 10)
       return(ans$value)
       returnType(double(1))
     },
@@ -730,8 +696,9 @@ nimOneLaplace <- nimbleFunction(
         gr_inner_logLik_force_update <<- FALSE
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod, control = optimControl)
-      if(optRes$convergence != 0)
+      if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
+      }
       return(optRes)
       returnType(optimResultNimbleList())
     },
@@ -747,23 +714,15 @@ nimOneLaplace <- nimbleFunction(
         return(optRes)
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod, control = optimControl)
-      if(optRes$convergence != 0)
+      if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of Laplace approximation")
+      }
       return(optRes)
       returnType(optimResultNimbleList())
     },
     ## These two update methods for max_inner_logLik use the same member data caches
     update_max_inner_logLik = function(p = double(1)) {
-      t9 <- run.time( {
-        optRes <- max_inner_logLik(p)
-      })
-      add_time(t9, 9)
-
-      inner_logLik_times[i_inner_time] <<- t9
-      if(i_inner_time == length(inner_logLik_times)) {
-        inner_logLik_times <<- c(inner_logLik_times, rep(0, 1000))
-      }
-      i_inner_time <<- i_inner_time + 1
+      optRes <- max_inner_logLik(p)
       max_inner_logLik_saved_par <<- optRes$par
       max_inner_logLik_saved_value <<- optRes$value
       max_inner_logLik_previous_p <<- p
@@ -951,8 +910,7 @@ nimOneLaplace <- nimbleFunction(
       
       Laplace_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
       Laplace3_saved_value <<- Laplace_value
-      # print(Laplace_value)
-
+      
       # We need A^T inverse(negHess) B
       # where A = gr_logdetNegHess_wrt_re_v (a vector treated by default as a one-column matrix)
       #  and  B = t(hess_cross_terms)
@@ -997,7 +955,7 @@ nimOneLaplace <- nimbleFunction(
       return(Laplace3_saved_gr)
       returnType(double(1))
     },
-    ## Laplace approximation 2: double taping with separate components
+    ## Laplace approximation 2: double tapping with separate components
     Laplace2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
@@ -1006,22 +964,16 @@ nimOneLaplace <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
-      t1 <- run.time( {
-        logdetNegHessian <- logdetNegHess(p, reTransform)
-      })
-      add_time(t1, 1)
-      t2 <- run.time( {
-        ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
-      })
+      logdetNegHessian <- logdetNegHess(p, reTransform)
+      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
       if(ans > max_Laplace) {
         max_Laplace <<- ans
         max_Laplace_saved_re_value <<- max_inner_logLik_saved_par
       }
-      add_time(t2, 2)
       return(ans)
       returnType(double())
     },
-    ## Laplace approximation 1: single taping with separate components
+    ## Laplace approximation 1: single tapping with separate components
     Laplace1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
@@ -1046,32 +998,13 @@ nimOneLaplace <- nimbleFunction(
         update_max_inner_logLik(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      t3 <- run.time( {
-        negHessian <- negHess(p, reTransform)
-      })
-      add_time(t3, 3)
-      t4 <- run.time( {
-        invNegHessian <- inverse(negHessian)
-      })
-      add_time(t4, 4)
-      t5 <- run.time( {
-        grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
-      })
-      add_time(t5, 5)
-      t6 <- run.time( {
-        grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)
-      })
-      add_time(t6, 6)
-      t7 <- run.time( {
-        hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)
-      })
-      add_time(t7, 7)
-      t8 <- run.time({
-      ans <- gr_joint_logLik_wrt_p(p, reTransform) -
+      negHessian <- negHess(p, reTransform)
+      invNegHessian <- inverse(negHessian)
+      grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
+      grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)
+      hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)
+      ans <- gr_joint_logLik_wrt_p(p, reTransform) - 
         0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
-      })
-      add_time(t8, 8)
-
       return(ans[1,])
       returnType(double(1))
     },
@@ -1117,17 +1050,17 @@ buildLaplace <- nimbleFunction(
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
     if(is.null(control$warn)) warn <- TRUE else warn <- control$warn
-
+    
     paramProvided <- !missing(paramNodes)
-    reProvided <- !missing(randomEffectsNodes)
-    calcProvided <- !missing(calcNodes)
-
+    reProvided    <- !missing(randomEffectsNodes)
+    calcProvided  <- !missing(calcNodes)
+    
     if(!paramProvided) {
       paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
     } else {
       paramNodes <- model$expandNodeNames(paramNodes)
     }
-
+    
     if((!reProvided) || warn) {
       paramDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
       reNodesDefault <- model$getNodeNames(latentOnly = TRUE)
@@ -1138,7 +1071,7 @@ buildLaplace <- nimbleFunction(
     if(reProvided && warn) {
       reCheck <- setdiff(reNodesDefault, randomEffectsNodes)
       if(length(reCheck)) {
-        errorNodes <- paste0(utils::head(reCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(reCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some random effects (latent states) in the model that look\n",
                        "like they should be included in randomEffectsNodes for Laplace approximation\n",
@@ -1149,7 +1082,7 @@ buildLaplace <- nimbleFunction(
       }
       reCheck <- setdiff(randomEffectsNodes, reNodesDefault)
       if(length(reCheck)) {
-        errorNodes <- paste0(utils::head(reCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(reCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some randomEffectsNodes provided that look like\n",
                        "they are not needed for Laplace approximation for the\n",
@@ -1170,7 +1103,7 @@ buildLaplace <- nimbleFunction(
     if(calcProvided  && warn) {
       calcCheck <- setdiff(calcNodesDefault, calcNodes)
       if(length(calcCheck)) {
-        errorNodes <- paste0(utils::head(calcCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(calcCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some model nodes that look like they should be\n",
                        "included in the calcNodes for Laplace approximation over\n",
@@ -1181,7 +1114,7 @@ buildLaplace <- nimbleFunction(
       }
       calcCheck <- setdiff(calcNodes, calcNodesDefault)
       if(length(calcCheck)) {
-        errorNodes <- paste0(utils::head(calcCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(calcCheck, n = 4), sep = ", ", collapse = ", ")
         if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some calcNodes provided that look like\n",
                        "they are not needed for Laplace approximation over\n",
@@ -1194,8 +1127,8 @@ buildLaplace <- nimbleFunction(
     if(!calcProvided) {
       calcNodes <- calcNodesDefault
     }
+    ## Need some attention later
     ## Out and inner optimization settings
-    ## Need some attention later:
     ## This returns a list in R with 0 value for all fields, but works fine inside a NIMBLE method on the C++ side..
     outOptControl <- nimOptimDefaultControl() 
     ## Set this up by hand
@@ -1206,19 +1139,27 @@ buildLaplace <- nimbleFunction(
     outOptControl$REPORT <- 10; outOptControl$type <- 1; outOptControl$lmm <- 5
     outOptControl$factr <- 1e+07; outOptControl$pgtol <- 0
     outOptControl$temp <- 10; outOptControl$tmax <- 10
+    ## Duplicate for inner optim control
     innerOptControl <- outOptControl
     
     if(!is.null(control$outOptimControl)) {
       validNames <- intersect(names(control$outOptimControl), names(outOptControl))
-      for(i in 1:length(validNames))
-        outOptControl[[validNames[i]]] <- control$outOptimControl[[validNames[i]]]   
+      numValidNames <- length(validNames)
+      ## Use valid control args only
+      if(numValidNames > 0){
+        for(i in 1:numValidNames)
+          outOptControl[[validNames[i]]] <- control$outOptimControl[[validNames[i]]]   
+      }
     }
     outOptControl$fnscale <- -1 ## This is required in case fnscale=1 is given by user
-    
     if(!is.null(control$innerOptimControl)) {
       validNames_inner <- intersect(names(control$innerOptimControl), names(innerOptControl))
-      for(i in 1:length(validNames_inner))
-        innerOptControl[[validNames_inner[i]]] <- control$innerOptimControl[[validNames_inner[i]]]   
+      numValidNames_inner <- length(validNames_inner)
+      ## Use valid control args only
+      if(numValidNames_inner > 0){
+        for(i in 1:numValidNames_inner)
+          innerOptControl[[validNames_inner[i]]] <- control$innerOptimControl[[validNames_inner[i]]]   
+      }
     }
     innerOptControl$fnscale <- -1 ## This is required in case fnscale=1 is given by user
     
@@ -1288,11 +1229,6 @@ buildLaplace <- nimbleFunction(
     one_time_fixes_done <- FALSE
     ## Default calculation method for Laplace
     methodID <- 2
-    ## Variables to record param values Laplace and its gradient are evaluated at 
-    # fn_params <- matrix(0, nrow = 1000, ncol = pTransform_length)
-    # gr_params <- matrix(0, nrow = 1000, ncol = pTransform_length)
-    # fn_iter <- 0
-    # gr_iter <- 0
     ## Define a nimbleList for Laplace MLE output
     laplceOutputNimbleList <- nimbleList(parameter = character(1), estimate = double(1), stdError = double(1))
   },## End of setup
@@ -1345,9 +1281,6 @@ buildLaplace <- nimbleFunction(
     },
     ## Laplace approximation in terms of transformed parameters
     p_transformed_Laplace = function(pTransform = double(1)) {
-      ## Record param values that the objective is evaluated at
-      # fn_iter <<- fn_iter + 1
-      # fn_params[fn_iter,] <<- pTransform
       if(!one_time_fixes_done) one_time_fixes()
       p <- paramsTransform$inverseTransform(pTransform)
       ans <- Laplace(p)
@@ -1370,9 +1303,6 @@ buildLaplace <- nimbleFunction(
     },
     ## Gradient of the Laplace approximation in terms of transformed parameters
     p_transformed_gr_Laplace = function(pTransform = double(1)) {
-      ## Record param values that the gradient is evaluated at
-      # gr_iter <<- gr_iter + 1
-      # gr_params[gr_iter,] <<- pTransform
       if(!one_time_fixes_done) one_time_fixes()
       pDerivs <- derivsInverseTransform(pTransform, c(0, 1))
       ans <- gr_Laplace(pDerivs$value) ## pDerivs$value gives original param values
@@ -1380,20 +1310,6 @@ buildLaplace <- nimbleFunction(
       return(ans)
       returnType(double(1))
     },
-    # reset = function(){
-    #   fn_params <<- nimMatrix(0, nrow = 1000, ncol = pTransform_length)
-    #   gr_params <<- nimMatrix(0, nrow = 1000, ncol = pTransform_length)
-    #   fn_iter <<- 0
-    #   gr_iter <<- 0
-    # },
-    # get_fn_params = function(){
-    #   return(fn_params)
-    #   returnType(double(2))
-    # },
-    # get_gr_params = function(){
-    #   return(gr_params)
-    #   returnType(double(2))
-    # },
     ## Calculate MLEs of transformed parameters
     LaplaceMLE = function(pStart  = double(1, default = Inf),
                           method  = character(0, default = "BFGS"),
@@ -1407,15 +1323,15 @@ buildLaplace <- nimbleFunction(
       returnType(optimResultNimbleList())
     },
     ## Summarize Laplace MLE results
-    summary = function(res = optimResultNimbleList()){
+    summary = function(LaplaceMLEOutput = optimResultNimbleList()){
       ans <- laplceOutputNimbleList$new()
       ans$parameter <- paramNodesAsScalars
-      transMLEs <- res$par
+      transMLEs <- LaplaceMLEOutput$par
       ans$estimate <- paramsTransform$inverseTransform(transMLEs)
-      if(dim(res$hessian)[1] == 0) 
+      if(dim(LaplaceMLEOutput$hessian)[1] == 0)
         ans$stdError <- rep(NA, length(ans$parameter))
       else {
-        transHess <- res$hessian
+        transHess <- LaplaceMLEOutput$hessian
         invTransDerivs <- derivsInverseTransform(transMLEs, c(0, 1))
         invTransJacobian <- invTransDerivs$jacobian
         vcov_ptransformed <- -inverse(transHess)
@@ -1430,21 +1346,28 @@ buildLaplace <- nimbleFunction(
 )
 
 #' Laplace approximation
-#'
+#' 
 #' Builds a Laplace approximation algorithm for a given NIMBLE model. 
 #' 
 #' @param model an uncompiled NIMBLE model object.
-#' @param paramNodes a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.
-#' @param randomEffectsNodes a character vector of names of latent nodes to integrate out using the Laplace approximation; defaults to latent nodes that depend on \code{paramNodes}.
-#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value; defaults to \code{model$geteDependencies(randomEffectsNodes)}. There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.
-#' @param optimControl a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.
-#' @param optimMethod optimization method to be used in \code{optim} for the inner optimization. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}}.Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By default, method "\code{CG}" is used for \code{nimOneLaplace1D} and "\code{BFGS}" for \code{nimOneLaplace}.
-#' @param optimStart choice of start values for the inner optimization. This could be \code{"last"}, \code{"last.best"}, or a vector of user provided values. \code{"last"} means the latest random effects values left in the model will be used. \code{"last.best"} means the latest random effects values corresponding to currently the largest Laplace likelihood will be used. By default, the initial random effects values will be used for all inner optimizations.   
-#' @param control a named list (for \code{buildLaplace} only) that controls the behavior of the Laplace approximation. See \code{control} section below.
-#'
-#' @section \code{control} list:
-#' 
-#' \code{buildLaplace} accepts the following control list elements:
+#' @param paramNodes a character vector of names of parameter nodes in the model; 
+#' default to top-level stochastic nodes.
+#' @param randomEffectsNodes a character vector of names of latent nodes to integrate out using the Laplace approximation; 
+#' default to latent nodes that depend on \code{paramNodes}.
+#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value; 
+#' default to \code{model$geteDependencies(randomEffectsNodes)}. 
+#' There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. 
+#' These will be included in calculations automatically.
+#' @param optimControl a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. 
+#' Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.
+#' @param optimMethod optimization method to be used in \code{optim} for the inner optimization. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}.
+#' See 'Details' of \code{\link{optim}}.Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". 
+#' By default, method "\code{CG}" is used for \code{nimOneLaplace1D} and "\code{BFGS}" for \code{nimOneLaplace}.
+#' @param optimStart choice of start values for the inner optimization. This could be \code{"last"}, \code{"last.best"}, or a vector of user provided values.
+#' \code{"last"} means the latest random effects values left in the model will be used. 
+#' \code{"last.best"} means the latest random effects values corresponding to currently the largest Laplace likelihood will be used.
+#' By default, the initial random effects values will be used for all inner optimizations.   
+#' @param control a named list (for \code{buildLaplace} only) that includes the following components:
 #' \itemize{
 #'   \item \code{split}. If TRUE (default), \code{randomEffectsNodes} will be split into conditionally independent sets if possible.
 #'         If FALSE, \code{randomEffectsNodes} will be handled as a multivariate block.
@@ -1458,11 +1381,13 @@ buildLaplace <- nimbleFunction(
 #'         See 'Details' of \code{\link{optim}} for further information.
 #' }
 #'
-#' @section \code{Laplace_BASE}:
-#' 
-#' Laplace base class, upon which specific Laplace algorithm classes are based by including \code{contains = Laplace_BASE}. This declares a list of nimbleFunctions for a single Laplace approximation.
+#' @name laplace
 #'
-#' @section \code{nimOneLaplace1D}:
+#' @section \code{Laplace_BASE}
+#' 
+#' Laplace base class, which is needed by including \code{contains = Laplace_BASE} for declaring a list of nimbleFunctions each for a single Laplace approximation.
+#'
+#' @section \code{nimOneLaplace1D}
 #' 
 #' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains only one scalar node.
 #' To use this function, one has to accurately provide inputs for all the arguments. 
@@ -1470,22 +1395,22 @@ buildLaplace <- nimbleFunction(
 #' This function generates an object that comprises a set of methods (functions), each accomplishing one piece of many calculations to obtain the Laplace approximation and its gradient w.r.t. model parameters. 
 #' Among these methods, six are most useful to a user:
 #' \itemize{
-#'   \item \code{Laplace1(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses single taping for gradient and Hessian calculations and separate components.
-#'   \item \code{Laplace2(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double taping for gradient and Hessian calculations and separate components.
-#'   \item \code{Laplace3(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double taping for gradient and Hessian calculations and packs everything together.
+#'   \item \code{Laplace1(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses single tapping for gradient and Hessian calculations and separate components.
+#'   \item \code{Laplace2(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double tapping for gradient and Hessian calculations and separate components.
+#'   \item \code{Laplace3(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double tapping for gradient and Hessian calculations and packs everything together.
 #'   \item \code{gr_Laplace1(p)}. Gradient of \code{Laplace1} w.r.t. parameters evaluated at the parameter value \code{p}.
 #'   \item \code{gr_Laplace2(p)}. Gradient of \code{Laplace2} w.r.t. parameters evaluated at the parameter value \code{p}.
 #'   \item \code{gr_Laplace3(p)}. Gradient of \code{Laplace3} w.r.t. parameters evaluated at the parameter value \code{p}.
 #' }
 #' 
-#' @section \code{nimOneLaplace}:
+#' @section \code{nimOneLaplace}
 #' 
 #' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains more than one scalar node.
 #' To use this function, one has to accurately provide inputs for all the arguments. 
 #' 
 #' The methods generated by this function are the same as \code{nimOneLaplace1D}. 
 #' 
-#' @section \code{buildLaplace}:
+#' @section \code{buildLaplace}
 #' 
 #' The main function for constructing the Laplace approximation for a given model. One only needs to provide a NIMBLE model object and then the function
 #' will determine inputs for \code{paramNodes}, \code{randomEffectsNodes}, and \code{calcNodes} and then construct the Laplace algorithm. 
@@ -1505,14 +1430,9 @@ buildLaplace <- nimbleFunction(
 #'         Arguments include \code{pStart}: start value on the original scale; default to parameter values in the model, \code{method}: optimization method used in \code{optim}; default \code{BFGS}, and \code{hessian}: whether calculating the Hessian matrix or not; default to \code{TRUE}.
 #'   \item \code{inverseTransform(pTransform)}. Back transform the transformed parameter value \code{pTransform} to original scale.
 #'   \item \code{derivsInverseTransform(pTransform, order)}. Derivative of the inverse transformation w.r.t. transformed parameters at \code{pTransform}. Derivative order is given by \code{order}.
-#'   \item \code{summary(res)}. Summarize the maximum likelihood estimation results, given object \code{res} that is returned by \code{LaplaceMLE}. This function generates a list of original parameter names, estimates, and standard errors.  
+#'   \item \code{summary(LaplaceMLEOutput)}. Summarize the maximum likelihood estimation results, given object \code{LaplaceMLEOutput} that is returned by \code{LaplaceMLE}. This function generates a list of original parameter names, estimates, and standard errors.  
 #'}
-#' @author Wei Zhang, Perry de Valpine
-#' 
-#' @name laplace
 #'
-#' @aliases Laplace
-#' 
 #' @examples 
 #' pumpCode <- nimbleCode({ 
 #'   for (i in 1:N){
@@ -1528,16 +1448,12 @@ buildLaplace <- nimbleFunction(
 #' pumpInits <- list(alpha = 0.1, beta = 0.1, theta = rep(0.1, pumpConsts$N))
 #' pump <- nimbleModel(code = pumpCode, name = "pump", constants = pumpConsts, 
 #'                     data = pumpData, inits = pumpInits, buildDerivs = TRUE)
-#' # Build Laplace approximation
-#' pumpLaplace <- buildLaplace(pump)
-#' 
-#' \dontrun{
 #' # Compile the model
 #' Cpump <- compileNimble(pump)
+#' # Build Laplace approximation
+#' pumpLaplace <- buildLaplace(pump)
 #' CpumpLaplace <- compileNimble(pumpLaplace, project = pump)
 #' # Calculate MLEs
 #' res <- CpumpLaplace$LaplaceMLE(c(0.1, 0.1))
 #' summ <- CpumpLaplace$summary(res)
-#' }
 #'
-NULL
