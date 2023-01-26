@@ -395,12 +395,21 @@ test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_known
 test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
 test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-## STOPPED HERE
-#### STOPPED HERE ####
-#### MAKE version 2 of later tests and also inner and outer
-test_AD_batch(pow_int_OpTests, knownFailures = AD_knownFailures, verbose = FALSE)
-test_AD_batch(binaryReductionOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(powOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(powOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(pow_int_OpTests2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(pow_int_OpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(pow_int_OpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
+# inprod
+test_AD_batch(binaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+ADtestEnv$RCrelTol[4] <- 1e-6
+test_AD_batch(binaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(binaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+resetTols()
+
+
+test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE)
 test_AD_batch(squareMatrixOpTests[9], verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 
 test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?

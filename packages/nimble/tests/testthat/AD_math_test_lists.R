@@ -302,9 +302,6 @@ powOpTests2 <- make_AD_test_batch(
 )
 modify_on_match(powOpTests2, '', 'input_gen_funs', function(x) runif(x, .5, 1.5)) # a^b now defined only valid for both > 0
 
-## STOPPED HERE
-
-
 # TO-DO: TEST NON-INTEGER INPUT FOR b
 # TO-DO: Add matrix^scalar case above
 
@@ -331,12 +328,11 @@ pow_int_OpTests2 <- list(
 
 # f(g(x)).  Use a different g than above because that is basically a power function
 
-powOpTests2 <- make_AD_test_batch(
-  powOps, powArgs2, maker = make_AD_test2, inner_codes = list(quote(0.5*exp(X)), quote(X*X*X))
+powOpTests2_inner <- make_AD_test_batch(
+  powOps, powArgs2, maker = make_AD_test2, inner_codes = list(quote(0.5*(exp(X/2)-1)), quote(1.1*X))
 )
-
-modify_on_match(powOpTests2, '', 'input_gen_funs', function(x) runif(x, .5, 1.5)) # a^b now defined only valid for both > 0
-pow_int_OpTests2 <- list(
+modify_on_match(powOpTests2_inner, '', 'input_gen_funs', function(x) runif(x, .5, 1.5)) # a^b now defined only valid for both > 0
+pow_int_OpTests2_inner <- list(
   make_AD_test2(c('double(0)', 'double(0)'), op = 'pow_int', wrt_args = c('arg1', 'arg2'),
                 input_gen_funs = list(arg1 = function(x) rnorm(x),
                                       arg2 = function(x) sample(-3:3, size = x, replace = TRUE)),
@@ -353,41 +349,34 @@ pow_int_OpTests2 <- list(
 # The 0.5*exp(X/2-1) is made up to give non-trivial derivs and some <0 and >0 values.
 # The 1.1*X doesn't do much but checks that round(b) is used and at least isn't nothing.
 
-resetTols()
-
 ## res <- lapply(powOpTests2, test_AD2)
 ## res <- lapply(pow_int_OpTests2, test_AD2)
 
 # g(f(x))
 
-powOpTests2 <- make_AD_test_batch(
+powOpTests2_outer <- make_AD_test_batch(
   powOps, powArgs2, maker = make_AD_test2, outer_code = quote(exp(0.5*Y))
 )
+modify_on_match(powOpTests2_outer, '', 'input_gen_funs', function(x) runif(x, .5, 1.5))
 
-modify_on_match(powOpTests2, '', 'input_gen_funs', function(x) runif(x, .5, 1.5)) 
-pow_int_OpTests2 <- list(
+pow_int_OpTests2_outer <- list(
   make_AD_test2(c('double(0)', 'double(0)'), op = 'pow_int', wrt_args = c('arg1', 'arg2'),
-                input_gen_funs = list(arg1 = function(x) rnorm(x),
+                input_gen_funs = list(arg1 = function(x) sample(c(-1,1), size = x, replace=TRUE)*runif(x,.5,1.5),
                                       arg2 = function(x) sample(-3:3, size = x, replace = TRUE)),
                 outer_code = quote(exp(0.5*Y))),
   make_AD_test2(c('double(1)', 'double(0)'), op = 'pow_int', wrt_args = c('arg1', 'arg2'),
-                input_gen_funs = list(arg1 = function(x) rnorm(x),
+                input_gen_funs = list(arg1 = function(x) sample(c(-1,1), size = x, replace=TRUE)*runif(x,.5,1.5),
                                       arg2 = function(x) sample(-3:3, size = x, replace = TRUE)),
                 outer_code = quote(exp(0.5*Y))),
   make_AD_test2(c('double(2)', 'double(0)'), op = 'pow_int', wrt_args = c('arg1', 'arg2'),
-                input_gen_funs = list(arg1 = function(x) rnorm(x),
+                input_gen_funs = list(arg1 = function(x) sample(c(-1,1), size = x, replace=TRUE)*runif(x,.5,1.5),
                                       arg2 = function(x) sample(-3:3, size = x, replace = TRUE)),
                 outer_code = quote(exp(0.5*Y)))
 )
 
-resetTols()
-
-ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2) # This seems to need looser tols, based on one case.
 
 ## res <- lapply(powOpTests2, test_AD2)
 ## res <- lapply(pow_int_OpTests2, test_AD2)
-
-resetTols()
 
 
 #######################
@@ -414,7 +403,7 @@ binaryReductionOpTests2 <- make_AD_test_batch(
 resetTols()
 ## res <- lapply(binaryReductionOpTests2, test_AD2)
 
-binaryReductionOpTests2 <- make_AD_test_batch(
+binaryReductionOpTests2_inner <- make_AD_test_batch(
   binaryReductionOps, binaryReductionArgs2, maker = make_AD_test2,
   inner_codes = list(quote(X*X*X), quote(X*X*X))
 )
@@ -422,7 +411,7 @@ resetTols()
 ##ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
 ##res <- lapply(binaryReductionOpTests2, test_AD2)
 
-binaryReductionOpTests2 <- make_AD_test_batch(
+binaryReductionOpTests2_outer <- make_AD_test_batch(
   binaryReductionOps, binaryReductionArgs2, maker = make_AD_test2,
   outer_code = quote(exp(0.5*Y))
 )
@@ -441,6 +430,7 @@ squareMatrixArgs2 <- list('double(2)')
 
 squareMatrixOps <- c(nimble:::matrixSquareOperators,
                      nimble:::matrixSquareReductionOperators)
+squareMatrixOps <- setdiff(squareMatrixOps, 'trace') # remove trace. It shouldn't be there
 
 squareMatrixOpTests <- make_AD_test_batch(
   squareMatrixOps, squareMatrixArgs
@@ -454,11 +444,17 @@ modify_on_match(
 squareMatrixOpTests2a <- make_AD_test_batch(squareMatrixOps, squareMatrixArgs2, maker = make_AD_test2)
 modify_on_match(squareMatrixOpTests2a, '', 'size', c(2, 2)) ## see AD_test_utils.R
 modify_on_match(squareMatrixOpTests2a, 'chol .+', 'input_gen_funs', function(x) gen_pos_def_matrix(x))
+modify_on_match(squareMatrixOpTests2a, 'logdet .+', 'input_gen_funs', function(x) gen_pos_def_matrix(x))
 
 squareMatrixOpTests2b <- make_AD_test_batch(squareMatrixOps, squareMatrixArgs2, maker = make_AD_test2)
 modify_on_match(squareMatrixOpTests2b, '', 'size', c(5, 5)) ## see AD_test_utils.R
 modify_on_match(squareMatrixOpTests2b, 'chol .+', 'input_gen_funs', function(x) gen_pos_def_matrix(x))
+modify_on_match(squareMatrixOpTests2b, 'logdet .+', 'input_gen_funs', function(x) gen_pos_def_matrix(x))
 
+
+# STOPPED HERE
+# the positive definite matrices need more breathing room so finite elements don't make them
+# not positive definite.
 squareMatrixOpTests2 <- c(squareMatrixOpTests2a, squareMatrixOpTests2b)
 
 # modify_on_match after c() would fail because only the first of redundant names would get handled
