@@ -1260,6 +1260,10 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     if (identical(gr, "NULL")) gr <- NULL
     defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
+    ## Only enter non-default values into Rcontrol.
+    ## R's optim will fill in the rest.
+    ## This should match compiled handling of control list
+    ## parameters in NimOptimProblem::solve in nimOptim.cpp.
     for (name in defaultControl$nimbleListDef$types$vars) {
         if (!identical(control[[name]], defaultControl[[name]])) {
             Rcontrol[[name]] <- control[[name]]
@@ -1315,7 +1319,23 @@ optimDefaultControl <- function() {
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
 #' @export
 nimOptimDefaultControl <- function() {
-    control <- optimControlNimbleList$new()
-    control$maxit <- NULL  ## The default value depends on method.
-    return(control)
+  control <- optimControlNimbleList$new()
+  control$trace <- 0
+  control$fnscale <- 1
+  control$parscale <- NA # Must be filled in to length of par
+  control$ndeps <- NA    # Ditto
+  control$maxit <- NA  ## The default value depends on method.
+  control$abstol = -Inf
+  control$reltol <- sqrt(.Machine$double.eps)
+  control$alpha <- 1.0
+  control$beta <- 0.5
+  control$gamma <- 2.0
+  control$REPORT <- NA # Method dependent and not used in compiled version
+  control$type <- 1
+  control$lmm <- 5
+  control$factr <- 1e7
+  control$pgtol <- 0
+  control$tmax <- 10
+  control$temp <- 10
+  return(control)
 }

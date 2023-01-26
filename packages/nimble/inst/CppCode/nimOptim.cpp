@@ -29,47 +29,42 @@
 double NimOptimProblem::fn(int n, double* par, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
-    std::copy(par, par + n, problem->par_.getPtr());
-    // std::cout<<"fn ";
-    // int n5 = n > 5 ? 5 : n;
-    // for(int i = 0; i < n5; ++i) std::cout<<par[i]<<"\t"; 
+    double* problem_par = problem->par_.getPtr();
+    double* problem_parscale = problem->control_->parscale.getPtr();
+    for(size_t i = 0; i < n; ++i)
+        *problem_par++ = par[i] * problem_parscale[i];
     double ans = problem->function() / problem->control_->fnscale;
-    // std::cout<<"ans = "<<ans<<"\t";
     if(isnan(ans)) ans = std::numeric_limits<double>::infinity();
-    // std::cout<<"returning "<<ans<<std::endl;
     return ans;
 }
 
 void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
-    std::copy(par, par + n, problem->par_.getPtr());
-    // std::cout<<"gr ";
-    // int n5 = n > 5 ? 5 : n;
-    // for(int i = 0; i < n5; ++i) std::cout<<par[i]<<"\t"; 
+    double* problem_par = problem->par_.getPtr();
+    double* problem_parscale = problem->control_->parscale.getPtr();
+    for(size_t i = 0; i < n; ++i)
+        *problem_par++ = par[i] * problem_parscale[i];
     problem->ans_.setSize(n, false, false);
     problem->gradient();
     for (int i = 0; i < n; ++i) {
         ans[i] = problem->ans_[i] / problem->control_->fnscale;
     }
-    // std::cout<<"ans: ";
-    // for(int i = 0; i < n5; ++i) std::cout<<ans[i]<<"\t"; 
-    // std::cout<<std::endl;
 }
 
 nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
     nimSmartPtr<OptimControlNimbleList> control = new OptimControlNimbleList;
     control->trace = 0;
     control->fnscale = 1;
-    control->parscale.initialize(1.0, true, 1);
-    control->ndeps.initialize(1e-3, true, 1);
+    control->parscale.initialize(NA_REAL, true, 1);
+    control->ndeps.initialize(NA_REAL, true, 1);
     control->maxit = NA_INTEGER;  // Context-dependent.
     control->abstol = -INFINITY;
     control->reltol = std::sqrt(std::numeric_limits<double>::epsilon());
     control->alpha = 1.0;
     control->beta = 0.5;
     control->gamma = 2.0;
-    control->REPORT = 10;
+    control->REPORT = NA_INTEGER;
     control->type = 1;
     control->lmm = 5;
     control->factr = 1e7;
@@ -86,16 +81,9 @@ nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
 //   https://svn.r-project.org/R/trunk/src/library/stats/src/optim.c
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
-    NimArr<1, double>& par) {
-    NIM_ASSERT1(!par.isMap(), "Internal error: failed to handle mapped NimArr");
-    const int n = par.dimSize(0);
-
-    nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
-    result->par = par;
-    result->counts.initialize(NA_INTEGER, true, 2);
-    if (hessian_) {
-        result->hessian.initialize(NA_REAL, true, n, n);
-    }
+    NimArr<1, double>& init_par) {
+    NIM_ASSERT1(!init_par.isMap(), "Internal error: failed to handle mapped NimArr");
+    const int n = init_par.dimSize(0);
 
     // Set context-dependent default control_ values.
     if (control_->maxit == NA_INTEGER) {
@@ -105,6 +93,45 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
             control_->maxit = 100;
         }
     }
+    if(control_->parscale.size() == 1) {
+        if(R_IsNA(control_->parscale[0])) {
+            control_->parscale.initialize(1.0, true, n);
+        }
+    }
+    bool parscale_error = (control_->parscale.size() != n);
+    if(control_->ndeps.size() == 1) {
+        if(R_IsNA(control_->ndeps[0])) {
+            control_->ndeps.initialize(1e-3, true, n);
+        }
+    }
+
+    if(control_->ndeps.size() != n) {
+        if(parscale_error)
+            NIMERROR("In compiled optim (aka nimOptim) call: lengths for control parameters parscale and ndeps must equal length(par).");
+        else
+            NIMERROR("In compiled optim (aka nimOptim) call: length for control parameter ndeps must equal length(par).");
+    } else {
+        if(parscale_error)
+            NIMERROR("In compiled optim (aka nimOptim) call: length for control parameters parscale must equal length(par).");
+    }
+    if(control_->REPORT == NA_INTEGER) {
+        if (method_ == "BFGS" || method_ == "L-BFGS-B")
+            control_->REPORT = 10;
+        if (method_ == "SANN") // SANN is not even supported, but I'm including this so we don't forget if we ever do support SANN
+            control_->REPORT = 100;
+    }
+
+    NimArr<1, double> par = init_par;
+    for(size_t i = 0; i < n; ++i)
+        par[i] /= control_->parscale[i];
+
+    nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
+    result->par = par;
+    result->counts.initialize(NA_INTEGER, true, 2);
+    if (hessian_) {
+        result->hessian.initialize(NA_REAL, true, n, n);
+    }
+
 
     // Parameters common to all methods.
     double* dpar = par.getPtr();
@@ -153,15 +180,19 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         NIMERROR("Unknown method_: %s", method_.c_str());
     }
     result->value *= control_->fnscale;
-
+    for(size_t i = 0; i < n; ++i)
+        result->par[i] *= control_->parscale[i];
     // Compute Hessian.
     if (hessian_) {
         Rf_warning("Hessian computation is not implemented");  // TODO
-	NimOptimProblem::calc_hessian(result->par, result->hessian);
+        // NimOptimProblem::calc_hessian(result->par, result->hessian);
+        // Don't forget to handle parscale
     }
     return result;
 }
 
+// This will be deprecated or updated.  It is only used in one place,
+// which is commented out just above.
 void NimOptimProblem::calc_hessian(NimArr<1, double> par,
 				   NimArr<2, double> &hessian) {
   // Notice par is copied but hessian is by reference.
