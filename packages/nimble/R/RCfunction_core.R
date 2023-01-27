@@ -125,9 +125,6 @@ nfMethodRC <- setRefClass(
                 if(isTRUE(nimbleOptions("doADerrorTraps"))) {
                    if(!isFALSE(buildDerivs) && !is.null(buildDerivs))
                        nf_checkDSLcode_derivs(code, names(arguments), callsNotAllowedInAD)
-                   if((isFALSE(buildDerivs) || is.null(buildDerivs)) &&
-                      'nimDerivs' %in% all.names(code))
-                       message("  [Note] Detected use of `nimDerivs` in a function or method for which `buildDerivs` has not been requested. This nimbleFunction cannot be compiled.")
                 }
             }
             generateTemplate() ## used for argument matching
@@ -242,6 +239,26 @@ nf_checkDSLcode_derivs <- function(code, args, calls_not_allowed) {
         message("  [Note] Detected use of function(s) that are not supported for derivative tracking in a function or method for which `buildDerivs` has been requested: ", paste(unique(problem_calls), collapse = ", "), ".")
     }
     NULL
+}
+
+nf_checkDSLcode_buildDerivs <- function(code, buildDerivs) {
+    code <- body(code)
+    codeNames <- all.names(code)
+    derivsLocn <- which(codeNames %in% c('derivs', 'nimDerivs'))
+    if(length(derivsLocn)) {
+        for(i in seq_along(derivsLocn)) {
+            if(!(length(codeNames) >= derivsLocn[i]+3 && codeNames[derivsLocn[i]+1] == '$'
+                && codeNames[derivsLocn[i]+3] == 'calculate')) {
+                methodName <- codeNames[derivsLocn[i]+1]
+                if(isFALSE(buildDerivs) || !length(buildDerivs) || is.null(buildDerivs) ||
+                    (is.character(buildDerivs) && !methodName %in% buildDerivs) ||
+                   (is.list(buildDerivs) && !methodName %in% names(buildDerivs)))
+                    message("  [Note] Detected use of `nimDerivs` with a function or method, `", methodName, "`, for which `buildDerivs` has not been set. This nimbleFunction cannot be compiled.") 
+            }
+
+        }
+    }
+    invisible(NULL)
 }
 
 nf_checkDSLcode <- function(code, methodNames, setupVarNames, args, where = NULL) {
