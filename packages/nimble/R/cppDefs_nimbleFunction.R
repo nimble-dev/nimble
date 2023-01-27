@@ -732,7 +732,7 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
-  message("   [Note] Operator pow may cause derivative problems with negative arguments.  If the exponent is guaranteed to be an integer, use pow_int insted.", call. = FALSE)
+  message("   [Note] Operator `pow` may cause derivative problems with negative arguments. If the exponent is guaranteed to be an integer, use `pow_int` instead.", call. = FALSE)
   invisible(NULL)
 }
 

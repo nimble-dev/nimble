@@ -1775,7 +1775,7 @@ calcNodesForDerivs <- nimbleFunction(
 ## unless user provides 'wrt' and 'calcNodes'.
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = NULL, calcNodes = NULL, wrt = NULL,
                                   newUpdateNodes = NULL, newConstantNodes = NULL,
-                                  relTol = c(1e-15, 1e-8, 1e-3, 1e-3), absTolThreshold = 0, useFasterRderivs = FALSE, useParamTransform = FALSE,
+                                  relTol = c(1e-15, 1e-8, 1e-3, 1e-3, 1e-14), absTolThreshold = 0, useFasterRderivs = FALSE, useParamTransform = FALSE,
                                   checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                   doAllUncHessian = TRUE, seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
@@ -2022,7 +2022,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
 test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL, xNew = NULL,
                                            calcNodes = NULL, wrt = NULL, savedMV = NULL, 
                                            newUpdateNodes = NULL, newConstantNodes = NULL, 
-                                           relTol = c(1e-15, 1e-8, 1e-3, 1e-3), absTolThreshold = 0, useFasterRderivs = FALSE,
+                                           relTol = c(1e-15, 1e-8, 1e-3, 1e-3, 1e-14), absTolThreshold = 0, useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkDoubleTape = TRUE, 
                                            checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                            doAllUncHessian = TRUE,
@@ -2037,7 +2037,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
         if(is.null(calcNodes))
             calcNodes <- model$getNodeNames()
 
-        nodes  <- model$getNodeNames()
+        nodes  <- model$getNodeNames(includeRHSonly = TRUE)
         if(!(exists('CobjectInterface', model) && !is(model$CobjectInterface, 'uninitializedField'))) {
             cModel <- compileNimble(model)
         } else {
@@ -2399,7 +2399,17 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
                 if(checkCompiledValuesIdentical) {
                     expect_fun <- expect_identical
-                } else expect_fun <- nim_expect_equal
+                } else {
+                    expect_fun <- function(x,y) {
+                            xlab <- deparse1(substitute(x))
+                            ylab <- deparse1(substitute(y))
+                            nim_expect_equal(x, y, tolerance = relTol[5], abs_threshold = absTolThreshold,
+                                             xlab = xlab, ylab = ylab)
+                    }
+                }
+
+                ## If go through transform and back, may not have identical.
+                expect_fun_wrt <- ifelse(useParamTransform, expect_equal, expect_identical)
                 
                 ## Check that only requested orders provided.
 
@@ -2586,7 +2596,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
                     ## explicit comparison to single-taped result
                     ## Not clear why 2d$value not identical to 012$hessian
-                    nim_expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = 1e-15, abs_threshold = absTolThreshold)
+                    nim_expect_equal(cOutput2d$value, c(cOutput012$hessian), tolerance = relTol[5], abs_threshold = absTolThreshold)
                     if(length(cOutput2d11$jacobian) == 1) cOutput2d11$jacobian <- c(cOutput2d11$jacobian)
                     expect_fun(cOutput2d11$jacobian, cOutput012$hessian[,,1])
 
@@ -2601,31 +2611,31 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 ## wrt values should equal original wrt values if order !=0 or doubleTape
                 ## because setting of wrt in model is done within nimDerivs call, so should obey our rules about when model state is altered.
 
-                expect_identical(rWrt01, x)
+                expect_fun_wrt(rWrt01, x)
                 ## We provide the model to nimDerivs, so expect restoration except for non-paramTransform
                 ## and non-fasterRderivs, where assignment is outside nimDerivs.
                 if(doAllUncHessian) {
                     if(!useParamTransform && !useFasterRderivs) {
-                        expect_identical(rWrt12, x)
-                    } else expect_identical(rWrt12, rWrt_orig)
+                        expect_fun_wrt(rWrt12, x)
+                    } else expect_fun_wrt(rWrt12, rWrt_orig)
                 }
-                expect_identical(rWrt012, x)
-                expect_identical(cWrt01, x)
+                expect_fun_wrt(rWrt012, x)
+                expect_fun_wrt(cWrt01, x)
                 if(!useParamTransform) {
                     ## Assignment to model is outside nimDerivs call, so expect change.
-                    expect_identical(cWrt12, x)
-                } else expect_identical(cWrt12, cWrt_orig)
-                expect_identical(cWrt012, x)
+                    expect_fun_wrt(cWrt12, x)
+                } else expect_fun_wrt(cWrt12, cWrt_orig)
+                expect_fun_wrt(cWrt012, x)
 
                 if(checkDoubleTape) {
-                    expect_identical(rWrt1d, rWrt_orig)
+                    expect_fun_wrt(rWrt1d, rWrt_orig)
                     if(doAllUncHessian) 
-                        expect_identical(rWrt2d, rWrt_orig)
+                        expect_fun_wrt(rWrt2d, rWrt_orig)
                     if(checkDoubleUncHessian)
-                        expect_identical(rWrt2d11, rWrt_orig)
-                    expect_identical(cWrt1d, cWrt_orig)
-                    expect_identical(cWrt2d, cWrt_orig)
-                    expect_identical(cWrt2d11, cWrt_orig)
+                        expect_fun_wrt(rWrt2d11, rWrt_orig)
+                    expect_fun_wrt(cWrt1d, cWrt_orig)
+                    expect_fun_wrt(cWrt2d, cWrt_orig)
+                    expect_fun_wrt(cWrt2d11, cWrt_orig)
                 }
 
                 ## Also, should we take otherNodes and break into those that are in calcNodes and those not?

@@ -1682,8 +1682,10 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_thresho
   all_result
 }
 
-nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_threshold = 0) {
-    xlab <- deparse1(substitute(x))
-    ylab <- deparse1(substitute(y))
+nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_threshold = 0, xlab = NULL, ylab = NULL) {
+    if(is.null(xlab))
+        xlab <- deparse1(substitute(x))
+    if(is.null(ylab))
+       ylab <- deparse1(substitute(y))
     expect_true(nim_all_equal(x, y, xlab = xlab, ylab = ylab, tolerance = tolerance, abs_threshold = abs_threshold, verbose = TRUE))
 }
