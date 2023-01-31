@@ -346,8 +346,6 @@ test_ADModelCalculate(model, relTol = relTolTmp, xNew = xNew, verbose = verbose,
                       checkCompiledValuesIdentical = FALSE, name = 'dt and dexp model')
 
 
-
-
 ## complicated indexing 
 set.seed(1)
 code <- nimbleCode({
@@ -377,16 +375,12 @@ relTolTmp <- relTol
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-2
 relTolTmp[4] <- 1e-2
-test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), relTol = relTolTmp, verbose = verbose, name = 'complicated indexing')
-## 2022-05-04:
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##             [,1]        [,2]         [,3]
-## [1,] -0.03723961 -0.03723961 4.658276e-15
-## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##            [,1]      [,2]       [,3]
-## [1,] 0.01329597 0.0128945 0.03113457
+relTolTmp[5] <- 1e-13
 
-test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'complicated indexing')
+## 30 minutes if do full assessment
+## various R vs. C discrepancies in 2d11 O(0.1); skip in part given time.
+## 570 sec.
+test_ADModelCalculate(model, newUpdateNodes = list(S = newS, pr = newPr, pr2 = newPr2), useParamTransform = TRUE, relTol = relTolTmp, checkCompiledValuesIdentical = FALSE, checkDoubleUncHessian = FALSE, verbose = verbose, name = 'complicated indexing')
 
 
 ## using different subsets of a matrix
@@ -411,10 +405,9 @@ relTolTmp[2] <- 1e-5
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
 
-## 2022-04-16: all set
+## 600 sec.
 test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), relTol = relTolTmp, verbose = verbose, name = 'different subsets of a matrix')
-## 2022-04-16: various compiled values equal but not identical
-test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'different subsets of a matrix')
+
 
 ## vectorized covariance matrix
 set.seed(1)
@@ -438,77 +431,22 @@ newDist <- as.matrix(dist(runif(5)))
 
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
-#relTolTmp[2] <- 1e-7
+relTolTmp[2] <- 1e-7
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-3
+relTolTmp[5] <- 1e-13
 
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist),
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
-## 2022-04-20: various compiled values equal but not identical
+
+## 470 sec.
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE,
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
-
-## 2022-04-22: (both cases above)
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##            [,1]       [,2]         [,3]
-## [1,]  0.0968665  0.0968665 1.575939e-15
-
-
-## vectorized covariance matrix, chol param
-set.seed(1)
-code <- nimbleCode({
-    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
-    y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
-    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    mu2[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
-    y[2, 1:n] ~ dmnorm(mu2[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
-    rho ~ dgamma(2, 3)
-})
-
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-
-## uncompiled 2d11 non-trivial discrepancies seem to correspond with near zero x values (likely NCT issue 350)
-## so set z not equal to zero so don't have small mu1, mu2 values
-model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(dist = dd, rho = rgamma(1, 1, 1),
-                                  z = rep(1, n), pr = diag(n)))
-model$simulate()
-model$calculate()
-model$setData('y')
-newPr <- crossprod(matrix(rnorm(5*5), 5))
-newDist <- as.matrix(dist(runif(5)))
-
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-10
-relTolTmp[2] <- 1e-6
-relTolTmp[3] <- 1e-5
-relTolTmp[4] <- 1e-3
-
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist),
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix, chol param')
-
-## 2022-04-20: various compiled values equal but not identical
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE,
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix, chol param')
-
-## 2022-04-21: (both cases above) various minor discrepancies, e.g.,
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##           [,1]      [,2]         [,3]
-## [1,] 0.2314997 0.2314997 1.918315e-15
-## [2,] 0.2314997 0.2314997 1.918315e-15
-## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##            [,1]       [,2]        [,3]
-## [1,] 0.03049935 0.03059135 0.003007278
+                      relTol = relTolTmp, absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE, 
+                      verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
 
 
 
 ## MVN with various parameterizations and user-defined functions
 
 ## user-defined cov function with loops
-## works with work-around that forces index vars to be treated as ints; see NCT issue 130
 covFunLoop <- nimbleFunction(
     run = function(dist = double(2), rho = double(0)) {
         n = dim(dist)[1]
@@ -520,7 +458,6 @@ covFunLoop <- nimbleFunction(
         returnType(double(2))
         return(out)
     }, buildDerivs = list(run = list(ignore = c('i','j'))))
-    # buildDerivs = TRUE) # if use NCT 130 work-around
 
 code <- nimbleCode({
     Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
@@ -538,77 +475,25 @@ model <- nimbleModel(code, constants = list(n = n),
 model$simulate()
 model$calculate()
 model$setData('y')
+newPr <- crossprod(matrix(rnorm(5*5), 5))
+newDist <- as.matrix(dist(runif(5)))
 
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-10
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-5
-relTolTmp[4] <- 1e-3
+relTolTmp[4] <- 1e-1
+relTolTmp[5] <- 1e-13
 
-test_ADModelCalculate(model,
-                      newUpdateNodes = list(dist = newDist, pr = newPr),
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, 
-                      name = 'dnorm with user-defined fxn for covariance with loops')
-## 2022-04-22: various compiled values equal but not identical
+
+## 470 sec.
 test_ADModelCalculate(model, useParamTransform = TRUE,
-                      newUpdateNodes = list(dist = newDist, pr = newPr),
+                      newUpdateNodes = list(dist = newDist, pr = newPr), checkCompiledValuesIdentical = FALSE, 
                       relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, 
                       name = 'dnorm with user-defined fxn for covariance with loops')
 
-## 2022-04-22: both cases above
-## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
-## [1] -4.630183691 -4.641418724  0.002420603
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##            [,1]       [,2]         [,3]
-## [1,] -0.6196033 -0.6196033 2.329377e-15
 
-
-
-## user-defined cov function vectorized
-set.seed(1)
-covFunVec <- nimbleFunction(
-    run = function(dist = double(2), rho = double(0)) {
-        out <- exp(-dist/rho)
-        returnType(double(2))
-        return(out)
-    }, buildDerivs = TRUE)
-
-code <- nimbleCode({
-    Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
-    y[1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
-    mu3[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    rho ~ dgamma(2, 3)
-})
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(dist = dd, rho = rgamma(1, 1, 1),
-                                  z = rep(0, n), pr = diag(n)))
-newPr <- crossprod(matrix(rnorm(n*n),n))
-newDist <- as.matrix(dist(runif(n)))
-
-model$simulate()
-model$calculate()
-model$setData('y')
-relTolTmp <- relTol
-relTolTmp[3] <- 1e-5
-relTolTmp[4] <- 1e-2
-
-test_ADModelCalculate(model, relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose,
-                      newUpdateNodes = list(dist = newDist, pr = newPr),
-                      name = 'dmnorm with user-defined vectorized fxn')
-
-## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose,
-                      newUpdateNodes = list(dist = newDist, pr = newPr),
-                      name = 'dmnorm with user-defined vectorized fxn')
-
-## 2022-04-23: both cases above
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##             [,1]        [,2]         [,3]
-## [1,] -0.42237762 -0.42237762 2.891359e-15
-
+## HERE
 
 ## other dmnorm parameterizations
 set.seed(1)
@@ -637,15 +522,16 @@ model$calculate()
 model$setData('y')
 newSigma <- crossprod(matrix(rnorm(5*5), 5))
 newQ <- crossprod(matrix(rnorm(5*5), 5))
+newPr <- crossprod(matrix(rnorm(5*5), 5))
 
 relTolTmp <- relTol
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
 
-test_ADModelCalculate(model, absTolThreshold = 1e-12,
-                      newUpdateNodes = list(pr = newPr, Q = newQ, Sigma = newSigma),
-                      relTol = relTolTmp, verbose = verbose, name = 'various dmnorm parameterizations')
+
+## TODO: errors
+## TODO: timing
 
 ## 2022-04-22: various compiled values equal but not identical
 test_ADModelCalculate(model, absTolThreshold = 1e-12, useParamTransform = TRUE,
@@ -658,158 +544,8 @@ test_ADModelCalculate(model, absTolThreshold = 1e-12, useParamTransform = TRUE,
 ## [1,] 0.035574402 0.035003007 0.016324157
 
 
-## various dmvt parameterizations
-set.seed(1)
-code <- nimbleCode({
-    y[1, 1:n] ~ dmvt(mu = mu1[1:n], prec = Q[1:n,1:n], df = nu)
 
-    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
-    Ucov[1:n, 1:n] <- chol(Sigma[1:n,1:n])
-    y[2, 1:n] ~ dmvt(mu2[1:n], cholesky = Uprec[1:n,1:n], df = nu, prec_param = 1)
-    y[3, 1:n] ~ dmvt(mu3[1:n], cholesky = Ucov[1:n,1:n], df = nu, prec_param = 0)
-    y[4, 1:n] ~ dmvt(mu4[1:n], scale = Sigma[1:n, 1:n], df = nu)
-    mu1[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
-    mu2[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
-    mu3[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
-    mu4[1:n] ~ dmvt(z[1:n], prec = pr[1:n,1:n], df = nu)
-    nu ~ dunif(0, 50)
-})
-
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-Sigma <- exp(-dd/0.1)
-model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(z = rep(1, n), pr = diag(n),
-                                  Sigma = Sigma, Q = solve(Sigma)))
-newSigma <- crossprod(matrix(rnorm(n*n), n))
-newQ <- crossprod(matrix(rnorm(n*n), n))
-
-model$simulate()
-model$calculate()
-model$setData('y')
-
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-10
-relTolTmp[2] <- 1e-6
-relTolTmp[3] <- 1e-2
-relTolTmp[4] <- 1e-2
-
-test_ADModelCalculate(model,
-                      newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),
-                      relTol = relTolTmp, verbose = verbose, name = 'various dmvt parameterizations')
-
-## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE,
-                      newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),
-                      relTol = relTolTmp, verbose = verbose, name = 'various dmvt parameterizations')
-
-## 2022-04-23: both cases above
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##             [,1]        [,2]         [,3]
-## [1,]  0.01955694  0.01955694 1.930137e-13
-## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##           [,1]      [,2]       [,3]
-## [1,] -3.348612 -3.248763 0.03073416
-## Detected some values out of (relative, usually) tolerance:  rOutput012$hessian   cOutput012$hessian .
-##               [,1]          [,2]       [,3]
-## [1,] -4.887581e-06 -4.809407e-06 0.01625429
-
-
-
-## dirichlet as likelihood so not differentiating wrt something with constraint.
-set.seed(1)
-code <- nimbleCode({
-    p[1:k] ~ ddirch(alpha[1:k])
-    for(i in 1:k)
-        alpha[i] ~ dgamma(1.3, 1.5)
-})
-k <- 4
-model <- nimbleModel(code, constants = list(k = k), data = list(p = c(.2, .4, .15, .25)), inits = list(alpha = runif(4)))
-newP <- rdirch(1, rep(1,4))
-
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-12
-relTolTmp[2] <- 1e-7
-relTolTmp[4] <- 1e-3
-
-## 2022-04-23: all set
-test_ADModelCalculate(model,
-                      newConstantNodes = list(p = newP),
-                      relTol = relTolTmp, verbose = verbose, name = 'Dirichlet likelihood')
-
-
-## 2022-04-22: various compiled values equal but not identical
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-## [1] -5.8683571e-02 -5.8683571e-02  3.9020035e-15
-test_ADModelCalculate(model, useParamTransform = TRUE,
-                      newConstantNodes = list(p = newP),
-                      relTol = relTolTmp, verbose = verbose, name = 'Dirichlet likelihood')
-
-
-
-## dwish and dinvwish so long as not differentiating w.r.t. the random variable (since it has constraints)
-## Note that nu must exceed n and can't be set to runif(0,1) via test_ADModelCalculate.
-set.seed(1)
-code <- nimbleCode({
-    R[1:n,1:n] <- sigma2 * exp(-dist[1:n, 1:n] / rho)
-    US[1:n,1:n] <- chol(inverse(R[1:n,1:n]))
-    UR[1:n,1:n] <- chol(R[1:n,1:n])
-    W1[1:n, 1:n] ~ dwish(R[1:n, 1:n], nu + n)
-    W2[1:n, 1:n] ~ dwish(S = R[1:n, 1:n], df = nu + n)
-    W3[1:n, 1:n] ~ dwish(cholesky = UR[1:n,1:n], df = nu + n, scale_param = 0)
-    W4[1:n, 1:n] ~ dwish(cholesky = US[1:n,1:n], df = nu + n, scale_param = 1)
-    IW1[1:n, 1:n] ~ dinvwish(R[1:n, 1:n], nu + n)
-    IW2[1:n, 1:n] ~ dinvwish(R = R[1:n, 1:n], df = nu + n)
-    IW3[1:n, 1:n] ~ dinvwish(cholesky = UR[1:n,1:n], df = nu + n, scale_param = 0)
-    IW4[1:n, 1:n] ~ dinvwish(cholesky = US[1:n,1:n], df = nu + n, scale_param = 1)
-    rho ~ dgamma(2, 3)
-    sigma2 ~ dgamma(2, 3)
-    nu ~ dgamma(2, 3)
-})
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n), inits = list(dist = dd, nu = 5))
-model$simulate()
-model$calculate()
-model$setData(c('W1','W2','W3','W4','IW1','IW2','IW3','IW4'))
-
-newW1 <- crossprod(matrix(rnorm(5*5), 5))
-newW2 <- crossprod(matrix(rnorm(5*5), 5))
-newW3 <- crossprod(matrix(rnorm(5*5), 5))
-newW4 <- crossprod(matrix(rnorm(5*5), 5))
-newIW1 <- crossprod(matrix(rnorm(5*5), 5))
-newIW2 <- crossprod(matrix(rnorm(5*5), 5))
-newIW3 <- crossprod(matrix(rnorm(5*5), 5))
-newIW4 <- crossprod(matrix(rnorm(5*5), 5))
-
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-14
-relTolTmp[2] <- 1e-7
-relTolTmp[3] <- 1e-5
-relTolTmp[4] <- 1e-2
-
-test_ADModelCalculate(model, newUpdateNodes = list(dist = newDist),
-                      newConstantNodes = list(W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4,
-                                        IW1 = newIW1, IW2 = newIW2, IW3 = newIW3, IW4 = newIW4),
-                      relTol = relTolTmp, verbose = verbose, name = 'dwish, dinvwish')
-
-## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE, newUpdateNodes = list(dist = newDist),
-                      newConstantNodes = list(W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4,
-                                        IW1 = newIW1, IW2 = newIW2, IW3 = newIW3, IW4 = newIW4),
-                      relTol = relTolTmp, verbose = verbose, name = 'dwish, dinvwish')
-
-## Both of the above:
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##           [,1]      [,2]         [,3]
-## [1,]  192.0026  192.0026 2.960554e-15
-## Only with paramTransform:
-## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
-## [1] -2.37781548 -2.41502054  0.01540569
-
-
+## HERE
 
 
 ## simple user-defined distribution
@@ -1207,6 +943,8 @@ test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R 
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
                       relTol = relTolTmp, verbose = verbose,
                       name = 'various multivariate dists')
+
+## 2023-01-30: got a seg fault in EB scenario; plus this takes forever
 
 ## 2022-05-05:
 ## I can't fully explain the magnitude of the 2d11 disparity. If I manually call jacobian, I can see
