@@ -112,36 +112,52 @@ class NimOptimProblem_Fun : public NimOptimProblem {
 
 template <class Fn>
 void NimOptimProblem_Fun<Fn>::gradient() {
+  // When gradient() is called (from NimOptimProblem::gr),
+  // parameters (par_) have already been multiplied by
+  // parscale elements to get to the scale used by the fn.
+  // However, the ndeps elements  (epsilons) get multiplied
+  // by parcale below.
     const int n = par_.dimSize(0);
     NIM_ASSERT_SIZE(ans_, n);
     NimArr<1, double>& ndeps = control_->ndeps;
-    if (ndeps.dimSize(0) == 1) ndeps.initialize(ndeps[0], true, n);
+    // Next line is no longer necessary because NimOptimProblem::solve()
+    // initializes ndeps to a vector of length n.
+    //    if (ndeps.dimSize(0) == 1) ndeps.initialize(ndeps[0], true, n);
     NIM_ASSERT_SIZE(ndeps, n);
     NimArr<1, double> par_h = par_;
+    double* parscale = control_->parscale.getPtr();
     if (method_ == "L-BFGS-B") {
         // Constrained optimization.
         for (int i = 0; i < n; ++i) {
-            const double h_pos = std::min(ndeps[i], upper_[i] - par_[i]);
-            const double h_neg = std::min(ndeps[i], par_[i] - lower_[i]);
+            const double h = ndeps[i]*parscale[i];
+            // Note that in the R source code where this is done
+            // (src/library/stats/src), the upper and lower bound
+            // vectors have been divided by parscale and so are
+            // checked on that scale.  Here the h and par_
+            // on the fn scale and so are upper_ and lower_.
+            const double h_pos = std::min(h, upper_[i] - par_[i]);
+            const double h_neg = std::min(h, par_[i] - lower_[i]);
             par_h[i] = par_[i] + h_pos;
             const double pos = fn_(par_h);
             par_h[i] = par_[i] - h_neg;
             const double neg = fn_(par_h);
             par_h[i] = par_[i];
-            ans_[i] = (pos - neg) / (h_pos + h_neg);
+            ans_[i] = parscale[i] * (pos - neg) / (h_pos + h_neg);
         }
     } else {
         // Unconstrained optimization.
         for (int i = 0; i < n; ++i) {
-            const double h = ndeps[i];
+            const double h = ndeps[i]*parscale[i];
             par_h[i] = par_[i] + h;
             const double pos = fn_(par_h);
             par_h[i] = par_[i] - h;
             const double neg = fn_(par_h);
             par_h[i] = par_[i];
-            ans_[i] = (pos - neg) / (2 * h);
+            ans_[i] = (pos - neg) / (2 * ndeps[i]);
         }
     }
+    // dividing the answer by fnscale is done by the calling
+    // function, NimOptimProblem::gr
 }
 
 template <class Fn, class Gr>
@@ -157,7 +173,17 @@ class NimOptimProblem_Fun_Grad : public NimOptimProblem {
 
    protected:
     virtual double function() { return fn_(par_); }
-    virtual void gradient() { ans_ = gr_(par_); }
+    virtual void gradient() {
+      // This should return gradient on par/parscale.
+      // But gr_ calculates the gradient wrt par.
+      // So we have to multiply by parscale.
+      ans_ = gr_(par_);
+      double* parscale = control_->parscale.getPtr();
+      const int n = par_.dimSize(0);
+      for (int i = 0; i < n; ++i) {
+        ans_[i] *= parscale[i];
+      }
+    }
 
    private:
     Fn fn_;
@@ -252,7 +278,6 @@ class NimOptimProblem_model : public NimOptimProblem {
     std::memcpy(lastGradient.getPtr(), ADresult->jacobian.getPtr(), length_wrt * sizeof(double));
     std::cout<<"done main calculations"<<std::endl;
   }
-
     
  protected:
   virtual double function() {
@@ -266,8 +291,8 @@ class NimOptimProblem_model : public NimOptimProblem {
     }
     for(size_t i = 0; i < length_wrt; ++i) {
       if(lastP[i] != par_[i]) {
-	sameAsLastCall = false;
-	break;
+        sameAsLastCall = false;
+        break;
       }
     }
     if(!sameAsLastCall) run_calculations();
