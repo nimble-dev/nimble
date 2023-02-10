@@ -473,8 +473,7 @@ conjugacyClass <- setRefClass(
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = targetNode)
                 if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
                 if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
-                targetNodeScalarComponents <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
-                linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode, targetNodeScalarComponents)   # determines whether paramExpr is linear in targetNode
+                linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
                 realizedLink <- cc_linkCheck(linearityCheck, currentLink)
                 if(is.null(realizedLink)) return(NULL)
                 ## ensure targetNode appears in only *one* depNode parameter expression
@@ -1368,13 +1367,11 @@ cc_replace01 <- function(expr) {
     return(expr)
 }
 
-cc_checkLinearity <- function(expr, targetNode, targetNodeScalarComponents) {
+cc_checkLinearity <- function(expr, targetNode) {
 
     ## targetNode doesn't appear in expr
     if(!cc_nodeInExpr(targetNode, expr)) {
         if(is.call(expr) && expr[[1]] == '(') return(cc_checkLinearity(expr[[2]], targetNode))
-        ## if any components of targetNode do appear in expr, return NULL
-        if(any(cc_getNodesInExpr(expr) %in% targetNodeScalarComponents)) return(NULL)
         ## add +1i to tags 0s and 1s as not being from exact match to target
         return(list(offset = cc_replace01(expr), scale = 0))  
     }
