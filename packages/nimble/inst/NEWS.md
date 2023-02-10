@@ -1,3 +1,8 @@
+## BUG FIXES
+
+- Fix bug in MCMC detection of conjugacy, when prior and likelihood
+  use slices from different dimensions of multivariate nodes (PR #1264).
+
 #                            CHANGES IN VERSION 0.13.1 (December 2022) 
 
 ## BUG FIXES
