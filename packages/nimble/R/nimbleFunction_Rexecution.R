@@ -1228,9 +1228,10 @@ nimRound <- round
 #' cOptimizer <- compileNimble(optimizer)
 #' cOptimizer(method = 'BFGS', fnscale = -1)
 #' }
-nimOptim <- function(par, fn, gr = NULL, ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
+nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
                      control = nimOptimDefaultControl(), hessian = FALSE) {
-    # Tweak parameters.
+    ## Tweak parameters.
+    if(identical(gr, "NULL")) gr <- NULL
     defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
     for (name in defaultControl$nimbleListDef$types$vars) {
