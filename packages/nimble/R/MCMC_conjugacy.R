@@ -473,7 +473,8 @@ conjugacyClass <- setRefClass(
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = targetNode)
                 if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
                 if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
-                linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
+                targetNodeScalarComponents <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
+                linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode, targetNodeScalarComponents)   # determines whether paramExpr is linear in targetNode
                 realizedLink <- cc_linkCheck(linearityCheck, currentLink)
                 if(is.null(realizedLink)) return(NULL)
                 ## ensure targetNode appears in only *one* depNode parameter expression
@@ -1179,6 +1180,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         }
         exprText <- safeDeparse(expr, warn = TRUE)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
+        ## skipExpansionsNode was added specifically for CAR model target nodes:
         if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
         expandedNodeNames <- if(exprText %in% expandedNodeNamesRaw) exprText else expandedNodeNamesRaw
@@ -1199,8 +1201,10 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             stop('something went wrong with Daniel\'s understanding of newNimbleModel #2')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
-        for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
+        if(is.call(newExpr) && newExpr[[1]] == 'structureExpr') {  ## recurse, if there's a newly created structureExpr()
+            for(i in seq_along(newExpr)[-1])
+                newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
+        }
         return(newExpr)
     }
     if(is.call(expr)) {
@@ -1219,11 +1223,21 @@ cc_structureExprName <- quote(structureExpr)
 
 ## creates an expression of the form [cc_structureExprName](element11, element12, etc...) to represent vectors / arrays defined in terms of other stoch/determ nodes,
 cc_createStructureExpr <- function(model, exprText) {
-  expandedNodeNamesVector <- model$expandNodeNames(exprText)
-  expandedNodeExprList <- lapply(expandedNodeNamesVector, function(x) parse(text=x)[[1]])
-  structureExpr <- c(cc_structureExprName, expandedNodeExprList)
-  structureExprCall <- as.call(structureExpr)
-  return(structureExprCall)
+    expandedNodeNamesVector <- model$expandNodeNames(exprText)
+    ## remove expanded node names which are not fully represented in the original scalar components of exprText:
+    exprTextScalarComponents <- model$expandNodeNames(exprText, returnScalarComponents=TRUE)
+    expandedNodeNamesToKeepBool <- sapply(expandedNodeNamesVector, function(n) all(model$expandNodeNames(n, returnScalarComponents=TRUE) %in% exprTextScalarComponents))
+    expandedNodeNamesVector <- expandedNodeNamesVector[expandedNodeNamesToKeepBool]
+    ## now, add in any scalar components of original exprText which are not appearing in the expanded node names:
+    scalarComponentsToAdd <- setdiff(exprTextScalarComponents, model$expandNodeNames(expandedNodeNamesVector, returnScalarComponents=TRUE))
+    nodesForStructureExpr <- c(expandedNodeNamesVector, scalarComponentsToAdd)
+    ## if exprText is a non-node scalar component, then just return that parse(exprText); (rather than structureExpr(exprText))
+    if((length(nodesForStructureExpr) == 1) && identical(nodesForStructureExpr, scalarComponentsToAdd)) return(parse(text=exprText)[[1]])
+    ## otherwise, create and return a structureExpr:
+    structureExprExprList <- lapply(nodesForStructureExpr, function(x) parse(text=x)[[1]])
+    structureExpr <- c(cc_structureExprName, structureExprExprList)
+    structureExprCall <- as.call(structureExpr)
+    return(structureExprCall)
 }
 
 
@@ -1354,12 +1368,14 @@ cc_replace01 <- function(expr) {
     return(expr)
 }
 
-cc_checkLinearity <- function(expr, targetNode) {
+cc_checkLinearity <- function(expr, targetNode, targetNodeScalarComponents) {
 
     ## targetNode doesn't appear in expr
     if(!cc_nodeInExpr(targetNode, expr)) {
         if(is.call(expr) && expr[[1]] == '(') return(cc_checkLinearity(expr[[2]], targetNode))
-        # add +1i to tags 0s and 1s as not being from exact match to target
+        ## if any components of targetNode do appear in expr, return NULL
+        if(any(cc_getNodesInExpr(expr) %in% targetNodeScalarComponents)) return(NULL)
+        ## add +1i to tags 0s and 1s as not being from exact match to target
         return(list(offset = cc_replace01(expr), scale = 0))  
     }
 
