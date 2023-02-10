@@ -466,7 +466,7 @@ conjugacyClass <- setRefClass(
             dependentObj <- dependents[[depNodeDist]]
             if(is.null(restrictLink)) {
                 if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
-            } else currentLink = restrictLink
+            } else currentLink <- restrictLink
             if(currentLink != 'stickbreaking') {
                 depNodeParamName <- dependentObj$param
                 linearityCheckExprRaw <- model$getParamExpr(depNode, depNodeParamName)   # extracts the expression for 'param' from 'depNode'
