@@ -1232,7 +1232,7 @@ cc_createStructureExpr <- function(model, exprText) {
     nodesForStructureExpr <- c(expandedNodeNamesVector, scalarComponentsToAdd)
     ## if exprText is a non-node scalar component, then just return that parse(exprText); (rather than structureExpr(exprText))
     if((length(nodesForStructureExpr) == 1) && identical(nodesForStructureExpr, scalarComponentsToAdd)) return(parse(text=exprText)[[1]])
-    ## otherwise, create and return a structureExpr:
+    ## otherwise, create and return a structureExpr
     structureExprExprList <- lapply(nodesForStructureExpr, function(x) parse(text=x)[[1]])
     structureExpr <- c(cc_structureExprName, structureExprExprList)
     structureExprCall <- as.call(structureExpr)
