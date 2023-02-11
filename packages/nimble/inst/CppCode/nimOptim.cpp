@@ -180,14 +180,16 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         NIMERROR("Unknown method_: %s", method_.c_str());
     }
     result->value *= control_->fnscale;
+
+    // Compute Hessian.
+    // Parameters are still on the optimization scale,
+    // i.e. divided by parscale
+    if (hessian_) {
+        NimOptimProblem::calc_hessian(result->par, result->hessian);
+    }
+
     for(size_t i = 0; i < n; ++i)
         result->par[i] *= control_->parscale[i];
-    // Compute Hessian.
-    if (hessian_) {
-        Rf_warning("Hessian computation is not implemented");  // TODO
-        // NimOptimProblem::calc_hessian(result->par, result->hessian);
-        // Don't forget to handle parscale
-    }
     return result;
 }
 
@@ -196,11 +198,13 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
 void NimOptimProblem::calc_hessian(NimArr<1, double> par,
 				   NimArr<2, double> &hessian) {
   // Notice par is copied but hessian is by reference.
-  double ndeps = 0.001; //  This should be obtained from control list but is hard-wired for now.
-  double epsilon = ndeps;
+    double *ndeps = control_->ndeps.getPtr();
+    double *parscale = control_->parscale.getPtr();
+    //  double ndeps = 0.001; //  This should be obtained from control list but is hard-wired for now.
+  double epsilon;
   int n = par.dimSize(0);
   void *ex = this;
-  double* dpar = par.getPtr();
+  double* dpar = par.getPtr(); // This is already divided by parscale
   NimArr<1, double> ansUpper;
   NimArr<1, double> ansLower;
   ansUpper.setSize(n, false, false);
@@ -208,13 +212,16 @@ void NimOptimProblem::calc_hessian(NimArr<1, double> par,
   hessian.setSize(n, n, false, false);
   int i, j;
   for(i = 0; i < n; ++i) {
+      // It is strange to divide ndeps by parscale, but that's
+      // exactly what R's C code for optimhess does
+      epsilon = ndeps[i] / parscale[i];
     dpar[i] += epsilon;
     gr(n, dpar, ansUpper.getPtr(), ex);
     dpar[i] -= 2*epsilon;
     gr(n, dpar, ansLower.getPtr(), ex);
     for(j = 0; j < n; ++j) {
       // Following R's optimhess, we want to multiply by fnscale here to return answer to original scale.
-      hessian(i, j) = control_->fnscale * (ansUpper[j] - ansLower[j]) / (2.*epsilon);
+      hessian(i, j) = control_->fnscale * (ansUpper[j] - ansLower[j]) / (2.*epsilon*parscale[i]*parscale[j]);
     }
     dpar[i] += epsilon;
   }
