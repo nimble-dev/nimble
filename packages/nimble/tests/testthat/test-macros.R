@@ -14,7 +14,7 @@ test_that('Macro expansion 1',
     ## This converts a ~ testMacro(b)
     ## to inputs as (stoch = TRUE, LHS = a, b)
     testMacro <- nimble:::model_macro_builder(
-        function(stoch, LHS, RHSarg) {
+        function(stoch, LHS, RHSarg, .constants, .env) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
                 list(LHS = LHS, RHSarg = RHSarg,
@@ -77,7 +77,7 @@ test_that('Macro expansion 2',
     ## Like testMacro above but with unpackArgs = FALSE.
     ## This takes a ~ testMacro(b) with arguments (stoch = TRUE, LHS = a, RHS = b)
     testMacro <- nimble:::model_macro_builder(
-        function(stoch, LHS, RHS) {
+        function(stoch, LHS, RHS, .constants, .env) {
             if(RHS[[1]] != "testMacro")
                 stop("Problem with how testMacro was called")
             RHS[[1]] <- as.name('step') ## something valid
@@ -119,7 +119,7 @@ test_that('Macro expansion 3',
     ## This takes a ~ testMacro(newVar = b, newIndex = 3)
     ## as arguments (stoch = TRUE, LHS = a, newVar = b, newIndex = 3)
     testMacro <- nimble:::model_macro_builder(
-        function(stoch, LHS, newIndex, newVar) {
+        function(stoch, LHS, newIndex, newVar, .constants, .env) {
         RHS <- substitute(
             X[I],
             list(X = newVar,
@@ -163,7 +163,7 @@ test_that('Macro expansion 4',
     ## (code = a ~ testMacro(b)).
     ## It does not even need to be in a line with '~' or '<-'.
     testMacro <- nimble:::model_macro_builder(
-        function(code) {
+        function(code, .constants, .env) {
             code[[3]][[1]] <- as.name('dnorm')
             list(code = code)
         },
@@ -198,7 +198,7 @@ test_that('Macro expansion 5',
     ## It is designed for a line without '~' or '<-'.
     ## It takes testMacro(arg1, arg2, arg3)
     testMacro <- nimble:::model_macro_builder(
-        function(arg1, arg2, arg3) {
+        function(arg1, arg2, arg3, .constants, .env) {
             code <- substitute(A <- B + C, list(A = arg1, B = arg2, C = arg3))
             list(code = code)
         },
@@ -229,7 +229,7 @@ test_that('Macro expansion 5',
 test_that('Macro expansion 6 (recursive macro expansion)',
 {
     testMacroInner <- nimble:::model_macro_builder(
-        function(stoch, LHS, RHSarg) {
+        function(stoch, LHS, RHSarg, ...) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
                 list(LHS = LHS, RHSarg = RHSarg,
@@ -245,7 +245,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
     testMacroOuter <- nimble:::model_macro_builder(
-        function(code) {
+        function(code, ...) {
             code[[3]][[1]] <- as.name('testMacroInner')
             list(code = code)
         },
@@ -282,7 +282,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
     ## This a ~ testMacroInner(b)
     ## with inputs as (stoch = TRUE, LHS = a, b)
     testMacroInner <- nimble:::model_macro_builder(
-        function(stoch, LHS, RHSarg) {
+        function(stoch, LHS, RHSarg, ...) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
                 list(LHS = LHS, RHSarg = RHSarg,
@@ -355,7 +355,8 @@ test_that('duplicate variables from macro expansion error-trapped correctly',
     ## from roxygen example
     flat_normal_priors <- nimble:::model_macro_builder(
         function(...) {
-            allVars <- list(...)
+          allVars <- list(...)
+          allVars <- allVars[ !(names(allVars) %in% (c('.constants','.env'))) ]
             priorDeclarations <- lapply(allVars,
                                         function(x)
                                             substitute(VAR ~ dnorm(0, sd = 1000),
@@ -381,7 +382,7 @@ test_that('duplicate variables from macro expansion error-trapped correctly',
 test_that('duplicate nested indices from macro expansion error-trapped correctly',
 {
     all_dnorm <- nimble:::model_macro_builder(
-        function(stoch, LHS, RHSvar, start, end, sd = 1) {
+        function(stoch, LHS, RHSvar, start, end, sd = 1, ...) {
             newCode <- substitute(
                 for(i in START:END) {
                     LHS[i] ~ dnorm(RHSvar[i], SD)
@@ -405,6 +406,67 @@ test_that('duplicate nested indices from macro expansion error-trapped correctly
                 x ~ all_dnorm(mu, start = 1, end = 10)        
         }
         )), "Variable i used multiple times as for loop index")
+})
+
+test_that('constants and env are accessed correctly, even in recursion',
+{
+  testEnv <- new.env()
+  testEnv$var_in_env <- 5
+  temporarilyAssignInGlobalEnv(testEnv)
+
+  testMacroInner <- nimble:::model_macro_builder(
+    function(stoch, LHS, RHSarg, .constants, .env) {
+      constant_of_interest <- .constants$constant_of_interest
+      var_in_env <- eval(quote(var_in_env), envir = .env)
+            ans <- substitute(
+                OP(LHS, dnorm(RHSarg, VAR_IN_ENV + CONSTANT_OF_INTEREST)),
+                list(LHS = LHS, RHSarg = RHSarg,
+                     OP = if(stoch) as.name('~') else as.name('<-'),
+                     VAR_IN_ENV = var_in_env,
+                     CONSTANT_OF_INTEREST = constant_of_interest)
+            )
+            list(code = ans)
+        },
+        use3pieces = TRUE, ## default
+        unpackArgs = TRUE  ## default
+        )
+  temporarilyAssignInGlobalEnv(testMacroInner)
+
+
+    ## a ~ testMacroOuter(b)
+    ## becomes a ~ testMacroInner(b)
+  testMacroOuter <- nimble:::model_macro_builder(
+        function(code, .constants, .env) {
+            code[[3]][[1]] <- as.name('testMacroInner')
+            list(code = code)
+        },
+        use3pieces = FALSE, ## NON-default
+        unpackArgs = FALSE  ## NON-default
+        )
+  temporarilyAssignInGlobalEnv(testMacroOuter)
+
+    expect_identical(
+        nimble:::codeProcessModelMacros(
+                   quote(x[1] ~ testMacroOuter(y[1])),
+                   env = testEnv,
+                   constants = list(constant_of_interest = 10)
+        ),
+        quote(x[1] ~ dnorm(y[1], 5 + 10))
+    )
+
+
+    model <- nimbleModel(
+        nimbleCode({
+            x[1] ~ testMacroOuter(y[1])
+        }),
+        constants = list(constant_of_interest = 10),
+        userEnv = testEnv
+    )
+
+    expect_identical(
+        model$getCode()[[2]],
+        quote(x[1] ~ dnorm(y[1], 5 + 10))
+    )
 })
 
 options(warn = RwarnLevel)
