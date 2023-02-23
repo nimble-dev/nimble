@@ -562,7 +562,7 @@ Resets the \'data\' property of ALL model nodes to FALSE.  Subsequent to this ca
 
                                   setData = function(..., warnAboutMissingNames = TRUE) {
 '
-Sets the \'data\' flag for specified nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
+Sets the \'data\' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
 
 Arguments:
 
@@ -606,10 +606,12 @@ Details: If a provided value (or the current value in the model when only a name
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
-
                                       for(iData in seq_along(data)) {
                                           varName <- dataNames[iData]
                                           varValue <- data[[varName]]
+                                          determ <- .self$isDeterm(varName)
+                                          if(any(.self$isDeterm(expandNodeNames(varName, returnScalarComponents = TRUE)) & !is.na(varValue)))
+                                              stop("setData: '", varName, "' contains deterministic nodes. Only stochastic nodes can be specified as 'data'.") 
                                           if(is.data.frame(varValue)) {
                                               if(!all(sapply(varValue, is.numeric)))
                                                   stop("setData: '", varName, "' must be numeric")
@@ -621,7 +623,7 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## it is possible that the constants don't exist on LHS of BUGS decls
                                               ## and so are not variables in the model.  In that case we don't want to issue the warning.
                                               if(warnAboutMissingNames
-                                                 & nimble::nimbleOptions("verbose")) {
+                                                 && nimble::nimbleOptions("verbose")) {
                                                   if(varName == '') {
                                                       warning('setData: unnamed element provided to setData.')
                                                   } else 
