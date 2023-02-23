@@ -1215,10 +1215,19 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                       }
 
                                   },
-                                  initializeInfo = function() {
+                                  initializeInfo = function(stochasticLogProbs = FALSE) {
                                     '
 Provides more detailed information on which model nodes are not initialized.
+
+Arguments:
+
+stochasticLogProbs: Boolean argument. If TRUE, the log-density value associated with each stochastic model variable is calculated and printed.
 '
+                                    if(stochasticLogProbs) {
+                                        stochVars <- unique(nimble:::removeIndexing(.self$getNodeNames(stochOnly = TRUE)))
+                                        for(v in stochVars)   cat(paste0(v, ': ', .self$calculate(v), '\n'))
+                                        return(invisible(NULL))
+                                    }
                                     varsWithNAs <- NULL
                                     for(v in .self$getVarNames()){
                                       if(!nimble:::isValid(.self[[v]])){
