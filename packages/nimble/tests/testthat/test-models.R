@@ -341,7 +341,7 @@ test_that("test of distinguishing lumped data and constants:", {
         beta ~ dnorm(0, 1)
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, 5)))
-    expect_equal(m$isData('x'), c(TRUE, TRUE), info = "'x' not set as data in fourth test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' not set as data in fourth test")
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in fourth test")
     expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in fourth test")
 
@@ -421,7 +421,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x' appears incorrectly in nodes in second test")
 
     code <- nimbleCode({
@@ -432,7 +432,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
     expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
 
@@ -444,7 +444,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
     expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
 
