@@ -136,7 +136,19 @@ test_that("deterministic nodes produce error", {
                 z[6] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), data = list(z = rnorm(6), y = rnorm(1))),
-        "Only stochastic nodes can be specified as 'data'."
+        "Deterministic nodes cannot be specified"
+    )
+
+    expect_error(
+        model <- nimbleModel(
+            nimbleCode({
+                for(i in 1:5) {
+                    z[i] <- mu[i]
+                }
+                z[6] ~ dnorm(0, 1)
+                y ~ dnorm(0, 1)
+            }), constants = list(z = rnorm(6))),
+        "Deterministic nodes cannot be specified"
     )
 
     expect_error(
@@ -146,7 +158,7 @@ test_that("deterministic nodes produce error", {
                 z[3] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), data = list(z = rnorm(3), y = rnorm(1))),
-        "Only stochastic nodes can be specified as 'data'."
+        "Deterministic nodes cannot be specified"
     )
 
     expect_message(
@@ -158,7 +170,7 @@ test_that("deterministic nodes produce error", {
             }), data = list(z = c(rep(NA, 2), rnorm(1)), y = rnorm(1))),
         "Checking model sizes"
     )
-
+    
     expect_message(
         model <- nimbleModel(
             nimbleCode({
@@ -168,10 +180,23 @@ test_that("deterministic nodes produce error", {
                 z[6] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), data = list(z = c(rep(NA, 5), rnorm(1)), y = rnorm(1))),
-        "Checking model sizes"
+        "Checking model sizes"        
     )
 })
 
+test_that("RHSonly nodes not flagged as data", {
+    model <- nimbleModel(
+        nimbleCode({
+            y ~ dnorm(mu, 1)
+        }), data = list(y = 1, mu = 2))
+    expect_false(model$isData('mu'))
+
+    model <- nimbleModel(
+        nimbleCode({
+            y ~ dnorm(mu, 1)
+        }), data = list(y = 1), constants = list(mu = 2))
+    expect_length(model$isData('mu'), 0)
+})
 
 test_that("data frame as matrix processed correctly", {
     model <- nimbleModel(

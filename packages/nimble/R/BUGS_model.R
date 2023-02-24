@@ -279,10 +279,14 @@ nodes: A character vector specifying one or more node or variable names.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
 '
-                                  !isStoch(nodes)
+                                  nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                  type <- getNodeType(nodeNames)
+                                  out <- type == "determ"
+                                  names(out) <- nodeNames
+                                  return(out)
                                 },
 
-                                  isTruncated = function(nodes) {
+                                isTruncated = function(nodes) {
                                                                       '
 Determines whether one or more nodes are truncated
 
@@ -312,7 +316,7 @@ Details: The return value is a character vector with an element for each node in
 
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       dists <- getDistribution(nodeNames)
-				  dims <- sapply(dists, getDimension)
+			   	      dims <- sapply(dists, getDimension)
                                       out <- dims == 1
                                       names(out) <- nodeNames
                                       return(out)
@@ -609,9 +613,6 @@ Details: If a provided value (or the current value in the model when only a name
                                       for(iData in seq_along(data)) {
                                           varName <- dataNames[iData]
                                           varValue <- data[[varName]]
-                                          determ <- .self$isDeterm(varName)
-                                          if(any(.self$isDeterm(expandNodeNames(varName, returnScalarComponents = TRUE)) & !is.na(varValue)))
-                                              stop("setData: '", varName, "' contains deterministic nodes. Only stochastic nodes can be specified as 'data'.") 
                                           if(is.data.frame(varValue)) {
                                               if(!all(sapply(varValue, is.numeric)))
                                                   stop("setData: '", varName, "' must be numeric")
@@ -637,13 +638,17 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## as a cleanup step.
                                               data[[varName]] <- NULL
                                               next
-                                          }
+                                          } 
+                                          if(any(.self$isDeterm(expandNodeNames(varName, returnScalarComponents = TRUE)) & !is.na(varValue)))
+                                              stop("setData: '", varName, "' contains deterministic nodes. Deterministic nodes cannot be specified as 'data' or 'constants'.")
                                           if(length(isDataVars[[varName]]))
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
                                           if(length(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           .self[[varName]] <- varValue
-                                          isDataVarValue <- !is.na(varValue)
+                                          ## Values set as NA are not flagged as data nor are RHSonly elements.
+                                          isDataVarValue <- !is.na(varValue) & .self$isStoch(expandNodeNames(varName, returnScalarComponents = TRUE))
+                                          names(isDataVarValue) <- NULL
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
                                    ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
