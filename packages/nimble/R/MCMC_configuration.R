@@ -847,8 +847,8 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                 cat(paste0(info, "\n"))
             }
             if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
-                message('\n  [Note] Samplers have a modified order of execution.')
-                message('  [Note] To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
+                messageIfVerbose('\n  [Note] Samplers have a modified order of execution.')
+                messageIfVerbose('  [Note] To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
             }
             return(invisible(NULL))
         },
@@ -956,7 +956,7 @@ Returns a list object, containing the setup function, run function, and addition
 '
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 1) {
-                message('More than one sampler specified, only returning the first')
+                messageIfVerbose('  [Note] More than one sampler specified, only returning the first.')
                 ind <- ind[1]
             }
             if((ind <= 0) || (ind > length(samplerConfs))) stop('Invalid sampler specified')
@@ -1009,7 +1009,7 @@ Details: See the initialize() function
             '
             
             if(isMvSamplesReady(ind)){
-            	message('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
+            	messageIfVerbose('   [Note] Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
             	if(ind == 1)
                     mvSamples1Conf <<- NULL
             	if(ind == 2)
@@ -1214,7 +1214,7 @@ Details: See the initialize() function
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
                 sTag <- if(numUnsampled > 1) 's' else ''
-                message(paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag))
+                messageIfVerbose('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag, '.')
             }
         },
 
@@ -1225,7 +1225,7 @@ Details: See the initialize() function
                 (getNimbleOption('MCMCwarnUnsampledStochasticNodes') && length(unsampledNodes))
             if(anyComments) {
                 cat('===== Comments =====\n')
-                if(length(postPredSamplerDownstreamNodes))   message('  [Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler')
+                if(length(postPredSamplerDownstreamNodes))   message('  [Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler.')
                 if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
             }
         },
