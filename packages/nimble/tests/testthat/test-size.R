@@ -123,11 +123,10 @@ testsMultivarParam <- list(
     # with p as constant ERRORS in compileNimble(); not caught in size check, but replaceConstantsRecurse warning regarding dimensionality is given
     # this now has error that dcat is getting prob = model$p[1] so sum of probs is not 1; this error makes sense given sizes problem.
     
-    list(name = 'mv param stochastic, scalar param', expectPass = FALSE,
+    list(name = 'mv param stochastic, scalar param', expectPass = TRUE, expectPassWithConst = FALSE,
          expr = quote({y ~ dcat(p[1])}), 
          inits = list(p = 1) ),
-    
-    list(name = 'mv param stochastic, scalar param, no indices', expectPass = FALSE,
+    list(name = 'mv param stochastic, scalar param, no indices', expectPass = TRUE,
          expr = quote({y ~ dcat(p)}), 
          inits = list(p = 1) ),
     list(name = 'mv param stochastic, parameter expression', expectPass = FALSE,

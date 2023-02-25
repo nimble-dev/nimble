@@ -1156,8 +1156,13 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       stop("Dimension of '", LHSvar, "' does not match required dimension for the distribution '", dist, "'. Necessary dimension is ", distDims['value'], ".", ifelse(distDims['value'] > 0, paste0(" You may need to include explicit indexing information, e.g., variable_name", ifelse(distDims['value'] < 2, "[1:2].", "[1:2,1:2].")), ''))
                                                   nms2 <- nms[nms%in%names(declInfo$valueExprReplaced)]
                                                   for(k in seq_along(nms2)) {
-                                                      if(!is.numeric(declInfo$valueExprReplaced[[nms2[k]]]) && !(dist == 'dinterval' && nms2[k] == 'c') && ( length(declInfo$valueExprReplaced[[nms2[k]]]) ==1 || nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[1]], warn = TRUE) == '[' )) {  # can only check variables not expressions or constants
-                                                          # also dinterval can take 'c' param as scalar or vector, so don't check
+                                                      if(!is.numeric(declInfo$valueExprReplaced[[nms2[k]]]) &&
+                                                         !(dist == 'dinterval' && nms2[k] == 'c') &&
+                                                         !(dist == 'dcat' && nms2[k] == 'prob') &&
+                                                         ( length(declInfo$valueExprReplaced[[nms2[k]]]) ==1
+                                                             || nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[1]], warn = TRUE) == '[' )) {  # can only check variables not expressions or constants
+                                                          ## also dinterval can take 'c' param as scalar or vector
+                                                          ## and dcat same for 'prob', so don't check
                                                           if(length(declInfo$valueExprReplaced[[nms2[k]]]) > 1) {
                                                               var <- nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[2]], warn = TRUE)
                                                           } else var <- nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]], warn = TRUE)
@@ -1171,6 +1176,12 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   dims <- sapply(sizes, length)
                                                   toCheck <- names(dims[!is.na(sizes) & sapply(sizes, function(x) !is.null(x))])
                                                   if(dist == 'dinterval') toCheck <- toCheck[toCheck != 'c']
+                                                  if(dist == 'dcat') {  # either scalar or vector is allowed (NCT issue 1251)
+                                                      wh <- which(toCheck == 'prob')
+                                                      if(dims[wh] > 1) 
+                                                          stop("Dimension of distribution argument 'prob' does not match required dimension for the distribution 'dcat'. Necessary dimension is one (zero is also allowed).")
+                                                      toCheck <- toCheck[toCheck != 'prob']
+                                                  }
                                         # check dimensions based on empirical size of variables
                                                   if(!identical(dims[toCheck], distDims[toCheck])) {
                                                       mismatches <- which(dims[toCheck] != distDims[toCheck])
