@@ -1161,6 +1161,12 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     if(sum(rcfUnits) > 0) {
         whichUnits <- which(rcfUnits)
         for(i in whichUnits) {
+            if(isTRUE(nimbleOptions("enableDerivs"))) {
+              if(!is.null(environment(units[[i]])$nfMethodRCobject$buildDerivs))
+                stop(paste0("A nimbleFunction without setup code and with buildDerivs=TRUE can't be included\n",
+                            "directly in a call to compileNimble.  It can be called by another nimbleFunction and,\n",
+                            "in that case, will be automatically compiled."))
+            }
             ans[[i]] <- project$compileRCfun(units[[i]], control = control, showCompilerOutput = showCompilerOutput)
             if(names(units)[i] != '') names(ans)[i] <- names(units)[i]
         }

@@ -324,7 +324,7 @@ nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCal
         calcNodeVars <- unique(.Call(parseVar, nodes))
                                         # determine any stochastic nodes and include their logProb nodes
         anyStoch_calcNodeVars <- unlist(lapply(calcNodeVars, function(x) model$getVarInfo(x)$anyStoch))
-        logProbVars <- makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
+        logProbVars <- if(sum(anyStoch_calcNodeVars)) makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] ) else character()
         varsToRestore <- c(union(wrtVars, calcNodeVars), logProbVars)
         savedVars <- new.env()
     } else {
@@ -436,7 +436,7 @@ nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFx
         calcNodeVars <- unique(.Call(parseVar, nodes))
                                         # determine any stochastic nodes and include their logProb nodes
         anyStoch_calcNodeVars <- unlist(lapply(calcNodeVars, function(x) model$getVarInfo(x)$anyStoch))
-        logProbVars <- makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] )
+        logProbVars <- if(sum(anyStoch_calcNodeVars)) makeLogProbName( calcNodeVars[anyStoch_calcNodeVars] ) else character()
         varsToRestore <- c(union(wrtVars, calcNodeVars), logProbVars)
         savedVars <- new.env()
     } else {

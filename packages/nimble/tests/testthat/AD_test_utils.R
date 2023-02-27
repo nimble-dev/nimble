@@ -1580,12 +1580,12 @@ make_distribution_fun_AD_test <- function(distn_param, maker = make_AD_test) {
 #############################
 
 ## arg_size comes from arg$size where arg is a symbolBasic object
-gen_pos_def_matrix <- function(arg_size) {
+gen_pos_def_matrix <- function(arg_size, rfun = runif) {
   m <- arg_size[1] ## assumes matrix argType is square
   if(length(arg_size) == 1) # single length defined as arg_size = m^2
     m <- sqrt(m)
   mat <- diag(m)
-  mat[lower.tri(mat, diag = TRUE)] <- runif(m*(m + 1)/2)
+  mat[lower.tri(mat, diag = TRUE)] <- rfun(m*(m + 1)/2)
   mat %*% t(mat)
 }
 

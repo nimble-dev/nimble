@@ -581,7 +581,7 @@ distn_params[['mvt_chol_base']]$wrt <- c('mu', 'cholesky', 'x')
 #######################
 
 ## The make_AD_test2 machinery is buggy for matrix arguments, so
-## this will be a one-off test in test-ADfunctions.
+## there is now a one-off test in test-ADfunctions.
 ## distn_params[['wish_chol_base']] <- chol_base
 ## distn_params[['wish_chol_base']]$name <- 'wish_chol'
 ## distn_params[['wish_chol_base']]$args[['rand_variate']] <- list(

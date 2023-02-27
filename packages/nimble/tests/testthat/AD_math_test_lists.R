@@ -459,7 +459,7 @@ squareMatrixOpTests2 <- c(squareMatrixOpTests2a, squareMatrixOpTests2b)
 
 # modify_on_match after c() would fail because only the first of redundant names would get handled
 
-ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
+# ADtestEnv$RCrelTol <- c(1e-12, 1e-4, 1e-2)
 
 ##lapply(squareMatrixOpTests2, test_AD2)
 ##debug(test_AD2)

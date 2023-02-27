@@ -2166,6 +2166,11 @@ nimDerivsInfoClass <- setRefClass(
                               thisModel = NULL,
                               case = "nimDerivsCalculate",
                               ...) {
+          if(!isTRUE(thisModel$modelDef$buildDerivs)) {
+            stop(paste0("To use automatic differentiation involving model calculations,\n",
+                        "include 'buildDerivs=TRUE' in the call to 'nimbleModel' or set\n",
+                        "'nimbleOptions(buildModelDerivs = TRUE)' before calling 'nimbleModel'."), call. = FALSE)
+          }
           switch(case,
                  nimDerivsCalculate = nimDerivsInfoClass_init_impl(.self = .self,
                                                                    wrtNodes = wrtNodes,
