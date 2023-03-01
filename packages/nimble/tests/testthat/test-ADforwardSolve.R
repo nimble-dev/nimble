@@ -140,3 +140,6 @@ testArgs <- makeArgs(n1-1, n1, n1-1, n2, 1.4)
 
 checkCase(forwardsolveTest, Aconst, Bconst, c(2, 1), c(n1, n1), c(2, 1), c(n1, n2),
           recordArgs = recordArgs, testArgs = testArgs)
+
+nimbleOptions(enableDerivs = EDopt)
+nimbleOptions(buildModelDerivs = BMDopt)

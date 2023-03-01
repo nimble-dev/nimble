@@ -397,6 +397,7 @@ test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_known
 test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(powOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(powOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+
 test_AD_batch(pow_int_OpTests2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(pow_int_OpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(pow_int_OpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
@@ -416,46 +417,7 @@ test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures, verbose = F
 test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
 
 ## from AD_distribution_test_lists.R
-test_AD_batch(distn_tests,  knownFailures = AD_knownFailures, verbose = FALSE) ## dcat are knownFailures.  
-
-test_AD_batch(distn_tests[9], verbose = FALSE)#,  knownFailures = AD_knownFailures) ## dcat are knownFailures.  
-test_AD_batch(distn_tests[13:14],  knownFailures = AD_knownFailures, verbose = FALSE) ## dmulti fails, perhaps in regular compilation too?
-## test_AD_batch(distn_tests[15:148],  knownFailures = AD_knownFailures) ## dmulti fails, perhaps in regular compilation too?
-## test_AD_batch(distn_tests[39:64]) ## ddexp was in knownFailures.  Now it's ok.
-## test_AD_batch(distn_tests[65:148]) ## There is a problem in sqrtinvgamma with scale, vectorized
-## test_AD_batch(distn_tests[85:148]) ## There is a problem in dt with vector x
-## test_AD_batch(distn_tests[113:148])  ## There is a problem in dt_nonstandard with vector x
-## test_AD_batch(distn_tests[129:148]) ## ddirch fails
-## test_AD_batch(distn_tests[146]) 
-## test_AD_batch(distn_tests[147]) 
-## test_AD_batch(distn_tests[148]) ## dwish fails
-
-
 resetTols()
-## iTests <- which(grepl("^binom_base", names(distn_tests2)))
-## # cat breaks
-## iTests <- which(grepl("^multi_no_size", names(distn_tests2)))
-## iTests <- which(grepl("^multi_with_size", names(distn_tests2)))
-## iTests <- which(grepl("^nbinom_base", names(distn_tests2)))
-## iTests <- which(grepl("^pois_base", names(distn_tests2)))
-## iTests <- which(grepl("^beta_base", names(distn_tests2)))
-## iTests <- which(grepl("^chisq_base", names(distn_tests2)))
-## iTests <- which(grepl("^dexp", names(distn_tests2)))
-## iTests <- which(grepl("^exp", names(distn_tests2)))
-## iTests <- which(grepl("^gamma", names(distn_tests2)))
-## iTests <- which(grepl("^invgamma", names(distn_tests2)))
-## iTests <- which(grepl("^sqrtinvgamma", names(distn_tests2)))
-## iTests <- which(grepl("^lnorm", names(distn_tests2)))
-## iTests <- which(grepl("^logis", names(distn_tests2)))
-## iTests <- which(grepl("^norm", names(distn_tests2)))
-## iTests <- which(grepl("^t_", names(distn_tests2)))
-## iTests <- which(grepl("^unif", names(distn_tests2)))
-## iTests <- which(grepl("^weibull", names(distn_tests2)))
-## # Dirichlet has a separate test above
-## iTests <- which(grepl("^mnorm", names(distn_tests2)))
-## iTests <- which(grepl("^mvt", names(distn_tests2))) # has tolerance problems for 5 numbers 35x35 Hessian
-## # Wishart has a separate test above.
-
 testResults <- lapply(distn_tests2[1:140], test_AD2)
 testResults <- lapply(distn_with_log_tests2[1:140], test_AD2)
 
