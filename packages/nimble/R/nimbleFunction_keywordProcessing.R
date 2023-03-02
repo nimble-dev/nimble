@@ -1983,11 +1983,11 @@ nimDerivsInfoClass_init_impl <- function(.self
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
-    # See comment in makeDerivsInfo for explanation of why both of the next
+    # See comment in makeModelDerivsInfo for explanation of why both of the next
     # two lines are necessary.
     calcNodes <- model$expandNodeNames(calcNodes)
     calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
-    derivsInfo <- makeDerivsInfo_impl(model,
+    derivsInfo <- makeModelDerivsInfo_impl(model,
                                       wrtNodes,
                                       calcNodes,
                                       dataAsConstantNodes = TRUE)
@@ -2060,7 +2060,7 @@ nimDerivsInfoClass_output_init_impl <- function(.self,
 }
 
 #' @export
-makeDerivsInfo <- function(model,
+makeModelDerivsInfo <- function(model,
                            wrtNodes,
                            calcNodes,
                            dataAsConstantNodes = TRUE) {
@@ -2071,7 +2071,7 @@ makeDerivsInfo <- function(model,
   # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
   # the above call gets `mu[1:3]` and then the below call splits it.
   calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE) 
-  makeDerivsInfo_impl(model,
+  makeModelDerivsInfo_impl(model,
                       wrtNodes,
                       calcNodes,
                       dataAsConstantNodes)
@@ -2091,7 +2091,7 @@ getImmediateParentNodes <- function(nodes, model) {
   fromNodes
 }
 
-makeDerivsInfo_impl <- function(model,
+makeModelDerivsInfo_impl <- function(model,
                                 wrtNodes,
                                  calcNodes,
                                 dataAsConstantNodes = TRUE) {

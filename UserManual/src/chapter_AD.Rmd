@@ -481,7 +481,7 @@ Here is a nimbleFunction to do that.
 ```{r eval=eval}
 derivs_nf2 <- nimbleFunction(
   setup = function(model, wrt_nodes, calc_nodes) {
-    derivsInfo <- makeDerivsInfo(model, wrt_nodes, calc_nodes)
+    derivsInfo <- makeModelDerivsInfo(model, wrt_nodes, calc_nodes)
     updateNodes <- derivsInfo$updateNodes
     constantNodes <- derivsInfo$constantNodes
     n_wrt <- length(wrt_nodes) 
@@ -529,9 +529,9 @@ There are several important new points here:
 
 - The only valid way to get values into the model that will be recorded on the AD tape is with `values(model, nodes) <<- some_values` as shown.  Other ways such as `nimCopy` or `model[[node]] <<- some_value` are not currently supported to work with AD.
 
-- The call to `nimDerivs` of `run`  must be told some information about the model calculations that will be done inside of `run`. `model` is of course the model that will be used.  `constantNodes` is a vector of node names whose values are needed for the calculations but are not expected to change until you use `reset = TRUE`.  Values of these nodes will be baked into the AD tape until `reset = TRUE`.  `updateNodes` is a vector of node names whose values are needed for the calculations, might change between calls even with `reset = FALSE`, and are neither part of `wrt_nodes` nor a deterministic part of `calc_nodes`.  The function `makeDerivsInfo`, as shown in the `setup` code, determines what is usually needed for `constantNodes` and `updateNodes`.
+- The call to `nimDerivs` of `run`  must be told some information about the model calculations that will be done inside of `run`. `model` is of course the model that will be used.  `constantNodes` is a vector of node names whose values are needed for the calculations but are not expected to change until you use `reset = TRUE`.  Values of these nodes will be baked into the AD tape until `reset = TRUE`.  `updateNodes` is a vector of node names whose values are needed for the calculations, might change between calls even with `reset = FALSE`, and are neither part of `wrt_nodes` nor a deterministic part of `calc_nodes`.  The function `makeModelDerivsInfo`, as shown in the `setup` code, determines what is usually needed for `constantNodes` and `updateNodes`.
 
-- In Method 1 above, the NIMBLE compiler automatically determines `constantNodes` and `updateNodes` using `makeDerivsInfo` based on the inputs to `nimDerivs(model$calculate(...),...)`.
+- In Method 1 above, the NIMBLE compiler automatically determines `constantNodes` and `updateNodes` using `makeModelDerivsInfo` based on the inputs to `nimDerivs(model$calculate(...),...)`.
 
 - One can use double-taping, but if so *both* calls to `nimDerivs` need the `model`, `updateNodes`, and `constantNodes` arguments, which should normally be identical.
 
@@ -541,7 +541,7 @@ It is possible to build derivative support in a user-defined function or distrib
 
 #### Advanced topic: more about `constantNodes` and `updateNodes`.
 
-In most cases, you can obtain `constantNodes` and `updateNodes` from `makeDerivsInfo` without knowing exactly what they mean.  But for advanced uses and possible debugging needs, let's explore these arguments in more detail.  The purpose of `constantNodes` and `updateNodes` is to tell the AD system about all nodes that will be needed for taped model calculations.  Specifically:
+In most cases, you can obtain `constantNodes` and `updateNodes` from `makeModelDerivsInfo` without knowing exactly what they mean.  But for advanced uses and possible debugging needs, let's explore these arguments in more detail.  The purpose of `constantNodes` and `updateNodes` is to tell the AD system about all nodes that will be needed for taped model calculations.  Specifically:
 
 - `updateNodes` and `constantNodes` are vectors of nodes names that together comprise any nodes that are necessary for `model$calculate(calc_nodes)` but are:
     - not in the `wrt` argument to `nimDerivs` (only relevant for Method 1), and
@@ -560,7 +560,7 @@ In this case, the log probability of `ran_eff[1]` itself requires `sigma`.  Sinc
 Next, notice that the stochastic node `y[1, 1]` in `calc_nodes` means that the log probability of `y[1, 1]` will be calculated, and this requires the actual value of `y[1, 1]`.  This node is part of `calc_nodes` but is not a deterministic part of it, so it must be provided in either `updateNodes` or `constantNodes`.  When data values will not be changed often, it is better to put those nodes in `constantNodes`, because that will be more efficient than putting them in `updateNodes`.  (If the data values are changed, use `reset=TRUE`, which will reset values of all `constantNodes` in the tape.)
 
 
-The function `makeDerivsInfo` inspects the model and determines the usual needs for `updateNodes` and `constantNodes`.  By default, data nodes are put in `constantNodes`.  Use `dataAsConstantNodes = FALSE` in `makeDerivsInfo` if you want them put in `updateNodes`.
+The function `makeModelDerivsInfo` inspects the model and determines the usual needs for `updateNodes` and `constantNodes`.  By default, data nodes are put in `constantNodes`.  Use `dataAsConstantNodes = FALSE` in `makeModelDerivsInfo` if you want them put in `updateNodes`.
 
 Note that a deterministic node in `calc_nodes` will have its value calculated as part of the operations recorded in the AD tape, so it does not need to be included in `updateNodes` or `constantNodes`.
 
@@ -570,7 +570,7 @@ As usual in model-generic programming in NIMBLE, be aware of lifted nodes and th
   # <other lines>
     ran_eff[i] ~ dnorm(0, tau = precision)
 ```
-This would result in a lifted node for the standard deviation, calculated as `1/sqrt(precision)`.  That lifted node is what would actually be used in `dnorm` for each `ran_eff[i]`.  Now if `ran_eff[1]` is in `wrt_nodes`, the *lifted node* (but *not* `precision`) will be in `updateNodes` (as determined by `makeDerivsInfo`).  If you then change the value of `precision`, you must be sure to calculate the lifted node before obtaining derivatives.  Otherwise the value of the lifted node will correspond to the old value of precision.
+This would result in a lifted node for the standard deviation, calculated as `1/sqrt(precision)`.  That lifted node is what would actually be used in `dnorm` for each `ran_eff[i]`.  Now if `ran_eff[1]` is in `wrt_nodes`, the *lifted node* (but *not* `precision`) will be in `updateNodes` (as determined by `makeModelDerivsInfo`).  If you then change the value of `precision`, you must be sure to calculate the lifted node before obtaining derivatives.  Otherwise the value of the lifted node will correspond to the old value of precision.
 
 An example of model-generic programming to update any lifted nodes that depend on `precision` would be:
 
@@ -578,7 +578,7 @@ An example of model-generic programming to update any lifted nodes that depend o
 model$calculate(model$getDependencies('precision', determOnly=TRUE))
 ```
 
-In Method 1 above, NIMBLE automatically uses `makeDerivsInfo` based on the code `nimDerivs(model$calculate(<args>), <args>)`.  However, in Method 2, when `model$calculate(<args>)` is used in a method such as `run`, then a call to `nimDerivs(run(<args>), <args>)` requires the `model`, `updateNodes` and `constantNodes` to be provided.  In this sense, the two functions (`run` and `derivsRun`) must be written in coordination.
+In Method 1 above, NIMBLE automatically uses `makeModelDerivsInfo` based on the code `nimDerivs(model$calculate(<args>), <args>)`.  However, in Method 2, when `model$calculate(<args>)` is used in a method such as `run`, then a call to `nimDerivs(run(<args>), <args>)` requires the `model`, `updateNodes` and `constantNodes` to be provided.  In this sense, the two functions (`run` and `derivsRun`) must be written in coordination.
 
 
 <!-- In the "more advanced use" example above, `derivsRun` is just a function with some input and output.  Can we take its derivative, even thought it contains derivative calculations itself?  The answer, with minor modification, is yes.  Here is an example. -->
@@ -731,7 +731,7 @@ logLikelihood_nf <- nimbleFunction(
     # Determine nodes for calculating the log likelihood for parameters given by paramNodes
     calcNodes <- model$getDependencies(paramNodes, self = FALSE)
     # Set up the additional arguments for nimDerivs when the function called includes model$calculate
-    derivsInfo <- makeDerivsInfo(model, paramNodes, calcNodes)
+    derivsInfo <- makeModelDerivsInfo(model, paramNodes, calcNodes)
     updateNodes <- derivsInfo$updateNodes
     constantNodes <- derivsInfo$constantNodes
     # Create a parameter transformation between original and unconstrained parameter spaces.

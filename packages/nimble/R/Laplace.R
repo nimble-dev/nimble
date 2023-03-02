@@ -85,10 +85,10 @@ nimOneLaplace1D <- nimbleFunction(
     }
     
     ## Update and constant nodes for obtaining derivatives using AD
-    inner_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
     
@@ -560,10 +560,10 @@ nimOneLaplace <- nimbleFunction(
       optStart <- optimStart
     }
     ## Update and constant nodes info for obtaining derivatives using AD
-    inner_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- nimble:::makeDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
     

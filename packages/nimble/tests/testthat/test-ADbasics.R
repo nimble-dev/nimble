@@ -271,7 +271,7 @@ test_that('AD works with model$calulate in a method', {
   
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
-      infoNodes <- makeDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
+      infoNodes <- makeModelDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
       updateNodes <- infoNodes$updateNodes
       # ignore constant nodes as both are empty anyway
     },
@@ -356,7 +356,7 @@ test_that('AD works with a model compiled in one call', {
   
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
-      infoNodes <- makeDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
+      infoNodes <- makeModelDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
       updateNodes <- infoNodes$updateNodes
       # ignore constant nodes as both are empty anyway
     },
@@ -429,7 +429,7 @@ test_that('AD works with a model calling a custom dist and custom fun', {
   
   adfun <- nimbleFunction(
     setup = function(model, wrt, calc) {
-      infoNodes <- makeDerivsInfo(model, wrtNodes = wrt, calcNodes = calc)
+      infoNodes <- makeModelDerivsInfo(model, wrtNodes = wrt, calcNodes = calc)
       updateNodes <- infoNodes$updateNodes
       constantNodes <- infoNodes$constantNodes
     },
@@ -555,7 +555,7 @@ test_that('AD works with a model with do_update', {
 
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
-      infoNodes <- makeDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
+      infoNodes <- makeModelDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
       updateNodes <- infoNodes$updateNodes
       # constantNodes should be empty
     },
@@ -620,7 +620,7 @@ test_that('AD works with a model with do_update', {
 
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
-      infoNodes <- makeDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
+      infoNodes <- makeModelDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
       updateNodes <- infoNodes$updateNodes
       # constantNodes should be empty
     },
@@ -687,7 +687,7 @@ test_that('AD works with a model with do_update in double-taping', {
 
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
-      infoNodes <- makeDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
+      infoNodes <- makeModelDerivsInfo(model, wrtNodes = nodes, calcNodes = nodes)
       updateNodes <- infoNodes$updateNodes
       # constantNodes should be empty
     },
