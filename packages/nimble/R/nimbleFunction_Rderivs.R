@@ -11,8 +11,8 @@ nimDerivs_dummy <- nimbleFunction(
 
 #' Nimble Derivatives
 #' 
-#' EXPERIMENTAL Computes the value, Jacobian, and Hessian of a given  
-#' \code{nimbleFunction} method.  
+#' Computes the value, 1st order (Jacobian), and 2nd order (Hessian) derivatives of a given
+#' \code{nimbleFunction} method and/or model log probabilities
 #' 
 #' @param call a call to a \code{nimbleFunction} method with arguments
 #' included.  Can also be a call to  \code{model$calculate(nodes)}, or to 
@@ -26,12 +26,12 @@ nimDerivs_dummy <- nimbleFunction(
 #' corresponding to whether the function value, Jacobian, and Hessian should be
 #'  returned respectively.  Defaults to \code{c(0, 1, 2)}.
 #' @param model (optional) for derivatives of a nimbleFunction that involves model.
-#' @param ... additional arguments intended for internal use only.
-#' 
 #' calculations, the uncompiled model that is used. This is needed in order
 #' to be able to correctly restore values into the model when \code{order} does not
 #' include 0 (or in all cases when double-taping).
-#' @details Derivatives for uncompiled nimbleFunctions are calculated using the
+#' @param ... additional arguments intended for internal use only.
+#'
+#'@details Derivatives for uncompiled nimbleFunctions are calculated using the
 #' \code{numDeriv} package.  If this package is not installed, an error will
 #' be issued.  Derivatives for matrix valued arguments will be returned in 
 #' column-major order.

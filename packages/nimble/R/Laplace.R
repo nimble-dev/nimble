@@ -1195,7 +1195,8 @@ buildLaplace <- nimbleFunction(
     }
     else {## Split randomEffectsNodes into sets
       if(isTRUE(split)){
-        givenNodes <- setdiff(c(paramNodes, calcNodes), randomEffectsNodes)
+        givenNodes <- setdiff(c(paramNodes, calcNodes),
+                              c(randomEffectsNodes, model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
         reSets <- model$getConditionallyIndependentSets(nodes = randomEffectsNodes, givenNodes = givenNodes)
       }
       else if(is.numeric(split)){
@@ -1239,6 +1240,10 @@ buildLaplace <- nimbleFunction(
     else reTransform_indices <- c(1, -1)
     reNodesAsScalars <- model$expandNodeNames(internalRandomEffectsNodes, returnScalarComponents = TRUE)
     paramNodesAsScalars <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
+    paramNodesAsScalars_vec <- paramNodesAsScalars
+    if(length(paramNodesAsScalars)==1)
+      paramNodesAsScalars_vec <- c(paramNodesAsScalars, "_EXTRA_")
+    paramNodesAsScalars_first <- paramNodesAsScalars[1]
     setupOutputs(reNodesAsScalars, paramNodesAsScalars)
     npar <- length(paramNodesAsScalars)
     ## Automated transformation for parameters
@@ -1262,6 +1267,14 @@ buildLaplace <- nimbleFunction(
   },## End of setup
   run = function(){},
   methods = list(
+    get_paramNodes_names_vec = function() {
+      returnType(character(1))
+      return(paramNodesAsScalars_vec)
+    },
+    get_paramNodes_names_single = function() {
+      returnType(character())
+      return(paramNodesAsScalars_first)
+    },
     set_method = function(method = integer()) {
       if(!any(c(1, 2, 3) == method)) stop("Choose a valid method ID from 1, 2, and 3")
       methodID <<- method

@@ -886,6 +886,7 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       constantNodesProvided <- is.name(code[['constantNodes']])
       if(!constantNodesProvided)
         if(is.character(code[['constantNodes']]))
+
           constantNodesProvided <- !is.na(code[['constantNodes']][1])
       if(xor(modelProvided, updateNodesProvided || constantNodesProvided))
         stop('nimDerivs arguments model and at least one of updateNodes or constantNodes must be provided together or not at all.')
@@ -2059,6 +2060,71 @@ nimDerivsInfoClass_output_init_impl <- function(.self,
   NULL
 }
 
+#' Information on model structure used for derivatives
+#'
+#' Inspect structure of a nimble model to determine nodes needed as "update"
+#' and/or "constant" entries in usage of nimDerivs. This will typically be used
+#' in the setup code of a nimbleFunction.
+#'
+#' @param model a nimble model object, such as returned from \code{nimbleModel}.
+#' @param wrtNodes a character vector of node names in the model with respect to
+#'   which derivatives will be taken through a call to \code{nimDerivs} (same as
+#'   \code{derivs}).
+#' @param calcNodes a character vector of node names in the model that will be
+#'   used in \code{model$calculate(calcNodes)} while derivatives are being
+#'   recorded.
+#' @param dataAsConstantNodes logical indicating whether data nodes in the model
+#'   should automatically be treated as "constant" entries (TRUE) or "update"
+#'   entries (FALSE). Defaults to TRUE.
+#'
+#' @details In the compilable parts of a \code{nimbleFunction} (i.e. \code{run}
+#'   or other method code, not \code{setup} code), a call like
+#'   \code{nimDerivs(foo(x), ...)} records derivatives of \code{foo(x)}. If
+#'   \code{foo} contains any calls to \code{model$calculate(calcNodes)}, it may
+#'   be necessary to provide auxiliary information about the model in further
+#'   arguments to \code{nimDerivs}, specifically the \code{model},
+#'   \code{updateNodes} and \code{constantNodes} arguments.
+#'   `makeModelDerivsInfo` is a utility to set up that information for typical
+#'   use cases. It returns a list with elements \code{updateNodes} and
+#'   \code{constantNodes} to be passed as arguments of the same name to
+#'   \code{nimDerivs} (along with passing the \code{model} as the \code{model}
+#'   argument).
+#'
+#' The reason auxiliary information is needed is that recording of derivatives
+#' uses a different model than for regular calculations. Together,
+#' \code{updateNodes} and \code{constantNodes} should contain all nodes whose
+#' values are needed for the model calculations being recorded and that are not
+#' part of \code{wrtNodes}. These may include parents of nodes that are in
+#' \code{calcNodes} but are not themselves in \code{calcNodes}, as well as the
+#' values of stochastic nodes in \code{calcNodes}, which are needed to calculate
+#' the corresponding log probabilities. \code{updateNodes} will have their
+#' values updated from the regular model every time that recorded derivative
+#' calculations are used. \code{constantNodes} will not be updated every time,
+#' which means their values will be permanently fixed either the first time the
+#' call to `nimDerivs` is invoked or on any subsequent call that has
+#' \code{reset=TRUE}. Use of \code{constantNodes} can be slightly more
+#' efficient, but one must be careful to be aware that values will not be
+#' updated unless \code{reset=TRUE}. See the automatic differentiation section
+#' of the User Manual for more information.
+#'
+#' In the above explanation, care must be taken to understand what should be
+#' included in \code{wrtNodes}. In a typical use case, some arguments to
+#' \code{foo} are put into the model using \code{values(model, nodes) <-
+#' some_foo_arguments}. Next there is typically a call to
+#' \code{model$calculate(calcNodes)}. Here the \code{nodes} are considered
+#' "with-respect-to" nodes because derivative tracking will follow the arguments
+#' of \code{foo}, including when they are put into a model and hence used in
+#' \code{model$calculate}. Therefore these \code{nodes} should be the
+#' \code{wrtNodes} for \code{makeModelDerivsInfo}.
+#'
+#' @return A list with elements \code{updateNodes} and \code{constantNodes}.
+#'   These shouls be provided as the same-named arguments to \code{nimDerivs}
+#'   (same as \code{derivs}).
+#'
+#' When using double-taping of derivatives (i.e. \code{foo} contains another
+#' call to \code{nimDerivs}), both calls to \code{nimDerivs} should include the
+#' \code{model}, \code{updateNodes}, and \code{constantNodes} arguments.
+#'
 #' @export
 makeModelDerivsInfo <- function(model,
                            wrtNodes,
