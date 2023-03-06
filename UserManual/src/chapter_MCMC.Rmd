@@ -512,8 +512,9 @@ Many user questions and problems end up being related to missing or bad initial 
 
  - Run `model$initializeInfo()` to find uninitialized nodes.
  - Run `model$calculate()` to see if the full model log probability density can be calculated (values of `-Inf`, `NA`, `NaN` indicate there are missing or invalid initial values).
- - To debug the specific node(s) whose initial value(s) are causing problems, run `model$calculate(nodes)` on specific `nodes` and look for values of `-Inf`, `NA`, or `NaN`.
- - With a compiled or uncompiled model, you can run the model initialization (but no MCMC iterations) with `mcmc$run(niter = 0)`. Then inspect the model object, e.g., `model$variable`, to see the results of initialization.
+ - To debug the specific node(s) whose initial value(s) are causing problems, run `model$calculate(nodes)` on specific `nodes` to find their log probability density values, looking look for values of `-Inf`, `NA`, or `NaN`.
+ - For the node(s) with invalid log probability density, inspect the values of the node(s) and parameter(s) of the distribution(s) assigned to those node(s). You can inspect values of a variable in the model using natural R syntax, `model$variable_name`.
+ - With a compiled or uncompiled model, you can run the model initialization (but no MCMC iterations) with `mcmc$run(niter = 0)`. Then inspect the values of model variables to see the results of initialization.
 
 
 ## User-friendly execution of MCMC algorithms: *runMCMC* {#sec:runMCMC}
