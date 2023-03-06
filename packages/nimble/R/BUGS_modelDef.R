@@ -136,8 +136,11 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     if(debug) browser()
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
-    if(nimbleOptions("enableModelMacros"))
-      code <- codeProcessModelMacros(code=code, constants=constants, env=userEnv)
+    if(nimbleOptions("enableModelMacros")){
+      macroOutput <- codeProcessModelMacros(code=code, constants=constants, env=userEnv)
+      code <- macroOutput$code
+      constants <- macroOutput$constants
+    }
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
@@ -229,7 +232,7 @@ codeProcessModelMacros <- function(code,
                if(length(labels) > 0)
                    paste0('(expanded from ',
                           paste(labels, collapse = '-->'),
-                          ')')                          
+                          ')')
                else
                    character()
                )
@@ -239,18 +242,22 @@ codeProcessModelMacros <- function(code,
     if(code[[1]] == '{') {
         if(codeLength > 1)
             ## Recurse on each line
-            for(i in 2:codeLength)
-              code[[i]] <- codeProcessModelMacros(code = code[[i]],
+            for(i in 2:codeLength){
+              macroOutput <- codeProcessModelMacros(code = code[[i]],
                                                   constants = constants,
                                                   env = env)
-        return(code)
+              code[[i]] <- macroOutput$code
+              constants <- macroOutput$constants
+            }
+        return(list(code=code, constants=constants))
     }
     ## If this is a for loop, recurse on the body of the loop
     if(code[[1]] == 'for') {
-      code[[4]] <- codeProcessModelMacros(code[[4]],
+      macroOutput <- codeProcessModelMacros(code[[4]],
                                           constants = constants,
                                           env = env)
-        return(code)
+      code[[4]] <- macroOutput$code
+        return(list(code=code, constants=macroOutput$constants))
     }
     ## Check if this line invokes a submodel.
     ## This can be done in two ways:
@@ -301,16 +308,16 @@ codeProcessModelMacros <- function(code,
             ## Return object is a list so we can ossibly extract other
             ## content in the future.  We recurse on the returned code
             ## to expand macros that it might contain.
-            code <- codeProcessModelMacros(expandedInfo$code,
-                                           constants = constants,
+            macroOutput <- codeProcessModelMacros(expandedInfo$code,
+                                           constants = expandedInfo$constants,
                                            env = env,
                                            c(recursionLabels, possibleMacroName)
                                            )
+            return(list(code=macroOutput$code, constants=macroOutput$constants))
         }
     }
-    code
+    list(code=code, constants=constants)
 }
-
 modelDefClass$methods(checkUnusedConstants = function(code, constants) {
     constantsEnv <<- new.env()
     if(length(constants) > 0) {

@@ -20,7 +20,7 @@ test_that('Macro expansion 1',
                 list(LHS = LHS, RHSarg = RHSarg,
                      OP = if(stoch) as.name('~') else as.name('<-'))
             )
-            list(code = ans)
+            list(code = ans, constants=.constants)
         },
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
@@ -31,7 +31,7 @@ test_that('Macro expansion 1',
         nimble:::codeProcessModelMacros(
             quote(x[1] ~ testMacro(y[1]))
         ),
-        quote(x[1] ~ dnorm(y[1], 1))
+        list(code=quote(x[1] ~ dnorm(y[1], 1)), constants=list())
     )
     
     model1 <- nimbleModel(
@@ -86,7 +86,7 @@ test_that('Macro expansion 2',
                 list(LHS = LHS, RHS = RHS,
                      OP = if(stoch) as.name('~') else as.name('<-'))
             )
-            list(code = ans)
+            list(code = ans, constants=.constants)
         },
         use3pieces = TRUE, ## default
         unpackArgs = FALSE  ## NON-default
@@ -98,7 +98,7 @@ test_that('Macro expansion 2',
         nimble:::codeProcessModelMacros(
             quote(x[1] ~ testMacro(y[1]))
         ),
-        quote(x[1] ~ dnorm(step(y[1]), 1))
+        list(code=quote(x[1] ~ dnorm(step(y[1]), 1)), constants=list())
     )
     
     
@@ -130,7 +130,7 @@ test_that('Macro expansion 3',
             list(LHS = LHS, RHS = RHS,
                  OP = if(stoch) as.name('~') else as.name('<-'))
         )
-        list(code = ans)
+        list(code = ans, constants=.constants)
         },
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
@@ -142,7 +142,7 @@ test_that('Macro expansion 3',
         nimble:::codeProcessModelMacros(
             quote(x[1] ~ testMacro(newVar = z, newIndex = 5))
         ),
-        quote(x[1] ~ dnorm(z[5], 1))
+        list(code=quote(x[1] ~ dnorm(z[5], 1)), constants=list())
     )
 
     model <- nimbleModel(
@@ -165,7 +165,7 @@ test_that('Macro expansion 4',
     testMacro <- nimble:::model_macro_builder(
         function(code, .constants, .env) {
             code[[3]][[1]] <- as.name('dnorm')
-            list(code = code)
+            list(code = code, constants=.constants)
         },
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
@@ -177,7 +177,7 @@ test_that('Macro expansion 4',
         nimble:::codeProcessModelMacros(
             quote(x[1] ~ testMacro(y[1], 1))
         ),
-        quote(x[1] ~ dnorm(y[1], 1))
+        list(code=quote(x[1] ~ dnorm(y[1], 1)), constants=list())
     )
     
     model <- nimbleModel(
@@ -200,7 +200,7 @@ test_that('Macro expansion 5',
     testMacro <- nimble:::model_macro_builder(
         function(arg1, arg2, arg3, .constants, .env) {
             code <- substitute(A <- B + C, list(A = arg1, B = arg2, C = arg3))
-            list(code = code)
+            list(code = code, constants=.constants)
         },
         use3pieces = FALSE, ## NON-default
         unpackArgs = TRUE  ## default
@@ -212,7 +212,7 @@ test_that('Macro expansion 5',
         nimble:::codeProcessModelMacros(
             quote(testMacro(x[1], y[2], z[i, j]))
         ),
-        quote(x[1] <- y[2] + z[i, j])
+        list(code=quote(x[1] <- y[2] + z[i, j]), constants=list())
     )
 
     model <- nimbleModel(
@@ -229,13 +229,13 @@ test_that('Macro expansion 5',
 test_that('Macro expansion 6 (recursive macro expansion)',
 {
     testMacroInner <- nimble:::model_macro_builder(
-        function(stoch, LHS, RHSarg, ...) {
+        function(stoch, LHS, RHSarg, .constants, ...) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
                 list(LHS = LHS, RHSarg = RHSarg,
                      OP = if(stoch) as.name('~') else as.name('<-'))
             )
-            list(code = ans)
+            list(code = ans, constants=.constants)
         },
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
@@ -245,9 +245,9 @@ test_that('Macro expansion 6 (recursive macro expansion)',
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
     testMacroOuter <- nimble:::model_macro_builder(
-        function(code, ...) {
+        function(code, .constants, ...) {
             code[[3]][[1]] <- as.name('testMacroInner')
-            list(code = code)
+            list(code = code, constants=.constants)
         },
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
@@ -258,7 +258,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
         nimble:::codeProcessModelMacros(
             quote(x[1] ~ testMacroOuter(y[1]))
         ),
-        quote(x[1] ~ dnorm(y[1], 1))
+        list(code=quote(x[1] ~ dnorm(y[1], 1)), constants=list())
     )
 
 
@@ -297,17 +297,18 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
     testMacroOuter <- nimble:::model_macro_builder(
-        function(code) {
+        function(code, .constants, .env) {
             code[[3]][[1]] <- as.name('testMacroInner')
-            list(code = code)
+            list(code = code, constants=.constants)
         },
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
     )
     temporarilyAssignInGlobalEnv(testMacroOuter)
 
-    cat("\nTwo 'unused argument' error messages known to occur here:\n")
-    
+    cat("\nTwo 'unused argument' error messages known to occur here:\n") 
+    cat("\nNot sure why these are supposed to fail:\n")
+
     expect_error(nimble:::codeProcessModelMacros(
                               quote(x[1] ~ testMacroOuter(y[1], 1))),
                  "Model macro testMacroInner\\(expanded from testMacroOuter\\) failed.")
@@ -425,7 +426,7 @@ test_that('constants and env are accessed correctly, even in recursion',
                      VAR_IN_ENV = var_in_env,
                      CONSTANT_OF_INTEREST = constant_of_interest)
             )
-            list(code = ans)
+            list(code = ans, constants = .constants)
         },
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
@@ -438,7 +439,7 @@ test_that('constants and env are accessed correctly, even in recursion',
   testMacroOuter <- nimble:::model_macro_builder(
         function(code, .constants, .env) {
             code[[3]][[1]] <- as.name('testMacroInner')
-            list(code = code)
+            list(code = code, constants = .constants)
         },
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
@@ -451,7 +452,8 @@ test_that('constants and env are accessed correctly, even in recursion',
                    env = testEnv,
                    constants = list(constant_of_interest = 10)
         ),
-        quote(x[1] ~ dnorm(y[1], 5 + 10))
+        list(code=quote(x[1] ~ dnorm(y[1], 5 + 10)),
+             constants=list(constant_of_interest=10))
     )
 
 
