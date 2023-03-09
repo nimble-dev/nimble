@@ -1190,6 +1190,13 @@ buildLaplace <- nimbleFunction(
         else if(is.numeric(sum(providedStart)) && (length(providedStart) == nre)) innerOptStart <- providedStart
         else innerOptStart <- values(model, randomEffectsNodes)
       }
+      ## In case random effects are not properly initialized
+      if(any(is.infinite(innerOptStart) | is.na(innerOptStart) | is.nan(innerOptStart))){
+        all_reTransform <- parameterTransform(model, randomEffectsNodes)
+        all_reTransform_length <- all_reTransform$getTransformedLength()
+        innerOptStart <- all_reTransform$inverseTransform(rep(0, all_reTransform_length))
+      }
+      ## Build Laplace
       if(nre > 1) laplace_nfl[[1]] <- nimOneLaplace(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
       else laplace_nfl[[1]] <- nimOneLaplace1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
     }
@@ -1227,6 +1234,13 @@ buildLaplace <- nimbleFunction(
           }
           else innerOptStart <- values(model, these_reNodes)
         }
+        ## In case random effects are not properly initialized
+        if(any(is.infinite(innerOptStart) | is.na(innerOptStart) | is.nan(innerOptStart))){
+          these_reTransform <- parameterTransform(model, these_reNodes)
+          these_reTransform_length <- these_reTransform$getTransformedLength()
+          innerOptStart <- these_reTransform$inverseTransform(rep(0, these_reTransform_length))
+        }
+        ## Build Laplace for each set
         if(nre_these > 1){
           laplace_nfl[[i]] <- nimOneLaplace(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
         }
@@ -1375,10 +1389,13 @@ buildLaplace <- nimbleFunction(
     LaplaceMLE = function(pStart        = double(1, default = Inf),
                           method        = character(0, default = "BFGS"),
                           hessian       = logical(0, default = TRUE),
-                          originalScale = logical(0, default = TRUE)) {
-      ## pStart gives starting values on the original scale; if not given, current param values in the model will be used
-      if(pStart[1] == Inf) pStart <- values(model, paramNodes)
-      pStartTransform <- paramsTransform$transform(pStart)
+                          backTransform = logical(0, default = TRUE)) {
+      if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
+      ## In case parameter nodes are not properly initialized 
+      if(any_na(pStart) | any_nan(pStart) | any(abs(pStart)==Inf)) pStartTransform <- rep(0, pTransform_length)
+      else pStartTransform <- paramsTransform$transform(pStart)
+      ## In case bad start values are provided 
+      if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
       optRes <- optim(pStartTransform, p_transformed_Laplace, p_transformed_gr_Laplace,
                       method = method, control = outOptControl, hessian = hessian)
       LaplaceMLEDone <<- TRUE
@@ -1388,7 +1405,7 @@ buildLaplace <- nimbleFunction(
         transformParamsVCOV <<- vcov_ptransformed
         vcovDone <<- TRUE
       }
-      if(originalScale) optRes$par <- paramsTransform$inverseTransform(optRes$par)
+      if(backTransform) optRes$par <- paramsTransform$inverseTransform(optRes$par)
       return(optRes)
       returnType(optimResultNimbleList())
     },
