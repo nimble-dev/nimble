@@ -1371,10 +1371,11 @@ buildLaplace <- nimbleFunction(
       return(ans)
       returnType(double(1))
     },
-    ## Calculate MLEs of transformed parameters
-    LaplaceMLE = function(pStart  = double(1, default = Inf),
-                          method  = character(0, default = "BFGS"),
-                          hessian = logical(0, default = TRUE)) {
+    ## Calculate MLEs of parameters
+    LaplaceMLE = function(pStart        = double(1, default = Inf),
+                          method        = character(0, default = "BFGS"),
+                          hessian       = logical(0, default = TRUE),
+                          originalScale = logical(0, default = TRUE)) {
       ## pStart gives starting values on the original scale; if not given, current param values in the model will be used
       if(pStart[1] == Inf) pStart <- values(model, paramNodes)
       pStartTransform <- paramsTransform$transform(pStart)
@@ -1383,10 +1384,11 @@ buildLaplace <- nimbleFunction(
       LaplaceMLEDone <<- TRUE
       transformParamsMLE <<- optRes$par
       if(hessian) {
-        vcov <- -inverse(optRes$hessian)
-        transformParamsVCOV <<- vcov
+        vcov_ptransformed <- -inverse(optRes$hessian)
+        transformParamsVCOV <<- vcov_ptransformed
         vcovDone <<- TRUE
       }
+      if(originalScale) optRes$par <- paramsTransform$inverseTransform(optRes$par)
       return(optRes)
       returnType(optimResultNimbleList())
     },
@@ -1397,7 +1399,8 @@ buildLaplace <- nimbleFunction(
       tmp <- numeric(nre) ## Not sure this is needed. 
       tot <- 0
       for(i in seq_along(laplace_nfl)){
-        tmp <- laplace_nfl[[i]]$update_max_inner_logLik(p)
+        if(methodID == 1) tmp <- laplace_nfl[[i]]$update_max_inner_logLik_internal(p)
+        else tmp <- laplace_nfl[[i]]$update_max_inner_logLik(p)
         numre <- dim(tmp)[1]
         raneff[(tot+1):(tot+numre)] <- tmp
         tot <- tot + numre
@@ -1407,38 +1410,44 @@ buildLaplace <- nimbleFunction(
     },
     ## Inverse of the negative Hessian of log-likelihood wrt random effects
     inverseNegHess = function(p = double(1), reTransform = double(1)){
-      hess <- matrix(value = 0, nrow = nre, ncol = nre)
+      invHess <- matrix(value = 0, nrow = nre, ncol = nre)
       tot <- 0
       for(i in seq_along(laplace_nfl)){
         numre <- lenRENodeSets[i]
         tmp <- laplace_nfl[[i]]$negHess(p, reTransform[(tot+1):(tot+numre)])
-        hess[(tot+1):(tot+numre), (tot+1):(tot+numre)] <- tmp
+        invHess[(tot+1):(tot+numre), (tot+1):(tot+numre)] <- inverse(tmp)
         tot <- tot + numre
       }
-      invHess <- inverse(hess)
       return(invHess)
       returnType(double(2))
-    },
-    ## Summarize Laplace MLE results on parameters only
-    summary = function(LaplaceMLEOutput = optimResultNimbleList()){
-      ans <- LaplaceOutputNimbleList$new()
-#      ans$parameter <- paramNodesAsScalars
-      transMLEs <- LaplaceMLEOutput$par
-      ans$estimate <- paramsTransform$inverseTransform(transMLEs)
-      if(dim(LaplaceMLEOutput$hessian)[1] == 0) {
-        ans$stdError <- rep(NA, length(ans$parameter))
-      }
-      else {
-        transHess <- LaplaceMLEOutput$hessian
-        invTransDerivs <- derivspInverseTransform(transMLEs, c(0, 1))
-        invTransJacobian <- invTransDerivs$jacobian
-        vcov_ptransformed <- -inverse(transHess)
-        vcov <- invTransJacobian %*% vcov_ptransformed %*% t(invTransJacobian)
-        ans$stdError <- sqrt(diag(vcov))
-      }
-      return(ans)
-      returnType(LaplaceOutputNimbleList())
     }
+    # ## Summarize Laplace MLE results on parameters only
+    # ## This function could be removed later given all post-processing will be done in summaryLaplace
+    # summary = function(LaplaceMLEOutput = optimResultNimbleList(), 
+    #                    originalScale    = logical(0, default = TRUE)){
+    #   ans <- LaplaceOutputNimbleList$new()
+    #   # ans$parameter <- paramNodesAsScalars
+    #   if(!originalScale){
+    #     transMLEs <- LaplaceMLEOutput$par
+    #     ans$estimate <- paramsTransform$inverseTransform(transMLEs)
+    #   }
+    #   else {
+    #     MLEs <- LaplaceMLEOutput$par
+    #     transMLEs <- paramsTransform$transform(MLEs)
+    #     ans$estimate <- MLEs
+    #   }
+    #   if(dim(LaplaceMLEOutput$hessian)[1] == 0) {
+    #     ans$stdError <- rep(NA, length(ans$parameter))
+    #   }
+    #   else {
+    #     invTransDerivs <- derivspInverseTransform(transMLEs, c(0, 1))
+    #     invTransJacobian <- invTransDerivs$jacobian
+    #     vcov <- invTransJacobian %*% transformParamsVCOV %*% t(invTransJacobian)
+    #     ans$stdError <- sqrt(diag(vcov))
+    #   }
+    #   return(ans)
+    #   returnType(LaplaceOutputNimbleList())
+    # }
   ),
   buildDerivs = list(pInverseTransform = list(),
                      reInverseTransform = list())
