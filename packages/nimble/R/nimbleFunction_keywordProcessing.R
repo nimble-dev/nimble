@@ -516,6 +516,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
 doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
     processor = function(code, nfProc){
+        callerCode <- code[[2]]
         if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
         possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList', 'symbolNimbleList')
         class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
@@ -1310,6 +1311,8 @@ matchAndFill.call <- function(def, call){
 determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     allNDims <- lapply(nfProc$instances, function(x) {
         model <- eval(modelExpr, envir = x)
+        if(length(varOrNodeExpr) > 1)
+            stop("One must request a node from a model using syntax like `model[[node]]` and not syntax such as `model[[nodes[i]]]`. For the latter case use `values()` instead.")
         if(!exists(as.character(varOrNodeExpr), x, inherits = FALSE) ) {
             stop(paste0('Problem accessing node or variable ', deparse(varOrNodeExpr), '.'), call. = FALSE)
         }
