@@ -1,20 +1,10 @@
----
-title: "Draft AD chapter - to be integrated into User Manual"
-output: html_document
-bibliography: AD_references.bib
-reference-section-title: "References"
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 # (PART) Automatic Derivatives in NIMBLE {-}
 
 ```{r, echo=FALSE}
 require(nimble)
 ``` 
 
-# Automatic Derivatives {#cha-AD}
+# Automatic Derivatives {#cha:AD}
 
 ```{r, ADchunk0, echo = FALSE}
 # source the code
@@ -26,7 +16,7 @@ require(igraph, warn.conflicts = FALSE, quietly = TRUE)  # same question
 eval <- TRUE
 ``` 
 
-As of version 1.0-0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package nimbleHMC), Laplace approximation, and fast optimization with methods that use function gradients.
+As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package `nimbleHMC`), Laplace approximation, and fast optimization with methods that use function gradients.
 
 Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations. When done this way, derivatives are numerically accurate to the precision of the computer. This is distinct from finite element methods, used by R packages such as `numDeriv` [@gilbert-varadhan-19] and `pracma` [@borchers-22], which approximate derivatives by calculating function values at extremely nearby points. Finite element methods are slower and less accurate than AD. It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD. NIMBLE uses the CppAD package [@bell-22] as its AD engine, following TMB's success in doing so [@kristensen-etal-16]. A general reference on AD is @griewank-walther-08.
 
@@ -52,9 +42,9 @@ nimbleOptions(enableDerivs = TRUE)
 
 ## How to turn on derivatives in a model 
 
-To allow algorithms to use automatic derivatives for a model, include `buildDerivs=TRUE` in the call to `nimbleModel`. (Note that if you use the one-step method `nimbleHMC` described below, then you do not need to build the model yourself and so you do not need to provide this `buildDerivs` option.)
+To allow algorithms to use automatic derivatives for a model, include `buildDerivs=TRUE` in the call to `nimbleModel`. 
 
-We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC and Laplace approximation. There will be 10 groups (`i`) of 5 observations (`j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
+We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for Laplace approximation. There will be 10 groups (`i`) of 5 observations (`j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
 ```{r eval=TRUE}
 model_code <- nimbleCode({
   # priors 
@@ -88,7 +78,7 @@ model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
 
 ### Finish setting up the GLMM example
 
-As preparation for the HMC and Laplace examples below, we need to finish setting up the GLMM. We could have provided data in the call to `nimbleModel`, but instead we will simulate it using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data use.
+As preparation for the Laplace examples below, we need to finish setting up the GLMM. We could have provided data in the call to `nimbleModel`, but instead we will simulate it using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.
 
 ```{r eval=eval}
 model$intercept <- 0
@@ -108,32 +98,6 @@ Finally, we will make a compiled version of the model.
 Cmodel <- compileNimble(model)
 ```
 
-## How to use Hamiltonian Monte Carlo (HMC)
-
-NIMBLE's HMC sampler is provided in a separate package, `nimbleHMC`. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.
-
-At its core, HMC in NIMBLE is just another MCMC sampler that can be used in NIMBLE's general MCMC system, possibly along with other samplers. For convenience, `nimbleHMC` provides different ways to set up and run HMC that allow different degrees of control.  These include:
-
-- `nimbleHMC` is analogous to `nimbleMCMC`: It takes model `code`, `data`, `inits` and `constants` and does all steps from building the model to running one or more MCMC chains. Use this if you want one call to get default HMC samples of the entire model.
-- `configureHMC` is analogous to `configureMCMC`: It sets up a default MCMC configuration that comprises one HMC sampler for all model nodes (or nodes you choose). You can then use `addSampler` and other methods of the configuration to fully customize it before building and using the MCMC.  Use `configureHMC` if you want to do MCMC with both HMC and other samplers and you find it easier to start with HMC in the configuration first.
-- `buildHMC` is analogous to `buildMCMC`: It builds a configuration that, if not provided, will be created by `configureHMC`. Use this if you want to manage MCMC runs through `runMCMC` instead of `nimbleHMC` and you don't need to customize the configuration by doing `configureHMC` yourself.
-- `addHMC`: This manages use of `addSampler` for an MCMC configuration to add specifically an HMC sampler for a chosen set of nodes. It optionally removes other samplers first. Use this if you want to do MCMC with both HMC and other samplers and you find it easier to start with the other sampler in the configuration, i.e. from the result of `configureMCMC`. 
-- For the most fine-grained control, you can call `configureMCMC` and then use the `addSampler` with `type="HMC"` to add HMC sampler(s).
-
-More information on these is available from the help pages, e.g. `help(configureHMC)`.
-
-With the GLMM created above, we will configure and build an MCMC to use HMC. In this case we'll use HMC for the whole model, i.e. all parameters and latent states.
-```{r eval=eval}
-library(nimbleHMC)
-HMC <- buildHMC(model)
-CHMC <- compileNimble(HMC, project = model) # The compiled HMC will use the compiled model.
-samples <- runMCMC(CHMC, niter = 1000, nburnin = 500) # short run for illustration
-```
-
-We will not investigate results in detail, but here is a summary to see that reasonable results were generated.
-```{r eval=eval}
-summary(coda::as.mcmc(samples))
-```
 
 ## How to use Laplace approximation
 
@@ -143,9 +107,8 @@ To create a Laplace approximation specialized to the parameters of interest for 
 
 ```{r eval=eval}
 glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'))
-Cglmm_laplace <- compileNimble(glmm_laplace, project = model, resetFunctions = TRUE)
+Cglmm_laplace <- compileNimble(glmm_laplace, project = model)
 ```
-Note that `resetFunctions=TRUE` is sometimes necessary when compiling a second algorithm to use the same compiled model as a previous algorithm (in this case, the MCMC above, with the HMC sampler).
 
 Now we are ready to use some of the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood.
 
@@ -573,7 +536,7 @@ In `derivs_nf`:
 
 Thus, `nimDerivs(model$calculate(calc_nodes), wrt = with_respect_to_nodes, <other args>)` takes derivatives of a function whose inputs are the values of `with_respect_to_nodes` (using their values in the model object) and whose output is the summed log probability returned by `model$calculate(calc_nodes)`. The internal handling of this case is distinct from other calls to `nimDerivs`.
 
-Now we can make an instance of `derivs_nf`, compile the model and nimbleFunction instance, and look at the results. We will assume the `model` was built as above in the HMC example
+Now we can make an instance of `derivs_nf`, compile the model and nimbleFunction instance, and look at the results. We will assume the `model` was built as above in the Laplace example.
 
 ```{r, eval=eval}
 wrt_nodes <- c('intercept','beta', 'sigma')
@@ -607,7 +570,7 @@ Sometimes one needs derivatives of calculations done in a nimbleFunction as well
 
 For these reasons, it is possible in one method to take derivatives of a method  that includes a call to `model$calculate`. Continuing the above example, say we want to take derivatives with respect to the log of `sigma`, so the input vector will be treated as `intercept`, `beta`, and `log(sigma)`, in that order. We will convert `log(sigma)` to `sigma` before using it in the model, and we want the derivative of that transformation included in the tape (i.e. using the chain rule).
 
-(Using `log(sigma)` instead of `sigma` is useful so an algorithm such as optimization or HMC can use an unconstrained parameter space. A constraint such as `sigma>0` can be difficult for many algorithms. See below for NIMBLE's automated parameter transformation system if you need to do this systematically.)
+(Using `log(sigma)` instead of `sigma` is useful so an algorithm such as optimization or HMC can use an unconstrained parameter space. A constraint such as `sigma > 0` can be difficult for many algorithms. See below for NIMBLE's automated parameter transformation system if you need to do this systematically.)
 
 Here is a nimbleFunction to do that.
 
@@ -717,7 +680,7 @@ The additional rule for when tapes need to be reset based on model calculations 
 
 - when values of any `constantNodes` are changed. Usually these will only be data nodes.
 
-## Parameter transformations
+## Parameter transformations {#sec:parameter-transform}
 
 \newcommand{\logit}{\mbox{logit}}
 \newcommand{\chol}{\mbox{chol}}
