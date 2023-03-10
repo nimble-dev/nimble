@@ -42,17 +42,17 @@ matInverse <- nimbleFunction(
 )
 
 checkCase <- function(nf,
-                     Aconst, A_UL, A_LR,
-                     order = 0:2,
-                     recordArgs, testArgs) {
+                      Aconst, A_UL, A_LR,
+                      order = 0:2,
+                      recordArgs, testArgs) {
 
-    Rfxn <- nf(Aconst, A_UL, A_LR)
-    Cfxn <- compileNimble(Rfxn)
-    
-    test_AD2_oneCall(Rfxn, Cfxn,
-                     recordArgs = recordArgs, testArgs = testArgs,
-                     order = order, wrt = 1,
-                     RCrelTol = c(1e-12, 1e-05, 0.001))    
+  Rfxn <- nf(Aconst, A_UL, A_LR)
+  Cfxn <- compileNimble(Rfxn)
+
+  test_AD2_oneCall(Rfxn, Cfxn,
+                   recordArgs = recordArgs, testArgs = testArgs,
+                   order = order, wrt = 1,
+                   RCrelTol = c(1e-12, 1e-05, 0.001))
 }
 
 n <- 7
@@ -69,13 +69,17 @@ makeArgs = function(n1Ar, n1Ac, d, Adiag = FALSE) {
   )
 }
 
-set.seed(4)
-Aconst <- matrix(runif(n*n, min = 1, max = 3), nrow = n)
+test_that("AD matrix inverse atomic works", {
+  set.seed(4)
+  Aconst <- matrix(runif(n*n, min = 1, max = 3), nrow = n)
 
-## Case with all elements variable.
-set.seed(3)
-recordArgs <- makeArgs(n, n, 1.2)
-testArgs <- makeArgs(n, n, 1.4)
+  ## Case with all elements variable.
+  set.seed(3)
+  recordArgs <- makeArgs(n, n, 1.2)
+  testArgs <- makeArgs(n, n, 1.4)
 
-checkCase(matInverse, Aconst, c(1, 1), c(n, n),
-          recordArgs = recordArgs, testArgs = testArgs)
+  expect_no_error(
+    checkCase(matInverse, Aconst, c(1, 1), c(n, n),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})

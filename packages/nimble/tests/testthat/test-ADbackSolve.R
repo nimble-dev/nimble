@@ -35,7 +35,7 @@ op <- list(
       B[ BupperLeft[1]:BlowerRight[1], BupperLeft[2]:BlowerRight[2] ] <- exp(-2 * d * Binput)
     Y <- backsolve(A, B)
     out <- sum( Y * Y )
-}),
+  }),
   args = list(d = quote(double()),
               Ainput = quote(double(2)),
               Binput = quote(double(2))),
@@ -56,16 +56,16 @@ backsolveTest <- nimbleFunction(
 )
 
 checkCase <- function(nf,
-                     Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR,
-                     order = 0:2,
-                     recordArgs, testArgs) {
+                      Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR,
+                      order = 0:2,
+                      recordArgs, testArgs) {
 
-    Rfxn <- nf(Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR)
-    Cfxn <- compileNimble(Rfxn)
-    
-    test_AD2_oneCall(Rfxn, Cfxn,
-                     recordArgs = recordArgs, testArgs = testArgs,
-                     order = order, wrt = 1)    
+  Rfxn <- nf(Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR)
+  Cfxn <- compileNimble(Rfxn)
+
+  test_AD2_oneCall(Rfxn, Cfxn,
+                   recordArgs = recordArgs, testArgs = testArgs,
+                   order = order, wrt = 1)
 }
 
 n1 <- 5
@@ -91,51 +91,73 @@ makeArgs = function(n1Ar, n1Ac, n1B, n2, d, Adiag = FALSE) {
 }
 
 ## Case with all elements variable. 
-recordArgs <- makeArgs(n1, n1, n1, n2, 1.2)
-testArgs <- makeArgs(n1, n1, n1, n2, 1.4)
+test_that("backsolve with all elements as CppAD variables works", {
+  recordArgs <- makeArgs(n1, n1, n1, n2, 1.2)
+  testArgs <- makeArgs(n1, n1, n1, n2, 1.4)
 
-checkCase(backsolveTest, Aconst, Bconst, c(1, 1), c(n1, n1), c(1, 1), c(n1, n2),
-          recordArgs = recordArgs, testArgs = testArgs)
-
+  expect_no_error(
+    checkCase(backsolveTest, Aconst, Bconst, c(1, 1), c(n1, n1), c(1, 1), c(n1, n2),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})
 ## Case with all of A constant.
-recordArgs <- makeArgs(0, 0, n1, n2, 1.2)
-testArgs <- makeArgs(0, 0, n1, n2, 1.4)
+test_that("backsolve with A as CppAD constant works", {
+  recordArgs <- makeArgs(0, 0, n1, n2, 1.2)
+  testArgs <- makeArgs(0, 0, n1, n2, 1.4)
 
-checkCase(backsolveTest, Aconst, Bconst, c(-1, 1), c(n1, n1), c(1, 1), c(n1, n2),
-          recordArgs = recordArgs, testArgs = testArgs)
-
+  expect_no_error(
+    checkCase(backsolveTest, Aconst, Bconst, c(-1, 1), c(n1, n1), c(1, 1), c(n1, n2),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})
 ## Case with all of A and B variable and A diagonal
-recordArgs <- makeArgs(n1, n1, n1, n2, 1.2, Adiag=TRUE)
-testArgs <- makeArgs(n1, n1, n1, n2, 1.4, Adiag=TRUE)
+test_that("backsolve with A and B as CppAD variables and A diagonal works", {
+  recordArgs <- makeArgs(n1, n1, n1, n2, 1.2, Adiag=TRUE)
+  testArgs <- makeArgs(n1, n1, n1, n2, 1.4, Adiag=TRUE)
 
-checkCase(backsolveTest, Aconst, Bconst, c(1, 1), c(n1, n1), c(1, 1), c(n1, n2),
-          recordArgs = recordArgs, testArgs = testArgs)
-
+  expect_no_error(
+    checkCase(backsolveTest, Aconst, Bconst, c(1, 1), c(n1, n1), c(1, 1), c(n1, n2),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})
 ## Case with all of B constant.
-recordArgs <- makeArgs(n1, n1, 0, 0, 1.2)
-testArgs <- makeArgs(n1, n1, 0, 0, 1.4)
+test_that("backsolve with B as CppAD constant works", {
+  recordArgs <- makeArgs(n1, n1, 0, 0, 1.2)
+  testArgs <- makeArgs(n1, n1, 0, 0, 1.4)
 
-checkCase(backsolveTest, Aconst, Bconst, c(1, 1), c(n1, n1), c(-1, 1), c(n1, n2),
-          recordArgs = recordArgs, testArgs = testArgs)
-
+  expect_no_error(
+    checkCase(backsolveTest, Aconst, Bconst, c(1, 1), c(n1, n1), c(-1, 1), c(n1, n2),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})
 ## Case with all of B constant with some leading zeros.
-recordArgs <- makeArgs(n1, n1, 0, 0, 1.2)
-testArgs <- makeArgs(n1, n1, 0, 0, 1.4)
+test_that("backsolve with B as CppAD constant with some leading zeros works", {
 
-checkCase(backsolveTest, Aconst, Bconst0, c(1, 1), c(n1, n1), c(-1, 1), c(n1, n2),
-          recordArgs = recordArgs, testArgs = testArgs)
+  recordArgs <- makeArgs(n1, n1, 0, 0, 1.2)
+  testArgs <- makeArgs(n1, n1, 0, 0, 1.4)
 
+  expect_no_error(
+    checkCase(backsolveTest, Aconst, Bconst0, c(1, 1), c(n1, n1), c(-1, 1), c(n1, n2),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})
 ## Case with all of B variable except for some leading zeros
-recordArgs <- makeArgs(n1, n1, n1-1, n2, 1.2)
-testArgs <- makeArgs(n1, n1, n1-1, n2, 1.4)
+test_that("backsolve with B as CppAD variable except for some leading zeros works", {
+  recordArgs <- makeArgs(n1, n1, n1-1, n2, 1.2)
+  testArgs <- makeArgs(n1, n1, n1-1, n2, 1.4)
 
-checkCase(backsolveTest, Aconst, Bconst0, c(1, 1), c(n1, n1), c(2, 1), c(n1, n2),
-          recordArgs = recordArgs, testArgs = testArgs)
-
+  expect_no_error(
+    checkCase(backsolveTest, Aconst, Bconst0, c(1, 1), c(n1, n1), c(2, 1), c(n1, n2),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})
 ## Case with first rows of both A and B of constant elements. (I have a note that this does not get special handling internally, but it might be out of date.) My original testing code for this used Bconst0, but I'm not sure that was intended.
-recordArgs <- makeArgs(n1-1, n1, n1-1, n2, 1.2)
-testArgs <- makeArgs(n1-1, n1, n1-1, n2, 1.4)
+test_that("backsolve with first rows of both A and B as CppAD constant elements works", {
+  recordArgs <- makeArgs(n1-1, n1, n1-1, n2, 1.2)
+  testArgs <- makeArgs(n1-1, n1, n1-1, n2, 1.4)
 
-checkCase(backsolveTest, Aconst, Bconst, c(2, 1), c(n1, n1), c(2, 1), c(n1, n2),
-          recordArgs = recordArgs, testArgs = testArgs)
-
+  expect_no_error(
+    checkCase(backsolveTest, Aconst, Bconst, c(2, 1), c(n1, n1), c(2, 1), c(n1, n2),
+              recordArgs = recordArgs, testArgs = testArgs)
+  )
+})

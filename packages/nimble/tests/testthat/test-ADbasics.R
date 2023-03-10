@@ -343,7 +343,6 @@ test_that('AD works with nimDerivs(model$calulate(...), ...)', {
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
 })
 
-
 test_that('AD works with a model compiled in one call', {
   m <- nimbleModel(
     nimbleCode({
@@ -501,7 +500,6 @@ test_that('AD works with reset', {
   nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
 })
-
 
 test_that('AD works with reset with empty model args', {
   adfun <- nimbleFunction(
@@ -798,14 +796,16 @@ test_that('AD works with a model with do_update in double-taping', {
   ## The outer tape is cleared, and the inner tape used to re-record with the values it
   ## had last time it was recorded, which was 1.15 above.
   ## This is hard to follow but could be almost undefined behavior.
-  Cm$mu <- 0.8
-  Cans <- Cadfun1$derivsValueRun(xTest, inner_do_update = FALSE, inner_reset = FALSE,
-                                 do_update = TRUE, reset = TRUE)
-  m$mu <- 1.15
-  Rans <- Radfun1$derivsValueRun(xTest)
-  nim_expect_equal(Rans$value, Cans$value, RCrelTol0)
-  nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
-  nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
+  ## This test is commented out because it is basically weird and unsupported
+  ##   on the uncompiled side.
+  ## Cm$mu <- 0.8
+  ## Cans <- Cadfun1$derivsValueRun(xTest, inner_do_update = FALSE, inner_reset = FALSE,
+  ##                                do_update = TRUE, reset = TRUE)
+  ## m$mu <- 1.15
+  ## Rans <- Radfun1$derivsValueRun(xTest)
+  ## nim_expect_equal(Rans$value, Cans$value, RCrelTol0)
+  ## nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
+  ## nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
 
   ## This case is also weird:
   ## Cm$mu <- 0.9

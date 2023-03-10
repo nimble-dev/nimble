@@ -71,13 +71,16 @@ makeArgs = function(n1Ar, n1Ac, d, Adiag = FALSE) {
   )
 }
 
-set.seed(4)
-Aconst <- matrix(runif(n*n, min = 1, max = 3), nrow = n)
+test_that("AD Cholesky atomic works", {
 
-## Case with all elements variable.
-set.seed(3)
-recordArgs <- makeArgs(n, n, 1.2)
-testArgs <- makeArgs(n, n, 1.4)
+  set.seed(4)
+  Aconst <- matrix(runif(n*n, min = 1, max = 3), nrow = n)
 
-checkCase(cholNF, Aconst, c(1, 1), c(n, n),
-          recordArgs = recordArgs, testArgs = testArgs)
+  ## Case with all elements variable.
+  set.seed(3)
+  recordArgs <- makeArgs(n, n, 1.2)
+  testArgs <- makeArgs(n, n, 1.4)
+
+  checkCase(cholNF, Aconst, c(1, 1), c(n, n),
+            recordArgs = recordArgs, testArgs = testArgs)
+})
