@@ -1,76 +1,187 @@
 source(system.file(file.path('tests', 'testthat', 'AD_test_utils.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'AD_distribution_test_lists.R'), package = 'nimble'))
+source(system.file(file.path('tests', 'testthat', 'AD_knownFailures.R'), package = 'nimble'))
 EDopt <- nimbleOptions("enableDerivs")
 BMDopt <- nimbleOptions("buildModelDerivs")
 nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
-## I'll use more comprehensive tests in AD_distribution_test_lists
-## and corner-case or special-case tests here.
-
-## Status and to-do
+## Some status notes:
 ## dcat: broken in double taping
-## dbinom: looks ok.  add test case p = 0 or 1 and x = 0 or n
-## dmulti with no size: add test case any p = 0 or x = 0 or n
-## dmulti with size:    ditto
-## dnbinom: looks ok.  add test for p = 1 and/or x = 0
-## dpois: add test case of x = 0 and/or mu = 0
-## dbeta: will break for x == 0 or x == 1 and the values of a and/or b where this is allowed by the dist.
-## chisq: will break for x = 0
-## dexp: check on breaking cases
-## exp: will break for lambda = 0 (works in R)
-## gamma: check for x = 0 case
-## invgamma: ditto
-## sqrtinvgamma: ditto
-## lnorm: good
-## logis: good
-## norm: good
-## t: good
-## t_nonstandard: good
-## unif: good. check on x at boundaries
-## weibull: good. check on x = 0
-## 
+## For many distributions, edge values of parameters (e.g. 0) may not
+## work in derivatives
 ##
-## dmnorm, dmvt: good but add test with prec_param flipped
-## wishart: good - does it need more variants?
-##
-## TO-DO:
+## Things to do or check:
 ## Add warning message if prec_param or scale_param is not CppAD::Constant
-## Add test for dirch
-## Add test for invwishard
+## Add test for invwishart
 ## Add test for lkj_chol
-## Are there others that are needed now?
+## Look for other gaps
 
 
-normDistTests <- list(
-  make_AD_test2('dnorm', c(x='double()', mean='double()', sd='double()'),
-                input_gen_funs = list(x=rnorm, mu=rnorm, sd=runif)),
-  make_AD_test2('dnorm', c(x='double()', mean='double()', sd='double()'),
-                more_args = list(log = 1),
-                input_gen_funs = list(x=rnorm, mu=rnorm, sd=runif)),
-  make_AD_test2('dnorm', c(x='double()', mean='double()', sd='double()', log='double()'),
-                wrt = c('x', 'mean', 'sd'),
-                inputs = list(record = c(x = 1.2, mean = 0.8, sd = 0.3, log = 1),
-                              test   = c(x = 1.1, mean = 0.9, sd = 0.5, log = 0)))
+test_that('Derivatives of dnorm function correctly.',
+  {
+    ADfun1 <- nimbleFunction(
+      setup = function(){},
+      run = function(y = double(1)) {
+        outList <- derivs(testMethod(y), wrt = c('x'))
+        returnType(ADNimbleList())
+        return(outList)
+      },
+      methods = list(
+        testMethod = function(x = double(1, 2)) {
+          out <- dnorm(x[1],0,1)
+          returnType(double())
+          return(out)
+        }
+      ), buildDerivs = c('testMethod')
+    )
+    ADfunInst <- ADfun1()
+    xRec <- matrix(c(1, -1))
+    x <- matrix(c(2, -2))
+    Rderivs <- ADfunInst$run(x)
+    temporarilyAssignInGlobalEnv(ADfunInst)
+    cADfunInst <- compileNimble(ADfunInst)
+    cADfunInst$run(xRec)
+    cderivs <- cADfunInst$run(x)
+    expect_equal(cderivs$value, Rderivs$value)
+    expect_equal(cderivs$jacobian, Rderivs$jacobian)
+    expect_equal(cderivs$hessian, Rderivs$hessian)
+  }
 )
-result <- lapply(normDistTests, test_AD2, verbose = FALSE)
 
-grunif <- function(min, max) function(size) runif(size, min, max)
 
-betaDistTests <- list(
-  make_AD_test2('dbeta', c(x='double()', shape1='double()', shape2='double()'),
-                input_gen_funs = list(x='rbeta(size, 1, 1)', shape1='runif(size, 0.9, 1.1)', shape2='runif(size, 0.9, 1.1)')),
-  make_AD_test2('dbeta', c(x='double()', shape1='double()', shape2='double()'),
-                more_args = list(log = 1),
-                input_gen_funs = list(x='rbeta(size, 1, 1)', shape1='runif(size, 0.9, 1.1)', shape2='runif(size, 0.9, 1.1)')),
-  make_AD_test2('dbeta', c(x='double()', shape1='double()', shape2='double()', log='double()'),
-                wrt = c('x', 'shape1', 'shape2'),
-                inputs = list(record = c(x = 0.6, shape1 = 0.8, shape2 = 1.3, log = 1),
-                              test   = c(x = 0.43, shape1 = 0.9, shape2 = 1.6, log = 0)))
+## Dirichlet with log argument
+dirch_test_log <- make_AD_test2(
+  op = list(
+    name = "ddirch manual using additive log-ratio transformation",
+    opParam = list(name = "ddirch manual"),
+    # X = Xtrans = log(Xorig_i / Xorig_n), i = 1... n-1
+    # Xorig[1:n-1] = exp(Xtrans)
+    # Xorig[n] = 1/(1+sum(Xorig[1:n-1]))
+    expr = quote({
+      Xorig_1_nm1_over_Xn <- exp(x)
+      Xorig_n <- 1/(1 + sum(Xorig_1_nm1_over_Xn))
+      Xorig <- c(Xorig_1_nm1_over_Xn * Xorig_n, Xorig_n)
+      out <- ddirch(x = Xorig, alpha=alpha, log = log)
+    }),
+    args = list(
+      x = quote(double(1)),
+      alpha = quote(double(1)),
+      log = quote(double())
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', alpha='double(1)', log='double()'),
+  wrt = c('x', 'alpha'),
+  inputs = list(record = list(x = c(log(.2/.5), log(.3/.5)), alpha = c(2, 4, 4), log = 1),
+                test   = list(x = c(log(.4/.45), log(.15/.45)), alpha = c(3, 2, 5), log = 0)))
+
+dirch_test_out <- test_AD2(dirch_test_log)
+
+## Dirichlet without log argument
+dirch_test_fixedlog <- make_AD_test2(
+  op = list(
+    name = "ddirch manual using additive log-ratio transformation",
+    opParam = list(name = "ddirch manual"),
+    # X = Xtrans = log(Xorig_i / Xorig_n), i = 1... n-1
+    # Xorig[1:n-1] = exp(Xtrans)
+    # Xorig[n] = 1/(1+sum(Xorig[1:n-1]))
+    expr = quote({
+      Xorig_1_nm1_over_Xn <- exp(x)
+      Xorig_n <- 1/(1 + sum(Xorig_1_nm1_over_Xn))
+      Xorig <- c(Xorig_1_nm1_over_Xn * Xorig_n, Xorig_n)
+      out <- ddirch(x = Xorig, alpha=alpha, log = 1)
+    }),
+    args = list(
+      x = quote(double(1)),
+      alpha = quote(double(1))
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', alpha='double(1)'),
+  wrt = c('x', 'alpha'),
+  inputs = list(record = list(x = c(log(.2/.5), log(.3/.5)), alpha = c(2, 4, 4)),
+                test   = list(x = c(log(.4/.45), log(.15/.45)), alpha = c(3, 2, 5))))
+
+dirch_test_out <- test_AD2(dirch_test_fixedlog)
+
+## Wishart
+## Testing Wishart is tricky because both x and cholesky are
+## matrices and also because not all elements are indendent
+makeARcov <- function(n, rho, sigma) {
+  s2 <- sigma^2
+  ans <- matrix(nrow = n, ncol = n)
+  for(i in 1:n) {
+    for(j in 1:i) {
+      ans[i,j] <- ans[j,i] <- s2 * rho^(abs(i-j))
+    }
+  }
+  ans
+}
+set.seed(123)
+cholRec <- chol(makeARcov(4, .6, 2))
+cholTest <- chol(makeARcov(4, .55, 3))
+
+wRec <- rwish_chol(1, cholRec, df = 7, scale_param = FALSE)
+wTest <- rwish_chol(1, cholTest, df = 7, scale_param = FALSE)
+
+cholRecTri <- cholRec[ upper.tri(cholRec, TRUE)]
+cholTestTri <-cholTest[ upper.tri(cholTest, TRUE)]
+
+wRecTri <- wRec[ upper.tri(wRec, TRUE) ]
+wTestTri <- wRec[ upper.tri(wTest, TRUE) ]
+
+wish_test_log <- make_AD_test2(
+  op = list(
+    name = "dwish_chol manual",
+    opParam = list(name = "dwish_chol manual"),
+    expr = quote({
+      # populate 2D matrices from the vectors
+      # created from upper triangular values.
+      x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
+      chol2D <- nimMatrix(nrow = 4, ncol = 4, init = FALSE)
+      i <- 1L
+      j <- 1L
+      indOrig <- 1L
+      for(j in 1:4) {
+        for(i in 1:j) {
+          x2D[i,j] <- x2D[j,i] <- x[indOrig]
+          chol2D[i,j] <- chol[indOrig]  # chol2D does not need lower triangular entries
+          indOrig <- indOrig + 1
+        }
+      }
+      out <- dwish_chol(x = x2D, cholesky=chol2D, df = df, log = log)
+    }),
+    args = list(
+      x = quote(double(1)),
+      chol = quote(double(1)),
+      df = quote(double()),
+      log = quote(double())
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', chol='double(1)', df = 'double()', log='double()'),
+  wrt = c('x', 'chol'),
+  inputs = list(record = list(x = wRecTri, chol = cholRecTri, df = 7, log = 0),
+                test   = list(x = wTestTri, chol = cholTestTri, df = 8, log = 1)),
 )
-# PROBLEM: Set tols
-# WILL NOT WORK AT X = 0
-result <- lapply(betaDistTests, test_AD2, verbose = FALSE)
+
+wish_test_out <- test_AD2(wish_test_log)
+
+## from AD_distribution_test_lists.R
+resetTols()
+testResults <- lapply(distn_tests2[1:140], test_AD2)
+testResults <- lapply(distn_with_log_tests2[1:140], test_AD2)
+
+ADtestEnv$RCrelTol[4] <- 1e-5 # set looser absolute tolerance for the dmnorm and dmvt tests
+testResults <- lapply(distn_tests2[141:142], test_AD2)
+testResults <- lapply(distn_with_log_tests2[141:142], test_AD2)
+resetTols()
+
+# test_AD_batch does not work with these.  Check that out
+# make lapply run line for distn_tests2
+# test_AD_batch(distn_with_log_tests2, knownFailures = AD_knownFailures, verbose = TRUE)
 
 nimbleOptions(enableDerivs= EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
