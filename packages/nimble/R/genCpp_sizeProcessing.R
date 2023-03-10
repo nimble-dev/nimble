@@ -1135,7 +1135,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     ## nl in nlEigenReferenceList
 
     if(!(isSymFunc || isSymList))
-        stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or a nimbleList'), call. = FALSE)
+        stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or a nimbleList.\nList-like syntax with `[[` and `$` in nimbleFunction run code can only be done with a nimbleFunction or nimbleList.'), call. = FALSE)
     nfProc <- if(isSymFunc) symbolObject$nfProc else symbolObject$nlProc
     
     if(is.null(nfProc)) {
