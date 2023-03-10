@@ -500,7 +500,7 @@ It is often important to provide valid and reasonable initial values to an MCMC,
 Not doing so can cause slow convergence or even failure of an MCMC algorithm (e.g., if the values the model is initialized with are not valid). When starting an MCMC, when NIMBLE encounters a missing parameter value, it simulates from the prior distribution. NIMBLE can be more sensitive to missing or bad starting values than some MCMC packages.
 
 The following cases are particularly important to consider when initializing:
-  - In a model with flat priors, NIMBLE cannot generate initial values from those priors.
+  - In a model with flat priors (i.e., using `x~dflat()` or `x~dhalfflat()`), NIMBLE cannot generate initial values from those priors.
   - In a model with diffuse priors, initializing from the prior can give unreasonable/extreme initial values. 
   - In a model with stochastic indices (e.g., `x[idx[i]]` with `idx[i]` unknown), those indices should have (valid) initial values.
   - In a model with constraints (via `dconstraint`), the model should be initialized such that the constraints are satisfied.
