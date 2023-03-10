@@ -72,7 +72,6 @@ makeArgs = function(n1Ar, n1Ac, d, Adiag = FALSE) {
 }
 
 test_that("AD Cholesky atomic works", {
-
   set.seed(4)
   Aconst <- matrix(runif(n*n, min = 1, max = 3), nrow = n)
 

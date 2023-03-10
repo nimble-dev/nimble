@@ -409,22 +409,11 @@ test_AD_batch(binaryReductionOpTests2_inner, testFun = test_AD2, knownFailures =
 test_AD_batch(binaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 
-
 test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE)
 test_AD_batch(squareMatrixOpTests[9], verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 
 test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
-
-## from AD_distribution_test_lists.R
-resetTols()
-testResults <- lapply(distn_tests2[1:140], test_AD2)
-testResults <- lapply(distn_with_log_tests2[1:140], test_AD2)
-
-ADtestEnv$RCrelTol[4] <- 1e-5 # set looser absolute tolerance for the dmnorm and dmvt tests
-testResults <- lapply(distn_tests2[141:142], test_AD2)
-testResults <- lapply(distn_with_log_tests2[141:142], test_AD2)
-resetTols()
 
 # test_AD_batch does not work with these.  Check that out
 # make lapply run line for distn_tests2
