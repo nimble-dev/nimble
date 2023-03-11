@@ -263,7 +263,7 @@ sampler_RW <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
-        setScale = function(newScale) {
+        setScale = function(newScale = double()) {
             scale         <<- newScale
             scaleOriginal <<- newScale
         },
@@ -424,12 +424,12 @@ sampler_RW_block <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
-        setScale = function(newScale) {
+        setScale = function(newScale = double()) {
             scale         <<- newScale
             scaleOriginal <<- newScale
             chol_propCov_scale <<- chol_propCov * scale
         },
-        setPropCov = function(newPropCov) {
+        setPropCov = function(newPropCov = double(2)) {
             propCov         <<- newPropCov
             propCovOriginal <<- newPropCov
             chol_propCov <<- chol(propCov)
