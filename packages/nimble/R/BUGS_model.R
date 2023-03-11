@@ -1069,7 +1069,21 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
                                               if(any(!is.na(inits[[i]][dataVals])))
                                                   messageIfVerbose("  [Note] Ignoring non-NA values in inits for data nodes: ", names(inits)[[i]], ".")
-                                          } else  .self[[names(inits)[i]]] <- inits[[i]]
+                                          } else {
+                                              inputDim <- nimbleInternalFunctions$dimOrLength(inits[[i]])
+                                              varInfo <- .self$modelDef$varInfo[[names(inits)[i]]]
+                                              mismatch <- FALSE
+                                              if(length(inputDim) == 1 && inputDim == 1) {  # scalar could be scalar or vector of length 1
+                                                  if(!(varInfo$nDim == 0 || (varInfo$nDim > 0 && identical(varInfo$maxs, rep(1, varInfo$nDim)))))
+                                                      mismatch <- TRUE
+                                              } else {
+                                                  if(length(inputDim) != varInfo$nDim || any(inputDim != varInfo$maxs))
+                                                      mismatch <- TRUE
+                                              }
+                                              if(mismatch)
+                                                  message("  [Warning] Incorrect size or dimension of initial value for '", names(inits)[i], "'.\n         Initial value will not be used in compiled model.")
+                                              .self[[names(inits)[i]]] <- inits[[i]]
+                                          }
                                       }
                                   },
                                   checkConjugacy = function(nodeVector, restrictLink = NULL) {
