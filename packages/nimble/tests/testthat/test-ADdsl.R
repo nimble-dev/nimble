@@ -18,7 +18,7 @@ context("Testing of derivatives for distributions and dsl functions")
 # 'dlogis',
 # 'dlnorm',
 # 'dmnorm_chol',
-# 'dmulti', # not implemented
+# 'dmulti',
 # 'dnegbin'
 # 'dnorm',
 # 'dpois',
@@ -205,18 +205,20 @@ distributionArgsList[['dmnorm_chol']] <- list(
   WRT = c('x', 'mean', 'cholesky')
 )
 
-#   distnName = 'dmulti',
-#   args = list(x = quote(double(1, 3)),
-#               size = quote(double(0)),
-#               prob = quote(double(1, 3))),
-#   argsValues = list(
+distributionArgsList[['dmulti']] <- list(
+   distnName = 'dmulti',
+   args = list(x = quote(double(1, 3)),
+               size = quote(double(0)),
+               prob = quote(double(1, 3))),
+   argsValues = list(
 #     list(x = numeric(3), size = 0, prob = numeric(3)),
 #     list(x = numeric(3) - 1, size = -3, prob = numeric(3)),
 #     list(x = numeric(3) - 1, size = -3, prob = numeric(3) + 1/3),
-#     list(x = 1:3, size = sum(1:3), prob = numeric(3) + 1/3)
-#   ),
-#   WRT = c('prob')
-# )
+     list(x = 1:3, size = sum(1:3), prob = numeric(3) + 1/3)
+   ),
+   WRT = c('prob')
+)
+ 
 
 distributionArgsList[['dnbinom']] <- list(
   distnName = 'dnbinom',
