@@ -244,7 +244,6 @@ relTolTmp[4] <- 1e-3
 test_ADModelCalculate(model, relTol = relTolTmp, checkCompiledValuesIdentical = FALSE,
                       verbose = verbose, name = 'basic model, lifted nodes')
 
-
 ## basic state space model
 set.seed(1) 
 code <- nimbleCode({
@@ -817,6 +816,14 @@ test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNod
 ## Detected some values out of (relative, usually) tolerance:  rOutput12$hessian   cOutput12$hessian .
 ##               [,1]          [,2]       [,3]
 ## [1,] -3.576279e-06 -3.778980e-06 0.05363926
+
+
+covFunVec <- nimbleFunction(
+    run = function(dist = double(2), rho = double(0)) {
+        out <- exp(-dist/rho)
+        returnType(double(2))
+        return(out)
+    }, buildDerivs = TRUE)
 
 
 code <- nimbleCode({

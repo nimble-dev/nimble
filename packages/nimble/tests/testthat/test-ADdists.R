@@ -130,7 +130,7 @@ cholRecTri <- cholRec[ upper.tri(cholRec, TRUE)]
 cholTestTri <-cholTest[ upper.tri(cholTest, TRUE)]
 
 wRecTri <- wRec[ upper.tri(wRec, TRUE) ]
-wTestTri <- wRec[ upper.tri(wTest, TRUE) ]
+wTestTri <- wTest[ upper.tri(wTest, TRUE) ]
 
 wish_test_log <- make_AD_test2(
   op = list(
@@ -168,6 +168,52 @@ wish_test_log <- make_AD_test2(
 )
 
 wish_test_out <- test_AD2(wish_test_log)
+
+## LKJ
+
+p <- 5
+
+lkj_test_log <- make_AD_test2(
+  op = list(
+    name = "dlkj_corr_cholesky manual",
+    opParam = list(name = "dlkj_corr_cholesky manual"),
+    expr = quote({
+      # correlation matrix inverse transform 
+      z <- nimMatrix(nrow = 5, ncol = 5, init=FALSE)
+      u <- nimMatrix(nrow = 5, ncol = 5, init=FALSE)
+        
+      j <- 1L
+      i <- 1L
+      cnt <- 1L
+      for(j in 2:5)
+          for(i in 1:(j-1)) {
+              z[i,j] <- tanh(x[cnt])
+              cnt <- cnt + 1
+          }
+      u[1,2:5] <- z[1,2:5]
+      u[2,3:5] <- z[2,3:5]*sqrt(1-u[1,3:5]^2)
+      u[3,4:5] <- z[3,4:5]*sqrt(1-u[1,4:5]^2-u[2,4:5]^2)
+      u[4,5] <- z[4,5]*sqrt(1-u[1,5]^2-u[2,5]^2-u[3,5]^2)
+      for(j in 1:5)
+          u[j,j] <- sqrt(1-sum(u[1:5,j]^2))
+      out <- dlkj_corr_cholesky(x = u, eta = eta, p = 5, log = log)
+    }),
+    args = list(
+      x = quote(double(1)),
+      eta = quote(double()),
+      p = quote(double()),
+      log = quote(double())
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', eta='double()', p = 'double()', log='double()'),
+  wrt = c('x', 'eta'),
+  inputs = list(record = list(x = rnorm(choose(p,2)), eta = etaRec, p = 5, log = 0),
+                test   = list(x = rnorm(choose(p,2)), eta = etaTest, p = 5, log = 1)),
+)
+
+lkj_test_out <- test_AD2(lkj_test_log)
+
 
 ## from AD_distribution_test_lists.R
 resetTols()
