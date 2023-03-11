@@ -858,7 +858,7 @@ SEXP mapInfo2Rlist(const mapInfoClass &input) {
 SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim) {
   varAndIndicesClass *varAndIndicesPtr = static_cast<varAndIndicesClass *>(R_ExternalPtrAddr(SvarAndIndicesExtPtr));
   vector<int> sizes(SEXP_2_vectorInt(Ssizes, 0));
-  int nDim(SEXP_2_int(SnDim, 0, 0));
+  int nDim(SEXP_2_int(SnDim, 0));
   mapInfoClass output;
   varAndIndices2mapParts(*varAndIndicesPtr, nDim, sizes, output);
   return(mapInfo2Rlist(output));
@@ -869,7 +869,7 @@ SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim) {
   varAndIndicesClass varAndIndices;
   parseVarAndInds(input, varAndIndices);
   vector<int> sizes(SEXP_2_vectorInt(Ssizes, 0));
-  int nDim(SEXP_2_int(SnDim, 0, 0));
+  int nDim(SEXP_2_int(SnDim, 0));
   mapInfoClass output;
   varAndIndices2mapParts(varAndIndices, nDim, sizes, output);
   return(mapInfo2Rlist(output));

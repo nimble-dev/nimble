@@ -72,9 +72,8 @@ SEXP vectorInt_2_SEXP(const vector<int> &v);
 SEXP vectorInt_2_SEXP(const vector<int> &v, int offset);
 
 vector<int> SEXP_2_vectorInt(SEXP Sn, int offset = 0); /* Sn can be numeric or integer from R */ 
-/* Offset is added to every value, so if the vectors are indices, offset = -1 is useful */
 /* If Sn is numeric but not integer, a warning is issued if it contains non-integers */
-int SEXP_2_int(SEXP Sn, int i = 0, int offset = 0);
+int SEXP_2_int(SEXP Sn, int i = 0);
 SEXP int_2_SEXP(int i);
 bool SEXP_2_bool(SEXP Sn, int i = 0);
 SEXP bool_2_SEXP(bool ind);
