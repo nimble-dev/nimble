@@ -1761,11 +1761,12 @@ testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
 #' Information on initial values in a NIMBLE model
 #'
 #'  Having uninitialized nodes in a NIMBLE model can potentially cause some algorithms to fail and can lead to poor performance in others.  Here are some
-#'  general guidelines on how non-intitialized variables can affect performance:
+#'  general guidelines on how non-initialized variables can affect performance:
 #'  \itemize{
 #'    \item MCMC will auto-initialize but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
 #'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
 #' }
+#' Please see this Section (\url{https://r-nimble.org/html_manual/cha-mcmc.html#sec:initMCMC}) of the NIMBLE user manual for further suggestions.
 #'
 #' @name modelInitialization
 #' @rdname modelInitialization

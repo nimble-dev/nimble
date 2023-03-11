@@ -491,6 +491,30 @@ Note that if you compile the MCMC with another object (the model in this case), 
 Cmcmc$Rmcmc$run(niter = 1000)
 ```
 
+## Initializing MCMC {#sec:initMCMC}
+
+To see how to provide initial values, see `help(runMCMC)`, `help(nimbleMCMC)`, or `help(nimbleModel)`.
+
+It is often important to provide valid and reasonable initial values to an MCMC, either as fixed values or via an initialization function.
+
+Not doing so can cause slow convergence or even failure of an MCMC algorithm (e.g., if the values the model is initialized with are not valid). When starting an MCMC, when NIMBLE encounters a missing parameter value, it simulates from the prior distribution. NIMBLE can be more sensitive to missing or bad starting values than some MCMC packages.
+
+The following cases are particularly important to consider when initializing:
+  - In a model with flat priors (i.e., using `x~dflat()` or `x~dhalfflat()`), NIMBLE cannot generate initial values from those priors.
+  - In a model with diffuse priors, initializing from the prior can give unreasonable/extreme initial values. 
+  - In a model with stochastic indices (e.g., `x[idx[i]]` with `idx[i]` unknown), those indices should have (valid) initial values.
+  - In a model with constraints (via `dconstraint`), the model should be initialized such that the constraints are satisfied.
+  - In a model with censoring (via `dinterval`), the initial value(s) of `t` in `dinterval` for the censored node(s) should be consistent with the censoring that is specified.
+
+That said, some MCMC algorithms (such a conjugate samplers) don't use the initial values, so flat or diffuse priors on nodes assigned such samplers will not be a problem with regard to initialization.
+
+Many user questions and problems end up being related to missing or bad initial values. Some suggestions for diagnosing initialization problems include:
+
+ - Run `model$initializeInfo()` to find uninitialized nodes.
+ - Run `model$calculate()` to see if the full model log probability density can be calculated (values of `-Inf`, `NA`, `NaN` indicate there are missing or invalid initial values).
+ - To debug the specific node(s) whose initial value(s) are causing problems, run `model$calculate(nodes)` on specific `nodes` to find their log probability density values, looking look for values of `-Inf`, `NA`, or `NaN`.
+ - For the node(s) with invalid log probability density, inspect the values of the node(s) and parameter(s) of the distribution(s) assigned to those node(s). You can inspect values of a variable in the model using natural R syntax, `model$variable_name`.
+ - With a compiled or uncompiled model, you can run the model initialization (but no MCMC iterations) with `mcmc$run(niter = 0)`. Then inspect the values of model variables to see the results of initialization.
 
 
 ## User-friendly execution of MCMC algorithms: *runMCMC* {#sec:runMCMC}

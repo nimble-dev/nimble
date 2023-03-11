@@ -509,7 +509,10 @@ to be estimated or might be changed for some reason.
 
 Left-censored observations would be specified by setting `censored[i]` to 0 
 and `t[i]` to `NA`. 
-  
+
+Important: The value of `t[i]` corresponding to each censored data point should be given a
+valid initial value (via `inits`) that is consistent with `censored[i]`. Otherwise, NIMBLE will initialize
+from the prior, which may not produce a valid initial value.
 
 The `dinterval` is not really a distribution but rather a trick: in the above example when `censored[i] = 1` it gives a 'probability' of 1 if `t[i] > c[i]` and 0 otherwise.  This means that `t[i] <= c[i]` is treated as impossible.  More generally than simple right- or left-censoring, `censored[i] ~ dinterval(t[i], c[i, ])` is defined such that for a vector of increasing cutpoints, `c[i, ]`, `t[i]` is enforced to fall within the `censored[i]`-th cutpoint interval.  This is done by setting data `censored[i]` as follows:
 
@@ -542,6 +545,8 @@ with `constraint_data` set (as `data`) to 1.  This is
 equivalent to a half-normal distribution on the half-plane $\mu_1 +
 \mu_2 > 0$.  Nodes following `dconstraint` should be provided as data for the same reason of avoiding unintended initialization described above for `dinterval`.
 <!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. -->
+
+Important: the model should be initialized so that the constraints are satisfied. Otherwise, NIMBLE will initialize from the prior, which may not produce a valid initial value and may cause algorithms (particularly) MCMC to fail.
 
 Formally, `dconstraint(cond)` is a probability distribution on $\left\{ 0, 1 \right\}$ such that $P(1) = 1$ if `cond` is `TRUE` and $P(0) = 1$ if `cond` is `FALSE`. 
 <!---  TODO: Chris thought this wording is confusing: 
