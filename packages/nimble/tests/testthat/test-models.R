@@ -916,6 +916,86 @@ test_that("dmvt usage", {
     expect_equal(m$getParam('y2[1:3]', 'prec'), diag(rep(0.5, n)))
 })
 
+test_that("bad size or dimension of initial values", {
+
+    code <- nimbleCode({
+        for(i in 1:3)
+            z[i] ~ dnorm(0,1)
+        a[1:3,1:2] <- b[1:3,1:2]
+    })
+    
+    ## Bad dim for nimbleModel
+    expect_error(m <- nimbleModel(code, inits = list(z = matrix(rnorm(9), 3))),
+                 "inconsistent dimensionality")
+    
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(z = matrix(rnorm(9), 3))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "Incorrect number of dimensions")
+    expect_identical(cm$z, rep(0, 3))    
+    expect_message(cm$setInits(list(z = matrix(rnorm(9), 3))), "Incorrect size or dimension")
+    
+    expect_error(m <- nimbleModel(code, inits = list(b = rnorm(2))),
+          "inconsistent dimensionality")         
+    
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(b = rnorm(2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$b, matrix(0, 3, 2))
+    expect_message(cm$setInits(list(b = rnorm(2))), "Incorrect size or dimension")
+
+    ## Too many values
+
+    ## For better or worse, length of 5 gets baked in based on inits.
+    ## TODO: do we want to reconsider whether this should error out?
+    m <- nimbleModel(code, inits = list(z = rnorm(5)))
+    cm <- compileNimble(m)
+    expect_identical(m$z, cm$z)
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(z=rnorm(5))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$z, rep(0, 3))
+    expect_message(cm$setInits(list(z=rnorm(5))), "Incorrect size or dimension")
+    
+    ### matrix
+
+    ## For better or worse, 4x2 gets baked in based on inits.
+    ## TODO: do we want to reconsider whether this should error out?
+    m <- nimbleModel(code, inits = list(b = matrix(rnorm(8),4,2)))
+    cm <- compileNimble(m)
+    expect_identical(m$b, cm$b)
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(b = matrix(rnorm(8),4,2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$b, matrix(0, 3, 2))
+    expect_message(cm$setInits(list(b = matrix(rnorm(8),4,2))), "Incorrect size or dimension")
+    
+
+    ## Too few values
+
+    expect_error(m <- nimbleModel(code, inits = list(z = rnorm(2))),
+                 "dimensions specified are smaller")
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(z=rnorm(2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$z, rep(0, 3))
+    expect_message(cm$setInits(list(z=rnorm(2))), "Incorrect size or dimension")
+    
+    ### matrix
+
+    expect_error(m <- nimbleModel(code, inits = list(b = matrix(rnorm(4),2,2))),
+                 "dimensions specified are smaller")
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(b = matrix(rnorm(4),2,2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$b, matrix(0, 3, 2))
+    expect_message(cm$setInits(list(b = matrix(rnorm(4),2,2))), "Incorrect size or dimension")
+
+})
+
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
