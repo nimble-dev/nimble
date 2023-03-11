@@ -838,42 +838,42 @@ test_that("handling of contiguous blocks", {
 
     indArr <- matrix(1, 3, 3)
     diag(indArr) <- c(2, 3, 1)
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3]', 'y[1, 1]', 'y[2, 2]'))
 
     indArr <- matrix(1, 3, 3)
     diag(indArr) <- c(2, 3, 4)
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3]', 'y[1, 1]', 'y[2, 2]', 'y[3, 3]'))
 
     indArr <- matrix(1, 4, 4)
     indArr[2:3, 1:3] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%4, 1%.s%4]', 'y[2:3, 1:3]'))
 
     indArr <- matrix(1, 4, 4)
     indArr[2:3, c(1,3)] <- indArr[2:3, c(1,3)] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%4, 1%.s%4]', 'y[2:3, 1%.s%3]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1:2, 1:2, 2] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1:2, 1:2, 2]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1:2, 1:2, 1:2] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1:2, 1:2, 1:2]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1, 1, 1] <- indArr[2, 2, 1] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1, 1, 1] <- indArr[2, 2, 2] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1%.s%2]'))
 
     ## Another case that would formerly error out
