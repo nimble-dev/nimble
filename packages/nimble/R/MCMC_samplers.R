@@ -263,6 +263,10 @@ sampler_RW <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
+        setScale = function(newScale) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+        },
         getScaleHistory = function() {       ## scaleHistory
             returnType(double(1))
             if(saveMCMChistory) {
@@ -419,6 +423,17 @@ sampler_RW_block <- nimbleFunction(
                 timesRan <<- 0
                 timesAccepted <<- 0
             }
+        },
+        setScale = function(newScale) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+            chol_propCov_scale <<- chol_propCov * scale
+        },
+        setPropCov = function(newPropCov) {
+            propCov         <<- newPropCov
+            propCovOriginal <<- newPropCov
+            chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
         },
         getScaleHistory = function() {  ## scaleHistory
             if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
