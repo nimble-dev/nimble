@@ -1748,7 +1748,7 @@ testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
 #'    \item MCMC will auto-initialize but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
 #'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
 #' }
-#' Please also see Section 7.4 of the NIMBLE user manual for further suggestions.
+#' Please see this Section (\url{https://r-nimble.org/html_manual/cha-mcmc.html#sec:initMCMC}) of the NIMBLE user manual for further suggestions.
 #'
 #' @name modelInitialization
 #' @rdname modelInitialization
