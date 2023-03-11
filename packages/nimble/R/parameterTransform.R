@@ -75,8 +75,8 @@ parameterTransform <- nimbleFunction(
     name = 'parameterTransform',
     setup = function(model, nodes) {
         nodesExpanded <- model$expandNodeNames(nodes)
-        if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform nodes may not be deterministic: ', paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
-        if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform nodes may not be discrete: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
+        if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
+        if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         nNodes <- length(nodesExpanded)
         if(nNodes < 1) stop('parameterTransform requires at least one model node')
         ## transformType:
