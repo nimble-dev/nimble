@@ -764,7 +764,7 @@ sampler_AF_slice <- nimbleFunction(
         widthVec               <- extractControlElement(control, 'sliceWidths',              'oneVec')
         maxSteps               <- extractControlElement(control, 'sliceMaxSteps',            100)
         adaptFactorMaxIter     <- extractControlElement(control, 'sliceAdaptFactorMaxIter',  15000)
-        adaptFactorInterval    <- extractControlElement(control, 'sliceAdaptFactorInterval', 1000)
+        adaptFactorInterval    <- extractControlElement(control, 'sliceAdaptFactorInterval', 200)
         adaptWidthMaxIter      <- extractControlElement(control, 'sliceAdaptWidthMaxIter',   512)
         adaptWidthTolerance    <- extractControlElement(control, 'sliceAdaptWidthTolerance', 0.1)
         maxContractions        <- extractControlElement(control, 'maxContractions',          1000)
@@ -2263,7 +2263,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item sliceWidths.  A numeric vector of initial slice widths.  The length of the vector must be equal to the sum of the lengths of all nodes being used by the automated factor slice sampler.  Defaults to a vector of 1's.
 #' \item sliceAdaptFactorMaxIter.  The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation. (default = 15000)
-#' \item sliceAdaptFactorInterval.  The interval on which to perform factor adaptation. (default = 1000)
+#' \item sliceAdaptFactorInterval.  The interval on which to perform factor adaptation. (default = 200)
 #' \item sliceAdaptWidthMaxIter.  The maximum number of iterations for which to adapt the widths for a given set of factors. (default = 512)
 #' \item sliceAdaptWidthTolerance. The tolerance for when widths no longer need to adapt, between 0 and 0.5. (default = 0.1)
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
