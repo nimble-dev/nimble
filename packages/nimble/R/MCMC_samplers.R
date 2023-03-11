@@ -1596,12 +1596,14 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
             ## Calculate canonical partial correlations (z) and partial sums (remaining lengths of U columns)
             z[1, 2:d] <<- x[1, 2:d]
             partialSums[2, 2] <<- 1 - x[1, 2]^2
-            for(i in 3:d) {
-                for(j in 2:(i-1)) {
-                    partialSums[j, i] <<- partialSums[j-1, i] - x[j-1, i]^2
-                    z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
+            if(d >= 3) {
+                for(i in 3:d) {
+                    for(j in 2:(i-1)) {
+                        partialSums[j, i] <<- partialSums[j-1, i] - x[j-1, i]^2
+                        z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
+                    }
+                    partialSums[i, i] <<- partialSums[i-1, i] - x[i-1, i]^2
                 }
-                partialSums[i, i] <<- partialSums[i-1, i] - x[i-1, i]^2
             }
         },
         reset = function() {
