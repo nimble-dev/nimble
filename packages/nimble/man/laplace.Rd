@@ -5,7 +5,6 @@
 \alias{nimOneLaplace1D}
 \alias{nimOneLaplace}
 \alias{buildLaplace}
-\alias{summaryLaplace}
 \alias{laplace}
 \alias{Laplace}
 \title{Laplace approximation}
@@ -39,22 +38,15 @@ buildLaplace(
   calcNodes,
   control = list()
 )
-
-summaryLaplace(
-  cLaplace,
-  scale = "original",
-  calcRandomEffectsStdError = FALSE,
-  returnJointCovariance = FALSE
-)
 }
 \arguments{
 \item{model}{an uncompiled NIMBLE model object.}
 
 \item{paramNodes}{a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.}
 
-\item{randomEffectsNodes}{a character vector of names of latent nodes to integrate out using the Laplace approximation; defaults to latent nodes that depend on \code{paramNodes}.}
+\item{randomEffectsNodes}{a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to stochastic nodes that depend on \code{paramNodes}.}
 
-\item{calcNodes}{a character vector of names of nodes for calculating the log-likelihood value; defaults to \code{model$geteDependencies(randomEffectsNodes)}. 
+\item{calcNodes}{a character vector of names of nodes for calculating the log-likelihood value; defaults to nodes that depend on \code{randomEffectsNodes} as determined by \code{model$geteDependencies(randomEffectsNodes)}.
 There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.}
 
 \item{optimControl}{a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.}
@@ -66,14 +58,6 @@ Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{
 \code{"last.best"} means the latest random effects values corresponding to currently the largest Laplace likelihood will be used. By default, the initial random effects values will be used for inner optimization.}
 
 \item{control}{a named list (for \code{buildLaplace} only) that controls the behavior of the Laplace approximation. See \code{control} section below.}
-
-\item{cLaplace}{a compiled Laplace algorithm.}
-
-\item{scale}{specifies the scale of the summarized Laplace results: 'original' (default) or 'transform'.}
-
-\item{calcRandomEffectsStdError}{if the standard errors for random effects estimates are calculated; defaults to FALSE.}
-
-\item{returnJointCovariance}{if the joint covariance matrix of the estimators of random effects and parameters is returned; defaults to FALSE.}
 }
 \description{
 Builds a Laplace approximation algorithm for a given NIMBLE model.
@@ -138,6 +122,8 @@ Default settings are given inside the function and can be changed for all contro
 
 The Laplace algorithm object contains a list of functions:
 \itemize{
+  \item \code{get_node_name_vec(returnParams)}. Return a list (>1) of names of parameters/random effects nodes, according to \code{returnParams = TRUE/FALSE}.
+  \item \code{get_node_name_single(returnParams)}. Return the name of a single parameter/random effect node, \code{returnParams = TRUE/FALSE}.
   \item \code{set_method(method)}. Set method ID for calculating the Laplace approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2}, default method), or 3 (\code{Laplace3}).
   \item \code{get_method()}. Return the method ID currently used in the algorithm. 
   \item \code{one_time_fixes()}. Fix the dimensionality issue if there is only one parameter in the model. This function is called where necessary and users do not need to run this.  
@@ -152,24 +138,23 @@ The Laplace algorithm object contains a list of functions:
   \item \code{derivspInverseTransform(pTransform, order)}. Derivative of the inverse transformation w.r.t. transformed parameters at \code{pTransform}. Derivative order is given by \code{order}.
   \item \code{reInverseTransform(reTrans)}. Back transform the transformed random effects value \code{reTrans} to original scale.
   \item \code{derivsreInverseTransform(reTrans, order)}. Derivative of the inverse transformation w.r.t. transformed random effects at \code{reTrans}. Derivative order is given by \code{order}.
-  \item \code{optimRandomEffects(pTransform)} Calculate the optimized random effects given transformed parameter value \code{pTransform}.
-  \item \code{inverseNegHess(p, reTransform)} Calculate the inverse of the negative Hessian matrix of the joint log-likelihood w.r.t. transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
-  \item \code{summary(LaplaceMLEOutput)}. Summarize the maximum likelihood estimation results, given object \code{LaplaceMLEOutput} that is returned by \code{LaplaceMLE}. This function generates a list of original parameter names, estimates, and standard errors.  
-}
-}
-
-\section{\code{summaryLaplace}}{
-
-
-This function summarizes Laplace maximum likelihood estimation results given a compiled Laplace algorithm. 
-If \code{LaplaceMLE()} is called before, \code{summaryLaplace} will calculate standard errors and covariance matrix (if required) and do scale transformations if necessary.
-Otherwise, \code{LaplaceMLE()} will be called internally to do maximum likelihood estimation first. 
-If transformations are used for optimization, standard errors and covariance matrix on original scale are obtained by the delta method. 
-It returns a named list (\code{params}, \code{random}, and \code{vcov}) and more specifically it returns the following:
-\itemize{
-  \item \code{params}: estimates and standard errors of parameters on a specified scale, i.e. original or transformed.
-  \item \code{random}: estimates of random effects and if required their standard errors.
-  \item \code{vcov}: if required, joint variance-covariance matrix of the estimators of random effects and parameters; otherwise it is null. 
+  \item \code{optimRandomEffects(pTransform)}. Calculate the optimized random effects given transformed parameter value \code{pTransform}.
+  \item \code{inverseNegHess(p, reTransform)}. Calculate the inverse of the negative Hessian matrix of the joint log-likelihood w.r.t. transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
+  \item \code{hess_logLik_wrt_p_wrt_re(p, reTransform)}. Calculate the Hessian matrix of the joint log-likelihood w.r.t. parameters and transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
+  \item \code{summary(LaplaceMLEOutput, originalScale, calcRandomEffectsStdError, returnJointCovariance)}. Summarize the maximum likelihood estimation results, given object \code{LaplaceMLEOutput} that is returned by \code{LaplaceMLE}. 
+       In addition, this function accepts the following arguments:
+       \itemize{
+          \item \code{originalScale}. Logical. If TRUE, the function returns results for original parameters and random effects; otherwise, it returns transformed results if transformation is needed. Defaults to TRUE.
+          \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard errors of random effects estimators will be calculated. Defaults to FALSE.
+          \item \code{returnJointCovariance}. Logical. If TRUE, return the joint variance-covariance matrix of the estimators of random effects and parameters. Defaults to FALSE.
+       } 
+       This function returns a named list:
+       \itemize{
+          \item \code{params}. A list that contains estimates and standard errors of parameters on a specified scale, i.e. original (if \code{originalScale} is TRUE) or transformed.
+          \item \code{random}. A list that contains estimates of random effects and if required their standard errors, on original/transformed scale. 
+          \item \code{vcov}. If required (i.e. \code{returnJointCovariance} is TRUE), the joint variance-covariance matrix of the estimators of random effects and parameters, on original/transformed scale. 
+          \item \code{scale}. \code{original} or \code{transformed}. 
+       } 
 }
 }
 
@@ -197,9 +182,9 @@ pumpLaplace <- buildLaplace(pump)
 Cpump <- compileNimble(pump)
 CpumpLaplace <- compileNimble(pumpLaplace, project = pump)
 # Calculate MLEs on transformed scale
-MLEres <- CpumpLaplace$LaplaceMLE(c(0.1, 0.1))
+MLEres <- CpumpLaplace$LaplaceMLE()
 # Calculate estimates and standard errors for parameters and random effects on original scale
-summ <- summaryLaplace(CpumpLaplace, calcRandomEffectsStdError = TRUE)
+allres <- CpumpLaplace$summary(MLEres, calcRandomEffectsStdError = TRUE)
 }
 
 }

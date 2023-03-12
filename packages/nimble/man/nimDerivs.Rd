@@ -21,21 +21,20 @@ all arguments to \code{nimFxn}.}
 corresponding to whether the function value, Jacobian, and Hessian should be
  returned respectively.  Defaults to \code{c(0, 1, 2)}.}
 
-\item{model}{(optional) for derivatives of a nimbleFunction that involves model.}
-
-\item{...}{additional arguments intended for internal use only.
-
+\item{model}{(optional) for derivatives of a nimbleFunction that involves model.
 calculations, the uncompiled model that is used. This is needed in order
 to be able to correctly restore values into the model when \code{order} does not
 include 0 (or in all cases when double-taping).}
+
+\item{...}{additional arguments intended for internal use only.}
 }
 \value{
 a \code{nimbleList} with elements \code{value}, \code{jacobian},
 and \code{hessian}.
 }
 \description{
-EXPERIMENTAL Computes the value, Jacobian, and Hessian of a given  
-\code{nimbleFunction} method.
+Computes the value, 1st order (Jacobian), and 2nd order (Hessian) derivatives of a given
+\code{nimbleFunction} method and/or model log probabilities
 }
 \details{
 Derivatives for uncompiled nimbleFunctions are calculated using the
