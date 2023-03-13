@@ -2844,6 +2844,8 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
                 stop(exprClassProcessingErrorMsg(code, 'NIMBLE compiler does not support var with a matrix (or higher dimensional) argument.'), call. = FALSE) 
             }
         }
+        if(code$args[[1]]$nDim == 0) 
+            stop(exprClassProcessingErrorMsg(code, 'NIMBLE compiler does not support reduction operations on scalar arguments.'), call. = FALSE)
         if(!nimbleOptions('experimentalNewSizeProcessing') ) {
             if(!code$args[[1]]$isName) {
                 if(code$args[[1]]$toEigenize == 'no') {

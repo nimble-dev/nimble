@@ -334,6 +334,25 @@ test_that("Handling of negative indexing in nimbleFunction code", {
     
 })
 
+test_that("Test of error trapping for reduction functions", {
+    nf <- nimbleFunction(
+        run = function(x = double(0)) {
+            returnType(double())
+            y = mean(x)
+            return(0)
+        }
+    ) 
+    expect_error(ca <- compileNimble(a), "does not support reduction")
+    
+    nf <- nimbleFunction(
+        run = function(x = double(1)) {
+            returnType(double())
+            y = mean(x)
+            return(0)
+        }
+    ) 
+    ca <- compileNimble(a)
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
