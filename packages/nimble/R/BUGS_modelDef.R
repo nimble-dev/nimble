@@ -2689,6 +2689,12 @@ modelDefClass$methods(genVarInfo3 = function() {
            stop("genVarInfo3: index value of zero or less found for model variable(s): ",
                 paste(names(varInfo)[problemVars], collapse = ' '))
     }
+
+    ## check for any index variables that match names of vars (this case will not compile correctly)
+    indexVars <- unlist(lapply(declInfo, function(x) lapply(x$indexExpr, deparse)))
+    badVars <- which(names(varInfo) %in% indexVars)
+    if(length(badVars))
+        stop("Detected use of '", names(varInfo)[badVars], "' as both a for loop index variable and model variable. This model cannot be compiled.")
 })
 
 modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
