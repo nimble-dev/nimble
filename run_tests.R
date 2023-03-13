@@ -50,7 +50,7 @@ if (length(grep('^-', argv, invert = TRUE))) {
         ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
     cat('SKIPPING', omitlist, sep = '\n  ')
     allTests <- setdiff(allTests, omitlist)
-
+    cat('Debug: Did setdiff.')
     smcTests <- 'test-filtering.R'
 }
 
@@ -64,6 +64,8 @@ for (test in allTests) {
 }
 testTimes <- testTimes[order(testTimes),, drop = FALSE]
 allTests <- intersect(row.names(testTimes), allTests)
+
+    cat('Debug: Got allTests.')
 
 # Parallelize tests by splitting them up into batches.
 # We use the Best Fit Decreasing heuristic to approximatly solve this 1-D bin packing problem.
