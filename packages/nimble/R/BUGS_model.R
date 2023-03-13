@@ -252,37 +252,49 @@ Details: The return value is a character vector with an element for each node in
                                   },
 
                                 # user-facing, in contrast to getNodeTypes
-                                isStoch = function(nodes) {
+                                isStoch = function(nodes, nodesAlreadyExpanded = FALSE) {
                                   '
 Determines whether one or more nodes are stochastic
 
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
 '
-                                  nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                  ## This check handles strange case of overlapping RHSonly nodes
+                                  ## when called from `setData` and checking deterministic data nodes;
+                                  ## e.g., see test-mcmc.R 'conjugate MVN with ragged dependencies'
+                                  if(!nodesAlreadyExpanded)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE) else nodeNames <- nodes
                                   type <- getNodeType(nodeNames)
                                   out <- type == "stoch"
                                   names(out) <- nodeNames
                                   return(out)
                                 },
 
-                                isDeterm = function(nodes) {
+                                isDeterm = function(nodes, nodesAlreadyExpanded = FALSE) {
                                   '
 Determines whether one or more nodes are deterministic
 
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
 '
-                                  !isStoch(nodes)
+                                  ## See comment in `isStoch`.
+                                  if(!nodesAlreadyExpanded)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE) else nodeNames <- nodes
+                                  type <- getNodeType(nodeNames)
+                                  out <- type == "determ"
+                                  names(out) <- nodeNames
+                                  return(out)
                                 },
 
-                                  isTruncated = function(nodes) {
+                                isTruncated = function(nodes) {
                                                                       '
 Determines whether one or more nodes are truncated
 
@@ -312,7 +324,7 @@ Details: The return value is a character vector with an element for each node in
 
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       dists <- getDistribution(nodeNames)
-				  dims <- sapply(dists, getDimension)
+			   	      dims <- sapply(dists, getDimension)
                                       out <- dims == 1
                                       names(out) <- nodeNames
                                       return(out)
@@ -562,7 +574,7 @@ Resets the \'data\' property of ALL model nodes to FALSE.  Subsequent to this ca
 
                                   setData = function(..., warnAboutMissingNames = TRUE) {
 '
-Sets the \'data\' flag for specified nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
+Sets the \'data\' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
 
 Arguments:
 
@@ -606,7 +618,6 @@ Details: If a provided value (or the current value in the model when only a name
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
-
                                       for(iData in seq_along(data)) {
                                           varName <- dataNames[iData]
                                           varValue <- data[[varName]]
@@ -621,7 +632,7 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## it is possible that the constants don't exist on LHS of BUGS decls
                                               ## and so are not variables in the model.  In that case we don't want to issue the warning.
                                               if(warnAboutMissingNames
-                                                 & nimble::nimbleOptions("verbose")) {
+                                                 && nimble::nimbleOptions("verbose")) {
                                                   if(varName == '') {
                                                       warning('setData: unnamed element provided to setData.')
                                                   } else 
@@ -640,8 +651,18 @@ Details: If a provided value (or the current value in the model when only a name
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
                                           if(length(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+
+                                          expandedNodeNames <- expandNodeNames(varName, returnScalarComponents = TRUE)
+                                          determElements <- .self$isDeterm(expandedNodeNames, nodesAlreadyExpanded = TRUE)
+                                          if(any(determElements))
+                                              if(any(!is.na(varValue[which(determElements)])))
+                                                  stop("setData: '", varName, "' contains deterministic nodes. Deterministic nodes cannot be specified as 'data' or 'constants'.")
+                                          
                                           .self[[varName]] <- varValue
+                                          ## Values set as NA are not flagged as data nor are RHSonly elements.
                                           isDataVarValue <- !is.na(varValue)
+                                          isDataVarValue[!.self$isStoch(expandedNodeNames, nodesAlreadyExpanded = TRUE)] <- FALSE
+                                          names(isDataVarValue) <- NULL
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
                                    ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
