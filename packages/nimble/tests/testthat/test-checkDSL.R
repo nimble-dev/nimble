@@ -342,7 +342,7 @@ test_that("Test of error trapping for reduction functions", {
             return(0)
         }
     ) 
-    expect_error(ca <- compileNimble(a), "does not support reduction")
+    expect_error(cnf <- compileNimble(nf), "does not support reduction")
     
     nf <- nimbleFunction(
         run = function(x = double(1)) {
@@ -351,7 +351,7 @@ test_that("Test of error trapping for reduction functions", {
             return(0)
         }
     ) 
-    ca <- compileNimble(a)
+    cnf <- compileNimble(nf)
 })
 
 options(warn = RwarnLevel)
