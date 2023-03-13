@@ -647,18 +647,21 @@ Details: If a provided value (or the current value in the model when only a name
                                               data[[varName]] <- NULL
                                               next
                                           }
-                                          determElements <- .self$isDeterm(expandNodeNames(varName, returnScalarComponents = TRUE),
-                                                                nodesAlreadyExpanded = TRUE)
-                                          if(any(determElements & !is.na(varValue[seq_along(determElements)])))
-                                              stop("setData: '", varName, "' contains deterministic nodes. Deterministic nodes cannot be specified as 'data' or 'constants'.")
                                           if(length(isDataVars[[varName]]))
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
                                           if(length(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+
+                                          expandedNodeNames <- expandNodeNames(varName, returnScalarComponents = TRUE)
+                                          determElements <- .self$isDeterm(expandedNodeNames, nodesAlreadyExpanded = TRUE)
+                                          if(any(determElements))
+                                              if(any(!is.na(varValue[which(determElements)])))
+                                                  stop("setData: '", varName, "' contains deterministic nodes. Deterministic nodes cannot be specified as 'data' or 'constants'.")
+                                          
                                           .self[[varName]] <- varValue
                                           ## Values set as NA are not flagged as data nor are RHSonly elements.
                                           isDataVarValue <- !is.na(varValue)
-                                          isDataVarValue[!.self$isStoch(expandNodeNames(varName, returnScalarComponents = TRUE), nodesAlreadyExpanded = TRUE)] <- FALSE
+                                          isDataVarValue[!.self$isStoch(expandedNodeNames, nodesAlreadyExpanded = TRUE)] <- FALSE
                                           names(isDataVarValue) <- NULL
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
