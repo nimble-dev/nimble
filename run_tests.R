@@ -63,7 +63,7 @@ for (test in allTests) {
         testTimes[test, 'time'] <- 0.1  # Bogus very short duration.
     }
 }
-testTimes <- testTimes[order(testTimes),, drop = FALSE]
+testTimes <- testTimes[order(testTimes$time),, drop = FALSE]
 allTests <- intersect(row.names(testTimes), allTests)
 
 # Parallelize tests by splitting them up into batches.
