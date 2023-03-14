@@ -1196,12 +1196,20 @@ Details: See the initialize() function
         
         setUnsampledNodes = function() {
             samplerTargetNodes <- model$expandNodeNames(unlist(lapply(samplerConfs, `[[`, 'target')))
+            additionalNodesBeingSampled <- character()
             samplerNames <- sapply(samplerConfs, `[[`, 'name')
-            postPredSamplerInd <- which(samplerNames == 'posterior_predictive')
-            postPredSamplerTargetNodes <- if(length(postPredSamplerInd)) model$expandNodeNames(unlist(lapply(samplerConfs[postPredSamplerInd], `[[`, 'target'))) else character()
+            ## special case for posterior_predictive sampler:
+            samplerInd <- which(samplerNames == 'posterior_predictive')
+            postPredSamplerTargetNodes <- if(length(samplerInd)) model$expandNodeNames(unlist(lapply(samplerConfs[samplerInd], `[[`, 'target'))) else character()
             postPredSamplerNodesSampled <- model$getDependencies(postPredSamplerTargetNodes, stochOnly = TRUE, downstream = TRUE, includePredictive = TRUE)
+            additionalNodesBeingSampled <- c(additionalNodesBeingSampled, postPredSamplerNodesSampled)
             postPredSamplerDownstreamNodes <<- setdiff(postPredSamplerNodesSampled, postPredSamplerTargetNodes)
-            allNodesBeingSampled <- unique(c(samplerTargetNodes, postPredSamplerNodesSampled))
+            ## special case for RW_PF and RW_PF_block samplers:
+            samplerInd <- which(samplerNames %in% c('RW_PF', 'RW_PF_block'))
+            pfSamplerLatentNodes <- if(length(samplerInd)) model$expandNodeNames(unlist(lapply(samplerConfs[samplerInd], function(sconf) sconf$control$latents))) else character()
+            additionalNodesBeingSampled <- c(additionalNodesBeingSampled, pfSamplerLatentNodes)
+            ##
+            allNodesBeingSampled <- unique(c(samplerTargetNodes, additionalNodesBeingSampled))
             unsampledNodes <<- setdiff(model$getNodeNames(stochOnly = TRUE, includeData = FALSE), allNodesBeingSampled)
         },
         
