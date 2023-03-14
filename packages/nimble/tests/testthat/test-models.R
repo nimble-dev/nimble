@@ -996,6 +996,19 @@ test_that("bad size or dimension of initial values", {
 
 })
 
+test_that("Example of splitVertices bug from Issue 1268 works.", {
+  code <- nimbleCode({
+    for (i in 1:2) {
+      for (j in 1:2){
+        b[i,j] <- X[i, index[j]]
+      }
+    }
+    for (i in 1:2) {
+      y[i] <- sum(a[1:2, index[i]])
+    }
+  })
+  expect_no_error(Rmodel <- nimbleModel(code, constants = list(index=c(1,1))))
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
