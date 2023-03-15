@@ -140,6 +140,11 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
       macroOutput <- codeProcessModelMacros(code=code, constants=constants, env=userEnv)
       code <- macroOutput$code
       constants <- macroOutput$constants
+      # Convert factors to numeric
+      constants <- lapply(constants, function(x){
+        if(is.factor(x)) x <- as.numeric(x)
+        x
+      })
     }
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
@@ -272,7 +277,7 @@ codeProcessModelMacros <- function(code,
     possibleMacroName <- safeDeparse(code[[1]], warn = TRUE)
     ## If it is really version (i), possibleMacroName will be
     ## ~ or <- and should be updated to the call on the right-hand side:
-    if(possibleMacroName %in% c('<-', '~')) {
+    if(possibleMacroName %in% c('<-', '~') & !is.name(code[[3]])) {
         possibleMacroName <- safeDeparse(code[[3]][[1]], warn = TRUE)
     }
     if(exists(possibleMacroName)) { ## may need to provide an envir argument
