@@ -14,8 +14,10 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
                                               cm, # compiled model
                                               m,  # original model (or list with values)
                                               opt, # possibly already-run LaplaceMLE result,
-                                              methods = 1:3 # methods to check
-                                              ) {
+                                              methods = 1:3, # methods to check
+                                              summ_orig, # summarized Laplace MLE result (original)
+                                              summ_trans # summarized Laplace MLE result (transformed)
+) {
   vars <- cm$getVarNames()
   reset <- function() {
     for(v in vars) cm[[v]] <- m[[v]]
@@ -23,6 +25,12 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
   if(missing(opt)) {
     reset()
     opt <- cL$LaplaceMLE()
+  }
+  if(missing(summ_orig)){
+    summ_orig <- cL$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  }
+  if(missing(summ_trans)){
+    summ_trans <- cL$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   }
   ref_method <- cL$get_method()
   for(method in methods) {
@@ -32,6 +40,18 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
       opt_alt <- cL$LaplaceMLE()
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
+      summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+      summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+      expect_equal(summ_orig$params$estimate, summ_orig_alt$params$estimate, tol = 1e-5)
+      expect_equal(summ_orig$random$estimate, summ_orig_alt$random$estimate, tol = 1e-5)
+      expect_equal(summ_orig$params$stdError, summ_orig_alt$params$stdError, tol = 1e-5)
+      expect_equal(summ_orig$random$stdError, summ_orig_alt$random$stdError, tol = 1e-5)
+      expect_equal(summ_orig$vcov, summ_orig_alt$vcov, tol = 1e-5)
+      expect_equal(summ_trans$params$estimate, summ_trans_alt$params$estimate, tol = 1e-5)
+      expect_equal(summ_trans$random$estimate, summ_trans_alt$random$estimate, tol = 1e-5)
+      expect_equal(summ_trans$params$stdError, summ_trans_alt$params$stdError, tol = 1e-5)
+      expect_equal(summ_trans$random$stdError, summ_trans_alt$random$stdError, tol = 1e-5)
+      expect_equal(summ_trans$vcov, summ_trans_alt$vcov, tol = 1e-5)
     }
   }
   invisible(NULL)
@@ -40,7 +60,7 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
 test_that("Laplace simplest 1D works", {
   m <- nimbleModel(
     nimbleCode({
-      y ~ dnorm(a, sd=2)
+      y ~ dnorm(a, sd = 2)
       a ~ dnorm(mu, sd = 3)
       mu ~ dnorm(0, sd = 5)
     }), data = list(y = 4), inits = list(a = -1, mu = 0),
@@ -61,6 +81,55 @@ test_that("Laplace simplest 1D works", {
   # Cov[a, y] = V[a] = 9 (not needed)
   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
 
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+})
+
+test_that("Laplace simplest 1D with a constrained parameter works", {
+  m <- nimbleModel(
+    nimbleCode({
+      y ~ dnorm(a, sd = 2)
+      a ~ dnorm(mu, sd = 3)
+      mu ~ dexp(1.0)
+    }), data = list(y = 4), inits = list(a = -1, mu = 0),
+    buildDerivs = TRUE
+  )
+  
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  # V[a] = 9
+  # V[y] = 9 + 4 = 13
+  # Cov[a, y] = V[a] = 9 (not needed)
+  # y ~ N(mu, 13)
+  # muhat = y = 4
+  # ahat = (9*y+4*mu)/(9+4) = y = 4
+  # Jacobian of ahat wrt transformed param log(mu) is 4/13*mu = 4*mu/13 = 16/13
+  # Hessian of joint loglik wrt a: -(1/4 + 1/9)
+  # Hessian of marginal loglik wrt transformed param log(mu) is (y*mu - 2*mu*mu)/13 = -4^2/13
+  # Variance of transformed param is 13/16
+  expect_equal(opt$par, 4, tol = 1e-4)
+  expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
+  expect_equal(opt$hessian[1,1], -4^2/13, tol = 1e-4)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_equal(summ$random$estimate, 4, tol = 1e-4)
+  # Covariance matrix on transformed scale
+  vcov_transform <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(16/13, 1), ncol = 1) %*% (13/16) %*% t(matrix(c(16/13, 1), ncol = 1))
+  expect_equal(vcov_transform, summ$vcov, tol = 1e-4)
+  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  # Covariance matrix on original scale
+  vcov <- diag(c(1,4)) %*% vcov_transform %*% diag(c(1,4))
+  expect_equal(vcov, summ2$vcov, tol = 1e-4)
+  
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
@@ -99,6 +168,55 @@ test_that("Laplace 1D with deterministic intermediates works", {
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 })
+
+test_that("Laplace 1D with a constrained parameter and deterministic intermediates works", {
+  m <- nimbleModel(
+    nimbleCode({
+      y ~ dnorm(0.2 * a, sd = 2)
+      a ~ dnorm(0.5 * mu, sd = 3)
+      mu ~ dexp(1.0)
+    }), data = list(y = 4), inits = list(a = -1, mu = 0),
+    buildDerivs = TRUE
+  )
+  
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE() # some warnings are ok here.
+  # V[a] = 9
+  # V[y] = 0.2^2 * 9 + 4 = 4.36
+  # y ~ N(0.2*0.5*mu, 4.36)
+  # muhat = y/(0.2*0.5) = 40
+  # ahat = (9*0.2*y + 4*0.5*mu)/(4+9*0.2^2) = 20
+  # Jacobian of ahat wrt transformed param log(mu) is 4*0.5*mu/(4+9*0.2^2) = 18.34862
+  # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
+  # Hessian of marginal lolik wrt param mu is -(0.2*0.5)^2/4.36
+  # Hessian of marginal loglik wrt transformed param log(mu) is (0.2*0.5*y*mu - 2*0.1^2*mu*mu)/4.36 = -3.669725
+  expect_equal(opt$par, 40, tol = 1e-4) 
+  expect_equal(opt$hessian[1,1], -3.669725, tol = 1e-3)
+  expect_equal(opt$value, dnorm(0.1*40, 0.1*40, sd = sqrt(4.36), log = TRUE))
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_equal(summ$random$estimate, 20, tol = 1e-4)
+  # Covariance matrix on transformed scale
+  vcov_transform <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(18.34862, 1), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(18.34862, 1), ncol = 1))
+  expect_equal(vcov_transform, summ$vcov, tol = 1e-3)
+  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  # Covariance matrix on original scale
+  vcov <- diag(c(1,40)) %*% vcov_transform %*% diag(c(1,40))
+  expect_equal(vcov, summ2$vcov, tol = 1e-3)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+})
+
 
 test_that("Laplace 1D with deterministic intermediates and multiple data works", {
   m <- nimbleModel(
@@ -150,6 +268,81 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   expect_identical(nim1D$joint_updateNodes, character())
   expect_identical(nim1D$joint_constantNodes, c("y[1]", "y[2]", "y[3]"))
 
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+})
+
+test_that("Laplace 1D with a constrained parameter and deterministic intermediates and multiple data works", {
+  m <- nimbleModel(
+    nimbleCode({
+      for(i in 1:n)
+        y[i] ~ dnorm(mu_y, sd = 2) 
+      mu_y <- 0.8*a
+      a ~ dnorm(mu_a, sd = 3)
+      mu_a <- 0.5 * mu
+      mu ~ dexp(1.0)
+    }),
+    data = list(y = c(4, 5, 6)),
+    constants = list(n = 3),
+    inits = list(a = -1, mu = 0),
+    buildDerivs = TRUE
+  )
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  expect_equal(opt$par, 12.5, tol = 1e-4)
+  # V[a] = 9
+  # V[y[i]] = 0.8^2 * 9 + 4 = 9.76
+  # Cov[a, y[i]] = 0.8 * 9 = 7.2
+  # Cov[y[i], y[j]] = 0.8^2 * 9 = 5.76
+  # y[i] ~ N(0.4*mu, 9.76) 
+  # mean(y) = 5
+  # muhat = mean(y)/(0.8*0.5) = 12.5
+  # ahat = (9*0.8*sum(y) + 4*0.5*mu)/(4+9*0.8^2*3) = 6.25
+  # Jacobian of ahat wrt transformed param log(mu) is 4*0.5*mu/(4+9*0.8^2*3) = 1.174812
+  # Hessian of joint loglik wrt a: -(3*0.8^2/4 + 1/9)
+  # Hessian of marginal loglik wrt transformed param: -3.524436 (numerical, have not got AD work)
+  Cov_ay1y2y3 <- matrix(nrow = 4, ncol = 4)
+  Cov_ay1y2y3[1, 1:4] <- c(9, 7.2, 7.2, 7.2)
+  Cov_ay1y2y3[2, 1:4] <- c(7.2, 9.76, 5.76, 5.76)
+  Cov_ay1y2y3[3, 1:4] <- c(7.2, 5.76, 9.76, 5.76)
+  Cov_ay1y2y3[4, 1:4] <- c(7.2, 5.76, 5.76, 9.76)
+  Cov_y1y2y3 <- Cov_ay1y2y3[2:4, 2:4]
+  chol_cov <- chol(Cov_y1y2y3)
+  res <- dmnorm_chol(c(4, 5, 6), 0.8*0.5*12.5, cholesky = chol_cov, prec_param=FALSE, log = TRUE)
+  expect_equal(opt$value, res)
+  # Check covariance matrix 
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_equal(summ$random$estimate, 6.25, tol = 1e-6)
+  # Covariance matrix on transformed scale
+  vcov_transform <- matrix(c(1/(0.8^2*3/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(1.174812, 1), ncol = 1) %*% (1/3.524436) %*% t(matrix(c(1.174812, 1), ncol = 1))
+  expect_equal(vcov_transform, summ$vcov, tol = 1e-6)
+  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  # Covariance matrix on original scale
+  vcov <- diag(c(1,12.5)) %*% vcov_transform %*% diag(c(1,12.5))
+  expect_equal(vcov, summ2$vcov, tol = 1e-5)
+  # check that
+  mLaplaceCheck <- buildLaplace(model = m, paramNodes = 'mu', randomEffectsNodes = 'a')
+  nim1D <-  mLaplace$laplace_nfl[[1]]
+  expect_identical(nim1D$paramNodes, "mu")
+  expect_identical(nim1D$paramDeps, "mu_a")
+  expect_identical(nim1D$randomEffectsNodes, "a")
+  expect_identical(nim1D$innerCalcNodes, c("a", "mu_y", "y[1]", "y[2]", "y[3]"))
+  expect_identical(nim1D$calcNodes, c("mu_a", nim1D$innerCalcNodes))
+  expect_identical(nim1D$inner_updateNodes, "mu_a")
+  expect_identical(nim1D$inner_constantNodes, c("y[1]", "y[2]", "y[3]"))
+  expect_identical(nim1D$joint_updateNodes, character())
+  expect_identical(nim1D$joint_constantNodes, c("y[1]", "y[2]", "y[3]"))
+  
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
@@ -416,7 +609,8 @@ test_that("simple LME case works", {
       fixed_int ~ dnorm(0, sd = 100)
       fixed_slope ~ dnorm(0, sd = 100)
     }),
-    constants = list(g = g, ng = max(g), n = n, x = x)
+    constants = list(g = g, ng = max(g), n = n, x = x),
+    buildDerivs = TRUE
   )
   params <- c("fixed_int", "fixed_slope", "sigma_int", "sigma_slope", "sigma_res")
   values(m, params) <- c(10, 0.5, 3, .25, 0.2)
@@ -435,22 +629,73 @@ test_that("simple LME case works", {
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
   opt <- cmLaplace$LaplaceMLE()
-  # This test works. The opt$par matches the manual_fit.
-  # But it is still obscured by the parameter transformation,
-  # and while allowing that as an option, we also need to
-  # work how to handle a summaryLaplace feature.
+  nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
+  lme4res <- summary(manual_fit)
+  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-6)
+  expect_equal(nimres$params$estimate[1:3], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-5)
+  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-4)
+  expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-5)
+  
 })
 
+test_that("simple LME with correlated intercept and slope works", {
+  set.seed(1)
+  g <- rep(1:10, each = 10)
+  n <- length(g)
+  x <- runif(n)
+  m <- nimbleModel(
+    nimbleCode({
+      for(i in 1:n) {
+        y[i] ~ dnorm((fixed_int + random_int_slope[g[i], 1]) + (fixed_slope + random_int_slope[g[i], 2])*x[i], sd = sigma_res)
+      }
+      cov[1, 1] <- sigma_int^2
+      cov[2, 2] <- sigma_slope^2
+      cov[1, 2] <- rho * sigma_int * sigma_slope
+      cov[2, 1] <- rho * sigma_int * sigma_slope
+      for(i in 1:ng) {
+        random_int_slope[i, 1:2] ~ dmnorm(zeros[1:2], cov = cov[1:2, 1:2])
+      }
+      sigma_int ~ dunif(0, 10)
+      sigma_slope ~ dunif(0, 10)
+      sigma_res ~ dunif(0, 10)
+      fixed_int ~ dnorm(0, sd = 100)
+      fixed_slope ~ dnorm(0, sd = 100)
+      rho ~ dunif(-1, 1)
+    }),
+    constants = list(g = g, ng = max(g), n = n, x = x, zeros = rep(0, 2)),
+    buildDerivs = TRUE
+  )
+  params <- c("fixed_int", "fixed_slope", "sigma_int", "sigma_slope", "sigma_res", "rho")
+  values(m, params) <- c(10, 0.5, 3, 0.25, 0.2, 0.45)
+  m$simulate(m$getDependencies(params, self = FALSE))
+  m$setData('y')
+  y <- m$y
+  library(lme4)
+  manual_fit <- lmer(y ~ x + (1 + x | g), REML = FALSE)
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  opt <- cmLaplace$LaplaceMLE()
+  nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
+  lme4res <- summary(manual_fit)
+  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-5)
+  sdparams <- nimres$params$estimate[-c(4,5)]
+  expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-4)
+  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-3)
+  expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
+})
 
 
 # To do:
 # Multivariate random effects that are separable
 # Multiple parameters
-# parameters needing transformation
 # Various structures of random effects groupings
 # Crossed scalar random effects
-# Correlated intercept and slope
 # Try having no prior
+# Non-normal examples
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
