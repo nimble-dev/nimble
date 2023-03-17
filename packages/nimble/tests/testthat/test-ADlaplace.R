@@ -79,7 +79,18 @@ test_that("Laplace simplest 1D works", {
   # V[a] = 9
   # V[y] = 9 + 4 = 13
   # Cov[a, y] = V[a] = 9 (not needed)
+  # y ~ N(mu, 13)
   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
+  # muhat = y = 4
+  # ahat = (9*y+4*mu)/(9+4) = y = 4
+  # Jacobian of ahat wrt mu is 4/13
+  # Hessian of joint loglik wrt a: -(1/4 + 1/9)
+  # Hessian of marginal loglik wrt mu is -1/13
+  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_equal(summ$random$estimate, 4, tol = 1e-5)
+  # Covariance matrix 
+  vcov <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(4/13, 1), ncol = 1) %*% (13) %*% t(matrix(c(4/13, 1), ncol = 1))
+  expect_equal(vcov, summ$vcov, tol = 1e-6)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
@@ -160,6 +171,17 @@ test_that("Laplace 1D with deterministic intermediates works", {
   # V[a] = 9
   # V[y] = 0.2^2 * 9 + 4 = 4.36
   expect_equal(opt$value, dnorm(0.1*40, 0.1*40, sd = sqrt(4.36), log = TRUE))
+  # y ~ N(0.2*0.5*mu, 4.36)
+  # muhat = y/(0.2*0.5) = 40
+  # ahat = (9*0.2*y + 4*0.5*mu)/(4+9*0.2^2) = 20
+  # Jacobian of ahat wrt mu is 4*0.5/(4+9*0.2^2) = 0.4587156
+  # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
+  # Hessian of marginal loglik wrt param mu is -(0.2*0.5)^2/4.36 = -0.002293578
+  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_equal(summ$random$estimate, 20, tol = 1e-4)
+  # Covariance matrix 
+  vcov <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(0.4587156, 1), ncol = 1) %*% (1/0.002293578) %*% t(matrix(c(0.4587156, 1), ncol = 1))
+  expect_equal(vcov, summ$vcov, tol = 1e-4)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
@@ -194,7 +216,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   # ahat = (9*0.2*y + 4*0.5*mu)/(4+9*0.2^2) = 20
   # Jacobian of ahat wrt transformed param log(mu) is 4*0.5*mu/(4+9*0.2^2) = 18.34862
   # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
-  # Hessian of marginal lolik wrt param mu is -(0.2*0.5)^2/4.36
+  # Hessian of marginal loglik wrt param mu is -(0.2*0.5)^2/4.36
   # Hessian of marginal loglik wrt transformed param log(mu) is (0.2*0.5*y*mu - 2*0.1^2*mu*mu)/4.36 = -3.669725
   expect_equal(opt$par, 40, tol = 1e-4) 
   expect_equal(opt$hessian[1,1], -3.669725, tol = 1e-3)
@@ -255,6 +277,19 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   chol_cov <- chol(Cov_y1y2y3)
   res <- dmnorm_chol(c(4, 5, 6), 0.8*0.5*12.5, cholesky = chol_cov, prec_param=FALSE, log = TRUE)
   expect_equal(opt$value, res)
+  # y[i] ~ N(0.4*mu, 9.76) 
+  # mean(y) = 5
+  # muhat = mean(y)/(0.8*0.5) = 12.5
+  # ahat = (9*0.8*sum(y) + 4*0.5*mu)/(4+9*0.8^2*3) = 6.25
+  # Jacobian of ahat wrt mu is 4*0.5/(4+9*0.8^2*3) = 0.09398496
+  # Hessian of joint loglik wrt a: -(3*0.8^2/4 + 1/9)
+  # Hessian of marginal loglik wrt mu: -0.02255639 (numerical, have not got AD work)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_equal(summ$random$estimate, 6.25, tol = 1e-6)
+  # Covariance matrix 
+  vcov <- matrix(c(1/(0.8^2*3/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(0.09398496, 1), ncol = 1) %*% (1/0.02255639) %*% t(matrix(c(0.09398496, 1), ncol = 1))
+  expect_equal(vcov, summ$vcov, tol = 1e-7)
+  
   # check that
   mLaplaceCheck <- buildLaplace(model = m, paramNodes = 'mu', randomEffectsNodes = 'a')
   nim1D <-  mLaplace$laplace_nfl[[1]]
@@ -394,7 +429,20 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   chol_cov <- chol(Cov_Y)
   res <- dmnorm_chol(as.numeric(t(y)), mean(y), cholesky = chol_cov, prec_param=FALSE, log = TRUE)
   expect_equal(opt$value, res)
-
+  # muhat = mean(y)/(0.8*0.5)
+  # ahat[1] = (9*0.8*sum(y[1,]) + 4*0.5*mu)/(4+9*0.8^2*3)
+  # ahat[2] = (9*0.8*sum(y[2,]) + 4*0.5*mu)/(4+9*0.8^2*3)
+  # Jacobian of ahat[i] wrt mu is 4*0.5/(4+9*0.8^2*3) = 0.09398496
+  # Hessian of joint loglik wrt a[i]a[i]: -(3*0.8^2/4 + 1/9); wrt a[i]a[j]: 0
+  # Hessian of marginal loglik wrt mu: -0.04511278 (numerical, have not got AD work)
+  muhat <- mean(y)/(0.8*0.5)
+  ahat <- c((9*0.8*sum(y[1,]) + 4*0.5*muhat)/(4+9*0.8^2*3), (9*0.8*sum(y[2,]) + 4*0.5*muhat)/(4+9*0.8^2*3))
+  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_equal(summ$random$estimate, ahat, tol = 1e-6)
+  # Covariance matrix 
+  vcov <- diag(c(rep(1/(3*0.8^2/4 + 1/9), 2), 0)) + matrix(c(rep(0.09398496, 2), 1), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(rep(0.09398496, 2), 1), ncol = 1))
+  expect_equal(vcov, summ$vcov, tol = 1e-7)
+  
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
@@ -453,6 +501,52 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   chol_cov <- chol(Cov_Y)
   res <- dmnorm_chol(as.numeric(y), mean(y), cholesky = chol_cov, prec_param=FALSE, log = TRUE)
   expect_equal(opt$value, res)
+  # Check covariance matrix
+  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  # Covariance matrix from TMB:
+  # TMB cpp code (test.cpp) below:
+  # include <TMB.hpp>
+  # template<class Type>
+  # Type objective_function<Type>::operator() () 
+  # {
+  #   DATA_MATRIX(y);
+  #   DATA_MATRIX(Sigma);
+  #   PARAMETER(mu);
+  #   PARAMETER_VECTOR(a);
+  #   int i;
+  #   Type ans = 0.0;
+  #   // Negative log-likelihood
+  #   for(i = 0; i < 2; i++){
+  #     ans -= dnorm(a[i], 0.5*mu, Type(3.0), true);
+  #   }
+  #   vector<Type> residual(2);
+  #   using namespace density;
+  #   MVNORM_t<Type> neg_log_dmvnorm(Sigma);
+  #   for(i = 0; i < 3; i++)
+  #   {
+  #     residual = vector<Type>(y.col(i)) - a;
+  #     ans += neg_log_dmvnorm(residual);
+  #   }
+  #   return ans;
+  #   }
+  # TMB R code:
+  # library(TMB)
+  # compile("test.cpp") 
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y, Sigma = m$cov_y)
+  # parameters <- list(mu = 0, a = c(-2, -1))
+  # 
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="a", DLL="test")
+  # tmbopt <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+  tmbvcov <- matrix(nrow = 3, ncol = 3)
+  tmbvcov[1,] <- c(20.333333, 1.1666667, 1.1666667)
+  tmbvcov[2,] <- c(1.166667, 0.6651515, 0.5015152)
+  tmbvcov[3,] <- c(1.166667, 0.5015152, 0.6651515)
+  ## TMB and NIMBLE have different orders of random effects and parameters
+  expect_equal(summ$vcov[c(3,1,2), c(3,1,2)], tmbvcov, tol = 1e-6)
 })
 
 test_that("Laplace with 2x1D random effects needing joint integration works, with intermediate nodes", {
@@ -505,30 +599,73 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   chol_cov <- chol(Cov_Y)
   res <- dmnorm_chol(as.numeric(y), mean(y), cholesky = chol_cov, prec_param=FALSE, log = TRUE)
   expect_equal(opt$value, res)
+  
+  # Check covariance matrix
+  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  # Covariance matrix from TMB:
+  # TMB cpp code (test.cpp) below:
+  # include <TMB.hpp>
+  # template<class Type>
+  # Type objective_function<Type>::operator() () 
+  # {
+  #   DATA_MATRIX(y);
+  #   DATA_MATRIX(Sigma);
+  #   PARAMETER(mu);
+  #   PARAMETER_VECTOR(a);
+  #   int i;
+  #   Type ans = 0.0;
+  #   // Negative log-likelihood
+  #   for(i = 0; i < 2; i++){
+  #     ans -= dnorm(a[i], 0.5*mu, Type(3.0), true);
+  #   }
+  #   vector<Type> residual(2);
+  #   using namespace density;
+  #   MVNORM_t<Type> neg_log_dmvnorm(Sigma);
+  #   for(i = 0; i < 3; i++)
+  #   {
+  #     residual = vector<Type>(y.col(i)) - 0.8 * a;
+  #     ans += neg_log_dmvnorm(residual);
+  #   }
+  #   return ans;
+  #   }
+  # TMB R code:
+  # library(TMB)
+  # compile("test.cpp") 
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y, Sigma = m$cov_y)
+  # parameters <- list(mu = 0, a = c(-2, -1))
+  # 
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="a", DLL="test")
+  # tmbopt <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+  tmbvcov <- matrix(nrow = 3, ncol = 3)
+  tmbvcov[1,] <- c(21.645833, 1.8229167, 1.8229167)
+  tmbvcov[2,] <- c(1.822917, 1.0380050, 0.7849117)
+  tmbvcov[3,] <- c(1.822917, 0.7849117, 1.0380050)
+  ## TMB and NIMBLE have different orders of random effects and parameters
+  expect_equal(summ$vcov[c(3,1,2), c(3,1,2)], tmbvcov, tol = 1e-6)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
-
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 })
 
-# Following currently fails because getConditionallyIndependentSets does not trace upward to stochastic nodes
-test_that("Laplace with 3x2D random effects for 1D data needing joint integration works, with intermediate nodes", {
+test_that("Laplace with 2x1D parameters and 2x2D random effects for 1D data needing joint integration works, with intermediate nodes", {
   set.seed(1)
   # y[i, j] is jth datum from ith group
-  y <- array(rnorm(8, 6, 5), dim = c(2, 2, 2)) #
-
+  y <- array(rnorm(8, 6, 5), dim = c(2, 2, 2)) 
   cov_a <- matrix(c(2, 1.5, 1.5, 2), nrow = 2)
   m <- nimbleModel(
     nimbleCode({
       for(i in 1:2) mu[i] ~ dnorm(0, sd = 10)
       mu_a[1] <- 0.8 * mu[1]
       mu_a[2] <- 0.2 * mu[2]
-      for(i in 1:2) a[i, 1:2] ~ dmnorm( mu_a[1:2], cov = cov_a[1:2, 1:2])
+      for(i in 1:2) a[i, 1:2] ~ dmnorm(mu_a[1:2], cov = cov_a[1:2, 1:2])
       for(i in 1:2) {
         for(j in 1:2) {
           y[1, j, i] ~ dnorm( 0.5 * a[i, 1], sd = 1.8) # this ordering makes it easier below
@@ -550,37 +687,94 @@ test_that("Laplace with 3x2D random effects for 1D data needing joint integratio
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
   opt <- cmLaplace$LaplaceMLE()
-
+  
+  ## Wei: I tested this using TMB instead of the code below
+  # TMB cpp code:
+  # #include <TMB.hpp>
+  # template<class Type>
+  # Type objective_function<Type>::operator() () 
+  # {
+  #   DATA_ARRAY(y);
+  #   DATA_MATRIX(Sigma);
+  #   PARAMETER_VECTOR(mu);
+  #   PARAMETER_MATRIX(a);
+  #   int i, j;
+  #   Type ans = 0.0;
+  #   vector<Type> mu_a(2);
+  #   mu_a(0) = 0.8 * mu(0);
+  #   mu_a(1) = 0.2 * mu(1);
+  #   // Negative log-likelihood
+  #   vector<Type> residual(2);
+  #   using namespace density;
+  #   MVNORM_t<Type> neg_log_dmvnorm(Sigma);
+  #   for(i = 0; i < 2; i++)
+  #   {
+  #     residual = vector<Type>(a.row(i)) - mu_a;
+  #     ans += neg_log_dmvnorm(residual);
+  #   }
+  #   for(i = 0; i < 2; i++){
+  #     for(j = 0; j < 2; j++){
+  #       ans -= dnorm(y(0, j, i), 0.5*a(i, 0), Type(1.8), true);
+  #       ans -= dnorm(y(1, j, i), 0.1*a(i, 1), Type(1.2), true);
+  #     }
+  #   }
+  #   return ans;
+  # }
+  # TMB R code:
+  # library(TMB)
+  # compile("test.cpp")
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y, Sigma = m$cov_a)
+  # parameters <- list(mu = m$mu, a = m$a)
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="a", DLL="test")
+  # tmbopt <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+  expect_equal(opt$par, c(12.98392, 406.04878), tol = 1e-5)
+  expect_equal(opt$value, -41.86976)
+  # Check covariance matrix
+  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  tmbvcov <- matrix(nrow = 6, ncol = 6)
+  tmbvcov[1,] <- c(6.625000e+00, 4.687500e+00,  4.050000e+00,  4.050000e+00, -2.693817e-11, -2.695275e-11)
+  tmbvcov[2,] <- c(4.687500e+00, 9.250000e+02,  2.965628e-11,  2.967848e-11,  1.800000e+02,  1.800000e+02)
+  tmbvcov[3,] <- c(4.050000e+00, 2.951367e-11,  3.995242e+00,  2.484758e+00,  5.596302e-01, -5.596302e-01)
+  tmbvcov[4,] <- c(4.050000e+00, 2.951367e-11,  2.484758e+00,  3.995242e+00, -5.596302e-01,  5.596302e-01)
+  tmbvcov[5,] <- c(-2.691772e-11, 1.800000e+02,  5.596302e-01, -5.596302e-01,  3.684693e+01,  3.515307e+01)
+  tmbvcov[6,] <- c(-2.691772e-11, 1.800000e+02, -5.596302e-01,  5.596302e-01,  3.515307e+01,  3.684693e+01)
+  
+  expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-5)
+  
   # For this case, we build up the correct answer more formulaically
   # Define A as the vector a[1, 1], a[1, 2], a[2, 1], a[2, 2]
-  cov_A <- matrix(0, nrow = 4, ncol = 4)
-  cov_A[1:2, 1:2] <- cov_a
-  cov_A[3:4, 3:4] <- cov_a
-  # Define Y as the vector y[1,1,1],y[2,1,1],y[1,2,1],y[2,2,1], then same with last index 2
-  # Define E[Y] as IA %*% A, where:
-  IA <- matrix(0, nrow = 8, ncol = 4)
-  IA[c(1, 3), 1] <- 0.5
-  IA[c(2, 4), 2] <- 0.1
-  IA[c(5, 7), 3] <- 0.5
-  IA[c(6, 8), 4] <- 0.1
-
-  # define cov_y_given_a as the Cov[Y | A]
-  cov_y_given_a <- matrix(0, nrow = 8, ncol = 8)
-  diag(cov_y_given_a) <- rep(c(1.8^2, 1.2^2), 4)
-  # And finally get cov_Y, the marginal (over A) covariance of Y
-  cov_Y <- IA %*% cov_A %*% t(IA) + cov_y_given_a
-  chol_cov <- chol(cov_Y)
-
-  # make a log likelihood function
-  nlogL <- function(mu) {
-    mean_Y <- rep(c(0.8*0.5*mu[1], 0.2*0.1*mu[2]), 4)
-    -dmnorm_chol(as.numeric(y), mean_Y, cholesky = chol_cov, prec_param=FALSE, log = TRUE)
-  }
-  # maximize it
-  opt_manual <- optim(c(20, 100), nlogL, method = "BFGS")
-
-  expect_equal(opt$par, opt_manual$par, tol = 1e-4)
-  expect_equal(opt$value, -opt_manual$value, tol = 1e-5)
+  # cov_A <- matrix(0, nrow = 4, ncol = 4)
+  # cov_A[1:2, 1:2] <- cov_a
+  # cov_A[3:4, 3:4] <- cov_a
+  # # Define Y as the vector y[1,1,1],y[2,1,1],y[1,2,1],y[2,2,1], then same with last index 2
+  # # Define E[Y] as IA %*% A, where:
+  # IA <- matrix(0, nrow = 8, ncol = 4)
+  # IA[c(1, 3), 1] <- 0.5
+  # IA[c(2, 4), 2] <- 0.1
+  # IA[c(5, 7), 3] <- 0.5
+  # IA[c(6, 8), 4] <- 0.1
+  # 
+  # # define cov_y_given_a as the Cov[Y | A]
+  # cov_y_given_a <- matrix(0, nrow = 8, ncol = 8)
+  # diag(cov_y_given_a) <- rep(c(1.8^2, 1.2^2), 4)
+  # # And finally get cov_Y, the marginal (over A) covariance of Y
+  # cov_Y <- IA %*% cov_A %*% t(IA) + cov_y_given_a
+  # chol_cov <- chol(cov_Y)
+  # 
+  # # make a log likelihood function
+  # nlogL <- function(mu) {
+  #   mean_Y <- rep(c(0.8*0.5*mu[1], 0.2*0.1*mu[2]), 4)
+  #   -dmnorm_chol(as.numeric(y), mean_Y, cholesky = chol_cov, prec_param=FALSE, log = TRUE)
+  # }
+  # # maximize it
+  # opt_manual <- optim(c(20, 100), nlogL, method = "BFGS")
+  # expect_equal(opt$par, opt_manual$par, tol = 1e-4)
+  # expect_equal(opt$value, -opt_manual$value, tol = 1e-5)
+  
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-4)
@@ -687,7 +881,6 @@ test_that("simple LME with correlated intercept and slope works", {
   expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-3)
   expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
 })
-
 
 # To do:
 # Multivariate random effects that are separable
