@@ -208,8 +208,8 @@ lkj_test_log <- make_AD_test2(
   ),
   argTypes = c(x='double(1)', eta='double()', p = 'double()', log='double()'),
   wrt = c('x', 'eta'),
-  inputs = list(record = list(x = rnorm(choose(p,2)), eta = etaRec, p = 5, log = 0),
-                test   = list(x = rnorm(choose(p,2)), eta = etaTest, p = 5, log = 1)),
+  inputs = list(record = list(x = rnorm(choose(p,2)), eta = 3.3, p = 5, log = 0),
+                test   = list(x = rnorm(choose(p,2)), eta = 1.4, p = 5, log = 1)),
 )
 
 lkj_test_out <- test_AD2(lkj_test_log)

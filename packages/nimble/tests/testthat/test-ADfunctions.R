@@ -137,7 +137,6 @@ test_that('Derivatives of model$calculate() work in expressions.',
             compileNimble(testModel)
             cADfunInst <- compileNimble(ADfunInst)
             cderivs <- cADfunInst$run()
-            print(cderivs)
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
 )
