@@ -46,8 +46,8 @@ buildLaplace(
 
 \item{randomEffectsNodes}{a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to stochastic nodes that depend on \code{paramNodes}.}
 
-\item{calcNodes}{a character vector of names of nodes for calculating the log-likelihood value; defaults to nodes that depend on \code{randomEffectsNodes} as determined by \code{model$geteDependencies(randomEffectsNodes)}.
-There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.}
+\item{calcNodes}{a character vector of names of nodes for calculating the log-likelihood value; defaults to nodes that depend on \code{randomEffectsNodes} and nodes that only depend on parameter nodes.
+There may be deterministic nodes between \code{paramNodes} and \code{calcNodes}. These will be included in calculations automatically.}
 
 \item{optimControl}{a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.}
 

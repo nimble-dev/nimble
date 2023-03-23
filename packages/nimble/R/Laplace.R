@@ -1120,7 +1120,9 @@ buildLaplace <- nimbleFunction(
       randomEffectsNodes <- reNodesDefault
     }
     if((!calcProvided) || warn) {
-      calcNodesDefault <- model$getDependencies(randomEffectsNodes)
+      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+      reStochDeps <- model$getDependencies(randomEffectsNodes)
+      calcNodesDefault <- union(paramStochDeps, reStochDeps)
     }
     if(calcProvided){
       calcNodes <- model$expandNodeNames(calcNodes)
@@ -1184,11 +1186,12 @@ buildLaplace <- nimbleFunction(
     laplace_nfl <- nimbleFunctionList(Laplace_BASE)
     scalarRENodes <- model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE)
     nre <- length(scalarRENodes)
+    ## Record the order of random effects processed internally
     internalRandomEffectsNodes <- NULL
-    lenRENodeSets <- NULL
-    if(isFALSE(split)) { ## Do all random effects in one set
+    lenInternalRENodeSets <- NULL
+    if(isFALSE(split)) { ## Do all calcNodes in one set
       internalRandomEffectsNodes <- randomEffectsNodes
-      lenRENodeSets <- nre
+      lenInternalRENodeSets <- nre
       if(is.null(control$innerOptimStart)) innerOptStart <- values(model, randomEffectsNodes)
       else {
         providedStart <- control$innerOptimStart
@@ -1206,54 +1209,63 @@ buildLaplace <- nimbleFunction(
       if(nre > 1) laplace_nfl[[1]] <- nimOneLaplace(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
       else laplace_nfl[[1]] <- nimOneLaplace1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
     }
-    else {## Split randomEffectsNodes into sets
+    else {## Split calcNodes into conditionally independent sets
       if(isTRUE(split)){
-        givenNodes <- setdiff(c(paramNodes, calcNodes),
-                              c(randomEffectsNodes, model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
-        reSets <- model$getConditionallyIndependentSets(nodes = randomEffectsNodes, givenNodes = givenNodes)
+        calcNodesSets <- model$getConditionallyIndependentSets(nodes = calcNodes, givenNodes = paramNodes)
       }
       else if(is.numeric(split)){
-        reSets <- split(randomEffectsNodes, split)
+        calcNodesSets <- split(calcNodes, split)
       }
       else stop("Invalid value for \'split\' provided in control list")
-      num_reSets <- length(reSets)
-      if(num_reSets == 0){
+      num_calcNodesSets <- length(calcNodesSets)
+      if(num_calcNodesSets == 0){
         stop("There was a problem determining conditionally independent sets for this model.")
       }
-      for(i in seq_along(reSets)){
-        ## Work with one conditionally independent set of latent states
-        these_reNodes <- reSets[[i]]
-        internalRandomEffectsNodes <- c(internalRandomEffectsNodes, these_reNodes)
-        ## find paramNodes and calcNodes for this set of reNodes
-        these_reDeps <- model$getDependencies(these_reNodes) ## candidate calcNodes via reNodes
-        these_calcNodes <- intersect(calcNodes, these_reDeps) ## definite calcNodes
-        ## paramNodes are the same for all laplace_nfl elements. In the future this could be customized.
-        nre_these <- length(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE))
-        lenRENodeSets <- c(lenRENodeSets, nre_these)
-        if(is.null(control$innerOptimStart)) innerOptStart <- values(model, these_reNodes)
-        else {
-          providedStart <- control$innerOptimStart
-          if(any(providedStart %in% c("last", "last.best"))) innerOptStart <- providedStart
-          else if(is.numeric(sum(providedStart)) && (length(providedStart) == nre)){
-            these_reNodes_inds <- unlist(lapply(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE), function(x) {which(scalarRENodes == x)}))
-            innerOptStart <- providedStart[these_reNodes_inds]
+      ## Record calcNodes that do not depend on random effects, e.g. data nodes that depend only on parameter nodes directly
+      calcNodesDoNotDepRandomEffects <- NULL
+      numLaplace <- 0
+      for(i in seq_along(calcNodesSets)){
+        ## Need to call getDependencies below because getConditionallyIndependentSets omits deterministic nodes
+        these_calcNodes <- model$getDependencies(calcNodesSets[[i]])
+        these_reNodes <- intersect(these_calcNodes, randomEffectsNodes)
+        ## Check if there are random effects in this set of calcNodes
+        if(length(these_reNodes) == 0){
+          calcNodesDoNotDepRandomEffects <- c(calcNodesDoNotDepRandomEffects, these_calcNodes)
+        }
+        else{
+          nre_these <- length(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE))
+          internalRandomEffectsNodes <- c(internalRandomEffectsNodes, these_reNodes)
+          lenInternalRENodeSets <- c(lenInternalRENodeSets, nre_these)
+          numLaplace <- numLaplace + 1
+          if(is.null(control$innerOptimStart)) innerOptStart <- values(model, these_reNodes)
+          else {
+            providedStart <- control$innerOptimStart
+            if(any(providedStart %in% c("last", "last.best"))) innerOptStart <- providedStart
+            else if(is.numeric(sum(providedStart)) && (length(providedStart) == nre)){
+              these_reNodes_inds <- unlist(lapply(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE), function(x) {which(scalarRENodes == x)}))
+              innerOptStart <- providedStart[these_reNodes_inds]
+            }
+            else innerOptStart <- values(model, these_reNodes)
           }
-          else innerOptStart <- values(model, these_reNodes)
+          ## In case random effects are not properly initialized
+          if(!any(innerOptStart %in% c("last", "last.best")) & any(is.infinite(innerOptStart) | is.na(innerOptStart) | is.nan(innerOptStart))){
+            these_reTransform <- parameterTransform(model, these_reNodes)
+            these_reTransform_length <- these_reTransform$getTransformedLength()
+            innerOptStart <- these_reTransform$inverseTransform(rep(0, these_reTransform_length))
+          }
+          ## If this is the last set of calcNodes, then add all calcNodesDoNotDepRandomEffects, if any, to the calcNodes of the last single Laplace approximation
+          if(i == num_calcNodesSets){
+            if(length(calcNodesDoNotDepRandomEffects) > 0) these_calcNodes <- c(these_calcNodes, calcNodesDoNotDepRandomEffects)
+          }
+          ## Build Laplace for each set
+          if(nre_these > 1){
+            laplace_nfl[[numLaplace]] <- nimOneLaplace(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
+          }
+          else laplace_nfl[[numLaplace]] <- nimOneLaplace1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
         }
-        ## In case random effects are not properly initialized
-        if(!any(innerOptStart %in% c("last", "last.best")) & any(is.infinite(innerOptStart) | is.na(innerOptStart) | is.nan(innerOptStart))){
-          these_reTransform <- parameterTransform(model, these_reNodes)
-          these_reTransform_length <- these_reTransform$getTransformedLength()
-          innerOptStart <- these_reTransform$inverseTransform(rep(0, these_reTransform_length))
-        }
-        ## Build Laplace for each set
-        if(nre_these > 1){
-          laplace_nfl[[i]] <- nimOneLaplace(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-        }
-        else laplace_nfl[[i]] <- nimOneLaplace1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
       }
     }
-    if(length(lenRENodeSets) == 1) lenRENodeSets <- c(lenRENodeSets, -1)
+    if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
     reTransform <- parameterTransform(model, internalRandomEffectsNodes)
     reTransform_length <- reTransform$getTransformedLength()
     if(reTransform_length > 1) reTransform_indices <- 1:reTransform_length
@@ -1430,7 +1442,7 @@ buildLaplace <- nimbleFunction(
       invHess <- matrix(value = 0, nrow = nre, ncol = nre)
       tot <- 0
       for(i in seq_along(laplace_nfl)){
-        numre <- lenRENodeSets[i]
+        numre <- lenInternalRENodeSets[i]
         tmp <- laplace_nfl[[i]]$negHess(p, reTransform[(tot+1):(tot+numre)])
         invHess[(tot+1):(tot+numre), (tot+1):(tot+numre)] <- inverse(tmp)
         tot <- tot + numre
@@ -1443,7 +1455,7 @@ buildLaplace <- nimbleFunction(
       ans <- matrix(value = 0, nrow = npar, ncol = nre)
       tot <- 0
       for(i in seq_along(laplace_nfl)){
-        numre <- lenRENodeSets[i]
+        numre <- lenInternalRENodeSets[i]
         if(methodID == 1){
           tmp <- laplace_nfl[[i]]$hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform[(tot+1):(tot+numre)])
         }
@@ -1623,8 +1635,8 @@ buildLaplace <- nimbleFunction(
 #' @param model an uncompiled NIMBLE model object.
 #' @param paramNodes a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.
 #' @param randomEffectsNodes a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to stochastic nodes that depend on \code{paramNodes}.
-#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value; defaults to nodes that depend on \code{randomEffectsNodes} as determined by \code{model$geteDependencies(randomEffectsNodes)}.
-#' There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.
+#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value; defaults to nodes that depend on \code{randomEffectsNodes} and nodes that only depend on parameter nodes.
+#' There may be deterministic nodes between \code{paramNodes} and \code{calcNodes}. These will be included in calculations automatically.
 #' @param optimControl a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.
 #' @param optimMethod optimization method to be used in \code{optim} for the inner optimization. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}}.
 #' Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By default, method "\code{CG}" is used for \code{nimOneLaplace1D} and "\code{BFGS}" for \code{nimOneLaplace}.
