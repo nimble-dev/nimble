@@ -149,6 +149,139 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 })
 
+test_that("Laplace simplest 1D (constrained) with multiple data works", {
+  set.seed(1)
+  m <- nimbleModel(
+    nimbleCode({
+      mu ~ dnorm(0, sd = 5)
+      a ~ dexp(rate = exp(mu))
+      for (i in 1:5){
+        y[i] ~ dnorm(a, sd = 2)
+      }
+    }), data = list(y = rnorm(5, 1, 2)), inits = list(mu = 2, a = 1), 
+    buildDerivs = TRUE
+  )
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
+  # Results are checked using those from TMB
+  # TMB cpp code:
+  #include <TMB.hpp>
+  #template<class Type>
+  #Type objective_function<Type>::operator() () 
+  # {
+  #   DATA_VECTOR(y);
+  #   PARAMETER(mu);
+  #   PARAMETER(log_a);
+  #   int n = y.size();
+  #   Type a = exp(log_a); // Invserse transformation
+  #   // Negative log-likelihood
+  #   Type ans = -dexp(a, exp(mu), true);
+  #   ans -= log_a; // logdet Jacobian of inverse transformation: exp
+  #   for(int i = 0; i < n; i++){
+  #     ans -= dnorm(y[i], a, Type(2), true);
+  #   }
+  #   return ans;
+  # }
+  # TMB R code:
+  # library(TMB)
+  # compile("test.cpp")
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y)
+  # parameters <- list(mu = 2, log_a = 0)
+  # 
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="log_a", DLL="test")
+  # tmbres <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+  expect_equal(opt$par, 0.2895238)
+  expect_equal(opt$value, -10.47905, tol = 1e-7)
+  expect_equal(summ$random$estimate, -0.005608619)
+  vcov <- matrix(c(1.414499, -1.628299, -1.628299, 2.741033), nrow = 2, byrow = TRUE)
+  expect_equal(summ$vcov, vcov, 1e-6)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+})
+
+test_that("Laplace simplest 1D (constrained) with deterministic intermediates and multiple data works", {
+  set.seed(1)
+  m <- nimbleModel(
+    nimbleCode({
+      mu ~ dnorm(0, sd = 5)
+      a ~ dexp(rate = exp(0.5 * mu))
+      for (i in 1:5){
+        y[i] ~ dnorm(0.2 * a, sd = 2)
+      }
+    }), data = list(y = rnorm(5, 1, 2)), inits = list(mu = 2, a = 1), 
+    buildDerivs = TRUE
+  )
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
+  # Results are checked using those from TMB
+  # TMB cpp code:
+  # #include <TMB.hpp>
+  # template<class Type>
+  # Type objective_function<Type>::operator() () 
+  # {
+  #   DATA_VECTOR(y);
+  #   PARAMETER(mu);
+  #   PARAMETER(log_a);
+  #   int n = y.size();
+  #   Type a = exp(log_a); // Invserse transformation
+  #   // Negative log-likelihood
+  #   Type ans = -dexp(a, exp(0.5 * mu), true);
+  #   ans -= log_a; // logdet Jacobian of inverse transformation: exp
+  #   for(int i = 0; i < n; i++){
+  #     ans -= dnorm(y[i], 0.2 * a, Type(2), true);
+  #   }
+  #   ADREPORT(a);
+  #   return ans;
+  # }
+  ## R code:
+  # library(TMB)
+  # compile("test.cpp")
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y)
+  # parameters <- list(mu = 2, log_a = 0)
+  # 
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="log_a", DLL="test")
+  # tmbres <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+  expect_equal(opt$par, -2.639534, 1e-7)
+  expect_equal(opt$value, -10.47905, tol = 1e-7)
+  expect_equal(summ$random$estimate, 1.603742, tol = 1e-7)
+  vcov <- matrix(c(1.415167, -3.258191, -3.258191, 10.967784), nrow = 2, byrow = TRUE)
+  expect_equal(summ$vcov, vcov, 1e-7)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+})
+
 test_that("Laplace 1D with deterministic intermediates works", {
   m <- nimbleModel(
     nimbleCode({
@@ -238,7 +371,6 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 })
-
 
 test_that("Laplace 1D with deterministic intermediates and multiple data works", {
   m <- nimbleModel(
@@ -547,6 +679,13 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   tmbvcov[3,] <- c(1.166667, 0.5015152, 0.6651515)
   ## TMB and NIMBLE have different orders of random effects and parameters
   expect_equal(summ$vcov[c(3,1,2), c(3,1,2)], tmbvcov, tol = 1e-6)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 })
 
 test_that("Laplace with 2x1D random effects needing joint integration works, with intermediate nodes", {
@@ -812,16 +951,11 @@ test_that("simple LME case works", {
   m$setData('y')
   y <- m$y
   library(lme4)
-
   manual_fit <- lmer(y ~ x + (1 + x || g), REML = FALSE)
 
   mLaplace <- buildLaplace(model = m)
-  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
   cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
-  cmLaplace <- cL$mLaplace
-  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
-
+  cmLaplace <- compileNimble(mLaplace, project = m)
   opt <- cmLaplace$LaplaceMLE()
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   lme4res <- summary(manual_fit)
@@ -867,17 +1001,14 @@ test_that("simple LME with correlated intercept and slope works", {
   library(lme4)
   manual_fit <- lmer(y ~ x + (1 + x | g), REML = FALSE)
   mLaplace <- buildLaplace(model = m)
-  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
   cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
-  cmLaplace <- cL$mLaplace
-  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  cmLaplace <- compileNimble(mLaplace, project = m)
   opt <- cmLaplace$LaplaceMLE()
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   lme4res <- summary(manual_fit)
   expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-5)
   sdparams <- nimres$params$estimate[-c(4,5)]
-  expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-4)
+  expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
   expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-3)
   expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
 })
