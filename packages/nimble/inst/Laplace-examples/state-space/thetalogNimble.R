@@ -66,15 +66,15 @@ CthetalogLaplace$Laplace(p)
 CthetalogLaplace$gr_Laplace(p)
 
 ## Calculate MLEs and standard errors
-CthetalogLaplace$LaplaceMLE(p-1)
-nimtime <- system.time(nimres <- summaryLaplace(CthetalogLaplace, calcRandomEffectsStdError = TRUE))
+nimtime <- system.time(opt <- CthetalogLaplace$LaplaceMLE(p-1))
+nimtime2 <- system.time(nimres <- CthetalogLaplace$summary(opt, calcRandomEffectsStdError = TRUE))
 
 ## Run TMB code
 source("thetalogTMB.R") 
 
 ## Compare runtimes, MLEs, and standard errors
-rbind(nimtime, tmbtime + tmbtime2)
-rbind(nimres$params[,"Estimate"], tmbres$par)
-rbind(nimres$params[,"StdError"], tmbsumm[1:5, "Std. Error"])
-max(abs(nimres$random[,"Estimate"] - tmbsumm[6:205, "Estimate"]))
-max(abs(nimres$random[,"StdError"] - tmbsumm[6:205, "Std. Error"]))
+rbind(nimtime + nimtime2, tmbtime + tmbtime2)
+rbind(nimres$params$estimate, tmbres$par)
+rbind(nimres$params$stdError, tmbsumm[1:5, "Std. Error"])
+max(abs(nimres$random$estimate - tmbsumm[6:205, "Estimate"]))
+max(abs(nimres$random$stdError - tmbsumm[6:205, "Std. Error"]))

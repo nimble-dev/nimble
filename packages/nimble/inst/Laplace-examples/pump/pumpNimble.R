@@ -33,7 +33,8 @@ laplace <- buildLaplace(pump)
 cLaplace <- compileNimble(laplace, project = pump)
 
 ## Calculate MLEs and standard errors
-nimtime <- system.time(nimres <- summaryLaplace(cLaplace, calcRandomEffectsStdError = TRUE))
+nimtime <- system.time(opt <- cLaplace$LaplaceMLE())
+nimres <- cLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
 
 ## Run TMB code
 source("pumpTMB.R")
@@ -41,9 +42,9 @@ source("pumpTMB.R")
 ## Compare results
 rbind(nimtime, tmbtime) 
 ## Estimates
-rbind(c(nimres$params[,"Estimate"], nimres$random[,"Estimate"]), tmbsumm[,"Estimate"])
+rbind(c(nimres$params$estimate, nimres$random$estimate), tmbsumm[,"Estimate"])
 ## Standard errors
-rbind(c(nimres$params[,"StdError"], nimres$random[,"StdError"]), tmbsumm[,"Std. Error"])
+rbind(c(nimres$params$stdError, nimres$random$stdError), tmbsumm[,"Std. Error"])
 
 ## Use Laplace with within MCMC:
 ## 1: Integrate out all elements of theta and use MCMC for parameters

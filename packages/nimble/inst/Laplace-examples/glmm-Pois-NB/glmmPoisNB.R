@@ -70,7 +70,8 @@ Cplaplace$Laplace(rep(1, 9))
 Cplaplace$gr_Laplace(rep(1, 9))
 
 ## Calculate MLEs and standard errors
-nimtimep <- system.time(nimresp <- summaryLaplace(Cplaplace, calcRandomEffectsStdError = TRUE))
+nimtimep  <- system.time(popt <- Cplaplace$LaplaceMLE())
+nimtimep2 <- system.time(nimresp <- Cplaplace$summary(popt, calcRandomEffectsStdError = TRUE))
 
 ## Fit the model using glmmTMB
 ## TMB is slightly slower here, but the time includes that for compilation etc
@@ -78,10 +79,10 @@ tmbtimep <- system.time(tmbresp <- glmmTMB(count ~ spp + mined + (1|site), Salam
 tmbsummp <- summary(tmbresp)
 
 ## MLEs are very close: 
-rbind(nimresp$params[,"Estimate"], tmbresp$fit$par)
+rbind(nimresp$params$estimate, tmbresp$fit$par)
 
 ## Std. errors for regression coefficients
-rbind(nimresp$params[1:8,"StdError"], tmbsummp$coefficients$cond[,"Std. Error"])
+rbind(nimresp$params$stdError[1:8], tmbsummp$coefficients$cond[,"Std. Error"])
 
 ##------------------------------------------------------------------------------
 ## Negative binomial model
@@ -132,14 +133,15 @@ Cnblaplace$Laplace(rep(0, 10))
 Cnblaplace$gr_Laplace(rep(0, 10))
 
 ## Calculate MLEs and standard errors
-nimtime <- system.time(nimres <- summaryLaplace(Cnblaplace, calcRandomEffectsStdError = TRUE))
+nimtime <- system.time(nbopt <- Cnblaplace$LaplaceMLE())
+nimres <- Cnblaplace$summary(nbopt, calcRandomEffectsStdError = TRUE)
 
 ## Use glmmTMB
 tmbtimenb <- system.time(tmbresnb <- glmmTMB(count ~ spp + mined + (1|site), Salamanders, family=nbinom2))
 tmbsummnb <- summary(tmbresnb)
 
 ## MLEs are very close: 
-rbind(nimres$params[,"Estimate"], tmbresnb$fit$par)
+rbind(nimres$params$estimate, tmbresnb$fit$par)
 
 ## Standard errors of regression coefficients: very close 
-rbind(nimres$params[1:8,"StdError"], tmbsummnb$coefficients$cond[,"Std. Error"])
+rbind(nimres$params$stdError[1:8], tmbsummnb$coefficients$cond[,"Std. Error"])

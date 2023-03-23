@@ -55,13 +55,14 @@ Claplace$Laplace(rep(1, 4))
 Claplace$gr_Laplace(rep(1, 4))
 
 ## Calculate MLEs and standard errors
-nimtime <- system.time(nimres <- summaryLaplace(Claplace, calcRandomEffectsStdError = TRUE))
+nimtime <- system.time(opt <- Claplace$LaplaceMLE())
+nimtime2 <- system.time(nimres <- Claplace$summary(opt, calcRandomEffectsStdError = TRUE))
 
 ## Compare results:
-rbind(nimtime, tmbtime + tmbtime2)
+rbind(nimtime + nimtime2, tmbtime + tmbtime2)
 ## Parameters
-rbind(nimres$params[,"Estimate"], tmbres$par)
-rbind(nimres$params[,"StdError"], tmbsumm[1:4,"Std. Error"])
+rbind(nimres$params$estimate, tmbres$par)
+rbind(nimres$params$stdError, tmbsumm[1:4,"Std. Error"])
 ## Random effects
-max(abs(nimres$random[,"Estimate"] - tmbsumm[5:104, "Estimate"]))
-max(abs(nimres$random[,"StdError"] - tmbsumm[5:104,"Std. Error"]))
+max(abs(nimres$random$estimate - tmbsumm[5:104, "Estimate"]))
+max(abs(nimres$random$stdError - tmbsumm[5:104,"Std. Error"]))

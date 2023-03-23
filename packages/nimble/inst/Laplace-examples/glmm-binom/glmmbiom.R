@@ -54,7 +54,8 @@ cmodel$calculate()
 laplace <- buildLaplace(model)
 ## Compile Laplace 
 Claplace <- compileNimble(laplace, project = model)
-nimtime <- system.time(nimres <- summaryLaplace(Claplace, calcRandomEffectsStdError = TRUE))
+opt <- Claplace$LaplaceMLE()
+nimtime <- system.time(nimres <- Claplace$summary(opt, calcRandomEffectsStdError = TRUE))
 
 ## Fit the model using glmmTMB
 tmbtime <- system.time(tmbres <- glmmTMB(cbind(incidence, size-incidence) ~ period + (1|herd), 
@@ -62,6 +63,6 @@ tmbtime <- system.time(tmbres <- glmmTMB(cbind(incidence, size-incidence) ~ peri
 tmbsumm <- summary(tmbres)
 
 ## Compare results
-rbind(nimres$params[,"Estimate"], tmbres$fit$par)
-rbind(nimres$params[1:4,"StdError"], tmbsumm$coefficients$cond[,"Std. Error"])
+rbind(nimres$params$estimate, tmbres$fit$par)
+rbind(nimres$params$stdError[1:4], tmbsumm$coefficients$cond[,"Std. Error"])
 

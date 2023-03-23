@@ -26,7 +26,7 @@ inits <- list(logsdu = 1,
               u = u*0,
               beta = beta*0)
 data <- list(x = x)
-model <- nimbleModel(code, constants = constants, data = data, inits = inits, buildDerivs = T)
+model <- nimbleModel(code, constants = constants, data = data, inits = inits, buildDerivs = TRUE)
 cmodel <- compileNimble(model)
 cmodel$calculate()
 
@@ -35,11 +35,12 @@ laplace <- buildLaplace(model)
 claplace <- compileNimble(laplace, project = model)
 claplace$Laplace(c(1, 1, 0, 0))
 claplace$gr_Laplace(c(1, 1, 0, 0))
-nimtime <- system.time(nimres <- summaryLaplace(claplace, calcRandomEffectsStdError = TRUE))
+nimtime <- system.time(opt <- claplace$LaplaceMLE())
+nimtime2 <- system.time(nimres <- claplace$summary(opt, calcRandomEffectsStdError = TRUE))
 
 ## Compare results
-rbind(nimtime, tmbtime + tmbtime2)
-rbind(nimres$params[,"Estimate"], tmbres$par)
-rbind(nimres$params[,"StdError"], tmbsumm[1:4, "Std. Error"])
-max(abs(nimres$random[,"Estimate"] - tmbsumm[5:118, "Estimate"]))
-max(abs(nimres$random[,"StdError"] - tmbsumm[5:118, "Std. Error"]))
+rbind(nimtime + nimtime2, tmbtime + tmbtime2)
+rbind(nimres$params$estimate, tmbres$par)
+rbind(nimres$params$stdError, tmbsumm[1:4, "Std. Error"])
+max(abs(nimres$random$estimate - tmbsumm[5:118, "Estimate"]))
+max(abs(nimres$random$stdError - tmbsumm[5:118, "Std. Error"]))
