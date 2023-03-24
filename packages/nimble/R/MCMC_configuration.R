@@ -873,7 +873,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     theseUniVars <- model$getVarNames(nodes = univariateList)
                     uniNodesListByVar <- lapply(theseUniVars, function(var)
                         unlist(univariateList[(univariateList == var) |
-                                                  grepl(paste0('^', var, '\\['), univariateList)]))
+                                                  grepl(paste0('^', gsub('\\.','\\\\\\.',var), '\\['), univariateList)]))
                     if(length(unlist(uniNodesListByVar)) != length(univariateList)) stop('something went wrong')
                     for(j in seq_along(uniNodesListByVar)) {
                         theseNodes <- uniNodesListByVar[[j]]
@@ -901,7 +901,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     if(length(LEoneNodes) > 0) {
                         theseMultiVars <- model$getVarNames(nodes = LEoneNodes)
                         multiNodesListByVar <- lapply(theseMultiVars, function(var)
-                            unlist(LEoneNodes[ grepl(paste0('^', var, '\\['), LEoneNodes) ]))
+                            unlist(LEoneNodes[ grepl(paste0('^', gsub('\\.','\\\\\\.',var), '\\['), LEoneNodes) ]))
                         if(length(unlist(multiNodesListByVar)) != length(LEoneNodes)) stop('something went wrong')
                         for(j in seq_along(multiNodesListByVar)) {
                             theseNodes <- multiNodesListByVar[[j]]
