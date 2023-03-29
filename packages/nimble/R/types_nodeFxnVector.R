@@ -32,7 +32,12 @@ nodeFunctionVector_DerivsModelUpdateNodes <- function(model,
                                       case = "updateOnly")
   ## Make one dummy node that can be used for set_CppAD_tape_info_for_model
   ## It will never be called from this object
-  dummyNodeNames <- c(updateNodes, constantNodes)[1]
+  ## Using the first of updateNodes or constantNodes did not work because
+  ## it could be a RHSonly node, which nodes not have a nodeFunction,
+  ## which manifests as a crash if not caught.  Instead now we use the first
+  ## node in the model (by default, includeRHSnodes = FALSE).
+  ## dummyNodeNames <- c(updateNodes, constantNodes)[1]
+  dummyNodeNames <- model$getNodeNames()[1]
   if(isTRUE(is.na(dummyNodeNames))) dummyNodeNames <- character()
   if(isTRUE(is.null(dummyNodeNames))) dummyNodeNames <- character()
   NFV <- nodeFunctionVector(model = model,
