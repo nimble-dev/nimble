@@ -84,7 +84,9 @@ Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-
 
 can test on Windows using win-builder and Mac M1 on macbuilder (https://mac.r-project.org/macbuilder/submit.html)
 
-submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
+submit to CRAN
+- request install_opts="--no-multiarch" -- check back with Perry
+- potentially making use of notes in CJP's cranSubmit.txt file
 
 Once CRAN package accepted:
 

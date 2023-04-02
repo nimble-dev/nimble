@@ -1733,7 +1733,7 @@ buildLaplace <- nimbleFunction(
 #' 
 #' @name laplace
 #' 
-#' @aliases Laplace
+#' @aliases Laplace buildLaplace
 #'
 #' @examples 
 #' pumpCode <- nimbleCode({ 
