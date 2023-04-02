@@ -76,6 +76,8 @@ model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
                      buildDerivs = TRUE) # Here is the argument needed for AD.
 ```
 
+If you want derivatives to be set up for all models, you can run `nimbleOptions(buildModelDerivs = TRUE)` and omit the `buildDerivs` argument.
+
 ### Finish setting up the GLMM example
 
 As preparation for the Laplace examples below, we need to finish setting up the GLMM. We could have provided data in the call to `nimbleModel`, but instead we will simulate it using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.
