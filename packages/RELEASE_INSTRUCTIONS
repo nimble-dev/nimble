@@ -84,6 +84,11 @@ Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-
 
 can test on Windows using win-builder and Mac M1 on macbuilder (https://mac.r-project.org/macbuilder/submit.html)
 
+careful AD testing:
+- run full ADmodel testing in packages/test-ADmodels-full.R, either scanning all results or (TBD) setting up a gold file. This is both time-consuming an a PITA because of tolerances.
+- run some AD tests on Windows (this might be done via winbuilder with AD tests now in GHA)
+- install Mac binary tarball that is created on one Mac on a second Mac - make sure nothing baked in when mimicing binary creation by CRAN
+
 submit to CRAN
 - request install_opts="--no-multiarch" -- check back with Perry
 - potentially making use of notes in CJP's cranSubmit.txt file
