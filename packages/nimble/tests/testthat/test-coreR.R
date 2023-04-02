@@ -424,6 +424,8 @@ seqTests <- list(
          setArgVals = quote({}), outputType = quote(double(1)), checkEqual = TRUE),
     list(name = "seq(.1, 10, by = .1)", expr = quote(out <- seq(.1, 10, by = .1)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1))),
+    list(name = "seq(1, arg1, by = arg2)", expr = quote(out <- seq(1, arg1, by = arg2)), args = list(arg1 = quote(integer()), arg2 = quote(integer())),
+         setArgVals = quote({arg1 <- 8; arg2 <- 2}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11)", expr = quote(out <- seq(.1, 10, length.out = 11)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, by = 10, length.out = 11)", expr = quote(out <- seq(.1, by = 10, length.out = 11)), args = list(),
