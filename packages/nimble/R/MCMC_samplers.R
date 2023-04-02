@@ -263,6 +263,10 @@ sampler_RW <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+        },
         getScaleHistory = function() {       ## scaleHistory
             returnType(double(1))
             if(saveMCMChistory) {
@@ -419,6 +423,17 @@ sampler_RW_block <- nimbleFunction(
                 timesRan <<- 0
                 timesAccepted <<- 0
             }
+        },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+            chol_propCov_scale <<- chol_propCov * scale
+        },
+        setPropCov = function(newPropCov = double(2)) {
+            propCov         <<- newPropCov
+            propCovOriginal <<- newPropCov
+            chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
         },
         getScaleHistory = function() {  ## scaleHistory
             if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
@@ -2203,6 +2218,8 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' The RW sampler cannot be used with options log=TRUE and reflective=TRUE, i.e. it cannot do reflective sampling on a log scale.
 #'
+#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
+#'
 #' @section RW_block sampler:
 #'
 #' The RW_block sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr
@@ -2217,6 +2234,10 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' \item tries. The number of times this sampler will repeatedly operate on each MCMC iteration.  Each try consists of a new proposed transition and an accept/reject decision of this proposal.  Specifying tries > 1 can help increase the overall sampler acceptance rate and therefore chain mixing. (default = 1)
 #' }
+#'
+#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
+#'
+#' Operating analogous to the setScale method, the RW_block sampler also has a setPropCov method.  This method accepts a single matrix-valued argument, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal covariance.
 #'
 #' Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases. 
 #'
