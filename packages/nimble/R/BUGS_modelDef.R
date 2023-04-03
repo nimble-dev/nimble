@@ -2148,7 +2148,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbNames
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbName[[lhsVar]]
-                eval(forCode, envir = BUGSdecl$replacementsEnv, silent = TRUE)
+                result <- try(eval(forCode, envir = BUGSdecl$replacementsEnv), silent = TRUE)
                 if(is(result, 'try-error')) {
                     msg <- paste0("Cannot process code `", safeDeparse(forCode), "`.")
                     varsFound <- all.vars(forCode) %in% ls(BUGSdecl$replacementsEnv)
