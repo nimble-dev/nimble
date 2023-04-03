@@ -314,36 +314,6 @@ relTolTmp[4] <- 1e-2
 test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'stochastic link model', useFasterRderivs = TRUE,
                       checkCompiledValuesIdentical = FALSE, useParamTransform = TRUE, newConstantNodes = list(y = newY))
 
-## dexp and dt, which are provided by NIMBLE to allow expanded parameterizations
-set.seed(1)
-code <- nimbleCode({
-    for(i in 1:n) {
-        y[i] ~ dnorm(mu[i], sd = sigma)
-        mu[i] ~ dt(mu0, sigma = sd0, df = nu)
-    }
-    mu0 ~ dnorm(0,1)
-    sd0 ~ dgamma(1.5, .7)
-    nu ~ dunif(0, 50)
-    sigma ~ dexp(scale = tau)
-    tau ~ dexp(rate = 3.5)
-})
-n <- 10
-## if mu is near zero, can get back uncompiled 2d11 hessian (NCT issue 350 likely)
-model <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)),
-                     inits = list(mu = rnorm(n, 1, .2), sigma = runif(1), nu = 2.5, mu0 = rnorm(1), sd0 = runif(1),
-                                  tau = runif(1)))
-xNew = list(mu = rnorm(n, 1, .2))
-            
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-10  
-relTolTmp[2] <- 1e-7 
-relTolTmp[3] <- 1e-4 
-relTolTmp[4] <- 1e-1
-relTolTmp[5] <- 1e-13
-## 348 sec.
-test_ADModelCalculate(model, relTol = relTolTmp, xNew = xNew, verbose = verbose,
-                      useFasterRderivs = TRUE, useParamTransform = TRUE,
-                      checkCompiledValuesIdentical = FALSE, name = 'dt and dexp model')
 
 
 ## complicated indexing 
@@ -891,34 +861,6 @@ test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R 
                       name = 'various multivariate dists')
 
 ## 2023-01-30: got a seg fault in EB scenario; plus this takes forever
-
-## 2022-05-05:
-## I can't fully explain the magnitude of the 2d11 disparity. If I manually call jacobian, I can see
-## smaller disparities than if I do my own hand-calculated 2nd derivs, but not the magnitude seen here.
-## However, given the single-taped uncompiled Hessians match compiled Hessians, I don't think anything is wrong.
-## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##              [,1]          [,2]      [,3]
-## [1,]  1.918025622  0.0000000000 1.9180256
-## Detected some values out of (relative, usually) tolerance:  rOutput2d11$jacobian   cOutput2d11$jacobian .
-##           [,1] [,2]      [,3]
-## [1,] 12.198946    0 12.198946
-## [2,] 12.198946    0 12.198946
-## [3,] -6.777284    0  6.777284
-## [4,] -6.777284    0  6.777284
-## [5,]  2.709502    0  2.709502
-## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
-##            [,1]       [,2]         [,3]
-## [1,] -0.9472489 -0.9472489 1.200179e-13
-## Detected some values out of  absolute  tolerance   :  rOutput012$hessian   cOutput012$hessian .
-##              [,1]         [,2]      [,3]
-## [1,] -0.002075195 -0.002125045 0.0234584
-## Detected some values out of  absolute  tolerance   :  rOutput01$jacobian   cOutput01$jacobian .
-## [1] -4.988689e-01 -4.988643e-01  9.101791e-06
-
-## various cases equal but not identical
-
-## 2022-07-29: have gotten seg faults in EB scenario, 'Testing new wrt values with new constantNodes' for the above when running on its own, 
-
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

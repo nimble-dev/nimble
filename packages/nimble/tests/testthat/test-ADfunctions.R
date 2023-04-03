@@ -39,7 +39,7 @@ test_that('Derivatives of dnorm function correctly.',
     expect_equal(cderivs$jacobian, Rderivs$jacobian)
     expect_equal(cderivs$hessian, Rderivs$hessian)
   }
-)
+) 
 
 test_that('Derivatives of x^2 function correctly.',
           {
@@ -82,7 +82,7 @@ test_that('Derivatives of x^2 function correctly.',
             expect_equal(cderivs$list2$jacobian, Rderivs$list2$jacobian, tolerance = 0.01)
             expect_equal(cderivs$list2$hessian, Rderivs$list2$hessian, tolerance = 0.01)
           }
-)
+) 
 
 test_that('Derivatives of sum(log(x)) function correctly.',
           {
@@ -110,7 +110,7 @@ test_that('Derivatives of sum(log(x)) function correctly.',
             cderivs <- cADfunInst$run(x)
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
-)
+) 
 
 test_that('Derivatives of model$calculate() work in expressions.', 
           {
@@ -139,7 +139,7 @@ test_that('Derivatives of model$calculate() work in expressions.',
             cderivs <- cADfunInst$run()
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
-)
+) 
 
 test_that('Derivatives of matrix multiplication function correctly.',
           {
@@ -195,7 +195,7 @@ test_that('Derivatives of matrix component-wise exponentiation function correctl
             cderivs <- cADfunInst$run(x)
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
-)
+) 
 
 test_that('Derivatives with rep() work correctly.',
 {
@@ -225,7 +225,7 @@ test_that('Derivatives with rep() work correctly.',
   expect_equivalent(cderivs$jacobian, derivs$jacobian)
   expect_equivalent(cderivs$hessian, derivs$hessian)
 }
-)
+) 
 
 test_that('Derivatives with c() work correctly.',
 {
@@ -255,7 +255,7 @@ test_that('Derivatives with c() work correctly.',
   expect_equivalent(cderivs$jacobian, derivs$jacobian)
   expect_equivalent(cderivs$hessian, derivs$hessian)
 }
-)
+) 
 
 ## Dirichlet with log argument
 dirch_test_log <- make_AD_test2(
@@ -283,7 +283,7 @@ dirch_test_log <- make_AD_test2(
   inputs = list(record = list(x = c(log(.2/.5), log(.3/.5)), alpha = c(2, 4, 4), log = 1),
                 test   = list(x = c(log(.4/.45), log(.15/.45)), alpha = c(3, 2, 5), log = 0)))
 
-dirch_test_out <- test_AD2(dirch_test_log)
+dirch_test_out <- test_AD2(dirch_test_log) 
 
 ## Dirichlet without log argument
 dirch_test_fixedlog <- make_AD_test2(
@@ -310,7 +310,7 @@ dirch_test_fixedlog <- make_AD_test2(
   inputs = list(record = list(x = c(log(.2/.5), log(.3/.5)), alpha = c(2, 4, 4)),
                 test   = list(x = c(log(.4/.45), log(.15/.45)), alpha = c(3, 2, 5))))
 
-dirch_test_out <- test_AD2(dirch_test_fixedlog)
+dirch_test_out <- test_AD2(dirch_test_fixedlog) 
 
 ## Wishart
 ## Testing Wishart is tricky because both x and cholesky are
@@ -374,6 +374,8 @@ wish_test_log <- make_AD_test2(
 )
 
 wish_test_out <- test_AD2(wish_test_log)
+
+## Tests above each take 10-20 seconds.
 
 #######################
 ## run all of the tests
