@@ -256,6 +256,8 @@ test_that('CAR conjugacy checking new skipExpansionsNode system', {
     Rmcmc <- buildMCMC(conf)
     ##
     expect_true(class(Rmcmc) == 'MCMC')
+    expect_true(conf$samplerConfs[[1]]$name == 'RW')
+    expect_true(conf$samplerConfs[[7]]$name == 'RW')
     expect_true(conf$samplerConfs[[8]]$name == 'CAR_normal')
     expect_true(class(Rmcmc$samplerFunctions$contentsList[[8]]$componentSamplerFunctions$contentsList[[1]]) == 'CAR_scalar_conjugate')
     expect_true(class(Rmcmc$samplerFunctions$contentsList[[8]]$componentSamplerFunctions$contentsList[[2]]) == 'CAR_scalar_conjugate')
@@ -267,7 +269,7 @@ test_that('CAR conjugacy checking new skipExpansionsNode system', {
     set.seed(0); Rsamples <- runMCMC(Rmcmc, 10)
     set.seed(0); Csamples <- runMCMC(Cmcmc, 10)
     ##
-    expectedSamples <- c(0.97357331, 0.07601302, 0.10439196, -0.37719856, 0.15912985, 0.03509085, -0.01162275, 0.17958068, -0.34811805, 0.10319592)
+    expectedSamples <- c(0.34819833, 0.02054514, -0.04970985, -0.16040014, 0.02538287, 0.01642986, 0.04211587, -0.59325817, -0.30403269, -0.62785918)
     Rcolnames <- colnames(Rsamples)
     ##
     expect_true(all(round(as.numeric(Rsamples[10,Rcolnames]),8) == expectedSamples))
