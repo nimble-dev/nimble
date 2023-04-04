@@ -40,6 +40,7 @@ Imports:
 Suggests:
     testthat
 URL: https://r-nimble.org, https://github.com/nimble-dev/nimble
+BugReports: https://github.com/nimble-dev/nimble/issues
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
 Copyright: See COPYRIGHTS file.
