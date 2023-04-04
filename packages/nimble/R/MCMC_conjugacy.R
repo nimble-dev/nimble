@@ -1393,6 +1393,7 @@ cc_checkLinearity <- function(expr, targetNode) {
             cc_nodeInExpr(targetNode, x)))
         checkLinearityStrucExpr <- cc_checkLinearity(expr[[wh+1]], targetNode)
         if(is.null(checkLinearityStrucExpr)) return(NULL)
+        if(length(expr) > 2) return(NULL)    ## if expr has other components (beyond targetNode), then it's not linear in targetNode
         return(list(offset = cc_combineExprsAddition(expr, checkLinearityStrucExpr$offset),  # was expr?,
                     scale = checkLinearityStrucExpr$scale))
     }
