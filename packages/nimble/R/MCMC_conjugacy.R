@@ -1181,7 +1181,17 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
         if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
-        expandedNodeNames <- if(exprText %in% expandedNodeNamesRaw) exprText else expandedNodeNamesRaw
+        if(exprText %in% expandedNodeNamesRaw) {
+            expandedNodeNames <- exprText
+        } else {
+            ## if exprText is itself *not* a formal node name, but rather a subset of a larger formal node,
+            ## then we don't want it to be expanded to include the subsubming full node
+            if(length(setdiff(model$expandNodeNames(expandedNodeNamesRaw, returnScalarComponents = TRUE), model$expandNodeNames(exprText, returnScalarComponents = TRUE)))) {
+                expandedNodeNames <- exprText
+            } else {
+                expandedNodeNames <- expandedNodeNamesRaw
+            }
+        }
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
@@ -1393,7 +1403,13 @@ cc_checkLinearity <- function(expr, targetNode) {
             cc_nodeInExpr(targetNode, x)))
         checkLinearityStrucExpr <- cc_checkLinearity(expr[[wh+1]], targetNode)
         if(is.null(checkLinearityStrucExpr)) return(NULL)
-        if(length(expr) > 2) return(NULL)    ## if expr has other components (beyond targetNode), then it's not linear in targetNode
+        if(is.indexed(targetNode) && grepl(':', targetNode)) {
+            ## if this is a structureExpression, and also
+            ## if targetNode is multivariate (is indexed and contains ":"),
+            ## and is also part of a larger structureExpr,
+            ## then we do not handle conjugacy for those cases
+            return(NULL)
+        }
         return(list(offset = cc_combineExprsAddition(expr, checkLinearityStrucExpr$offset),  # was expr?,
                     scale = checkLinearityStrucExpr$scale))
     }

@@ -2783,6 +2783,30 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
 })
 
 
+#######test_that('Conjugacy checking does not return conjugate for subsets of multivariate nodes', {
+#######    ## the changes unerlying this test have to do with the handling of structureExprs
+#######    code <- nimbleCode({
+#######        mu[1:2] ~ dmnorm(mu0[1:2], Q2[1:2,1:2])
+#######        y[1:3] ~ dmnorm(mu[1:3], Q3[1:3,1:3])
+#######    })
+#######    Rmodel <- nimbleModel(code, data= list(y=rep(0,3)), inits = list(mu=rep(0,2), Q2=diag(2), Q3=diag(3)))
+#######    conf <- configureMCMC(Rmodel)
+#######    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:2]')
+#######    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+#######    ##
+#######    code <- nimbleCode({
+#######        mu[1:4] ~ dmnorm(mu0[1:4], Q4[1:4,1:4])
+#######        y[1:3] ~ dmnorm(mu[1:3], Q3[1:3,1:3])
+#######    })
+#######    Rmodel <- nimbleModel(code, data= list(y=rep(0,3)), inits = list(mu=rep(0,4), Q3=diag(3), Q4=diag(4)))
+#######    conf <- configureMCMC(Rmodel)
+#######    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:2]')
+#######    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+#######    
+#######    Rmodel$checkConjugacy('mu[1:2]')
+#######})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {

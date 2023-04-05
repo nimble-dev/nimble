@@ -255,8 +255,6 @@ test_that("Testing multivariate normal-Wishart dependency conjugacy detection wi
     ## Note this is a strange model in terms of conjugacy as y depends on only
     ## one element of mu[1:3,i], but our dynamic calculation of offset and coeff
     ## should resolve that properly.
-    ## Update: we do not detect this conjugacy.  The checking is being made more strict,
-    ## to prevent 'false' detections of conjugate relationships (-DT April 2023)
     code = nimbleCode({
         y[1:3] ~ dmnorm(mu[k, 1:3], pr[1:3,1:3])
         pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
@@ -267,7 +265,8 @@ test_that("Testing multivariate normal-Wishart dependency conjugacy detection wi
     m = nimbleModel(code, inits = list(k = 1, pr0 = diag(3), pr = diag(3),
                                        z = rep(1,3)), data = list(y = rep(0,3)))
     conf <- configureMCMC(m)
-    expect_match(conf$getSamplers()[[3]]$name, "RW_block")
+    expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
+            info = "failed to detect dmnorm-dmnorm conjugacy in multivariate crossed multi-conjugacy setting")
 })
 
 test_that("Testing normal-normal-IG multi-index multi-conjugacy detection with dynamic indexing", {    
