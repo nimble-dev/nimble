@@ -1195,6 +1195,13 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
+            ## this next block covers a **real corner case** (from a legacy BUGS model: biops) where dimensions are inferred
+            ## (since not provided), thus causing a valid stochastic node to rather have dimensions larger than it acually is
+            ## (being defined as part of a ragged declaration of multivariate stochastic nodes),
+            ## thus the "type" of this expanded node includes both 'stoch' and also 'RHSonly', leading to a "node"
+            ## with two types... which triggers the check below.  So, if a "node" we're processing has multiple types, then
+            ## we remove the extraneous 'RHSonly' types here:
+            if((length(type) > 1) && ('RHSonly'  %in% type)) type <- setdiff(type, 'RHSonly')
             if(length(type) > 1) {
                 ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
                 if(exprText %in% expandedNodeNamesRaw) type <- type[which(exprText == expandedNodeNamesRaw)]
