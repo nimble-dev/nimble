@@ -1239,11 +1239,21 @@ cc_structureExprName <- quote(structureExpr)
 
 ## creates an expression of the form [cc_structureExprName](element11, element12, etc...) to represent vectors / arrays defined in terms of other stoch/determ nodes,
 cc_createStructureExpr <- function(model, exprText) {
-  expandedNodeNamesVector <- model$expandNodeNames(exprText)
-  expandedNodeExprList <- lapply(expandedNodeNamesVector, function(x) parse(text=x)[[1]])
-  structureExpr <- c(cc_structureExprName, expandedNodeExprList)
-  structureExprCall <- as.call(structureExpr)
-  return(structureExprCall)
+    expandedNodeNamesVector <- model$expandNodeNames(exprText)
+    ## remove expanded node names which are not fully represented in the original scalar components of exprText:
+    exprTextScalarComponents <- model$expandNodeNames(exprText, returnScalarComponents=TRUE)
+    expandedNodeNamesToKeepBool <- sapply(expandedNodeNamesVector, function(n) all(model$expandNodeNames(n, returnScalarComponents=TRUE) %in% exprTextScalarComponents))
+    expandedNodeNamesVector <- expandedNodeNamesVector[expandedNodeNamesToKeepBool]
+    ## now, add in any scalar components of original exprText which are not appearing in the expanded node names:
+    scalarComponentsToAdd <- setdiff(exprTextScalarComponents, model$expandNodeNames(expandedNodeNamesVector, returnScalarComponents=TRUE))
+    nodesForStructureExpr <- c(expandedNodeNamesVector, scalarComponentsToAdd)
+    ## if exprText is a non-node scalar component, then just return that parse(exprText); (rather than structureExpr(exprText))
+    if((length(nodesForStructureExpr) == 1) && identical(nodesForStructureExpr, scalarComponentsToAdd)) return(parse(text=exprText)[[1]])
+    ## otherwise, create and return a structureExpr
+    structureExprExprList <- lapply(nodesForStructureExpr, function(x) parse(text=x)[[1]])
+    structureExpr <- c(cc_structureExprName, structureExprExprList)
+    structureExprCall <- as.call(structureExpr)
+    return(structureExprCall)
 }
 
 
