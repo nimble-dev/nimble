@@ -466,7 +466,7 @@ conjugacyClass <- setRefClass(
             dependentObj <- dependents[[depNodeDist]]
             if(is.null(restrictLink)) {
                 if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
-            } else currentLink = restrictLink
+            } else currentLink <- restrictLink
             if(currentLink != 'stickbreaking') {
                 depNodeParamName <- dependentObj$param
                 linearityCheckExprRaw <- model$getParamExpr(depNode, depNodeParamName)   # extracts the expression for 'param' from 'depNode'
@@ -1179,6 +1179,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         }
         exprText <- safeDeparse(expr, warn = TRUE)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
+        ## skipExpansionsNode was added specifically for CAR model target nodes:
         if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
         if(exprText %in% expandedNodeNamesRaw) {
@@ -1216,8 +1217,10 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             stop('something went wrong with Daniel\'s understanding of newNimbleModel #2')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
-        for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
+        if(is.call(newExpr) && newExpr[[1]] == 'structureExpr') {  ## recurse, if there's a newly created structureExpr()
+            for(i in seq_along(newExpr)[-1])
+                newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
+        }
         return(newExpr)
     }
     if(is.call(expr)) {
@@ -1376,7 +1379,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     ## targetNode doesn't appear in expr
     if(!cc_nodeInExpr(targetNode, expr)) {
         if(is.call(expr) && expr[[1]] == '(') return(cc_checkLinearity(expr[[2]], targetNode))
-        # add +1i to tags 0s and 1s as not being from exact match to target
+        ## add +1i to tags 0s and 1s as not being from exact match to target
         return(list(offset = cc_replace01(expr), scale = 0))  
     }
 
