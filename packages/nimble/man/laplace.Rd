@@ -36,6 +36,7 @@ buildLaplace(
   paramNodes,
   randomEffectsNodes,
   calcNodes,
+  calcNodesNoLaplace,
   control = list()
 )
 }
@@ -44,10 +45,10 @@ buildLaplace(
 
 \item{paramNodes}{a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.}
 
-\item{randomEffectsNodes}{a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to stochastic nodes that depend on \code{paramNodes}.}
+\item{randomEffectsNodes}{a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to latent stochastic nodes that depend on \code{paramNodes}.}
 
-\item{calcNodes}{a character vector of names of nodes for calculating the log-likelihood value; defaults to nodes that depend on \code{randomEffectsNodes} and nodes that only depend on parameter nodes.
-There may be deterministic nodes between \code{paramNodes} and \code{calcNodes}. These will be included in calculations automatically.}
+\item{calcNodes}{a character vector of names of nodes for calculating the log-likelihood value for Laplace approximation; defaults to nodes that depend on \code{randomEffectsNodes} as determined by \code{model$geteDependencies(randomEffectsNodes)}.
+There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.}
 
 \item{optimControl}{a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.}
 
@@ -56,6 +57,9 @@ Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{
 
 \item{optimStart}{choice of start values for the inner optimization. This could be \code{"last"}, \code{"last.best"}, or a vector of user provided values. \code{"last"} means the latest random effects values left in the model will be used. 
 \code{"last.best"} means the latest random effects values corresponding to currently the largest Laplace likelihood will be used. By default, the initial random effects values will be used for inner optimization.}
+
+\item{calcNodesNoLaplace}{a character vector of names of nodes for calculating the exact log-likelihood value that does not depend on any random effects; defaults to stochastic nodes that depend on \code{paramNodes} but do not depend on \code{randomEffectsNodes}.
+There may be deterministic nodes between \code{paramNodes} and \code{calcNodesNoLaplace}. These will be included in calculations automatically.}
 
 \item{control}{a named list (for \code{buildLaplace} only) that controls the behavior of the Laplace approximation. See \code{control} section below.}
 }
@@ -127,7 +131,10 @@ The Laplace algorithm object contains a list of functions:
   \item \code{set_method(method)}. Set method ID for calculating the Laplace approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2}, default method), or 3 (\code{Laplace3}).
   \item \code{get_method()}. Return the method ID currently used in the algorithm. 
   \item \code{one_time_fixes()}. Fix the dimensionality issue if there is only one parameter in the model. This function is called where necessary and users do not need to run this.  
-  \item \code{Laplace(p)}. Laplace approximation at parameter value \code{p}.
+  \item \code{logLikNoLaplace(p)}. Exact log-likelihood value at parameter value \code{p}.
+  \item \code{gr_logLikNoLaplace_internal(p)}. Derivative (obtained via single taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
+  \item \code{gr_logLikNoLaplace(p)}. Derivative (obtained via double taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
+  \item \code{Laplace(p)}. Laplace approximation to the marginal log-likelihood function at parameter value \code{p}. If a model does not include random effects, the Laplace approximation is the exact log-likelihood function. 
   \item \code{gr_Laplace(p)}. Gradient of the Laplace approximation at parameter value \code{p}.
   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at transformed parameter value \code{pTransform}. 
         To make maximizing the Laplace likelihood unconstrained, an automated transformation via \code{\link{parameterTransform}} is performed on any parameters with value constraints.  
@@ -145,13 +152,13 @@ The Laplace algorithm object contains a list of functions:
        In addition, this function accepts the following arguments:
        \itemize{
           \item \code{originalScale}. Logical. If TRUE, the function returns results for original parameters and random effects; otherwise, it returns transformed results if transformation is needed. Defaults to TRUE.
-          \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard errors of random effects estimators will be calculated. Defaults to FALSE.
-          \item \code{returnJointCovariance}. Logical. If TRUE, return the joint variance-covariance matrix of the estimators of random effects and parameters. Defaults to FALSE.
+          \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard errors of random effects estimators (if any) will be calculated. Defaults to FALSE.
+          \item \code{returnJointCovariance}. Logical. If TRUE, return the joint variance-covariance matrix of the estimators of random effects (if any) and parameters. Defaults to FALSE.
        } 
        This function returns a named list:
        \itemize{
           \item \code{params}. A list that contains estimates and standard errors of parameters on a specified scale, i.e. original (if \code{originalScale} is TRUE) or transformed.
-          \item \code{random}. A list that contains estimates of random effects and if required their standard errors, on original/transformed scale. 
+          \item \code{random}. A list that contains estimates of random effects and if required their standard errors, on original/transformed scale. Standard errors are calculated following the generalized delta method of Kass and Steffey (1989).
           \item \code{vcov}. If required (i.e. \code{returnJointCovariance} is TRUE), the joint variance-covariance matrix of the estimators of random effects and parameters, on original/transformed scale. 
           \item \code{scale}. \code{original} or \code{transformed}. 
        } 
@@ -187,6 +194,11 @@ MLEres <- CpumpLaplace$LaplaceMLE()
 allres <- CpumpLaplace$summary(MLEres, calcRandomEffectsStdError = TRUE)
 }
 
+}
+\references{
+Kass, R. and Steffey, D. (1989). Approximate Bayesian inference in conditionally independent hierarchical models (parametric empirical Bayes models). \emph{Journal of the American Statistical Association}, 84(407), 717–726.
+
+Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal likelihood in non-Gaussian hierarchical models. \emph{Computational Statistics & Data Analysis}, 56, 699–709.
 }
 \author{
 Wei Zhang, Perry de Valpine
