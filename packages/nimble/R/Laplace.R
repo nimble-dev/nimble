@@ -1070,13 +1070,14 @@ nimOneLaplace <- nimbleFunction(
 #' @rdname laplace 
 #' @export
 buildLaplace <- nimbleFunction(
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, control = list()) {
+  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesNoLaplace, control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
-    if(is.null(control$warn)) warn <- TRUE else warn <- control$warn
+    if(is.null(control$warn))   warn <- TRUE else  warn <- control$warn
     
-    paramProvided <- !missing(paramNodes)
-    reProvided    <- !missing(randomEffectsNodes)
-    calcProvided  <- !missing(calcNodes)
+    paramProvided         <- !missing(paramNodes)
+    reProvided            <- !missing(randomEffectsNodes)
+    calcProvided          <- !missing(calcNodes)
+    calcNoLaplaceProvided <- !missing(calcNodesNoLaplace) 
     
     if(!paramProvided) {
       paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -1085,9 +1086,9 @@ buildLaplace <- nimbleFunction(
     }
     
     if((!reProvided) || warn) {
-      paramDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-      reNodesDefault <- model$getNodeNames(latentOnly = TRUE)
-      reNodesDefault <- intersect(reNodesDefault, paramDeps)
+      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+      latentNodes <- model$getNodeNames(latentOnly = TRUE)
+      reNodesDefault <- intersect(latentNodes, paramStochDeps)
     }
     if(reProvided){
       randomEffectsNodes <- model$expandNodeNames(randomEffectsNodes)
@@ -1095,7 +1096,7 @@ buildLaplace <- nimbleFunction(
     if(reProvided && warn) {
       reCheck <- setdiff(reNodesDefault, randomEffectsNodes)
       if(length(reCheck)) {
-        errorNodes <- paste0(head(reCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some random effects (latent states) in the model that look\n",
                        "like they should be included in randomEffectsNodes for Laplace approximation\n",
@@ -1106,7 +1107,7 @@ buildLaplace <- nimbleFunction(
       }
       reCheck <- setdiff(randomEffectsNodes, reNodesDefault)
       if(length(reCheck)) {
-        errorNodes <- paste0(head(reCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some randomEffectsNodes provided that look like\n",
                        "they are not needed for Laplace approximation for the\n",
@@ -1119,10 +1120,9 @@ buildLaplace <- nimbleFunction(
     if(!reProvided) {
       randomEffectsNodes <- reNodesDefault
     }
+    
     if((!calcProvided) || warn) {
-      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-      reStochDeps <- model$getDependencies(randomEffectsNodes)
-      calcNodesDefault <- union(paramStochDeps, reStochDeps)
+      calcNodesDefault <- model$getDependencies(randomEffectsNodes)
     }
     if(calcProvided){
       calcNodes <- model$expandNodeNames(calcNodes)
@@ -1130,7 +1130,7 @@ buildLaplace <- nimbleFunction(
     if(calcProvided  && warn) {
       calcCheck <- setdiff(calcNodesDefault, calcNodes)
       if(length(calcCheck)) {
-        errorNodes <- paste0(head(calcCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
         if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some model nodes that look like they should be\n",
                        "included in the calcNodes for Laplace approximation over\n",
@@ -1141,7 +1141,7 @@ buildLaplace <- nimbleFunction(
       }
       calcCheck <- setdiff(calcNodes, calcNodesDefault)
       if(length(calcCheck)){
-        errorNodes <- paste0(head(calcCheck, n = 4), sep = ", ", collapse = ", ")
+        errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
         if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some calcNodes provided that look like\n",
                        "they are not needed for Laplace approximation over\n",
@@ -1154,6 +1154,67 @@ buildLaplace <- nimbleFunction(
     if(!calcProvided){
       calcNodes <- calcNodesDefault
     }
+    
+    if((!calcNoLaplaceProvided) || warn) {
+      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+      reStochDeps <- model$getDependencies(randomEffectsNodes, stochOnly = TRUE)
+      calcNodesNoLaplaceDefault <- setdiff(paramStochDeps, reStochDeps)
+    }
+    if(calcNoLaplaceProvided){
+      calcNodesNoLaplace <- model$expandNodeNames(calcNodesNoLaplace)
+    }
+    if(calcNoLaplaceProvided  && warn) {
+      calcNoLaplaceCheck <- setdiff(calcNodesNoLaplaceDefault, calcNodesNoLaplace)
+      if(length(calcNoLaplaceCheck)) {
+        errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
+        if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
+        warning(paste0("There are some model nodes that look like they should be\n",
+                       "included in the calcNodesNoLaplace for exact likelihood calculation:\n",
+                       errorNodes, "\n",
+                       "To silence this warning, include \'warn = FALSE\' in\n",
+                       "the control list."))
+      }
+      calcNoLaplaceCheck <- setdiff(calcNodesNoLaplace, calcNodesNoLaplaceDefault)
+      if(length(calcNoLaplaceCheck)){
+        errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
+        if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
+        warning(paste0("There are some nodes provided in calcNodesNoLaplace that look like\n",
+                       "they are not needed for exact likelihood calculation:\n",
+                       errorNodes, "\n",
+                       "To silence this warning, include \'warn = FALSE\' in\n",
+                       "the control list."))
+      }
+    }
+    if(!calcNoLaplaceProvided){
+      calcNodesNoLaplace <- calcNodesNoLaplaceDefault
+    }
+    ## Check and add necessary deterministic nodes into calcNodesNoLaplace
+    num_calcNodesNoLaplace <- length(calcNodesNoLaplace)
+    if(num_calcNodesNoLaplace > 0){
+      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+      if(length(paramDetermDeps) > 0) {
+        keep_paramDetermDeps <- logical(length(paramDetermDeps))
+        for(i in seq_along(paramDetermDeps)) {
+          if(any(paramDetermDeps[i] == calcNodesNoLaplace)) keep_paramDetermDeps[i] <- FALSE
+          else {
+            nextDeps <- model$getDependencies(paramDetermDeps[i])
+            keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesNoLaplace)
+          }
+        }
+        paramDetermDeps <- paramDetermDeps[keep_paramDetermDeps]
+      }
+      innerCalcNodesNoLaplace <- calcNodesNoLaplace
+      calcNodesNoLaplace <- model$expandNodeNames(c(paramDetermDeps, calcNodesNoLaplace), sort = TRUE)
+      ## derivsInfo for the part of exact log-likelihood wrt parameters
+      exactLoglik_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesNoLaplace)
+      exactLoglik_updateNodes   <- exactLoglik_derivsInfo$updateNodes
+      exactLoglik_constantNodes <- exactLoglik_derivsInfo$constantNodes
+    } 
+    else { ## calcNodesNoLaplace is empty
+      exactLoglik_updateNodes   <- character(0)
+      exactLoglik_constantNodes <- character(0)
+    }
+    
     ## Out and inner optimization settings
     outOptControl   <- nimOptimDefaultControl()
     innerOptControl <- nimOptimDefaultControl()
@@ -1182,61 +1243,61 @@ buildLaplace <- nimbleFunction(
       innerOptMethod <- control$innerOptimMethod
     }
     else innerOptMethod <- "BFGS"
+    
     ## Create a Laplace nimbleFunctionList
     laplace_nfl <- nimbleFunctionList(Laplace_BASE)
     scalarRENodes <- model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE)
     nre <- length(scalarRENodes)
-    ## Record the order of random effects processed internally
-    internalRandomEffectsNodes <- NULL
-    lenInternalRENodeSets <- NULL
-    if(isFALSE(split)) { ## Do all calcNodes in one set
-      internalRandomEffectsNodes <- randomEffectsNodes
-      lenInternalRENodeSets <- nre
-      if(is.null(control$innerOptimStart)) innerOptStart <- values(model, randomEffectsNodes)
-      else {
-        providedStart <- control$innerOptimStart
-        if(any(providedStart %in% c("last", "last.best"))) innerOptStart <- providedStart
-        else if(is.numeric(sum(providedStart)) && (length(providedStart) == nre)) innerOptStart <- providedStart
-        else innerOptStart <- values(model, randomEffectsNodes)
-      }
-      ## In case random effects are not properly initialized
-      if(!any(innerOptStart %in% c("last", "last.best")) & any(is.infinite(innerOptStart) | is.na(innerOptStart) | is.nan(innerOptStart))){
-        all_reTransform <- parameterTransform(model, randomEffectsNodes)
-        all_reTransform_length <- all_reTransform$getTransformedLength()
-        innerOptStart <- all_reTransform$inverseTransform(rep(0, all_reTransform_length))
-      }
-      ## Build Laplace
-      if(nre > 1) laplace_nfl[[1]] <- nimOneLaplace(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-      else laplace_nfl[[1]] <- nimOneLaplace1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
-    }
-    else {## Split calcNodes into conditionally independent sets
-      if(isTRUE(split)){
-        calcNodesSets <- model$getConditionallyIndependentSets(nodes = calcNodes, givenNodes = paramNodes)
-      }
-      else if(is.numeric(split)){
-        calcNodesSets <- split(calcNodes, split)
-      }
-      else stop("Invalid value for \'split\' provided in control list")
-      num_calcNodesSets <- length(calcNodesSets)
-      if(num_calcNodesSets == 0){
-        stop("There was a problem determining conditionally independent sets for this model.")
-      }
-      ## Record calcNodes that do not depend on random effects, e.g. data nodes that depend only on parameter nodes directly
-      calcNodesDoNotDepRandomEffects <- NULL
-      numLaplace <- 0
-      for(i in seq_along(calcNodesSets)){
-        ## Need to call getDependencies below because getConditionallyIndependentSets omits deterministic nodes
-        these_calcNodes <- model$getDependencies(calcNodesSets[[i]])
-        these_reNodes <- intersect(these_calcNodes, randomEffectsNodes)
-        ## Check if there are random effects in this set of calcNodes
-        if(length(these_reNodes) == 0){
-          calcNodesDoNotDepRandomEffects <- c(calcNodesDoNotDepRandomEffects, these_calcNodes)
+    if(nre > 0){
+      ## Record the order of random effects processed internally
+      internalRandomEffectsNodes <- NULL
+      lenInternalRENodeSets <- NULL
+      if(isFALSE(split)) { ## Do all randomEffectsNodes in one set
+        internalRandomEffectsNodes <- randomEffectsNodes
+        lenInternalRENodeSets <- nre
+        if(is.null(control$innerOptimStart)) innerOptStart <- values(model, randomEffectsNodes)
+        else {
+          providedStart <- control$innerOptimStart
+          if(any(providedStart %in% c("last", "last.best"))) innerOptStart <- providedStart
+          else if(is.numeric(sum(providedStart)) && (length(providedStart) == nre)) innerOptStart <- providedStart
+          else innerOptStart <- values(model, randomEffectsNodes)
         }
-        else{
-          nre_these <- length(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE))
+        ## In case random effects are not properly initialized
+        if(!any(innerOptStart %in% c("last", "last.best")) & any(is.infinite(innerOptStart) | is.na(innerOptStart) | is.nan(innerOptStart))){
+          all_reTransform <- parameterTransform(model, randomEffectsNodes)
+          all_reTransform_length <- all_reTransform$getTransformedLength()
+          innerOptStart <- all_reTransform$inverseTransform(rep(0, all_reTransform_length))
+        }
+        ## Build Laplace
+        if(nre > 1) laplace_nfl[[1]] <- nimOneLaplace(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
+        else laplace_nfl[[1]] <- nimOneLaplace1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+      }
+      else {## Split randomEffectsNodes into conditionally independent sets
+        if(isTRUE(split)){
+          # calcNodesSets <- model$getConditionallyIndependentSets(nodes = calcNodes, givenNodes = paramNodes)
+          givenNodes <- setdiff(c(paramNodes, calcNodes),
+                                c(randomEffectsNodes, model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
+          reSets <- model$getConditionallyIndependentSets(nodes = randomEffectsNodes, givenNodes = givenNodes)
+        }
+        else if(is.numeric(split)){
+          reSets <- split(randomEffectsNodes, split)
+        }
+        else stop("Invalid value for \'split\' provided in control list")
+        num_reSets <- length(reSets)
+        if(num_reSets == 0){
+          stop("There was a problem determining conditionally independent random effects sets for this model.")
+        }
+        for(i in seq_along(reSets)){
+          ## Work with one conditionally independent set of latent states
+          these_reNodes <- reSets[[i]]
           internalRandomEffectsNodes <- c(internalRandomEffectsNodes, these_reNodes)
+          ## find paramNodes and calcNodes for this set of reNodes
+          ## paramNodes are the same for all laplace_nfl elements. In the future this could be customized.
+          these_reDeps <- model$getDependencies(these_reNodes)  ## candidate calcNodes via reNodes
+          these_calcNodes <- intersect(calcNodes, these_reDeps) ## definite calcNodes
+          nre_these <- length(model$expandNodeNames(these_reNodes, returnScalarComponents = TRUE))
           lenInternalRENodeSets <- c(lenInternalRENodeSets, nre_these)
-          numLaplace <- numLaplace + 1
+          ## Process start values for inner optimisation
           if(is.null(control$innerOptimStart)) innerOptStart <- values(model, these_reNodes)
           else {
             providedStart <- control$innerOptimStart
@@ -1253,38 +1314,48 @@ buildLaplace <- nimbleFunction(
             these_reTransform_length <- these_reTransform$getTransformedLength()
             innerOptStart <- these_reTransform$inverseTransform(rep(0, these_reTransform_length))
           }
-          ## If this is the last set of calcNodes, then add all calcNodesDoNotDepRandomEffects, if any, to the calcNodes of the last single Laplace approximation
-          if(i == num_calcNodesSets){
-            if(length(calcNodesDoNotDepRandomEffects) > 0) these_calcNodes <- c(these_calcNodes, calcNodesDoNotDepRandomEffects)
-          }
           ## Build Laplace for each set
           if(nre_these > 1){
-            laplace_nfl[[numLaplace]] <- nimOneLaplace(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
+            laplace_nfl[[i]] <- nimOneLaplace(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
           }
-          else laplace_nfl[[numLaplace]] <- nimOneLaplace1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
+          else laplace_nfl[[i]] <- nimOneLaplace1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
         }
       }
+      if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
+      reTransform <- parameterTransform(model, internalRandomEffectsNodes)
+      reTransform_length <- reTransform$getTransformedLength()
+      if(reTransform_length > 1) reTransform_indices <- 1:reTransform_length
+      else reTransform_indices <- c(1, -1)
+      
+      reNodesAsScalars <- model$expandNodeNames(internalRandomEffectsNodes, returnScalarComponents = TRUE)
+      reNodesAsScalars_vec <- reNodesAsScalars
+      if(nre == 1) reNodesAsScalars_vec <- c(reNodesAsScalars, "_EXTRA_")
+      reNodesAsScalars_first <- reNodesAsScalars[1]
     }
-    if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
-    reTransform <- parameterTransform(model, internalRandomEffectsNodes)
-    reTransform_length <- reTransform$getTransformedLength()
-    if(reTransform_length > 1) reTransform_indices <- 1:reTransform_length
-    else reTransform_indices <- c(1, -1)
-    reNodesAsScalars <- model$expandNodeNames(internalRandomEffectsNodes, returnScalarComponents = TRUE)
-    reNodesAsScalars_vec <- reNodesAsScalars
-    if(nre == 1) reNodesAsScalars_vec <- c(reNodesAsScalars, "_EXTRA_")
-    reNodesAsScalars_first <- reNodesAsScalars[1]
-    paramNodesAsScalars <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
-    paramNodesAsScalars_vec <- paramNodesAsScalars
+    else{
+      ## No random effects
+      lenInternalRENodeSets <- numeric(2)
+      reTransform <- parameterTransform(model, paramNodes[1]) ## Won't be needed at all
+      reTransform_indices <- numeric(2)
+      reNodesAsScalars_vec <- character(0)
+      reNodesAsScalars_first <- character(1)
+    }
+    
+    paramNodesAsScalars     <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
     npar <- length(paramNodesAsScalars)
+    paramNodesAsScalars_vec <- paramNodesAsScalars
     if(npar == 1) paramNodesAsScalars_vec <- c(paramNodesAsScalars, "_EXTRA_")
     paramNodesAsScalars_first <- paramNodesAsScalars[1]
+    if(npar == 1) p_indices <- c(1, -1)
+    else p_indices <- 1:npar
     ## setupOutputs(reNodesAsScalars, paramNodesAsScalars)
+    
     ## Automated transformation for parameters
     paramsTransform <- parameterTransform(model, paramNodes)
     pTransform_length <- paramsTransform$getTransformedLength()
     if(pTransform_length > 1) pTransform_indices <- 1:pTransform_length
     else pTransform_indices <- c(1, -1)
+    
     ## Indicator for removing the redundant index -1 in pTransform_indices
     one_time_fixes_done <- FALSE
     ## Default calculation method for Laplace
@@ -1309,6 +1380,7 @@ buildLaplace <- nimbleFunction(
       else return(reNodesAsScalars_first)
     },
     set_method = function(method = integer()) {
+      if(nre == 0) print("Laplace approximation is not needed for the given model: no random effects")
       if(!any(c(1, 2, 3) == method)) stop("Choose a valid method ID from 1, 2, and 3")
       methodID <<- method
     },
@@ -1323,20 +1395,49 @@ buildLaplace <- nimbleFunction(
           pTransform_indices <<- numeric(length = 1, value = 1)
         }
       }
+      if(npar == 1){
+        if(length(p_indices) == 2){
+          p_indices <<- numeric(length = 1, value = 1)
+        }
+      }
       one_time_fixes_done <<- TRUE
     },
+    ## Exact log-likelihood in terms of original parameters
+    logLikNoLaplace = function(p = double(1)) {
+      if(num_calcNodesNoLaplace == 0) stop("calcNodesNoLaplace is empty: there is no exact likelihood component for the model")
+      values(model, paramNodes) <<- p
+      ans <- model$calculate(calcNodesNoLaplace) 
+      return(ans)
+      returnType(double())
+    },
+    ## Gradient of the exact log-likelihood w.r.t parameters
+    gr_logLikNoLaplace_internal = function(p = double(1)) {
+      if(num_calcNodesNoLaplace == 0) stop("calcNodesNoLaplace is empty: there is no exact likelihood component for the model")
+      if(!one_time_fixes_done) one_time_fixes()
+      ans <- derivs(logLikNoLaplace(p), wrt = p_indices, order = 1, model = model, 
+                    updateNodes = exactLoglik_updateNodes, constantNodes = exactLoglik_constantNodes)
+      return(ans$jacobian[1,])
+      returnType(double(1))
+    },
+    ## Double taping for efficiency
+    gr_logLikNoLaplace = function(p = double(1)) {
+      if(num_calcNodesNoLaplace == 0) stop("calcNodesNoLaplace is empty: there is no exact likelihood component for the model")
+      if(!one_time_fixes_done) one_time_fixes()
+      ans <- derivs(gr_logLikNoLaplace_internal(p), wrt = p_indices, order = 0, model = model,
+                    updateNodes = exactLoglik_updateNodes, constantNodes = exactLoglik_constantNodes)
+      return(ans$value)
+      returnType(double(1))
+    },
+    ## Laplace approximation in terms of original parameters
     Laplace = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      ans <- 0
-      for(i in seq_along(laplace_nfl)){
-        if(methodID == 1){
-          ans <- ans + laplace_nfl[[i]]$Laplace1(p)
-        }
-        else if(methodID == 2){          
-          ans <- ans + laplace_nfl[[i]]$Laplace2(p)
-        }
-        else if(methodID == 3){
-          ans <- ans + laplace_nfl[[i]]$Laplace3(p)
+      if(num_calcNodesNoLaplace > 0) ans <- logLikNoLaplace(p)
+      else ans <- 0
+      if(nre > 0){
+        for(i in seq_along(laplace_nfl)){
+          if(methodID == 1) ans <- ans + laplace_nfl[[i]]$Laplace1(p)
+          else if(methodID == 2) ans <- ans + laplace_nfl[[i]]$Laplace2(p)
+          else ans <- ans + laplace_nfl[[i]]$Laplace3(p)
         }
       }
       return(ans)
@@ -1345,16 +1446,13 @@ buildLaplace <- nimbleFunction(
     ## Gradient of the Laplace approximation w.r.t. parameters
     gr_Laplace = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      ans <- numeric(length = npar)
-      for(i in seq_along(laplace_nfl)){
-        if(methodID == 1){
-          ans <- ans + laplace_nfl[[i]]$gr_Laplace1(p)
-        }
-        else if(methodID == 2){          
-          ans <- ans + laplace_nfl[[i]]$gr_Laplace2(p)
-        }
-        else if(methodID == 3){
-          ans <- ans + laplace_nfl[[i]]$gr_Laplace3(p)
+      if(num_calcNodesNoLaplace > 0) ans <- gr_logLikNoLaplace(p)
+      else ans <- numeric(length = npar)
+      if(nre > 0){
+        for(i in seq_along(laplace_nfl)){
+          if(methodID == 1) ans <- ans + laplace_nfl[[i]]$gr_Laplace1(p)
+          else if(methodID == 2) ans <- ans + laplace_nfl[[i]]$gr_Laplace2(p)
+          else ans <- ans + laplace_nfl[[i]]$gr_Laplace3(p)
         }
       }
       return(ans)
@@ -1364,8 +1462,8 @@ buildLaplace <- nimbleFunction(
     p_transformed_Laplace = function(pTransform = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
       p <- paramsTransform$inverseTransform(pTransform)
-      ans <- Laplace(p)
-      if(is.nan(ans)) ans <- -Inf
+      ans <- Laplace(p) 
+      if(is.nan(ans) | is.na(ans)) ans <- -Inf
       return(ans)
       returnType(double())
     },
@@ -1384,6 +1482,7 @@ buildLaplace <- nimbleFunction(
     },
     ## Inverse transform random effects to original scale
     reInverseTransform = function(reTrans = double(1)) {
+      if(nre == 0) stop("No random effects in the model")
       re <- reTransform$inverseTransform(reTrans)
       return(re)
       returnType(double(1))
@@ -1391,6 +1490,7 @@ buildLaplace <- nimbleFunction(
     ## Jacobian of the inverse transformation
     derivsreInverseTransform = function(reTrans = double(1), order = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
+      if(nre == 0) stop("No random effects in the model")
       ans <- derivs(reInverseTransform(reTrans), wrt = reTransform_indices, order = order)
       return(ans)
       returnType(ADNimbleList())
@@ -1400,7 +1500,7 @@ buildLaplace <- nimbleFunction(
       if(!one_time_fixes_done) one_time_fixes()
       pDerivs <- derivspInverseTransform(pTransform, c(0, 1))
       gr <- gr_Laplace(pDerivs$value) ## pDerivs$value gives original param values
-      ans <- (gr %*% pDerivs$jacobian)[1,]
+      ans <- (gr %*% pDerivs$jacobian)[1,] 
       return(ans)
       returnType(double(1))
     },
@@ -1414,8 +1514,7 @@ buildLaplace <- nimbleFunction(
       else pStartTransform <- paramsTransform$transform(pStart)
       ## In case bad start values are provided 
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
-      optRes <- optim(pStartTransform, p_transformed_Laplace, p_transformed_gr_Laplace,
-                      method = method, control = outOptControl, hessian = hessian)
+      optRes <- optim(pStartTransform, p_transformed_Laplace, p_transformed_gr_Laplace, method = method, control = outOptControl, hessian = hessian)
       ## Back transform results to original scale
       optRes$par <- paramsTransform$inverseTransform(optRes$par)
       return(optRes)
@@ -1423,6 +1522,7 @@ buildLaplace <- nimbleFunction(
     },
     ## Optimized random effects given transformed parameter values
     optimRandomEffects = function(pTransform = double(1)){
+      if(nre == 0) stop("No random effects in the model")
       p <- pInverseTransform(pTransform)
       raneff <- numeric(nre)
       tmp <- numeric(nre) ## Not sure this is needed. 
@@ -1437,8 +1537,9 @@ buildLaplace <- nimbleFunction(
       return(raneff)
       returnType(double(1))
     },
-    ## Inverse of the negative Hessian of log-likelihood wrt random effects
+    ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects
     inverseNegHess = function(p = double(1), reTransform = double(1)){
+      if(nre == 0) stop("No random effects in the model")
       invHess <- matrix(value = 0, nrow = nre, ncol = nre)
       tot <- 0
       for(i in seq_along(laplace_nfl)){
@@ -1452,165 +1553,194 @@ buildLaplace <- nimbleFunction(
     },
     ## Hessian of joint log-likelihood wrt parameters and (transformed) random effects
     hess_logLik_wrt_p_wrt_re = function(p = double(1), reTransform = double(1)){
+      if(nre == 0) stop("No random effects in the model")
       ans <- matrix(value = 0, nrow = npar, ncol = nre)
       tot <- 0
       for(i in seq_along(laplace_nfl)){
         numre <- lenInternalRENodeSets[i]
-        if(methodID == 1){
-          tmp <- laplace_nfl[[i]]$hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform[(tot+1):(tot+numre)])
-        }
-        else {
-          tmp <- laplace_nfl[[i]]$hess_joint_logLik_wrt_p_wrt_re(p, reTransform[(tot+1):(tot+numre)])
-        }
+        if(methodID == 1) tmp <- laplace_nfl[[i]]$hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform[(tot+1):(tot+numre)])
+        else tmp <- laplace_nfl[[i]]$hess_joint_logLik_wrt_p_wrt_re(p, reTransform[(tot+1):(tot+numre)])
         ans[1:npar, (tot+1):(tot+numre)] <- tmp
         tot <- tot + numre
       }
       return(ans)
       returnType(double(2))
     },
+    ## Summarise Laplace MLE results
     summary = function(LaplaceMLEOutput          = optimResultNimbleList(),
                        originalScale             = logical(0, default = TRUE),
                        calcRandomEffectsStdError = logical(0, default = FALSE), 
                        returnJointCovariance     = logical(0, default = FALSE)){
       if(dim(LaplaceMLEOutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace MLE")
       ## Output lists
-      ans    <- LaplaceOutputNimbleList$new() 
-      pres   <- LaplaceOutputSingleNimbleList$new()
+      ans <- LaplaceOutputNimbleList$new() 
+      pres <- LaplaceOutputSingleNimbleList$new()
       ranres <- LaplaceOutputSingleNimbleList$new()
       ## Parameters
       p <- LaplaceMLEOutput$par
       pTransform <- paramsTransform$transform(p)
       vcov_pTransform <- -inverse(LaplaceMLEOutput$hessian)
       stdErr_pTransform <- sqrt(diag(vcov_pTransform))
-      ## Random effects
-      optreTransform <- optimRandomEffects(pTransform)
-      optre <- reInverseTransform(optreTransform)
-      ntot <- npar + nre
-      if(returnJointCovariance) {
-        ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects at MLEs
-        invNegHess <- inverseNegHess(p, optreTransform)
-        jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
-        jointInvNegHessZero[1:nre, 1:nre] <- invNegHess
-        ## Hessian of log-likelihood wrt to params and transformed random effects
-        hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
-        ## Derivative of inverse transformation for params
-        derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
-        JacobpInvTransform   <- derivspInvTransform$jacobian
-        ## Jacobian of optimized random effects wrt transformed parameters
-        JacobOptreWrtParams <- invNegHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
-        jointJacob <- matrix(NA, nrow = ntot, ncol = npar)
-        jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
-        jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
-        ## Joint covariance matrix on transformed scale
-        vcov_Transform <- jointInvNegHessZero + jointJacob %*% vcov_pTransform %*% t(jointJacob)
+      if(nre == 0) { ## No random effects
+        ranres$estimate <- numeric(0)
+        ranres$stdError <- numeric(0)
         if(originalScale){
-          derivsreInvTransform <- derivsreInverseTransform(optreTransform, c(0, 1))
-          JacobreInvTransform  <- derivsreInvTransform$jacobian
-          JacobJointInvTransform <- matrix(0, nrow = ntot, ncol = ntot)
-          JacobJointInvTransform[1:nre, 1:nre] <- JacobreInvTransform
-          JacobJointInvTransform[(nre+1):ntot, (nre+1):ntot] <- JacobpInvTransform
-          vcov <- JacobJointInvTransform %*% vcov_Transform %*% t(JacobJointInvTransform)
-          stdErr_re_p <- sqrt(diag(vcov))
-          stdErr_p <- stdErr_re_p[(nre+1):ntot]
-          if(calcRandomEffectsStdError){
-            ranres$stdError <- stdErr_re_p[1:nre]
+          derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
+          JacobpInvTransform   <- derivspInvTransform$jacobian
+          stdErr_p <- numeric(npar)
+          if(returnJointCovariance) {
+            vcov <- JacobpInvTransform %*% vcov_pTransform %*% t(JacobpInvTransform)
+            stdErr_p <- sqrt(diag(vcov))
+            ans$vcov <- vcov
           }
           else{
-            ranres$stdError <- numeric(0)
+            for(i in 1:npar){
+              var_p_i <- (JacobpInvTransform[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobpInvTransform[i,,drop=FALSE]))[1,1]
+              stdErr_p[i] <- sqrt(var_p_i)
+            }
+            ans$vcov <- matrix(nrow = 0, ncol = 0)
           }
-          ans$vcov <- vcov
           pres$estimate <- p
           pres$stdError <- stdErr_p
-          ranres$estimate <- optre
-        }## End of if(originalScale)
-        else { ## On transformed scale
-          if(calcRandomEffectsStdError){
-            stdErr_reTransform <- sqrt(diag(vcov_Transform)[1:nre])
-            ranres$stdError <- stdErr_reTransform
-          }
-          else{
-            ranres$stdError <- numeric(0)
-          }
-          ans$vcov <- vcov_Transform
-          pres$estimate <- pTransform
-          pres$stdError <- sqrt(diag(vcov_Transform)[(nre+1):ntot])
-          ranres$estimate <- optreTransform
         }
-      }## End of if(returnJointCovariance)
-      else { ## Do not return joint covariance matrix
-        ans$vcov <- matrix(nrow = 0, ncol = 0)
-        if(originalScale){## On original scale
-          pres$estimate <- p
-          ranres$estimate <- optre
-          if(calcRandomEffectsStdError){
-            ## Joint covariance matrix on transform scale
-            invNegHess <- inverseNegHess(p, optreTransform)
-            jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
-            jointInvNegHessZero[1:nre, 1:nre] <- invNegHess
-            ## Hessian of log-likelihood wrt to params and transformed random effects
-            hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
-            ## Derivative of inverse transformation for params
-            derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
-            JacobpInvTransform   <- derivspInvTransform$jacobian
-            ## Jacobian of optimized random effects wrt transformed parameters
-            JacobOptreWrtParams <- invNegHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
-            jointJacob <- matrix(NA, nrow = ntot, ncol = npar)
-            jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
-            jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
-            ## Join covariance matrix on transformed scale
-            vcov_Transform <- jointInvNegHessZero + jointJacob %*% vcov_pTransform %*% t(jointJacob)
-            ## Derivatives information
+        else {
+          pres$estimate <- pTransform
+          pres$stdError <- stdErr_pTransform
+          if(returnJointCovariance) ans$vcov <- vcov_pTransform
+          else ans$vcov <- matrix(0, nrow = 0, ncol = 0)
+        }
+      }
+      else{
+        ## Random effects
+        optreTransform <- optimRandomEffects(pTransform)
+        optre <- reInverseTransform(optreTransform)
+        ntot <- npar + nre
+        if(returnJointCovariance) {
+          ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects at MLEs
+          invNegHess <- inverseNegHess(p, optreTransform)
+          jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
+          jointInvNegHessZero[1:nre, 1:nre] <- invNegHess
+          ## Hessian of log-likelihood wrt to params and transformed random effects
+          hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
+          ## Derivative of inverse transformation for params
+          derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
+          JacobpInvTransform   <- derivspInvTransform$jacobian
+          ## Jacobian of optimized random effects wrt transformed parameters
+          JacobOptreWrtParams <- invNegHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
+          jointJacob <- matrix(NA, nrow = ntot, ncol = npar)
+          jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
+          jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
+          ## Joint covariance matrix on transformed scale
+          vcov_Transform <- jointInvNegHessZero + jointJacob %*% vcov_pTransform %*% t(jointJacob)
+          if(originalScale){
             derivsreInvTransform <- derivsreInverseTransform(optreTransform, c(0, 1))
             JacobreInvTransform  <- derivsreInvTransform$jacobian
             JacobJointInvTransform <- matrix(0, nrow = ntot, ncol = ntot)
             JacobJointInvTransform[1:nre, 1:nre] <- JacobreInvTransform
             JacobJointInvTransform[(nre+1):ntot, (nre+1):ntot] <- JacobpInvTransform
-            stdErr <- numeric(ntot)
-            for(i in 1:ntot){
-              var_i <- (JacobJointInvTransform[i,,drop=FALSE] %*% vcov_Transform %*% t(JacobJointInvTransform[i,,drop=FALSE]))[1,1]
-              stdErr[i] <- sqrt(var_i)
+            vcov <- JacobJointInvTransform %*% vcov_Transform %*% t(JacobJointInvTransform)
+            stdErr_re_p <- sqrt(diag(vcov))
+            stdErr_p <- stdErr_re_p[(nre+1):ntot]
+            if(calcRandomEffectsStdError){
+              ranres$stdError <- stdErr_re_p[1:nre]
             }
-            stdErr_p <- stdErr[(nre+1):ntot]
-            stdErr_re <- stdErr[1:nre]
-            pres$stdError   <- stdErr_p
-            ranres$stdError <- stdErr_re
-          }## End of if(calcRandomEffectsStdError)
-          else { ## Do not calculate standard errors of random effects estimates
-            derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
-            JacobpInvTransform   <- derivspInvTransform$jacobian
-            stdErr_p <- numeric(npar)
-            for(i in 1:npar){
-              var_p_i <- (JacobpInvTransform[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobpInvTransform[i,,drop=FALSE]))[1,1]
-              stdErr_p[i] <- sqrt(var_p_i)
+            else{
+              ranres$stdError <- numeric(0)
             }
+            ans$vcov <- vcov
+            pres$estimate <- p
             pres$stdError <- stdErr_p
-            ranres$stdError <- numeric(0)
-          }
-        }## End of if(originalScale)
-        else {## On transformed scale
-          pres$estimate <- pTransform
-          pres$stdError <- stdErr_pTransform
-          ranres$estimate <- optreTransform
-          if(calcRandomEffectsStdError){
-            invNegHess <- inverseNegHess(p, optreTransform)
-            jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
-            jointInvNegHessZero[1:nre, 1:nre] <- invNegHess
-            ## Hessian of log-likelihood wrt to params and transformed random effects
-            hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
-            ## Derivative of inverse transformation for params
-            derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
-            JacobpInvTransform   <- derivspInvTransform$jacobian
-            ## Jacobian of optimized random effects wrt transformed parameters
-            JacobOptreWrtParams <- invNegHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
-            stdErr_reTransform <- numeric(nre)
-            for(i in 1:nre){
-              var_reTransform_i <- invNegHess[i, i] + (JacobOptreWrtParams[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobOptreWrtParams[i,,drop=FALSE]))[1,1]
-              stdErr_reTransform[i] <- sqrt(var_reTransform_i)
+            ranres$estimate <- optre
+          }## End of if(originalScale)
+          else { ## On transformed scale
+            if(calcRandomEffectsStdError){
+              stdErr_reTransform <- sqrt(diag(vcov_Transform)[1:nre])
+              ranres$stdError <- stdErr_reTransform
             }
-            ranres$stdError <- stdErr_reTransform
+            else{
+              ranres$stdError <- numeric(0)
+            }
+            ans$vcov <- vcov_Transform
+            pres$estimate <- pTransform
+            pres$stdError <- sqrt(diag(vcov_Transform)[(nre+1):ntot])
+            ranres$estimate <- optreTransform
           }
-          else{
-            ranres$stdError <- numeric(0)
+        }## End of if(returnJointCovariance)
+        else { ## Do not return joint covariance matrix
+          ans$vcov <- matrix(nrow = 0, ncol = 0)
+          if(originalScale){## On original scale
+            pres$estimate <- p
+            ranres$estimate <- optre
+            if(calcRandomEffectsStdError){
+              ## Joint covariance matrix on transform scale
+              invNegHess <- inverseNegHess(p, optreTransform)
+              jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
+              jointInvNegHessZero[1:nre, 1:nre] <- invNegHess
+              ## Hessian of log-likelihood wrt to params and transformed random effects
+              hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
+              ## Derivative of inverse transformation for params
+              derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
+              JacobpInvTransform   <- derivspInvTransform$jacobian
+              ## Jacobian of optimized random effects wrt transformed parameters
+              JacobOptreWrtParams <- invNegHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
+              jointJacob <- matrix(NA, nrow = ntot, ncol = npar)
+              jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
+              jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
+              ## Join covariance matrix on transformed scale
+              vcov_Transform <- jointInvNegHessZero + jointJacob %*% vcov_pTransform %*% t(jointJacob)
+              ## Derivatives information
+              derivsreInvTransform <- derivsreInverseTransform(optreTransform, c(0, 1))
+              JacobreInvTransform  <- derivsreInvTransform$jacobian
+              JacobJointInvTransform <- matrix(0, nrow = ntot, ncol = ntot)
+              JacobJointInvTransform[1:nre, 1:nre] <- JacobreInvTransform
+              JacobJointInvTransform[(nre+1):ntot, (nre+1):ntot] <- JacobpInvTransform
+              stdErr <- numeric(ntot)
+              for(i in 1:ntot){
+                var_i <- (JacobJointInvTransform[i,,drop=FALSE] %*% vcov_Transform %*% t(JacobJointInvTransform[i,,drop=FALSE]))[1,1]
+                stdErr[i] <- sqrt(var_i)
+              }
+              stdErr_p <- stdErr[(nre+1):ntot]
+              stdErr_re <- stdErr[1:nre]
+              pres$stdError   <- stdErr_p
+              ranres$stdError <- stdErr_re
+            }## End of if(calcRandomEffectsStdError)
+            else { ## Do not calculate standard errors of random effects estimates
+              derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
+              JacobpInvTransform   <- derivspInvTransform$jacobian
+              stdErr_p <- numeric(npar)
+              for(i in 1:npar){
+                var_p_i <- (JacobpInvTransform[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobpInvTransform[i,,drop=FALSE]))[1,1]
+                stdErr_p[i] <- sqrt(var_p_i)
+              }
+              pres$stdError <- stdErr_p
+              ranres$stdError <- numeric(0)
+            }
+          }## End of if(originalScale)
+          else {## On transformed scale
+            pres$estimate <- pTransform
+            pres$stdError <- stdErr_pTransform
+            ranres$estimate <- optreTransform
+            if(calcRandomEffectsStdError){
+              invNegHess <- inverseNegHess(p, optreTransform)
+              jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
+              jointInvNegHessZero[1:nre, 1:nre] <- invNegHess
+              ## Hessian of log-likelihood wrt to params and transformed random effects
+              hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
+              ## Derivative of inverse transformation for params
+              derivspInvTransform  <- derivspInverseTransform(pTransform, c(0, 1))
+              JacobpInvTransform   <- derivspInvTransform$jacobian
+              ## Jacobian of optimized random effects wrt transformed parameters
+              JacobOptreWrtParams <- invNegHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
+              stdErr_reTransform <- numeric(nre)
+              for(i in 1:nre){
+                var_reTransform_i <- invNegHess[i, i] + (JacobOptreWrtParams[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobOptreWrtParams[i,,drop=FALSE]))[1,1]
+                stdErr_reTransform[i] <- sqrt(var_reTransform_i)
+              }
+              ranres$stdError <- stdErr_reTransform
+            }
+            else{
+              ranres$stdError <- numeric(0)
+            }
           }
         }
       }
@@ -1625,7 +1755,10 @@ buildLaplace <- nimbleFunction(
     }
   ),
   buildDerivs = list(pInverseTransform  = list(),
-                     reInverseTransform = list())
+                     reInverseTransform = list(),
+                     logLikNoLaplace = list(),
+                     gr_logLikNoLaplace_internal = list()
+                     )
 )
 
 #' Laplace approximation
@@ -1634,9 +1767,11 @@ buildLaplace <- nimbleFunction(
 #' 
 #' @param model an uncompiled NIMBLE model object.
 #' @param paramNodes a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.
-#' @param randomEffectsNodes a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to stochastic nodes that depend on \code{paramNodes}.
-#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value; defaults to nodes that depend on \code{randomEffectsNodes} and nodes that only depend on parameter nodes.
-#' There may be deterministic nodes between \code{paramNodes} and \code{calcNodes}. These will be included in calculations automatically.
+#' @param randomEffectsNodes a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to latent stochastic nodes that depend on \code{paramNodes}.
+#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value for Laplace approximation; defaults to nodes that depend on \code{randomEffectsNodes} as determined by \code{model$geteDependencies(randomEffectsNodes)}.
+#' There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.
+#' @param calcNodesNoLaplace a character vector of names of nodes for calculating the exact log-likelihood value that does not depend on any random effects; defaults to stochastic nodes that depend on \code{paramNodes} but do not depend on \code{randomEffectsNodes}.
+#' There may be deterministic nodes between \code{paramNodes} and \code{calcNodesNoLaplace}. These will be included in calculations automatically.
 #' @param optimControl a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.
 #' @param optimMethod optimization method to be used in \code{optim} for the inner optimization. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}}.
 #' Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By default, method "\code{CG}" is used for \code{nimOneLaplace1D} and "\code{BFGS}" for \code{nimOneLaplace}.
@@ -1689,7 +1824,7 @@ buildLaplace <- nimbleFunction(
 #' @section \code{buildLaplace}:
 #' 
 #' The main function for constructing the Laplace approximation for a given model. One only needs to provide a NIMBLE model object and then the function
-#' will determine inputs for \code{paramNodes}, \code{randomEffectsNodes}, and \code{calcNodes} and then construct the Laplace algorithm. 
+#' will determine inputs for \code{paramNodes}, \code{randomEffectsNodes}, \code{calcNodes}, and \code{calcNodesNoLaplace} and then construct the Laplace algorithm. 
 #' Default settings are given inside the function and can be changed for all control parameters inside the \code{control} argument. 
 #' 
 #' The Laplace algorithm object contains a list of functions:
@@ -1699,7 +1834,10 @@ buildLaplace <- nimbleFunction(
 #'   \item \code{set_method(method)}. Set method ID for calculating the Laplace approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2}, default method), or 3 (\code{Laplace3}).
 #'   \item \code{get_method()}. Return the method ID currently used in the algorithm. 
 #'   \item \code{one_time_fixes()}. Fix the dimensionality issue if there is only one parameter in the model. This function is called where necessary and users do not need to run this.  
-#'   \item \code{Laplace(p)}. Laplace approximation at parameter value \code{p}.
+#'   \item \code{logLikNoLaplace(p)}. Exact log-likelihood value at parameter value \code{p}.
+#'   \item \code{gr_logLikNoLaplace_internal(p)}. Derivative (obtained via single taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
+#'   \item \code{gr_logLikNoLaplace(p)}. Derivative (obtained via double taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
+#'   \item \code{Laplace(p)}. Laplace approximation to the marginal log-likelihood function at parameter value \code{p}. If a model does not include random effects, the Laplace approximation is the exact log-likelihood function. 
 #'   \item \code{gr_Laplace(p)}. Gradient of the Laplace approximation at parameter value \code{p}.
 #'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at transformed parameter value \code{pTransform}. 
 #'         To make maximizing the Laplace likelihood unconstrained, an automated transformation via \code{\link{parameterTransform}} is performed on any parameters with value constraints.  
@@ -1717,13 +1855,13 @@ buildLaplace <- nimbleFunction(
 #'        In addition, this function accepts the following arguments:
 #'        \itemize{
 #'           \item \code{originalScale}. Logical. If TRUE, the function returns results for original parameters and random effects; otherwise, it returns transformed results if transformation is needed. Defaults to TRUE.
-#'           \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard errors of random effects estimators will be calculated. Defaults to FALSE.
-#'           \item \code{returnJointCovariance}. Logical. If TRUE, return the joint variance-covariance matrix of the estimators of random effects and parameters. Defaults to FALSE.
+#'           \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard errors of random effects estimators (if any) will be calculated. Defaults to FALSE.
+#'           \item \code{returnJointCovariance}. Logical. If TRUE, return the joint variance-covariance matrix of the estimators of random effects (if any) and parameters. Defaults to FALSE.
 #'        } 
 #'        This function returns a named list:
 #'        \itemize{
 #'           \item \code{params}. A list that contains estimates and standard errors of parameters on a specified scale, i.e. original (if \code{originalScale} is TRUE) or transformed.
-#'           \item \code{random}. A list that contains estimates of random effects and if required their standard errors, on original/transformed scale. 
+#'           \item \code{random}. A list that contains estimates of random effects and if required their standard errors, on original/transformed scale. Standard errors are calculated following the generalized delta method of Kass and Steffey (1989).
 #'           \item \code{vcov}. If required (i.e. \code{returnJointCovariance} is TRUE), the joint variance-covariance matrix of the estimators of random effects and parameters, on original/transformed scale. 
 #'           \item \code{scale}. \code{original} or \code{transformed}. 
 #'        } 
@@ -1758,10 +1896,15 @@ buildLaplace <- nimbleFunction(
 #' # Compile the model
 #' Cpump <- compileNimble(pump)
 #' CpumpLaplace <- compileNimble(pumpLaplace, project = pump)
-#' # Calculate MLEs on transformed scale
+#' # Calculate MLEs of parameters
 #' MLEres <- CpumpLaplace$LaplaceMLE()
 #' # Calculate estimates and standard errors for parameters and random effects on original scale
 #' allres <- CpumpLaplace$summary(MLEres, calcRandomEffectsStdError = TRUE)
 #' }
 #'
+#' @references 
+#' Kass, R. and Steffey, D. (1989). Approximate Bayesian inference in conditionally independent hierarchical models (parametric empirical Bayes models). \emph{Journal of the American Statistical Association}, 84(407), 717–726.
+#' 
+#' Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal likelihood in non-Gaussian hierarchical models. \emph{Computational Statistics & Data Analysis}, 56, 699–709.
+#' 
 NULL
