@@ -191,12 +191,10 @@ test_that('makeModelDerivsInfo works correctly', {
                                            model$expandNodeNames('y')))
     expect_identical(result$constantNodes, character(0))
 
-    # @paciorek take a look at this one
     result <- makeModelDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('mu[1]','y[1]'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, 'mu[1]', 'mu[2]', 'mu[3]'))
     expect_identical(result$constantNodes, "y[1]")
 
-    # @paciorek and this one. Note that prElems is not in result$updateNodes and shouldn't be.
     result <- makeModelDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0'), calcNodes = c('mu[1:2]','y[1:2]'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", lftChElems, model$expandNodeNames('mu', returnScalarComponents = TRUE)))
     expect_identical(result$constantNodes, c("y[1]", "y[2]"))

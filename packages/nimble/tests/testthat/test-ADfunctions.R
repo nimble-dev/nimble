@@ -387,30 +387,32 @@ test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailure
 test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 1410 sec.
 test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
-test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 160 sec.
 test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
-test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 475 sec.
 test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
-test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 83 sec.
 test_AD_batch(powOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(powOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
-test_AD_batch(pow_int_OpTests2, knownFailures = AD_knownFailures, verbose = FALSE)
+## 2023-04-06: @perrydv: error: argument "wrt" is missing, with no default
+test_AD_batch(pow_int_OpTests2, knownFailures = AD_knownFailures, verbose = FALSE)  
 test_AD_batch(pow_int_OpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(pow_int_OpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
 # inprod
-test_AD_batch(binaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+test_AD_batch(binaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 14 sec.
 ADtestEnv$RCrelTol[4] <- 1e-6
 test_AD_batch(binaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(binaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 
-test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE)
+## 2023-04-06: @perrydv: error: Error in chol.default(arg1) : the leading minor of order 4 is not positive definite
+test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE) # 
 test_AD_batch(squareMatrixOpTests[9], verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
 
 test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
