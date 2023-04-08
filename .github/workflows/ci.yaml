@@ -88,7 +88,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           R CMD build packages/nimble  # Is this needed? Is purpose of this to see if 'build' induces an error?
-          R CMD INSTALL --install-tests packages/nimble
+          R CMD INSTALL --install-tests --enable-dylib=false packages/nimble  # use libnimble.a to reduce seg faults when using clearCompiled for long sets of AD tests
 
       - name: Install reverse dependencies
         run: |

@@ -15,6 +15,7 @@ nimbleOptions(allowDynamicIndexing = FALSE)
 ## Things to do or check:
 ## Add warning message if prec_param or scale_param is not CppAD::Constant
 ## Add test for invwishart
+## Add test for lkj_chol
 ## Look for other gaps
 
 
@@ -215,26 +216,9 @@ lkj_test_out <- test_AD2(lkj_test_log)
 
 
 ## from AD_distribution_test_lists.R
-
-## shorten set of tests for automated testing
-## do all variants for dnorm and only 'most' vectorized for other dists
-
-nm <- sapply(names(distn_tests2), function(x) strsplit(x, split = ' ')[[1]][1])
-tmpList <- split(distn_tests2, nm)
-tmpList <- tmpList[!names(tmpList) %in% c("norm_base.dnorm", "mnorm_chol_base.dmnorm_chol", "mvt_chol_base.dmvt_chol")]
-distn_tests2_short <- c(distn_tests2[nm == "norm_base.dnorm"],
-                        lapply(tmpList, function(elem) elem[[length(elem)]])) # last item should be 'most' vectorized
-
-nm <- sapply(names(distn_with_log_tests2), function(x) strsplit(x, split = ' ')[[1]][1])
-tmpList <- split(distn_with_log_tests2, nm)
-tmpList <- tmpList[!names(tmpList) %in% c("norm_base.dnorm", "mnorm_chol_base.dmnorm_chol", "mvt_chol_base.dmvt_chol")]
-distn_with_log_tests2_short <- c(distn_with_log_tests2[nm == "norm_base.dnorm"],
-                                 lapply(tmpList, function(elem) elem[[length(elem)]]))
-
-
 resetTols()
-testResults <- lapply(distn_tests2_short, test_AD2)
-testResults <- lapply(distn_with_log_tests2_short, test_AD2)
+testResults <- lapply(distn_tests2[1:140], test_AD2)
+testResults <- lapply(distn_with_log_tests2[1:140], test_AD2)
 
 ADtestEnv$RCrelTol[4] <- 1e-5 # set looser absolute tolerance for the dmnorm and dmvt tests
 testResults <- lapply(distn_tests2[141:142], test_AD2)
