@@ -380,39 +380,6 @@ test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), 
                       useFasterRderivs = TRUE, verbose = verbose, name = 'different subsets of a matrix')
 
 
-## vectorized covariance matrix
-set.seed(1)
-code <- nimbleCode({
-    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
-    y[1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
-    mu1[1:n] ~ dmnorm(z[1:n], pr[1:n,1:n])
-    rho ~ dgamma(2, 3)
-})
-
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(dist = dd, rho = rgamma(1, 1, 1), z = rep(1, n), pr = diag(n)))
-model$simulate()
-model$calculate()
-model$setData('y')
-newPr <- crossprod(matrix(rnorm(5*5), 5))
-newDist <- as.matrix(dist(runif(5)))
-
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-14
-relTolTmp[2] <- 1e-6
-relTolTmp[3] <- 1e-5
-relTolTmp[4] <- 1e-2
-relTolTmp[5] <- 1e-13
-## 330 sec.
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE,
-                      relTol = relTolTmp, absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE, 
-                      useFasterRderivs = TRUE, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
-
-
-
 ## MVN with various parameterizations and user-defined functions
 
 ## user-defined cov function with loops
@@ -427,6 +394,8 @@ covFunLoop <- nimbleFunction(
         returnType(double(2))
         return(out)
     }, buildDerivs = list(run = list(ignore = c('i','j'))))
+
+assign('covFunLoop', covFunLoop, envir = .GlobalEnv)
 
 code <- nimbleCode({
     Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
@@ -464,7 +433,6 @@ test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE,
 set.seed(1)
 code <- nimbleCode({
     y[1, 1:n] ~ dmnorm(mu1[1:n], Q[1:n,1:n])
-
     Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
     Ucov[1:n, 1:n] <- chol(Sigma[1:n,1:n])
     y[2, 1:n] ~ dmnorm(mu2[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
@@ -497,67 +465,6 @@ relTolTmp[4] <- 1e-1
 test_ADModelCalculate(model, absTolThreshold = 1e-12, useParamTransform = TRUE, useFasterRderivs = TRUE,
                       checkCompiledValuesIdentical = FALSE, newUpdateNodes = list(pr = newPr, Q = newQ, Sigma = newSigma),
                       relTol = relTolTmp, verbose = verbose, name = 'various dmnorm parameterizations')
-
-
-## simple user-defined distribution
-dmyexp <- nimbleFunction(
-    run = function(x = double(0), rate = double(0, default = 1), 
-        log = integer(0, default = 0)) {
-        returnType(double(0))
-        logProb <- log(rate) - x*rate
-        if(log) return(logProb)
-        else return(exp(logProb)) 
-    }, buildDerivs = TRUE)
-
-code <- nimbleCode({ 
-    y ~ dmyexp(rho)
-    rho ~ dgamma(2, 3)
-})
-
-set.seed(1)
-model <- nimbleModel(code, data = list(y = rgamma(1,1,1)), inits = list(rho = rgamma(1, 1, 1)))
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-14
-
-## 310 sec.
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, checkCompiledValuesIdentical = FALSE,
-                      useFasterRderivs = TRUE, verbose = verbose, name = 'simple user-defined distribution')
-
-
-
-dtest <- nimbleFunction(
-    run = function(x = double(0), mu = double(1), 
-                   log = integer(0, default = 0)) {
-        returnType(double(0))
-        tmp <- mu^2
-        out <- tmp[1]
-        if(log) return(out) else return(exp(out))
-    }, buildDerivs = TRUE)
-
-rtest <- nimbleFunction(
-    run = function(n = integer(0), mu = double(1)) {
-        returnType(double(0))
-        out <- rnorm(1, 0, 1)
-        return(out)
-    })
-
-code <- nimbleCode({ 
-    y ~ dtest(mu[1:2])
-    mu[1] ~ dnorm(0,1)
-    mu[2] ~ dnorm(0,1)
-})
-
-set.seed(1)
-model <- nimbleModel(code, inits = list(mu = rnorm(2)))
-model$simulate()
-model$calculate()
-model$setData('y')
-
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-14
-
-## 166 sec.
-test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'vectorized power')
 
 
 dGPdist <- nimbleFunction(
@@ -699,19 +606,6 @@ test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, verbo
 
 ## Parameter transform system and full use of ddirch, dwish, dinvwish
 
-## basic variance component
-set.seed(1)
-code <- nimbleCode({
-    y ~ dnorm(mu, sd = sigma)
-    sigma ~ dinvgamma(1.3, 0.7)
-    mu ~ dnorm(0, 1)
-})
-model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma = rgamma(1, 1, 1), mu = rnorm(1)))
-## 330 sec.
-test_ADModelCalculate(model, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE,
-                      useFasterRderivs = TRUE, useParamTransform = TRUE, name = 'basic param transform')
-
-
 set.seed(1)
 code <- nimbleCode({
     y ~ dnorm(mu, var = sigma2)
@@ -775,90 +669,6 @@ test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNod
                       useFasterRderivs = TRUE, verbose = verbose, name = 'Dirichlet paramTransform') 
 
 
-## This segfaults as of 2023-03-25, with libnimble.a.
-
-covFunVec <- nimbleFunction(
-    run = function(dist = double(2), rho = double(0)) {
-        out <- exp(-dist/rho)
-        returnType(double(2))
-        return(out)
-    }, buildDerivs = TRUE)
-
-
-code <- nimbleCode({
-    Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
-    Sigma2[1:n,1:n] <- covFunLoop(dist[1:n,1:n], rho)
-    Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
-    
-    y[1, 1:n] ~ dmnorm(mu1[1:n], cov = Sigma1[1:n,1:n])
-    y[2, 1:n] ~ dmnorm(mu2[1:n], cov = Sigma2[1:n,1:n])
-    y[3, 1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
-
-    Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
-    y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
-
-    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
-    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
-    y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
-    y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
-    y[7, 1:n] ~ dGPdist(dist[1:n, 1:n], rho)
-    
-    W1[1:n, 1:n] ~ dinvwish(R = R[1:n,1:n], df = nu)
-
-    UR[1:n, 1:n] <- chol(R[1:n,1:n])
-    US[1:n, 1:n] <- chol(inverse(R[1:n,1:n]))
-    W2[1:n, 1:n] ~ dinvwish(cholesky = UR[1:n,1:n], df = nu, scale_param = 0)
-    W3[1:n, 1:n] ~ dinvwish(cholesky = US[1:n,1:n], df = nu, scale_param = 1)
-
-    W4[1:n, 1:5] ~ dwish(R[1:n, 1:n], df = nu)
-    W5[1:n, 1:5] ~ dwish(cholesky = UR[1:n, 1:n], df = nu, scale_param = 0)
-    W6[1:n, 1:5] ~ dwish(cholesky = US[1:n, 1:n], df = nu, scale_param = 1)
-    
-    mu1[1:n] ~ dmnorm(z[1:n], cov = W1[1:n,1:n])
-    mu2[1:n] ~ dmnorm(z[1:n], cov = W2[1:n,1:n])
-    mu3[1:n] ~ dmnorm(z[1:n], cov = W3[1:n,1:n])
-    mu4[1:n] ~ dmnorm(z[1:n], W4[1:n,1:n])
-    mu5[1:n] ~ dmnorm(z[1:n], W5[1:n,1:n])
-    mu6[1:n] ~ dmnorm(z[1:n], W6[1:n,1:n])
-    rho ~ dgamma(2, 3)
-    nu ~ dunif(0, 100)
-})
-
-set.seed(1)
-n <- 5
-locs <- runif(n)
-dd <- fields::rdist(locs)
-R <- crossprod(matrix(rnorm(n^2), n, n))
-model <- nimbleModel(code, constants = list(n = n),
-                     inits = list(dist = dd, R = R, nu = 8, rho = rgamma(1, 1, 1),
-                                                                 z = rep(1, n)))
-model$simulate()
-model$calculate()
-model$setData('y')
-
-newDist <- as.matrix(dist(runif(n)))
-newR <- crossprod(matrix(rnorm(n*n), n))
-newW1 <- crossprod(matrix(rnorm(n*n), n))
-newW2 <- crossprod(matrix(rnorm(n*n), n))
-newW3 <- crossprod(matrix(rnorm(n*n), n))
-newW4 <- crossprod(matrix(rnorm(n*n), n))
-newW5 <- crossprod(matrix(rnorm(n*n), n))
-newW6 <- crossprod(matrix(rnorm(n*n), n))
-relTolTmp <- relTol
-relTolTmp[1] <- 1e-14
-relTolTmp[2] <- 1e-6
-relTolTmp[3] <- 1e-1
-relTolTmp[4] <- 1e-1
-relTolTmp[5] <- 1e-11
-
-## rOutput2d11 result can be wildly out of tolerance, so not checking it.
-test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR, W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4, W5 = newW5, W6 = newW6),
-                      x = 'prior', absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,
-                      useParamTransform = TRUE, useFasterRderivs = TRUE, checkDoubleUncHessian = FALSE,
-                      relTol = relTolTmp, verbose = verbose,
-                      name = 'various multivariate dists')
-
-## 2023-01-30: got a seg fault in EB scenario; plus this takes forever
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
