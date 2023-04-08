@@ -489,6 +489,9 @@ rGPdist <- nimbleFunction(
         return(out)
     })
 
+assign('dGPdist', dGPdist, envir = .GlobalEnv)
+assign('rGPdist', rGPdist, envir = .GlobalEnv)
+
 code <- nimbleCode({ 
     y[1:n] ~ dGPdist(dist[1:n, 1:n], rho)
     rho ~ dgamma(2, 3)
