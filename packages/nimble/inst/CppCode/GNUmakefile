@@ -1,4 +1,4 @@
-SRC=RcppUtils.cpp EigenTypedefs.cpp eigenUsingClasses.cpp RcppNimbleUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp dllFinalizer.cpp nimbleGraph.cpp smartPtrs.cpp predefinedNimbleLists.cpp nimOptim.cpp
+SRC=RcppUtils.cpp EigenTypedefs.cpp eigenUsingClasses.cpp RcppNimbleUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp dllFinalizer.cpp nimbleGraph.cpp smartPtrs.cpp predefinedNimbleLists.cpp nimOptim.cpp nimIntegrate.cpp
 OBJECTS=$(SRC:%.cpp=%.o)
 
 # nimbleGraph.cpp is only needed in SRC for --enable-dylib=true, but it's not a big deal to leave include it either way

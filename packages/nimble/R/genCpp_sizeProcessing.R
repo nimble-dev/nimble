@@ -49,6 +49,7 @@ sizeCalls <- c(
     makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
     makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
     nimOptim = 'sizeOptim',
+    nimIntegrate = 'sizeIntegrate',
     nimOptimDefaultControl = 'sizeOptimDefaultControl',
     list('debugSizeProcessing' = 'sizeProxyForDebugging',
          diag = 'sizeDiagonal',
@@ -1296,6 +1297,23 @@ sizeOptimDefaultControl <- function(code, symTab, typeEnv) {
     code$nDim <- 0
 
     if(length(asserts) == 0) NULL else asserts
+}
+
+sizeIntegrate <- function(code, symTab, typeEnv) {
+  typeEnv$.allowFunctionAsArgument <- TRUE
+  asserts <- recurseSetSizes(code, symTab, typeEnv)
+  typeEnv$.allowFunctionAsArgument <- FALSE
+  code$sizeExprs <- list()
+  code$toEigenize <- "no"
+  code$nDim <- 0
+  code$type <- 'double'
+  fnCode <- code$args$f
+  if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
+    fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
+  } else {
+    stop(paste0('unsupported fn argument in integrate(fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
+  }
+  if(length(asserts) == 0) NULL else asserts
 }
 
 sizeCppPointerDereference <- function(code, symTab, typeEnv) {

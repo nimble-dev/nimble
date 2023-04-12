@@ -829,6 +829,7 @@ matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, lo
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- nimOptim
+matchFunctions[['nimIntegrate']] <- nimIntegrate
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}

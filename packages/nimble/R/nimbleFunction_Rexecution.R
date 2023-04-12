@@ -1262,6 +1262,10 @@ optimDefaultControl <- function() {
     return(list())
 }
 
+nimIntegrate <- function(f, lower, upper) {
+  f((upper-lower)/2.)
+}
+
 #' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
