@@ -1262,8 +1262,21 @@ optimDefaultControl <- function() {
     return(list())
 }
 
-nimIntegrate <- function(f, lower, upper) {
-  f((upper-lower)/2.)
+#' Copies R's 1D integrate function.
+#'
+#' @return a \code{list} with class integrate: with components 
+#' value the final estimate of the integral.
+#' abs.error estimate of the modulus of the absolute error. 
+#' subdivisions the number of subintervals produced in the subdivision process.
+#' message "OK" or a character string giving the error message.
+#' call the matched call.
+#' @export
+nimIntegrate <- function(f, lower, upper, ..., subdivisions = 100L,
+          rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol,
+          stop.on.error = TRUE) {
+  integrate( f, lower, upper, ..., subdivisions = 100L,
+          rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol,
+          stop.on.error = TRUE )
 }
 
 #' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
