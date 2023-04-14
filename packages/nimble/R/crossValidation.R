@@ -43,7 +43,7 @@ calcCrossVal <- function(i,
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
-  if(!silent) compileNimble(newModel, dirName = dirName)
+  if(!silent) Cmodel <- compileNimble(newModel, dirName = dirName)
   else Cmodel <- suppressMessages(compileNimble(newModel, dirName = dirName))
   predLoss <- FALSE
   if(is.character(lossFunction) && lossFunction == 'predictive'){
@@ -51,9 +51,9 @@ calcCrossVal <- function(i,
     dependencies <- model$getDependencies(paramNames)
     missingDataNames <- leaveOutNames
     lossFunction <- function(posteriorSamples, observedData){
-      values(model, paramNames) <- posteriorSamples
-      model$calculate(dependencies)
-      return(exp(model$calculate(missingDataNames)))
+      values(Cmodel, paramNames) <- posteriorSamples
+      Cmodel$calculate(dependencies)
+      return(exp(Cmodel$calculate(missingDataNames)))
     }
     leaveOutNames <- paramNames
     predLoss <- TRUE
