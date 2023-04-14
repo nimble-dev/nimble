@@ -61,9 +61,9 @@ calcCrossVal <- function(i,
   if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames, print = silent)
   else modelMCMCConf <- suppressMessages(configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames, print = silent))
   if(!predLoss) {
-      for(i in seq_along(modelMCMCConf$samplerConfs)) {
-          sConf <- modelMCMCConf$samplerConfs[[i]]
-          conf$addSampler(target=sConf$target, type=sConf$samplerFunction, control=sConf$control, silent=TRUE)
+      for(i in seq_along(conf$samplerConfs)) {
+          sConf <- conf$samplerConfs[[i]]
+          modelMCMCConf$addSampler(target=sConf$target, type=sConf$samplerFunction, control=sConf$control, silent=TRUE)
       }
   }
   MCMCwarnUnsampledStochasticNodes_current <- nimbleOptions('MCMCwarnUnsampledStochasticNodes')
