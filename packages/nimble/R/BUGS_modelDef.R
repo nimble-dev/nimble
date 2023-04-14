@@ -277,7 +277,7 @@ codeProcessModelMacros <- function(code,
     possibleMacroName <- safeDeparse(code[[1]], warn = TRUE)
     ## If it is really version (i), possibleMacroName will be
     ## ~ or <- and should be updated to the call on the right-hand side:
-    if(possibleMacroName %in% c('<-', '~') & !is.name(code[[3]])) {
+    if(possibleMacroName %in% c('<-', '~') && !is.name(code[[3]])) {
         possibleMacroName <- safeDeparse(code[[3]][[1]], warn = TRUE)
     }
     if(exists(possibleMacroName)) { ## may need to provide an envir argument
