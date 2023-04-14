@@ -156,7 +156,7 @@ test_that("Testing invalid parameter name in getParam", {
 
 test_that('getParam, user-defined integer-valued', {
     dtest <- nimbleFunction(
-        run = function(x = integer(0), thetaInt = integer(0), thetaDbl = double(0), log = integer(0, default = 0)) {
+        run = function(x = double(0), thetaInt = integer(0), thetaDbl = double(0), log = integer(0, default = 0)) {
             returnType(double(0))
             return(0)
         })

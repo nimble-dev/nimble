@@ -252,37 +252,49 @@ Details: The return value is a character vector with an element for each node in
                                   },
 
                                 # user-facing, in contrast to getNodeTypes
-                                isStoch = function(nodes) {
+                                isStoch = function(nodes, nodesAlreadyExpanded = FALSE) {
                                   '
 Determines whether one or more nodes are stochastic
 
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
 '
-                                  nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                  ## This check handles strange case of overlapping RHSonly nodes
+                                  ## when called from `setData` and checking deterministic data nodes;
+                                  ## e.g., see test-mcmc.R 'conjugate MVN with ragged dependencies'
+                                  if(!nodesAlreadyExpanded)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE) else nodeNames <- nodes
                                   type <- getNodeType(nodeNames)
                                   out <- type == "stoch"
                                   names(out) <- nodeNames
                                   return(out)
                                 },
 
-                                isDeterm = function(nodes) {
+                                isDeterm = function(nodes, nodesAlreadyExpanded = FALSE) {
                                   '
 Determines whether one or more nodes are deterministic
 
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
 '
-                                  !isStoch(nodes)
+                                  ## See comment in `isStoch`.
+                                  if(!nodesAlreadyExpanded)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE) else nodeNames <- nodes
+                                  type <- getNodeType(nodeNames)
+                                  out <- type == "determ"
+                                  names(out) <- nodeNames
+                                  return(out)
                                 },
 
-                                  isTruncated = function(nodes) {
+                                isTruncated = function(nodes) {
                                                                       '
 Determines whether one or more nodes are truncated
 
@@ -312,7 +324,7 @@ Details: The return value is a character vector with an element for each node in
 
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       dists <- getDistribution(nodeNames)
-				  dims <- sapply(dists, getDimension)
+			   	      dims <- sapply(dists, getDimension)
                                       out <- dims == 1
                                       names(out) <- nodeNames
                                       return(out)
@@ -562,7 +574,7 @@ Resets the \'data\' property of ALL model nodes to FALSE.  Subsequent to this ca
 
                                   setData = function(..., warnAboutMissingNames = TRUE) {
 '
-Sets the \'data\' flag for specified nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
+Sets the \'data\' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
 
 Arguments:
 
@@ -606,7 +618,6 @@ Details: If a provided value (or the current value in the model when only a name
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
-
                                       for(iData in seq_along(data)) {
                                           varName <- dataNames[iData]
                                           varValue <- data[[varName]]
@@ -621,7 +632,7 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## it is possible that the constants don't exist on LHS of BUGS decls
                                               ## and so are not variables in the model.  In that case we don't want to issue the warning.
                                               if(warnAboutMissingNames
-                                                 & nimble::nimbleOptions("verbose")) {
+                                                 && nimble::nimbleOptions("verbose")) {
                                                   if(varName == '') {
                                                       warning('setData: unnamed element provided to setData.')
                                                   } else 
@@ -640,8 +651,18 @@ Details: If a provided value (or the current value in the model when only a name
                                               scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
                                           if(length(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+
+                                          expandedNodeNames <- expandNodeNames(varName, returnScalarComponents = TRUE)
+                                          determElements <- .self$isDeterm(expandedNodeNames, nodesAlreadyExpanded = TRUE)
+                                          if(any(determElements))
+                                              if(any(!is.na(varValue[which(determElements)])))
+                                                  stop("setData: '", varName, "' contains deterministic nodes. Deterministic nodes cannot be specified as 'data' or 'constants'.")
+                                          
                                           .self[[varName]] <- varValue
+                                          ## Values set as NA are not flagged as data nor are RHSonly elements.
                                           isDataVarValue <- !is.na(varValue)
+                                          isDataVarValue[!.self$isStoch(expandedNodeNames, nodesAlreadyExpanded = TRUE)] <- FALSE
+                                          names(isDataVarValue) <- NULL
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
                                    ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
@@ -1069,7 +1090,21 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
                                               if(any(!is.na(inits[[i]][dataVals])))
                                                   messageIfVerbose("  [Note] Ignoring non-NA values in inits for data nodes: ", names(inits)[[i]], ".")
-                                          } else  .self[[names(inits)[i]]] <- inits[[i]]
+                                          } else {
+                                              inputDim <- nimbleInternalFunctions$dimOrLength(inits[[i]])
+                                              varInfo <- .self$modelDef$varInfo[[names(inits)[i]]]
+                                              mismatch <- FALSE
+                                              if(length(inputDim) == 1 && inputDim == 1) {  # scalar could be scalar or vector of length 1
+                                                  if(!(varInfo$nDim == 0 || (varInfo$nDim > 0 && identical(varInfo$maxs, rep(1, varInfo$nDim)))))
+                                                      mismatch <- TRUE
+                                              } else {
+                                                  if(length(inputDim) != varInfo$nDim || any(inputDim != varInfo$maxs))
+                                                      mismatch <- TRUE
+                                              }
+                                              if(mismatch)
+                                                  message("  [Warning] Incorrect size or dimension of initial value for '", names(inits)[i], "'.\n         Initial value will not be used in compiled model.")
+                                              .self[[names(inits)[i]]] <- inits[[i]]
+                                          }
                                       }
                                   },
                                   checkConjugacy = function(nodeVector, restrictLink = NULL) {
@@ -1156,8 +1191,13 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       stop("Dimension of '", LHSvar, "' does not match required dimension for the distribution '", dist, "'. Necessary dimension is ", distDims['value'], ".", ifelse(distDims['value'] > 0, paste0(" You may need to include explicit indexing information, e.g., variable_name", ifelse(distDims['value'] < 2, "[1:2].", "[1:2,1:2].")), ''))
                                                   nms2 <- nms[nms%in%names(declInfo$valueExprReplaced)]
                                                   for(k in seq_along(nms2)) {
-                                                      if(!is.numeric(declInfo$valueExprReplaced[[nms2[k]]]) && !(dist == 'dinterval' && nms2[k] == 'c') && ( length(declInfo$valueExprReplaced[[nms2[k]]]) ==1 || nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[1]], warn = TRUE) == '[' )) {  # can only check variables not expressions or constants
-                                                          # also dinterval can take 'c' param as scalar or vector, so don't check
+                                                      if(!is.numeric(declInfo$valueExprReplaced[[nms2[k]]]) &&
+                                                         !(dist == 'dinterval' && nms2[k] == 'c') &&
+                                                         !(dist == 'dcat' && nms2[k] == 'prob') &&
+                                                         ( length(declInfo$valueExprReplaced[[nms2[k]]]) ==1
+                                                             || nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[1]], warn = TRUE) == '[' )) {  # can only check variables not expressions or constants
+                                                          ## also dinterval can take 'c' param as scalar or vector
+                                                          ## and dcat same for 'prob', so don't check
                                                           if(length(declInfo$valueExprReplaced[[nms2[k]]]) > 1) {
                                                               var <- nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]][[2]], warn = TRUE)
                                                           } else var <- nimble:::safeDeparse(declInfo$valueExprReplaced[[nms2[k]]], warn = TRUE)
@@ -1171,6 +1211,12 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   dims <- sapply(sizes, length)
                                                   toCheck <- names(dims[!is.na(sizes) & sapply(sizes, function(x) !is.null(x))])
                                                   if(dist == 'dinterval') toCheck <- toCheck[toCheck != 'c']
+                                                  if(dist == 'dcat') {  # either scalar or vector is allowed (NCT issue 1251)
+                                                      wh <- which(toCheck == 'prob')
+                                                      if(dims[wh] > 1) 
+                                                          stop("Dimension of distribution argument 'prob' does not match required dimension for the distribution 'dcat'. Necessary dimension is one (zero is also allowed).")
+                                                      toCheck <- toCheck[toCheck != 'prob']
+                                                  }
                                         # check dimensions based on empirical size of variables
                                                   if(!identical(dims[toCheck], distDims[toCheck])) {
                                                       mismatches <- which(dims[toCheck] != distDims[toCheck])
@@ -1215,10 +1261,19 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                       }
 
                                   },
-                                  initializeInfo = function() {
+                                  initializeInfo = function(stochasticLogProbs = FALSE) {
                                     '
 Provides more detailed information on which model nodes are not initialized.
+
+Arguments:
+
+stochasticLogProbs: Boolean argument. If TRUE, the log-density value associated with each stochastic model variable is calculated and printed.
 '
+                                    if(stochasticLogProbs) {
+                                        stochVars <- unique(nimble:::removeIndexing(.self$getNodeNames(stochOnly = TRUE)))
+                                        for(v in stochVars)   cat(paste0(v, ': ', .self$calculate(v), '\n'))
+                                        return(invisible(NULL))
+                                    }
                                     varsWithNAs <- NULL
                                     for(v in .self$getVarNames()){
                                       if(!nimble:::isValid(.self[[v]])){
@@ -1752,11 +1807,12 @@ testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
 #' Information on initial values in a NIMBLE model
 #'
 #'  Having uninitialized nodes in a NIMBLE model can potentially cause some algorithms to fail and can lead to poor performance in others.  Here are some
-#'  general guidelines on how non-intitialized variables can affect performance:
+#'  general guidelines on how non-initialized variables can affect performance:
 #'  \itemize{
 #'    \item MCMC will auto-initialize but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
 #'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
 #' }
+#' Please see this Section (\url{https://r-nimble.org/html_manual/cha-mcmc.html#sec:initMCMC}) of the NIMBLE user manual for further suggestions.
 #'
 #' @name modelInitialization
 #' @rdname modelInitialization

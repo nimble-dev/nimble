@@ -1700,7 +1700,9 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
     if(all(is.na(var2vertexID)))
         currentVertexCounts <- rep(0, maxVertexID)
     else
-        currentVertexCounts <- tabulate(var2vertexID, max(max(var2vertexID, na.rm = TRUE), maxVertexID))
+      currentVertexCounts <- tabulate(var2vertexID, max(max(var2vertexID, na.rm = TRUE), maxVertexID))
+    if(nextVertexID > length(currentVertexCounts))
+      currentVertexCounts <- append(currentVertexCounts, rep(0, nextVertexID - length(currentVertexCounts)))
     ## 5. Set up initial table of vertexIDcounts
 
     ## 6. All scalar case: iterate or vectorize via cbind and put new vertexIDs over -1s
@@ -1755,7 +1757,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
                         varIndicesToUse[ , !dynamicIndices] <- tmp[ , (numDynamicIndices+1):ncol(varIndicesToUse)]
                 }
             }
-        
+
+      #  varIndicesToUse <- unique(varIndicesToUse)
         ## parentIndexNamePieces Should there be a unique in one of the next lines? Or varIndicesToUse <- unique(varIndicesToUse).
         ## OR use a !duplicated construction in boolUseUnrolledRow <- rep(TRUE, nrow(unrolledBUGSindices)) above
         currentVertexIDs <- var2vertexID[varIndicesToUse]
@@ -1764,6 +1767,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
         if(numNewVertexIDs > 0) {
             var2vertexID[varIndicesToUse][needsVertexID] <- nextVertexID - 1 + 1:numNewVertexIDs
             nextVertexID <- nextVertexID + numNewVertexIDs
+            if(nextVertexID > length(currentVertexCounts))
+              currentVertexCounts <- append(currentVertexCounts, rep(0, nextVertexID - length(currentVertexCounts)))
         }
         ## Still need to look for splits on other existing vertexIDs
         oldIndices <- !needsVertexID
@@ -1776,6 +1781,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
         if(numNeedSplit > 0) {
             var2vertexID[varIndicesToUse][ oldIndices][needsSplit] <- nextVertexID - 1 + 1:numNeedSplit
             nextVertexID <- nextVertexID + numNeedSplit
+            if(nextVertexID > length(currentVertexCounts))
+               currentVertexCounts <- append(currentVertexCounts, rep(0, nextVertexID - length(currentVertexCounts)))
         }
         ## This can result in skips, e.g. if a previous BUGSdecl labeled a vector with a new vectorID, and that now gets split in scalar vectorID labels
         ## Then the earlier vectorID will be gone forever
@@ -1801,11 +1808,15 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
             currentVertexIDblock <- eval(accessExpr)
             uniqueCurrentVertexIDs <- unique(c(currentVertexIDblock))
             if(length(uniqueCurrentVertexIDs)==1) { ## current block has only 1 ID
-                if( is.na(uniqueCurrentVertexIDs[1]) |      ## It's all unassigned OR
+                if( is.na(uniqueCurrentVertexIDs[1]) ||      ## It's all unassigned OR
                    currentVertexCounts[ uniqueCurrentVertexIDs[1] ] != length(currentVertexIDblock) ) { ## It does not fully cover  existing vertexID
                     if(!is.na(uniqueCurrentVertexIDs[1])) currentVertexCounts[ uniqueCurrentVertexIDs[1] ] <- currentVertexCounts[ uniqueCurrentVertexIDs[1] ] - sum(currentVertexIDblock == uniqueCurrentVertexIDs[1])
                     eval(assignExprNextVID) ## var2vertexID[ all indexing stuff ] <- nextVertexID
+             #       updatedVertexIDblock <- eval(accessExpr)
+             #       currentVertexCounts[nextVertexID] <- currentVertexCounts[nextVertexID] + sum(updatedVertexIDblock == nextVertexID) ## should be all of the elements, so summing the size of the block
                     nextVertexID <- nextVertexID + 1
+                    if(nextVertexID > length(currentVertexCounts))
+                       currentVertexCounts <- append(currentVertexCounts, rep(0, nextVertexID - length(currentVertexCounts)))
                 }
             } else { ## need to iterate through IDs
                 for(VID in uniqueCurrentVertexIDs) {
@@ -1814,6 +1825,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
                         currentVertexIDblock[ boolIsNA ] <- nextVertexID
                         currentVertexCounts[nextVertexID] <- currentVertexCounts[nextVertexID] + sum(boolIsNA)
                         nextVertexID <- nextVertexID + 1
+                        if(nextVertexID > length(currentVertexCounts))
+                           currentVertexCounts <- append(currentVertexCounts, rep(0, nextVertexID - length(currentVertexCounts)))
                     } else {
                         boolWithinBlock <- currentVertexIDblock == VID
                         numWithinBlock <- sum(boolWithinBlock, na.rm = TRUE)
@@ -1822,6 +1835,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
                             currentVertexCounts[VID] <- currentVertexCounts[VID] - numWithinBlock
                             currentVertexCounts[nextVertexID] <- currentVertexCounts[nextVertexID] + numWithinBlock
                             nextVertexID <- nextVertexID + 1
+                            if(nextVertexID > length(currentVertexCounts))
+                                 currentVertexCounts <- append(currentVertexCounts, rep(0, nextVertexID - length(currentVertexCounts)))
                         }
                     }
                 }
@@ -1830,7 +1845,6 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
         }
     }
     list(var2vertexID = var2vertexID, nextVertexID = nextVertexID)
-    
 }
 
 collectInferredVertexEdges <- function(var2nodeID, var2vertexID) {
@@ -2077,7 +2091,16 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 ## make a line of code to evaluate in the replacementsEnv
                 forCode <- substitute( for(iAns in 1:OUTPUTSIZE) ASSIGNCODE <- origIDs[iAns], list(OUTPUTSIZE = BUGSdecl$outputSize, ASSIGNCODE = IDassignCode) )
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars_2_nodeOrigID[[lhsVar]]
-                eval(forCode, envir = BUGSdecl$replacementsEnv)
+                result <- try(eval(forCode, envir = BUGSdecl$replacementsEnv), silent = TRUE)
+                if(is(result, 'try-error')) {
+                    msg <- paste0("Cannot process code `", safeDeparse(forCode), "`.")
+                    varsFound <- all.vars(forCode) %in% ls(BUGSdecl$replacementsEnv)
+                    if(!all(varsFound))
+                        msg <- paste0(msg, " Missing variable(s): `",
+                                     paste0(all.vars(forCode)[!varsFound], collapse = "`, "),
+                                     "`.")
+                    stop(msg)                
+                }
                 vars_2_nodeOrigID[[lhsVar]] <- BUGSdecl$replacementsEnv[[lhsVar]]
                 rm(list = lhsVar, envir = BUGSdecl$replacementsEnv)
             } else {
@@ -2146,7 +2169,16 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbNames
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbName[[lhsVar]]
-                eval(forCode, envir = BUGSdecl$replacementsEnv)
+                result <- try(eval(forCode, envir = BUGSdecl$replacementsEnv), silent = TRUE)
+                if(is(result, 'try-error')) {
+                    msg <- paste0("Cannot process code `", safeDeparse(forCode), "`.")
+                    varsFound <- all.vars(forCode) %in% ls(BUGSdecl$replacementsEnv)
+                    if(!all(varsFound))
+                        msg <- paste0(msg, " Missing variable(s): `",
+                                     paste0(all.vars(forCode)[!varsFound], collapse = "`, "),
+                                     "`.")
+                    stop(msg)                
+                }
                 vars2LogProbName[[lhsVar]] <- BUGSdecl$replacementsEnv[[lhsVar]]
                 rm(list = c(lhsVar, 'logProbIDs'), envir = BUGSdecl$replacementsEnv)
             } else {
@@ -2710,6 +2742,12 @@ modelDefClass$methods(genVarInfo3 = function() {
            stop("genVarInfo3: index value of zero or less found for model variable(s): ",
                 paste(names(varInfo)[problemVars], collapse = ' '))
     }
+
+    ## check for any index variables that match names of vars (this case will not compile correctly)
+    indexVars <- unlist(lapply(declInfo, function(x) lapply(x$indexExpr, deparse)))
+    badVars <- which(names(varInfo) %in% indexVars)
+    if(length(badVars))
+        stop("Detected use of '", names(varInfo)[badVars], "' as both a for loop index variable and model variable. This model cannot be compiled.")
 })
 
 modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {

@@ -1135,7 +1135,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     ## nl in nlEigenReferenceList
 
     if(!(isSymFunc || isSymList))
-        stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or a nimbleList'), call. = FALSE)
+        stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or a nimbleList.\nList-like syntax with `[[` and `$` in nimbleFunction run code can only be done with a nimbleFunction or nimbleList.'), call. = FALSE)
     nfProc <- if(isSymFunc) symbolObject$nfProc else symbolObject$nlProc
     
     if(is.null(nfProc)) {
@@ -2558,6 +2558,7 @@ isIntegerEquivalent <- function(code) {
     code == floor(code) ## storage.mode must be 'double' so check if it's equivalent to an integer 
 }
 
+
 sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
     byProvided <- code$name == 'nimSeqBy' | code$name == 'nimSeqByLen'
@@ -2576,42 +2577,41 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
             asserts <- c(asserts, sizeColonOperator(code, symTab, typeEnv, recurse = FALSE))
             return(if(length(asserts)==0) NULL else asserts)
         }
-    } else {
-        if(!byProvided && !lengthProvided) {
-            code$args[[3]] <- 1
-            byProvided <- TRUE
-        }
-        if(byProvided) {
-            code$name <- 'nimSeqByD'
-            ## lift any expression arguments
-            for(i in 1:2) {
-                if(inherits(code$args[[i]], 'exprClass')) {
-                    if(!code$args[[i]]$isName) {
-                        asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
-                    }
-                }
-            }
-            if(lengthProvided) {
-                code$name <- 'nimSeqByLenD'
-                thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
-            } else {
-                thisSizeExpr <- substitute(calcSeqLength(FROM_, TO_, BY_),##1 + floor((TO_ - FROM_) / BY_),
-                                           list(FROM_ = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]],
-                                                TO_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
-                                                BY_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]]))
-            }
-        } else { ## must be lengthProvided
-            code$name <- 'nimSeqLenD'
-            thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
-        }
     }
+    if(!byProvided && !lengthProvided) {
+      code$args[[3]] <- 1
+      byProvided <- TRUE
+    }
+    if(byProvided) {
+      code$name <- 'nimSeqByD'
+      ## lift any expression arguments
+      for(i in 1:2) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+          if(!code$args[[i]]$isName) {
+            asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+          }
+        }
+      }
+      if(lengthProvided) {
+        code$name <- 'nimSeqByLenD'
+        thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
+      } else {
+        thisSizeExpr <- substitute(calcSeqLength(FROM_, TO_, BY_),##1 + floor((TO_ - FROM_) / BY_),
+                                   list(FROM_ = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]],
+                                        TO_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
+                                        BY_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]]))
+      }
+    } else { ## must be lengthProvided
+      code$name <- 'nimSeqLenD'
+      thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
+    }
+
     code$type <- 'double' ## only remaining case to catch here is -1 integer sequences, which we don't move to `:`
     code$sizeExprs <- list(thisSizeExpr)
     code$toEigenize <- 'yes'
     code$nDim <- 1
     return(if(length(asserts)==0) NULL else asserts)
 }
-
 
 sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
@@ -2844,6 +2844,8 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
                 stop(exprClassProcessingErrorMsg(code, 'NIMBLE compiler does not support var with a matrix (or higher dimensional) argument.'), call. = FALSE) 
             }
         }
+        if(code$args[[1]]$nDim == 0) 
+            stop(exprClassProcessingErrorMsg(code, 'NIMBLE compiler does not support reduction operations on scalar arguments.'), call. = FALSE)
         if(!nimbleOptions('experimentalNewSizeProcessing') ) {
             if(!code$args[[1]]$isName) {
                 if(code$args[[1]]$toEigenize == 'no') {

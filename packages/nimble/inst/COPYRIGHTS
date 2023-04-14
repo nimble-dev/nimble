@@ -18,7 +18,7 @@ License: MPL-2
 
 Files: inst/include/Eigen/src/SVD/BDCSVD.h
 Copyright: Copyright (C) 2013 Gauthier Brun, Nicolas Carre, Jean Ceccato, Pierre Zoppitelli, Jitse Niesen
-Copyright: Copyright (C) 2014-2016 Gael Guennebaud 
+Copyright: Copyright (C) 2014-2017 Gael Guennebaud 
 License: MPL-2
 
 Files: inst/include/Eigen/src/SVD/UpperBidiagonalization.h
@@ -553,6 +553,10 @@ Files: inst/include/Eigen/src/Core/arch/Default/Settings.h inst/include/Eigen/sr
 Copyright: Copyright (C) 2006-2008 Benoit Jacob
 License: MPL-2
 
+Files: inst/include/Eigen/src/Core/arch/Default/ConjHelper.h inst/include/Eigen/src/Core/IndexedView.h inst/include/Eigen/src/Core/ArithmeticSequence.h inst/include/Eigen/src/Core/util/SymbolicIndex.h inst/include/Eigen/src/Core/util/IntegralConstant.h inst/include/Eigen/src/Core/util/IndexedViewHelper.h inst/include/Eigen/src/plugins/IndexedViewMethods.h
+Copyright: Copyright (C) 2017 Gael Guennebaud
+License: MPL-2
+
 Files: inst/include/Eigen/src/Core/MathFunctionsImpl.h
 Copyright: Copyright (C) 2014 Pedro Gonnet
 Copyright: Copyright (C) 2016 Gael Guennebaud
@@ -720,6 +724,12 @@ Files: inst/include/Eigen/src/IterativeLinearSolvers/BiCGSTAB.h
 Copyright: Copyright (C) 2011-2014 Gael Guennebaud
 Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
 License: MPL-2
+
+Files: inst/include/Eigen/src/KLUSupport/KLUSupport.h
+Copyright: Copyright (C) 2017 Kyle Macfarlan
+License: MPL-2
+
+
 
 Files: inst/include/Eigen/src/StlSupport/StdList.h
 Copyright: Copyright (C) 2009 Hauke Heibel

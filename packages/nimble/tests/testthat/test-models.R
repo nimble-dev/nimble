@@ -341,7 +341,7 @@ test_that("test of distinguishing lumped data and constants:", {
         beta ~ dnorm(0, 1)
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, 5)))
-    expect_equal(m$isData('x'), c(TRUE, TRUE), info = "'x' not set as data in fourth test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' not set as data in fourth test")
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in fourth test")
     expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in fourth test")
 
@@ -421,7 +421,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x' appears incorrectly in nodes in second test")
 
     code <- nimbleCode({
@@ -432,7 +432,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
     expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
 
@@ -444,7 +444,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
     expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
 
@@ -838,42 +838,42 @@ test_that("handling of contiguous blocks", {
 
     indArr <- matrix(1, 3, 3)
     diag(indArr) <- c(2, 3, 1)
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3]', 'y[1, 1]', 'y[2, 2]'))
 
     indArr <- matrix(1, 3, 3)
     diag(indArr) <- c(2, 3, 4)
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3]', 'y[1, 1]', 'y[2, 2]', 'y[3, 3]'))
 
     indArr <- matrix(1, 4, 4)
     indArr[2:3, 1:3] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%4, 1%.s%4]', 'y[2:3, 1:3]'))
 
     indArr <- matrix(1, 4, 4)
     indArr[2:3, c(1,3)] <- indArr[2:3, c(1,3)] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%4, 1%.s%4]', 'y[2:3, 1%.s%3]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1:2, 1:2, 2] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1:2, 1:2, 2]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1:2, 1:2, 1:2] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1:2, 1:2, 1:2]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1, 1, 1] <- indArr[2, 2, 1] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1]'))
 
     indArr <- array(1, c(3, 3, 3))
     indArr[1, 1, 1] <- indArr[2, 2, 2] <- 2
-    out <- makeVertexNamesFromIndexArray2(indArr, varName = 'y')
+    out <- nimble:::makeVertexNamesFromIndexArray2(indArr, varName = 'y')
     expect_identical(out$names, c('y[1%.s%3, 1%.s%3, 1%.s%3]', 'y[1%.s%2, 1%.s%2, 1%.s%2]'))
 
     ## Another case that would formerly error out
@@ -916,6 +916,99 @@ test_that("dmvt usage", {
     expect_equal(m$getParam('y2[1:3]', 'prec'), diag(rep(0.5, n)))
 })
 
+test_that("bad size or dimension of initial values", {
+
+    code <- nimbleCode({
+        for(i in 1:3)
+            z[i] ~ dnorm(0,1)
+        a[1:3,1:2] <- b[1:3,1:2]
+    })
+    
+    ## Bad dim for nimbleModel
+    expect_error(m <- nimbleModel(code, inits = list(z = matrix(rnorm(9), 3))),
+                 "inconsistent dimensionality")
+    
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(z = matrix(rnorm(9), 3))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "Incorrect number of dimensions")
+    expect_identical(cm$z, rep(0, 3))    
+    expect_message(cm$setInits(list(z = matrix(rnorm(9), 3))), "Incorrect size or dimension")
+    
+    expect_error(m <- nimbleModel(code, inits = list(b = rnorm(2))),
+          "inconsistent dimensionality")         
+    
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(b = rnorm(2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$b, matrix(0, 3, 2))
+    expect_message(cm$setInits(list(b = rnorm(2))), "Incorrect size or dimension")
+
+    ## Too many values
+
+    ## For better or worse, length of 5 gets baked in based on inits.
+    ## TODO: do we want to reconsider whether this should error out?
+    m <- nimbleModel(code, inits = list(z = rnorm(5)))
+    cm <- compileNimble(m)
+    expect_identical(m$z, cm$z)
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(z=rnorm(5))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$z, rep(0, 3))
+    expect_message(cm$setInits(list(z=rnorm(5))), "Incorrect size or dimension")
+    
+    ### matrix
+
+    ## For better or worse, 4x2 gets baked in based on inits.
+    ## TODO: do we want to reconsider whether this should error out?
+    m <- nimbleModel(code, inits = list(b = matrix(rnorm(8),4,2)))
+    cm <- compileNimble(m)
+    expect_identical(m$b, cm$b)
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(b = matrix(rnorm(8),4,2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$b, matrix(0, 3, 2))
+    expect_message(cm$setInits(list(b = matrix(rnorm(8),4,2))), "Incorrect size or dimension")
+    
+
+    ## Too few values
+
+    expect_error(m <- nimbleModel(code, inits = list(z = rnorm(2))),
+                 "dimensions specified are smaller")
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(z=rnorm(2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$z, rep(0, 3))
+    expect_message(cm$setInits(list(z=rnorm(2))), "Incorrect size or dimension")
+    
+    ### matrix
+
+    expect_error(m <- nimbleModel(code, inits = list(b = matrix(rnorm(4),2,2))),
+                 "dimensions specified are smaller")
+
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(b = matrix(rnorm(4),2,2))), "Incorrect size or dimension")
+    expect_output(cm <- compileNimble(m), "R object of different size")
+    expect_identical(cm$b, matrix(0, 3, 2))
+    expect_message(cm$setInits(list(b = matrix(rnorm(4),2,2))), "Incorrect size or dimension")
+
+})
+
+test_that("Example of splitVertices bug from Issue 1268 works.", {
+  code <- nimbleCode({
+    for (i in 1:2) {
+      for (j in 1:2){
+        b[i,j] <- X[i, index[j]]
+      }
+    }
+    for (i in 1:2) {
+      y[i] <- sum(a[1:2, index[i]])
+    }
+  })
+  expect_no_error(Rmodel <- nimbleModel(code, constants = list(index=c(1,1))))
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

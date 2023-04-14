@@ -1311,5 +1311,43 @@ test_that("nimSvd Model Test 1", {
     expect_identical(Rmodel2$calculate(), Cmodel2$calculate())
 })
 
+test_that("nimbleList test use of [[", {
+    testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+    temporarilyAssignInGlobalEnv(testListDef1)
+    
+    nlTestFunc1 <- nimbleFunction(
+        setup = function(){
+            doubleMatrix <- diag(1)
+        },
+        run = function(){
+            doubleScalar <- 1
+            doubleVector <- numeric(2, 1)
+            newList1 <- testListDef1$new(nlVector = doubleVector, nlMatrix = doubleMatrix)
+            newList1[['nlScalar']] <- doubleScalar
+            returnType(testListDef1())
+            return(newList1)
+        }
+    )
+    
+    testInst <- nlTestFunc1()
+    RnimbleList <- testInst$run()
+    CtestInst <- compileNimble(testInst, control = list(debug =  F))
+    CnimbleList <- CtestInst$run()
+
+    ## test for correct values of R nimbleList
+    expect_identical(RnimbleList$nlScalar, 1)
+    expect_identical(RnimbleList$nlVector, c(1, 1))
+    expect_identical(RnimbleList$nlMatrix, diag(1))
+    ## test for identical values of R and C nimbleLists
+    expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
+    expect_identical(RnimbleList$nlVector, CnimbleList$nlVector)
+    expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+    expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+    expect_identical(is.nl(CnimbleList), TRUE)
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
+
+
+

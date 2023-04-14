@@ -179,7 +179,7 @@ SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList) {
   if(!Rf_isMatrix(S_x))
     RBREAK("Error (C_nimSvd): 'x' must be a matrix.\n");
   NimArr<2, double> x;
-  int vectors = SEXP_2_int(S_vectors, 0, 0);
+  int vectors = SEXP_2_int(S_vectors, 0);
   SEXP_2_NimArr<2>(S_x, x);
   Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
   EIGEN_SVDCLASS_R C_svdClass = *EIGEN_SVD_R(Eig_x, vectors);

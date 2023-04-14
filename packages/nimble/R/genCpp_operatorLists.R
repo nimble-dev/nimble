@@ -86,7 +86,7 @@ reductionUnaryOperatorsEither <- c(reductionUnaryDoubleOperatorsEither,
 reductionUnaryOperatorsArray <- c('sd','var')
 reductionUnaryOperators <- c(reductionUnaryOperatorsEither,
                              reductionUnaryOperatorsArray)
-matrixSquareReductionOperators <- c('det','logdet','trace')
+matrixSquareReductionOperators <- c('det','logdet')
 reductionBinaryOperatorsEither <- c('inprod')
 reductionBinaryOperators <- reductionBinaryOperatorsEither
 

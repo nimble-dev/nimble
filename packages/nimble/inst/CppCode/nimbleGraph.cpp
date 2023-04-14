@@ -147,7 +147,7 @@ SEXP C_getParents(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream, 
 
 SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
-  int node = SEXP_2_int(Snode, 0, -1); // subtract 1 index for C
+  int node = SEXP_2_int(Snode, 0)-1; // subtract 1 index for C
   int result = graphPtr->getDependencyPathCountOneNode(node);
   return(int_2_SEXP(result)); 
 }
