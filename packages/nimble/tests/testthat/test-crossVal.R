@@ -35,6 +35,7 @@ test_that("voter model cross-validation is accurate: ", {
                            inits = list(beta_1 = 44, beta_2 = 3.75, 
                                         sigma = 4.4))
   voterConf <- configureMCMC(voterModel)
+  set.seed(0)
   testOut <- runCrossValidate(MCMCconfiguration = voterConf,
                               k = 15, ## do loo-cv so that we can compare against a known value
                               foldFunction = 'random',
