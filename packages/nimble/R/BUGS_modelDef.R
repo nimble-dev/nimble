@@ -137,14 +137,9 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(nimbleOptions("enableModelMacros")){
-      macroOutput <- codeProcessModelMacros(code=code, constants=constants, env=userEnv)
+      macroOutput <- processModelMacros(code=code, constants=constants, env=userEnv)
       code <- macroOutput$code
       constants <- macroOutput$constants
-      # Convert factors to numeric
-      constants <- lapply(constants, function(x){
-        if(is.factor(x)) x <- as.numeric(x)
-        x
-      })
     }
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
@@ -323,6 +318,38 @@ codeProcessModelMacros <- function(code,
     }
     list(code=code, constants=constants)
 }
+
+processModelMacros <- function(code, constants, env){
+  macroOutput <- codeProcessModelMacros(code=code, constants=constants, env=env)
+  # Clean up extra brackets
+  code <- removeExtraBrackets(macroOutput$code)
+  constants <- macroOutput$constants
+  # Convert factors to numeric
+  constants <- lapply(macroOutput$constants, function(x){
+    if(is.factor(x)) x <- as.numeric(x)
+    x
+  })
+  list(code = code, constants = constants)
+}
+
+# Remove extra brackets in BUGS code (typically resulting from macros)
+removeExtraBrackets <- function(code){
+  as.call(removeExtraBracketsInternal(code))
+}
+
+removeExtraBracketsInternal <- function(code){
+  unlist(lapply(code, function(x){
+    if(length(x) == 1) return(x)                       
+    if(x[[1]] == "{") x <- as.list(x)[2:length(x)]
+    if(is.list(x)){
+      x <- removeExtraBracketsInternal(x)
+    } else if(x[[1]] == "for"){
+      x[[4]] <- removeExtraBrackets(x[[4]])
+    }
+    x
+  }))
+}
+
 modelDefClass$methods(checkUnusedConstants = function(code, constants) {
     constantsEnv <<- new.env()
     if(length(constants) > 0) {

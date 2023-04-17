@@ -471,5 +471,82 @@ test_that('constants and env are accessed correctly, even in recursion',
     )
 })
 
+test_that("macros can add constants", {
+
+  inp_constants <- list(a = 1)
+
+  testMacro <- list(process = function(code, .constants, .env){
+      code[[3]] <- quote(dnorm(0, sd = 1))
+      .constants$b <- 2
+      list(code = code, constants=.constants)
+    }
+  )
+  class(testMacro) <- "model_macro"
+
+  code <- nimbleCode({
+    x ~ testMacro()
+  })
+
+  out <- nimble:::codeProcessModelMacros(code, inp_constants)
+  expect_equal(out,
+    list(code = quote({
+           x ~ dnorm(0, sd = 1)
+        }), 
+        constants=list(a = 1, b = 2))
+  )
+
+})
+
+test_that("codeProcessModelMacros converts factors to numeric", {
+  inp_constants <- list(y = rnorm(3), x = factor(c("a","b","c")))
+
+  code <- nimbleCode({
+    for (i in 1:3){
+      y[i] ~ dnorm(x[i], sd = 1)
+    }
+  })
+  
+  mod <- nimbleModel(code, inp_constants)
+
+  expect_equal(
+    mod$modelDef$constantsList,
+    lapply(inp_constants, as.numeric)["x"]
+  )
+
+})
+
+test_that("removeExtraBrackets cleans up output from codeProcessModelMacros",{
+
+  code <- nimbleCode({
+  {
+    alpha <- 1
+    for (i in 1:n){
+      {
+        for (j in 1:k){
+          z <- 1
+          {
+          y <- 1
+          }
+        }
+      }
+    }
+  }
+  })
+  
+  expect_equal(
+    nimble:::removeExtraBrackets(code),
+    quote({
+      alpha <- 1
+      for (i in 1:n){
+        for (j in 1:k){
+          z <- 1
+          y <- 1
+        }
+      }
+    })
+  )
+
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
