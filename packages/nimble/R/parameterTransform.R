@@ -73,9 +73,11 @@
 #' @export
 parameterTransform <- nimbleFunction(
     name = 'parameterTransform',
-    setup = function(model, nodes) {
+    setup = function(model, nodes, control = list()) {
         nodesExpanded <- model$expandNodeNames(nodes)
-        if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
+        allowDeterm <- if(!is.null(control$allowDeterm)) control$allowDeterm else FALSE
+        if(!allowDeterm)
+          if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
         if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         nNodes <- length(nodesExpanded)
         if(nNodes < 1) stop('parameterTransform requires at least one model node')
@@ -101,14 +103,29 @@ parameterTransform <- nimbleFunction(
         ##
         for(i in 1:nNodes) {
             node <- nodesExpanded[i]
-            dist <- model$getDistribution(node)
             transformData[i,NIND1] <- if(i==1) 1 else transformData[i-1,NIND2]+1
             transformData[i,TIND1] <- if(i==1) 1 else transformData[i-1,TIND2]+1
+            if(allowDeterm) {
+              if(model$isDeterm(node)) {
+                d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+                if(d == 1) {       ## copied from case #1 below
+                  transformData[i,NIND2] <- transformData[i,NIND1]
+                  transformData[i,TIND2] <- transformData[i,TIND1]
+                  transformType[i] <- 1L; next }
+                if( d > 1) {       ## copied from case #6 below
+                  transformType[i] <- 6L
+                  transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
+                  transformData[i,TIND2] <- transformData[i,TIND1] + d - 1
+                  next }
+                stop("parameter transformation system is not able to configure for node: ", node, ".")
+              }
+            }
+            dist <- model$getDistribution(node)
             if(!model$isMultivariate(node)) {   ## univariate
                 transformData[i,NIND2] <- transformData[i,NIND1]
                 transformData[i,TIND2] <- transformData[i,TIND1]
                 bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
-                if(bounds[1] == -Inf && bounds[2] == Inf) {       ## 1: scalar unconstrained
+                if(bounds[1] == -Inf && bounds[2] == Inf) {       ## 1: scalar unconstrained; also set for scalar determ nodes when allowDeterm is TRUE
                     transformType[i] <- 1L; next }
                 if(bounds[1] == 0    && bounds[2] == Inf) {       ## 2: scalar semi-interval (0, Inf)
                     transformType[i] <- 2L; next }
@@ -152,7 +169,7 @@ parameterTransform <- nimbleFunction(
                     next }
                 stop(paste0('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
             } else {   ## multivariate
-                if(dist %in% c('dmnorm', 'dmvt')) {               ## 6: multivariate {normal, t}
+                if(dist %in% c('dmnorm', 'dmvt')) {               ## 6: multivariate {normal, t}; also set for non-scalar determ nodes when allowDeterm is TRUE
                     transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1

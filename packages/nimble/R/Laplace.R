@@ -50,8 +50,9 @@ nimOneLaplace1D <- nimbleFunction(
     ## Check the number of random effects is 1
     nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
     if(length(nre) != 1) stop("Number of random effects for nimOneLaplace1D must be 1.")
-    ## Check and add necessary deterministic nodes into calcNodes
-    paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+    ## Check and add necessary upstream deterministic nodes into calcNodes
+    ## This ensures that deterministic nodes between paramNodes and calcNodes are used.
+    paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE, self=FALSE)
     if(length(paramDeps) > 0) {
       keep_paramDeps <- logical(length(paramDeps))
       for(i in seq_along(paramDeps)) {
@@ -521,8 +522,9 @@ nimOneLaplace1D <- nimbleFunction(
 nimOneLaplace <- nimbleFunction(
   contains = Laplace_BASE,
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
-    ## Check and add necessary deterministic nodes into calcNodes
-    paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+    ## Check and add necessary (upstream) deterministic nodes into calcNodes
+    ## This ensures that deterministic nodes between paramNodes and calcNodes are used.
+    paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE, self=FALSE)
     if(length(paramDeps) > 0) {
       keep_paramDeps <- logical(length(paramDeps))
       for(i in seq_along(paramDeps)) {
@@ -1066,6 +1068,209 @@ nimOneLaplace <- nimbleFunction(
                      negHess_inner_logLik_internal           = list())
 ) ## End of nimOneLaplace
 
+#' Process model to organize nodes for Laplace approximation
+#' @export
+setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
+                              calcNodesNoLaplace, allowNonPriors = FALSE, split = TRUE,
+                              warn = warn) {
+  paramProvided         <- !missing(paramNodes)
+  reProvided            <- !missing(randomEffectsNodes)
+  calcProvided          <- !missing(calcNodes)
+  calcNoLaplaceProvided <- !missing(calcNodesNoLaplace)
+
+  # 1. Default parameters are stochastic top-level nodes
+  #    unless allowNonPriors is TRUE, in which case they are all top-level nodes
+  if(!paramProvided) {
+    paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = !allowNonPriors)
+  } else {
+    paramNodes <- model$expandNodeNames(paramNodes)
+  }
+  # 2. Default random effects are latent nodes that are stochastic dependencies of params.
+  if((!reProvided) || warn) {
+    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+    latentNodes <- model$getNodeNames(latentOnly = TRUE)
+    reNodesDefault <- intersect(latentNodes, paramStochDeps)
+  }
+  if(reProvided){
+    randomEffectsNodes <- model$expandNodeNames(randomEffectsNodes)
+  }
+  # 3. Optionally check random effects if they were provided (not default)
+  if(reProvided && warn) {
+    # First check is for random effects that should have been included but weren't
+    reCheck <- setdiff(reNodesDefault, randomEffectsNodes)
+    if(length(reCheck)) {
+      errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
+      if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
+      warning(paste0("There are some random effects (latent states) in the model that look\n",
+                     "like they should be included in randomEffectsNodes for Laplace approximation\n",
+                     "for the provided (or default) paramNodes:\n",
+                     errorNodes, "\n",
+                     "To silence this warning, include \'warn = FALSE\' in\n",
+                     "the control list."))
+    }
+    # Second check is for random effects that were included but look unnecessary
+    reCheck <- setdiff(randomEffectsNodes, reNodesDefault)
+    if(length(reCheck)) {
+      errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
+      if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
+      warning(paste0("There are some randomEffectsNodes provided that look like\n",
+                     "they are not needed for Laplace approximation for the\n",
+                     "provided (or default) paramNodes:\n",
+                     errorNodes, "\n",
+                     "To silence this warning, include \'warn = FALSE\' in\n",
+                     "the control list."))
+    }
+  }
+  # End of step 2
+  if(!reProvided) {
+    randomEffectsNodes <- reNodesDefault
+  }
+  # 4. Default calc nodes are dependencies of random effects
+  #    Note that the internal Laplace nimbleFunctions (one for each conditionally independent set)
+  #    will fill in deterministic nodes between paramNodes and randomEffectsNodes
+  if((!calcProvided) || warn) {
+    calcNodesDefault <- model$getDependencies(randomEffectsNodes)
+  }
+  if(calcProvided){
+    calcNodes <- model$expandNodeNames(calcNodes)
+  }
+  # 5. Optionally check calcNodes if they were provided (not default)
+  if(calcProvided && warn) {
+    # First check is for
+    calcCheck <- setdiff(calcNodesDefault, calcNodes)
+    if(length(calcCheck)) {
+      # First check is for calcNodes that look necessary but were omitted
+      errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
+      if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
+      warning(paste0("There are some model nodes that look like they should be\n",
+                     "included in the calcNodes for Laplace approximation because\n",
+                     "they are stochastic dependencies of some randomEffectsNodes:\n",
+                     errorNodes, "\n",
+                     "To silence this warning, include \'warn = FALSE\' in\n",
+                     "the control list."))
+    }
+    # Second check is for calcNodes that look unnecessary
+    calcCheck <- setdiff(calcNodes, calcNodesDefault)
+    if(length(calcCheck)){
+      errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
+      if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
+      warning(paste0("There are some calcNodes provided that look like\n",
+                     "they are not needed for Laplace approximation because\n",
+                     "they are not stochastic dependencies of any randomEffectsNodes:\n",
+                     errorNodes, "\n",
+                     "To silence this warning, include \'warn = FALSE\' in\n",
+                     "the control list."))
+    }
+  }
+  # Finish step 4
+  if(!calcProvided){
+    calcNodes <- calcNodesDefault
+  }
+  # 6. Default calcNodesNoLaplce: nodes needed for full model likelihood but
+  #    that are not involved in the marginalization done by Laplace.
+  #    Default is a bit complicated: All dependencies from paramNodes to
+  #    stochastic nodes that are not part of calcNodes. Note that calcNodes
+  #    does not necessarily contain deterministic nodes between paramNodes and
+  #    randomEffectsNodes. We don't want to include those in calcNodesNoLaplace.
+  #    (A deterministic that is needed for both calcNodes and calcNodesNoLaplace should be included.)
+  #    So we have to first do a setdiff on stochastic nodes and then fill in the
+  #    deterministics that are needed.
+  if(!calcNoLaplaceProvided) { # Add || warn if we ever create a warning system for this.
+    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+    calcNodesNoLaplaceDefault <- setdiff(paramStochDeps, calcNodes)
+    ## Check and add necessary (upstream) deterministic nodes into calcNodesNoLaplace
+    ## This ensures that deterministic nodes between paramNodes and calcNodesNoLaplace are used.
+    num_calcNodesNoLaplace <- length(calcNodesNoLaplaceDefault)
+    if(num_calcNodesNoLaplace > 0){
+      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+      if(length(paramDetermDeps) > 0) {
+        keep_paramDetermDeps <- logical(length(paramDetermDeps))
+        for(i in seq_along(paramDetermDeps)) {
+          # calcNodesNoLaplaceDefault is only stochastic, so this first check is not needed here.
+          # (In other places of this code motif, it is needed.)
+          # if(any(paramDetermDeps[i] == calcNodesNoLaplaceDefault)) keep_paramDetermDeps[i] <- FALSE
+#        else {
+          nextDeps <- model$getDependencies(paramDetermDeps[i])
+          keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesNoLaplaceDefault)
+#        }
+      }
+      paramDetermDeps <- paramDetermDeps[keep_paramDetermDeps]
+    }
+    calcNodesNoLaplaceDefault <- model$expandNodeNames(c(paramDetermDeps, calcNodesNoLaplaceDefault), sort = TRUE)
+  ##   ## derivsInfo for the part of exact log-likelihood wrt parameters
+  ##   exactLoglik_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesNoLaplace)
+  ##   exactLoglik_updateNodes   <- exactLoglik_derivsInfo$updateNodes
+  ##   exactLoglik_constantNodes <- exactLoglik_derivsInfo$constantNodes
+  ## }
+  ## else { ## calcNodesNoLaplace is empty
+  ##   exactLoglik_updateNodes   <- character(0)
+  ##   exactLoglik_constantNodes <- character(0)
+    }
+  }
+  if(calcNoLaplaceProvided){
+    calcNodesNoLaplace <- model$expandNodeNames(calcNodesNoLaplace)
+  }
+  # We thought about a warning system, but it is not clear that is makes sense, i.e.
+  # that the default is obvious or that we should get in the way of a user providing
+  # this input (which only an advanced user would do?).
+  ## if(calcNoLaplaceProvided  && warn) {
+  ##   calcNoLaplaceCheck <- setdiff(calcNodesNoLaplaceDefault, calcNodesNoLaplace)
+  ##   if(length(calcNoLaplaceCheck)) {
+  ##     errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
+  ##     if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
+  ##     warning(paste0("There are some model nodes that look like they should be\n",
+  ##                    "included in the calcNodesNoLaplace for exact likelihood calculation:\n",
+  ##                    errorNodes, "\n",
+  ##                    "To silence this warning, include \'warn = FALSE\' in\n",
+  ##                    "the control list."))
+  ##   }
+  ##   calcNoLaplaceCheck <- setdiff(calcNodesNoLaplace, calcNodesNoLaplaceDefault)
+  ##   if(length(calcNoLaplaceCheck)){
+  ##     errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
+  ##     if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
+  ##     warning(paste0("There are some nodes provided in calcNodesNoLaplace that look like\n",
+  ##                    "they are not needed for exact likelihood calculation:\n",
+  ##                    errorNodes, "\n",
+  ##                    "To silence this warning, include \'warn = FALSE\' in\n",
+  ##                    "the control list."))
+  ##   }
+  ## }
+  # This could be done at the end of the !calcNoLaplaceProvided clause above.
+  # It is here to keep the pattern above, of waiting until after checks to move
+  # the default into the actual variable.
+  if(!calcNoLaplaceProvided){
+    calcNodesNoLaplace <- calcNodesNoLaplaceDefault
+  }
+  # 7. Do the splitting into sets (if given) or conditionally independent sets (if TRUE)
+  givenNodes <- NULL
+  reSets <- list()
+  if(length(randomEffectsNodes)) {
+    if(isFALSE(split)) {
+      reSets <- list(randomEffectsNodes)
+    } else {
+      if(isTRUE(split)) {
+        givenNodes <- setdiff(c(paramNodes, calcNodes),
+                              c(randomEffectsNodes,
+                                model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
+        reSets <- model$getConditionallyIndependentSets(
+          nodes = randomEffectsNodes, givenNodes = givenNodes,
+          unknownAsGiven = allowNonPriors)
+      }
+      else if(is.numeric(split)){
+        reSets <- split(randomEffectsNodes, split)
+      }
+      else stop("Invalid value for \'split\'.")
+    }
+  }
+  list(paramNodes = paramNodes,
+       randomEffectsNodes = randomEffectsNodes,
+       calcNodes = calcNodes,
+       calcNodesNoLaplace = calcNodesNoLaplace,
+       givenNodes = givenNodes,
+       randomEffectsSets = reSets
+       )
+}
+
 ## Main function for Laplace approximation
 #' @rdname laplace 
 #' @export
@@ -1073,148 +1278,42 @@ buildLaplace <- nimbleFunction(
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesNoLaplace, control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
     if(is.null(control$warn))   warn <- TRUE else  warn <- control$warn
-    
-    paramProvided         <- !missing(paramNodes)
-    reProvided            <- !missing(randomEffectsNodes)
-    calcProvided          <- !missing(calcNodes)
-    calcNoLaplaceProvided <- !missing(calcNodesNoLaplace) 
-    
-    if(!paramProvided) {
-      paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
-    } else {
-      paramNodes <- model$expandNodeNames(paramNodes)
-    }
-    
-    if((!reProvided) || warn) {
-      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-      latentNodes <- model$getNodeNames(latentOnly = TRUE)
-      reNodesDefault <- intersect(latentNodes, paramStochDeps)
-    }
-    if(reProvided){
-      randomEffectsNodes <- model$expandNodeNames(randomEffectsNodes)
-    }
-    if(reProvided && warn) {
-      reCheck <- setdiff(reNodesDefault, randomEffectsNodes)
-      if(length(reCheck)) {
-        errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
-        if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some random effects (latent states) in the model that look\n",
-                       "like they should be included in randomEffectsNodes for Laplace approximation\n",
-                       "for the provided (or default) paramNodes:\n",
-                       errorNodes, "\n",
-                       "To silence this warning, include \'warn = FALSE\' in\n",
-                       "the control list."))
-      }
-      reCheck <- setdiff(randomEffectsNodes, reNodesDefault)
-      if(length(reCheck)) {
-        errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
-        if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some randomEffectsNodes provided that look like\n",
-                       "they are not needed for Laplace approximation for the\n",
-                       "provided (or default) paramNodes:\n",
-                       errorNodes, "\n",
-                       "To silence this warning, include \'warn = FALSE\' in\n",
-                       "the control list."))
+    if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
+
+    LaplaceNodes <- NULL
+    if(!missing(paramNodes)) {
+      if(is.list(paramNodes)) {
+        # The user called setupLaplaceNodes and provided a list of that format to paramNodes.
+        LaplaceNodes <- paramNodes
       }
     }
-    if(!reProvided) {
-      randomEffectsNodes <- reNodesDefault
+    if(is.null(LaplaceNodes)) {
+      LaplaceNodes <- setupLaplaceNodes(model = model, paramNodes = paramNodes,
+                                        randomEffectsNodes = randomEffectsNodes,
+                                        calcNodes = calcNodes,
+                                        calcNodesNoLaplace = calcNodesNoLaplace,
+                                        allowNonPriors = allowNonPriors,
+                                        split = split,
+                                        warn = warn)
     }
-    
-    if((!calcProvided) || warn) {
-      calcNodesDefault <- model$getDependencies(randomEffectsNodes)
-    }
-    if(calcProvided){
-      calcNodes <- model$expandNodeNames(calcNodes)
-    }
-    if(calcProvided  && warn) {
-      calcCheck <- setdiff(calcNodesDefault, calcNodes)
-      if(length(calcCheck)) {
-        errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
-        if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some model nodes that look like they should be\n",
-                       "included in the calcNodes for Laplace approximation over\n",
-                       "the provided (or default) randomEffectsNodes:\n",
-                       errorNodes, "\n",
-                       "To silence this warning, include \'warn = FALSE\' in\n",
-                       "the control list."))
-      }
-      calcCheck <- setdiff(calcNodes, calcNodesDefault)
-      if(length(calcCheck)){
-        errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
-        if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some calcNodes provided that look like\n",
-                       "they are not needed for Laplace approximation over\n",
-                       "the provided (or default) randomEffectsNodes:\n",
-                       errorNodes, "\n",
-                       "To silence this warning, include \'warn = FALSE\' in\n",
-                       "the control list."))
-      }
-    }
-    if(!calcProvided){
-      calcNodes <- calcNodesDefault
-    }
-    
-    if((!calcNoLaplaceProvided) || warn) {
-      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-      reStochDeps <- model$getDependencies(randomEffectsNodes, stochOnly = TRUE)
-      calcNodesNoLaplaceDefault <- setdiff(paramStochDeps, reStochDeps)
-    }
-    if(calcNoLaplaceProvided){
-      calcNodesNoLaplace <- model$expandNodeNames(calcNodesNoLaplace)
-    }
-    if(calcNoLaplaceProvided  && warn) {
-      calcNoLaplaceCheck <- setdiff(calcNodesNoLaplaceDefault, calcNodesNoLaplace)
-      if(length(calcNoLaplaceCheck)) {
-        errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
-        if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some model nodes that look like they should be\n",
-                       "included in the calcNodesNoLaplace for exact likelihood calculation:\n",
-                       errorNodes, "\n",
-                       "To silence this warning, include \'warn = FALSE\' in\n",
-                       "the control list."))
-      }
-      calcNoLaplaceCheck <- setdiff(calcNodesNoLaplace, calcNodesNoLaplaceDefault)
-      if(length(calcNoLaplaceCheck)){
-        errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
-        if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some nodes provided in calcNodesNoLaplace that look like\n",
-                       "they are not needed for exact likelihood calculation:\n",
-                       errorNodes, "\n",
-                       "To silence this warning, include \'warn = FALSE\' in\n",
-                       "the control list."))
-      }
-    }
-    if(!calcNoLaplaceProvided){
-      calcNodesNoLaplace <- calcNodesNoLaplaceDefault
-    }
-    ## Check and add necessary deterministic nodes into calcNodesNoLaplace
+    paramNodes <- LaplaceNodes$paramNodes
+    randomEffectsNodes <- LaplaceNodes$randomEffectsNodes
+    calcNodes <- LaplaceNodes$calcNodes
+    calcNodesNoLaplace <- LaplaceNodes$calcNodesNoLaplace
     num_calcNodesNoLaplace <- length(calcNodesNoLaplace)
-    if(num_calcNodesNoLaplace > 0){
-      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-      if(length(paramDetermDeps) > 0) {
-        keep_paramDetermDeps <- logical(length(paramDetermDeps))
-        for(i in seq_along(paramDetermDeps)) {
-          if(any(paramDetermDeps[i] == calcNodesNoLaplace)) keep_paramDetermDeps[i] <- FALSE
-          else {
-            nextDeps <- model$getDependencies(paramDetermDeps[i])
-            keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesNoLaplace)
-          }
-        }
-        paramDetermDeps <- paramDetermDeps[keep_paramDetermDeps]
-      }
-      innerCalcNodesNoLaplace <- calcNodesNoLaplace
-      calcNodesNoLaplace <- model$expandNodeNames(c(paramDetermDeps, calcNodesNoLaplace), sort = TRUE)
-      ## derivsInfo for the part of exact log-likelihood wrt parameters
+    # LaplaceNodes$randomEffectsSets will be extracted below if needed
+
+    if(length(calcNodesNoLaplace)) {
       exactLoglik_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesNoLaplace)
       exactLoglik_updateNodes   <- exactLoglik_derivsInfo$updateNodes
       exactLoglik_constantNodes <- exactLoglik_derivsInfo$constantNodes
-    } 
+    }
     else { ## calcNodesNoLaplace is empty
       exactLoglik_updateNodes   <- character(0)
       exactLoglik_constantNodes <- character(0)
     }
-    
+
+
     ## Out and inner optimization settings
     outOptControl   <- nimOptimDefaultControl()
     innerOptControl <- nimOptimDefaultControl()
@@ -1273,16 +1372,17 @@ buildLaplace <- nimbleFunction(
         else laplace_nfl[[1]] <- nimOneLaplace1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
-        if(isTRUE(split)){
-          # calcNodesSets <- model$getConditionallyIndependentSets(nodes = calcNodes, givenNodes = paramNodes)
-          givenNodes <- setdiff(c(paramNodes, calcNodes),
-                                c(randomEffectsNodes, model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
-          reSets <- model$getConditionallyIndependentSets(nodes = randomEffectsNodes, givenNodes = givenNodes)
-        }
-        else if(is.numeric(split)){
-          reSets <- split(randomEffectsNodes, split)
-        }
-        else stop("Invalid value for \'split\' provided in control list")
+        reSets <- LaplaceNodes$randomEffectsSets
+        ## if(isTRUE(split)){
+        ##   # calcNodesSets <- model$getConditionallyIndependentSets(nodes = calcNodes, givenNodes = paramNodes)
+        ##   givenNodes <- setdiff(c(paramNodes, calcNodes),
+        ##                         c(randomEffectsNodes, model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
+        ##   reSets <- model$getConditionallyIndependentSets(nodes = randomEffectsNodes, givenNodes = givenNodes)
+        ## }
+        ## else if(is.numeric(split)){
+        ##   reSets <- split(randomEffectsNodes, split)
+        ## }
+        ## else stop("Invalid value for \'split\' provided in control list")
         num_reSets <- length(reSets)
         if(num_reSets == 0){
           stop("There was a problem determining conditionally independent random effects sets for this model.")
@@ -1765,50 +1865,217 @@ buildLaplace <- nimbleFunction(
 #' 
 #' Builds a Laplace approximation algorithm for a given NIMBLE model. 
 #' 
-#' @param model an uncompiled NIMBLE model object.
-#' @param paramNodes a character vector of names of parameter nodes in the model; defaults to top-level stochastic nodes.
-#' @param randomEffectsNodes a character vector of names of unobserved (latent) nodes to integrate out using the Laplace approximation; defaults to latent stochastic nodes that depend on \code{paramNodes}.
-#' @param calcNodes a character vector of names of nodes for calculating the log-likelihood value for Laplace approximation; defaults to nodes that depend on \code{randomEffectsNodes} as determined by \code{model$geteDependencies(randomEffectsNodes)}.
-#' There may be deterministic nodes between \code{paramNodes} and \code{randomEffectsNodes}. These will be included in calculations automatically.
-#' @param calcNodesNoLaplace a character vector of names of nodes for calculating the exact log-likelihood value that does not depend on any random effects; defaults to stochastic nodes that depend on \code{paramNodes} but do not depend on \code{randomEffectsNodes}.
-#' There may be deterministic nodes between \code{paramNodes} and \code{calcNodesNoLaplace}. These will be included in calculations automatically.
-#' @param optimControl a list of control parameters for the inner optimization of Laplace approximation using \code{optim}. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further information.
-#' @param optimMethod optimization method to be used in \code{optim} for the inner optimization. Needed only for \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}}.
-#' Currently \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By default, method "\code{CG}" is used for \code{nimOneLaplace1D} and "\code{BFGS}" for \code{nimOneLaplace}.
-#' @param optimStart choice of start values for the inner optimization. This could be \code{"last"}, \code{"last.best"}, or a vector of user provided values. \code{"last"} means the latest random effects values left in the model will be used. 
-#' \code{"last.best"} means the latest random effects values corresponding to currently the largest Laplace likelihood will be used. By default, the initial random effects values will be used for inner optimization.   
-#' @param control a named list (for \code{buildLaplace} only) that controls the behavior of the Laplace approximation. See \code{control} section below.
+#' @param model a NIMBLE model object, such as returned by \code{nimbleModel}.
+#' @param paramNodes a character vector of names of parameter nodes in the
+#'   model; defaults to top-level stochastic nodes. Alternatively, this can be a
+#'   list in the format returned by \code{setupLaplaceNodes}, in which case
+#'   \code{randomEffectsNodes}, \code{calcNodes}, and \code{calcNodesNoLaplace}
+#'   are not needed (and will be ignored).
+#' @param randomEffectsNodes a character vector of names of unobserved (latent)
+#'   nodes to marginalize (integrate) over using the Laplace approximation;
+#'   defaults to latent stochastic nodes that depend on \code{paramNodes}.
+#' @param calcNodes a character vector of names of nodes for calculating the
+#'   log-likelihood value for Laplace approximation; defaults to nodes that
+#'   depend on \code{randomEffectsNodes} as determined by
+#'   \code{model$geteDependencies(randomEffectsNodes)} (which will include
+#'   \code{randomEffectsNodes}). There may be deterministic nodes between
+#'   \code{paramNodes} and \code{randomEffectsNodes}. These will be included in
+#'   calculations automatically and thus do not need to be included in
+#'   \code{calcNodes} (but may be).
+#' @param calcNodesNoLaplace a character vector of names of nodes for
+#'   calculating the log-likelihood that do not depend on any
+#'   \code{randomEffectsNodes}, and thus are not part of the marginalization,
+#'   but should be included when finding the MLE. This defaults to stochastic
+#'   nodes that depend on \code{paramNodes} but do not depend on
+#'   \code{randomEffectsNodes}. There may be deterministic nodes between
+#'   \code{paramNodes} and \code{calcNodesNoLaplace}. These will be included in
+#'   calculations automatically and thus do not need to be included in
+#'   \code{calcNodesNoLaplace} (but may be).
+#' @param optimControl a list of control parameters for the inner optimization
+#'   (of randomEffectsNodes) of Laplace approximation using \code{optim}. This
+#'   is used in the internal nimbleFunctions \code{nimOneLaplace} and
+#'   \code{nimOneLaplace1D}. See 'Details' of \code{\link{optim}} for further
+#'   information.
+#' @param optimMethod optimization method to be used in \code{optim} for the
+#'   inner optimization. This is used in the internal nimbleFunctions
+#'   \code{nimOneLaplace} and \code{nimOneLaplace1D}. See 'Details' of
+#'   \code{\link{optim}}. Currently \code{nimOptim} supports:
+#'   "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By
+#'   default, method "\code{CG}" is used for \code{nimOneLaplace1D} and
+#'   "\code{BFGS}" for \code{nimOneLaplace}.
+#' @param optimStart choice of start values for the inner optimization. This
+#'   could be \code{"last"}, \code{"last.best"}, or a vector of user provided
+#'   values. \code{"last"} means the most recent random effects values left in
+#'   the model will be used. When finding the MLE, the most recent values will
+#'   be the result of the most recent inner optimization, from the previous
+#'   parameter values. \code{"last.best"} means the random effects values
+#'   corresponding to the largest Laplace likelihood (from any call to the
+#'   `Laplace` method, including during an MLE search) will be used (even if it
+#'   was not the most recent Laplace likelihood). By default, the initial random
+#'   effects values will be used for inner optimization.
+#' @param control a named list (for \code{buildLaplace} only) that controls the
+#'   behavior of the Laplace approximation. See \code{control} section below.
+#'
+#' @section \code{buildLaplace}:
+#'
+#' This is the main function for constructing the Laplace approximation for a
+#' given model. One only needs to provide a NIMBLE model object and then the
+#' function will construct the pieces necessary for Laplace approximation to
+#' marginalize over all latent states (aka random effects) in a model. To do so,
+#' it will determine default values for \code{paramNodes},
+#' \code{randomEffectsNodes}, \code{calcNodes}, and \code{calcNodesNoLaplace} as
+#' described above.
+#'
+#' The default values are obtained by calling \code{setupLaplaceNodes}, whose
+#' arguments match those here (except for a few arguments which are control list
+#' elements here). One can call that function to see exactly how nodes will be
+#' arranged for Laplace approximation. One can also call it, customize the
+#' returned list, and then provide that to \code{buildLaplace} as
+#' \code{paramNodes}.
+#'
+#' If any \code{randomEffectsNodes} have constraints on the range of valid
+#' values (because of the distribution they follow), they will be used on a
+#' transformed scale determined by \code{parameterTransform}. This means the
+#' Laplace approximation itself will be done on the transformed scale for random
+#' effects. For parameters (\code{paramNodes}), any prior distributions are not
+#' included in calculations, but they are used to determine valid parameter
+#' ranges. For example, if \code{sigma} is a standard deviation, declare it with
+#' a prior such as \code{sigma ~ dhalfflat()} to indicate that it must be greater
+#' than 0. Such information will not be determined based on how a parameter is
+#' used. E.g. \code{x ~ dnorm(mu, sd = sigma)} is not used to determine a
+#' contstraint on \code{sigma}.
+#'
+#' The object returned by \code{buildLaplace} is a nimbleFunction object with
+#' numerous methods (functions). The most useful ones are:
+#'
+#' \itemize{
+#'
+#' \item \code{Laplace(p)}. Laplace approximation to the marginal log-likelihood
+#'       function at parameter value \code{p}, which is used in the order of
+#'       \cope{paramNodes}.
+#'
+#' \item \code{LaplaceMLE(pStart, method, hessian)}. Find the maximum likelihood
+#'         estimates of the Laplace-approximated marginal likelihood. Arguments
+#'         include \code{pStart}: initial parameter values (deafults to
+#'         parameter values currently in the model); \code{method}: optimization
+#'         method to use in \code{optim} (defaults to "BFGS"); and
+#'         \code{hessian}: whether to calculate and return the Hessian matrix
+#'         (defaults to \code{TRUE}).
+#'
+#' \item \code{summary(LaplaceMLEOutput, originalScale,
+#'        calcRandomEffectsStdError, returnJointCovariance)}. Summarize the
+#'        maximum likelihood estimation results, given object
+#'        \code{LaplaceMLEOutput} that is returned by \code{LaplaceMLE}. The
+#'        summary can include a covariance matrix for the parameters, the random
+#'        effects, or both, and these can be returned on the original parameter
+#'        scale or on the potentially transformed scale(s) used in estimation.
+#'        Any random effects or parameters that have constraints on the range of
+#'        valid values are use on a transformed scale determined by
+#'        \code{parameterTransform} during estimation (inner and/or outer
+#'        optimization).
+#'
+#' In addition, this function accepts the following optional arguments:
+#'
+#'        \itemize{
+#'
+#'           \item \code{originalScale}. Logical. If TRUE, the function returns
+#'           results on the original scale(s) of parameters and random effects;
+#'           otherwise, it returns results on the transformed scale(s). If there
+#'           are no constraints, the two scales are identical. Defaults to TRUE.
+#'
+#'           \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard
+#'           errors of random effects will be calculated.
+#'           Defaults to FALSE.
+#'
+#'           \item \code{returnJointCovariance}. Logical. If TRUE, return the
+#'           joint variance-covariance matrix of the parameters and the random
+#'           effects. Defaults to FALSE.
+#'
+#'        }
+#'
+#'        This function returns a named list, with elements:
+#'
+#'        \itemize{
+#'
+#'           \item \code{params}. A list that contains estimates and standard
+#'           errors of parameters (on the original or transformed scale, as
+#'           chosen by \code{originalScale}).
+#'
+#'           \item \code{random}. A list that contains estimates of random
+#'           effects and, if requested (\code{calcRandomEffectsStdError=TRUE})
+#'           their standard errors, on original or transformed scale. Standard
+#'           errors are calculated following the generalized delta method of
+#'           Kass and Steffey (1989).
+#'
+#'           \item \code{vcov}. If requested (i.e.
+#'           \code{returnJointCovariance=TRUE}), return the joint
+#'           variance-covariance matrix of the random effects and parameters, on
+#'           original or transformed scale.
+#'
+#'           \item \code{scale}. \code{original} or \code{transformed}, the
+#'        scale on which results were requested.
+#'
+#'        }
+#'
+#'     }
+#'
+#' Additional methods to access or control more details of the Laplace approximation include:
+#'
+#' \itemize{
+#'   \item \code{get_node_name_vec(returnParams)}. Return a list (>1) of names of parameters/random effects nodes, according to \code{returnParams = TRUE/FALSE}.
+#'   \item \code{get_node_name_single(returnParams)}. Return the name of a single parameter/random effect node, \code{returnParams = TRUE/FALSE}.
+#'   \item \code{set_method(method)}. Set method ID for calculating the Laplace approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2}, default method), or 3 (\code{Laplace3}).
+#'   \item \code{get_method()}. Return the method ID currently used in the algorithm.
+#'   \item \code{one_time_fixes()}. Fix the dimensionality issue if there is only one parameter in the model. This function is called where necessary and users do not need to run this.
+#'   \item \code{logLikNoLaplace(p)}. Exact log-likelihood value at parameter value \code{p}.
+#'   \item \code{gr_logLikNoLaplace_internal(p)}. Derivative (obtained via single taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
+#'   \item \code{gr_logLikNoLaplace(p)}. Derivative (obtained via double taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
+#'   \item \code{gr_Laplace(p)}. Gradient of the Laplace approximation at parameter value \code{p}.
+#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at transformed parameter value \code{pTransform}.
+#'         To make maximizing the Laplace likelihood unconstrained, an automated transformation via \code{\link{parameterTransform}} is performed on any parameters with value constraints.
+#'   \item \code{p_transformed_gr_Laplace(pTransform)}. Gradient of the Laplace approximation (with parameter transformation) w.r.t. transformed parameters, evaluated at transformed parameter value \code{pTransform}.
+#'   \item \code{pInverseTransform(pTransform)}. Back transform the transformed parameter value \code{pTransform} to original scale.
+#'   \item \code{derivspInverseTransform(pTransform, order)}. Derivative of the inverse transformation w.r.t. transformed parameters at \code{pTransform}. Derivative order is given by \code{order}.
+#'   \item \code{reInverseTransform(reTrans)}. Back transform the transformed random effects value \code{reTrans} to original scale.
+#'   \item \code{derivsreInverseTransform(reTrans, order)}. Derivative of the inverse transformation w.r.t. transformed random effects at \code{reTrans}. Derivative order is given by \code{order}.
+#'   \item \code{optimRandomEffects(pTransform)}. Calculate the optimized random effects given transformed parameter value \code{pTransform}.
+#'   \item \code{inverseNegHess(p, reTransform)}. Calculate the inverse of the negative Hessian matrix of the joint log-likelihood w.r.t. transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
+#'   \item \code{hess_logLik_wrt_p_wrt_re(p, reTransform)}. Calculate the Hessian matrix of the joint log-likelihood w.r.t. parameters and transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
+#'}
+
 #'
 #' @section \code{control} list:
 #' 
 #' \code{buildLaplace} accepts the following control list elements:
 #' \itemize{
 #'   \item \code{split}. If TRUE (default), \code{randomEffectsNodes} will be split into conditionally independent sets if possible.
-#'         If FALSE, \code{randomEffectsNodes} will be handled as a multivariate block.
+#'         This facilitates more efficient Laplace approximation because each conditionally independent set can be marginalized independently.
+#'         If FALSE, \code{randomEffectsNodes} will be handled as one multivariate block, with one multivariate Laplace approximation.
 #'         If a vector, \code{randomEffectsNodes} will be split by \code{split}(\code{randomEffectsNodes}, \code{control$split}).
 #'         The last option allows arbitrary control over how \code{randomEffectsNodes} are blocked.
-#'   \item \code{warn}. If TRUE (default), a warning is issued if \code{randomEffectsNodes}/\code{calcNodes} is provided and has extra or missing elements.
-#'   \item \code{innerOptimControl}. See \code{optimControl}. 
+#'   \item \code{warn}. If TRUE (default), a warning is issued if \code{randomEffectsNodes} and/or \code{calcNodes} are provided but have extra or missing elements relative to their defaults.
+#'   \item \code{innerOptimControl}. See \code{optimControl}.
 #'   \item \code{innerOptimMethod}. See \code{optimMethod}.
 #'   \item \code{innerOptimStart}. see \code{optimStart}.
-#'   \item \code{outOptimControl}. A list of control parameters for maximizing the Laplace log-likelihood using \code{optim}. 
+#'   \item \code{outOptimControl}. A list of control parameters for maximizing the Laplace log-likelihood using \code{optim}.
 #'         See 'Details' of \code{\link{optim}} for further information.
+#'   \item \code{allowNonPriors} If FALSE (default), all parameter nodes must have stochastic declarations (i.e. priors). These are not calculated as part of Laplace approximation, but they are used to determine boundaries on the valid ranges of parameters. If TRUE, parameters do not need declarations, and those without one will be assumed to have no constraints on valid values.
 #' }
 #'
 #' @section \code{Laplace_BASE}:
 #' 
-#' Laplace base class, upon which specific Laplace algorithm classes are based by including \code{contains = Laplace_BASE}. This declares a list of nimbleFunctions for a single Laplace approximation.
+#' Laplace base class, upon which specific Laplace algorithm classes are based by including \code{contains = Laplace_BASE}. This declares a list of nimbleFunctions for a single Laplace approximation. Mostly for internal use.
 #' @section \code{nimOneLaplace1D}:
 #' 
 #' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains only one scalar node.
-#' To use this function, one has to accurately provide inputs for all the arguments. 
+#' It is mostly for internal use by `buildLaplace`. To use it directly, one has to provide full inputs for all the arguments; there are no defaults.
 #' 
 #' This function generates an object that comprises a set of methods (functions), each accomplishing one piece of many calculations to obtain the Laplace approximation and its gradient w.r.t. model parameters. 
 #' Among these methods, six are most useful to a user:
 #' \itemize{
-#'   \item \code{Laplace1(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses single taping for gradient and Hessian calculations and separate components.
-#'   \item \code{Laplace2(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double taping for gradient and Hessian calculations and separate components.
-#'   \item \code{Laplace3(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double taping for gradient and Hessian calculations and packs everything together.
+#'   \item \code{Laplace1(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses single AD taping for gradient and Hessian calculations and separate components.
+#'   \item \code{Laplace2(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double AD taping for gradient and Hessian calculations and separate components.
+#'   \item \code{Laplace3(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double AD taping for gradient and Hessian calculations and packs everything together.
 #'   \item \code{gr_Laplace1(p)}. Gradient of \code{Laplace1} w.r.t. parameters evaluated at the parameter value \code{p}.
 #'   \item \code{gr_Laplace2(p)}. Gradient of \code{Laplace2} w.r.t. parameters evaluated at the parameter value \code{p}.
 #'   \item \code{gr_Laplace3(p)}. Gradient of \code{Laplace3} w.r.t. parameters evaluated at the parameter value \code{p}.
@@ -1817,55 +2084,9 @@ buildLaplace <- nimbleFunction(
 #' @section \code{nimOneLaplace}:
 #' 
 #' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains more than one scalar node.
-#' To use this function, one has to accurately provide inputs for all the arguments. 
+#' It is mostly for internal use by `buildLaplace`. To use it directly, one has to provide full inputs for all the arguments; there are no defaults.
 #' 
 #' The methods generated by this function are the same as \code{nimOneLaplace1D}. 
-#' 
-#' @section \code{buildLaplace}:
-#' 
-#' The main function for constructing the Laplace approximation for a given model. One only needs to provide a NIMBLE model object and then the function
-#' will determine inputs for \code{paramNodes}, \code{randomEffectsNodes}, \code{calcNodes}, and \code{calcNodesNoLaplace} and then construct the Laplace algorithm. 
-#' Default settings are given inside the function and can be changed for all control parameters inside the \code{control} argument. 
-#' 
-#' The Laplace algorithm object contains a list of functions:
-#'\itemize{
-#'   \item \code{get_node_name_vec(returnParams)}. Return a list (>1) of names of parameters/random effects nodes, according to \code{returnParams = TRUE/FALSE}.
-#'   \item \code{get_node_name_single(returnParams)}. Return the name of a single parameter/random effect node, \code{returnParams = TRUE/FALSE}.
-#'   \item \code{set_method(method)}. Set method ID for calculating the Laplace approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2}, default method), or 3 (\code{Laplace3}).
-#'   \item \code{get_method()}. Return the method ID currently used in the algorithm. 
-#'   \item \code{one_time_fixes()}. Fix the dimensionality issue if there is only one parameter in the model. This function is called where necessary and users do not need to run this.  
-#'   \item \code{logLikNoLaplace(p)}. Exact log-likelihood value at parameter value \code{p}.
-#'   \item \code{gr_logLikNoLaplace_internal(p)}. Derivative (obtained via single taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
-#'   \item \code{gr_logLikNoLaplace(p)}. Derivative (obtained via double taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
-#'   \item \code{Laplace(p)}. Laplace approximation to the marginal log-likelihood function at parameter value \code{p}. If a model does not include random effects, the Laplace approximation is the exact log-likelihood function. 
-#'   \item \code{gr_Laplace(p)}. Gradient of the Laplace approximation at parameter value \code{p}.
-#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at transformed parameter value \code{pTransform}. 
-#'         To make maximizing the Laplace likelihood unconstrained, an automated transformation via \code{\link{parameterTransform}} is performed on any parameters with value constraints.  
-#'   \item \code{p_transformed_gr_Laplace(pTransform)}. Gradient of the Laplace approximation (with parameter transformation) w.r.t. transformed parameters, evaluated at transformed parameter value \code{pTransform}.
-#'   \item \code{LaplaceMLE(pStart, method, hessian)}. Run maximum likelihood estimation and return results on the transformed scale if any. 
-#'         Arguments include \code{pStart}: start value on the original scale; default to parameter values in the model, \code{method}: optimization method used in \code{optim}; default \code{BFGS}, and \code{hessian}: whether calculating the Hessian matrix or not; default to \code{TRUE}.
-#'   \item \code{pInverseTransform(pTransform)}. Back transform the transformed parameter value \code{pTransform} to original scale.
-#'   \item \code{derivspInverseTransform(pTransform, order)}. Derivative of the inverse transformation w.r.t. transformed parameters at \code{pTransform}. Derivative order is given by \code{order}.
-#'   \item \code{reInverseTransform(reTrans)}. Back transform the transformed random effects value \code{reTrans} to original scale.
-#'   \item \code{derivsreInverseTransform(reTrans, order)}. Derivative of the inverse transformation w.r.t. transformed random effects at \code{reTrans}. Derivative order is given by \code{order}.
-#'   \item \code{optimRandomEffects(pTransform)}. Calculate the optimized random effects given transformed parameter value \code{pTransform}.
-#'   \item \code{inverseNegHess(p, reTransform)}. Calculate the inverse of the negative Hessian matrix of the joint log-likelihood w.r.t. transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
-#'   \item \code{hess_logLik_wrt_p_wrt_re(p, reTransform)}. Calculate the Hessian matrix of the joint log-likelihood w.r.t. parameters and transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
-#'   \item \code{summary(LaplaceMLEOutput, originalScale, calcRandomEffectsStdError, returnJointCovariance)}. Summarize the maximum likelihood estimation results, given object \code{LaplaceMLEOutput} that is returned by \code{LaplaceMLE}. 
-#'        In addition, this function accepts the following arguments:
-#'        \itemize{
-#'           \item \code{originalScale}. Logical. If TRUE, the function returns results for original parameters and random effects; otherwise, it returns transformed results if transformation is needed. Defaults to TRUE.
-#'           \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard errors of random effects estimators (if any) will be calculated. Defaults to FALSE.
-#'           \item \code{returnJointCovariance}. Logical. If TRUE, return the joint variance-covariance matrix of the estimators of random effects (if any) and parameters. Defaults to FALSE.
-#'        } 
-#'        This function returns a named list:
-#'        \itemize{
-#'           \item \code{params}. A list that contains estimates and standard errors of parameters on a specified scale, i.e. original (if \code{originalScale} is TRUE) or transformed.
-#'           \item \code{random}. A list that contains estimates of random effects and if required their standard errors, on original/transformed scale. Standard errors are calculated following the generalized delta method of Kass and Steffey (1989).
-#'           \item \code{vcov}. If required (i.e. \code{returnJointCovariance} is TRUE), the joint variance-covariance matrix of the estimators of random effects and parameters, on original/transformed scale. 
-#'           \item \code{scale}. \code{original} or \code{transformed}. 
-#'        } 
-#'}
 #'
 #' @author Wei Zhang, Perry de Valpine
 #' 

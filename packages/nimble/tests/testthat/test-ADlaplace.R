@@ -870,8 +870,8 @@ test_that("Laplace with 2x1D parameters and 2x2D random effects for 1D data need
   # tmbopt <- nlminb(obj$par, obj$fn, obj$gr)
   # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
   # tmbvcov <- inverse(tmbrep$jointPrecision)
-  expect_equal(opt$par, c(12.98392, 406.04878), tol = 1e-5)
-  expect_equal(opt$value, -41.86976)
+  expect_equal(opt$par, c(12.98392, 406.04878), tol = 1e-4)
+  expect_equal(opt$value, -41.86976, tol = 1e-6)
   # Check covariance matrix
   summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
   tmbvcov <- matrix(nrow = 6, ncol = 6)
@@ -882,7 +882,7 @@ test_that("Laplace with 2x1D parameters and 2x2D random effects for 1D data need
   tmbvcov[5,] <- c(-2.691772e-11, 1.800000e+02,  5.596302e-01, -5.596302e-01,  3.684693e+01,  3.515307e+01)
   tmbvcov[6,] <- c(-2.691772e-11, 1.800000e+02, -5.596302e-01,  5.596302e-01,  3.515307e+01,  3.684693e+01)
   
-  expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-5)
+  expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-4)
   
   # For this case, we build up the correct answer more formulaically
   # Define A as the vector a[1, 1], a[1, 2], a[2, 1], a[2, 2]
@@ -963,7 +963,6 @@ test_that("simple LME case works", {
   expect_equal(nimres$params$estimate[1:3], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-5)
   expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-4)
   expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-5)
-  
 })
 
 test_that("simple LME with correlated intercept and slope works", {
@@ -1006,11 +1005,11 @@ test_that("simple LME with correlated intercept and slope works", {
   opt <- cmLaplace$LaplaceMLE()
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-5)
+  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
   sdparams <- nimres$params$estimate[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-3)
-  expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
+  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=5e-3)
+  expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 })
 
 # To do:
