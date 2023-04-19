@@ -794,7 +794,7 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 })
 
-test_that("Laplace with 2x1D parameters and 2x2D random effects for 1D data needing joint integration works, with intermediate nodes", {
+test_that("Laplace with 2x2D random effects for 1D data that are separable works, with intermediate nodes", {
   set.seed(1)
   # y[i, j] is jth datum from ith group
   y <- array(rnorm(8, 6, 5), dim = c(2, 2, 2)) 
@@ -922,6 +922,107 @@ test_that("Laplace with 2x1D parameters and 2x2D random effects for 1D data need
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 })
 
+test_that("Laplace with 2x2D random effects for 2D data that need joint integration works, with intermediate nodes", {
+  set.seed(1)
+  cov_a <- matrix(c(2, 1.5, 1.5, 2), nrow = 2)
+  cov_y <- matrix(c(1, 0.5, 0.5, 1), nrow = 2)
+  y <- rmnorm_chol(1, c(1, 1), chol(cov_y), prec_param = FALSE)
+  y <- rbind(y, rmnorm_chol(1, c(1, 1), chol(cov_y), prec_param = FALSE))
+  m <- nimbleModel(
+    nimbleCode({
+      for(i in 1:2) mu[i] ~ dnorm(0, sd = 10)
+      mu_a[1] <- 0.8 * mu[1]
+      mu_a[2] <- 0.2 * mu[2]
+      for(i in 1:2) a[i, 1:2] ~ dmnorm(mu_a[1:2], cov = cov_a[1:2, 1:2])
+      mu_y[1:2] <- 0.5*a[1, 1:2] + 0.1*a[2, 1:2]
+      for(i in 1:2) {
+        y[i, 1:2] ~ dmnorm(mu_y[1:2], cov = cov_y[1:2, 1:2])
+      }
+    }),
+    data = list(y = y),
+    inits = list(a = matrix(c(-2, -3, 0,  -1), nrow = 2), mu = c(0, 0.5)),
+    constants = list(cov_a = cov_a, cov_y = cov_y),
+    buildDerivs = TRUE
+  )
+  
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  ## Check using TMB results
+  expect_equal(opt$par, c(0.5603309, 11.7064674 ), tol = 1e-4)
+  expect_equal(opt$value, -4.503796, tol = 1e-7)
+  # Check covariance matrix
+  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  tmbvcov <- matrix(nrow = 6, ncol = 6)
+  tmbvcov[1,] <- c(4.4270833,  11.111111, 1.4583333, 3.1250000, 0.6597222,  1.9097222)
+  tmbvcov[2,] <- c(11.1111111, 70.833333, 2.6388889, 7.6388889, 5.8333333, 12.5000000)
+  tmbvcov[3,] <- c(1.4583333,   2.638889, 1.5000000, 0.8333333, 0.7777778,  0.2777778)
+  tmbvcov[4,] <- c(3.1250000,   7.638889, 0.8333333, 4.1666667, 0.2777778,  2.7777778)
+  tmbvcov[5,] <- c(0.6597222,   5.833333, 0.7777778, 0.2777778, 1.5000000,  0.8333333)
+  tmbvcov[6,] <- c(1.9097222,  12.500000, 0.2777778, 2.7777778, 0.8333333,  4.1666667)
+  
+  expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-4)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-4)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+  ## TMB cpp code:
+  #include <TMB.hpp>
+  #template<class Type>
+  #Type objective_function<Type>::operator() () 
+  # {
+  #   DATA_MATRIX(y);
+  #   DATA_MATRIX(cov_a);
+  #   DATA_MATRIX(cov_y);
+  #   PARAMETER_VECTOR(mu);
+  #   PARAMETER_MATRIX(a);
+  #   int i;
+  #   Type ans = 0.0;
+  #   
+  #   using namespace density;
+  #   // Negative log-likelihood of mv normal
+  #   vector<Type> mu_a(2);
+  #   mu_a(0) = 0.8 * mu(0);
+  #   mu_a(1) = 0.2 * mu(1);
+  #   vector<Type> residual_a(2);
+  #   MVNORM_t<Type> dmvnorm_a(cov_a);
+  #   for(i = 0; i < 2; i++)
+  #   {
+  #     residual_a = vector<Type>(a.row(i)) - mu_a;
+  #     ans += dmvnorm_a(residual_a);
+  #   }
+  #   vector<Type> mu_y(2);
+  #   mu_y(0) = 0.5*a(0, 0) + 0.1*a(1, 0);
+  #   mu_y(1) = 0.5*a(0, 1) + 0.1*a(1, 1);
+  #   vector<Type> residual_y(2);
+  #   MVNORM_t<Type> dmvnorm_y(cov_y);
+  #   for(i = 0; i < 2; i++){
+  #     residual_y = vector<Type>(y.row(i)) - mu_y;
+  #     ans += dmvnorm_y(residual_y);
+  #   }
+  #   return ans;
+  # }
+  # library(TMB)
+  # compile("test.cpp")
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y,  cov_a = m$cov_a, cov_y = m$cov_y)
+  # parameters <- list(mu = m$mu, a = m$a)
+  # 
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="a", DLL="test")
+  # tmbopt <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+})
+
 test_that("simple LME case works", {
   set.seed(1)
   g <- rep(1:10, each = 5)
@@ -1012,13 +1113,241 @@ test_that("simple LME with correlated intercept and slope works", {
   expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 })
 
+test_that("Laplace with non-empty calcNodesNoLaplace works", {
+  m <- nimbleModel(
+    nimbleCode({
+      for(i in 1:3) {
+        mu[i] ~ dnorm(0, sd = 10)
+      }
+      mu_a[1] <- mu[1] + mu[2]
+      mu_a[2] <- mu[2] + mu[3]
+      a[1] ~ dnorm(mu_a[1], sd = 2)
+      y[1] ~ dnorm(a[1], sd = 3)
+      a[2] ~ dnorm(mu_a[2], sd = 2)
+      y[2] ~ dnorm(a[2], sd =3)
+      y[3] ~ dnorm(mu[3], sd = 3)
+    }),
+    data = list(y = c(2, 3, 5)),
+    inits = list(a = c(1, 2), mu = c(1, 2, 3)),
+    buildDerivs = TRUE
+  )
+  
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  expect_equal(opt$par, c(4, -2, 5), tol = 1e-3)
+  expect_equal(opt$value, -6.420377, tol = 1e-6)
+  
+  ## Check covariance matrix
+  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  ## TMB cpp code:
+  #include <TMB.hpp>
+  #template<class Type>
+  #Type objective_function<Type>::operator() () 
+  # {
+  #   DATA_VECTOR(y);
+  #   PARAMETER_VECTOR(mu);
+  #   PARAMETER_VECTOR(a);
+  #   int i;
+  #   // Negative log-likelihood
+  #   Type ans = -dnorm(a[0], mu[0]+mu[1], Type(2.0), true);
+  #   ans -= dnorm(a[1], mu[1]+mu[2], Type(2.0), true);
+  #   for(i = 0; i < 2; i++){
+  #     ans -= dnorm(y[i], a[i], Type(3.0), true);
+  #   }
+  #   ans -= dnorm(y[2], mu[2], Type(3.0), true);
+  #   return ans;
+  # }
+  ## TMB R code:
+  # library(TMB)
+  # compile("test.cpp")
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y)
+  # parameters <- list(mu = c(1, 2, 3), a = c(1, 2))
+  # 
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="a", DLL="test")
+  # tmbres <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+  
+  ## Covariance matrix from TMB
+  tmbvcov <- matrix(nrow = 5, ncol = 5)
+  tmbvcov[1,] <- c( 35, -2.20000e+01,  9.000000e+00,  9.000000e+00, -9.000000e+00)
+  tmbvcov[2,] <- c(-22,  2.20000e+01, -9.000000e+00,  8.463230e-13,  9.000000e+00)
+  tmbvcov[3,] <- c( 9,  -9.00000e+00,  9.000000e+00, -3.462231e-13,  3.462231e-13)
+  tmbvcov[4,] <- c( 9,   8.46323e-13, -3.462231e-13,  9.000000e+00,  3.462231e-13)
+  tmbvcov[5,] <- c(-9,   9.00000e+00,  3.462231e-13,  3.462231e-13,  9.000000e+00)
+  
+  expect_equal(summ$vcov[c(3:5, 1:2), c(3:5, 1:2)], tmbvcov, tol=1e-5)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+})
+
+test_that("Laplace with 2x1D parameters (one needs transformation) and non-normal data works", {
+  m <- nimbleModel(
+    nimbleCode({
+      mu ~ dnorm(0, sd = 10.0)
+      sigma ~ dunif(0, 100)
+      for (i in 1:5){
+        theta[i] ~ dnorm(mu, sd = sigma)
+        logit(p[i]) <- theta[i]
+        y[i] ~ dbinom(10, prob = p[i])
+      }
+    }),
+    data = list(y = c(8, 6, 5, 3, 7)),
+    inits = list(mu = 1, sigma = 1, theta = rep(0, 5)),
+    buildDerivs = TRUE
+  )
+  
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  ## Compare with results from TMB
+  expect_equal(opt$par, c(0.330241, 0.3059177), tol = 1e-4)
+  expect_equal(opt$value, -9.703857, tol = 1e-6)
+  ## Check covariance matrix on the transformed scale
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
+  tmbvcov <- matrix(nrow = 7, ncol = 7)
+  tmbvcov[1,] <- c(0.10337427,  0.04574391,  0.09719623, 0.08526807,  0.07943536,  0.06797944,  0.09118502)
+  tmbvcov[2,] <- c(0.04574391,  3.21994672,  0.91522073, 0.10980129, -0.28810783, -1.07845809,  0.51064309)
+  tmbvcov[3,] <- c(0.09719623,  0.91522073,  0.40584816, 0.09981763, -0.01342937, -0.23826114,  0.21393310)
+  tmbvcov[4,] <- c(0.08526807,  0.10980129,  0.09981763, 0.14821768,  0.05824110,  0.03110420,  0.08580658)
+  tmbvcov[5,] <- c(0.07943536, -0.28810783, -0.01342937, 0.05824110,  0.16979550,  0.16423022,  0.02255625)
+  tmbvcov[6,] <- c(0.06797944, -1.07845809, -0.23826114, 0.03110420,  0.16423022,  0.50464751, -0.10296956)
+  tmbvcov[7,] <- c(0.09118502,  0.51064309,  0.21393310, 0.08580658,  0.02255625, -0.10296956,  0.22602059)
+  expect_equal(summ$vcov[c(6:7, 1:5), c(6:7, 1:5)], tmbvcov, tol=1e-4)
+  ## Stand error for sigma (original parameter)
+  summ2 <- cmLaplace$summary(opt, originalScale = TRUE)
+  expect_equal(summ2$params$stdError[2], 0.5472659, tol=1e-4)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+  ## TMB cpp code:
+  #include <TMB.hpp>
+  #template<class Type>
+  #Type objective_function<Type>::operator() ()
+  # {
+  #   DATA_VECTOR(y);
+  #   PARAMETER(mu);
+  #   PARAMETER(sigmaTrans);
+  #   PARAMETER_VECTOR(theta);
+  #   // Transformation for sigma
+  #   Type sigma = 100 * exp(sigmaTrans) / (1 + exp(sigmaTrans));
+  #   // Negative log-likelihood
+  #   Type ans = 0;
+  #   vector<Type> p(5);
+  #   for(int i = 0; i < 5; i++){
+  #     p[i] = exp(theta[i]) / (1 + exp(theta[i]));
+  #     ans -= dnorm(theta[i], mu, sigma, true) + dbinom(y[i], Type(10), p[i], true);
+  #   }
+  #   ADREPORT(sigma);
+  #   return ans;
+  # }
+  ## TMB R code:
+  # library(TMB)
+  # compile("test.cpp")
+  # dyn.load(dynlib("test"))
+  # data <- list(y = m$y)
+  # parameters <- list(mu = m$mu, sigmaTrans = logit(m$sigma/100), theta = m$theta)
+  # ## Fit model
+  # obj <- MakeADFun(data, parameters, random="theta", DLL="test")
+  # tmbopt <- nlminb(obj$par, obj$fn, obj$gr)
+  # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  # tmbvcov <- inverse(tmbrep$jointPrecision)
+})
+
+test_that("Laplace with no random effects (simple linear regression) works", {
+  set.seed(1)
+  x <- rnorm(5)
+  y <- sapply(-1 + x, rnorm, n = 1, sd = 1)
+  m <- nimbleModel(
+    nimbleCode({
+      a ~ dnorm(0, sd = 10.0)
+      b ~ dnorm(0, sd = 10.0)
+      sigma ~ dunif(0, 100)
+      for(i in 1:5){
+        mu_y[i] <- a + b*x[i]
+        y[i] ~ dnorm(mu_y[i], sd = sigma)
+      }
+    }),
+    constants = list(x = x),
+    data = list(y = y),
+    inits = list(a = -1, b = 1, sigma = 1),
+    buildDerivs = TRUE
+  )
+  
+  mLaplace <- buildLaplace(model = m)
+  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+  cmLaplace <- cL$mLaplace
+  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+  
+  opt <- cmLaplace$LaplaceMLE()
+  summ <- cmLaplace$summary(opt)
+  ## Compare results with those from TMB
+  expect_equal(opt$par, c(-0.8899436, 1.1940911, 0.5744841), tol = 1e-5)
+  expect_equal(opt$value, -4.323288, tol = 1e-7)
+  expect_equal(summ$params$stdError, c(0.2598061, 0.2988869, 0.1816661), tol = 1e-5)
+  
+  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
+  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt) # The warnings are normal
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+  
+  ## TMB cpp code
+  #include <TMB.hpp>
+  #template<class Type>
+  # Type objective_function<Type>::operator() ()
+  # {
+  #   DATA_VECTOR(y);
+  #   DATA_VECTOR(x);
+  #   PARAMETER(a);
+  #   PARAMETER(b);
+  #   PARAMETER(sigma);
+  #   Type nll = -sum(dnorm(y, a+b*x, sigma, true));
+  #   return nll;
+  # }
+  ## R code
+  # compile("lm.cpp")
+  # dyn.load(dynlib("lm"))
+  # set.seed(1)
+  # x <- rnorm(5)
+  # y <- sapply(-1 + x, rnorm, n = 1, sd = 1)
+  # data <- list(y=y, x=x)
+  # parameters <- list(a=-1, b=1, sigma=1)
+  # obj <- MakeADFun(data, parameters, DLL="lm")
+  # obj$hessian <- TRUE
+  # tmbres <- do.call("optim", obj)
+  # tmbsumm <- summary(sdreport(obj))
+})
+
 # To do:
-# Multivariate random effects that are separable
-# Multiple parameters
 # Various structures of random effects groupings
 # Crossed scalar random effects
 # Try having no prior
-# Non-normal examples
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
