@@ -92,10 +92,10 @@ nimOneLaplace1D <- nimbleFunction(
     }
     
     ## Update and constant nodes for obtaining derivatives using AD
-    inner_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
     
@@ -568,10 +568,10 @@ nimOneLaplace <- nimbleFunction(
       optStart <- optimStart
     }
     ## Update and constant nodes info for obtaining derivatives using AD
-    inner_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
+    inner_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
     inner_constantNodes <- inner_derivsInfo$constantNodes
-    joint_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
+    joint_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = wrtNodes, calcNodes = calcNodes)
     joint_updateNodes   <- joint_derivsInfo$updateNodes
     joint_constantNodes <- joint_derivsInfo$constantNodes
     
@@ -1072,26 +1072,51 @@ nimOneLaplace <- nimbleFunction(
 #' @export
 setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                               calcNodesNoLaplace, allowNonPriors = FALSE, split = TRUE,
-                              warn = warn) {
+                              warn = TRUE) {
   paramProvided         <- !missing(paramNodes)
   reProvided            <- !missing(randomEffectsNodes)
   calcProvided          <- !missing(calcNodes)
   calcNoLaplaceProvided <- !missing(calcNodesNoLaplace)
-
+  # We may need to use determ and stochastic dependencies of parameters multiple times below
+  # Define these to avoid repeated computation
+  paramDetermDeps <- character(0)
+  paramStochDeps  <- character(0)
+  paramDetermDepsCalculated <- FALSE
+  paramStochDepsCalculated  <- FALSE
+  
   # 1. Default parameters are stochastic top-level nodes
   #    unless allowNonPriors is TRUE, in which case they are all top-level nodes
   if(!paramProvided) {
-    paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = !allowNonPriors)
+    allTopNodes <- model$getNodeNames(topOnly = TRUE, includeRHSonly = TRUE)
+    stochTopNodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="stoch")]
+    if(!allowNonPriors) { 
+      paramNodes <- stochTopNodes
+    }
+    else { 
+      allRHSnodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="RHSonly")]
+      ## Select all RHSonly nodes with stochastic dependencies
+      allRHSwithStochDeps <- character(0)
+      numAllRHSnodes <- length(allRHSnodes)
+      if(numAllRHSnodes){
+        for(i in 1:numAllRHSnodes) {
+          if(length(model$getDependencies(allRHSnodes[i], stochOnly = TRUE))) 
+            allRHSwithStochDeps <- c(allRHSwithStochDeps, allRHSnodes[i])
+        }
+      }
+      paramNodes <- c(stochTopNodes, allRHSwithStochDeps)
+    }
   } else {
     paramNodes <- model$expandNodeNames(paramNodes)
   }
   # 2. Default random effects are latent nodes that are stochastic dependencies of params.
   if((!reProvided) || warn) {
     paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+    paramStochDepsCalculated <- TRUE
     latentNodes <- model$getNodeNames(latentOnly = TRUE)
     reNodesDefault <- intersect(latentNodes, paramStochDeps)
   }
   if(reProvided){
+    if(is.null(randomEffectsNodes) || isFALSE(randomEffectsNodes)) randomEffectsNodes <- character(0)
     randomEffectsNodes <- model$expandNodeNames(randomEffectsNodes)
   }
   # 3. Optionally check random effects if they were provided (not default)
@@ -1105,8 +1130,7 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "like they should be included in randomEffectsNodes for Laplace approximation\n",
                      "for the provided (or default) paramNodes:\n",
                      errorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in\n",
-                     "the control list."))
+                     "To silence this warning, include \'warn = FALSE\' in the control list."))
     }
     # Second check is for random effects that were included but look unnecessary
     reCheck <- setdiff(randomEffectsNodes, reNodesDefault)
@@ -1117,8 +1141,7 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "they are not needed for Laplace approximation for the\n",
                      "provided (or default) paramNodes:\n",
                      errorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in\n",
-                     "the control list."))
+                     "To silence this warning, include \'warn = FALSE\' in the control list."))
     }
   }
   # End of step 2
@@ -1132,34 +1155,48 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     calcNodesDefault <- model$getDependencies(randomEffectsNodes)
   }
   if(calcProvided){
+    if(is.null(calcNodes) || isFALSE(calcNodes)) calcNodes <- character(0)
     calcNodes <- model$expandNodeNames(calcNodes)
   }
   # 5. Optionally check calcNodes if they were provided (not default)
   if(calcProvided && warn) {
-    # First check is for
+    # First check is for calcNodes that look necessary but were omitted
     calcCheck <- setdiff(calcNodesDefault, calcNodes)
     if(length(calcCheck)) {
-      # First check is for calcNodes that look necessary but were omitted
       errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
       if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
       warning(paste0("There are some model nodes that look like they should be\n",
                      "included in the calcNodes for Laplace approximation because\n",
-                     "they are stochastic dependencies of some randomEffectsNodes:\n",
+                     "they are dependencies of some randomEffectsNodes:\n",
                      errorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in\n",
-                     "the control list."))
+                     "To silence this warning, include \'warn = FALSE\' in the control list."))
     }
     # Second check is for calcNodes that look unnecessary
+    # If some determ nodes between paramNodes and randomEffectsNodes are provided in calcNodes 
+    # then that's ok and we should not throw a warning message. 
     calcCheck <- setdiff(calcNodes, calcNodesDefault)
-    if(length(calcCheck)){
-      errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
-      if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
+    errorNodes <- calcCheck[model$getNodeType(calcCheck)=="stoch"]
+    determCalcCheck <- setdiff(calcCheck, errorNodes)
+    numDetermCalcCheck <- length(determCalcCheck)
+    # Check extra determ nodes
+    if(numDetermCalcCheck){
+      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+      paramDetermDepsCalculated <- TRUE
+      for(i in 1:numDetermCalcCheck){
+        if(!(determCalcCheck[i] %in% paramDetermDeps) || 
+           !(any(m$getDependencies(determCalcCheck[i], self = FALSE) %in% calcNodesDefault))){
+          errorNodes <- c(errorNodes, determCalcCheck[i])
+        }
+      }
+    }
+    if(length(errorNodes)){
+      outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
+      if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
       warning(paste0("There are some calcNodes provided that look like\n",
-                     "they are not needed for Laplace approximation because\n",
-                     "they are not stochastic dependencies of any randomEffectsNodes:\n",
-                     errorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in\n",
-                     "the control list."))
+                     "they are not needed for Laplace approximation over\n",
+                     "the provided (or default) randomEffectsNodes:\n",
+                     outErrorNodes, "\n",
+                     "To silence this warning, include \'warn = FALSE\' in the control list."))
     }
   }
   # Finish step 4
@@ -1175,72 +1212,88 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   #    (A deterministic that is needed for both calcNodes and calcNodesNoLaplace should be included.)
   #    So we have to first do a setdiff on stochastic nodes and then fill in the
   #    deterministics that are needed.
-  if(!calcNoLaplaceProvided) { # Add || warn if we ever create a warning system for this.
-    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+  if(!calcNoLaplaceProvided || warn) { 
+    if(!paramStochDepsCalculated){
+      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+      paramStochDepsCalculated <- TRUE
+    }
     calcNodesNoLaplaceDefault <- setdiff(paramStochDeps, calcNodes)
-    ## Check and add necessary (upstream) deterministic nodes into calcNodesNoLaplace
-    ## This ensures that deterministic nodes between paramNodes and calcNodesNoLaplace are used.
-    num_calcNodesNoLaplace <- length(calcNodesNoLaplaceDefault)
-    if(num_calcNodesNoLaplace > 0){
-      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-      if(length(paramDetermDeps) > 0) {
-        keep_paramDetermDeps <- logical(length(paramDetermDeps))
-        for(i in seq_along(paramDetermDeps)) {
-          # calcNodesNoLaplaceDefault is only stochastic, so this first check is not needed here.
-          # (In other places of this code motif, it is needed.)
-          # if(any(paramDetermDeps[i] == calcNodesNoLaplaceDefault)) keep_paramDetermDeps[i] <- FALSE
-#        else {
-          nextDeps <- model$getDependencies(paramDetermDeps[i])
-          keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesNoLaplaceDefault)
-#        }
-      }
-      paramDetermDeps <- paramDetermDeps[keep_paramDetermDeps]
-    }
-    calcNodesNoLaplaceDefault <- model$expandNodeNames(c(paramDetermDeps, calcNodesNoLaplaceDefault), sort = TRUE)
-  ##   ## derivsInfo for the part of exact log-likelihood wrt parameters
-  ##   exactLoglik_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesNoLaplace)
-  ##   exactLoglik_updateNodes   <- exactLoglik_derivsInfo$updateNodes
-  ##   exactLoglik_constantNodes <- exactLoglik_derivsInfo$constantNodes
-  ## }
-  ## else { ## calcNodesNoLaplace is empty
-  ##   exactLoglik_updateNodes   <- character(0)
-  ##   exactLoglik_constantNodes <- character(0)
-    }
   }
   if(calcNoLaplaceProvided){
-    calcNodesNoLaplace <- model$expandNodeNames(calcNodesNoLaplace)
+    if(is.null(calcNodesNoLaplace) || isFALSE(calcNodesNoLaplace)) calcNodesNoLaplace <- character(0)
+    calcNodesNoLaplace <- model$expandNodeNames(calcNodesNoLaplace, sort = TRUE)
+    if((length(calcNodesNoLaplace) > 0) && !any(model$getNodeType(calcNodesNoLaplace)=="stoch")){
+      warning("There are no stochastic nodes in the calcNodesNoLaplace provided for Laplace.")
+    }
   }
-  # We thought about a warning system, but it is not clear that is makes sense, i.e.
-  # that the default is obvious or that we should get in the way of a user providing
-  # this input (which only an advanced user would do?).
-  ## if(calcNoLaplaceProvided  && warn) {
-  ##   calcNoLaplaceCheck <- setdiff(calcNodesNoLaplaceDefault, calcNodesNoLaplace)
-  ##   if(length(calcNoLaplaceCheck)) {
-  ##     errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
-  ##     if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
-  ##     warning(paste0("There are some model nodes that look like they should be\n",
-  ##                    "included in the calcNodesNoLaplace for exact likelihood calculation:\n",
-  ##                    errorNodes, "\n",
-  ##                    "To silence this warning, include \'warn = FALSE\' in\n",
-  ##                    "the control list."))
-  ##   }
-  ##   calcNoLaplaceCheck <- setdiff(calcNodesNoLaplace, calcNodesNoLaplaceDefault)
-  ##   if(length(calcNoLaplaceCheck)){
-  ##     errorNodes <- paste0(head(calcNoLaplaceCheck, n = 4), sep = "", collapse = ", ")
-  ##     if(length(calcNoLaplaceCheck) > 4) errorNodes <- paste(errorNodes, "...")
-  ##     warning(paste0("There are some nodes provided in calcNodesNoLaplace that look like\n",
-  ##                    "they are not needed for exact likelihood calculation:\n",
-  ##                    errorNodes, "\n",
-  ##                    "To silence this warning, include \'warn = FALSE\' in\n",
-  ##                    "the control list."))
-  ##   }
-  ## }
-  # This could be done at the end of the !calcNoLaplaceProvided clause above.
-  # It is here to keep the pattern above, of waiting until after checks to move
-  # the default into the actual variable.
   if(!calcNoLaplaceProvided){
     calcNodesNoLaplace <- calcNodesNoLaplaceDefault
   }
+  if(calcNoLaplaceProvided && warn) {
+    calcNoLaplaceCheck <- setdiff(calcNodesNoLaplaceDefault, calcNodesNoLaplace)
+    if(length(calcNoLaplaceCheck)) {
+      # We only check missing stochastic nodes; determ nodes will be added below
+      missingStochNodesInds <- which((model$getNodeType(calcNoLaplaceCheck)) == "stoch")
+      numMissingStochNodes <- length(missingStochNodesInds)
+      missingStochNodes <- calcNoLaplaceCheck[missingStochNodesInds]
+      if(numMissingStochNodes){
+        errorNodes <- paste0(head(missingStochNodes, n = 4), sep = "", collapse = ", ")
+        if(numMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
+        warning(paste0("There are some model nodes (stochastic) that look like they should be\n",
+                       "included in the calcNodesNoLaplace for exact likelihood calculation:\n",
+                       errorNodes, "\n",
+                       "To silence this warning, include \'warn = FALSE\' in the control list."))
+      }
+    }
+    # Check redundant stochastic nodes
+    calcNoLaplaceCheck <- setdiff(calcNodesNoLaplace, calcNodesNoLaplaceDefault)
+    stochCalcNoLaplaceCheck <- calcNoLaplaceCheck[model$getNodeType(calcNoLaplaceCheck)=="stoch"]
+    # Check redundant determ nodes
+    determCalcNoLaplaceCheck <- setdiff(calcNoLaplaceCheck, stochCalcNoLaplaceCheck)
+    numDetermCalcNoLaplaceCheck <- length(determCalcNoLaplaceCheck)
+    errorNodes <- character(0)
+    if(numDetermCalcNoLaplaceCheck){
+      if(!paramDetermDepsCalculated) {
+        paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+        paramDetermDepsCalculated <- TRUE
+      }
+      for(i in 1:numDetermCalcNoLaplaceCheck){
+        if(!(determCalcNoLaplaceCheck[i] %in% paramDetermDeps) || 
+           !(any(m$getDependencies(determCalcNoLaplaceCheck[i], self = FALSE) %in% calcNodesNoLaplaceDefault))){
+          errorNodes <- c(errorNodes, determCalcNoLaplaceCheck[i])
+        }
+      }
+    }
+    errorNodes <- c(stochCalcNoLaplaceCheck, errorNodes)
+    if(length(errorNodes)){
+      outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
+      if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
+      warning(paste0("There are some nodes provided in calcNodesNoLaplace that look like\n",
+                     "they are not needed for exact likelihood calculation:\n",
+                     outErrorNodes, "\n",
+                     "To silence this warning, include \'warn = FALSE\' in the control list."))
+    }
+  }
+  # Check and add necessary (upstream) deterministic nodes into calcNodesNoLaplace
+  # This ensures that deterministic nodes between paramNodes and calcNodesNoLaplace are used.
+  num_calcNodesNoLaplace <- length(calcNodesNoLaplace)
+  if(num_calcNodesNoLaplace > 0){
+    if(!paramDetermDepsCalculated) {
+      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+      paramDetermDepsCalculated <- TRUE
+    }
+    numParamDetermDeps <- length(paramDetermDeps)
+    if(numParamDetermDeps > 0) {
+      keep_paramDetermDeps <- logical(numParamDetermDeps)
+      for(i in seq_along(paramDetermDeps)) {
+        nextDeps <- model$getDependencies(paramDetermDeps[i])
+        keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesNoLaplace)
+      }
+      paramDetermDeps <- paramDetermDeps[keep_paramDetermDeps]
+    }
+    calcNodesNoLaplace <- model$expandNodeNames(c(paramDetermDeps, calcNodesNoLaplace), sort = TRUE)
+  }
+
   # 7. Do the splitting into sets (if given) or conditionally independent sets (if TRUE)
   givenNodes <- NULL
   reSets <- list()
@@ -1275,7 +1328,8 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
 #' @rdname laplace 
 #' @export
 buildLaplace <- nimbleFunction(
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesNoLaplace, control = list()) {
+  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesNoLaplace, 
+                   control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
     if(is.null(control$warn))   warn <- TRUE else  warn <- control$warn
     if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
@@ -1304,7 +1358,7 @@ buildLaplace <- nimbleFunction(
     # LaplaceNodes$randomEffectsSets will be extracted below if needed
 
     if(length(calcNodesNoLaplace)) {
-      exactLoglik_derivsInfo    <- nimble:::makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesNoLaplace)
+      exactLoglik_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesNoLaplace)
       exactLoglik_updateNodes   <- exactLoglik_derivsInfo$updateNodes
       exactLoglik_constantNodes <- exactLoglik_derivsInfo$constantNodes
     }
@@ -1312,8 +1366,6 @@ buildLaplace <- nimbleFunction(
       exactLoglik_updateNodes   <- character(0)
       exactLoglik_constantNodes <- character(0)
     }
-
-
     ## Out and inner optimization settings
     outOptControl   <- nimOptimDefaultControl()
     innerOptControl <- nimOptimDefaultControl()
@@ -1373,16 +1425,6 @@ buildLaplace <- nimbleFunction(
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- LaplaceNodes$randomEffectsSets
-        ## if(isTRUE(split)){
-        ##   # calcNodesSets <- model$getConditionallyIndependentSets(nodes = calcNodes, givenNodes = paramNodes)
-        ##   givenNodes <- setdiff(c(paramNodes, calcNodes),
-        ##                         c(randomEffectsNodes, model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
-        ##   reSets <- model$getConditionallyIndependentSets(nodes = randomEffectsNodes, givenNodes = givenNodes)
-        ## }
-        ## else if(is.numeric(split)){
-        ##   reSets <- split(randomEffectsNodes, split)
-        ## }
-        ## else stop("Invalid value for \'split\' provided in control list")
         num_reSets <- length(reSets)
         if(num_reSets == 0){
           stop("There was a problem determining conditionally independent random effects sets for this model.")
@@ -1435,10 +1477,12 @@ buildLaplace <- nimbleFunction(
     else{
       ## No random effects
       lenInternalRENodeSets <- numeric(2)
-      reTransform <- parameterTransform(model, paramNodes[1]) ## Won't be needed at all
+      reTransform <- parameterTransform(model, paramNodes[1], control = list(allowDeterm = allowNonPriors)) ## Won't be needed at all
       reTransform_indices <- numeric(2)
       reNodesAsScalars_vec <- character(0)
       reNodesAsScalars_first <- character(1)
+      if(num_calcNodesNoLaplace == 0) 
+        stop("Both calcNodesNoLaplace and randomEffectsNodes are empty for Laplace for the given model.")
     }
     
     paramNodesAsScalars     <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
@@ -1451,7 +1495,7 @@ buildLaplace <- nimbleFunction(
     ## setupOutputs(reNodesAsScalars, paramNodesAsScalars)
     
     ## Automated transformation for parameters
-    paramsTransform <- parameterTransform(model, paramNodes)
+    paramsTransform <- parameterTransform(model, paramNodes, control = list(allowDeterm = allowNonPriors))
     pTransform_length <- paramsTransform$getTransformedLength()
     if(pTransform_length > 1) pTransform_indices <- 1:pTransform_length
     else pTransform_indices <- c(1, -1)
