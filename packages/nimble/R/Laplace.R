@@ -1866,31 +1866,38 @@ buildLaplace <- nimbleFunction(
 #' Builds a Laplace approximation algorithm for a given NIMBLE model. 
 #' 
 #' @param model a NIMBLE model object, such as returned by \code{nimbleModel}.
+#'   The model must have automatic derivatives (AD) turned on, using
+#'   \code{buildDerivs=TRUE} in \code{nimbleModel}.
 #' @param paramNodes a character vector of names of parameter nodes in the
-#'   model; defaults to top-level stochastic nodes. Alternatively, this can be a
-#'   list in the format returned by \code{setupLaplaceNodes}, in which case
-#'   \code{randomEffectsNodes}, \code{calcNodes}, and \code{calcNodesNoLaplace}
-#'   are not needed (and will be ignored).
+#'   model; defaults to top-level stochastic nodes, as determined by
+#'   \code{model$getNodeNames(topOnly=TRUE, stochOnly=TRUE)}. If
+#'   \code{allowNonPriors} is \code{TRUE}, top-level determinisic nodes are also
+#'   treated as parameters (i.e. \code{stochOnly=FALSE}). Alternatively,
+#'   \code{paramNodes} can be a list in the format returned by
+#'   \code{setupLaplaceNodes}, in which case \code{randomEffectsNodes},
+#'   \code{calcNodes}, and \code{calcNodesNoLaplace} are not needed (and will be
+#'   ignored).
 #' @param randomEffectsNodes a character vector of names of unobserved (latent)
 #'   nodes to marginalize (integrate) over using the Laplace approximation;
 #'   defaults to latent stochastic nodes that depend on \code{paramNodes}.
 #' @param calcNodes a character vector of names of nodes for calculating the
-#'   log-likelihood value for Laplace approximation; defaults to nodes that
-#'   depend on \code{randomEffectsNodes} as determined by
+#'   integrand for Laplace approximation; defaults to nodes that depend on
+#'   \code{randomEffectsNodes}, as determined by
 #'   \code{model$geteDependencies(randomEffectsNodes)} (which will include
 #'   \code{randomEffectsNodes}). There may be deterministic nodes between
 #'   \code{paramNodes} and \code{randomEffectsNodes}. These will be included in
 #'   calculations automatically and thus do not need to be included in
-#'   \code{calcNodes} (but may be).
+#'   \code{calcNodes} (but there is no problem if they are).
 #' @param calcNodesNoLaplace a character vector of names of nodes for
-#'   calculating the log-likelihood that do not depend on any
+#'   calculating terms in the log-likelihood that do not depend on any
 #'   \code{randomEffectsNodes}, and thus are not part of the marginalization,
-#'   but should be included when finding the MLE. This defaults to stochastic
-#'   nodes that depend on \code{paramNodes} but do not depend on
-#'   \code{randomEffectsNodes}. There may be deterministic nodes between
-#'   \code{paramNodes} and \code{calcNodesNoLaplace}. These will be included in
-#'   calculations automatically and thus do not need to be included in
-#'   \code{calcNodesNoLaplace} (but may be).
+#'   but should be included for purposes of finding the MLE. This defaults to
+#'   stochastic nodes that depend on \code{paramNodes} but are not part of and
+#'   do not depend on \code{randomEffectsNodes}. There may be deterministic
+#'   nodes between \code{paramNodes} and \code{calcNodesNoLaplace}. These will
+#'   be included in calculations automatically and thus do not need to be
+#'   included in \code{calcNodesNoLaplace} (but there is no problem if they
+#'   are).
 #' @param optimControl a list of control parameters for the inner optimization
 #'   (of randomEffectsNodes) of Laplace approximation using \code{optim}. This
 #'   is used in the internal nimbleFunctions \code{nimOneLaplace} and
@@ -1903,7 +1910,7 @@ buildLaplace <- nimbleFunction(
 #'   "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By
 #'   default, method "\code{CG}" is used for \code{nimOneLaplace1D} and
 #'   "\code{BFGS}" for \code{nimOneLaplace}.
-#' @param optimStart choice of start values for the inner optimization. This
+#' @param optimStart choice of starting values for the inner optimization. This
 #'   could be \code{"last"}, \code{"last.best"}, or a vector of user provided
 #'   values. \code{"last"} means the most recent random effects values left in
 #'   the model will be used. When finding the MLE, the most recent values will
@@ -1927,23 +1934,22 @@ buildLaplace <- nimbleFunction(
 #' described above.
 #'
 #' The default values are obtained by calling \code{setupLaplaceNodes}, whose
-#' arguments match those here (except for a few arguments which are control list
-#' elements here). One can call that function to see exactly how nodes will be
-#' arranged for Laplace approximation. One can also call it, customize the
-#' returned list, and then provide that to \code{buildLaplace} as
+#' arguments match those here (except for a few arguments which are taken from
+#' control list elements here). One can call that function to see exactly how
+#' nodes will be arranged for Laplace approximation. One can also call it,
+#' customize the returned list, and then provide that to \code{buildLaplace} as
 #' \code{paramNodes}.
 #'
-#' If any \code{randomEffectsNodes} have constraints on the range of valid
-#' values (because of the distribution they follow), they will be used on a
-#' transformed scale determined by \code{parameterTransform}. This means the
-#' Laplace approximation itself will be done on the transformed scale for random
-#' effects. For parameters (\code{paramNodes}), any prior distributions are not
-#' included in calculations, but they are used to determine valid parameter
-#' ranges. For example, if \code{sigma} is a standard deviation, declare it with
-#' a prior such as \code{sigma ~ dhalfflat()} to indicate that it must be greater
-#' than 0. Such information will not be determined based on how a parameter is
-#' used. E.g. \code{x ~ dnorm(mu, sd = sigma)} is not used to determine a
-#' contstraint on \code{sigma}.
+#' If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
+#' effects / latent states) have constraints on the range of valid values
+#' (because of the distribution they follow), they will be used on a transformed
+#' scale determined by \code{parameterTransform}. This means the Laplace
+#' approximation itself will be done on the transformed scale for random effects
+#' and finding the MLE will be done on the transformed scale for parameters. For
+#' parameters, any prior distributions are not included in calculations, but
+#' they are used to determine valid parameter ranges. For example, if
+#' \code{sigma} is a standard deviation, declare it with a prior such as
+#' \code{sigma ~ dhalfflat()} to indicate that it must be greater than 0.
 #'
 #' The object returned by \code{buildLaplace} is a nimbleFunction object with
 #' numerous methods (functions). The most useful ones are:
@@ -1951,30 +1957,30 @@ buildLaplace <- nimbleFunction(
 #' \itemize{
 #'
 #' \item \code{Laplace(p)}. Laplace approximation to the marginal log-likelihood
-#'       function at parameter value \code{p}, which is used in the order of
-#'       \cope{paramNodes}.
+#'       function at parameter value \code{p}, which should match the order of
+#'       \cope{paramNodes}. For any non-scalar nodes in \code{paramNodes}, the
+#'       order within the node is column-major (which can be seen for R objects
+#'       using \code{as.numeric}).
 #'
 #' \item \code{LaplaceMLE(pStart, method, hessian)}. Find the maximum likelihood
 #'         estimates of the Laplace-approximated marginal likelihood. Arguments
-#'         include \code{pStart}: initial parameter values (deafults to
-#'         parameter values currently in the model); \code{method}: optimization
-#'         method to use in \code{optim} (defaults to "BFGS"); and
+#'         include \code{pStart}: initial parameter values (defaults to
+#'         parameter values currently in the model); \code{method}: (outer)
+#'         optimization method to use in \code{optim} (defaults to "BFGS"); and
 #'         \code{hessian}: whether to calculate and return the Hessian matrix
-#'         (defaults to \code{TRUE}).
+#'         (defaults to \code{TRUE}). Second derivatives in the Hessian are
+#'         determined by finite differences of the gradients obtained by
+#'         automatic differentiation (AD).
 #'
 #' \item \code{summary(LaplaceMLEOutput, originalScale,
 #'        calcRandomEffectsStdError, returnJointCovariance)}. Summarize the
 #'        maximum likelihood estimation results, given object
-#'        \code{LaplaceMLEOutput} that is returned by \code{LaplaceMLE}. The
+#'        \code{LaplaceMLEOutput} that was returned by \code{LaplaceMLE}. The
 #'        summary can include a covariance matrix for the parameters, the random
 #'        effects, or both, and these can be returned on the original parameter
 #'        scale or on the potentially transformed scale(s) used in estimation.
-#'        Any random effects or parameters that have constraints on the range of
-#'        valid values are use on a transformed scale determined by
-#'        \code{parameterTransform} during estimation (inner and/or outer
-#'        optimization).
 #'
-#' In addition, this function accepts the following optional arguments:
+#' In addition, \code{summary} accepts the following optional arguments:
 #'
 #'        \itemize{
 #'
@@ -1987,13 +1993,13 @@ buildLaplace <- nimbleFunction(
 #'           errors of random effects will be calculated.
 #'           Defaults to FALSE.
 #'
-#'           \item \code{returnJointCovariance}. Logical. If TRUE, return the
-#'           joint variance-covariance matrix of the parameters and the random
-#'           effects. Defaults to FALSE.
+#'           \item \code{returnJointCovariance}. Logical. If TRUE, the joint
+#'           variance-covariance matrix of the parameters and the random effects
+#'           will be returned. Defaults to FALSE.
 #'
 #'        }
 #'
-#'        This function returns a named list, with elements:
+#'        \code{summary} function returns a named list, with elements:
 #'
 #'        \itemize{
 #'
@@ -2008,9 +2014,9 @@ buildLaplace <- nimbleFunction(
 #'           Kass and Steffey (1989).
 #'
 #'           \item \code{vcov}. If requested (i.e.
-#'           \code{returnJointCovariance=TRUE}), return the joint
-#'           variance-covariance matrix of the random effects and parameters, on
-#'           original or transformed scale.
+#'           \code{returnJointCovariance=TRUE}), the joint variance-covariance
+#'           matrix of the random effects and parameters, on original or
+#'           transformed scale.
 #'
 #'           \item \code{scale}. \code{original} or \code{transformed}, the
 #'        scale on which results were requested.
@@ -2022,69 +2028,191 @@ buildLaplace <- nimbleFunction(
 #' Additional methods to access or control more details of the Laplace approximation include:
 #'
 #' \itemize{
-#'   \item \code{get_node_name_vec(returnParams)}. Return a list (>1) of names of parameters/random effects nodes, according to \code{returnParams = TRUE/FALSE}.
-#'   \item \code{get_node_name_single(returnParams)}. Return the name of a single parameter/random effect node, \code{returnParams = TRUE/FALSE}.
-#'   \item \code{set_method(method)}. Set method ID for calculating the Laplace approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2}, default method), or 3 (\code{Laplace3}).
-#'   \item \code{get_method()}. Return the method ID currently used in the algorithm.
-#'   \item \code{one_time_fixes()}. Fix the dimensionality issue if there is only one parameter in the model. This function is called where necessary and users do not need to run this.
-#'   \item \code{logLikNoLaplace(p)}. Exact log-likelihood value at parameter value \code{p}.
-#'   \item \code{gr_logLikNoLaplace_internal(p)}. Derivative (obtained via single taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
-#'   \item \code{gr_logLikNoLaplace(p)}. Derivative (obtained via double taping) of the exact log-likelihood function w.r.t. parameters evaluated at \code{p}.
-#'   \item \code{gr_Laplace(p)}. Gradient of the Laplace approximation at parameter value \code{p}.
-#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at transformed parameter value \code{pTransform}.
-#'         To make maximizing the Laplace likelihood unconstrained, an automated transformation via \code{\link{parameterTransform}} is performed on any parameters with value constraints.
-#'   \item \code{p_transformed_gr_Laplace(pTransform)}. Gradient of the Laplace approximation (with parameter transformation) w.r.t. transformed parameters, evaluated at transformed parameter value \code{pTransform}.
-#'   \item \code{pInverseTransform(pTransform)}. Back transform the transformed parameter value \code{pTransform} to original scale.
-#'   \item \code{derivspInverseTransform(pTransform, order)}. Derivative of the inverse transformation w.r.t. transformed parameters at \code{pTransform}. Derivative order is given by \code{order}.
-#'   \item \code{reInverseTransform(reTrans)}. Back transform the transformed random effects value \code{reTrans} to original scale.
-#'   \item \code{derivsreInverseTransform(reTrans, order)}. Derivative of the inverse transformation w.r.t. transformed random effects at \code{reTrans}. Derivative order is given by \code{order}.
-#'   \item \code{optimRandomEffects(pTransform)}. Calculate the optimized random effects given transformed parameter value \code{pTransform}.
-#'   \item \code{inverseNegHess(p, reTransform)}. Calculate the inverse of the negative Hessian matrix of the joint log-likelihood w.r.t. transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
-#'   \item \code{hess_logLik_wrt_p_wrt_re(p, reTransform)}. Calculate the Hessian matrix of the joint log-likelihood w.r.t. parameters and transformed random effects, evaluated at parameter value \code{p} and transformed random effects \code{reTransform}.
-#'}
-
+#'
+#'   \item \code{get_node_name_vec(returnParams)}. Return a vector (>1) of names
+#'   of parameters/random effects nodes, according to \code{returnParams =
+#'   TRUE/FALSE}. Use this is there is more than one parameter.
+#'
+#'   \item \code{get_node_name_single(returnParams)}. Return the name of a
+#'   single parameter/random effect node, \code{returnParams = TRUE/FALSE}. Use
+#'   this if there is only one parameter.
+#'
+#'   \item \code{set_method(method)}. Set method ID for calculating the Laplace
+#'   approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2},
+#'   default method), or 3 (\code{Laplace3}). See below for more details. Users
+#'   wanting to explore efficiency can try switching from method 2 (default) to
+#'   methods 1 or 3 and comparing performance. The first Laplace approximation
+#'   with each method will be (much) slower than subsequent Laplace
+#'   approximations.
+#'
+#'   \item \code{get_method()}. Return the current method ID.
+#'
+#'   \item \code{one_time_fixes()}. Users do not need to run this. Is is called
+#'   when necessary internally to fix dimensionality issues if there is only
+#'   one parameter in the model.
+#'
+#'   \item \code{logLikNoLaplace(p)}. Calculate the \code{calcNodesNoLaplace}
+#'   nodes, which returns the log-likelihood of the parts of the model that are
+#'   not included in the Laplace approximation. \code{p} is the vector of
+#'   parameter values in the order of \code{paramNames}.
+#'
+#'   \item \code{gr_logLikNoLaplace_internal(p)}. Gradient (vector of
+#'   derivatives with respect to each parameter) of \code{logLikNoLaplace(p)}.
+#'   This is obtained using automatic differentiation (AD) with single-taping.
+#'   First call will always be slower than later calls.
+#'
+#'   \item \code{gr_logLikNoLaplace(p)}. Gradient (vector of derivatives with
+#'   respect to each parameter) of \code{logLikNoLaplace(p)}. This is obtained
+#'   using automatic differentiation (AD) with double-taping. Results should
+#'   match \code{gr_logLikNoLaplace_internal(p)} but may be more efficient after
+#'   the first call.
+#'
+#'   \item \code{gr_Laplace(p)}. Gradient of the Laplace-approximated marginal
+#'   likelihood at parameter value \code{p}.
+#'
+#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at
+#'         transformed (unconstrained) parameter value \code{pTransform}. To
+#'         make maximizing the Laplace likelihood unconstrained, an automated
+#'         transformation via \code{\link{parameterTransform}} is performed on
+#'         any parameters with constraints indicated by their priors (even
+#'         though the prior probabilities are not used).
+#'
+#' }
+#'
+#' Finally, methods that are primarily for internal use by other methods include:
+#'
+#' \itemize{
+#'
+#'    \item \code{p_transformed_gr_Laplace(pTransform)}. Gradient of the Laplace
+#'     approximation (\code{p_transformed_Laplace(pTransform)}) at transformed (unconstrained) parameter value
+#'     \code{pTransform}.
+#'
+#'    \item \code{pInverseTransform(pTransform)}. Back-transform the transformed
+#'    parameter value \code{pTransform} to original scale.
+#'
+#'    \item \code{derivspInverseTransform(pTransform, order)}. Derivatives of
+#'    the back-transformation (i.e. inverse of parameter transformation) with
+#'    respect to transformed parameters at \code{pTransform}. Derivative order
+#'    is given by \code{order} (any of 0, 1, and/or 2).
+#'
+#'    \item \code{reInverseTransform(reTrans)}. Back-transform the transformed
+#'    random effects value \code{reTrans} to original scale.
+#'
+#'    \item \code{derivsreInverseTransform(reTrans, order)}. Derivatives of the
+#'    back-transformation (i.e. inverse of random effects transformation) with
+#'    respect to transformed random effects at \code{reTrans}. Derivative order
+#'    is given by \code{order} (any of 0, 1, and/or 2).
+#'
+#'    \item \code{optimRandomEffects(pTransform)}. Calculate the optimized
+#'    random effects given transformed parameter value \code{pTransform}. The
+#'    optimized random effects are the mode of the conditional distribution of
+#'    random effects given data at parameters \code{pTransform}, i.e. the
+#'    calculation of \code{calcNodes}.
+#'
+#'    \item \code{inverseNegHess(p, reTransform)}. Calculate the inverse of the
+#'    negative Hessian matrix of the joint (parameters and random effects)
+#'    log-likelihood with respect to transformed random effects, evaluated at
+#'    parameter value \code{p} and transformed random effects
+#'    \code{reTransform}.
+#'
+#'    \item \code{hess_logLik_wrt_p_wrt_re(p, reTransform)}. Calculate the
+#'    Hessian matrix of the joint log-likelihood with respect to parameters and
+#'    transformed random effects, evaluated at parameter value \code{p} and
+#'    transformed random effects \code{reTransform}.
+#'
+#' }
 #'
 #' @section \code{control} list:
 #' 
 #' \code{buildLaplace} accepts the following control list elements:
+#'
 #' \itemize{
-#'   \item \code{split}. If TRUE (default), \code{randomEffectsNodes} will be split into conditionally independent sets if possible.
-#'         This facilitates more efficient Laplace approximation because each conditionally independent set can be marginalized independently.
-#'         If FALSE, \code{randomEffectsNodes} will be handled as one multivariate block, with one multivariate Laplace approximation.
-#'         If a vector, \code{randomEffectsNodes} will be split by \code{split}(\code{randomEffectsNodes}, \code{control$split}).
-#'         The last option allows arbitrary control over how \code{randomEffectsNodes} are blocked.
-#'   \item \code{warn}. If TRUE (default), a warning is issued if \code{randomEffectsNodes} and/or \code{calcNodes} are provided but have extra or missing elements relative to their defaults.
+#'
+#'   \item \code{split}. If TRUE (default), \code{randomEffectsNodes} will be
+#'         split into conditionally independent sets if possible. This
+#'         facilitates more efficient Laplace approximation because each
+#'         conditionally independent set can be marginalized independently. If
+#'         FALSE, \code{randomEffectsNodes} will be handled as one multivariate
+#'         block, with one multivariate Laplace approximation. If \code{split}
+#'         is a numeric vector, \code{randomEffectsNodes} will be split by
+#'         \code{split}(\code{randomEffectsNodes}, \code{control$split}). The
+#'         last option allows arbitrary control over how
+#'         \code{randomEffectsNodes} are blocked.
+#'
+#'   \item \code{warn}. If TRUE (default), a warning is issued if
+#'   \code{randomEffectsNodes} and/or \code{calcNodes} are provided but have
+#'   extra or missing elements relative to their defaults.
+#'
 #'   \item \code{innerOptimControl}. See \code{optimControl}.
+#'
 #'   \item \code{innerOptimMethod}. See \code{optimMethod}.
+#'
 #'   \item \code{innerOptimStart}. see \code{optimStart}.
-#'   \item \code{outOptimControl}. A list of control parameters for maximizing the Laplace log-likelihood using \code{optim}.
-#'         See 'Details' of \code{\link{optim}} for further information.
-#'   \item \code{allowNonPriors} If FALSE (default), all parameter nodes must have stochastic declarations (i.e. priors). These are not calculated as part of Laplace approximation, but they are used to determine boundaries on the valid ranges of parameters. If TRUE, parameters do not need declarations, and those without one will be assumed to have no constraints on valid values.
+#'
+#'   \item \code{outOptimControl}. A list of control parameters for maximizing
+#'         the Laplace log-likelihood using \code{optim}. See 'Details' of
+#'         \code{\link{optim}} for further information.
+#'
+#'   \item \code{allowNonPriors} If FALSE (default), all parameter nodes must
+#'   have stochastic declarations (i.e. priors). These are not calculated as
+#'   part of Laplace approximation, but they are used to determine boundaries on
+#'   the valid ranges of parameters. If TRUE, parameters do not need
+#'   declarations, and those without one will be assumed to have no constraints
+#'   on valid values.
+#'
 #' }
 #'
 #' @section \code{Laplace_BASE}:
 #' 
-#' Laplace base class, upon which specific Laplace algorithm classes are based by including \code{contains = Laplace_BASE}. This declares a list of nimbleFunctions for a single Laplace approximation. Mostly for internal use.
+#' Laplace base class, upon which specific Laplace algorithm classes are based
+#' by including \code{contains = Laplace_BASE}. This declares a list of
+#' nimbleFunctions for a single Laplace approximation. Intended for internal use
+#' only.
+#'
 #' @section \code{nimOneLaplace1D}:
 #' 
-#' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains only one scalar node.
-#' It is mostly for internal use by `buildLaplace`. To use it directly, one has to provide full inputs for all the arguments; there are no defaults.
+#' This function constructs a single Laplace approximation when
+#' \code{randomEffectsNodes} contains only one scalar node. It is mostly for
+#' internal use by `buildLaplace`, when a scalar random effect is conditionally
+#' independent from any other random effects. To use it directly, one has to
+#' provide full inputs for all the arguments; there are no defaults.
 #' 
 #' This function generates an object that comprises a set of methods (functions), each accomplishing one piece of many calculations to obtain the Laplace approximation and its gradient w.r.t. model parameters. 
+#'
 #' Among these methods, six are most useful to a user:
+#'
 #' \itemize{
-#'   \item \code{Laplace1(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses single AD taping for gradient and Hessian calculations and separate components.
-#'   \item \code{Laplace2(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double AD taping for gradient and Hessian calculations and separate components.
-#'   \item \code{Laplace3(p)}. Laplace approximation evaluated at the parameter value \code{p}. This function uses double AD taping for gradient and Hessian calculations and packs everything together.
-#'   \item \code{gr_Laplace1(p)}. Gradient of \code{Laplace1} w.r.t. parameters evaluated at the parameter value \code{p}.
-#'   \item \code{gr_Laplace2(p)}. Gradient of \code{Laplace2} w.r.t. parameters evaluated at the parameter value \code{p}.
-#'   \item \code{gr_Laplace3(p)}. Gradient of \code{Laplace3} w.r.t. parameters evaluated at the parameter value \code{p}.
+#'
+#'   \item \code{Laplace1(p)}. Laplace approximation evaluated at the parameter
+#'   value \code{p}. This function uses single AD taping for gradient and
+#'   Hessian calculations and separate components.
+#'
+#'   \item \code{Laplace2(p)}. Laplace approximation evaluated at the parameter
+#'   value \code{p}. This function uses double AD taping for gradient and
+#'   Hessian calculations and separate components.
+#'
+#'   \item \code{Laplace3(p)}. Laplace approximation evaluated at the parameter
+#'   value \code{p}. This function uses double AD taping for gradient and
+#'   Hessian calculations and packs everything together.
+#'
+#'   \item \code{gr_Laplace1(p)}. Gradient of \code{Laplace1} with respect to
+#'   parameters evaluated at the parameter value \code{p}.
+#'
+#'   \item \code{gr_Laplace2(p)}. Gradient of \code{Laplace2} with respect to
+#'   parameters evaluated at the parameter value \code{p}.
+#'
+#'   \item \code{gr_Laplace3(p)}. Gradient of \code{Laplace3} with respect to
+#'   parameters evaluated at the parameter value \code{p}.
+#'
 #' }
 #' 
 #' @section \code{nimOneLaplace}:
 #' 
-#' This function is suitable for constructing a single Laplace approximation when \code{randomEffectsNodes} contains more than one scalar node.
-#' It is mostly for internal use by `buildLaplace`. To use it directly, one has to provide full inputs for all the arguments; there are no defaults.
+#' This function constructs a single Laplace approximation when
+#' \code{randomEffectsNodes} contains more than one dimension (i.e. has a
+#' non-scalar node and/or multiple scalar nodes). It is mostly for internal use
+#' by `buildLaplace`. To use it directly, one has to provide full inputs for all
+#' the arguments; there are no defaults.
 #' 
 #' The methods generated by this function are the same as \code{nimOneLaplace1D}. 
 #'
@@ -2123,9 +2251,15 @@ buildLaplace <- nimbleFunction(
 #' allres <- CpumpLaplace$summary(MLEres, calcRandomEffectsStdError = TRUE)
 #' }
 #'
-#' @references 
-#' Kass, R. and Steffey, D. (1989). Approximate Bayesian inference in conditionally independent hierarchical models (parametric empirical Bayes models). \emph{Journal of the American Statistical Association}, 84(407), 717–726.
+#' @references
+#'
+#' Kass, R. and Steffey, D. (1989). Approximate Bayesian inference in
+#' conditionally independent hierarchical models (parametric empirical Bayes
+#' models). \emph{Journal of the American Statistical Association}, 84(407),
+#' 717–726.
 #' 
-#' Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal likelihood in non-Gaussian hierarchical models. \emph{Computational Statistics & Data Analysis}, 56, 699–709.
+#' Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal
+#' likelihood in non-Gaussian hierarchical models. \emph{Computational
+#' Statistics & Data Analysis}, 56, 699–709.
 #' 
 NULL
