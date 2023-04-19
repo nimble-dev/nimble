@@ -1080,14 +1080,31 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   # We may need to use determ and stochastic dependencies of parameters multiple times below
   # Define these to avoid repeated computation
   paramDetermDeps <- character(0)
-  paramStochDeps <- character(0)
+  paramStochDeps  <- character(0)
   paramDetermDepsCalculated <- FALSE
-  paramStochDepsCalculated <- FALSE
+  paramStochDepsCalculated  <- FALSE
   
   # 1. Default parameters are stochastic top-level nodes
   #    unless allowNonPriors is TRUE, in which case they are all top-level nodes
   if(!paramProvided) {
-    paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = !allowNonPriors)
+    allTopNodes <- model$getNodeNames(topOnly = TRUE, includeRHSonly = TRUE)
+    stochTopNodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="stoch")]
+    if(!allowNonPriors) { 
+      paramNodes <- stochTopNodes
+    }
+    else { 
+      allRHSnodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="RHSonly")]
+      ## Select all RHSonly nodes with stochastic dependencies
+      allRHSwithStochDeps <- character(0)
+      numAllRHSnodes <- length(allRHSnodes)
+      if(numAllRHSnodes){
+        for(i in 1:numAllRHSnodes) {
+          if(length(model$getDependencies(allRHSnodes[i], stochOnly = TRUE))) 
+            allRHSwithStochDeps <- c(allRHSwithStochDeps, allRHSnodes[i])
+        }
+      }
+      paramNodes <- c(stochTopNodes, allRHSwithStochDeps)
+    }
   } else {
     paramNodes <- model$expandNodeNames(paramNodes)
   }
@@ -1272,9 +1289,9 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         nextDeps <- model$getDependencies(paramDetermDeps[i])
         keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesNoLaplace)
       }
-      paramDetermDepsAdded <- paramDetermDeps[keep_paramDetermDeps]
+      paramDetermDeps <- paramDetermDeps[keep_paramDetermDeps]
     }
-    calcNodesNoLaplace <- model$expandNodeNames(c(paramDetermDepsAdded, calcNodesNoLaplace), sort = TRUE)
+    calcNodesNoLaplace <- model$expandNodeNames(c(paramDetermDeps, calcNodesNoLaplace), sort = TRUE)
   }
 
   # 7. Do the splitting into sets (if given) or conditionally independent sets (if TRUE)
