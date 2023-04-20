@@ -967,15 +967,32 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
                 asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
 
-    if(!useNewMatrix) 
-        if(inherits(code$caller, 'exprClass'))
-            if(!(code$caller$name %in% assignmentOperators)) {
-                if(!is.null(code$caller$name)) {
-                    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-                }
-            } else
-                typeEnv$.ensureNimbleBlocks <- TRUE
-    
+    ## if(!useNewMatrix)
+    ##     if(inherits(code$caller, 'exprClass'))
+    ##         if(!(code$caller$name %in% assignmentOperators)) {
+    ##             if(!is.null(code$caller$name)) {
+    ##                 asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    ##             }
+    ##         } else
+    ##             typeEnv$.ensureNimbleBlocks <- TRUE
+
+    if(!useNewMatrix)
+      if(inherits(code$caller, 'exprClass')) {
+        liftNewArr <- FALSE
+        if(!is.null(code$caller$name)) {
+          if(!(code$caller$name %in% assignmentOperators)) {
+            liftNewArr <- TRUE
+          } else {
+            if(!isTRUE(code$caller$args[[1]]$isName))
+              liftNewArr <- TRUE
+          }
+        }
+        if(liftNewArr)
+          asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        else
+          typeEnv$.ensureNimbleBlocks <- TRUE
+      }
+
     return(asserts)
 }
 
