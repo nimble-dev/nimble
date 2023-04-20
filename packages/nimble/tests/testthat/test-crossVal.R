@@ -192,10 +192,21 @@ test_that("dyes model cross-validation exact results", {
                                        lossFunction = RMSElossFunction,
                                        MCMCcontrol = list(niter = 5000, nburnin = 500))
     ##
-    expect_equal(crossValOutput$CVvalue, 63.872534)
-    expect_equal(crossValOutput$CVstandardError, 0.0023289839)
-    expect_equal(unname(sapply(crossValOutput$foldCVinfo, function(x) x['foldCVvalue'])), c(56.525316, 41.326957, 73.621281, 61.466634, 109.806489, 40.488530))
-    expect_equal(unname(sapply(crossValOutput$foldCVinfo, function(x) x['foldCVstandardError'])), c(0.0052012467, 0.0058034916, 0.0060221136, 0.0059338851, 0.0045952414, 0.0064763733))
+    expect_equal(round(crossValOutput$CVvalue, 5), 97.89058)
+    expect_equal(round(crossValOutput$CVstandardError, 6), 1.042394)
+    expect_equal(unname(sapply(crossValOutput$foldCVinfo, function(x) round(x['foldCVvalue'],5))), c(100.56460, 79.60581, 92.88915, 105.16338, 112.89869, 96.22186))
+    expect_equal(unname(sapply(crossValOutput$foldCVinfo, function(x) round(x['foldCVstandardError'],6))), c(2.768838, 1.402500, 2.177210, 4.491977, 1.136694, 1.809252))
+    ##
+    set.seed(0)
+    ## using default foldFunction: 'random'
+    ## using default lossFunction: 'MSE'
+    crossValOutput_MSE <- runCrossValidate(
+        MCMCconfiguration = dyesMCMCconfiguration,
+        k = 5,
+        MCMCcontrol = list(niter = 5000, nburnin = 500))
+    ##
+    expect_equal(round(crossValOutput_MSE$CVvalue, 3), 7648.88)
+    expect_equal(round(crossValOutput_MSE$CVstandardError, 5), 64.68307)
 })
 
 
