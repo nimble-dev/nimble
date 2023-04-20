@@ -1088,7 +1088,7 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   #    unless allowNonPriors is TRUE, in which case they are all top-level nodes
   if(!paramProvided) {
     allTopNodes <- model$getNodeNames(topOnly = TRUE, includeRHSonly = TRUE)
-    stochTopNodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="stoch")]
+    stochTopNodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="stoch")] # shortcut of isStoch()
     if(!allowNonPriors) { 
       paramNodes <- stochTopNodes
     }
