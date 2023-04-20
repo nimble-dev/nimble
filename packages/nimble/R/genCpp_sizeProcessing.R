@@ -1817,7 +1817,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         RHStype <- RHS$type
         RHSsizeExprs <- RHS$sizeExprs
     } else {
-        if(is.numeric(RHS) | is.logical(RHS)) {
+        if(is.numeric(RHS) || is.logical(RHS)) {
             RHSname = ''
             RHSnDim <- 0
             RHStype <- sizeProc_storage_mode(RHS)
@@ -1833,7 +1833,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             stop(exprClassProcessingErrorMsg(code, "In sizeAssignAfterRecursing: don't know what to do with a provided expression."), call. = FALSE)
         }
     }
-    if(is.null(RHStype) | length(RHStype)==0) {
+    if(is.null(RHStype) || length(RHStype)==0) {
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '", RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     }
     if(LHS$isName) {
@@ -1904,7 +1904,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## update size info in typeEnv
     assert <- NULL
 
-    if((LHS$name == 'values' | LHS$name == 'valuesIndexRange') && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
+    if((LHS$name == 'values' || LHS$name == 'valuesIndexRange') && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
         # triggered when we have simple assignment into values() without indexing of values()
         if(is.numeric(RHS)) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Cannot assign into values() from numeric.')), call. = FALSE)
         code$name <- if(LHS$name == 'values') 'setValues' else 'setValuesIndexRange' 
@@ -1928,7 +1928,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         code$toEigenize <-if(inherits(RHS, 'exprClass')) {
             if(RHS$toEigenize == 'no') 'no' else {
                 if(RHS$toEigenize == 'unknown') 'no' else {
-                    if(RHS$toEigenize != 'yes' & (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
+                    if(RHS$toEigenize != 'yes' && (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) && (RHS$isName || RHS$nDim == 0 || (RHS$name == 'map' && NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
                     else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
                 }
             }
@@ -1949,7 +1949,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         }
         if(RHSnDim > 0) {
             if(!(RHS$name %in% setSizeNotNeededOperators)) {
-                if(LHS$isName | LHS$name == "nfVar") {
+                if(LHS$isName || LHS$name == "nfVar") {
                     assert <- substitute(setSize(LHS), list(LHS = nimbleGeneralParseDeparse(LHS)))
                     for(i in seq_along(RHSsizeExprs)) {
                         test <- try(assert[[i + 2]] <- RHS$sizeExprs[[i]])
@@ -1969,7 +1969,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                                     newExpr$sizeExprs <- RHS$sizeExprs 
                                     newExpr$type <- LHS$type
                                     newExpr$nDim <- RHS$nDim
-                                    if(!is.numeric(LHS$sizeExprs[[1]]) | !is.numeric(RHS$sizeExprs[[2]])) {
+                                    if(!is.numeric(LHS$sizeExprs[[1]]) || !is.numeric(RHS$sizeExprs[[2]])) {
                                         assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[2]]))
                                         thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[2]], assertMessage)
                                         if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert 
