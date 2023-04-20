@@ -27,6 +27,7 @@ Authors@R: c(
     person("Claudia", "Wehrhahn Cortes", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Abel", "Rodr\u00ecguez", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Duncan", "Temple Lang", role = "aut", comment = "packaging configuration"),
+    person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
@@ -40,6 +41,7 @@ Imports:
 Suggests:
     testthat
 URL: https://r-nimble.org, https://github.com/nimble-dev/nimble
+BugReports: https://github.com/nimble-dev/nimble/issues
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
 Copyright: See COPYRIGHTS file.

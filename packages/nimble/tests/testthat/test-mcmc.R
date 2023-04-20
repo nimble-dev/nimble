@@ -2782,6 +2782,46 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
 
 })
 
+test_that('Check MCMC sampler dependencies with and without predictive nodes included', {
+    code <- nimbleCode({
+        for(i in 1:N)
+            x[i] ~ dnorm(0, 1)
+        z2[1:2] ~ dmnorm(mu[1:2], Q[1:2,1:2])
+        z3[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])
+        y ~ dnorm(sum(x[1:N]) + z2[1] + z3[1], 1)
+    })
+    N <- 10
+    Rmodel <- nimbleModel(code = code, constants = list(N=N), data = list(y=0), inits = list(x=rep(0,N), z2=c(0,0), z3=c(0,0,0), mu=c(0,0,0), Q=diag(3)))
+    conf <- configureMCMC(Rmodel, nodes = NULL, print = FALSE)
+    ##
+    conf$addSampler(c('x', 'z2', 'z3'), default = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers('x')) == N)
+    expect_true(conf$getSamplers('x[1]')[[1]]$name == 'RW')
+    expect_true(conf$getSamplers('z2')[[1]]$name == 'RW_block')
+    expect_true(conf$getSamplers('z3')[[1]]$name == 'RW_block')
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', print = FALSE)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_identical(conf$getSamplers()[[1]]$target, c('x', 'z2', 'z3'))
+    expect_identical(conf$getSamplers()[[1]]$name, 'AF_slice')
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', scalarComponents = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_identical(conf$getSamplers()[[1]]$target, c('x', 'z2', 'z3'))
+    expect_identical(conf$getSamplers()[[1]]$name, 'AF_slice')
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', expandTarget = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers()) == 12)
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', expandTarget = TRUE, scalarComponents = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers()) == 15)
+    expect_identical(sapply(conf$getSamplers(), `[[`, 'target'), Rmodel$expandNodeNames(c('x', 'z2', 'z3'), returnScalarComponents = TRUE))
+    expect_identical(sapply(conf$getSamplers(), `[[`, 'name'), rep('AF_slice', 15))
+})
 
 test_that('Conjugacy checking does not return conjugate for subsets (or supersets) of multivariate nodes', {
     ## the changes unerlying this test have to do with the handling of structureExprs
