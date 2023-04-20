@@ -1714,7 +1714,7 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
 
 nimbleAliasRiskFxns <- c("t", "[", "eigenBlock", ## all "[" will be replaced by eigenBlock anyway
                          names(nimble:::sizeCalls)[ grepl("RecyclingRule", unlist(nimble:::sizeCalls) ) ],
-                         "nimRep", "nimRepd", "nimRepi", "nimRedb", "nimC", "nimCd", "nimCi", "nimCb")
+                         "nimRep", "nimRepd", "nimRepi", "nimRepb", "nimC", "nimCd", "nimCi", "nimCb")
 
 detectNimbleAliasRisk <- function(code, LHSname, insideRiskFxn = FALSE) {
     if(!inherits(code, "exprClass")) return(FALSE)
@@ -1734,6 +1734,48 @@ detectNimbleAliasRisk <- function(code, LHSname, insideRiskFxn = FALSE) {
     FALSE
 }
 
+# Inspect an expression to extract any nfVar(A, x), meaning A$x
+# This passes over '[' at the top level, so that A$x[i] goes to A$x
+find_nfVar_info <- function(code) {
+  if(!inherits(code, 'exprClass')) return(NULL)
+  if(code$name == "[") return(find_nfVar_info(code$args[[1]]))
+  if(code$name == "nfVar") { # using A$x which is nfVar(A, x)
+    A <- code$args[[1]]$name
+    x <- code$args[[2]]
+    if(is.character(x)) {
+      inner <- x
+    } else {
+      if(!(x$name == "nfVar"))
+        return(list(var = NULL, objs = NULL))
+      x <- find_nfVar_info(x)
+      A <- c(A, x$objs)
+      inner <- x$var
+    }
+    result <- list(var = inner,
+                   objs = A )
+    return(result)
+  }
+  NULL
+}
+
+detect_nfVar_info_aliasRisk <- function(code, LHS_nfVar_info) {
+  if(!inherits(code, "exprClass")) return(FALSE)
+  if(code$name == "nfVar") {
+    this_nfVar_info <- find_nfVar_info(code)
+    if(identical(this_nfVar_info$var, LHS_nfVar_info$var))
+      return(TRUE)
+    else
+      return(FALSE)
+  }
+  if(length(code$args) > 0) {
+    for(i in seq_along(code$args)) {
+      if(detect_nfVar_info_aliasRisk(code$args[[i]], LHS_nfVar_info))
+        return(TRUE)
+    }
+  }
+  FALSE
+}
+
 sizeAssign <- function(code, symTab, typeEnv) {
     typeEnv$.AllowUnknowns <- FALSE
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, TRUE))
@@ -1751,6 +1793,13 @@ sizeAssign <- function(code, symTab, typeEnv) {
               if(detectNimbleAliasRisk(RHS, LHS$name)) {
                   asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
               }
+          } else {
+            LHS_nfVar_info <- find_nfVar_info(LHS)
+            if(!is.null(LHS_nfVar_info)) {
+              if(detect_nfVar_info_aliasRisk(RHS, LHS_nfVar_info)) {
+                asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
+              }
+            }
           }
       }
       asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
