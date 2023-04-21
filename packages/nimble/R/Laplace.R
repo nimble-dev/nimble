@@ -1659,6 +1659,8 @@ buildLaplace <- nimbleFunction(
       ## In case bad start values are provided 
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
       optRes <- optim(pStartTransform, p_transformed_Laplace, p_transformed_gr_Laplace, method = method, control = outOptControl, hessian = hessian)
+      if(optRes$convergence != 0) 
+        print("Warning: optim has a non-zero convergence code: ", optRes$convergence, ".\nThe control parameters of optim can be adjusted in the control argument of buildLaplace via list(outOptimControl = list()).")
       ## Back transform results to original scale
       optRes$par <- paramsTransform$inverseTransform(optRes$par)
       return(optRes)
@@ -2128,8 +2130,8 @@ buildLaplace <- nimbleFunction(
 #' \itemize{
 #'
 #'    \item \code{p_transformed_gr_Laplace(pTransform)}. Gradient of the Laplace
-#'     approximation (\code{p_transformed_Laplace(pTransform)}) at transformed (unconstrained) parameter value
-#'     \code{pTransform}.
+#'     approximation (\code{p_transformed_Laplace(pTransform)}) at transformed 
+#'     (unconstrained) parameter value \code{pTransform}.
 #'
 #'    \item \code{pInverseTransform(pTransform)}. Back-transform the transformed
 #'    parameter value \code{pTransform} to original scale.
@@ -2221,7 +2223,9 @@ buildLaplace <- nimbleFunction(
 #' independent from any other random effects. To use it directly, one has to
 #' provide full inputs for all the arguments; there are no defaults.
 #' 
-#' This function generates an object that comprises a set of methods (functions), each accomplishing one piece of many calculations to obtain the Laplace approximation and its gradient w.r.t. model parameters. 
+#' This function generates an object that comprises a set of methods (functions), 
+#' each accomplishing one piece of many calculations to obtain the Laplace 
+#' approximation and its gradient w.r.t. model parameters. 
 #'
 #' Among these methods, six are most useful to a user:
 #'
