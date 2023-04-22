@@ -1346,6 +1346,49 @@ test_that("nimbleList test use of [[", {
     expect_identical(is.nl(CnimbleList), TRUE)
 })
 
+test_that("Assignment of list object to list object works (Issue 1246) a", {
+  nl <- nimbleList(A = double(1))
+  temporarilyAssignInGlobalEnv(nl)
+
+  foo <- nimbleFunction(
+    setup <- function(A) {
+      my_nl <- nl$new()
+      my_nl$A <- A
+    },
+    run = function() {
+      my_nl$A <<- my_nl$A[1:3]
+      return(my_nl$A)
+      returnType(double(1))
+    }
+  )
+
+  foo1 <- foo(as.numeric(1:10))
+  cfoo <- compileNimble(foo1)
+  expect_equal(cfoo$run(), 1:3)
+})
+
+test_that("Assignment of list object to list object works (Issue 1246) b", {
+  nl <- nimbleList(A = double(1))
+  temporarilyAssignInGlobalEnv(nl)
+
+  foo <- nimbleFunction(
+    setup <- function(A) {
+      my_nl <- nl$new()
+      my_nl$A <- A
+      my_nl2 <- my_nl
+    },
+    run = function() {
+      my_nl2$A <<- my_nl$A[1:3]
+      return(my_nl$A)
+      returnType(double(1))
+    }
+  )
+
+  foo1 <- foo(as.numeric(1:10))
+  cfoo <- compileNimble(foo1)
+  expect_equal(cfoo$run(), 1:3)
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 

@@ -256,6 +256,8 @@ test_that('CAR conjugacy checking new skipExpansionsNode system', {
     Rmcmc <- buildMCMC(conf)
     ##
     expect_true(class(Rmcmc) == 'MCMC')
+    expect_true(conf$samplerConfs[[1]]$name == 'conjugate_dnorm_dnorm_linear')
+    expect_true(conf$samplerConfs[[7]]$name == 'conjugate_dnorm_dnorm_linear')
     expect_true(conf$samplerConfs[[8]]$name == 'CAR_normal')
     expect_true(class(Rmcmc$samplerFunctions$contentsList[[8]]$componentSamplerFunctions$contentsList[[1]]) == 'CAR_scalar_conjugate')
     expect_true(class(Rmcmc$samplerFunctions$contentsList[[8]]$componentSamplerFunctions$contentsList[[2]]) == 'CAR_scalar_conjugate')

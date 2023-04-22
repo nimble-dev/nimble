@@ -533,7 +533,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
           #  myNimbleList[['myVar']]
           nl_charName <- as.character(callerCode)
           nl_fieldName <-as.character(code[[3]])
-          newRunCode <- substitute(nlVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+          newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
           return(newRunCode)
         }
         if(class == 'symbolModel'){

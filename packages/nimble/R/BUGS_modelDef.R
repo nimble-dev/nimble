@@ -2070,7 +2070,16 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 ## make a line of code to evaluate in the replacementsEnv
                 forCode <- substitute( for(iAns in 1:OUTPUTSIZE) ASSIGNCODE <- origIDs[iAns], list(OUTPUTSIZE = BUGSdecl$outputSize, ASSIGNCODE = IDassignCode) )
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars_2_nodeOrigID[[lhsVar]]
-                eval(forCode, envir = BUGSdecl$replacementsEnv)
+                result <- try(eval(forCode, envir = BUGSdecl$replacementsEnv), silent = TRUE)
+                if(is(result, 'try-error')) {
+                    msg <- paste0("Cannot process code `", safeDeparse(forCode), "`.")
+                    varsFound <- all.vars(forCode) %in% ls(BUGSdecl$replacementsEnv)
+                    if(!all(varsFound))
+                        msg <- paste0(msg, " Missing variable(s): `",
+                                     paste0(all.vars(forCode)[!varsFound], collapse = "`, "),
+                                     "`.")
+                    stop(msg)                
+                }
                 vars_2_nodeOrigID[[lhsVar]] <- BUGSdecl$replacementsEnv[[lhsVar]]
                 rm(list = lhsVar, envir = BUGSdecl$replacementsEnv)
             } else {
@@ -2139,7 +2148,16 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbNames
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbName[[lhsVar]]
-                eval(forCode, envir = BUGSdecl$replacementsEnv)
+                result <- try(eval(forCode, envir = BUGSdecl$replacementsEnv), silent = TRUE)
+                if(is(result, 'try-error')) {
+                    msg <- paste0("Cannot process code `", safeDeparse(forCode), "`.")
+                    varsFound <- all.vars(forCode) %in% ls(BUGSdecl$replacementsEnv)
+                    if(!all(varsFound))
+                        msg <- paste0(msg, " Missing variable(s): `",
+                                     paste0(all.vars(forCode)[!varsFound], collapse = "`, "),
+                                     "`.")
+                    stop(msg)                
+                }
                 vars2LogProbName[[lhsVar]] <- BUGSdecl$replacementsEnv[[lhsVar]]
                 rm(list = c(lhsVar, 'logProbIDs'), envir = BUGSdecl$replacementsEnv)
             } else {
