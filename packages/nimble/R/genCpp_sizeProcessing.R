@@ -1731,7 +1731,7 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
 
 nimbleAliasRiskFxns <- c("t", "[", "eigenBlock", ## all "[" will be replaced by eigenBlock anyway
                          names(nimble:::sizeCalls)[ grepl("RecyclingRule", unlist(nimble:::sizeCalls) ) ],
-                         "nimRep", "nimRepd", "nimRepi", "nimRedb", "nimC", "nimCd", "nimCi", "nimCb")
+                         "nimRep", "nimRepd", "nimRepi", "nimRepb", "nimC", "nimCd", "nimCi", "nimCb")
 
 detectNimbleAliasRisk <- function(code, LHSname, insideRiskFxn = FALSE) {
     if(!inherits(code, "exprClass")) return(FALSE)
@@ -1751,6 +1751,48 @@ detectNimbleAliasRisk <- function(code, LHSname, insideRiskFxn = FALSE) {
     FALSE
 }
 
+# Inspect an expression to extract any nfVar(A, x), meaning A$x
+# This passes over '[' at the top level, so that A$x[i] goes to A$x
+find_nfVar_info <- function(code) {
+  if(!inherits(code, 'exprClass')) return(NULL)
+  if(code$name == "[") return(find_nfVar_info(code$args[[1]]))
+  if(code$name == "nfVar") { # using A$x which is nfVar(A, x)
+    A <- code$args[[1]]$name
+    x <- code$args[[2]]
+    if(is.character(x)) {
+      inner <- x
+    } else {
+      if(!(x$name == "nfVar"))
+        return(list(var = NULL, objs = NULL))
+      x <- find_nfVar_info(x)
+      A <- c(A, x$objs)
+      inner <- x$var
+    }
+    result <- list(var = inner,
+                   objs = A )
+    return(result)
+  }
+  NULL
+}
+
+detect_nfVar_info_aliasRisk <- function(code, LHS_nfVar_info) {
+  if(!inherits(code, "exprClass")) return(FALSE)
+  if(code$name == "nfVar") {
+    this_nfVar_info <- find_nfVar_info(code)
+    if(identical(this_nfVar_info$var, LHS_nfVar_info$var))
+      return(TRUE)
+    else
+      return(FALSE)
+  }
+  if(length(code$args) > 0) {
+    for(i in seq_along(code$args)) {
+      if(detect_nfVar_info_aliasRisk(code$args[[i]], LHS_nfVar_info))
+        return(TRUE)
+    }
+  }
+  FALSE
+}
+
 sizeAssign <- function(code, symTab, typeEnv) {
     typeEnv$.AllowUnknowns <- FALSE
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, TRUE))
@@ -1768,6 +1810,13 @@ sizeAssign <- function(code, symTab, typeEnv) {
               if(detectNimbleAliasRisk(RHS, LHS$name)) {
                   asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
               }
+          } else {
+            LHS_nfVar_info <- find_nfVar_info(LHS)
+            if(!is.null(LHS_nfVar_info)) {
+              if(detect_nfVar_info_aliasRisk(RHS, LHS_nfVar_info)) {
+                asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
+              }
+            }
           }
       }
       asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
@@ -1785,7 +1834,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         RHStype <- RHS$type
         RHSsizeExprs <- RHS$sizeExprs
     } else {
-        if(is.numeric(RHS) | is.logical(RHS)) {
+        if(is.numeric(RHS) || is.logical(RHS)) {
             RHSname = ''
             RHSnDim <- 0
             RHStype <- sizeProc_storage_mode(RHS)
@@ -1801,7 +1850,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             stop(exprClassProcessingErrorMsg(code, "In sizeAssignAfterRecursing: don't know what to do with a provided expression."), call. = FALSE)
         }
     }
-    if(is.null(RHStype) | length(RHStype)==0) {
+    if(is.null(RHStype) || length(RHStype)==0) {
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '", RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     }
     if(LHS$isName) {
@@ -1872,7 +1921,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## update size info in typeEnv
     assert <- NULL
 
-    if((LHS$name == 'values' | LHS$name == 'valuesIndexRange') && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
+    if((LHS$name == 'values' || LHS$name == 'valuesIndexRange') && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
         # triggered when we have simple assignment into values() without indexing of values()
         if(is.numeric(RHS)) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Cannot assign into values() from numeric.')), call. = FALSE)
         code$name <- if(LHS$name == 'values') 'setValues' else 'setValuesIndexRange' 
@@ -1896,7 +1945,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         code$toEigenize <-if(inherits(RHS, 'exprClass')) {
             if(RHS$toEigenize == 'no') 'no' else {
                 if(RHS$toEigenize == 'unknown') 'no' else {
-                    if(RHS$toEigenize != 'yes' & (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
+                    if(RHS$toEigenize != 'yes' && (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) && (RHS$isName || RHS$nDim == 0 || (RHS$name == 'map' && NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
                     else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
                 }
             }
@@ -1917,7 +1966,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         }
         if(RHSnDim > 0) {
             if(!(RHS$name %in% setSizeNotNeededOperators)) {
-                if(LHS$isName | LHS$name == "nfVar") {
+                if(LHS$isName || LHS$name == "nfVar") {
                     assert <- substitute(setSize(LHS), list(LHS = nimbleGeneralParseDeparse(LHS)))
                     for(i in seq_along(RHSsizeExprs)) {
                         test <- try(assert[[i + 2]] <- RHS$sizeExprs[[i]])
@@ -1937,7 +1986,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                                     newExpr$sizeExprs <- RHS$sizeExprs 
                                     newExpr$type <- LHS$type
                                     newExpr$nDim <- RHS$nDim
-                                    if(!is.numeric(LHS$sizeExprs[[1]]) | !is.numeric(RHS$sizeExprs[[2]])) {
+                                    if(!is.numeric(LHS$sizeExprs[[1]]) || !is.numeric(RHS$sizeExprs[[2]])) {
                                         assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[2]]))
                                         thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[2]], assertMessage)
                                         if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert 
