@@ -375,6 +375,127 @@ wish_test_log <- make_AD_test2(
 
 wish_test_out <- test_AD2(wish_test_log)
 
+## Wishart with cholesky included and inner and outer
+## Input will be lower diag of the AR cov matrix, squared
+
+makeARcov <- function(n, rho, sigma) {
+  s2 <- sigma^2
+  ans <- matrix(nrow = n, ncol = n)
+  for(i in 1:n) {
+    for(j in 1:i) {
+      ans[i,j] <- ans[j,i] <- s2 * rho^(abs(i-j))
+    }
+  }
+  ans
+}
+set.seed(123)
+ARcovRec <- makeARcov(4, .6, 2)
+ARcovTest <- makeARcov(4, .55, 3)
+
+ARcovRecTri <- ARcovRec[ upper.tri(ARcovRec, TRUE) ]
+ARcovTestTri <- ARcovTest[ upper.tri(ARcovTest, TRUE) ]
+
+cholRec <- chol(ARcovRec)
+cholTest <- chol(ARcovTest)
+
+wRec <- rwish_chol(1, cholRec, df = 7, scale_param = FALSE)
+wTest <- rwish_chol(1, cholTest, df = 7, scale_param = FALSE)
+
+wRecTri <- wRec[ upper.tri(wRec, TRUE) ]
+wTestTri <- wRec[ upper.tri(wTest, TRUE) ]
+
+
+wish_chol_test_log <- make_AD_test2(
+  op = list(
+    name = "dwish_chol and chol manual",
+    opParam = list(name = "dwish_chol and chol manual"),
+    expr = quote({
+      # populate 2D matrices from the vectors
+      # created from upper triangular values.
+      ARcov2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
+      x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
+      i <- 1L
+      j <- 1L
+      indOrig <- 1L
+      for(j in 1:4) {
+        for(i in 1:j) {
+          ARcov2D[i,j] <- ARcov2D[j,i] <- sqrt(ARcovTriSq[indOrig])
+          x2D[i,j] <- x2D[j,i] <- x[indOrig]
+          indOrig <- indOrig + 1
+        }
+      }
+      cholARcov <- chol(ARcov2D)
+      out <- dwish_chol(x = x2D, cholesky=cholARcov, df = df, log = log)
+      out <- exp(2*out) # to have an "outer" call
+    }),
+    args = list(
+      x = quote(double(1)),
+      ARcovTriSq = quote(double(1)),
+      df = quote(double()),
+      log = quote(double())
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', ARcovTriSq='double(1)', df = 'double()', log='double()'),
+  wrt = c('x', 'ARcovTriSq'),
+  inputs = list(record = list(x = wRecTri, ARcovTriSq = cholRecTri, df = 7, log = 0),
+                test   = list(x = wTestTri, ARcovTriSq = cholTestTri, df = 8, log = 1))
+)
+
+wish_chol_test_out <- test_AD2(wish_chol_test_log)
+
+## logdet
+
+makeARcov <- function(n, rho, sigma) {
+  s2 <- sigma^2
+  ans <- matrix(nrow = n, ncol = n)
+  for(i in 1:n) {
+    for(j in 1:i) {
+      ans[i,j] <- ans[j,i] <- s2 * rho^(abs(i-j))
+    }
+  }
+  ans
+}
+set.seed(123)
+ARcovRec <- makeARcov(4, .6, 2)
+ARcovTest <- makeARcov(4, .55, 3)
+
+ARcovRecTri <- ARcovRec[ upper.tri(ARcovRec, TRUE) ]
+ARcovTestTri <- ARcovTest[ upper.tri(ARcovTest, TRUE) ]
+
+logdet_test <- make_AD_test2(
+  op = list(
+    name = "logdet manual",
+    opParam = list(name = "logdet manual"),
+    expr = quote({
+      # populate 2D matrices from the vectors
+      # created from upper triangular values.
+      ARcov2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
+      i <- 1L
+      j <- 1L
+      indOrig <- 1L
+      for(j in 1:4) {
+        for(i in 1:j) {
+          ARcov2D[i,j] <- ARcov2D[j,i] <- sqrt(ARcovTriSq[indOrig]) # an "inner" call
+          indOrig <- indOrig + 1
+        }
+      }
+      out <- logdet(ARcov2D)
+      out <- exp(2*out) # to have an "outer" call
+    }),
+    args = list(
+      ARcovTriSq = quote(double(1))
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(ARcovTriSq='double(1)'),
+  wrt = c('ARcovTriSq'),
+  inputs = list(record = list(ARcovTriSq = cholRecTri),
+                test   = list(ARcovTriSq = cholTestTri))
+)
+
+logdet_test_out <- test_AD2(logdet_test)
+
 ## Tests above each take 10-20 seconds.
 
 #######################
@@ -400,7 +521,7 @@ test_AD_batch(powOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFai
 test_AD_batch(powOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
 ## 2023-04-06: @perrydv: error: argument "wrt" is missing, with no default
-test_AD_batch(pow_int_OpTests2, knownFailures = AD_knownFailures, verbose = FALSE)  
+test_AD_batch(pow_int_OpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(pow_int_OpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(pow_int_OpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
@@ -411,16 +532,11 @@ test_AD_batch(binaryReductionOpTests2_inner, testFun = test_AD2, knownFailures =
 test_AD_batch(binaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 resetTols()
 
-## 2023-04-06: @perrydv: error: Error in chol.default(arg1) : the leading minor of order 4 is not positive definite
-test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE) # 
-test_AD_batch(squareMatrixOpTests[9], verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
+## chol and logdet tests have been moved to manual tests above
+test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE) #
 
-test_AD_batch(squareMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE) ## trace has a knownFailures entry for compilation failure.  Do we even support it?
-test_AD_batch(binaryMatrixOpTests, knownFailures = AD_knownFailures, verbose = FALSE)
-
-# test_AD_batch does not work with these.  Check that out
-# make lapply run line for distn_tests2
-# test_AD_batch(distn_with_log_tests2, knownFailures = AD_knownFailures, verbose = TRUE)
+##
+test_AD_batch(binaryMatrixOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

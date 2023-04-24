@@ -452,10 +452,9 @@ modify_on_match(squareMatrixOpTests2b, 'chol .+', 'input_gen_funs', function(x) 
 modify_on_match(squareMatrixOpTests2b, 'logdet .+', 'input_gen_funs', function(x) gen_pos_def_matrix(x))
 
 
-# STOPPED HERE
-# the positive definite matrices need more breathing room so finite elements don't make them
-# not positive definite.
 squareMatrixOpTests2 <- c(squareMatrixOpTests2a, squareMatrixOpTests2b)
+squareMatrixOpTests2 <- squareMatrixOpTests2[-8] # logdet is hard to set up so it is hand-coded as logdet_test in test-ADfunctions
+squareMatrixOpTests2 <- squareMatrixOpTests2[-5] # Chol test is hard to set up so it is hand-coded as wish_chol_test_log in test-ADfunctions
 
 # modify_on_match after c() would fail because only the first of redundant names would get handled
 
@@ -479,6 +478,8 @@ squareMatrixOpTests2 <- c(squareMatrixOpTests2a, squareMatrixOpTests2b)
 ## binary matrix ops
 ####################
 
+# Note this is only matrix multiplication and there is a more thorough test-ADmatMult
+
 binaryMatrixOps <- nimble:::matrixMultOperators
 
 binaryMatrixArgs <- as.list(
@@ -488,11 +489,13 @@ binaryMatrixArgs <- as.list(
     stringsAsFactors=FALSE)
 )
 
-binaryMatrixOpTests <- make_AD_test_batch(
-  binaryMatrixOps, binaryMatrixArgs
+# We don't make a binaryMatrixArgs2 because we want the different shaped built in as in binaryMatrixArgs
+
+## binaryMatrixOpTests <- make_AD_test_batch(
+##   binaryMatrixOps, binaryMatrixArgs2
+## )
+
+binaryMatrixOpTests2 <- make_AD_test_batch(
+  binaryMatrixOps, binaryMatrixArgs, maker = make_AD_test2
 )
 
-## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
-## modify_on_match(binaryMatrixOpTests, '%*% .+', 'tol2', 0.001)
-
-## To-Do: Add solve, forward-solve and back-solve
