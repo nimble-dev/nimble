@@ -30,6 +30,7 @@ Authors@R: c(
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
     person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
+    person("Paul", "van Dam-Bates", role = "aut", comment = "Adaptive Gauss-Hermite Quadrature"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
     person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
     person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")
@@ -127,6 +128,7 @@ Collate:
     parameterTransform.R
     CAR.R
     Laplace.R
+	AGHQuadrature.R
     MCMC_utils.R
     MCMC_configuration.R
     MCMC_build.R
