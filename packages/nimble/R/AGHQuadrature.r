@@ -577,7 +577,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 		}
 		## All cached values
 		reTransform <- max_inner_logLik_saved_par
-		maxValue <- max_inner_logLik_saved_value
+		# maxValue <- max_inner_logLik_saved_value
 		logdetNegHessian <- logdetNegHess(p, reTransform)
 		sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
 
@@ -636,7 +636,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 		}
 		## All cached values
 		reTransform <- max_inner_logLik_saved_par
-		maxValue <- max_inner_logLik_saved_value
+		# maxValue <- max_inner_logLik_saved_value
 		logdetNegHessian <- logdetNegHess(p, reTransform)
 		sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
 
@@ -966,8 +966,10 @@ buildAGHQuad <- nimbleFunction(
     if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
 
 	nquadProvided  <- !missing(nquad)    
-    if(!nquadProvided) nquad <- 5					  
-
+    if(!nquadProvided) {
+	  nquad <- 5					  
+      nimCat('  [Note] Assuming 5 quadrature nodes.\n')
+	}
     AGHQuadNodes <- NULL
     if(!missing(paramNodes)) {
       if(is.list(paramNodes)) {
@@ -1207,6 +1209,13 @@ buildAGHQuad <- nimbleFunction(
       return(ans$value)
       returnType(double(1))
     },
+	Laplace = function(p = double(1)) {
+		if(nquad != 1) {
+			print('  [Note] Applying Adaptive Gauss-Hermite Quadrature with ', nquad, ' nodes.')
+		}
+		return(calcMargLogLik(p))
+		returnType(double())
+	},
     ## AGHQuad approximation in terms of original parameters
     calcMargLogLik = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
@@ -1283,8 +1292,18 @@ buildAGHQuad <- nimbleFunction(
       return(ans)
       returnType(double(1))
     },
+	## Pointer for old function name.
+	LaplaceMLE = function(pStart  = double(1, default = Inf),
+                          method  = character(0, default = "BFGS"),
+                          hessian = logical(0, default = TRUE)) {
+		if(nquad != 1) {
+			print('  [Note] Applying Adaptive Gauss-Hermite Quadrature with ', nquad, ' nodes.')
+		}
+		return(calculateMLE(pStart, method, hessian))
+        returnType(optimResultNimbleList())
+	},
     ## Calculate MLEs of parameters
-    MLE = function(pStart  = double(1, default = Inf),
+    calculateMLE = function(pStart  = double(1, default = Inf),
                           method  = character(0, default = "BFGS"),
                           hessian = logical(0, default = TRUE)) {
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
