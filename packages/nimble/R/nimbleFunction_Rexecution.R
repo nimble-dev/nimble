@@ -1283,27 +1283,6 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     return(nimResult)
 }
 
-
-## Interface for optimizing model logProb with respect to parameters
-nimOptim_model <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS",
-                           lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {
-    par <- values(model, wrt)
-    fn <- function(par) {
-        values(model, wrt) <- par
-        model$calculate(nodes)
-    }
-    if(use.gr) {
-        gr <-  function(par) {
-            numDeriv::grad(fn, par)
-        }
-    } else gr <- "NULL"
-    control$fnscale <- -1
-    nimOptim(par = par, fn = fn, gr = gr,
-             method = method, lower = lower, upper = upper,
-             control = control, hessian = hessian)
-}
-
-
 #' Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
 #'
 #' @return an empty \code{list}.
