@@ -651,7 +651,7 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
   };
   vector<int> sort_order(result.size());
   int numEmpty(0);
-  for(int i = 0; i < result.size(); ++i) {
+  for(size_t i = 0; i < result.size(); ++i) {
     sort_order[i] = i; // sort_order will be 0:number of results-1
     if(result[i].size()==0) ++numEmpty;
   }
@@ -659,7 +659,7 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
   std::sort(sort_order.begin(), sort_order.end(), comp(result));
   
   SEXP Sresult = PROTECT(Rf_allocVector(VECSXP, result.size() - numEmpty ) );
-  for(int i = 0; i < result.size(); ++i) {
+  for(size_t i = 0; i < result.size(); ++i) {
     if(result[sort_order[i] ].size() > 0) {
       SET_VECTOR_ELT(Sresult, i, PROTECT(vectorInt_2_SEXP(result[sort_order[i] ], 1)));
     }
@@ -697,7 +697,7 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
   }
 
   // Get first seed node
-  int iCurrentInputNode = 0;
+  size_t iCurrentInputNode = 0;
   vector<int> inputNodes(1);
   do {
     int inputNodeID = Cnodes[iCurrentInputNode];
@@ -717,7 +717,7 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
   // untouch the entire graph
   // the book-keeping of touched nodes across multiple cond. ind. sets
   // would be potentially more burdensome than simply untouching everything.
-  for(int i = 0; i < numNodes; i++) {
+  for(size_t i = 0; i < numNodes; i++) {
     graphNodeVec[ i ]->touched = false;
   }
 
@@ -813,7 +813,7 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
 
       thisRelCgraphID = thisRelNode->CgraphID;
       bool isGiven = isGivenVec[thisRelCgraphID];
-      if(unknownsAsGiven & (!isGiven)) {
+      if(unknownsAsGiven && (!isGiven)) {
         bool isLatent = isLatentVec[thisRelCgraphID];
         if(!isLatent) isGiven = true;
       }
@@ -824,7 +824,7 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
       // bool isGiven = isGivenVec[thisRelCgraphID];
       // bool isLatent = isLatentVec[thisRelCgraphID];
       // if(thisRelNode->type == STOCH) {
-      //   bool isUnknown = (!isGiven) & (!isLatent);
+      //   bool isUnknown = (!isGiven) && (!isLatent);
       //   if(isUnknown) {
       //     if (unknownsAsGiven) {
       //       isGiven = true;
@@ -850,7 +850,7 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
       // Note that other parent nodes of a given node found going down (a data node) need inclusion,
       // but other child nodes of a given node found going up (a top node) do not need inclusion.
       bool recurseUp = goingDown || ( (!goingDown) && (!isGiven) ); // going down or going up through a latent
-      bool recurseDown = (!isGiven) & (!((!goingDown) & (thisRelNode->type != STOCH))); // not given and not going up through a deterministic (non-stoch)
+      bool recurseDown = (!isGiven) && (!((!goingDown) && (thisRelNode->type != STOCH))); // not given and not going up through a deterministic (non-stoch)
       
       if(recurseUp || recurseDown) {
         expandCondIndSet(deps, thisRelCgraphID,

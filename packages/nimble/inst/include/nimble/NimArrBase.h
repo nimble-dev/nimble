@@ -133,7 +133,7 @@ class NimArrBase : public NimArrType {
   vector<int> getSizeVec() {
     vector<int> ans;
     ans.resize(numDims());
-    for(unsigned int i = 0; i < numDims(); ++i)
+    for(int i = 0; i < numDims(); ++i)
       ans[i] = dim()[i];
     return ans;
   }
@@ -143,7 +143,7 @@ class NimArrBase : public NimArrType {
   // vMemory.
   void setLength(int l, bool copyValues = true, bool fillZeros = true) {
     if (NAlength == l) {
-      if ((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0));
+      if ((!copyValues) && fillZeros) fillAllValues(static_cast<T>(0));
       return;
     }
     T *new_v = nimble_malloc<T>(l);

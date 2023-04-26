@@ -426,7 +426,9 @@ void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
   //  if(!nimRecInfo.recording_cp()) return;
   
   bool orderIncludesZero(false);
-  for(size_t i = 0; i < derivOrders.size(); ++ i) {orderIncludesZero |= (derivOrders[i] == 0);}
+  for(int i = 0; i < derivOrders.size(); ++i) {
+    orderIncludesZero |= (derivOrders[i] == 0);
+  }
   // std::cout << "orderIncludesZero = " << orderIncludesZero << std::endl;
   bool oldUpdateModel = ADinfo.updateModel();
   ADinfo.updateModel() = orderIncludesZero;
@@ -475,7 +477,9 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
   // std::cout<<"Entering getDerivs"<<std::endl;
   bool orderIncludesZero(false);
-  for(size_t i = 0; i < derivOrders.size(); ++ i) {orderIncludesZero |= (derivOrders[i] == 0);}
+  for(int i = 0; i < derivOrders.size(); ++ i) {
+    orderIncludesZero |= (derivOrders[i] == 0);
+  }
   //  std::cout << "orderIncludesZero = " << orderIncludesZero << std::endl;
   bool oldUpdateModel = ADinfo.updateModel();
   ADinfo.updateModel() = orderIncludesZero;
@@ -711,7 +715,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 						 derivOrders_meta,
 						 wrtVector,
 						 ansList_meta);
-	for(size_t iii = 0; iii < length_wrt; ++iii)
+	for(int iii = 0; iii < length_wrt; ++iii)
 	  dependentVars[iii] = ansList_meta->jacobian[iii];
 	ADinfo.ADtape() = new CppAD::ADFun<double>;
       } // These {} ensure the RAII object's destructor is called before Dependent, which is important on OS's (linux) with libnimble.so instead of libnimble.a
@@ -788,13 +792,13 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
 					 ansList_nested);
       if(ordersFound[1]) {
 	ansList->jacobian.setSize(1, length_wrt, false, false);
-	for(size_t ii = 0; ii < length_wrt; ++ii) //We could rewrite this with better pointer magic
+	for(int ii = 0; ii < length_wrt; ++ii) //We could rewrite this with better pointer magic
 	  ansList->jacobian[ ii ] = ansList_nested->value[ ii ];
       }
       if(ordersFound[2]) {
 	ansList->hessian.setSize(length_wrt, length_wrt, 1, false, false);
-	for(size_t ii = 0; ii < length_wrt; ++ii)
-	  for(size_t jj = 0; jj < length_wrt; ++jj)
+	for(int ii = 0; ii < length_wrt; ++ii)
+	  for(int jj = 0; jj < length_wrt; ++jj)
 	    ansList->hessian[jj + ii*length_wrt ] = ansList_nested->jacobian[jj + ii*length_wrt]; //orientation shouldn't matter due to symmetry
       }
     }
@@ -1023,7 +1027,7 @@ void nimble_CppAD_tape_mgr::reset() {
   // std::cout<<"Doing nimble_CppAD_tape_mgr::reset 2"<<std::endl;
   //  std::vector<CppAD::local::atomic_index_info>* temp_vec_ptr;
   // temp_vec_ptr = CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage();
-  for(int i = 0; i < atomic_ptrs.size(); ++i) {
+  for(size_t i = 0; i < atomic_ptrs.size(); ++i) {
     //    std::cout<<i<<std::endl;
     CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage(1, atomic_ptrs[i].second);
     /* This sets the atomic vec mgr back to what it was when the atomic was constructed.
@@ -1078,11 +1082,11 @@ void nimble_CppAD_tape_mgr::sum_dummyOutputs_to_dependentVars(std::vector<CppAD:
   if(dummyOutputs.size() == 0) return;
   CppAD::AD<double> firstSum = dummyOutputs[0];
   if(dummyOutputs.size() > 1) {
-    for(int i = 1; i < dummyOutputs.size(); ++i) {
+    for(size_t i = 1; i < dummyOutputs.size(); ++i) {
       firstSum += dummyOutputs[i];
     }
   }
-  for(int j = 0; j < depVars.size(); ++j) {
+  for(size_t j = 0; j < depVars.size(); ++j) {
     depVars[j] += firstSum;
   }
 }

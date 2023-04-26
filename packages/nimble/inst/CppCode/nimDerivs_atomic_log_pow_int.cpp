@@ -89,11 +89,11 @@ bool atomic_log_pow_int_class::forward(
   double a(taylor_x[0]);
   int b(round(taylor_x[0 + 1*nrow])); // b must be integer.  We could error-trap if needed.
   
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = b == 0 ? 0 : b * log(a);
     
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = b == 0 ? 0 : (b/a) * taylor_x[1];
   }
   return true;
@@ -108,10 +108,10 @@ bool atomic_log_pow_int_class::forward(
 				   const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
 				   CppAD::vector< CppAD::AD<double> >&                     taylor_y     ) {
  int nrow(order_up + 1);
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = nimDerivs_log_pow_int(taylor_x[0], taylor_x[0 + 1*nrow]);
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = nimDerivs_zb_over_a(taylor_x[0], taylor_x[0 + 1*nrow]) * taylor_x[1];
   }
   return true;
@@ -259,11 +259,11 @@ bool atomic_zb_over_a_class::forward(
   double a(taylor_x[0]);
   int b(round(taylor_x[0 + 1*nrow])); // b must be integer.  We could error-trap if needed.
   
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = b == 0 ? 0 : b / a;
     
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = b == 0 ? 0 : (-b/(a*a)) * taylor_x[1];
   }
   return true;
@@ -278,10 +278,10 @@ bool atomic_zb_over_a_class::forward(
 				   const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
 				   CppAD::vector< CppAD::AD<double> >&                     taylor_y     ) {
  int nrow(order_up + 1);
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = nimDerivs_zb_over_a(taylor_x[0], taylor_x[0 + 1*nrow]);
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = -nimDerivs_zb_over_a(taylor_x[0]*taylor_x[0], taylor_x[0 + 1*nrow]) * taylor_x[1];
   }
   return true;

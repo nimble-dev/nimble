@@ -289,7 +289,7 @@ class NimOptimProblem_model : public NimOptimProblem {
     if(par_.size() != length_wrt) {
       std::cout<<"Error in C++: wrong length par_ in nimOptim_model"<<std::endl;
     }
-    for(size_t i = 0; i < length_wrt; ++i) {
+    for(int i = 0; i < length_wrt; ++i) {
       if(lastP[i] != par_[i]) {
         sameAsLastCall = false;
         break;

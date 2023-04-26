@@ -53,10 +53,10 @@ bool atomic_zround_class::forward(
      const CppAD::vector<double>&               taylor_x     ,
      CppAD::vector<double>&                     taylor_y     )
 {
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = round(taylor_x[0]);    
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = 0.;
   }
   return true;
@@ -70,10 +70,10 @@ bool atomic_zround_class::forward(
 				   size_t                              order_up     ,
 				   const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
 				   CppAD::vector< CppAD::AD<double> >&                     taylor_y     ) {
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = nimDerivs_zround(taylor_x[0]);
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = nimDerivs_zround(CppAD::AD<double>(0.));
   }
   return true;
