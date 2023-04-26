@@ -224,6 +224,7 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
 ## This function recurses through a block of code and expands any submodels
 codeProcessModelMacros <- function(code,
                                    constants = list(),
+                                   parameters = list(),
                                    env = parent.frame(),
                                    recursionLabels = character()) {
     expandRecursionLabels <- function(possibleMacroName,
@@ -245,19 +246,23 @@ codeProcessModelMacros <- function(code,
             for(i in 2:codeLength){
               macroOutput <- codeProcessModelMacros(code = code[[i]],
                                                   constants = constants,
-                                                  env = env)
+                                                  parameters = parameters,
+                                                  env = env
+                                                  )
               code[[i]] <- macroOutput$code
               constants <- macroOutput$constants
+              parameters <- macroOutput$parameters
             }
-        return(list(code=code, constants=constants))
+        return(list(code=code, constants=constants, parameters=parameters))
     }
     ## If this is a for loop, recurse on the body of the loop
     if(code[[1]] == 'for') {
       macroOutput <- codeProcessModelMacros(code[[4]],
                                           constants = constants,
+                                          parameters = parameters,
                                           env = env)
       code[[4]] <- macroOutput$code
-        return(list(code=code, constants=macroOutput$constants))
+        return(list(code=code, constants=macroOutput$constants, parameters=macroOutput$parameters))
     }
     ## Check if this line invokes a submodel.
     ## This can be done in two ways:
@@ -278,7 +283,7 @@ codeProcessModelMacros <- function(code,
     if(exists(possibleMacroName)) { ## may need to provide an envir argument
         possibleMacro <- get(possibleMacroName) ## ditto
         if(inherits(possibleMacro, "model_macro")) {
-            expandedInfo <- try(possibleMacro$process(code, .constants = constants, .env = env))
+            expandedInfo <- try(possibleMacro$process(code, .constants = constants, parameters = parameters, .env = env))
             if(inherits(expandedInfo, 'try-error'))
                 stop(paste0("Model macro ",
                             expandRecursionLabels(
@@ -310,17 +315,21 @@ codeProcessModelMacros <- function(code,
             ## to expand macros that it might contain.
             macroOutput <- codeProcessModelMacros(expandedInfo$code,
                                            constants = expandedInfo$constants,
+                                           parameters = expandedInfo$parameters,
                                            env = env,
                                            c(recursionLabels, possibleMacroName)
                                            )
-            return(list(code=macroOutput$code, constants=macroOutput$constants))
+            return(list(code=macroOutput$code, constants=macroOutput$constants,
+                        parameters=macroOutput$parameters))
         }
     }
-    list(code=code, constants=constants)
+    list(code=code, constants=constants, parameters=parameters)
 }
 
 processModelMacros <- function(code, constants, env){
-  macroOutput <- codeProcessModelMacros(code=code, constants=constants, env=env)
+  # No generated parameters before any macros run, so parameters = empty list
+  macroOutput <- codeProcessModelMacros(code=code, constants=constants, 
+                                        parameters=list(), env=env)
   # Clean up extra brackets
   code <- removeExtraBrackets(macroOutput$code)
   constants <- macroOutput$constants
@@ -329,7 +338,7 @@ processModelMacros <- function(code, constants, env){
     if(is.factor(x)) x <- as.numeric(x)
     x
   })
-  list(code = code, constants = constants)
+  list(code = code, constants = constants, parameters = macroOutput$parameters)
 }
 
 # Remove extra brackets in BUGS code (typically resulting from macros)
