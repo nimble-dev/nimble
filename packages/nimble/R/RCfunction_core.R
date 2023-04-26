@@ -49,7 +49,6 @@ callsNotAllowedInAD <- c(
   'nimStep',
   'nimEigen',
   'nimSvd',
-  'nimOptim_model',
   'nimOptim',
   'getParam',
   'getBound',
