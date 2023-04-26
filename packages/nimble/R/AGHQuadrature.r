@@ -1213,6 +1213,7 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(1))
     },
 	Laplace = function(p = double(1)) {
+		if(length(p) != npar) stop("  [Warning] Calculation requires values for all parameters.")
 		if(nquad != 1) {
 			print('  [Note] Applying Adaptive Gauss-Hermite Quadrature with ', nquad, ' nodes.')
 		}
@@ -1221,6 +1222,7 @@ buildAGHQuad <- nimbleFunction(
 	},
     ## AGHQuad approximation in terms of original parameters
     calcMargLogLik = function(p = double(1)) {
+      if(length(p) != npar) stop("  [Warning] Calculation requires values for all parameters.")
       if(!one_time_fixes_done) one_time_fixes()
       if(num_calcNodesNoAGHQuad > 0) ans <- logLikNoAGHQuad(p)
       else ans <- 0
