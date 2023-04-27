@@ -1079,22 +1079,41 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   calcNoLaplaceProvided <- !missing(calcNodesNoLaplace)
   # We may need to use determ and stochastic dependencies of parameters multiple times below
   # Define these to avoid repeated computation
+  # A note for future: determ nodes between parameters and calcNodes are needed inside nimOneLaplace
+  # and nimOneLaplace1D. In the future, these could be all done here to be more efficient
   paramDetermDeps <- character(0)
   paramStochDeps  <- character(0)
   paramDetermDepsCalculated <- FALSE
   paramStochDepsCalculated  <- FALSE
   
   # 1. Default parameters are stochastic top-level nodes
-  #    unless allowNonPriors is TRUE, in which case they are all top-level nodes
+  #    unless allowNonPriors is TRUE, in which case they are all top-level stochastic 
+  #    nodes with no RHSonly nodes as parents and RHSonly nodes (excluding constants) that have stochastic dependencies 
+  #    Top-level stochastic nodes with RHSonly nodes as parents are essentially latent/data nodes,
+  #    some of which will be added to randomEffectsNodes below
+  stochTopNodes2reNodes <- character(0)
   if(!paramProvided) {
     allTopNodes <- model$getNodeNames(topOnly = TRUE, includeRHSonly = TRUE)
-    stochTopNodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="stoch")] # shortcut of isStoch()
+    stochTopNodes <- allTopNodes[model$isStoch(allTopNodes)]
     if(!allowNonPriors) { 
       paramNodes <- stochTopNodes
     }
     else { 
       allRHSnodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="RHSonly")]
-      ## Select all RHSonly nodes with stochastic dependencies
+      numAllRHSnodes <- length(allRHSnodes)
+      # If RHSonly nodes have non-NA values, then they are constants and thus 
+      # excluded from parameters. A user must NOT add initial values to parameters 
+      # with no priors or declare them as constants. 
+      # In the future, might need to consider a multivariate RHSonly node with NA 
+      # values for some components; currently we regard all components as parameters
+      if(numAllRHSnodes){
+        isTrueRHSnodes <- logical(numAllRHSnodes)
+        for(i in 1:numAllRHSnodes){
+          if(any(is.na(model[[allRHSnodes[i]]]))) isTrueRHSnodes[i] <- TRUE
+        }
+      }
+      allRHSnodes <- allRHSnodes[isTrueRHSnodes]
+      # Select all RHSonly nodes with stochastic dependencies
       allRHSwithStochDeps <- character(0)
       numAllRHSnodes <- length(allRHSnodes)
       if(numAllRHSnodes){
@@ -1103,16 +1122,42 @@ setupLaplaceNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
             allRHSwithStochDeps <- c(allRHSwithStochDeps, allRHSnodes[i])
         }
       }
+      # Exclude top-level stochastic nodes that have any of these nodes in allRHSwithStochDeps
+      # as parents, because they are essentially latent/data nodes and if latent
+      # they will be added into randomEffectsNodes below
+      numStochTopNodes <- length(stochTopNodes)
+      if(numStochTopNodes) {
+        isTrueStochTopNodes <- !logical(numStochTopNodes)
+        for(i in 1:numStochTopNodes){
+          if(any(model$getParents(stochTopNodes[i], includeRHSonly = TRUE) %in% allRHSwithStochDeps)) 
+            isTrueStochTopNodes[i] <- FALSE
+        }
+        # Top-level stoch nodes that are potentially random effects nodes
+        stochTopNodes2reNodes <- stochTopNodes[!isTrueStochTopNodes]
+        numStochTopNodes2reNodes <- length(stochTopNodes2reNodes)
+        isTrueREnodes <- logical(numStochTopNodes2reNodes)
+        if(numStochTopNodes2reNodes){
+          for(i in 1:numStochTopNodes2reNodes){
+            if(length(model$getDependencies(stochTopNodes2reNodes[i], self = FALSE, stochOnly = TRUE)))
+              isTrueREnodes[i] <- TRUE
+          }
+        }
+        # True top-level stoch nodes that are random effects
+        stochTopNodes2reNodes <- stochTopNodes2reNodes[isTrueREnodes]
+        # True top-level stoch nodes
+        stochTopNodes <- stochTopNodes[isTrueStochTopNodes]
+      }
       paramNodes <- c(stochTopNodes, allRHSwithStochDeps)
     }
-  } else {
+  }
+  else {
     paramNodes <- model$expandNodeNames(paramNodes)
   }
   # 2. Default random effects are latent nodes that are stochastic dependencies of params.
   if((!reProvided) || warn) {
     paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
     paramStochDepsCalculated <- TRUE
-    latentNodes <- model$getNodeNames(latentOnly = TRUE)
+    latentNodes <- c(model$getNodeNames(latentOnly = TRUE), stochTopNodes2reNodes)
     reNodesDefault <- intersect(latentNodes, paramStochDeps)
   }
   if(reProvided){
