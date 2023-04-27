@@ -18,7 +18,7 @@ eval <- TRUE
 
 As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package `nimbleHMC`), Laplace approximation, and fast optimization with methods that use function gradients.
 
-Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations. When done this way, derivatives are numerically accurate to the precision of the computer. This is distinct from finite element methods, used by R packages such as `numDeriv` [@gilbert-varadhan-19] and `pracma` [@borchers-22], which approximate derivatives by calculating function values at extremely nearby points. Finite element methods are slower and less accurate than AD. It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD. NIMBLE uses the CppAD package [@bell-22] as its AD engine, following TMB's success in doing so [@kristensen-etal-16]. A general reference on AD is @griewank-walther-08.
+Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations. When done this way, derivatives are numerically accurate to the precision of the computer. This is distinct from finite difference methods, used by R packages such as `numDeriv` [@gilbert-varadhan-19] and `pracma` [@borchers-22], which approximate derivatives by calculating function values at extremely nearby points. Finite difference methods are slower and less accurate than AD. It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD. NIMBLE uses the CppAD package [@bell-22] as its AD engine, following TMB's success in doing so [@kristensen-etal-16]. A general reference on AD is @griewank-walther-08.
 
 Using a packaged AD algorithm should be as simple as setting `buildDerivs=TRUE` in the model. On the other hand, writing new algorithms (as nimbleFunctions) that use AD requires understanding how the AD system works internally, including what can go wrong. Calls to `compileNimble` that include AD features will result in slower C++ compilation.
 
@@ -26,7 +26,7 @@ Using a packaged AD algorithm should be as simple as setting `buildDerivs=TRUE` 
 
 We will introduce NIMBLE's AD features step by step, from simply turning them on for a model to using them in your own nimbleFunctions. We will show you:
 
-1. how to turn on derivatives in a model and use them for Hamiltonian Monte Carlo (HMC) and Laplace approximation.
+1. how to turn on derivatives in a model and use them in Laplace approximation (for Hamiltonian Monte Carlo (HMC), see \@ref(subsec:HMC)).
 2. how to modify user-defined functions and distributions to support derivatives.
 3. what functions are supported and not supported for derivatives.
 4. basics of obtaining derivatives in your own algorithms written as `nimbleFunctions`.
@@ -40,11 +40,11 @@ First, make sure to set the option to enable derivative features. This should be
 nimbleOptions(enableDerivs = TRUE)
 ```
 
-## How to turn on derivatives in a model 
+## How to turn on derivatives in a model {#sec:use-derivs}
 
-To allow algorithms to use automatic derivatives for a model, include `buildDerivs=TRUE` in the call to `nimbleModel`. 
+To allow algorithms to use automatic derivatives for a model, include `buildDerivs=TRUE` in the call to `nimbleModel`. If you want derivatives to be set up for all models, you can run `nimbleOptions(buildModelDerivs = TRUE)` and omit the `buildDerivs` argument.
 
-We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for Laplace approximation. There will be 10 groups (`i`) of 5 observations (`j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
+We'll re-introduce the simple Poisson Generalized Linear Mixed Model (GLMM) example model from \@ref(subsec:HMC-example) use Laplace approximation on it. There will be 10 groups (`i`) of 5 observations (`j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
 ```{r eval=TRUE}
 model_code <- nimbleCode({
   # priors 
@@ -69,14 +69,11 @@ set.seed(123)
 X <- matrix(rnorm(50), nrow = 10)
 ```
 
-In order to allow an algorithm to use AD for a specific model, that model must be created with `buildDerivs=TRUE`.
-
+Next, we build the model, including `buildDerivs=TRUE`.
 ```{r eval=eval}
 model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
                      buildDerivs = TRUE) # Here is the argument needed for AD.
 ```
-
-If you want derivatives to be set up for all models, you can run `nimbleOptions(buildModelDerivs = TRUE)` and omit the `buildDerivs` argument.
 
 ### Finish setting up the GLMM example
 
@@ -92,8 +89,7 @@ model$calculate() # Now the model is fully initialized: all nodes have valid val
 model$setData('y') # Now the model has y marked as data, with values from simulation.
 ```
 
-If you are not very familiar with using a `nimble` model, that might have been
-confusing, but it was just for setting up the example.
+If you are not very familiar with using a `nimble` model, that might have been confusing, but it was just for setting up the example.
 
 Finally, we will make a compiled version of the model.
 ```{r eval=eval}
@@ -103,7 +99,7 @@ Cmodel <- compileNimble(model)
 
 ## How to use Laplace approximation
 
-Next we will show how to use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above.  What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation uses third derivatves. These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
+Next we will show how to use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above.  What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation (used for finding the MLE efficiently) uses third derivatves. These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
 
 To create a Laplace approximation specialized to the parameters of interest for this model, we use the nimbleFunction `buildLaplace`. The setup code in `buildLaplace` will automatically determine the random effects to be integrated over and the associated nodes to calculate. In fact, if you omit the parameter nodes, it will assume that all top-level nodes in the model should be treated as parameters. If fine-grained control is needed, these various sets of nodes can be input directly into `buildLaplace`.
 
@@ -124,7 +120,7 @@ MLE$value   # MLE log likelihood value
 
 The final outputs show the MLE for `intercept`, `beta`, and `sigma`, followed by the maximum (approximate) likelihood.
 
-`buildLaplace` actually offers several choices in how computations are done, differing in how they use double taping or not. In some cases one or another choice might be more efficient. See `help(buildLaplace)` if you want to explore it further.
+`buildLaplace` actually offers several choices in how computations are done, differing in how they use *double taping* for derivatives or not. In some cases one or another choice might be more efficient. See `help(buildLaplace)` if you want to explore it further.
 
 Finally, let's confirm that it worked by comparing to results from package `lme4`. In this case, `lme4` will be faster because it is highly specialized to GLMMs. Here our interest is in checking that nimble's Laplace approximation worked correctly in a case where we have an established tool such as `lme4`.
 
@@ -142,7 +138,7 @@ The results match within numerical tolerance typical of optimization problems. S
 
 ## How to support derivatives in user-defined functions and distributions
 
-It is possible to activate derivative support in a user-defined function or distribution used in a model. Simply set `buildDerivs=TRUE` in `nimbleFunction`.
+It is possible to activate derivative support for a user-defined function or distribution used in a model. Simply set `buildDerivs=TRUE` in `nimbleFunction`.
 
 Here is an extremely toy example. Let's say we want a model with one node that follows a user-defined distribution, which will happen to be the same as `dnorm` (a normal distribution) for illustration.
 
@@ -187,7 +183,7 @@ Much of the math supported by NIMBLE will work for AD. Here are some details on 
 
 Features that are not supported for AD include:
 
-- stochastic indexing in models.
+- stochastic indexing (i.e. the index itself in a latent state) in models.
 - cumulative ("p") and quantile ("q") functions for distributions.
 - truncated distributions in models (because they use cumulative distribution functions).
 - random number generation.
@@ -214,8 +210,8 @@ When a linear algebra atomic is turned off, the AD system simply uses all the sc
 Another important feature of AD is that sometimes values get "baked in" to AD calculations, meaning they are used *and permanently retained* from the first set of calculations and then can't have their value changed later (unless an algorithm does a "reset", described below). For people writing user-defined distributions and functions, a brief summary of what can get baked in includes:
 
 - the extent of any for-loops.
-- values of any arguments that are not of type 'double', including e.g. the 'log' argument in `d_my_norm`. ('d' functions called from models always have `log = TRUE`, so in this case it is not a problem.)
-- the evaluation path followed by any if-then-else.
+- values of any arguments that are not of type 'double', including e.g. the 'log' argument in `d_my_norm`. ('d' functions called from models always have `log = TRUE`, so in that case it is not a problem.)
+- the evaluation path followed by any if-then-else calls.
 - values of any indices.
 
 See below for more thorough explanations.
@@ -246,7 +242,7 @@ derivs_demo <- nimbleFunction(
 
 Here are some things to notice:
 
-- Having `setup` code allows the nimbleFunction to have multiple methods (i.e. to behave like a class definition in object-oriented programming). Some nimbleFunctions don't have `setup` code, but `setup` code is required when there will be a call to `derivs`. If, as here, you don't need the `setup` to do anything, you can instead use `setup=TRUE`.
+- Having `setup` code allows the nimbleFunction to have multiple methods (i.e. to behave like a class definition in object-oriented programming). Some nimbleFunctions don't have `setup` code, but `setup` code is required when there will be a call to `derivs`. If, as here, you don't need the `setup` to do anything, you can simply use `setup=TRUE`, which is equivalent to `setup=function(){}`.
 - Any arguments to `run` that are real numbers (i.e. regular double precision numbers, but not integers or logicals) will have derivatives tracked when called through `derivs`.
 - The "with-respect-to" (`wrt`) argument gives indices of the arguments for which you want derivatives. In this case, we're including all elements of `d` and `X`. The indices form one sequence over all arguments.
 - `order` is a vector of derivative orders to return, which can include any of `0` (the function value, not a derivative!), `1` (1st order), or `2` (2nd order). Higher-order derivatives can be obtained by double-taping, described below.
@@ -324,7 +320,7 @@ Note the more elaborate value for `buildDerivs`. Above, this was just a characte
 
 ### Using AD with multiple nimbleFunctions
 
-Derivatives will be tracked for whatever series of calculations occur in a method, possibly including calls to other methods or nimbleFunctions that have `buildDerivs` set. Let's look at an example where we have a separate function to return the element-wise square root of an input vector. The net calculation for derivatives will be `sqrt(exp(-d*x)))`.
+Derivatives will be tracked through whatever series of calculations occur in a method, possibly including calls to other methods or nimbleFunctions that have `buildDerivs` set. Let's look at an example where we have a separate function to return the element-wise square root of an input vector. The net calculation for derivatives will be `sqrt(exp(-d*x)))`.
 
 ```{r eval=eval}
 nf_sqrt <- nimbleFunction(
@@ -363,19 +359,19 @@ x <- c(2.1, 2.2)
 C_my_derivs_demo3$derivsRun(d, x)$jacobian
 ```
 
-Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE`, `buildDerivs = 'run'`, or `buildDerivs = list(run = list())`. One can't take derivatives of `nf_sqrt` on its own, but it can be called by a method of a nimbleFunction that can have its derivatives taken (i.e. one with `setup` code). 
+Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE`, `buildDerivs = 'run'`, or `buildDerivs = list(run = list())`. One can't take derivatives of `nf_sqrt` on its own, but it can be called by a method of a nimbleFunction that can have its derivatives taken (e.g. the `run` method of a `derivs_demo3` object). 
 
 ### Understanding more about how AD works: *taping* of operations.
 
 At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library [@bell-22]. AD methods work by following a set of calculations multiple times, sometimes in reverse order. 
 
-For example, the derivative of $y = \exp(x^2)$ can be calculated (by the chain rule of calculus) as the derivative of $y = \exp(z)$ (evaluated at $z = x^2$) times the derivative of $z = x^2$ (evaluated at $x$). This can be calculated by first going through the sequence of steps for the value, i.e. (i) $z = x^2$, (ii) $y = \exp(z)$, and then again for the derivatives, i.e. (i) $dz = 2x (dx)$, (ii) $dy = \exp(z) dz$. These steps determine the instantaneous change $dy$ that results from an instantaneous change $dx$. (It may be helpful to think of both values as a function of a third variable such as $t$. Then we are determining $dy/dt$ as a function of $dx/dt$.) In CppAD, the basic numeric object type (double) is replaced with a special type and corresponding versions of all the basic math operations so that those operations can track not just the values but the rates of change.
+For example, the derivative of $y = \exp(x^2)$ can be calculated (by the chain rule of calculus) as the derivative of $y = \exp(z)$ (evaluated at $z = x^2$) times the derivative of $z = x^2$ (evaluated at $x$). This can be calculated by first going through the sequence of steps for the value, i.e. (i) $z = x^2$, (ii) $y = \exp(z)$, and then again for the derivatives, i.e. (i) $dz = 2x (dx)$, (ii) $dy = \exp(z) dz$. These steps determine the instantaneous change $dy$ that results from an instantaneous change $dx$. (It may be helpful to think of both values as a function of a third variable such as $t$. Then we are determining $dy/dt$ as a function of $dx/dt$.) In CppAD, the basic numeric object type (double) is replaced with a special type and corresponding versions of all the basic math operations so that those operations can track not just the values but also derivative information.
 
 The derivative calculations typically need the values. For example, the derivative of $\exp(z)$ is (also) $\exp(z)$, for which the value of $z$ is needed, which in this case is $x^2$, which is one of the steps in calculating the value of $\exp(x^2)$. (In fact, in this case the derivative of $\exp(z)$ can more simply use the value of $y$ itself.) Hence, values are calculated before derivatives, which are calculated by stepping through the calculation sequence a *second* time
 
 What was just described is called *forward* mode in AD. The derivatives can also be calculated by working through $\exp(x^2)$ in *reverse* mode. This is often less familiar to graduates of basic calculus courses. In reverse mode, one determines what instantaneous change $dx$ would give an instantaneous change $dy$. For example, given a value of $dy$, we can calculate $1/dz = \exp(z) / dy$ and then $(1/dx) = (x^2) / dz$. Again, values are calculated first, followed by derivatives in a second pass through the calculation sequence, this time in reverse order.
 
-In general, choice of forward mode versus reverse mode has to do with the lengths of inputs and outputs and possibly specific operations involved. In nimble, some reasonable defaults are used.
+In general, choice of forward mode versus reverse mode has to do with the lengths of inputs and outputs and possibly specific operations involved. In nimble, some reasonable choices are used.
 
 In CppAD, the metaphor of pre-digital technology -- magnetic tapes -- is used for the set of operations in a calculation. When a line with `nimDerivs` is first run, the operations in the function it calls are *taped* and then re-used -- *played* -- in forward and/or reverse orders to obtain derivatives. Hence we will refer to the AD *tape* in explaining some features below. It is also possible to reset (i.e. re-record) the AD tape used for a particular `nimDerivs` call.
 
@@ -529,7 +525,7 @@ derivs_nf <- nimbleFunction(
 
 In `derivs_nf`:
 
-- The mere presence of `model`, `with_respect_to_nodes`, and `calc_nodes` as setup arguments makes them available as member data for `run` or other methods.
+- The mere presence of `model`, `with_respect_to_nodes`, and `calc_nodes` as `setup` arguments makes them available as member data for `run` or other methods.
 - `model` will be a model object returned from `nimbleModel`.
 - `with_respect_to_nodes` will be the names of nodes we want derivatives with respect to.
 - `calc_nodes` will be the nodes to be calculated, in the order given.
@@ -570,7 +566,7 @@ We can see that all the results clearly match the compiled results to a reasonab
 
 Sometimes one needs derivatives of calculations done in a nimbleFunction as well as in a model. And sometimes one needs to change values in a model before and/or after doing model calculations and have those changes recorded in the derivative tape. 
 
-For these reasons, it is possible in one method to take derivatives of a method  that includes a call to `model$calculate`. Continuing the above example, say we want to take derivatives with respect to the log of `sigma`, so the input vector will be treated as `intercept`, `beta`, and `log(sigma)`, in that order. We will convert `log(sigma)` to `sigma` before using it in the model, and we want the derivative of that transformation included in the tape (i.e. using the chain rule).
+For these reasons, it is possible to take derivatives of a method that includes a call to `model$calculate`. Continuing the above example, say we want to take derivatives with respect to the log of `sigma`, so the input vector will be treated as `intercept`, `beta`, and `log(sigma)`, in that order. We will convert `log(sigma)` to `sigma` before using it in the model, and we want the derivative of that transformation included in the tape (i.e. using the chain rule).
 
 (Using `log(sigma)` instead of `sigma` is useful so an algorithm such as optimization or HMC can use an unconstrained parameter space. A constraint such as `sigma > 0` can be difficult for many algorithms. See below for NIMBLE's automated parameter transformation system if you need to do this systematically.)
 
@@ -638,9 +634,11 @@ There are several important new points here:
 In most cases, you can obtain `constantNodes` and `updateNodes` from `makeModelDerivsInfo` without knowing exactly what they mean. But for advanced uses and possible debugging needs, let's explore these arguments in more detail. The purpose of `constantNodes` and `updateNodes` is to tell the AD system about all nodes that will be needed for taped model calculations. Specifically:
 
 - `updateNodes` and `constantNodes` are vectors of nodes names that together comprise any nodes that are necessary for `model$calculate(calc_nodes)` but are:
+
     - not in the `wrt` argument to `nimDerivs` (only relevant for Method 1), and
     - not assigned into the model using `values(model, nodes) <<- some_values` prior to `model$calculate` (only relevant for Method 2), and
     - not a deterministic node in `calc_nodes`.
+    
 - `updateNodes` includes node names satisfying those conditions whose values might change between uses of the tape regardless of the `reset` argument.
 - `constantNodes` includes node names satisfying those conditions whose values will be baked into the tape (will not change) until the next call with `reset=TRUE`.
 
@@ -649,12 +647,11 @@ To fix ideas, say that we want derivatives with respect to `ran_eff[1]` for calc
 ```{r eval=eval}
 model$getDependencies('ran_eff[1]')
 ```
-(The "lifted" nodes here are for the `exp(intercept + beta*X[i,j] + ran_eff[i])`, i.e. the inputs to `dpois`. See the NIMBLE User Manual to learn about lifted nodes.)
+(The "lifted" nodes here are for the `exp(intercept + beta*X[i,j] + ran_eff[i])`, i.e. the inputs to `dpois`. See chapters \@ref(#cha-lightning-intro) and \@ref(#cha-using-models) to learn about lifted nodes.)
 
-In this case, the log probability of `ran_eff[1]` itself requires `sigma`. Since `sigma` is not in `wrt_nodes`, it is not assigned into the model by the step `values(model, wrt_nodes) <<- x_trans`. It is also not a deterministic node (or any node) in `calc_nodes`, so it must be included in `updateNodes` or `constantNodes`. Since it might change between calls, it should be included in `updateNodes`.
+In this case, the log probability of `ran_eff[1]` itself requires `sigma`. Since `sigma` is not in `wrt_nodes`, it is not assigned into the model by the line `values(model, wrt_nodes) <<- x_trans`. It is also not a deterministic node (or any node) in `calc_nodes`, so it must be included in `updateNodes` or `constantNodes`. Since it might change between calls, it should be included in `updateNodes`.
 
 Next, notice that the stochastic node `y[1, 1]` in `calc_nodes` means that the log probability of `y[1, 1]` will be calculated, and this requires the actual value of `y[1, 1]`. This node is part of `calc_nodes` but is not a deterministic part of it, so it must be provided in either `updateNodes` or `constantNodes`. When data values will not be changed often, it is better to put those nodes in `constantNodes`, because that will be more efficient than putting them in `updateNodes`. (If the data values are changed, use `reset=TRUE`, which will reset values of all `constantNodes` in the tape.)
-
 
 The function `makeModelDerivsInfo` inspects the model and determines the usual needs for `updateNodes` and `constantNodes`. By default, data nodes are put in `constantNodes`. Use `dataAsConstantNodes = FALSE` in `makeModelDerivsInfo` if you want them put in `updateNodes`.
 
@@ -666,7 +663,7 @@ As usual in model-generic programming in NIMBLE, be aware of lifted nodes and th
   # <other lines>
     ran_eff[i] ~ dnorm(0, tau = precision)
 ```
-This would result in a lifted node for the standard deviation, calculated as `1/sqrt(precision)`. That lifted node is what would actually be used in `dnorm` for each `ran_eff[i]`. Now if `ran_eff[1]` is in `wrt_nodes`, the *lifted node* (but *not* `precision`) will be in `updateNodes` (as determined by `makeModelDerivsInfo`). If you then change the value of `precision`, you must be sure to calculate the lifted node before obtaining derivatives. Otherwise the value of the lifted node will correspond to the old value of precision. These considerations are not unique to AD but rather are part of model-generic programming as covered in the NIMBLE User Manual.
+This would result in a lifted node for the standard deviation, calculated as `1/sqrt(precision)`. That lifted node is what would actually be used in `dnorm` for each `ran_eff[i]`. Now if `ran_eff[1]` is in `wrt_nodes`, the *lifted node* (but *not* `precision`) will be in `updateNodes` (as determined by `makeModelDerivsInfo`). If you then change the value of `precision`, you must be sure to calculate the lifted node before obtaining derivatives. Otherwise the value of the lifted node will correspond to the old value of precision. These considerations are not unique to AD but rather are part of model-generic programming (see chapter \@ref(cha-progr-with-models)).
 
 An example of model-generic programming to update any lifted nodes that depend on `precision` would be:
 
@@ -696,7 +693,7 @@ NIMBLE provides a nimbleFunction to automatically create a transformation from o
 - If scalar $x \in (a, \infty)$, then $g(x) = \log(x - a)$.
 - If scalar $x \in (-\infty, b)$, then $g(x) = -\log(b - x)$.
 - If scalar $x \in (a, b)$, then $g(x) = \logit((x-a)/(b-a))$. For example `x ~ dunif(a, b)` in a model means $x \in (a, b)$.
-- If matrix `x[1:n, 1:n] ~ dwishart` or `x[1:n, 1:n] ~ dinvwishart` in a model, then $g(x) = \chol(x)$ for non-diagonal elements of $\chol(x)$ and $g(x) = \log(\chol(x))$ for diagonal elements of $\chol(x)$, where $\chol(x)$ is the Cholesky decomposition of $x$. Note that $x$ in these cases follows a Wishart or inverse Wishart distribution, respectively, and thus is a random covariance matrix. That means it must be positive definite and thus have positive diagonal elements of $\chol(x)$.
+- If matrix `x[1:n, 1:n] ~ dwishart` or `x[1:n, 1:n] ~ dinvwishart` in a model, then $g(x) = \chol(x)$ for non-diagonal elements of $\chol(x)$ and $g(x) = \log(\chol(x))$ for diagonal elements of $\chol(x)$, where $\chol(x)$ is the Cholesky decomposition of $x$. Note that $x$ in these cases follows a Wishart or inverse Wishart distribution, respectively, and thus is a random precision or covariance matrix. That means it must be positive definite and thus have positive diagonal elements of $\chol(x)$.
 - If vector `x[1:n] ~ ddirch` in a model, then $g(x[1]) = \logit(x[1])$ and $g(x[i]) = \logit(x[i] / (1-\sum_{k=1}^{i-1}x[i]))$ for $i \gt 1$. In this case, `x` follows a Dirichlet distribution and thus has the simplex constraint that $\sum_{i=1}^n x[i] = 1$.
 - If vector `x[1:n] ~ dlkj_corr_cholesky`, $g(x)$ is the LKJ Cholesky transformation. This provides the LKJ prior for a covariance matrix.
 
