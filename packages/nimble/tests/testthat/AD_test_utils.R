@@ -470,7 +470,7 @@ test_AD2 <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     }
 
   }
-  if(!compilation_fails) {
+  if(!compilation_fails && getNimbleOption('useClearCompiledInADTesting')) {
     nimble:::clearCompiled(Cobj)
   }
   list(res = res)
@@ -813,7 +813,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   if (verbose) cat("### Test successful \n\n")
   if (return_compiled_nf)
     invisible(list(CnfInst = CnfInst, input = input))
-  else if(!compilation_fails) {
+  else if(!compilation_fails && getNimbleOption('useClearCompiledInADTesting')) {
     nimble:::clearCompiled(CnfInst)
     invisible(list(input = input))
   }
@@ -2838,5 +2838,6 @@ test_ADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
         print(paste("Skipping check of R and C++ `hessian` equality for ",
                     name, " with arguments: ", argValsText ))
     }
-    nimble:::clearCompiled(CADfun)
+    if(getNimbleOption('useClearCompiledInADTesting'))
+        nimble:::clearCompiled(CADfun)
 }
