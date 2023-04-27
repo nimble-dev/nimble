@@ -48,7 +48,7 @@ bool atomic_forwardsolve_class::for_type(
     this_row_type = row_type_above;
     if(!Aconstant()) {
       if(this_row_type != CppAD::variable_enum) { // no need to check if row type is already at the "max"
-	for(size_t j = 0; j <= i; ++j) { // only look at lower triangle
+	for(int j = 0; j <= i; ++j) { // only look at lower triangle
 	  item_type = type_x[i + j*n1];
 	  if(item_type == CppAD::variable_enum) {
 	    this_row_type = CppAD::variable_enum;

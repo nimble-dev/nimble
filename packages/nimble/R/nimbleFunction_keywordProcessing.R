@@ -785,32 +785,6 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
-nimOptim_model_keywordInfo <- keywordInfoClass(
-    keyword = "nimOptim_model",
-    processor = function(code, nfProc, RCfunProc) {
-        nimOptim_model_keywordInfo_impl(code, nfProc, RCfunProc)
-    }
-)
-
-nimOptim_model_keywordInfo_impl <- function(code, nfProc, RCfunProc) {
-    wrt_arg <- code[['wrt']]
-    nodes_arg <- code[['nodes']]
-    model_arg <- code[['model']]
-
-    ## This will treat the line of code as if it is calculate(model, nodes, wrt),
-    ## which in turn sets up the nodeFxnVector with derivs info.
-    newCode <- calculate_keywordInfo$processor(code, nfProc, RCfunProc)
-    ## new code has only calculate(nodeFxnVector), so we need to add other argument back in
-    newCode[[1]] <- as.name('nimOptim_model')
-    newCode$use.gr <- code[['use.gr']]
-    newCode$method <-code[['method']]
-    newCode$lower <-code[['lower']]
-    newCode$upper <-code[['upper']]
-    newCode$control <-code[['control']]
-    newCode$hessian <-code[['hessian']]
-    return(newCode)
-}
-
 nimDerivs_keywordInfo <- keywordInfoClass(
   keyword = 'nimDerivs',
   processor = function(code, nfProc, RCfunProc) {
@@ -982,7 +956,6 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
 keywordList[['nimDerivs']] <- nimDerivs_keywordInfo
-keywordList[['nimOptim_model']] <- nimOptim_model_keywordInfo 
 keywordList[['derivInfo']] <- derivInfo_keywordInfo
 
 keywordListModelMemberFuns <- new.env()
@@ -1018,7 +991,6 @@ matchFunctions[['nimOptim']] <- nimOptim
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
-matchFunctions[['nimOptim_model']] <- function(model, wrt, nodes, use.gr = TRUE, method = "BFGS", lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {} ## Any changes here need to be reflected in the keyword processor, which has to re-insert arguments to a modified call.
 matchFunctions[['nimDerivs']] <- function(call = NA,
                                           order = nimC(0,1,2),
                                           wrt = NA,

@@ -106,7 +106,7 @@ class atomic_matmult_class :  public CppAD::atomic_three< double >, public nimbl
   CppAD::AD<double> * get_X_AD_stored_ptr() {return &X_AD_stored[0];}
   void fill_X_AD_stored() {
     X_AD_stored.resize( X_stored.size() );
-    for(int i = 0; i < X_stored.size(); ++i) X_AD_stored[i] = X_stored[i];
+    for(size_t i = 0; i < X_stored.size(); ++i) X_AD_stored[i] = X_stored[i];
   };
   void clear_X_AD_stored() {X_AD_stored.clear();}
   matrix_category transpose_matrix_cat(const matrix_category &Xcat) const {

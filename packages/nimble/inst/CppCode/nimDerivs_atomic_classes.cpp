@@ -248,7 +248,7 @@ bool atomic_lgamma_class::forward(
     std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
     std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
   }
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     if(baseOrder == 0)
       taylor_y[0] = Rf_lgammafn(taylor_x[0]);
     else
@@ -258,16 +258,16 @@ bool atomic_lgamma_class::forward(
     }
   }
   double fprime;
-  if(order_low <= 2 & order_up >= 1) {
+  if((order_low <= 2) && (order_up >= 1)) {
     fprime = Rf_psigamma(taylor_x[0], baseOrder);
     if(verbose) std::cout<<"fprime "<<fprime<<" ";
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = fprime * taylor_x[1];
     if(verbose) std::cout<<"taylor_x[1] "<<taylor_x[1]<<" taylor_y[1] "<<taylor_y[1]<<" ";
 	  // f'(x) (x')
   }
-  if(order_low <= 2 & order_up >= 2) {
+  if((order_low <= 2) && (order_up >= 2)) {
     taylor_y[2] = 0.5 * (Rf_psigamma(taylor_x[0], baseOrder+1) * taylor_x[1] * taylor_x[1] + 
 			 fprime * 2 * taylor_x[2]);
     if(verbose) std::cout<<"taylor_x[2] "<<taylor_x[2]<<" taylor_y[2] "<<taylor_y[2]<<" ";
@@ -324,7 +324,7 @@ bool atomic_lgamma_class::forward(
     std::cout<<"tape_id and handle:"<< CppAD::AD<double>::get_tape_id_nimble()<<" "<< CppAD::AD<double>::get_tape_handle_nimble()<<"\n";
     std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
   }
-     if(order_low <= 0 & order_up >= 0) {
+     if((order_low <= 0) && (order_up >= 0)) {
        taylor_y[0] = nimDerivs_lgammafn(taylor_x[0], baseOrder, verbose); // This puts it in the new tape being recorded
 	  if(verbose) {
 	    std::cout<<"taylor_y[0] "<<CppAD::Value(taylor_y[0])<<" ";
@@ -334,15 +334,15 @@ bool atomic_lgamma_class::forward(
      // std::cout<<"Value = "<<CppAD::Value(taylor_y[0])<<" which should equal "<<Rf_lgammafn(CppAD::Value(taylor_x[0]))<<"\n";
      
      CppAD::AD<double> fprime;
-     if(order_low <= 2 & order_up >= 1) {
+     if((order_low <= 2) && (order_up >= 1)) {
        fprime = nimDerivs_lgammafn(taylor_x[0], baseOrder+1, verbose);
 	  if(verbose) std::cout<<"fprime "<<CppAD::Value(fprime)<<" ";
      }
-     if(order_low <= 1 & order_up >= 1) {
+     if((order_low <= 1) && (order_up >= 1)) {
 	  taylor_y[1] = fprime * taylor_x[1];
 	  if(verbose) std::cout<<"taylor_x[1] "<<CppAD::Value(taylor_x[1])<<" taylor_y[1] "<<CppAD::Value(taylor_y[1])<<" ";
      }
-     if(order_low <= 2 & order_up >= 2) {
+     if((order_low <= 2) && (order_up >= 2)) {
        taylor_y[2] = 0.5 * (nimDerivs_lgammafn(taylor_x[0], baseOrder+2, verbose) * taylor_x[1] * taylor_x[1] + 
 			       fprime * 2 * taylor_x[2]);
 	  if(verbose) std::cout<<"taylor_x[2] "<<CppAD::Value(taylor_x[2])<<" taylor_y[2] "<<CppAD::Value(taylor_y[2])<<" ";
@@ -446,20 +446,20 @@ bool atomic_gammafn_class::forward(
      CppAD::vector<double>&                     taylor_y     )
 {
   bool verbose = false;
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = Rf_gammafn(taylor_x[0]);
   }
   double lgamma_prime;
-  if(order_low <= 2 & order_up >= 1) {
+  if((order_low <= 2) && (order_up >= 1)) {
     lgamma_prime = Rf_psigamma(taylor_x[0], 0) ;
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = lgamma_prime * taylor_y[0] * taylor_x[1];
     if(verbose) std::cout<<"taylor_x[1] "<<taylor_x[1]<<" taylor_y[1] "<<taylor_y[1]<<" ";
 	  // f'(x) (x')
   }
   // This is never used from nimble
-  if(order_low <= 2 & order_up >= 2) {
+  if((order_low <= 2) && (order_up >= 2)) {
     taylor_y[2] = 0.5 * taylor_y[0] *
       ((Rf_psigamma(taylor_x[0], 1) + lgamma_prime*lgamma_prime) * taylor_x[1] * taylor_x[1] + 
        lgamma_prime * 2 * taylor_x[2]);
@@ -505,21 +505,21 @@ bool atomic_gammafn_class::forward(
      CppAD::vector< CppAD::AD<double> >&                     taylor_y     )
 {
   bool verbose = false;
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = nimDerivs_gammafn(taylor_x[0]); // This puts it in the new tape being recorded
     if(verbose) {
       std::cout<<"taylor_y[0] "<<CppAD::Value(taylor_y[0])<<" ";
     }
   }
   CppAD::AD<double> lgamma_prime;
-  if(order_low <= 2 & order_up >= 1) {
+  if((order_low <= 2) && (order_up >= 1)) {
     lgamma_prime = nimDerivs_lgammafn(taylor_x[0], 1);
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = lgamma_prime * taylor_y[0] * taylor_x[1];
     if(verbose) std::cout<<"taylor_x[1] "<<CppAD::Value(taylor_x[1])<<" taylor_y[1] "<<CppAD::Value(taylor_y[1])<<" ";
   }
-  if(order_low <= 2 & order_up >= 2) {
+  if((order_low <= 2) && (order_up >= 2)) {
     taylor_y[2] = 0.5 * taylor_y[0] *
       ((nimDerivs_lgammafn(taylor_x[0], 2) + lgamma_prime*lgamma_prime) * taylor_x[1] * taylor_x[1] + 
        lgamma_prime * 2 * taylor_x[2]);

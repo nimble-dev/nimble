@@ -17,18 +17,18 @@ bool atomic_iprobit_class::forward(
 				   const CppAD::vector<double>&               taylor_x     ,
 				   CppAD::vector<double>&                     taylor_y     )
 {
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = Rf_pnorm5(taylor_x[0], 0, 1, 1, 0); // (x, mu, sigma, lower_tail, log)
     // F(x)
   }
   double Fprime(0.);
-  if(order_low <= 1 && order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     Fprime = Rf_dnorm4(taylor_x[0], 0, 1, 0);
     taylor_y[1] = Fprime * taylor_x[1];
     // F'(x) (x')
   }
   // Actually nimble will never call Forward above order 1, so following code is untested.
-  if(order_low <= 2 && order_up >= 2) {
+  if((order_low <= 2) && (order_up >= 2)) {
     if(Fprime == 0) {     // only calculate Fprime if it is really needed
       if(taylor_x[2] != 0)
 	Fprime = Rf_dnorm4(taylor_x[0], 0, 1, 0);
@@ -47,7 +47,7 @@ bool atomic_iprobit_class::forward(
 				   size_t                                     order_up     ,
 				   const CppAD::vector< CppAD::AD<double> >& taylor_x     ,
 				   CppAD::vector< CppAD::AD<double> >&       taylor_y     ) {
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = nimDerivs_iprobit(taylor_x[0]);
     // F(x)
   }
@@ -55,12 +55,12 @@ bool atomic_iprobit_class::forward(
   CppAD::AD<double> Fprime =
     exp(-(CppAD::AD<double>(0.5)) * (taylor_x[0] * taylor_x[0]) - CppAD::AD<double>(M_LN_SQRT_2PI));
   
-  if(order_low <= 1 && order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = Fprime * taylor_x[1];
     // F'(x) (x')
   }
   // Actually nimble will never call Forward above order 1, so following code is untested.
-  if(order_low <= 2 && order_up >= 2) {
+  if((order_low <= 2) && (order_up >= 2)) {
     taylor_y[2] = 0.5 * (- taylor_x[0]) * taylor_y[1] * taylor_x[1] +
       Fprime*taylor_x[2]; // 0.5 * (-x) * F'(x) (x') * (x') + 0.5 * 2 * F'(x) * (x'')
   }
@@ -148,7 +148,7 @@ bool atomic_probit_class::forward(
   // what is a parameter.
   // need_y determines whether all elements need calculation,
   // or only those for parameters, or only those for variables.
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = Rf_qnorm5(taylor_x[0], 0, 1, 1, 0); // (p, mu, sigma, lower_tail, log)
     // F(x)
   }
@@ -160,7 +160,7 @@ bool atomic_probit_class::forward(
     // F'(x) (x')
   }
   // Following will not be called by nimble, so it is untested.
-  if(order_low <= 2 && order_up >= 2) {
+  if((order_low <= 2) && (order_up >= 2)) {
     taylor_y[2] = 0.5 * z * taylor_y[1] * taylor_y[1];
     if(taylor_x[2] != 0) {
       if(invFprime == 0)
@@ -179,19 +179,19 @@ bool atomic_probit_class::forward(
 				  size_t                                     order_up     ,
 				  const CppAD::vector< CppAD::AD<double> >& taylor_x     ,
 				  CppAD::vector< CppAD::AD<double> >&       taylor_y     ) {
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = nimDerivs_probit(taylor_x[0]);
     // F(x)
   }
   if(order_up == 0) return true;
   CppAD::AD<double> z = taylor_y[0];
   CppAD::AD<double> invFprime = exp(-(CppAD::AD<double>(0.5)) * z * z - CppAD::AD<double>(M_LN_SQRT_2PI));
-  if(order_low <= 1 && order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = taylor_x[1] / invFprime;
     // F'(x) (x')
   }
   // Following will not be called by nimble, so it is untested.
-  if(order_low <= 2 && order_up >= 2) {
+  if((order_low <= 2) && (order_up >= 2)) {
     taylor_y[2] = 0.5 * z * taylor_y[1] * taylor_y[1];
     taylor_y[2] += taylor_x[2] / invFprime; // 0.5 * (-x) * F'(x) (x') * (x') + 0.5 * 2 * F'(x) * (x'')
   }

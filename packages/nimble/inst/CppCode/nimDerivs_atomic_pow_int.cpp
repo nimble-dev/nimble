@@ -76,7 +76,7 @@ bool atomic_pow_int_class::forward(
   //                     even(b) if a < 0, where even(b) gives 1 for b even and -1 for b odd.
   double sign_a = a >= 0 ? 1 : -1;
   double sign_y = a >= 0 ? 1 : ( b % 2 == 0 ? 1 : -1); 
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     // Cases with a == 0 take special care:
     // 0^(+ive) = 0 by special case.
     // 0^0 becomes exp(azmul(0, -Inf)) = exp(0) = 1, correct
@@ -84,7 +84,7 @@ bool atomic_pow_int_class::forward(
     //  Cases with a != 0 are fine.
     taylor_y[0] = (a_zero && (b > 0)) ? 0 : sign_y * exp( CppAD::azmul(b, log_fabs_a) ); // a^b = exp(b * log(a))
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     // dy = b a^(b-1) da = b * exp( (b-1) * log(a) ) * da
     double pow_a_bm1 = (a_zero && (b > 1)) ? 0 : exp( CppAD::azmul(b-1, log_fabs_a) );
     taylor_y[1] = sign_a * sign_y * CppAD::azmul(b, pow_a_bm1) * taylor_x[1];
@@ -101,10 +101,10 @@ bool atomic_pow_int_class::forward(
 				   const CppAD::vector< CppAD::AD<double> >&               taylor_x     ,
 				   CppAD::vector< CppAD::AD<double> >&                     taylor_y     ) {
   int nrow(order_up + 1);
-  if(order_low <= 0 & order_up >= 0) {
+  if((order_low <= 0) && (order_up >= 0)) {
     taylor_y[0] = nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow]);
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = CppAD::azmul(nimDerivs_nimRound(taylor_x[0 + 1*nrow]),
 			       nimDerivs_pow_int(taylor_x[0], taylor_x[0 + 1*nrow] - 1)) * taylor_x[1];
   }

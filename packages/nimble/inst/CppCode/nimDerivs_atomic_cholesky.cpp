@@ -185,7 +185,7 @@ bool atomic_cholesky_class::forward(
   size_t nrow = order_up + 1;
   size_t n = static_cast<size_t>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   // populate cholesky into taylor_y
-  if(order_low <= 0 & order_up >= 0) {//value
+  if((order_low <= 0) && (order_up >= 0)) {//value
     // Eigen::MatrixXd xMat(n, n);
     //     uppervec2mat(taylor_x, xMat, n, nrow); // Potential to use an Eigen map if only order is 0
     // Potential to avoid turning chol into a full matrix here, leaving it as an llt object.
@@ -200,7 +200,7 @@ bool atomic_cholesky_class::forward(
     // }
     double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     //  printf("In forward >1\n");
     double_cache.check_and_set_cache(this,
 				     parameter_x,
@@ -287,7 +287,7 @@ bool atomic_cholesky_class::forward(
   size_t nrow = order_up + 1;
   size_t n = static_cast<size_t>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   // populate cholesky into taylor_y
-  if(order_low <= 0 & order_up >= 0) {//value
+  if((order_low <= 0) && (order_up >= 0)) {//value
     // Eigen::MatrixXd xMat(n, n);
     //     uppervec2mat(taylor_x, xMat, n, nrow); // Potential to use an Eigen map if only order is 0
     // Potential to avoid turning chol into a full matrix here, leaving it as an llt object.
@@ -296,7 +296,7 @@ bool atomic_cholesky_class::forward(
     Ymap = nimDerivs_EIGEN_CHOL(Xmap);
     CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     // printf("In forward >1\n");
     CppADdouble_cache.check_and_set_cache(this,
 					  parameter_x,

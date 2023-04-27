@@ -120,14 +120,14 @@ bool atomic_matinverse_class::forward(
   //  std::cout<<"Xmap inputted for forward 0\n"<<Xmap<<std::endl;
   
   // std::cout<<"Xmap\n"<<Xmap<<std::endl;
-  if(order_low <= 0 & order_up >= 0) { // value
+  if((order_low <= 0) && (order_up >= 0)) { // value
     // We could compile different cases depending on need for strides or not.  
     EigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
     Ymap = Xmap.inverse().eval(); // This eval is necessary if nrow > 1
     // std::cout<<"Ymap calculated for forward 0\n"<<Ymap<<std::endl;
     double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     // printf("In forward >1\n");
     double_cache.check_and_set_cache(this,
 				     parameter_x,
@@ -174,13 +174,13 @@ bool atomic_matinverse_class::forward(
     
   size_t n = static_cast< size_t>(sqrt(static_cast<double>(taylor_x.size()/nrow)));
   metaEigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
-  if(order_low <= 0 & order_up >= 0) { // value
+  if((order_low <= 0) && (order_up >= 0)) { // value
     // We could compile different cases depending on need for strides or not.  
     metaEigenMap Ymap(&taylor_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
     Ymap = nimDerivs_matinverse(Xmap);
     CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     //    printf("In forward >1\n");
     CppADdouble_cache.check_and_set_cache(this,
 					  parameter_x,

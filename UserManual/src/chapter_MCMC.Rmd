@@ -919,23 +919,23 @@ If one wants information about conjugate node relationships for other purposes, 
 As of version 1.0.0 NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha:AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
 
 
-NIMBLE's HMC sampler is provided in a separate package, `nimbleHMC`, which implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.
+The HMC sampler in package `nimbleHMC` implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.
 
-At its core, HMC in NIMBLE is just another MCMC sampler that can be used in NIMBLE's general MCMC system, possibly along with other samplers. For convenience, `nimbleHMC` provides different ways to set up and run HMC that allow different degrees of control.  These include:
+At its core, HMC in NIMBLE is just another MCMC sampler that can be used in NIMBLE's general MCMC system, possibly along with other samplers. For convenience, `nimbleHMC` provides different ways to set up and run HMC that allow different degrees of control:
 
 - `nimbleHMC` is analogous to `nimbleMCMC`: It takes model `code`, `data`, `inits` and `constants` and does all steps from building the model to running one or more MCMC chains. Use this if you want one call to get default HMC samples of the entire model.
 - `configureHMC` is analogous to `configureMCMC`: It sets up a default MCMC configuration that comprises one HMC sampler for all model nodes (or nodes you choose). You can then use `addSampler` and other methods of the configuration to fully customize it before building and using the MCMC.  Use `configureHMC` if you want to do MCMC with both HMC and other samplers and you find it easier to start with HMC in the configuration first.
 - `buildHMC` is analogous to `buildMCMC`: It builds a configuration that, if not provided, will be created by `configureHMC`. Use this if you want to manage MCMC runs through `runMCMC` instead of `nimbleHMC` and you don't need to customize the configuration by doing `configureHMC` yourself.
-- `addHMC`: This manages use of `addSampler` for an MCMC configuration to add specifically an HMC sampler for a chosen set of nodes. It optionally removes other samplers first. Use this if you want to do MCMC with both HMC and other samplers and you find it easier to start with the other sampler in the configuration, i.e. from the result of `configureMCMC`. 
+- `addHMC`: This manages use of `addSampler` for an MCMC configuration to add specifically an HMC sampler for a chosen set of nodes. It optionally removes other samplers for those nodes first. Use this if you want to do MCMC with both HMC and other samplers and you find it easier to start with the other sampler in the configuration, i.e. from the result of `configureMCMC`. 
 - For the most fine-grained control, you can call `configureMCMC` and then use the `addSampler` with `type="HMC"` to add HMC sampler(s).
 
 More information on these is available from the help pages, e.g. `help(configureHMC)`.
 
-#### HMC example
+#### HMC example {#subsec:HMC-example}
 
 Here we will configure and build an MCMC to use HMC on a GLMM example. In this case we'll use HMC for the whole model, i.e., all parameters and latent states.
 
-We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC and Laplace approximation. There will be 10 groups (indexed by `i`) of 5 observations (indexed by `j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
+We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC (and also for Laplace approximation in \@ref(sec:use-derivs)). There will be 10 groups (indexed by `i`) of 5 observations (indexed by `j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
 
 ```{r eval=TRUE}
 model_code <- nimbleCode({
@@ -985,7 +985,6 @@ Cmodel <- compileNimble(model)
 ```
 
 Now we will build an HMC algorithm for the parameters and random effects in the model.
-
 ```{r eval=TRUE}
 library(nimbleHMC)
 HMC <- buildHMC(model)

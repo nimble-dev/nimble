@@ -95,10 +95,10 @@ bool atomic_matmult_class::for_type(
   CppAD::ad_type_enum item_type;
 
   // Find the maximal type (constant, dynamic, variable) for each row of x1
-  for(size_t i = 0; i < n1; ++i) {
+  for(int i = 0; i < n1; ++i) {
     this_row_type = CppAD::constant_enum;
     if(!X1constant()) {
-      for(size_t j = 0; j < n2; ++j) {
+      for(int j = 0; j < n2; ++j) {
 	item_type = type_x[i + j*n1];
 	//  std::cout<<"x1("<<i<<","<< j<<") type = "<<item_type<<"\n";
 	if(item_type == CppAD::variable_enum) {
@@ -115,10 +115,10 @@ bool atomic_matmult_class::for_type(
   int x2offset = X1constant() ? 0 : n1*n2;
   CppAD::ad_type_enum this_col_type;
   // Find the maximal type for each column
-  for(size_t j = 0; j < n3; ++j) {
+  for(int j = 0; j < n3; ++j) {
     this_col_type = CppAD::constant_enum;
     if(!X2constant()) {
-      for(size_t i = 0; i < n2; ++i) {
+      for(int i = 0; i < n2; ++i) {
 	item_type = type_x[x2offset + i + j*n2];
 	//std::cout<<"x2("<<i<<","<< j<<") type = "<<item_type<<"\n";
 	if(item_type == CppAD::variable_enum) {
@@ -133,8 +133,8 @@ bool atomic_matmult_class::for_type(
     x2ColTypes[j] = this_col_type;
   }
 
-  for(size_t i = 0; i < n1; ++i) {
-    for(size_t j = 0; j < n3; ++j) {
+  for(int i = 0; i < n1; ++i) {
+    for(int j = 0; j < n3; ++j) {
       item_type = CppAD::constant_enum;
       if(x1RowTypes[i] == CppAD::variable_enum || x2ColTypes[j] == CppAD::variable_enum) {
 	item_type = CppAD::variable_enum;
@@ -183,13 +183,13 @@ bool atomic_matmult_class::rev_depend(
   
   CppAD::vector<bool> depend_x1Row(n1);
   CppAD::vector<bool> depend_x2Col(n3);
-  for(size_t i = 0; i < n1; ++i) depend_x1Row[i] = false;
-  for(size_t j = 0; j < n3; ++j) depend_x2Col[j] = false;
+  for(int i = 0; i < n1; ++i) depend_x1Row[i] = false;
+  for(int j = 0; j < n3; ++j) depend_x2Col[j] = false;
   bool this_depend;
   // If y[i, j] has depend == true, then
   // the row x1[i,] and the column x2[,j] must return depend = true.
-  for(size_t i = 0; i < n1; ++i) {
-    for(size_t j = 0; j < n3; ++j) {
+  for(int i = 0; i < n1; ++i) {
+    for(int j = 0; j < n3; ++j) {
       this_depend = depend_y[i + j*n1];
       depend_x1Row[i] |= this_depend;
       depend_x2Col[j] |= this_depend;
@@ -197,18 +197,18 @@ bool atomic_matmult_class::rev_depend(
   }
   //
   if(!X1constant()) {
-    for(size_t i = 0; i < n1; ++i) {
+    for(int i = 0; i < n1; ++i) {
       this_depend = depend_x1Row[i];
-      for(size_t j = 0; j < n2; ++j) {
+      for(int j = 0; j < n2; ++j) {
 	depend_x[i + j*n1] = this_depend;
       }
     }
   }
   if(!X2constant()) {
     int x2offset = X1constant() ? 0 : n1*n2;
-    for(size_t j = 0; j < n3; ++j) {
+    for(int j = 0; j < n3; ++j) {
       this_depend = depend_x2Col[j];
-      for(size_t i = 0; i < n2; ++i) {
+      for(int i = 0; i < n2; ++i) {
 	depend_x[x2offset + i + j*n2] = this_depend;
       }
     }
@@ -382,7 +382,7 @@ bool atomic_matmult_class::forward(
   //  cout<<"X2\n"<<X2mapC<<endl;
 #endif
   
-  if(order_low <= 0 & order_up >= 0) { // value
+  if((order_low <= 0) && (order_up >= 0)) { // value
     // We could compile different cases depending on need for strides or not.
     new (&Ymap) EMap(&taylor_y[0], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     // Calculate value for any cases of dynamic or parameter CppAD types
@@ -391,7 +391,7 @@ bool atomic_matmult_class::forward(
     //    cout<<"Y\n"<<Ymap<<endl;
 #endif
   }
-  if(order_low <= 1 & order_up >= 1) { // forward 1
+  if((order_low <= 1) && (order_up >= 1)) { // forward 1
     //  printf("In forward >1\n");
     new (&dY_map) EMap(&taylor_y[1], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     if(!X1constant()) {
@@ -495,7 +495,7 @@ bool atomic_matmult_class::forward(
 	{Xptr = &taylor_x[0 + (n1*n2)*nrow]; }
     }
   new (&mX2mapC) EMapC(Xptr, n2, n3, EigStrDyn(row_mult*n2, row_mult ) );  
-  if(order_low <= 0 & order_up >= 0) { // value
+  if((order_low <= 0) && (order_up >= 0)) { // value
     new (&mYmap) EMap(&taylor_y[0], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     // This and other terms do not use X1cat() and X2cat() (triangular cases),
     // so the assumption is the zeros really are there are will be re-assessed as zeros
@@ -510,7 +510,7 @@ bool atomic_matmult_class::forward(
     mYmap = mTerm1;
   }
 
-  if(order_low <= 1 & order_up >= 1) { // forward 1
+  if((order_low <= 1) && (order_up >= 1)) { // forward 1
     //    printf("In forward >1\n");
     new (&mdY_map) EMap(&taylor_y[1], n1, n3, EigStrDyn(nrow*n1, nrow ) );
     if(!X1constant()) {
@@ -1139,7 +1139,7 @@ void atomic_matmult(const MatrixXd_CppAD &x1,
 
   y.fill(0);
   
-  for(int seg = 0; seg < iStart.size(); ++seg) {
+  for(size_t seg = 0; seg < iStart.size(); ++seg) {
     for(int i = iStart[seg]; i < iEnd[seg]; ++i) {
       for(int k = kStart[seg]; k < kEnd[seg]; ++k) {
 	CppAD::AD<double> oneVal = 0;

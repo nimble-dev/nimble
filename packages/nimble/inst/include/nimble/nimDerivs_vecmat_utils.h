@@ -289,7 +289,7 @@ bool delineate_condition_region(const Cond &cond,
     // For each col, counting down from end, check if all rows satisfy cond
     for(size_t j = colEnd_arg; j > colStart_arg; --j) {
       bool this_col_true(true);
-      for(int i = rowStart_arg; i < rowEnd_arg; ++i) {
+      for(size_t i = rowStart_arg; i < rowEnd_arg; ++i) {
 	if(!(this_col_true &= cond2(i, j-1 ))) break;
       }
       if(!this_col_true) {

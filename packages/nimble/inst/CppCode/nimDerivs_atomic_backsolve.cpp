@@ -259,12 +259,12 @@ bool atomic_backsolve_class::rev_depend(
 
 bool check_A_diagonal_upper(const MatrixXd_CppAD &A) {
   // THIS IGNORES LOWER OFF-DIAGONAL. IT IS FOR backsolve
-  size_t n1 = A.rows();
+  int n1 = A.rows();
   if(A.cols() != n1)
     cout<<"A is not square in check_A_diagonal"<<endl;
   bool diagonal(true);
-  for(size_t iii = 0; iii < n1-1; ++iii) {
-    for(size_t jjj = iii+1; jjj < n1; ++jjj) {
+  for(int iii = 0; iii < n1-1; ++iii) {
+    for(int jjj = iii+1; jjj < n1; ++jjj) {
       diagonal &= CppAD::IdenticalZero(A(iii, jjj));
       if(!diagonal) break;
     }

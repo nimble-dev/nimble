@@ -31,7 +31,7 @@ double NimOptimProblem::fn(int n, double* par, void* ex) {
     problem->par_.setSize(n, false, false);
     double* problem_par = problem->par_.getPtr();
     double* problem_parscale = problem->control_->parscale.getPtr();
-    for(size_t i = 0; i < n; ++i)
+    for(int i = 0; i < n; ++i)
         *problem_par++ = par[i] * problem_parscale[i];
     double ans = problem->function() / problem->control_->fnscale;
     if(isnan(ans)) ans = std::numeric_limits<double>::infinity();
@@ -43,7 +43,7 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     problem->par_.setSize(n, false, false);
     double* problem_par = problem->par_.getPtr();
     double* problem_parscale = problem->control_->parscale.getPtr();
-    for(size_t i = 0; i < n; ++i)
+    for(int i = 0; i < n; ++i)
         *problem_par++ = par[i] * problem_parscale[i];
     problem->ans_.setSize(n, false, false);
     problem->gradient();
@@ -122,7 +122,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     }
 
     NimArr<1, double> par = init_par;
-    for(size_t i = 0; i < n; ++i)
+    for(int i = 0; i < n; ++i)
         par[i] /= control_->parscale[i];
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
@@ -188,7 +188,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         NimOptimProblem::calc_hessian(result->par, result->hessian);
     }
 
-    for(size_t i = 0; i < n; ++i)
+    for(int i = 0; i < n; ++i)
         result->par[i] *= control_->parscale[i];
     return result;
 }

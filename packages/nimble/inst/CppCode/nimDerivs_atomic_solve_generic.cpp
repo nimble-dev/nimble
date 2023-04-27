@@ -57,7 +57,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
   new (&Amap) EigenConstMap(Xptr, n1, n1, EigStrDyn(row_mult*n1, row_mult));
   //  EigenConstMap Amap(&taylor_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
   
-  if(order_low <= 0 & order_up >= 0) { // value
+  if((order_low <= 0) && (order_up >= 0)) { // value
     //printf("In forward 0\n");
     // We could compile different cases depending on need for strides or not.
     //    EigenMap Ymap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
@@ -77,7 +77,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
     Ymap = ND_SOLVE(Amap, Bmap).eval();
     double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     //printf("In forward >1\n");
     //      solve(A, dB - dA * Y)
     double_cache.check_and_set_cache(this,
@@ -177,7 +177,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
     {                    Xptr = &taylor_x[0];       row_mult = nrow;}
   new (&mAmap) metaEigenConstMap(Xptr, n1, n1, EigStrDyn(row_mult*n1, row_mult));
   // metaEigenConstMap mAmap(&taylor_x[0], n1, n1, EigStrDyn(nrow*n1, nrow) );
-  if(order_low <= 0 & order_up >= 0) { // value
+  if((order_low <= 0) && (order_up >= 0)) { // value
       // We could compile different cases depending on need for strides or not.
     new (&mYmap) metaEigenMap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
     //    metaEigenMap mYmap(&taylor_y[0], n1, n2, EigStrDyn(nrow*n1, nrow ) );
@@ -197,7 +197,7 @@ bool ATOMIC_SOLVE_CLASS::forward(
     
     CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) && (order_up >= 1)) {
     //    std::cout<<"In forward >1"<<std::endl;
     //      solve(A, dB - dA * Y)
     CppADdouble_cache.check_and_set_cache(this,
