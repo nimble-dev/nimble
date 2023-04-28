@@ -1574,6 +1574,54 @@ test_that("Laplace with crossed random effects works", {
   expect_equal(nimres$random$estimate[1:24], as.vector(t(ranef(lme4_fit)$plate)), tol = 5e-6)
 })
 
+test_that("Laplace with nested random effects works", {
+  library(lme4)
+  data(Pastes)
+  lme4_fit <- lmer(strength ~ 1 + (1|batch) + (1|batch:cask), data = Pastes, REML = FALSE)
+  lme4res <- summary(lme4_fit)
+  
+  m <- nimbleModel(
+    nimbleCode({
+      ## Intercept
+      beta ~ dnorm(0, sd = 100)
+      ## Standard deviations
+      sigma ~ dgamma(1.0, 1.0)
+      sigma1 ~ dgamma(1.0, 1.0)
+      sigma2 ~ dgamma(1.0, 1.0)
+      ## Random effects for batch
+      for(i in 1:10){
+        mub[i] ~ dnorm(0, sd = sigma1)
+      }
+      ## Random effects for batch:cask
+      for(i in 1:30){
+        mubc[i] ~ dnorm(0, sd = sigma2)
+      }
+      ## Observations
+      for(i in 1:60){
+        mu_y[i] <- beta + mub[batch[i]] + mubc[cask[i]]
+        y[i] ~ dnorm(mu_y[i], sd = sigma) 
+      }
+    }),
+    constants = list(batch = rep(1:10, each = 6), cask = rep(1:30, each = 2)),
+    data = list(y = Pastes$strength),
+    buildDerivs = TRUE
+  )
+  mLaplace <- buildLaplace(model = m)
+  cm <- compileNimble(m)
+  cmLaplace <- compileNimble(mLaplace, project = m)
+  ## It seems that default start values (0, 1, 1, 1) for this example do not work well 
+  ## for optimisation; use c(2, 2, 2, 2) instead
+  opt <- cmLaplace$LaplaceMLE(pStart = c(2,2,2,2))
+  nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
+  
+  expect_equal(nimres$params$estimate[1], lme4res$coefficients[,"Estimate"], tol = 1e-5)
+  expect_equal(nimres$params$estimate[c(4, 3, 2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
+  expect_equal(nimres$params$stdError[1], lme4res$coefficients[,"Std. Error"], tol = 5e-5)
+  expect_equal(nimres$random$estimate[seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$batch)), tol = 5e-4)
+  expect_equal(nimres$random$estimate[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
+})
+
+
 # To do:
 # Various structures of random effects groupings
 
