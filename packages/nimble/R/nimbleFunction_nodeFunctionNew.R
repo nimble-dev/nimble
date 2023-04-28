@@ -91,38 +91,6 @@ nndf_makeNodeFunctionIndexAccessCall <- function(index) {
     substitute(getNodeFunctionIndexedInfo(INDEXEDNODEINFO_, INDEX), list(INDEX = index)) ## still needs unity decrement for c++
 }
 
-nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()){
-  if(is.call(code)){
-    if(deparse(code[[1]]) == '[') {
-      if(deparse(code[[2]]) %in% nodesToExtract){
-        thisIndexExpr <- list()
-        for(i in 1:(length(code)-2)){
-          if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
-            thisIndexExpr <- c(thisIndexExpr, list(c(code[[i+2]][[2]], code[[i+2]][[3]])))
-          }
-          else{
-            thisIndexExpr <- c(thisIndexExpr, list(code[[i+2]]))
-          }
-        }
-        if(is.null(indexExprList[[deparse(code[[2]])]])) {
-          indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
-        }
-        else{
-          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]] <- list()
-          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]])]]$indexExpr <- thisIndexExpr
-        }
-        return(indexExprList)
-      }
-    }
-    if(length(code) > 1){
-      for(i in 2:length(code)){
-        indexExprList <- nndf_extractNodeIndices(code[[i]], nodesToExtract, indexExprList)
-      }
-    }
-  }
-  return(indexExprList)
-}
-
 nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels) {
     cLength <- length(code)
     if(cLength == 1) {
@@ -306,21 +274,21 @@ parentsArgs <-c()
 
 nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()){
   if(is.call(code)){
-    if(deparse(code[[1]]) == '[') {
-      if(deparse(code[[2]]) %in% nodesToExtract){
+    if(safeDeparse(code[[1]]) == '[') {
+      if(safeDeparse(code[[2]]) %in% nodesToExtract){
         thisIndexExpr <- list()
         for(i in 1:(length(code)-2)){
-          if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
+          if(is.call(code[[i + 2]]) && safeDeparse(code[[i+2]][[1]]) == ':'){
             thisIndexExpr[[i]]   <- list(code[[i+2]][[2]], code[[i+2]][[3]])
           }
           else{
             thisIndexExpr[[i]] <- code[[i+2]]
           }
         }
-        if(is.null(indexExprList[[deparse(code[[2]])]])) indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
+        if(is.null(indexExprList[[safeDeparse(code[[2]])]])) indexExprList[[safeDeparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
         else{
-          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]] <- list()
-          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]])]]$indexExpr <- thisIndexExpr
+          indexExprList[[safeDeparse(code[[2]])]][[length(indexExprList[[safeDeparse(code[[2]])]]) + 1]] <- list()
+          indexExprList[[safeDeparse(code[[2]])]][[length(indexExprList[[safeDeparse(code[[2]])]])]]$indexExpr <- thisIndexExpr
         }
         return(indexExprList)
       }
