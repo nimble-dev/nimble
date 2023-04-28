@@ -1521,9 +1521,61 @@ test_that("Laplace with no priors for unconstrained parameters works", {
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
 
 })
+
+test_that("Laplace with crossed random effects works", {
+  library(lme4)
+  data(Penicillin)
+  N <- nrow(Penicillin) 
+  plate <- rep(1:24, each = 6)
+  np <- 24
+  sample <- rep(1:6, 24)
+  ns <- 6
+  
+  m <- nimbleModel(
+    nimbleCode({
+      ## Intercept
+      beta ~ dnorm(0, sd = 100)
+      ## Standard deviations
+      sigma ~ dgamma(1.0, 1.0)
+      sigma_p ~ dgamma(1.0, 1.0)
+      sigma_s ~ dgamma(1.0, 1.0)
+      ## Random effects for plate
+      for(i in 1:np){
+        mup[i] ~ dnorm(0, sd = sigma_p)
+      }
+      ## Random effects for sample
+      for(i in 1:ns){
+        mus[i] ~ dnorm(0, sd = sigma_s)
+      }
+      ## Observations
+      for(i in 1:N){
+        mu_y[i] <- beta + mus[sample[i]] + mup[plate[i]]
+        y[i] ~ dnorm(mu_y[i], sd = sigma) 
+      }
+    }),
+    constants = list(N = N, np = np, ns = ns, plate = plate, sample = sample),
+    data = list(y = Penicillin$diameter),
+    # inits = list(beta = 0, sigma = 1, sigma_p = 1, sigma_s = 1, mus = rep(0, ns), mup = rep(0, np)),
+    buildDerivs = TRUE
+  )
+  mLaplace <- buildLaplace(model = m)
+  cm <- compileNimble(m)
+  cmLaplace <- compileNimble(mLaplace, project = m)
+  opt <- cmLaplace$LaplaceMLE()
+  nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
+  
+  lme4_fit <- lmer(diameter ~ 1 + (1|plate) + (1|sample), data = Penicillin, REML = FALSE)
+  lme4res <- summary(lme4_fit)
+  
+  expect_equal(nimres$params$estimate[1], lme4res$coefficients[,"Estimate"], tol=1e-6)
+  expect_equal(nimres$params$estimate[c(3,4,2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
+  expect_equal(nimres$params$stdError[1], lme4res$coefficients[,"Std. Error"], tol=5e-4)
+  expect_equal(nimres$random$estimate[25:30], as.vector(t(ranef(lme4_fit)$sample)), tol = 5e-5)
+  expect_equal(nimres$random$estimate[1:24], as.vector(t(ranef(lme4_fit)$plate)), tol = 5e-6)
+})
+
 # To do:
 # Various structures of random effects groupings
-# Crossed scalar random effects
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
