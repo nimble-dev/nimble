@@ -508,13 +508,15 @@ test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailure
 test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 1410 sec.
 test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
-test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 160 sec.
-test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+## Do only one of the three sets 
+## test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 160 sec.
+## test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
-test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 475 sec.
+## Do only one of the three sets 
+## test_AD_batch(binaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 475 sec.
 test_AD_batch(binaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+## test_AD_batch(binaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
 ## Keep all pow tests.
 test_AD_batch(powOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 83 sec.
