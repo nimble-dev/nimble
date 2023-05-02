@@ -622,8 +622,9 @@ nimOneAGHQuad1D <- nimbleFunction(
 	  returnType(double(1))
 	},
 	## General Quadrature Gradient Summation for all 3 methods.
+	## Must be called internally as it does not safe check for previous QuadSum call etc.
 	gr_QuadSum = function(p = double(1), method = double())
-	{		
+	{
 	  gr_lik_wrt_p <- numeric(value = 0, length = length(p))
 
       reTransform <- max_inner_logLik_saved_par
