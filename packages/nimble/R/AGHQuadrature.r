@@ -146,8 +146,14 @@ nimOneAGHQuad1D <- nimbleFunction(
 	wi_lik_i <- numeric(nquad + 1)	## Add an extra zero for scalar compilation error.
 	sum_wi_lik <- numeric(1)
     quadrature_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
-    # logdetNegHessian <- numeric(0)
+    logdetNegHessian <- numeric(1)
 	marginal_log_lik <- numeric(1)
+	AGHQuad_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
+	
+    gr_sigmahatwrtre <- numeric(1)
+    gr_sigmahatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
+    gr_rehatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1)) # double(1)
+	gr_QuadSum_value <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
   },
   run = function(){},
   methods = list(
@@ -186,7 +192,11 @@ nimOneAGHQuad1D <- nimbleFunction(
         AGHQuad3_previous_p <<- fix_one_vec(AGHQuad3_previous_p)
         max_inner_logLik_previous_p <<- fix_one_vec(max_inner_logLik_previous_p)
 		quadrature_previous_p <<- fix_one_vec(quadrature_previous_p)	## Added by Paul.		
-      }
+		AGHQuad_saved_gr <<- fix_one_vec(AGHQuad_saved_gr)
+		gr_sigmahatwrtp <<- fix_one_vec(gr_sigmahatwrtp)
+		gr_rehatwrtp <<- fix_one_vec(gr_rehatwrtp)
+		gr_QuadSum_value <<- fix_one_vec(gr_QuadSum_value)
+	  }
 	  if(nquad == 1) {
 	  	wgt <<- fix_one_vec(wgt)
 		z_node <<- fix_one_vec(z_node)
@@ -424,7 +434,9 @@ nimOneAGHQuad1D <- nimbleFunction(
       # all "logLik" here is joint log likelihood (i.e. for p and re)
       gr_logLik_wrt_p <- numeric(value = ans$value[(ind):(ind + npar - 1)], length = npar)
       ind <- ind + npar
-      logdetNegHess_value <- ans$value[ind]
+      # logdetNegHess_value <- ans$value[ind]
+	  logdetNegHessian <<- ans$value[ind]
+	  
       ind <- ind + 1
       # chol_negHess <- matrix(ans$value[(ind):(ind + nre*nre - 1)], nrow = nre, ncol = nre)
       negHessValue <- ans$value[ind]
@@ -436,50 +448,25 @@ nimOneAGHQuad1D <- nimbleFunction(
       gr_logdetNegHess_wrt_re_v <- ans$value[ind]
       
 	  #logdetNegHessian <- logdetNegHess(p, reTransform) ## Renamed logdetNegHess_value
-	  sigma_hat <- exp(-0.5 * logdetNegHess_value)
-		
+	  sigma_hat <- exp(-0.5 * logdetNegHessian)
+	
 	  ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
-	  gr_rewrtp <- hess_cross_terms/negHessValue
+	  gr_rehatwrtp <<- hess_cross_terms/negHessValue
 
 	  ## dsigma_hat/dp (needed at real scale)
-	  grsigmahatwrtp <- -0.5*gr_logdetNegHess_wrt_p_v*sigma_hat
-	  gr_sigmahatwrtre <- -0.5*gr_logdetNegHess_wrt_re_v*sigma_hat
+	  gr_sigmahatwrtp <<- -0.5*gr_logdetNegHess_wrt_p_v*sigma_hat
+	  gr_sigmahatwrtre <<- -0.5*gr_logdetNegHess_wrt_re_v*sigma_hat
 
 	  gr_marg_loglik_wrt_p <- numeric(value = 0, length = length(p))
-	  AGHQ_value <- 0
-      
-	  if( nquad == 1 ){	## Laplace Approx from existing code
-		gr_AGHQuad_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
-	  }else {
-	    ## AGH w/ Gradient
-	    for( i in seq_along(z_node) ){
-		  if( middle_node == i ){
-			gr_marg_loglik_wrt_p <- gr_marg_loglik_wrt_p + wgt[i]*gr_logLik_wrt_p
-		    AGHQ_value <- AGHQ_value + wgt[i]
-		  }else{
-			## Calculate AGHQ
-		    reTrans_i <- reTransform + sigma_hat*z_node[i]
-		    log_lik_i <- joint_logLik(p = p, reTransform = reTrans_i) - maxValue
-	        wgt_lik_i <- exp(log_lik_i)*wgt[i]
-		    AGHQ_value <- AGHQ_value + wgt_lik_i
-		    
-			## Chain Rule: dll/dre * ( dre_hat/dp + dsigma_hat/dp*z_i )##Improve name
-		    grlogLikwrtrewrtp_i <- gr_joint_logLik_wrt_re_internal(p, reTrans_i)[1] * 
-				( (1 + gr_sigmahatwrtre*z_node[i]) * gr_rewrtp + grsigmahatwrtp*z_node[i] )
-		    ## dll/dp
-		    grlogLikwrtp_i <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)	## single call for both RE and p.
-		    ## The weighted gradient for the ith sum.
-		    gr_marg_loglik_wrt_p <- gr_marg_loglik_wrt_p + wgt_lik_i*(grlogLikwrtp_i +  grlogLikwrtrewrtp_i)
-		  }
-	    }
-	    ## weighted sum of likelihood evaluations + dsigma_hat/dp + dsigma_hat/dre * dre/dp
-	    gr_AGHQuad_v <- gr_marg_loglik_wrt_p/AGHQ_value - 0.5 * (gr_logdetNegHess_wrt_p_v + gr_logdetNegHess_wrt_re_v * gr_rewrtp)
-	  }
+
+	  ## AGHQ main call.
+	  QuadSum(p) # Caches each log lik evaluations and marginalized log-lik.
+	  gr_QuadSum(p, 2)
+	  gr_AGHQuad_v <- gr_QuadSum_value  - 0.5 * (gr_logdetNegHess_wrt_p_v + gr_logdetNegHess_wrt_re_v * gr_rehatwrtp)
 
 	  AGHQuad3_saved_gr <<- gr_AGHQuad_v
-      AGHQuad3_saved_value <<- log(AGHQ_value) - 0.5 * logdetNegHess_value + maxValue
-
-      return(ans$value)
+	  AGHQuad3_saved_value <<- marginal_log_lik
+	  return(ans$value)
       returnType(double(1))
     },
     AGHQuad3_update = function(p = double(1)) {
@@ -510,6 +497,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
       }
+	  logdetNegHessian <<- logdetNegHess(p, max_inner_logLik_saved_par)
 	  QuadSum(p)
       return(marginal_log_lik)	#Cached and updated by QuadSum
       returnType(double())
@@ -520,6 +508,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik_internal(p)
       }
+	  logdetNegHessian <<- logdetNegHess(p, max_inner_logLik_saved_par)
 	  QuadSum(p)
       return(marginal_log_lik)	#Cached and updated by QuadSum
       returnType(double())
@@ -537,7 +526,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 	  
 	  ## General Quadrature Sum
       reTransform <- max_inner_logLik_saved_par
-	  logdetNegHessian <- logdetNegHess(p, reTransform)
+	  # logdetNegHessian <<- logdetNegHess(p, reTransform)
       maxValue <- max_inner_logLik_saved_value
 	  if( nquad == 1 ){	## Laplace Approx.
 		ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
@@ -570,58 +559,33 @@ nimOneAGHQuad1D <- nimbleFunction(
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
       }
-		## Need to update cached values for gradient calculation if called 
-		## before quadrature, which means that we haven't actually calculated
-		if(any(p != quadrature_previous_p ) | marginal_log_lik == 0) {
-			QuadSum(p)
-		}
-		## All cached values
-		reTransform <- max_inner_logLik_saved_par
-		# maxValue <- max_inner_logLik_saved_value
-		logdetNegHessian <- logdetNegHess(p, reTransform)
-		sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
+	  ## Cached transformed RE MLE
+	  reTransform <- max_inner_logLik_saved_par
 
-		## Non taped gradients.
-		negHessian <- negHess(p, reTransform)[1, 1]
-		grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
-		grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)[1]
-		hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)[,1]
+	  ## Need to update cached values for gradient calculation if called 
+	  ## before quadrature, which means that we haven't actually calculated
+	  if(any(p != quadrature_previous_p ) | marginal_log_lik == 0) {
+		logdetNegHessian <<- logdetNegHess(p, reTransform)
+		QuadSum(p)
+	  }
+	  sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
 
-		## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
-		gr_rewrtp <- hesslogLikwrtpre/negHessian
-		## dsigma_hat/dp (needed at real scale)
-		grsigmahatwrtp <- -0.5*grlogdetNegHesswrtp*sigma_hat
-		gr_sigmahatwrtre <- -0.5*grlogdetNegHesswrtre*sigma_hat
-		## dll/dp
-		grjointlogLikwrtp <- gr_joint_logLik_wrt_p(p, reTransform)  
-
-		gr_gi_wrt_p <- numeric(value = 0, length = length(p))
+      ## Double taped gradients.
+	  negHessian <- negHess(p, reTransform)[1, 1]
+	  grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
+	  grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)[1]
+	  hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)[,1]
 	  
-		if( nquad == 1 ){	## Laplace Approx from existing code
-			## dll/dp + log(sigma)/dp + d^2ll/dre^2 * dre/dp
-			ans <- grjointlogLikwrtp - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rewrtp)
-		}else{
-			## AGH Gradient:
-			for( i in seq_along(z_node) ){
-				if( middle_node == i ){	## Try and avoid this set up. Ask Chris where I should put this then?
-						gr_gi_wrt_p <- gr_gi_wrt_p + wi_lik_i[i]*grjointlogLikwrtp
-				}else{
-					reTrans_i <- reTransform + sigma_hat*z_node[i]
-					## Chain Rule: dll/dre * ( dre_hat/dp + dsigma_hat/dp*z_i )##Improve name
-					grlogLikwrtrewrtp_i <- gr_joint_logLik_wrt_re(p, reTrans_i)[1] * 
-					( (1 + gr_sigmahatwrtre*z_node[i]) * gr_rewrtp  + 
-						grsigmahatwrtp*z_node[i] )
-					## dll/dp
-					grlogLikewrtp_i <- gr_joint_logLik_wrt_p(p, reTrans_i)	## single call for both RE and p.
-					## The weighted gradient for the ith sum.
-					gr_gi_wrt_p <- gr_gi_wrt_p + wi_lik_i[i]*(grlogLikewrtp_i +  grlogLikwrtrewrtp_i)
-				}
-			}
-			## weighted sum of likelihood evaluations + dsigma_hat/dp + dsigma_hat/dre * dre/dp
-			ans <- gr_gi_wrt_p/sum_wi_lik - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rewrtp)
-		}
-		return(ans)
-		returnType(double(1))
+	  ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+	  gr_rehatwrtp <<- hesslogLikwrtpre/negHessian
+	  ## dsigma_hat/dp (needed at real scale)
+	  gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
+	  gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
+
+	  gr_QuadSum(p, 2)
+	  AGHQuad_saved_gr <<- gr_QuadSum_value - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+	  return(AGHQuad_saved_gr)
+	  returnType(double(1))
 	},
     ## Gradient of the AGHQuad approximation (version 1) w.r.t. parameters
     gr_AGHQuad1 = function(p = double(1)){
@@ -629,59 +593,77 @@ nimOneAGHQuad1D <- nimbleFunction(
 		if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
 			update_max_inner_logLik_internal(p)
 		}
-		## Need to update cached values for gradient calculation if called 
-		## before quadrature, which means that we haven't actually calculated
-		if(any(p != quadrature_previous_p ) | marginal_log_lik == 0) {
-			QuadSum(p)
-		}
-		## All cached values
-		reTransform <- max_inner_logLik_saved_par
-		# maxValue <- max_inner_logLik_saved_value
-		logdetNegHessian <- logdetNegHess(p, reTransform)
-		sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
+	  ## Cached transformed RE MLE
+	  reTransform <- max_inner_logLik_saved_par
 
-		## Taped gradients.
-		negHessian <- negHess_internal(p, reTransform)[1, 1]
-		grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)				
-		grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1] 			
-		hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]		
+	  ## Need to update cached values for gradient calculation if called 
+	  ## before quadrature, which means that we haven't actually calculated
+	  if(any(p != quadrature_previous_p ) | marginal_log_lik == 0) {
+		logdetNegHessian <<- logdetNegHess(p, reTransform)
+		QuadSum(p)
+	  }
+	  sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
 
-		## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
-		gr_rewrtp <- hesslogLikwrtpre/negHessian
-		## dsigma_hat/dp (needed at real scale)
-		grsigmahatwrtp <- -0.5*grlogdetNegHesswrtp*sigma_hat
-		gr_sigmahatwrtre <- -0.5*grlogdetNegHesswrtre*sigma_hat
-		## dll/dp
-		grjointlogLikwrtp <- gr_joint_logLik_wrt_p_internal(p, reTransform)	  
-	
-		gr_gi_wrt_p <- numeric(value = 0, length = length(p))
+      ## Double taped gradients.
+	  negHessian <- negHess_internal(p, reTransform)[1, 1]
+	  grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
+	  grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1]
+	  hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]
 	  
-		if( nquad == 1 ){	## Laplace Approx from existing code
-			## dll/dp + log(sigma)/dp + d^2ll/dre^2 * dre/dp
-			ans <- grjointlogLikwrtp - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rewrtp)
-		}else{
-			## AGH Gradient:
-			for( i in seq_along(z_node) ){
-				if( middle_node == i ){	## Try and avoid this set up. Ask Chris where I should put this then?
-						gr_gi_wrt_p <- gr_gi_wrt_p + wi_lik_i[i]*grjointlogLikwrtp
-				}else{
-					reTrans_i <- reTransform + sigma_hat*z_node[i]
-					## Chain Rule: dll/dre * ( dre_hat/dp + dsigma_hat/dp*z_i )##Improve name
-					grlogLikwrtrewrtp_i <- gr_joint_logLik_wrt_re_internal(p, reTrans_i)[1] * 
-					( (1 + gr_sigmahatwrtre*z_node[i]) * gr_rewrtp  + 
-						grsigmahatwrtp*z_node[i] )
-					## dll/dp
-					grlogLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)	## single call for both RE and p.
-					## The weighted gradient for the ith sum.
-					gr_gi_wrt_p <- gr_gi_wrt_p + wi_lik_i[i]*(grlogLikewrtp_i +  grlogLikwrtrewrtp_i)
-				}
-			}
-			## weighted sum of likelihood evaluations + dsigma_hat/dp + dsigma_hat/dre * dre/dp
-			ans <- gr_gi_wrt_p/sum_wi_lik - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rewrtp)
-		}
-		return(ans)
-		returnType(double(1))
-	}	
+	  ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+	  gr_rehatwrtp <<- hesslogLikwrtpre/negHessian
+	  ## dsigma_hat/dp (needed at real scale)
+	  gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
+	  gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
+
+	  gr_QuadSum(p, 1)
+	  AGHQuad_saved_gr <<- gr_QuadSum_value - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+	  return(AGHQuad_saved_gr)
+	  returnType(double(1))
+	},
+	## General Quadrature Gradient Summation for all 3 methods.
+	gr_QuadSum = function(p = double(1), method = double())
+	{		
+	  gr_lik_wrt_p <- numeric(value = 0, length = length(p))
+
+      reTransform <- max_inner_logLik_saved_par
+	  sigma_hat <- exp(-0.5 * logdetNegHessian)
+	  
+	  if( method == 2 ) {
+		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_re(p, reTransform)
+	  }else {
+		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_re_internal(p, reTransform)
+	  }
+	  
+	  if( nquad == 1 ){	## Laplace Approx from existing code
+	    ## dll/dp + log(sigma)/dp + d^2ll/dre^2 * dre/dp
+		gr_QuadSum_value <<- gr_jointlogLikwrtp
+	  }else{
+	    for( i in seq_along(z_node) ){
+	      if( middle_node == i ){	## Try and avoid this set up. Ask Chris where I should put this then?
+		    gr_lik_wrt_p <- gr_lik_wrt_p + wi_lik_i[i]*gr_jointlogLikwrtp
+		  }else {			
+	        reTrans_i <- reTransform + sigma_hat*z_node[i]
+		    ## Chain Rule: dll/dre * ( dre_hat/dp + dsigma_hat/dp*z_i )##Improve name
+		    ## dll/dp
+		    ## Double Taping Version
+		    if( method == 2 ) {
+		      gr_logLikwrtrewrtp_i <- gr_joint_logLik_wrt_re(p, reTrans_i)[1] * 
+				( (1 + gr_sigmahatwrtre*z_node[i]) * gr_rehatwrtp  +  gr_sigmahatwrtp*z_node[i] )
+		      gr_logLikewrtp_i <- gr_joint_logLik_wrt_p(p, reTrans_i)	## single call for both RE and p.					
+		    }else {
+		      ## Single Taping
+		      gr_logLikwrtrewrtp_i <- gr_joint_logLik_wrt_re_internal(p, reTrans_i)[1] * 
+				( (1 + gr_sigmahatwrtre*z_node[i]) * gr_rehatwrtp  +  gr_sigmahatwrtp*z_node[i] )
+		      gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)	## single call for both RE and p.										
+		    }
+		    ## The weighted gradient for the ith sum.
+		    gr_lik_wrt_p <- gr_lik_wrt_p + wi_lik_i[i]*(gr_logLikewrtp_i +  gr_logLikwrtrewrtp_i)
+	      }
+	    }	
+	    gr_QuadSum_value <<- gr_lik_wrt_p/sum_wi_lik
+ 	  }
+    }	
   ),
   buildDerivs = list(inner_logLik                            = list(),
                      joint_logLik                            = list(),
@@ -1923,7 +1905,7 @@ buildAGHQuad <- nimbleFunction(
 #' 
 #' The methods generated by this function are the same as \code{nimOneAGHQuad1D}. 
 #'
-#' @author Wei Zhang, Perry de Valpine
+#' @author Paul van Dam-Bates, Perry de Valpine
 #' 
 #' @name AGHQuad
 #' 
