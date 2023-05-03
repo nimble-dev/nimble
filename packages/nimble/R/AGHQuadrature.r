@@ -121,10 +121,6 @@ nimOneAGHQuad1D <- nimbleFunction(
     reTrans <- parameterTransform(model, randomEffectsNodes)
     
     ## The following are used for caching values and gradient in the AGHQuad3 system
-    AGHQuad3_saved_value <- numeric(1)
-    AGHQuad3_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
-    AGHQuad3_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
-    ## The following are used for caching values and gradient in the AGHQuad3 system
     max_inner_logLik_saved_par <- as.numeric(c(1, -1))
     max_inner_logLik_saved_value <- numeric(1)
     max_inner_logLik_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
@@ -150,6 +146,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 	marginal_log_lik <- numeric(1)
 	AGHQuad_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
 	
+	## Gradients needed to cache for general sum functionality under 3 different approximation methods.
     gr_sigmahatwrtre <- numeric(1)
     gr_sigmahatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
     gr_rehatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1)) # double(1)
@@ -188,8 +185,6 @@ nimOneAGHQuad1D <- nimbleFunction(
       if(startID == 3) optStart <<- fix_one_vec(optStart)
       if(npar == 1) {
         p_indices <<- fix_one_vec(p_indices)
-        AGHQuad3_saved_gr <<- fix_one_vec(AGHQuad3_saved_gr)
-        AGHQuad3_previous_p <<- fix_one_vec(AGHQuad3_previous_p)
         max_inner_logLik_previous_p <<- fix_one_vec(max_inner_logLik_previous_p)
 		quadrature_previous_p <<- fix_one_vec(quadrature_previous_p)	## Added by Paul.		
 		AGHQuad_saved_gr <<- fix_one_vec(AGHQuad_saved_gr)
@@ -464,31 +459,29 @@ nimOneAGHQuad1D <- nimbleFunction(
 	  gr_QuadSum(p, 2)
 	  gr_AGHQuad_v <- gr_QuadSum_value  - 0.5 * (gr_logdetNegHess_wrt_p_v + gr_logdetNegHess_wrt_re_v * gr_rehatwrtp)
 
-	  AGHQuad3_saved_gr <<- gr_AGHQuad_v
-	  AGHQuad3_saved_value <<- marginal_log_lik
+	  AGHQuad_saved_gr <<- gr_AGHQuad_v
 	  return(ans$value)
       returnType(double(1))
     },
     AGHQuad3_update = function(p = double(1)) {
-      if(any(p != AGHQuad3_previous_p)) {
+      if(any(p != quadrature_previous_p)) {
         update_AGHQuad3_with_gr(p)
-        AGHQuad3_previous_p <<- p
       }
     },
     AGHQuad3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
       AGHQuad3_update(p)
-      if(AGHQuad3_saved_value > max_AGHQuad) {
-        max_AGHQuad <<- AGHQuad3_saved_value
+      if(marginal_log_lik > max_AGHQuad) {
+        max_AGHQuad <<- marginal_log_lik
         max_AGHQuad_saved_re_value <<- max_inner_logLik_saved_par
       }
-      return(AGHQuad3_saved_value)
+      return(marginal_log_lik)
       returnType(double())
     },
     gr_AGHQuad3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
       AGHQuad3_update(p)
-      return(AGHQuad3_saved_gr)
+      return(AGHQuad_saved_gr)
       returnType(double(1))
     },
     ## AGHQuad approximation 2: double tapping with separate components
@@ -630,6 +623,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
 	  sigma_hat <- exp(-0.5 * logdetNegHessian)
 	  
+	  ## Method 2 implies double taping.
 	  if( method == 2 ) {
 		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_re(p, reTransform)
 	  }else {
@@ -664,7 +658,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 	    }	
 	    gr_QuadSum_value <<- gr_lik_wrt_p/sum_wi_lik
  	  }
-    }	
+    }
   ),
   buildDerivs = list(inner_logLik                            = list(),
                      joint_logLik                            = list(),
