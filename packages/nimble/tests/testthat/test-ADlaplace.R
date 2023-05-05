@@ -74,7 +74,7 @@ test_that("Laplace simplest 1D works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   expect_equal(opt$par, 4, tol = 1e-4) # optim's reltol is about 1e-8 but that is for the value, not param.
   # V[a] = 9
   # V[y] = 9 + 4 = 13
@@ -87,13 +87,13 @@ test_that("Laplace simplest 1D works", {
   # Hessian of joint loglik wrt a: -(1/4 + 1/9)
   # Hessian of marginal loglik wrt mu is -1/13
   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, 4, tol = 1e-5)
+  expect_equal(summ$randomEffects$estimates, 4, tol = 1e-5)
   # Covariance matrix 
   vcov <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(4/13, 1), ncol = 1) %*% (13) %*% t(matrix(c(4/13, 1), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-6)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
+  optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
