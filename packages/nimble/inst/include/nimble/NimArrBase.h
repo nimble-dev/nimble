@@ -143,19 +143,27 @@ class NimArrBase : public NimArrType {
     if (own_v) {
       if (copyValues) {
         if (l < NAlength) {
-          std::copy(v, v + l, new_v);
+          if(l > 0) {
+            std::copy(v, v + l, new_v);
+          }
         } else {
-          std::copy(v, v + NAlength, new_v);
-          if (fillZeros) {
-            std::fill(new_v + NAlength, new_v + l, static_cast<T>(0));
+          if(NAlength > 0) {
+            std::copy(v, v + NAlength, new_v);
+            if (fillZeros) {
+              std::fill(new_v + NAlength, new_v + l, static_cast<T>(0));
+            }
           }
         }
       } else {
-        if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
+        if (fillZeros)
+          if(l > 0)
+            std::fill(new_v, new_v + l, static_cast<T>(0));
       }
       nimble_free(v);
     } else {
-      if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
+      if (fillZeros)
+        if(l > 0)
+          std::fill(new_v, new_v + l, static_cast<T>(0));
     }
     NAlength = l;
     v = new_v;
