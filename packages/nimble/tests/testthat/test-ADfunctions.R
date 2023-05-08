@@ -507,6 +507,7 @@ logdet_test_out <- test_AD2(logdet_test)
 
 ## Do both inner and outer for atomics.
 ## 2023-05-07: Errors with "double free or corruption (!prev)" if clearCompiled is on.
+## Using `try` as with some seeds, we get out of tolerance errors.
 nimbleOptions(useClearCompiledInADTesting = FALSE)
 try(test_AD_batch(unaryAtomicOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)) # 400 sec.
 ## This is seg faulting, even with clearCompiled off (2023-05-08)
