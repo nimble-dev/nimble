@@ -135,7 +135,7 @@ runMCMC <- function(mcmc,
             model$setInits(theseInits)
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
-        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, resetWAIC = FALSE) #, samplerExecutionOrder = samplerExecutionOrderToUse)
+        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, resetWAIC = FALSE, chain = i) #, samplerExecutionOrder = samplerExecutionOrderToUse)
         tmp <- as.matrix(mcmc$mvSamples)
         if(!is.null(tmp))
             samplesList[[i]] <- tmp 
