@@ -314,7 +314,7 @@ dirch_test_out <- test_AD2(dirch_test_fixedlog)
 
 ## Wishart
 ## Testing Wishart is tricky because both x and cholesky are
-## matrices and also because not all elements are indendent
+## matrices and also because not all elements are independent
 makeARcov <- function(n, rho, sigma) {
   s2 <- sigma^2
   ans <- matrix(nrow = n, ncol = n)
@@ -503,12 +503,22 @@ logdet_test_out <- test_AD2(logdet_test)
 #######################
 
 ## from AD_math_test_lists.R
-## See notes there on Spring 2022 update to "version 2" with f(g(x)) and g(f(x)) test variantes as well
-test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 1440 sec.
-test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 1410 sec.
-test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+## See notes there on Spring 2022 update to "version 2" with f(g(x)) and g(f(x)) test variants as well.
 
-## Do only one of the three sets 
+## Do both inner and outer for atomics.
+## 2023-05-07: Errors with "double free or corruption (!prev)" if clearCompiled is on.
+nimbleOptions(useClearCompiledInADTesting = FALSE)
+try(test_AD_batch(unaryAtomicOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)) # 400 sec.
+## This is seg faulting, even with clearCompiled off (2023-05-08)
+## try(test_AD_batch(unaryAtomicOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE))
+nimbleOptions(useClearCompiledInADTesting = TRUE)
+
+## Do only one of the three sets.
+## test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) 
+test_AD_batch(unaryOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 920 sec.
+##test_AD_batch(unaryOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+
+## Do only one of the three sets.
 ## test_AD_batch(unaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 160 sec.
 ## test_AD_batch(unaryReductionOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(unaryReductionOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
@@ -525,9 +535,11 @@ test_AD_batch(powOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFai
 
 ## Keep all pow tests.
 ## 2023-04-27: Errors with "double free or corruption (!prev)" if clearCompiled is on.
+nimbleOptions(useClearCompiledInADTesting = FALSE)
 test_AD_batch(pow_int_OpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 42 sec.
 test_AD_batch(pow_int_OpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(pow_int_OpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
+nimbleOptions(useClearCompiledInADTesting = TRUE)
 
 # inprod
 test_AD_batch(binaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 14 sec.
@@ -538,10 +550,14 @@ resetTols()
 
 ## chol and logdet tests have been moved to manual tests above
 ## 2023-04-27: Errors with "address 0x10, cause 'memory not mapped'" if clearCompiled is on.
+nimbleOptions(useClearCompiledInADTesting = FALSE)
 test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE) # 120 sec.
+nimbleOptions(useClearCompiledInADTesting = TRUE)
 
 ## 2023-04-27: This segfaults in similar fashion to other seg faults experienced in AD testing if clearCompiled is on.
+nimbleOptions(useClearCompiledInADTesting = FALSE)
 test_AD_batch(binaryMatrixOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 150 sec.
+nimbleOptions(useClearCompiledInADTesting = TRUE)
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

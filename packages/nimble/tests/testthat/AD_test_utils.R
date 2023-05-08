@@ -300,7 +300,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                          info = paste0("(RR order ", o,")"))
           if(!pass) {
             cat(paste('Some R-to-R derivatives do not match for order', o, '.\n'))
-            browser()
+            # browser()
           }
         }
         if(length(RansSet) > 0 && length(CansSet) > 0) {
@@ -309,7 +309,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                          info = paste0("(RC order ", o,")"))
           if(!pass) {
             cat(paste('Some C-to-R derivatives to not match for order', o, '.\n'))
-            browser()
+            # browser()
           }
         }
         if(length(CansSet) > 1) {
@@ -318,7 +318,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                          info = paste0("(CC order ", o, ")"))
           if(!pass) {
             cat(paste('Some C-to-C derivatives to not match for order', o, '.\n'))
-            browser()
+            # browser()
           }
         }
       }

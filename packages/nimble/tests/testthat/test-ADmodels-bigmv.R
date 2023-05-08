@@ -73,6 +73,7 @@ relTolTmp[5] <- 1e-11
 
 
 ## rOutput2d11 result can be wildly out of tolerance, so not checking it.
+
 test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR, W4 = newW4, W5 = newW5, W6 = newW6),
                       x = 'prior', absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,
                       useParamTransform = TRUE, useFasterRderivs = TRUE, checkDoubleUncHessian = FALSE,
@@ -80,8 +81,9 @@ test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R 
                       name = 'various multivariate dists')
 ## 1310 seconds.
 
-## This segfaults as of 2023-03-25, with libnimble.a.
-## 2023-01-30: got a seg fault in EB scenario; plus this takes forever
+## This segfaults as of 2023-05-08 (and did as well 2023-03-25), with libnimble.a (or with libnimble.so).
+## There is no call to `clearCompiled` in the models testing, so that shouldn't be the issue.
+## Not sure how able to get the timing above.
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

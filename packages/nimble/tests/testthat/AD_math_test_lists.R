@@ -41,6 +41,13 @@ unaryOps <- c(
   nimble:::unaryPromoteNoLogicalOperators
 )
 
+## Split into those involving atomics and not as we want to run both 'inner' and 'outer' on the atomics,
+## but that would take a long time if doing so on all unaryOps.
+unaryAtomicOps <- c('probit','iprobit','gammafn','lgammafn','lfactorial','factorial',
+                     'nimRound','ftrunc','ceil','floor')
+
+unaryOps <- unaryOps[!unaryOps %in% unaryAtomicOps]
+
 ## # old versions
 ## unaryOpTests <- make_AD_test_batch(
 ##   unaryOps, unaryArgs
@@ -63,17 +70,15 @@ unaryOpTests2 <- make_AD_test_batch(
 
 modify_on_match(unaryOpTests2, '(log|sqrt) .+', 'input_gen_funs', function(x) abs(rnorm(x)))
 modify_on_match(unaryOpTests2, 'log1p .+', 'input_gen_funs', function(x) abs(rnorm(x)) - 1)
-modify_on_match(unaryOpTests2, '(logit|probit|cloglog) .+', 'input_gen_funs', function(x) runif(x, 0.05, .95))
+modify_on_match(unaryOpTests2, '(logit|cloglog) .+', 'input_gen_funs', function(x) runif(x, 0.05, .95))
 modify_on_match(unaryOpTests2, '(acos|asin|atanh) .+', 'input_gen_funs', function(x) runif(x, -0.95, 0.95))
 modify_on_match(unaryOpTests2, 'acosh .+', 'input_gen_funs', function(x) abs(rnorm(x)) + 1)
-modify_on_match(unaryOpTests2, '(factorial|factorial) .+', 'input_gen_funs', function(x) sample(3:10, size = x, replace = TRUE))
 modify_on_match(unaryOpTests2, '^cos .+', 'input_gen_funs', function(x) runif(x, 1, 3)) # Avoid high 2nd derivs b/c numerical gradient is inaccurate three
 modify_on_match(unaryOpTests2, '^tan .+', 'input_gen_funs', function(x) runif(x, -1.5, 1.5)) #Avoid pi/2=1.57
 modify_on_match(unaryOpTests2, '^cosh .+', 'input_gen_funs', function(x) sample(c(-1,1), size = x, replace = TRUE) * runif(x, .2, 1.2)) # Avoid high 2nd derivs b/c numerical gradient is inaccurate there
 modify_on_match(unaryOpTests2, '^tanh .+', 'input_gen_funs', function(x) runif(x, -0.8, 0.8)) # Avoid flat rmodify_on_match(unaryOpTests2, '^sin .+', 'input_gen_funs', function(x) runif(x, -1, 1))
-gamma_x_vals <- c(-1.8, -1.4, -0.9, -0.2, 0.2, 0.8, 1, 1.2, 2, 2.5)
-modify_on_match(unaryOpTests2, '^gammafn .+', 'input_gen_funs', function(x) sample(gamma_x_vals, size = x, replace = TRUE))
 modify_on_match(unaryOpTests2, '^cube .+', 'input_gen_funs', function(x) sample(c(seq(-1.5, -.2, length = 20), seq(.2, 1.5, length = 20)), size = x, replace = TRUE))
+
 
 ###########################################################
 # f(g(x)) where f is function being tested and g(x) = x^3 
@@ -88,16 +93,14 @@ unaryOpTests2_inner <- make_AD_test_batch(
 sCbRt <- function(x) sign(x) * abs(x)^(1/3) #signed cube root. This preserves sign and scale of input to f since g(x) = x^3 
 modify_on_match(unaryOpTests2_inner, '(log|sqrt) .+', 'input_gen_funs', function(x) abs(rnorm(x)))
 modify_on_match(unaryOpTests2_inner, 'log1p .+', 'input_gen_funs', function(x) sCbRt(abs(rnorm(x)) - 1))
-modify_on_match(unaryOpTests2_inner, '(logit|probit|cloglog) .+', 'input_gen_funs', function(x) sCbRt(runif(x, 0.05, 0.95)))
+modify_on_match(unaryOpTests2_inner, '(logit|cloglog) .+', 'input_gen_funs', function(x) sCbRt(runif(x, 0.05, 0.95)))
 modify_on_match(unaryOpTests2_inner, '(acos|asin|atanh) .+', 'input_gen_funs', function(x) sCbRt(runif(x, -0.95, 0.95)))
 modify_on_match(unaryOpTests2_inner, 'acosh .+', 'input_gen_funs', function(x) sCbRt(abs(rnorm(x)) + 1.05))
-modify_on_match(unaryOpTests2_inner, '(factorial|factorial) .+', 'input_gen_funs', function(x) sample(1:3, size = x, replace = TRUE))
 modify_on_match(unaryOpTests2_inner, '^cos .+', 'input_gen_funs', function(x) sCbRt(runif(x, 1, 3))) # Avoid high 2nd derivs b/c numerical gradient is inaccurate there
 modify_on_match(unaryOpTests2_inner, '^cosh .+', 'input_gen_funs', function(x) sCbRt(sample(c(-1,1), size = x, replace = TRUE) * runif(x, .2, 1.2))) # Avoid high 2nd derivs b/c numerical gradient is inaccurate there
 modify_on_match(unaryOpTests2_inner, '^tanh .+', 'input_gen_funs', function(x) sCbRt(runif(x, -0.8, 0.8))) # Avoid flat regions
 modify_on_match(unaryOpTests2_inner, '^sin .+', 'input_gen_funs', function(x) sCbRt(runif(x, -1, 1)))
 modify_on_match(unaryOpTests2_inner, '^tan .+', 'input_gen_funs', function(x) sCbRt(runif(x, -1.5, 1.5))) #Avoid pi/2=1.57
-modify_on_match(unaryOpTests2_inner, '^gammafn .+', 'input_gen_funs', function(x) sCbRt(sample(gamma_x_vals, size = x, replace = TRUE)))
 modify_on_match(unaryOpTests2_inner, '^cube .+', 'input_gen_funs', function(x) sCbRt(sample(c(seq(-1.5, -.2, length = 20), seq(.2, 1.5, length = 20)), size = x, replace = TRUE)))
 
 
@@ -114,17 +117,59 @@ unaryOpTests2_outer <- make_AD_test_batch(
 
 modify_on_match(unaryOpTests2_outer, '(log|sqrt) .+', 'input_gen_funs', function(x) abs(rnorm(x)))
 modify_on_match(unaryOpTests2_outer, 'log1p .+', 'input_gen_funs', function(x) abs(rnorm(x)) - 1)
-modify_on_match(unaryOpTests2_outer, '(logit|probit|cloglog) .+', 'input_gen_funs', function(x) runif(x, 0.05, .95))
+modify_on_match(unaryOpTests2_outer, '(logit|cloglog) .+', 'input_gen_funs', function(x) runif(x, 0.05, .95))
 modify_on_match(unaryOpTests2_outer, '(acos|asin|atanh) .+', 'input_gen_funs', function(x) runif(x, -0.95, 0.95))
 modify_on_match(unaryOpTests2_outer, 'acosh .+', 'input_gen_funs', function(x) abs(rnorm(x)) + 1)
-modify_on_match(unaryOpTests2_outer, '(factorial|factorial) .+', 'input_gen_funs', function(x) sample(1:3, size = x, replace = TRUE))
 modify_on_match(unaryOpTests2_outer, '^cos .+', 'input_gen_funs', function(x) runif(x, 1, 3)) # Avoid high 2nd derivs b/c numerical gradient is inaccurate three
 modify_on_match(unaryOpTests2_outer, '^cosh .+', 'input_gen_funs', function(x) sample(c(-1,1), size = x, replace = TRUE) * runif(x, .2, 1.2)) # Avoid high 2nd derivs b/c numerical gradient is inaccurate there
 modify_on_match(unaryOpTests2_outer, '^tanh .+', 'input_gen_funs', function(x) runif(x, -0.8, 0.8)) # Avoid flat regions
 modify_on_match(unaryOpTests2_outer, '^sin .+', 'input_gen_funs', function(x) runif(x, -1, 1))
 modify_on_match(unaryOpTests2_outer, '^tan .+', 'input_gen_funs', function(x) runif(x, -1.5, 1.5)) #Avoid pi/2=1.57
-modify_on_match(unaryOpTests2_outer, '^gammafn .+', 'input_gen_funs', function(x) sample(gamma_x_vals, size = x, replace = TRUE))
 modify_on_match(unaryOpTests2_outer, '^cube .+', 'input_gen_funs', function(x) sample(c(seq(-1.5, -.2, length = 20), seq(.2, 1.5, length = 20)), size = x, replace = TRUE))
+
+
+## Now set up equivalent tests for atomics.
+
+set.seed(1234) # seed for randomly generating seeds for each test (using `123` gives tolerance issues; may want to look into)
+unaryAtomicOpTests2 <- make_AD_test_batch(
+  unaryAtomicOps, unaryArgs2, maker = make_AD_test2
+)
+
+
+modify_on_match(unaryAtomicOpTests2, 'probit .+', 'input_gen_funs', function(x) runif(x, 0.05, .95))
+modify_on_match(unaryAtomicOpTests2, '(factorial|factorial) .+', 'input_gen_funs', function(x) sample(3:10, size = x, replace = TRUE))
+gamma_x_vals <- c(-1.8, -1.4, -0.9, -0.2, 0.2, 0.8, 1, 1.2, 2, 2.5)
+modify_on_match(unaryAtomicOpTests2, '^gammafn .+', 'input_gen_funs', function(x) sample(gamma_x_vals, size = x, replace = TRUE))
+
+
+###########################################################
+# f(g(x)) where f is function being tested and g(x) = x^3 
+
+set.seed(1234) # Ok to use same as above
+unaryAtomicOpTests2_inner <- make_AD_test_batch(
+  unaryAtomicOps, unaryArgs2, maker = make_AD_test2, inner_codes = list(quote(X*X*X))
+)
+
+# ADtestEnv$RCrelTol <- c(1e-15, 1e-4, 1e-2) ## Loosen tols because there are more operations
+
+modify_on_match(unaryAtomicOpTests2_inner, 'probit .+', 'input_gen_funs', function(x) sCbRt(runif(x, 0.05, 0.95)))
+modify_on_match(unaryAtomicOpTests2_inner, '(factorial|factorial) .+', 'input_gen_funs', function(x) sample(1:3, size = x, replace = TRUE))
+modify_on_match(unaryAtomicOpTests2_inner, '^gammafn .+', 'input_gen_funs', function(x) sCbRt(sample(gamma_x_vals, size = x, replace = TRUE)))
+
+
+###########################################################
+# g(f(x)) where f is function being tested and g(y) is exp(.5 * y)
+
+set.seed(1234) # Ok to use same as above
+unaryAtomicOpTests2_outer <- make_AD_test_batch(
+  unaryAtomicOps, unaryArgs2, maker = make_AD_test2, outer_code = quote(exp(0.5 * Y))
+)
+
+#ADtestEnv$RCrelTol <- c(1e-15, 1e-6, 1e-2)
+
+modify_on_match(unaryAtomicOpTests2_outer, 'probit .+', 'input_gen_funs', function(x) runif(x, 0.05, .95))
+modify_on_match(unaryAtomicOpTests2_outer, '(factorial|factorial) .+', 'input_gen_funs', function(x) sample(1:3, size = x, replace = TRUE))
+modify_on_match(unaryAtomicOpTests2_outer, '^gammafn .+', 'input_gen_funs', function(x) sample(gamma_x_vals, size = x, replace = TRUE))
 
 
 ######################
