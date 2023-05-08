@@ -64,7 +64,7 @@ Rget_AGHQ_nodes <- function(n = double()) {
 #' @export
 nimOneAGHQuad1D <- nimbleFunction(
   contains = AGHQuad_BASE,
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, nquad, optimControl, optimMethod, optimStart) {
+  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, nQuad, optimControl, optimMethod, optimStart) {
     ## Check the number of random effects is 1
     nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
     if(length(nre) != 1) stop("Number of random effects for nimOneAGHQuad1D must be 1.")
@@ -132,14 +132,14 @@ nimOneAGHQuad1D <- nimbleFunction(
     one_time_fixes_done <- FALSE
 
 	## Adaptive Gauss-Hermite Quadrature Setup:
-	AGHQnodes <- Rget_AGHQ_nodes(nquad)
+	AGHQnodes <- Rget_AGHQ_nodes(nQuad)
 	wgt <- AGHQnodes$weights
 	z_node <- AGHQnodes$z_nodes
 	middle_node <- -1
-	if(nquad %% 2 == 0) middle_node <- (nquad + 1)/2
+	if(nQuad %% 2 == 0) middle_node <- (nQuad + 1)/2
 	
 	## Useful cached values for quadrature:
-	wi_lik_i <- numeric(nquad + 1)	## Add an extra zero for scalar compilation error.
+	wi_lik_i <- numeric(nQuad + 1)	## Add an extra zero for scalar compilation error.
 	sum_wi_lik <- numeric(1)
     quadrature_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
     logdetNegHessian <- numeric(1)
@@ -192,7 +192,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 		gr_rehatwrtp <<- fix_one_vec(gr_rehatwrtp)
 		gr_QuadSum_value <<- fix_one_vec(gr_QuadSum_value)
 	  }
-	  if(nquad == 1) {
+	  if(nQuad == 1) {
 	  	wgt <<- fix_one_vec(wgt)
 		z_node <<- fix_one_vec(z_node)
 	  } 
@@ -521,7 +521,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
 	  # logdetNegHessian <<- logdetNegHess(p, reTransform)
       maxValue <- max_inner_logLik_saved_value
-	  if( nquad == 1 ){	## Laplace Approx.
+	  if( nQuad == 1 ){	## Laplace Approx.
 		ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
 		wi_lik_i[1] <<- exp(ans)
 	  }else{
@@ -536,7 +536,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 		    wi_lik_i[i] <<- exp(log_lik_i)*wgt[i]
 	      }
 	    }
-		sum_wi_lik <<- sum(wi_lik_i[1:nquad])	## Needed for gradient.
+		sum_wi_lik <<- sum(wi_lik_i[1:nQuad])	## Needed for gradient.
 	    ans <- log(sum_wi_lik) - 0.5 * logdetNegHessian + maxValue
 	  }
 	  ## Update internally.
@@ -625,12 +625,12 @@ nimOneAGHQuad1D <- nimbleFunction(
 	  
 	  ## Method 2 implies double taping.
 	  if( method == 2 ) {
-		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_re(p, reTransform)
+		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p(p, reTransform)
 	  }else {
-		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_re_internal(p, reTransform)
+		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p_internal(p, reTransform)
 	  }
 	  
-	  if( nquad == 1 ){	## Laplace Approx from existing code
+	  if( nQuad == 1 ){	## Laplace Approx from existing code
 	    ## dll/dp + log(sigma)/dp + d^2ll/dre^2 * dre/dp
 		gr_QuadSum_value <<- gr_jointlogLikwrtp
 	  }else{
@@ -937,14 +937,14 @@ setupAGHQuadNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
 #' @export
 buildAGHQuad <- nimbleFunction(
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesNoAGHQuad, 
-                   nquad, control = list()) {
+                   nQuad, control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
     if(is.null(control$warn))   warn <- TRUE else  warn <- control$warn
     if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
 
-	nquadProvided  <- !missing(nquad)    
-    if(!nquadProvided) {
-	  nquad <- 5					  
+	nQuadProvided  <- !missing(nQuad)    
+    if(!nQuadProvided) {
+	  nQuad <- 5					  
       nimCat('  [Note] Assuming 5 quadrature nodes.\n')
 	}
     AGHQuadNodes <- NULL
@@ -1036,7 +1036,7 @@ buildAGHQuad <- nimbleFunction(
         if(nre > 1) {
 			nimCat('  [Note] Adaptive Gauss-Hermite quadrature is not implemented for multivariate integration.\n Defaulting to Laplace Approximation.')
 			AGHQuad_nfl[[1]] <- nimOneLaplace(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-		}else AGHQuad_nfl[[1]] <- nimOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, nquad, innerOptControl, "CG", innerOptStart)
+		}else AGHQuad_nfl[[1]] <- nimOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, nQuad, innerOptControl, "CG", innerOptStart)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- AGHQuadNodes$randomEffectsSets
@@ -1076,7 +1076,7 @@ buildAGHQuad <- nimbleFunction(
 		 	nimCat('  [Note] Adaptive Gauss-Hermite quadrature is not implemented for multivariate integration.\n Defaulting to Laplace Approximation.')
             AGHQuad_nfl[[i]] <- nimOneLaplace(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
           }
-          else AGHQuad_nfl[[i]] <- nimOneAGHQuad1D(model, paramNodes, these_reNodes, these_calcNodes, nquad, innerOptControl, "CG", innerOptStart)
+          else AGHQuad_nfl[[i]] <- nimOneAGHQuad1D(model, paramNodes, these_reNodes, these_calcNodes, nQuad, innerOptControl, "CG", innerOptStart)
         }
       }
       if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
@@ -1191,8 +1191,8 @@ buildAGHQuad <- nimbleFunction(
     },
 	Laplace = function(p = double(1)) {
 		if(length(p) != npar) stop("  [Warning] Calculation requires values for all parameters.")
-		if(nquad != 1) {
-			print('  [Note] Applying Adaptive Gauss-Hermite Quadrature with ', nquad, ' nodes.')
+		if(nQuad != 1) {
+			print('  [Note] Applying Adaptive Gauss-Hermite Quadrature with ', nQuad, ' nodes.')
 		}
 		return(calcMargLogLik(p))
 		returnType(double())
@@ -1278,8 +1278,8 @@ buildAGHQuad <- nimbleFunction(
 	LaplaceMLE = function(pStart  = double(1, default = Inf),
                           method  = character(0, default = "BFGS"),
                           hessian = logical(0, default = TRUE)) {
-		if(nquad != 1) {
-			print('  [Note] Applying Adaptive Gauss-Hermite Quadrature with ', nquad, ' nodes.')
+		if(nQuad != 1) {
+			print('  [Note] Applying Adaptive Gauss-Hermite Quadrature with ', nQuad, ' nodes.')
 		}
 		return(calculateMLE(pStart, method, hessian))
         returnType(optimResultNimbleList())
@@ -1580,6 +1580,9 @@ buildAGHQuad <- nimbleFunction(
 #'   be included in calculations automatically and thus do not need to be
 #'   included in \code{calcNodesNoAGHQuad} (but there is no problem if they
 #'   are).
+#' @param nQuad a positive integer declaring the number of nodes to use for 
+#'   adaptive Gauss-Hermite quadrature. Default is 5. Using nQuad = 1 is equivalent
+#'   to Laplace approximation.
 #' @param optimControl a list of control parameters for the inner optimization
 #'   (of randomEffectsNodes) of AGHQuad approximation using \code{optim}. This
 #'   is used in the internal nimbleFunctions \code{nimOneAGHQuad} and
@@ -1609,9 +1612,9 @@ buildAGHQuad <- nimbleFunction(
 #'
 #' This is the main function for constructing the AGHQuad approximation for a
 #' given model. One only needs to provide a NIMBLE model object and then the
-#' function will construct the pieces necessary for AGHQuad approximation to
-#' marginalize over all latent states (aka random effects) in a model. To do so,
-#' it will determine default values for \code{paramNodes},
+#' function will construct the pieces necessary for adaptive Gauss-Hermite quadrature
+#' approximation to marginalize over all latent states (aka random effects) in a model. 
+#' To do so, it will determine default values for \code{paramNodes},
 #' \code{randomEffectsNodes}, \code{calcNodes}, and \code{calcNodesNoAGHQuad} as
 #' described above.
 #'
