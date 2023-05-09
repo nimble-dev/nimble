@@ -940,7 +940,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 ### Hamiltonian Monte Carlo (HMC) {#subsec:HMC}
 
-As of version 1.0.0 NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha:AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
+As of version 1.0.0 NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha-AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
 
 
 The HMC sampler in package `nimbleHMC` implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.

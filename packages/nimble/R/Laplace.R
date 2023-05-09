@@ -1242,7 +1242,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       paramDetermDepsCalculated <- TRUE
       for(i in 1:numDetermCalcCheck){
         if(!(determCalcCheck[i] %in% paramDetermDeps) || 
-           !(any(m$getDependencies(determCalcCheck[i], self = FALSE) %in% calcNodesDefault))){
+           !(any(model$getDependencies(determCalcCheck[i], self = FALSE) %in% calcNodesDefault))){
           errorNodes <- c(errorNodes, determCalcCheck[i])
         }
       }
@@ -1318,7 +1318,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       }
       for(i in 1:numDetermCalcNoLaplaceCheck){
         if(!(determCalcNoLaplaceCheck[i] %in% paramDetermDeps) || 
-           !(any(m$getDependencies(determCalcNoLaplaceCheck[i], self = FALSE) %in% calcNodesExtraDefault))){
+           !(any(model$getDependencies(determCalcNoLaplaceCheck[i], self = FALSE) %in% calcNodesExtraDefault))){
           errorNodes <- c(errorNodes, determCalcNoLaplaceCheck[i])
         }
       }

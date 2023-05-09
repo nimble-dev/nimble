@@ -66,7 +66,7 @@
 #' pt$logDetJacobian(transformedVals)
 #' }
 #'
-#' @seealso \code{\link{sampler_HMC}} \code{\link{buildLaplace}}
+#' @seealso \code{\link{buildLaplace}}
 #'
 #' @author Daniel Turek
 #' 

@@ -4,7 +4,7 @@
 require(nimble)
 ``` 
 
-# Automatic Derivatives {#cha:AD}
+# Automatic Derivatives {#cha-AD}
 
 ```{r, ADchunk0, echo = FALSE}
 # source the code

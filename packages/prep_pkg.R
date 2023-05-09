@@ -94,7 +94,10 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "is.nfGenerator",
                        "mcmc_createModelObject",
                        "nimbleInternalFunctions",
-                       "nimbleUserNamespace")
+                       "nimbleUserNamespace",
+                       "buildAGHQuad",
+                       "buildOneAGHQuad",
+                       "buildOneAGHQuad1D")
 
 ## Not clear why we need this but this is not being put in NAMESPACE otherwise.
 ## It can't be in 'additionalExports' as it does have documentation.
@@ -156,6 +159,7 @@ importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
                  "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile",
+                 "utils, head",
                  "parallel, mclapply",
                  "pracma, hessian",
                  "numDeriv, genD, grad, jacobian"
