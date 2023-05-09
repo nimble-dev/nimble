@@ -1,4 +1,4 @@
-# Tests of Laplace approximation
+# Tests of AGH Quadrature approximation
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'testthat', 'AD_test_utils.R'), package = 'nimble'))
 EDopt <- nimbleOptions("enableDerivs")
@@ -9,53 +9,10 @@ nimbleOptions(allowDynamicIndexing = FALSE)
 
 library(nimble)
 
-# check internal consistency of optim method variants
-check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
-                                              cm, # compiled model
-                                              m,  # original model (or list with values)
-                                              opt, # possibly already-run LaplaceMLE result,
-                                              methods = 1:3, # methods to check
-                                              summ_orig, # summarized Laplace MLE result (original)
-                                              summ_trans # summarized Laplace MLE result (transformed)
-) {
-  vars <- cm$getVarNames()
-  reset <- function() {
-    for(v in vars) cm[[v]] <- m[[v]]
-  }
-  if(missing(opt)) {
-    reset()
-    opt <- cL$LaplaceMLE()
-  }
-  if(missing(summ_orig)){
-    summ_orig <- cL$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  }
-  if(missing(summ_trans)){
-    summ_trans <- cL$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  }
-  ref_method <- cL$get_method()
-  for(method in methods) {
-    if(method != ref_method) {
-      reset()
-      cL$set_method(method)
-      opt_alt <- cL$LaplaceMLE()
-      expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
-      expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
-      summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-      summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-      expect_equal(summ_orig$params$estimate, summ_orig_alt$params$estimate, tol = 1e-5)
-      expect_equal(summ_orig$random$estimate, summ_orig_alt$random$estimate, tol = 1e-5)
-      expect_equal(summ_orig$params$stdError, summ_orig_alt$params$stdError, tol = 1e-5)
-      expect_equal(summ_orig$random$stdError, summ_orig_alt$random$stdError, tol = 1e-5)
-      expect_equal(summ_orig$vcov, summ_orig_alt$vcov, tol = 1e-5)
-      expect_equal(summ_trans$params$estimate, summ_trans_alt$params$estimate, tol = 1e-5)
-      expect_equal(summ_trans$random$estimate, summ_trans_alt$random$estimate, tol = 1e-5)
-      expect_equal(summ_trans$params$stdError, summ_trans_alt$params$stdError, tol = 1e-5)
-      expect_equal(summ_trans$random$stdError, summ_trans_alt$random$stdError, tol = 1e-5)
-      expect_equal(summ_trans$vcov, summ_trans_alt$vcov, tol = 1e-5)
-    }
-  }
-  invisible(NULL)
-}
+## Temp for Paul's unbuilt testing:
+nimbleOptions(enableDerivs = TRUE)
+source("C:/Users/Paul/Documents/Nimble/nimble/packages/nimble/R/AGHQuadrature.R")
+library(testthat)
 
 test_that("AGH Quadrature Normal-Normal 1D works", {
 set.seed(123)
@@ -105,32 +62,56 @@ m <- nimbleModel(nimbleCode({
   }
   test.val1 <- c(5, 1, 0.5)
   test.val2 <- c(2, 0.5, 0.1)
+
+  ## Test against output from buildLaplace
+  expect_equal(cmLaplace$calcMargLogLik(test.val1), -72.5573684952759521,  tol = 1e-16 )
+  expect_equal(cmLaplace$calcMargLogLik(test.val2), -1000.9603427653298695,  tol = 1e-16 )
+
+  ## Values from buildLaplace with testval1 and testval2
+  grTestLaplace1 <- c(1.5385734890331042, -6.3490351165007235, -3.1745175582503542)
+  grTestLaplace2 <- c(584.3200662134241838, 3706.5010041520263258, 741.3001253250956779)
   
+  # sprintf("%.16f", x2)
+
   ## Check Marginalization
   logLik5 <- cmQuad$calcMargLogLik(test.val1)
   logLikTru <- ll.norm(test.val1)
-  expect_equal(logLik5, logLikTru, tol = 1e-12)	## Should be very similar for Normal-Normal Case.
+  expect_equal(logLik5, logLikTru, tol = 1e-14)	## Should be very similar for Normal-Normal Case.
 
   logLik5 <- cmQuad$calcMargLogLik(test.val2)
   logLikTru <- ll.norm(test.val2)
-  expect_equal(logLik5, logLikTru, tol = 1e-12)	## Should be very similar for Normal-Normal Case.
+  expect_equal(logLik5, logLikTru, tol = 1e-14)	## Should be very similar for Normal-Normal Case.
 
   ## Check Gradient of Marginalization
-  gr_quad5 <- cmQuad$gr_margLogLik(test.val1)
-  gr_laplace <- cmLaplace$gr_margLogLik(test.val1)
-  expect_equal(gr_quad5, gr_laplace, tol = 1e-08)	## Should be very similar for Normal-Normal Case.
+  gr_quad51 <- cmQuad$gr_margLogLik(test.val1)
+  gr_laplace1 <- cmLaplace$gr_margLogLik(test.val1)
+  expect_equal(gr_quad51, gr_laplace1, tol = 1e-08)	## Should be very similar for Normal-Normal Case.
+  expect_equal(gr_laplace1, grTestLaplace1, tol = 1e-16)	## Compare against buildLaplace
 
-  gr_quad5 <- cmQuad$gr_margLogLik(test.val2)
-  gr_laplace <- cmLaplace$gr_margLogLik(test.val2)
-  expect_equal(gr_quad5, gr_laplace, tol = 1e-05)	## Approx more different for poor values.
 
-  expect_equal(gr_quad5, gr.ll.norm(test.val2), tol = 1e-08)	## Approx more different for poor values.
+  gr_quad52 <- cmQuad$gr_margLogLik(test.val2)
+  gr_laplace2 <- cmLaplace$gr_margLogLik(test.val2)
+  expect_equal(gr_quad52, gr_laplace2, tol = 1e-05)	## Approx more different for poor values.
+  expect_equal(gr_laplace2, grTestLaplace2, tol = 1e-16)	## Compare against buildLaplace. Should be equivalent.
+
+  expect_equal(gr_quad52, gr.ll.norm(test.val2), tol = 1e-08)	## Approx more different for poor values.
 
   opt <- cmQuad$calculateMLE(pStart = test.val1)	## Needs decent starting values. 
   mle.tru <- optim(test.val1, ll.norm, gr.ll.norm, control = list(fnscale = -1))
   expect_equal(opt$value, mle.tru$value, tol = 1e-8) # Same log likelihood. Diff parameter values.
 
   ## Check covariance?
+
+  # Values from Laplace directly.
+  # mLaplace <- buildLaplace(model = m)
+  # cm <- compileNimble(m)
+  # cL <- compileNimble(mLaplace, project = m)
+  # x1 <- cL$Laplace(test.val1)
+  # x2 <- cL$Laplace(test.val2)
+  # g1 <- cL$gr_Laplace(test.val1)
+  # g2 <- cL$gr_Laplace(test.val2)
+  # sprintf("%.16f", x1)
+  # sprintf("%.16f", x2)
 })
 
 test_that("AGH Quadrature 1D Poisson-Gamma for checking nQuad", {
@@ -368,6 +349,158 @@ test_that("AGH Quadrature 1D Check MLE.", {
   mle.quad51 <- cmQuad$calculateMLE()
   expect_equal(mle.quad51$par, mle.par, tol = 1e-04)
   expect_equal(mle.quad51$value, mle.tru$value, tol = 1e-08)
+})
 
+test_that("AGH Quadrature Comparison to LME4 1 RE", {
+  set.seed(123)
+  n <- 50
+  J <- 10
+  nobs <- n*J
+  grp <- rep(1:n, each = J)
+  m <- nimbleModel(nimbleCode({
+    # priors 
+    b0 ~ dnorm(0, 1000)
+    # sigma1 ~ dunif(0, 1000)
+    # sigma2 ~ dunif(0, 1000)
+    sigma1 ~ dgamma(1,1)
+    sigma2 ~ dgamma(1,1)
+    for(i in 1:n){
+	  b[i] ~ dnorm(mean = 0, sd = sigma2)
+	  mu[i] <- b0 + b[i]
+    }  
+    for(i in 1:nobs){
+      y[i] ~ dnorm(mean = mu[grp[i]], sd = sigma1)
+    }}), constants = list(n=n, nobs=nobs, grp = grp),
+    inits = list(b = rnorm(n, 0, 0.5), b0 = 3.5, sigma1 = 1.5, sigma2 = 0.5), buildDerivs = TRUE)
+    m$simulate('y')
+    m$calculate()  
+
+    cm <- compileNimble(m)	  
+    mQuad <- buildAGHQuad(model = m, nQuad = 21)
+    mLaplace <- buildAGHQuad(model = m, nQuad = 1)
+    cQL <- compileNimble(mQuad, mLaplace, project = m)
+    cmQuad <- cQL$mQuad
+    cmLaplace <- cQL$mLaplace
  
+    mod.lme4 <- lme4::lmer(m$y ~ 1 + (1|grp), REML = FALSE, 
+	control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
+    sprintf("%.16f",   summary(mod.lme4)$sigma)
+    sprintf("%.16f",   lme4::fixef(mod.lme4))
+    sprintf("%.16f",   attr(unclass(lme4::VarCorr(mod.lme4))[[1]], 'stddev'))  
+
+    # mod.tmb <- glmmTMB::glmmTMB(m$y ~ 1 + (1|grp))
+    # sprintf("%.16f",   summary(mod.tmb)$sigma)
+    # sprintf("%.16f",   lme4::fixef(mod.tmb))
+    # sprintf("%.16f",   attr(unclass(glmmTMB::VarCorr(mod.tmb))[[1]]$grp, 'stddev'))  
+
+    mleLME4 <- c( 3.5679609790094040, 1.4736809813876610, 0.3925194078627622 )
+    mleTMB <-  c( 3.5679629394855974, 1.4736809255475793, 0.3925215998142128 )
+    mleLaplace <- cmLaplace$calculateMLE()$par
+    mleQuad <- cmQuad$calculateMLE()$par
+
+    expect_equal(mleLaplace, mleLME4, tol = 1e-4)
+    expect_equal(mleQuad, mleLME4, tol = 1e-4)
+    expect_equal(mleQuad, mleLaplace, tol = 1e-4)
+
+    expect_equal(mleLaplace, mleTMB, tol = 1e-4)
+    expect_equal(mleQuad, mleTMB, tol = 1e-3)
+
+    print(values(cm, c('b0', 'sigma1', 'sigma2')))
+    cmQuad$calcMargLogLik(round(mleLME4, 2))
+
+    mle <- NULL
+    gr <- mle
+    res <- mle
+    for( i in 1:25 )
+    {
+	  mQuad <- buildAGHQuad(model = m, nQuad = i)
+      cmQuad <- compileNimble(mQuad, project = m)
+      # gr <- rbind(gr, cmQuad$gr_margLogLik(round(mleLME4, 2)))
+      # res <- c(res, cmQuad$calcMargLogLik(round(mleLME4, 2)))
+	  mle <- rbind(mle, cmQuad$calculateMLE()$par)
+    }
+
+    par(mfrow = c(3,1))
+    plot(1:i, mle[,1], type = 'l')
+    abline(h = mleLME4[1], col = 'red')
+    plot(1:i, mle[,2], type = 'l')
+    abline(h = mleLME4[2], col = 'red')
+    plot(1:i, mle[,3], type = 'l')
+    abline(h = mleLME4[3], col = 'red')
+
+    par(mfrow = c(3,1))
+    plot(1:i, gr[,1], type = 'l')
+    plot(1:i, gr[,2], type = 'l')
+    plot(1:i, gr[,3], type = 'l')
+
+    par(mfrow = c(3,1))
+    plot(1:i, res, type = 'l')
+ 
+    mleQ <- grQ <- resQ <- NULL
+    for(i in 1:50){
+	  mleQ <- rbind(mleQ, cmQuad$calculateMLE()$par)
+      resQ <- c(resQ, cmQuad$calcMargLogLik(mleQ[i,]))
+      grQ <- rbind(grQ, cmQuad$gr_margLogLik(mleQ[i,]))
+    }
+    # values(cm, c('b0', 'sigma1', 'sigma2'))
+    par(mfrow = c(3,1))
+    plot(1:i, mleQ[,1], type = 'l', xlab = 'iter', ylab = 'intercept')
+    abline(h = mleLME4[1], col = 'red')
+    plot(1:i, mleQ[,2], type = 'l', xlab = 'iter', ylab = expression(sigma))
+    abline(h = mleLME4[2], col = 'red')
+    plot(1:i, mleQ[,3], type = 'l', xlab = 'iter', ylab = expression(sigma[re]))
+    abline(h = mleLME4[3], col = 'red')
+ 
+    par(mfrow = c(3,1))
+    plot(1:i, grQ[,1], type = 'l')
+    plot(1:i, grQ[,2], type = 'l')
+    plot(1:i, grQ[,3], type = 'l')
+
+  pstart <- values(cm, c("b0", "sigma1", "sigma2"))
+  pstart[2:3] <- log(pstart[2:3])
+  fit <- optim(pstart, cmQuad$p_transformed_margLogLik, cmQuad$p_transformed_gr_margLogLik, 
+	method = "BFGS", control =list(fnscale = -1, trace = 1), hessian = TRUE)
+  cmQuad$p_transformed_gr_margLogLik(fit$par)
+  fit.pars <- fit$par
+  fit.pars[2:3] <- exp(fit.pars[2:3])
+  cmQuad$gr_margLogLik(fit.pars)
+
+  fit2 <- optim(values(cm, c("b0", "sigma1", "sigma2")), cmQuad$calcMargLogLik, cmQuad$gr_margLogLik, 
+	method = "BFGS", control =list(fnscale = -1, maxit = 1000), hessian = TRUE)
+  cmQuad$gr_margLogLik(fit2$par)
+
+
+  mle1 <- cmQuad$calculateMLE(pStart = c(2, 1, 0.8))$par
+  mle2 <- cmQuad$calculateMLE(pStart = c(3.5, 1.7, 0.5))$par
+  mle3 <- cmQuad$calculateMLE(pStart = mleLME4)$par
+
+  # Values from Laplace directly.
+  mLaplace <- buildLaplace(model = m, control = list(maxit = 500))
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, project = m)
+  mleL1 <- cL$LaplaceMLE(pStart = c(2, 1, 0.8))$par
+  mleL2 <- cL$LaplaceMLE(pStart = c(3.5, 1.7, 0.5))$par
+  
+
+  mleL <- grL <- NULL
+  for(i in 1:25) {
+	mleL <- rbind(mleL, cL$LaplaceMLE(method= "Nelder-Mead")$par) 
+    grL <- rbind(grL, cL$gr_Laplace(mleL[i,]))
+  }
+  
+  par(mfrow = c(3,1))
+  plot(1:nrow(mleL), mleL[,1], type = 'l', xlab = 'iter', ylab = 'intercept')
+  abline(h = mleLME4[1], col = 'red')
+  plot(1:nrow(mleL), mleL[,2], type = 'l', xlab = 'iter', ylab = expression(sigma))
+  abline(h = mleLME4[2], col = 'red')
+  plot(1:nrow(mleL), mleL[,3], type = 'l', xlab = 'iter', ylab = expression(sigma[re]))
+  abline(h = mleLME4[3], col = 'red')
+
+  par(mfrow = c(3,1))
+  plot(1:nrow(grL), grL[,1], type = 'l')
+  plot(1:nrow(grL), grL[,2], type = 'l')
+  plot(1:nrow(grL), grL[,3], type = 'l')
+
+# lme4::lmer(m$y ~ 1 + (1|grp), REML = FALSE, control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
+
 })
