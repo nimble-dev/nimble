@@ -14,6 +14,8 @@
 #'
 #' \code{niter}: The number of iterations to run the MCMC.
 #'
+#' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
+#'
 #' \code{thin}: The thinning interval for the \code{monitors} that were specified in the MCMC configuration.  If this argument is provided at MCMC runtime, it will take precedence over the \code{thin} interval that was specified in the MCMC configuration.  If omitted, the \code{thin} interval from the MCMC configuration will be used.
 #'
 #' \code{thin2}: The thinning interval for the second set of monitors (\code{monitors2}) that were specified in the MCMC configuration.  If this argument is provided at MCMC runtime, it will take precedence over the \code{thin2} interval that was specified in the MCMC configuration.  If omitted, the \code{thin2} interval from the MCMC configuration will be used.
@@ -24,8 +26,8 @@
 #'
 #' \code{resetWAIC}: Boolean specifying whether to reset the WAIC summary statistics to their initial states and thereby begin the WAIC calculation anew (default = TRUE). Specifying \code{resetWAIC = FALSE} allows the WAIC calculation to continue running from where it left off. 
 #' 
-#' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
-#'
+#' \code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain and after_chain methods.  The value for this argument is specified automatically from invocation via runMCMC, and genernally need not be supplied when calling mcmc$run (default = 1).
+
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
@@ -169,7 +171,7 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
-
+        ##nimbleVerboseOption <- getNimbleOption('verbose')   ## not currently used anywhere
         waicFun <- nimbleFunctionList(waicClass_base)
         if(enableWAIC && !('online' %in% names(conf$controlWAIC) && !conf$controlWAIC$online)) {
            waicFun[[1]] <- buildWAIC(model, mvSaved, conf$controlWAIC)
@@ -201,7 +203,8 @@ buildMCMC <- nimbleFunction(
         nburnin               = double(default =  0),
         thin                  = double(default = -1),
         thin2                 = double(default = -1),
-        resetWAIC             = logical(default = TRUE)) {  ## Ideally default would be the value of `reset`
+        resetWAIC             = logical(default = TRUE),
+        chain                 = integer(default =  1)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')
@@ -215,8 +218,9 @@ buildMCMC <- nimbleFunction(
         my_initializeModel$run()
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
-            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter, nburnin, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -289,6 +293,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$after_chain()
         returnType(void())
     },
     methods = list(

@@ -1,3 +1,7 @@
+## Note 6/15/22: This test file is passing when run in a fresh R session.
+##  I am observing failures when run individually after others have been run.
+##  E.g. test_package("nimble", filter = "^getParam$")
+##  I have not tracked down why this would occur.  Modifications in nimbleUserNamespace might be a reason.
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn

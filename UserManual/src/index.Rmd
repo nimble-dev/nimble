@@ -3,7 +3,7 @@ fontsize: 11pt
 cover-image: nimble-icon.png
 output: bookdown::gitbook
 documentclass: book
-bibliography: [UserManualRefs.bib]
+bibliography: [UserManualRefs.bib,AD_references.bib]
 biblio-style: apalike
 link-citations: yes
 github-repo: nimble-dev/nimble

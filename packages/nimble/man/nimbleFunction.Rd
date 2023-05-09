@@ -6,12 +6,11 @@
 \usage{
 nimbleFunction(
   setup = NULL,
-  run = function() {
- },
+  run = function() { },
   methods = list(),
   globalSetup = NULL,
   contains = NULL,
-  enableDerivs = list(),
+  buildDerivs = list(),
   name = NA,
   check = getNimbleOption("checkNimbleFunction"),
   where = getNimbleFunctionEnvironment()
@@ -28,7 +27,7 @@ nimbleFunction(
 
 \item{contains}{An optional object returned from \code{\link{nimbleFunctionVirtual}} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform}
 
-\item{enableDerivs}{EXPERIMENTAL A list of names of function methods to enable derivatives for.  Currently only for developer use.}
+\item{buildDerivs}{EXPERIMENTAL A list of names of function methods for which to build derivatives capabilities.  Currently only for developer use.}
 
 \item{name}{An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.}
 

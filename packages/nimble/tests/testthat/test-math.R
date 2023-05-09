@@ -16,6 +16,7 @@ source(system.file(file.path('tests', 'testthat', 'mathTestLists.R'), package = 
 set.seed(0)
 ans1 <- sapply(testsVaried, test_math, 'math')    ## 12
 ans2 <- sapply(testsBasicMath, test_math, 'math') ## 70
+
 if(.Platform$OS.type == 'windows') {
     message("Since you are running on Windows, tests stopped prior to reaching max DLL limit.  Please use test-math2 to continue")
     stop()

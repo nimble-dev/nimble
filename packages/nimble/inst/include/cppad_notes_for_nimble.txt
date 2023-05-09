@@ -1,0 +1,61 @@
+Currently for nimble, we drop a few tweaks into CppAD.
+
+These are primarily necessary due to nimble's compilation situation, which involves crossing over compilation units.  (This is not ideal, but it has not caused problems.)  The problem is that CppAD uses several static variables, for which each compilation unit only sees its own instance.
+
+When updating CppAD, it should be sufficient to search all file names and all file code for "nimble" to find necessary modifications.  A summary of these is the following.
+
+1. In core, add the files nimble_ADbase_extensions.hpp and nimble_ADbase_tape_link_extensions.hpp.
+
+2. In ad.hpp, at the start of the "static public member functions" (in comment) section, add "#include nimble_ADbase_extensions.hpp".
+
+3. In tape_link.hpp, as the first line inside of "namespace CppAD", add "#include nimble_ADbase_tape_link_extensions.hpp"
+
+4. In local, add the file nimble_atomic_index.hpp
+
+5. In local, in atomic_index.hpp:
+after the struct atomic_index_info{} (inside CppAD::local namespaces), add
+
+#include "nimble_atomic_index.hpp"
+
+and, as the first line of atomic_index, replace
+
+    static std::vector<atomic_index_info> vec;
+
+with
+
+#ifndef USING_CPPAD_IN_NIMBLE
+    static std::vector<atomic_index_info> vec;
+#else
+    std::vector<atomic_index_info> &vec = *atomic_index_info_vec_manager_nimble<Base>::manage();
+#endif
+
+6. In local, in ad_tape.hpp, insert the following lines as the last lines of the definition of class ADTape.
+
+// NIMBLE extensions
+void *nimble_CppAD_tape_mgr_ptr_;
+void* &nimble_CppAD_tape_mgr_ptr() {return nimble_CppAD_tape_mgr_ptr_;}
+
+7. We previously commented out the function check_for_nan in check_for_nan.hpp, but in updated CppAD this appears to be moot.
+
+
+
+
+Steps for updating CppAD in nimble:
+
+1. Make copies of the above files for reference and/or copying into the updated CppAD files.
+
+2. Follow CppAD installation instructions (https://coin-or.github.io/CppAD/doc/install.htm) through step 2 (or 3 if you want to do the checks).  Since CppAD distributes via GitHub now, one may want to copy the current version to a local directory to avoid working in a local git repository.  Or one may want to try 'git clone --depth=1 https://github.com/coin-or/CppAD.git cppad.git' (last arg is the local directory in which to place the clone. 
+
+3. Note that the "installation directory" contains the "include" directory, not the "cppad.hpp" file.  The relevant description in CppAD documentation can be confusing.
+
+4. Note the cmake call must provide flags for C++.  The version suggested in CppAD documentation is
+-D cppad_cxx_flags="-Wall -ansi -pedantic-errors -std=c++11 -Wshadow"
+but a more minimal version that was used is
+cmake -D cppad_cxx_flags="-std=c++11" ..
+
+5. We don't need all of CppAD.  What we need can be copied manually.
+Copy most of include/cppad, except: CmakeLists.txt, build (dir), configure.hpp.in.
+In addition, copy COPYING and epl-2.0.txt from the CppAD (top) directory.  These might not have changed.
+
+6. Make the nimble-specific changes in steps 1-5 in the first section above, replacing and modifying files as needed, using the files copied in step 1 of this set of steps as source/reference.
+

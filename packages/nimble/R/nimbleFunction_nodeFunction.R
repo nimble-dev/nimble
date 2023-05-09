@@ -130,7 +130,9 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
 }
 
 ## changes 'dnorm(mean=1, sd=2)' into 'dnorm(LHS, mean=1, sd=2, log=TRUE)'
-ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, ADFunc = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
+ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
+                                     ##ADFunc = FALSE,
+                                     dynamicIndexLimitsExpr, RHSnonReplaced) {
     BUGSdistName <- as.character(RHS[[1]])
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
@@ -148,14 +150,6 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, AD
                                    list(STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
                                         TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))))
-            } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
-                code <- substitute(if(isTRUE(CONDITION)) LOGPROB <- STOCHCALC
-                                   else {LOGPROB <- NaN
-                                       print(TEXT)},
-                                   list(LOGPROB = logProbNodeExpr,
-                                        STOCHCALC = RHS,
-                                        CONDITION = dynamicIndexLimitsExpr,
-                                        TEXT = paste0("  [Warning] Dynamic index out of bounds: ", safeDeparse(RHSnonReplaced))))
             } else {
 
                 code <- substitute(if(isTRUE(CONDITION)) LOGPROB <<- STOCHCALC
@@ -171,10 +165,10 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, AD
                 code <- substitute(LocalNewLogProb <- STOCHCALC,
                                    list(
                                        STOCHCALC = RHS))
-            } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
-                code <- substitute(LOGPROB <- STOCHCALC,
-                                   list(LOGPROB = logProbNodeExpr,
-                                        STOCHCALC = RHS))
+            ## } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
+            ##     code <- substitute(LOGPROB <- STOCHCALC,
+            ##                        list(LOGPROB = logProbNodeExpr,
+            ##                             STOCHCALC = RHS))
             } else{
                 code <- substitute(LOGPROB <<- STOCHCALC,
                                    list(LOGPROB = logProbNodeExpr,

@@ -2,7 +2,9 @@
 ## Section for outputting C++ code from an exprClass object ##
 ##############################################################
 
-cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
+cppOutputCalls <- c(## makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclingRuleADFunction'),
+                    makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
+                    makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryMidLogicalOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryOrUnaryOperators, 'cppOutputBinaryOrUnary'),
                     makeCallList(assignmentOperators, 'cppOutputMidOperator'),
@@ -10,13 +12,15 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(eigProxyCalls, 'cppOutputEigMemberFunction'),
                     makeCallList(eigCalls, 'cppOutputMemberFunction'),
                     makeCallList(c('setSize', 'initialize', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
-                    makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer','push_back'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
+                    list(nimDerivs_dummy = 'cppOutputNimDerivs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     makeCallList(c("TFsetInput_", "TFgetOutput_", "TFrun_"), 'cppOutputMemberFunctionDeref'),
-                    list(
+    list(
+        'cwiseSqrt' = 'cppOutputEigMemberFunctionNoTranslate',
+        'cwiseAbs' = 'cppOutputEigMemberFunctionNoTranslate_specialAD',
                         'next' = 'cppOutputNext',
                         cppComment = 'cppOutputComment',
                         eigenCast = 'cppOutputEigenCast',
@@ -35,8 +39,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          nimSwitch = 'cppOutputNimSwitch',
                          getParam = 'cppOutputGetParam',
                          getBound = 'cppOutputGetBound',
-                        dnorm = 'cppOutputDerivDist',
-                        dpois = 'cppOutputDerivDist',
+                         nimDerivs_calculate = 'cppOutputNimDerivs_calculate',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -66,10 +69,11 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
                          eigBlank = 'cppOutputEigBlank',
                          voidPtr = 'cppOutputVoidPtr',
-                         cppLiteral = 'cppOutputLiteral'
-                        )
+                        cppLiteral = 'cppOutputLiteral',
+                        ADbreak = 'cppOutputSkip')
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
+cppOutputCalls[['pow_int']] <-  'cppOutputPow'
 cppMidOperators <- midOperators
 cppMidOperators[['::']] <- '::'
 cppMidOperators[['%*%']] <- ' * '
@@ -166,14 +170,53 @@ cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
 }
 
-cppOutputDerivDist <- function(code, symTab){
-  ###for now, use different dist c++ fn if taking derivs
-  if(identical(code$cppADCode, TRUE))
-    paste0('nimDerivs_',code$name, '(', 
-           paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ), ')', collapse = ', '), ')')
-  else
-    paste0(code$name, '(',
+## cppOutputRecyclingRuleADFunction <- function(code, symTab) {
+##   if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+##     code$name <- paste0('nimDerivs_', code$name)
+##     code$name <- gsub('::', '::nimDerivs_', code$name)
+##   }
+##   cppOutputCallAsIs(code, symTab)
+## }
+
+cppOutputNimDerivsPrependType <- function(code, symTab){
+  ## if(isTRUE(nimbleUserNamespace$cppADCode)){
+  ##   paste0('nimDerivs_', code$name, '(',
+  ##          paste0(unlist(lapply(code$args, function(x){
+  ##            if(is.numeric(x) || is.logical(x)){
+  ##              return(paste0('TYPE_(', nimGenerateCpp(x, symTab, asArg = TRUE), ')'))
+  ##            }
+  ##            return(nimGenerateCpp(x, symTab, asArg = TRUE))
+  ##          })), collapse = ', '), ')')
+  ## }
+  ## else
+    if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+    argList <- list()
+    logFixedString <- ''
+    for(i in seq_along(code$args)){
+      iArg <- code$args[[i]]
+      iName <- names(code$args)[i]
+      if(iName == 'log' && (is.numeric(iArg) | is.logical(iArg))){
+        logFixedString <- '_logFixed'
+        argList[[length(argList) + 1]] <- nimGenerateCpp(iArg, symTab,
+                                                         asArg = TRUE)
+      }
+      else if(is.numeric(iArg) || is.logical(iArg)){
+        argList[[length(argList) + 1]] <- paste0('CppAD::AD<double>(', 
+                                                 nimGenerateCpp(iArg, symTab,
+                                                                asArg = TRUE),
+                                                 ')')
+      }
+      else{
+        argList[[length(argList) + 1]] <- nimGenerateCpp(iArg, symTab,
+                                                         asArg = TRUE)
+      }
+    }
+    paste0('nimDerivs_', code$name, logFixedString, '(', 
+           paste0(unlist(argList), collapse = ', '), ')')
+  } else {
+     paste0(code$name, '(',
            paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
+  }
 }
 
 cppOutputNumList <- function(code, symTab) {
@@ -205,6 +248,27 @@ cppOutputChainedCall <- function(code, symTab) {
     paste0(firstCall, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
 }
 
+cppOutputNimDerivs <- function(code, symTab) {
+    origName <- code$args[[1]]$name
+    derivName <- paste0(origName, '_deriv_')
+    innerArgs <- code$args[[1]]$args
+    ## iOmit <- which(names(code$args) == 'dropArgs')
+    ## outerArgs <- code$args[-c(1, iOmit)]
+    outerArgs <- code$args[-1]
+    ADinfoArg <- code$aux$ADinfoName
+    updateNodesName <- code$aux[['updateNodesName']]
+    if(!is.null(updateNodesName)) {
+      ADinfoArg <- paste0( ADinfoArg, ".setUpdaterNV(", updateNodesName, ")" )
+    }
+    paste0(derivName, '(', paste0(unlist(lapply( c(innerArgs, outerArgs), nimGenerateCpp, symTab, asArg = TRUE ) ), collapse = ', '), ',', ADinfoArg, ')')
+}
+
+cppOutputNimDerivs_calculate <- function(code, symTab) {
+  ## Is there  a dropArgs option for this?
+  ADinfoArg <- code$aux$ADinfoName
+  paste0('nimDerivs_calculate', '(', ADinfoArg, ',', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE ) ), collapse = ', '), ')')
+}
+
 cppNewNimbleList <- function(code, symTab) {
     ## This won't work for something like A$B <- nl$new()
     ## because the first arg of the caller is A$B, not a simple name
@@ -234,6 +298,8 @@ cppOutputFor <- function(code, symTab) {
 }
 
 cppOutputIfWhile <- function(code, symTab) {
+    ## if(identical(nimbleUserNamespace$cppADCode, 2L))
+    ##     stop("Cannot use 'if' or 'while' statements in derivative-enabled nimbleFunctions.")
     part1 <- paste0(code$name,'(', nimGenerateCpp(code$args[[1]], symTab), ')')
     part2 <- nimGenerateCpp(code$args[[2]], symTab)
     if(is.list(part2)) {
@@ -259,7 +325,7 @@ cppOutputNimSwitch <- function(code, symTab) {
     numChoices <- length(code$args)-2
     if(numChoices <= 0) return('')
     choicesCode <- vector('list', numChoices)
-    choiceValues <- code$args[[2]]
+    choiceValues <- eval(nimbleGeneralParseDeparse(code$args[[2]]))
     if(length(choiceValues) != numChoices) stop(paste0('number of switch choices does not match number of indices for ',nimDeparse(code)))
     for(i in 1:numChoices) {
         if(code$args[[i+2]]$name != '{')
@@ -337,12 +403,26 @@ cppOutputMemberFunctionGeneric <- function(code, symTab) { ##cppMemberFunction(m
 cppOutputEigExternalUnaryFunction <- function(code, symTab) {
     info <-  eigProxyTranslateExternalUnary[[code$name]]
     if(length(info) < 3) stop(paste0("Invalid information entry for outputting eigen version of ", code$name), call. = FALSE)
-    paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').unaryExpr(std::ptr_fun<',info[2],', ',info[3],'>(', info[1], '))')
+    info1 <- info[1]
+    info2 <- info[2]
+    info3 <- info[3]
+    if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+      info1 <- paste0('nimDerivs_', info1)
+      info2 <- paste0('CppAD::AD<', info2, '>')
+      info3 <- paste0('CppAD::AD<', info3, '>')
+    }
+    paste0(
+      '(', nimGenerateCpp(code$args[[1]], symTab),
+      ').unaryExpr(std::ptr_fun<',info2,', ',info3,'>(', info1, '))'
+    )
 }
 
 ## like cppOutputCallAsIs but using eigProxyTranslate on the name
 cppOutputNonNativeEigen <- function(code, symTab) {
-    paste0(eigProxyTranslate[code$name], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+    ans <- paste0(eigProxyTranslate[code$name], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+    if(identical(nimbleUserNamespace$cppADCode, 2L))
+        ans <- paste0('nimDerivs_', ans)
+    ans
 }
 
 cppOutputEigMemberFunction <- function(code, symTab) {
@@ -351,6 +431,15 @@ cppOutputEigMemberFunction <- function(code, symTab) {
 
 cppOutputEigMemberFunctionNoTranslate <- function(code, symTab) {
     paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').', paste0(code$name, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab) ), collapse = ', '), ')' ))
+}
+
+cppOutputEigMemberFunctionNoTranslate_specialAD <- function(code, symTab) {
+    ## currently only for cwiseAbs, for which Eigen needs to be circumvented
+    if(!identical(nimbleUserNamespace$cppADCode, 2L))
+        return(cppOutputEigMemberFunctionNoTranslate(code, symTab))
+    paste0(
+        '(', nimGenerateCpp(code$args[[1]], symTab),
+        ').unaryExpr(std::ptr_fun<CppAD::AD<double>, CppAD::AD<double> >(nimDerivs_fabs))')
 }
 
 cppOutputMemberFunctionDeref <- function(code, symTab) {
@@ -368,8 +457,13 @@ cppOutputNFmethod <- function(code, symTab) {
         paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]) ##, ## No nimGenerateCpp on code$args[[2]] because it should be a string
     } else {
         ## This bound method obj$run is not part of a call, so we transform it to NimBoundMethod<T>(&T::run, obj).
+        
         objectName <- code$args[[1]]$name
-        typeName <- symTab$getSymbolObject(objectName, inherits = TRUE)$baseType
+        if(objectName == "this") {
+            typeName <- code$args[[1]]$type
+        } else {
+            typeName <- symTab$getSymbolObject(objectName, inherits = TRUE)$baseType
+        }
         methodName <- code$args[[2]]
         #paste0('NimBoundMethod<', typeName, '>(&', typeName, '::', methodName, ', ', objectName, ')')
         paste0('NimBind(&', typeName, '::', methodName, ', ', objectName, ')')
@@ -397,14 +491,20 @@ cppOutputMidOperator <- function(code, symTab) {
     }
 
     useDoubleCast <- FALSE
-    if(code$name == '/') ## cast the denominator to double if it is any numeric or if it is an scalar integer expression
-        if(is.numeric(code$args[[2]]) ) useDoubleCast <- TRUE
-        else ## We have cases where a integer ends up with type type 'double' during compilation but should be cast to double for C++, so we shouldn't filter on 'integer' types here
-            if(identical(code$args[[2]]$nDim, 0)) useDoubleCast <- TRUE
+##   if(!isTRUE(nimbleUserNamespace$cppADCode)){
+      if(code$name == '/') ## cast the denominator to double if it is any numeric or if it is an scalar integer expression
+          if(is.numeric(code$args[[2]]) ) useDoubleCast <- TRUE
+          else ## We have cases where a integer ends up with type type 'double' during compilation but should be cast to double for C++, so we shouldn't filter on 'integer' types here
+              if(identical(code$args[[2]]$nDim, 0)) useDoubleCast <- TRUE
+##    }
 
     secondPart <- nimGenerateCpp(code$args[[2]], symTab)
-    if(useDoubleCast) secondPart <- paste0('static_cast<double>(', secondPart, ')')
-
+    if(useDoubleCast) {
+        static_cast <- 'static_cast<double>('
+        if(identical(nimbleUserNamespace$cppADCode, 2L))
+            static_cast <- 'CppAD::AD<double>('
+        secondPart <- paste0(static_cast, secondPart, ')')
+    }
     if(useParens)
         paste0( '(',nimGenerateCpp(code$args[[1]], symTab), cppMidOperators[[code$name]],secondPart,')' )
     else
@@ -444,11 +544,35 @@ cppOutputCall <- function(code, symTab) {
 }
 
 cppOutputPow <- function(code, symTab) {
-    useStaticCase <- if(identical(code$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
-    if(useStaticCase)
-        paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
-    else
-        paste0(exprName2Cpp(code, symTab), '(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+    useStaticCast <-
+        ## if(isTRUE(nimbleUserNamespace$cppADCode))
+        ##     FALSE
+        ## else
+        if(is.numeric(code$args[[2]]) )
+            TRUE
+        else identical(code$args[[2]]$nDim, 0)
+    if(useStaticCast) {
+        static_cast <- '( static_cast<double>('
+        nimDerivs_text <- ''
+          if(identical(nimbleUserNamespace$cppADCode, 2L)){
+            static_cast <- '( CppAD::AD<double>('
+            nimDerivs_text <- 'nimDerivs_'
+        }
+        paste0(nimDerivs_text, exprName2Cpp(code, symTab), static_cast,
+               nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', 
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+      } else{
+      if(identical(nimbleUserNamespace$cppADCode, 2L)){
+        paste0('nimDerivs_', exprName2Cpp(code, symTab), 
+               '(', nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',',
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+      }
+      else{
+        paste0(exprName2Cpp(code, symTab), '(', 
+               nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',',
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+      }
+    }
 }
 
 cppOutputCallAsIs <- function(code, symTab) {

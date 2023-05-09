@@ -18,11 +18,9 @@ ADNimbleList
 \describe{
 \item{\code{value}}{The value of the function evaluated at the given input arguments.}
 
-\item{\code{gradient}}{The gradient of the function evaluated at the given input arguments.}
+\item{\code{jacobian}}{The Jacobian of the function evaluated at the given input arguments.}
 
 \item{\code{hessian}}{The Hessian of the function evaluated at the given input arguments.}
-
-\item{\code{thirdDerivs}}{Currently unused.}
 }}
 
 \seealso{

@@ -27,7 +27,6 @@ exprClass <- R6::R6Class(
         caller = NULL,           # exprClass object for the call to which this is an argument (if any)
         callerArgID =  NULL,	#'numeric', ## index in the calling object's args list for this object.
         assertions =  list(),	#'list'
-        cppADCode = FALSE,         #'logical' ## is expr in code generated for cppad?
         aux = NULL,               # anything needed for specific operators
         initialize = function(...) {
             dotsList <- list(...)
@@ -245,7 +244,9 @@ dropSingleSizes <- function(sizeList) {
 insertExprClassLayer <- function(code, argID, funName, isName = FALSE, isCall = TRUE, isAssign = FALSE, ... ) {
     newExpr <- exprClass$new(name = funName, isName = isName, isCall = isCall, isAssign = isAssign,
                              args = list(code$args[[argID]]), ...)
-    setCaller(code$args[[argID]], newExpr, 1)
+    if(inherits(code$args[[argID]], 'exprClass')){
+      setCaller(code$args[[argID]], newExpr, 1)
+    }
     setArg(code, argID, newExpr)
     newExpr
 }

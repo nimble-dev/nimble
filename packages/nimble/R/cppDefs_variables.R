@@ -152,7 +152,15 @@ cppVecNimArrPtr <- function(name = character(0), nDim = 1, type = 'double', ptr 
 
 cppSEXP <- function(name = character(0), ...) cppVar(name = name, baseType = 'SEXP', ptr = 0, ...)
 
-cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClassNew', ptr = 0, ...) 
+cppNodeFunctionVector <- function(name = character(0), ...){
+  splitOn_ <- strsplit(name, '_', fixed = T)[[1]]
+  if(splitOn_[length(splitOn_)] == 'derivs'){
+    cppVar(name = name, baseType = 'NodeVectorClassNew_derivs', ptr = 0, ...) 
+  }
+  else{
+    cppVar(name = name, baseType = 'NodeVectorClassNew', ptr = 0, ...) 
+  }
+}
 
 ## to be defunct
 cppModelVariableAccessorVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'ManyVariablesAccessor', ptr = 0, ...) 
