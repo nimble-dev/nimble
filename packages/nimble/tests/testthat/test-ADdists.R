@@ -168,6 +168,53 @@ wish_test_log <- make_AD_test2(
 
 wish_test_out <- test_AD2(wish_test_log)
 
+## inverse Wishart
+
+set.seed(123)
+
+wRec <- rinvwish_chol(1, cholRec, df = 7, scale_param = FALSE)
+wTest <- rinvwish_chol(1, cholTest, df = 7, scale_param = FALSE)
+
+wRecTri <- wRec[ upper.tri(wRec, TRUE) ]
+wTestTri <- wTest[ upper.tri(wTest, TRUE) ]
+
+invwish_test_log <- make_AD_test2(
+  op = list(
+    name = "dinvwish_chol manual",
+    opParam = list(name = "dinvwish_chol manual"),
+    expr = quote({
+      # populate 2D matrices from the vectors
+      # created from upper triangular values.
+      x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
+      chol2D <- nimMatrix(nrow = 4, ncol = 4, init = FALSE)
+      i <- 1L
+      j <- 1L
+      indOrig <- 1L
+      for(j in 1:4) {
+        for(i in 1:j) {
+          x2D[i,j] <- x2D[j,i] <- x[indOrig]
+          chol2D[i,j] <- chol[indOrig]  # chol2D does not need lower triangular entries
+          indOrig <- indOrig + 1
+        }
+      }
+      out <- dinvwish_chol(x = x2D, cholesky=chol2D, df = df, log = log)
+    }),
+    args = list(
+      x = quote(double(1)),
+      chol = quote(double(1)),
+      df = quote(double()),
+      log = quote(double())
+    ),
+    outputType = quote(double())
+  ),
+  argTypes = c(x='double(1)', chol='double(1)', df = 'double()', log='double()'),
+  wrt = c('x', 'chol'),
+  inputs = list(record = list(x = wRecTri, chol = cholRecTri, df = 7, log = 0),
+                test   = list(x = wTestTri, chol = cholTestTri, df = 8, log = 1)),
+)
+
+invwish_test_out <- test_AD2(invwish_test_log)
+
 ## LKJ
 
 p <- 5
