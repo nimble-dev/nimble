@@ -4,7 +4,7 @@
 \alias{parameterTransform}
 \title{Automated transformations of model nodes to unconstrained scales}
 \usage{
-parameterTransform(model, nodes)
+parameterTransform(model, nodes, control = list())
 }
 \arguments{
 \item{model}{A `nimble` model object.  See details.}

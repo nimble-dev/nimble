@@ -2096,7 +2096,7 @@ buildAGHQuad <- nimbleFunction(
 #'
 #' \item \code{Laplace(p)}. Laplace approximation to the marginal log-likelihood
 #'       function at parameter value \code{p}, which should match the order of
-#'       \cope{paramNodes}. For any non-scalar nodes in \code{paramNodes}, the
+#'       \code{paramNodes}. For any non-scalar nodes in \code{paramNodes}, the
 #'       order within the node is column-major (which can be seen for R objects
 #'       using \code{as.numeric}).
 #'

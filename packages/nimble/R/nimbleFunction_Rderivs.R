@@ -38,6 +38,8 @@ nimDerivs_dummy <- nimbleFunction(
 #' 
 #' @return a \code{nimbleList} with elements \code{value}, \code{jacobian},
 #' and \code{hessian}.
+#'
+#' @aliases derivs AD
 #' 
 #' @examples 
 #' 

@@ -93,7 +93,6 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calcAdaptationFactor",
                        "is.nfGenerator",
                        "mcmc_createModelObject",
-                       "nimOptim_model",
                        "nimbleInternalFunctions",
                        "nimbleUserNamespace")
 

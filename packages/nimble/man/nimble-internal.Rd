@@ -105,7 +105,6 @@
 \alias{calcAdaptationFactor}
 \alias{is.nfGenerator}
 \alias{mcmc_createModelObject}
-\alias{nimOptim_model}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
 \description{

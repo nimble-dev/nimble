@@ -13,9 +13,11 @@ Details of the WAIC measure for comparing models. NIMBLE implements an online
 WAIC algorithm, computed during the course of the MCMC iterations.
 }
 \details{
-To use WAIC, set \code{enableWAIC = TRUE} when configuring or (if not using
-\code{configureMCMC} building an MCMC) and set \code{WAIC = TRUE} when
-calling \code{nimbleMCMC} and optionally when calling \code{runMCMC}.
+To obtain WAIC, set \code{WAIC = TRUE} in nimbleMCMC. If using a more
+customized workflow, set \code{enableWAIC = TRUE} in \code{configureMCMC}
+or (if skipping \code{configureMCMC}) in \code{buildMCMC}, followed by
+setting \code{WAIC = TRUE} in \code{runMCMC}, if using runMCMC to manage
+sample generation.
 
 By default, NIMBLE calculates WAIC using an online algorithm that updates
 required summary statistics at each post-burnin iteration of the MCMC.
@@ -111,6 +113,9 @@ marginal likelihoods if using marginal WAIC.
 \code{thin}: Whether WAIC was calculated based only on thinned samples.
 
 \code{online}: Whether WAIC was calculated during MCMC sampling.
+
+\code{nburnin_extra}: Number of additional iterations discarded as burnin,
+in addition to original MCMC burnin.
 
 \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}: The
 computed marginal WAIC, lppd, and pWAIC based on fewer Monte Carlo

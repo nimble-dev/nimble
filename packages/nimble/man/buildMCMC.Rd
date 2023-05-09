@@ -7,7 +7,7 @@
 buildMCMC(conf, ...)
 }
 \arguments{
-\item{conf}{An MCMC configuration object of class \code{MCMCconf} that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMC configuration objects.  Alternatively, \code{conf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.}
+\item{conf}{Either an MCMC configuration object of class \code{MCMCconf} or a NIMBLE model object. An MCMC configuration object would be returned from \code{configureMCMC} and contains information on the model, samplers, monitors, and thinning intervals to be used. Alternatively, \code{conf} may a NIMBLE model object, in which case default configuration from calling \code{configureMCMC(model, ...l)} will be used.}
 
 \item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object (see \code{help(configureMCMC)}).}
 }
@@ -28,6 +28,8 @@ The uncompiled \code{run} function will have arguments:
 \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
 
 \code{resetMV}: Boolean specifying whether to begin recording posterior sample chains anew. This argument is only considered when using \code{reset = FALSE}.  Specifying \code{reset = FALSE, resetMV = TRUE} allows the MCMC algorithm to continue running from where it left off, but without appending the new posterior samples to the already existing samples, i.e. all previously obtained samples will be erased. This option can help reduce memory usage during burn-in (default = FALSE).
+
+\code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain and after_chain methods.  The value for this argument is specified automatically from invocation via runMCMC, and genernally need not be supplied when calling mcmc$run (default = 1).
 
 \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 

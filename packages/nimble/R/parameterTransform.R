@@ -2,7 +2,7 @@
 
 #' Automated transformations of model nodes to unconstrained scales
 #'
-#' `parameterTransform` provides general transformations of constrained continuous-valued model nodes (parameters) to an unconstrained scale.  It handles the cases of interval-bounded parameters (e.g. uniform or beta distributions), semi-interval-bounded parameters (e.g. exponential or gamma distributions), and the multivariate wishart, inverse wishart, dirichlet, and LKJ distributions.  Utilities are provided to transform paramters to an unconstrained scale, back-transform from the unconstrained scale to the original scale of the constrained parameterization, and to calculate the natural logarithm of the determinant of the Jacobian matrix of the inverse transformation, calculated at any location in the transformed (unconstrained) space.
+#' `parameterTransform` provides general transformations of constrained continuous-valued model nodes (parameters) to an unconstrained scale.  It handles the cases of interval-bounded parameters (e.g. uniform or beta distributions), semi-interval-bounded parameters (e.g. exponential or gamma distributions), and the multivariate Wishart, inverse Wishart, Dirichlet, and LKJ distributions.  Utilities are provided to transform paramters to an unconstrained scale, back-transform from the unconstrained scale to the original scale of the constrained parameterization, and to calculate the natural logarithm of the determinant of the Jacobian matrix of the inverse transformation, calculated at any location in the transformed (unconstrained) space.
 #'
 #' @param model A `nimble` model object.  See details.
 #' 
