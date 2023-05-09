@@ -22,6 +22,8 @@
 #'
 #' \code{resetMV}: Boolean specifying whether to begin recording posterior sample chains anew. This argument is only considered when using \code{reset = FALSE}.  Specifying \code{reset = FALSE, resetMV = TRUE} allows the MCMC algorithm to continue running from where it left off, but without appending the new posterior samples to the already existing samples, i.e. all previously obtained samples will be erased. This option can help reduce memory usage during burn-in (default = FALSE).
 #'
+#' \code{resetWAIC}: Boolean specifying whether to reset the WAIC summary statistics to their initial states and thereby begin the WAIC calculation anew (default = TRUE). Specifying \code{resetWAIC = FALSE} allows the WAIC calculation to continue running from where it left off. 
+#' 
 #' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 #'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
@@ -199,7 +201,7 @@ buildMCMC <- nimbleFunction(
         nburnin               = double(default =  0),
         thin                  = double(default = -1),
         thin2                 = double(default = -1),
-        resetWAIC             = logical(default = TRUE)) {
+        resetWAIC             = logical(default = TRUE)) {  ## Ideally default would be the value of `reset`
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')
