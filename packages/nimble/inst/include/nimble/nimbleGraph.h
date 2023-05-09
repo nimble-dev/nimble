@@ -75,21 +75,26 @@ public:
   int getDependencyPathCountOneNode(const int Cnode);
   
   vector<vector<int> > getAllCondIndSets(const vector<int> &Cnodes,
-					 const vector<int> &CgivenNodes,
-					 const vector<int> &Comit,
-					 bool startUp,
-					 bool startDown);
+                                         const vector<int> &CgivenNodes,
+                                         const vector<int> &Comit,
+                                         bool startUp,
+                                         bool startDown,
+                                         bool unknownsAsGiven);
   vector<int> getCondIndSet(const vector<int> &Cnodes,
-			    const vector<bool>  &isGivenVec,
-			    const vector<int> &Comit,
-			    bool startUp,
-			    bool startDown);
+                            const vector<bool>  &isGivenVec,
+                            const vector<bool>  &isLatentVec,
+                            const vector<int> &Comit,
+                            bool startUp,
+                            bool startDown,
+                            bool unknownsAsGiven);
   void expandCondIndSet(vector<int> &deps,
-			int CgraphID,
-			bool goUp,
-			bool goDown,
-			const vector<bool> &isGivenVec,
-			unsigned int recursionDepth);
+                        int CgraphID,
+                        bool goUp,
+                        bool goDown,
+                        const vector<bool> &isGivenVec,
+                        const vector<bool> &isLatentVec,
+                        bool unknownsAsGiven,
+                        unsigned int recursionDepth);
   ~nimbleGraph();
 };
 
@@ -103,11 +108,12 @@ extern "C" {
   SEXP C_getParents(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP upstream, SEXP SoneStep);
   SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
   SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
-					 SEXP Snodes,
-					 SEXP SgivenNodes,
-					 SEXP Somit,
-					 SEXP SstartUp,
-					 SEXP SstartDown);
+                                         SEXP Snodes,
+                                         SEXP SgivenNodes,
+                                         SEXP Somit,
+                                         SEXP SstartUp,
+                                         SEXP SstartDown,
+                                         SEXP SunknownsAsGiven);
 }
 
 /**********************/

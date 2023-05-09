@@ -91,6 +91,19 @@ template<int nDim, class T>
   return true;
 }
 
+// needed for some dists and some deriv functions
+// Was previously in nimDists.cpp
+template<int nDim, class T>
+NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
+  if(orig.isMap()) {
+    if(!isMapEntire<nDim, T>(orig)) {
+      possibleCopy = orig;
+      return(possibleCopy);
+    }
+  }
+  return(orig);
+}
+
 // Here is the specialization for 1 dimensions (for any type, T = double, int or
 // bool).
 template <class T>

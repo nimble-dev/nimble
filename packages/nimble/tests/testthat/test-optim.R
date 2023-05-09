@@ -642,5 +642,84 @@ test_that("optim() with gradient minimizes with fnscale = 1 and maximizes when f
     }
 })
 
+# See test-ADoptim for a case with AD gradients
+test_that("optim() respects parscale in R and C++", {
+  nf <- nimbleFunction(
+    setup = function() {
+      first_ten_xs <- matrix(0, nrow = 10, ncol = 2)
+      num_calls <- 0
+    },
+    run = function(x = double(1)) {
+      if(num_calls < 10) {
+        num_calls <<- num_calls + 1
+        first_ten_xs[num_calls, 1:2] <<- x[1:2]
+      }
+      return(sum(x^2))
+      returnType(double())
+    },
+    methods = list(
+      optRun = function(x = double(1), parscale = double(1),
+                        method = character()) {
+        con <- nimOptimDefaultControl()
+        con$parscale <- parscale
+        ans <- optim(x, run, method = method, control = con)
+        return(ans)
+        returnType(optimResultNimbleList())
+      }
+    )
+  )
+  nf1 <- nf()
+  cnf1 <- compileNimble(nf1)
+  junk <- nf1$run # needed to bring run into scope (wierd)
+  for(method in c(methodsAllowingGradient, methodsAllowingBounds)) {
+    nf1$num_calls <- 0
+    cnf1$num_calls <- 0
+    nf1$optRun(c(1, 1), c(1, 1), method = method)
+    cnf1$optRun(c(1, 1), c(1, 1), method = method)
+    expect_equal(nf1$first_ten_xs, cnf1$first_ten_xs)
+
+    nf1$num_calls <- 0
+    cnf1$num_calls <- 0
+    nf1$optRun(c(1, 1), c(3,2), method = method)
+    cnf1$optRun(c(1, 1), c(3,2), method = method)
+    expect_equal(nf1$first_ten_xs, cnf1$first_ten_xs)
+  }
+})
+
+test_that("optim() respects parscale for Hessian in R and C++", {
+  nf <- nimbleFunction(
+    setup = TRUE,
+    run = function(x = double(1)) {
+      xp <- c(x[1] / 2, x[2] / 4)
+      return(sum(xp^2) + 0.5*prod(xp))
+      returnType(double())
+    },
+    methods = list(
+      optRun = function(x = double(1), parscale = double(1),
+                        method = character()) {
+        con <- nimOptimDefaultControl()
+        con$parscale <- parscale
+        ans <- optim(x, run, method = method, control = con, hessian=TRUE)
+        return(ans)
+        returnType(optimResultNimbleList())
+      }
+    )
+  )
+  nf1 <- nf()
+  cnf1 <- compileNimble(nf1)
+  junk <- nf1$run # needed to bring run into scope (wierd)
+  for(method in c(methodsAllowingGradient, methodsAllowingBounds)) {
+    optR <- nf1$optRun(c(1, 1), c(1, 1), method = method)
+    optC <- cnf1$optRun(c(1, 1), c(1, 1), method = method)
+    expect_equal(optR$par, optC$par)
+    expect_equal(optR$hessian, optC$hessian)
+
+    optR <- nf1$optRun(c(1, 1), c(3,2), method = method)
+    optC <- cnf1$optRun(c(1, 1), c(3,2), method = method)
+    expect_equal(optR$par, optC$par)
+    expect_equal(optR$hessian, optC$hessian)
+  }
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

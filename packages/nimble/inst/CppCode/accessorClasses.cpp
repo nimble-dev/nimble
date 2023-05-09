@@ -56,6 +56,174 @@ double calculate(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
+/* This is a function because it should be done once and not undone. */
+void set_CppAD_atomic_info_for_model(NodeVectorClassNew_derivs &nodes,
+				     std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  if(instructions.size() > 0) {
+    nodeFun *nodeFunInModelDLL;
+    nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    nodeFunInModelDLL->set_atomic_info_from_nodeFun(vec_ptr);
+  }
+}
+
+void set_CppAD_atomic_info_for_model(nodeFun *nodeFunInModelDLL,
+				     std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  nodeFunInModelDLL->set_atomic_info_from_nodeFun(vec_ptr);
+}
+
+/* This is a class so it works by RAII */
+set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model(NodeVectorClassNew_derivs &nodes,
+				   CppAD::tape_id_t tape_id,
+				   CppAD::local::ADTape<double>* tape_handle_) { // tape handle
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  not_empty  = instructions.size() > 0;
+  if(not_empty) {
+    nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    nodeFunInModelDLL->get_tape_ptr_from_nodeFun(saved_tape_id, saved_tape_handle);
+    nodeFunInModelDLL->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, false);
+  }
+}
+
+set_CppAD_tape_info_for_model::set_CppAD_tape_info_for_model() :
+  nodeFunInModelDLL(0),
+  not_empty(false),
+  saved_tape_id(0),
+  saved_tape_handle(0) {}
+
+void set_CppAD_tape_info_for_model::set_from_nodeFunPtr(nodeFun *nodeFun_,
+							CppAD::tape_id_t tape_id,
+							CppAD::local::ADTape<double>* tape_handle_) {
+  not_empty = true;
+  nodeFunInModelDLL = nodeFun_;
+  nodeFunInModelDLL->get_tape_ptr_from_nodeFun(saved_tape_id, saved_tape_handle);
+  nodeFunInModelDLL->set_tape_ptr_from_nodeFun(tape_id, tape_handle_, false);
+}
+
+set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
+  if(not_empty) {
+    nodeFunInModelDLL->set_tape_ptr_from_nodeFun(saved_tape_id, saved_tape_handle, true); // This was an attempt at self-cleanup.  It does not seem necessary but is worth keeping in mind.
+  }
+}
+
+// CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
+// 					 bool includeExtraOutputStep,
+// 					 nimbleCppADrecordingInfoClass &recordingInfo) {
+//   //   std::cout <<"entering calculate_ADproxyModel"<< std::endl;
+//   //  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
+  
+//   CppAD::AD<double> ans = 0;
+//   const vector<NodeInstruction> &instructions = nodes.getInstructions();
+//   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+//   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
+//   // std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
+  
+//   for(; iNode != iNodeEnd; iNode++)
+//     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
+//   if(includeExtraOutputStep && recordingInfo.recording()) {
+//     //  std::cout<<"starting extraOutputStep"<<std::endl;
+//     if(instructions.begin() != iNodeEnd) {
+//       //  std::cout<<"will do extraOutputStep"<<std::endl;
+//       // It is arbitrary to call this for the first node,
+//       // but it is important to have it done by a nodeFun
+//       // because that will be in the right compilation unit
+//       // to access the right globals (statics) from CppAD.
+//       instructions.begin()->nodeFunPtr->setup_extraOutput_step( nodes,
+//       								ans,
+// 								recordingInfo.ADinfoPtr() );
+//     }
+//     // std::cout<<"done with extraOutputStep"<<std::endl;
+//   }
+
+//   return(ans);
+// }
+
+// void assign_extraInputDummy(NodeVectorClassNew_derivs &nodes,
+// 			    CppAD::AD<double> &extraInputDummy) {
+//   nodes.extraInputDummy = extraInputDummy;
+// }
+
+
+
+// void setup_extraInput_step(NodeVectorClassNew_derivs &nodes) {
+//   const vector<NodeInstruction> &instructions = nodes.getInstructions();
+//   if(instructions.size() == 0) {
+//       printf("No nodes for initialize_AD_model_before_recording\n");
+//       return;
+//   }
+//   nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
+//   nodeFunInModelDLL->setup_extraInput_step(nodes);
+// }
+
+void initialize_AD_model_before_recording(NodeVectorClassNew_derivs *nodes) {
+  if(!nodes) return;
+  const vector<NodeInstruction> &instructions = nodes->getInstructions();
+  if(instructions.size() == 0) {
+      // printf("No nodes for initialize_AD_model_before_recording\n");
+      return;
+  }
+  nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
+  nodeFunInModelDLL->initialize_AD_model_before_recording(*nodes);
+}
+
+void init_dynamicVars(NodeVectorClassNew_derivs *NV,
+		      std::vector<CppAD::AD<double> > &dynamicVars) {
+  if(!NV) return;
+  int length_extraInput = NV->model_extraInput_accessor.getTotalLength();
+  NimArr<1, double> NimArrValues;
+
+  if(length_extraInput > 0) {
+    NimArrValues.setSize(length_extraInput);
+    dynamicVars.resize(length_extraInput);
+    getValues(NimArrValues, NV->model_extraInput_accessor);
+    std::copy( NimArrValues.getPtr(),
+	       NimArrValues.getPtr() + length_extraInput,
+	       dynamicVars.begin());
+  }
+}
+
+void copy_dynamicVars_to_model(NodeVectorClassNew_derivs *NV,
+			       std::vector<CppAD::AD<double> > &dynamicVars) {
+  if(!NV) return;
+  int length_extraInput = NV->model_extraInput_accessor.getTotalLength();
+  NimArr<1, CppAD::AD<double> > NimArrValues_AD;
+
+  if(length_extraInput > 0) {
+    NimArrValues_AD.setSize(length_extraInput);
+    std::copy( dynamicVars.begin(),
+	       dynamicVars.end(),
+	       NimArrValues_AD.getPtr());
+    setValues_AD_AD(NimArrValues_AD, NV->model_AD_extraInput_accessor);
+  }
+}
+
+// void update_dynamicVars(NodeVectorClassNew_derivs &NV,
+// 			std::vector<double> &dynamicVars) {
+//   int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+//   NimArr<1, double> NimArrValues;
+//   if(length_extraInput > 0) {
+//     NimArrValues.setSize(length_extraInput);
+//     dynamicVars.resize(length_extraInput);
+//     getValues(NimArrValues, NV.model_extraInput_accessor);
+//     std::copy( NimArrValues.getPtr(),
+// 	       NimArrValues.getPtr() + length_extraInput,
+// 	       dynamicVars.begin());
+//   }
+// }
+
+// void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
+// 			     std::vector< CppAD::AD<double> > &dynamicVars) {
+//   int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
+//   NimArr<1, double> NimArrValues;
+//   if(length_extraInput > 0) {
+//     NimArrValues.setSize(length_extraInput);
+//     dynamicVars.resize(length_extraInput);
+//     getValues(NimArrValues, NV.model_extraInput_accessor);
+//     std::copy( NimArrValues.getPtr(),
+// 	       NimArrValues.getPtr() + length_extraInput,
+// 	       dynamicVars.begin());
+//   }
+// }
 
 double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
   if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
@@ -166,6 +334,48 @@ void ManyModelValuesMapAccessor::setRow(int i) {
 //  return(varAccessors);
 }
 
+void nimArr_2_SingleModelAccess_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
+				      NimArrBase< CppAD::AD<double> > &nimArr,
+				      int nimBegin,
+				      int nimStride) {
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  if(SMVAPtr->getSingleton()) {
+    (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
+  } else {
+    dynamicMapCopyFlatToDim< CppAD::AD<double> , CppAD::AD<double> >(static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
+								     SMVAPtr->getOffset(),
+								     SMVAPtr->getStrides(),
+								     SMVAPtr->getSizes(),
+								     &nimArr,
+								     nimBegin,
+								     nimStride);
+  }
+}
+
+
+void nimArr_2_ManyModelAccess_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBase< CppAD::AD<double> > &nimArr){
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = SMVA_Vec->size();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++){
+    curSingleAccess = (*SMVA_Vec)[i];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd){
+      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      break;
+    }
+    nimArr_2_SingleModelAccess_AD_AD(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing nimArr_2_ManyModelAccess_AD_AD, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
 
 template<class T>
 void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
@@ -214,10 +424,51 @@ void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 ///////////////
 // [accessors]_2_nimArr
 // nimArr is "to". SMVAPtr is "from"
+void SingleModelAccess_2_nimArr_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
+				      NimArrBase< CppAD::AD<double> > &nimArr,
+				      int nimBegin,
+				      int nimStride) {
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  if(SMVAPtr->getSingleton()) {
+    (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset];
+  } else {
+    dynamicMapCopyDimToFlat< CppAD::AD<double>, CppAD::AD<double> >(&nimArr,
+								  nimBegin,
+								  nimStride,
+								  static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
+								  SMVAPtr->getOffset(),
+								  SMVAPtr->getStrides(),
+								  SMVAPtr->getSizes() );
+  }
+}
+
+void ManyModelAccess_2_nimArr_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBase< CppAD::AD<double> > &nimArr){
+  const vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = SMVA_Vec->size();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++){
+    curSingleAccess = (*SMVA_Vec)[i];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd){
+      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      break;
+    }
+    SingleModelAccess_2_nimArr_AD_AD(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing ManyModelAccess_2_nimArr_AD_AD, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
 
 template<class T>
 void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
-  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  const vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
   int nimCurrent = 0;
   int nimEnd = nimArr.size();
   int nimArrStride = nimArr.strides()[0];
@@ -240,6 +491,7 @@ void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &
     PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
+
 template<class T>
 void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, int index) {
   vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
@@ -259,35 +511,40 @@ void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 
 //////////
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA){
-	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
+  nimArr_2_ManyModelAccess<double>(MVA, nimArr);
 }
-
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA){
-	nimArr_2_ManyModelAccess<int>(MVA, nimArr);
+  nimArr_2_ManyModelAccess<int>(MVA, nimArr);
+}
+void setValues_AD_AD(NimArrBase< CppAD::AD<double> > &nimArr,  ManyVariablesMapAccessor &MVA){
+  nimArr_2_ManyModelAccess_AD_AD(MVA, nimArr);
 }
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<double>(MVA, nimArr, index-1);
 }
-
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<int>(MVA, nimArr, index-1);
 }
-
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA){
-	ManyModelAccess_2_nimArr<double>(MVA, nimArr);
+  ManyModelAccess_2_nimArr<double>(MVA, nimArr);
 }
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA){
-	ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+  ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+}
+void getValues_AD_AD(NimArr<1, CppAD::AD<double> > &nimArr, ManyVariablesMapAccessor &MVA){
+  ManyModelAccess_2_nimArr_AD_AD(MVA, nimArr);
 }
 
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<double>(MVA, nimArr, index-1);
-  } 
+} 
 
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<int>(MVA, nimArr, index-1);
 }
+
+
 
 void nimCopy(const copierVectorClass &copiers) {
   vector<copierClass*>::const_iterator iCopy;
@@ -519,12 +776,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     singletonCopyCheck(toNimArr, to->getOffset());
 #endif
     switch(fromType) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       switch(toType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	(*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
 	break;
-    case INT:
+    case nimType::INT:
 	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
       break;
     default:
@@ -532,12 +789,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
       nimble_print_to_R(_nimble_global_output);
     }
     break;
-  case INT:
+  case nimType::INT:
     switch(toType) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       (*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->getOffset()];
       break;
-    case INT:
+    case nimType::INT:
 	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->getOffset()];
       break;
     default:
@@ -555,12 +812,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     dynamicMapCopyCheck(fromNimArr, from->getOffset(), from->getStrides(), from->getSizes());
 #endif
     switch(fromType) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       switch(toType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	dynamicMapCopy<double, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
-      case INT:
+      case nimType::INT:
 	dynamicMapCopy<double, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
@@ -568,12 +825,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
 	nimble_print_to_R(_nimble_global_output);
       }
       break;
-    case INT:
+    case nimType::INT:
       switch(toType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	dynamicMapCopy<int, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
-      case INT:
+      case nimType::INT:
 	dynamicMapCopy<int, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
@@ -590,10 +847,10 @@ void singletonCopyCheck(NimArrType *NAT, int offset) {
   nimType NATtype = NAT->getNimType();
   int NATsize;
   switch(NATtype) {
-  case INT:
+  case nimType::INT:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
-  case DOUBLE:
+  case nimType::DOUBLE:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:
@@ -608,10 +865,10 @@ void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vect
   nimType NATtype = NAT->getNimType();
   int NATsize;
   switch(NATtype) {
-  case INT:
+  case nimType::INT:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
-  case DOUBLE:
+  case nimType::DOUBLE:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:
@@ -640,6 +897,66 @@ SEXP getListElement(SEXP list, const char *str){
 	UNPROTECT(2);
 	return(ans);
 }
+
+void populateNodeFxnVectorNew_internal_forDerivs(NodeVectorClassNew_derivs* nfv, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo) {
+  (*nfv).populateDerivsInfo(SderivInfo);
+  int len = LENGTH(S_ROWINDS);
+  if(len == 0) return;
+  int* gids = INTEGER(S_GIDs);
+  int* rowinds = INTEGER(S_ROWINDS);
+  int index;
+  NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
+  int nextRowInd;
+  (*nfv).instructions.clear();
+  for(int i = 0; i < len; i++){
+    index = gids[i] - 1;
+    nextRowInd = rowinds[i]-1;
+    if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
+      nextRowInd = 0;
+    }
+    (*nfv).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
+  }
+}
+
+void populateNodeFxnVectorNew_copyFromRobject_forDerivs(void *nodeFxnVec_to, SEXP S_nodeFxnVec_from ) {
+   SEXP S_indexingInfo;
+   SEXP S_pxData;
+   PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  PROTECT(S_indexingInfo = VECTOR_ELT(S_nodeFxnVec_from, 1));
+  SEXP S_declIDs;
+  PROTECT(S_declIDs = VECTOR_ELT(S_indexingInfo, 0));
+  SEXP S_rowIndices;
+  PROTECT(S_rowIndices = VECTOR_ELT(S_indexingInfo, 1));
+  SEXP S_numberedPtrs;
+  PROTECT(S_numberedPtrs = Rf_findVarInFrame(PROTECT(GET_SLOT(
+							      Rf_findVarInFrame(PROTECT(GET_SLOT(
+												 Rf_findVarInFrame(PROTECT(GET_SLOT(
+																    VECTOR_ELT(S_nodeFxnVec_from,
+																	       2
+																	       ),
+																    S_pxData)),
+														   Rf_install("CobjectInterface")
+														   ),
+												 S_pxData)),
+										Rf_install(".nodeFxnPointers_byDeclID")),
+							      S_pxData)),
+					     Rf_install(".ptr")
+					     )
+  );
+  SEXP SderivInfo;
+  PROTECT(SderivInfo = VECTOR_ELT(S_nodeFxnVec_from, 3));
+  NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(nodeFxnVec_to);
+  populateNodeFxnVectorNew_internal_forDerivs(nfv_derivs, S_declIDs, S_numberedPtrs, S_rowIndices, SderivInfo);
+  UNPROTECT(9);
+}
+
+SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo){
+  NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(R_ExternalPtrAddr(SnodeFxnVec)) ;
+  populateNodeFxnVectorNew_internal_forDerivs(nfv_derivs, S_GIDs, SnumberedObj, S_ROWINDS, SderivInfo);
+  return(R_NilValue);
+}
+
 
 void populateNodeFxnVectorNew_internal(NodeVectorClassNew* nfv, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS ) {
   int len = LENGTH(S_ROWINDS);
@@ -877,12 +1194,14 @@ SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim) {
 
 //#define _DEBUG_POPULATE_MAP_ACCESSORS
 
-// call both with a bunch of output generated...
-SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
+
+void populateValueMapAccessorsFromNodeNames_internal(ManyVariablesMapAccessorBase* valuesAccessor,
+						     SEXP SnodeNames,
+						     SEXP SsizesAndNdims,
+						     SEXP SModelOrModelValuesPtr) {
   vector<string> nodeNames;
   STRSEXP_2_vectorString(SnodeNames, nodeNames);
   NamedObjects *sourceNamedObject = static_cast<NamedObjects*>(R_ExternalPtrAddr(SModelOrModelValuesPtr));
-  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
   int numNames = nodeNames.size();
   valuesAccessor->resize(numNames);
   vector<SingleVariableMapAccessBase *> *singleAccessors = &(valuesAccessor->getMapAccessVector());
@@ -892,7 +1211,7 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   SEXP SoneSizesAndNdims;
   mapInfoClass mapInfo;
   int totalLength = 0;
-
+  
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
   _nimble_global_output<<"New: "<<numNames<<"\n";
   nimble_print_to_R(_nimble_global_output);
@@ -946,6 +1265,43 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   _nimble_global_output<<totalLength<<"\n";
   nimble_print_to_R(_nimble_global_output);
 #endif
+}
+
+void populateValueMapAccessorsFromNodeNames_copyFromRobject(void *VvaluesAccessor,
+							    SEXP Sargs,
+							    bool derivsEnabled,
+							    void *VvaluesAccessor_AD) {
+  //  _nimble_global_output<<"In new copy system\n";
+  //  nimble_print_to_R(_nimble_global_output);
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(VvaluesAccessor);
+  SEXP SnodeNames, SsizesAndNdims, SModelOrModelValuesPtr;
+  PROTECT(SnodeNames = VECTOR_ELT(Sargs, 0));
+  PROTECT(SsizesAndNdims = VECTOR_ELT(Sargs, 1));
+  PROTECT(SModelOrModelValuesPtr = VECTOR_ELT(Sargs, 2));
+  populateValueMapAccessorsFromNodeNames_internal(valuesAccessor,
+						  SnodeNames,
+						  SsizesAndNdims,
+						  SModelOrModelValuesPtr);
+
+  if(derivsEnabled) {
+    if(VvaluesAccessor_AD) {
+      ManyVariablesMapAccessorBase* valuesAccessor_AD = static_cast<ManyVariablesMapAccessorBase*>(VvaluesAccessor_AD);
+      SEXP SModelOrModelValuesPtr_AD;
+      PROTECT(SModelOrModelValuesPtr_AD = VECTOR_ELT(Sargs, 3));
+      populateValueMapAccessorsFromNodeNames_internal(valuesAccessor_AD,
+						      SnodeNames,
+						      SsizesAndNdims,
+						      SModelOrModelValuesPtr_AD);
+      UNPROTECT(1);
+    }
+  }
+  UNPROTECT(3);
+}
+
+// call both with a bunch of output generated...
+SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
+  populateValueMapAccessorsFromNodeNames_internal(valuesAccessor, SnodeNames, SsizesAndNdims, SModelOrModelValuesPtr);
   return(R_NilValue);
 }
 

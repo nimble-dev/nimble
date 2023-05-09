@@ -29,6 +29,7 @@
 #include<limits>
 #include<string>
 #include<time.h>
+#include<cppad/cppad.hpp>
 using std::string;
 
 //using namespace std;
@@ -152,7 +153,8 @@ class nimbleTimerClass_ {
 	return R_D__0;					\
    }
 
-#define EIGEN_CHOL(x)       (x).selfadjointView<Eigen::Upper>().llt().matrixU()
+#define EIGEN_CHOL(x)       (x).template selfadjointView<Eigen::Upper>().llt().matrixU()
+#define nimDerivs_EIGEN_CHOL_no_atomic(x)       (x).template selfadjointView<Eigen::Upper>().llt().matrixU()
 //#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)
 //#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
 //#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
@@ -167,26 +169,118 @@ bool nimNot(bool x);
 
 static inline bool isTRUE(bool x) {return(x);}
 
+double pow_int(double a, double b);
+
 // needed for link functions
 double ilogit(double x);
+template<class T>
+T nimDerivs_ilogit(T x){
+  return(1./(1. + exp(-x)));
+}
+
 double icloglog(double x);
+template<class T>
+T nimDerivs_icloglog(T x){
+  return(1.-exp(-exp(x)));
+}
+
 double iprobit(double x);
 double probit(double x);
+
 //double abs(double x);
 double cloglog(double x);
+template<class T>
+T nimDerivs_cloglog(T x){
+  return(log(-log(T(1) - x)));
+}
+
 int nimEquals(double x1, double x2);
+template<class T>
+T nimDerivs_nimEquals(T x1, T x2){
+  return(CondExpEq(x1, x2, T(1), T(0))); 
+}
+
 double nimbleIfElse(bool condition, double x1, double x2);
 double lfactorial(double x);
 double factorial(double x);
 //double loggam(double x);
 double logit(double x);
+template<class T>
+T nimDerivs_logit(T x) {
+  return(log(x / (T(1)-x)));
+}
+
 double nimRound(double x);
 double pairmax(double x1, double x2);
+template<class T>
+T nimDerivs_pairmax(T x1, T x2) {
+  return(CondExpGt(x1, x2, x1, x2));
+}
+
 double pairmin(double x1, double x2);
+template<class T>
+T nimDerivs_pairmin(T x1, T x2) {
+  return(CondExpLt(x1, x2, x1, x2));
+}
+
 //double phi(double x);
 int nimStep(double x); 
+template<class T>
+T nimDerivs_nimStep(T x){
+	return(CondExpGe(x, T(0), T(1), T(0)));
+} 
+
 double cube(double x);
+template<class T>
+T nimDerivs_cube(T x){
+	return(x*x*x);
+}
+
 double inprod(double v1, double v2);
+template<class T>
+T nimDerivs_inprod(T v1, T v2) {
+  return(v1*v2);
+}
+
+template<class T>
+T nimDerivs_atan(T x) {
+  return(CppAD::atan(x));
+}
+
+template<class T>
+T nimDerivs_cosh(T x) {
+  return(CppAD::cosh(x));
+}
+
+template<class T>
+T nimDerivs_sinh(T x) {
+  return(CppAD::sinh(x));
+}
+
+template<class T>
+T nimDerivs_tanh(T x) {
+  return(CppAD::tanh(x));
+}
+
+template<class T>
+T nimDerivs_acosh(T x) {
+  return(CppAD::acosh(x));
+}
+
+template<class T>
+T nimDerivs_asinh(T x) {
+  return(CppAD::asinh(x));
+}
+
+template<class T>
+T nimDerivs_atanh(T x) {
+  return(CppAD::atanh(x));
+}
+
+template<class T>
+T nimDerivs_log1p(T x) {
+  return(CppAD::log1p(x));
+}
 
 inline double nimble_NaN() {
   return std::numeric_limits<double>::has_quiet_NaN

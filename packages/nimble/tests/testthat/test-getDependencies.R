@@ -386,6 +386,29 @@ test_that("getConditionallyIndependentSets works for tweaked pump model", {
                         c('theta[1]', 'theta[2]')))  
 })
 
+test_that("getConditionallyIndependentSets works with unknownAsGiven=TRUE", {
+  # This test is from NCT #405
+  m <- nimbleModel(
+  nimbleCode({
+    mu ~ dnorm(0,1)
+    for(i in 1:4) a[i] ~ dnorm(mu, 1)
+    y[1] ~ dnorm(a[1]+a[2], 1)
+    y[2] ~ dnorm(a[1]-a[2], 1)
+    y[3] ~ dnorm(a[3]+a[4], 1)
+    y[4] ~ dnorm(a[3]-a[4], 1)
+  }),
+  data = list(y = c(1, 1, 1, 1)),
+  inits = list(mu = 1))
+
+  expect_identical(
+    m$getConditionallyIndependentSets("a", givenNodes = c("y")),
+    list(m$expandNodeNames(c("mu","a"))))
+
+  expect_identical(
+    m$getConditionallyIndependentSets("a", givenNodes = c("y"), unknownAsGiven=TRUE),
+    list(c('a[1]','a[2]'), c('a[3]','a[4]')))
+})
+
 test_that('getNodeNames and getDependencies with predictiveNode options', {
     
     code <- nimbleCode({

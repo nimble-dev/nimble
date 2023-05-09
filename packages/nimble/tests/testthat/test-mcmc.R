@@ -41,7 +41,6 @@ sink_with_messages(outputFile)
 
 
 ## tests of classic BUGS examples
-
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
@@ -1663,7 +1662,6 @@ test_that('RW_dirichlet sampler more complicated', {
                 info = 'non-conjugate agreement between RW_dirichlet and component gamma sampling: sd')
 })
 
-
 ## testing dmnorm-dnorm conjugacies we don't detect
 
 test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
@@ -1937,6 +1935,7 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
     Cmcmc$run(10)
 })
 
+
 test_that('slice sampler bails out of loop', {
     code <- nimbleCode({
         y ~ dnorm(0, sd = sigma)
@@ -1994,6 +1993,7 @@ test_that('cc_checkScalar operates correctly', {
     expect_false(nimble:::cc_checkScalar(quote(foo(lambda))))
 
 })
+
 
 test_that('cc_stripExpr operates correctly', {
     expr <- 'coeff * (log(value) - offset) * taulog'

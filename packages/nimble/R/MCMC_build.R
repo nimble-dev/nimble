@@ -22,6 +22,8 @@
 #'
 #' \code{resetMV}: Boolean specifying whether to begin recording posterior sample chains anew. This argument is only considered when using \code{reset = FALSE}.  Specifying \code{reset = FALSE, resetMV = TRUE} allows the MCMC algorithm to continue running from where it left off, but without appending the new posterior samples to the already existing samples, i.e. all previously obtained samples will be erased. This option can help reduce memory usage during burn-in (default = FALSE).
 #'
+#' \code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain and after_chain methods.  The value for this argument is specified automatically from invocation via runMCMC, and genernally need not be supplied when calling mcmc$run (default = 1).
+#'
 #' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 #'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
@@ -167,7 +169,7 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
-
+        ##nimbleVerboseOption <- getNimbleOption('verbose')   ## not currently used anywhere
         waicFun <- nimbleFunctionList(waicClass_base)
         if(enableWAIC && !('online' %in% names(conf$controlWAIC) && !conf$controlWAIC$online)) {
            waicFun[[1]] <- buildWAIC(model, mvSaved, conf$controlWAIC)
@@ -199,7 +201,8 @@ buildMCMC <- nimbleFunction(
         nburnin               = double(default =  0),
         thin                  = double(default = -1),
         thin2                 = double(default = -1),
-        resetWAIC             = logical(default = TRUE)) {
+        resetWAIC             = logical(default = TRUE),
+        chain                 = integer(default =  1)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')
@@ -213,8 +216,9 @@ buildMCMC <- nimbleFunction(
         my_initializeModel$run()
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
-            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter, nburnin, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -287,6 +291,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$after_chain()
         returnType(void())
     },
     methods = list(

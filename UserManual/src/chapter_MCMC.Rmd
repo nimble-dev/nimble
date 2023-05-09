@@ -938,6 +938,93 @@ If one wants information about conjugate node relationships for other purposes, 
 
 <!---  The requirement that all stochastic descendants of the `target` nodes must themselves have only conjugate descendants will be checked when the MCMC algorithm is built.  This sampler is useful when there is strong dependence across the levels of a model that causes problems with convergence or mixing. -->
 
+### Hamiltonian Monte Carlo (HMC) {#subsec:HMC}
+
+As of version 1.0.0 NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha:AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
+
+
+The HMC sampler in package `nimbleHMC` implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.
+
+At its core, HMC in NIMBLE is just another MCMC sampler that can be used in NIMBLE's general MCMC system, possibly along with other samplers. For convenience, `nimbleHMC` provides different ways to set up and run HMC that allow different degrees of control:
+
+- `nimbleHMC` is analogous to `nimbleMCMC`: It takes model `code`, `data`, `inits` and `constants` and does all steps from building the model to running one or more MCMC chains. Use this if you want one call to get default HMC samples of the entire model.
+- `configureHMC` is analogous to `configureMCMC`: It sets up a default MCMC configuration that comprises one HMC sampler for all model nodes (or nodes you choose). You can then use `addSampler` and other methods of the configuration to fully customize it before building and using the MCMC.  Use `configureHMC` if you want to do MCMC with both HMC and other samplers and you find it easier to start with HMC in the configuration first.
+- `buildHMC` is analogous to `buildMCMC`: It builds a configuration that, if not provided, will be created by `configureHMC`. Use this if you want to manage MCMC runs through `runMCMC` instead of `nimbleHMC` and you don't need to customize the configuration by doing `configureHMC` yourself.
+- `addHMC`: This manages use of `addSampler` for an MCMC configuration to add specifically an HMC sampler for a chosen set of nodes. It optionally removes other samplers for those nodes first. Use this if you want to do MCMC with both HMC and other samplers and you find it easier to start with the other sampler in the configuration, i.e. from the result of `configureMCMC`. 
+- For the most fine-grained control, you can call `configureMCMC` and then use the `addSampler` with `type="HMC"` to add HMC sampler(s).
+
+More information on these is available from the help pages, e.g. `help(configureHMC)`.
+
+#### HMC example {#subsec:HMC-example}
+
+Here we will configure and build an MCMC to use HMC on a GLMM example. In this case we'll use HMC for the whole model, i.e., all parameters and latent states.
+
+We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC (and also for Laplace approximation in \@ref(sec:use-derivs)). There will be 10 groups (indexed by `i`) of 5 observations (indexed by `j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
+
+```{r eval=TRUE}
+model_code <- nimbleCode({
+  # priors 
+  intercept ~ dnorm(0, sd = 100)
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 10)
+  # random effects and data  
+  for(i in 1:10) {
+    # random effects
+    ran_eff[i] ~ dnorm(0, sd = sigma)
+    for(j in 1:5) {
+      # data
+      y[i,j] ~ dpois(exp(intercept + beta*X[i,j] + ran_eff[i]))
+    }
+  }
+})
+```
+
+We'll simulate some values for `X`.
+
+```{r eval=TRUE}
+set.seed(123)
+X <- matrix(rnorm(50), nrow = 10)
+```
+
+In order to allow an algorithm to use AD for a specific model, that model must be created with `buildDerivs = TRUE`. (Note that if you use the one-step method `nimbleHMC` described above, then you do not need to build the model yourself and so you do not need to provide this `buildDerivs` option.)
+
+```{r eval=TRUE}
+inits <- list(intercept = 0, beta = 0.2, sigma = 0.5)
+model <- nimbleModel(model_code, constants = list(X = X), inits = inits, calculate = FALSE,
+                     buildDerivs = TRUE) # Here is the argument needed for AD.
+```
+
+To finish setting up the example we need to put data values into the model. We could have provided data in the call to `nimbleModel`, but instead we will simulate them using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.
+
+```{r eval=TRUE}
+model$calculate() # This will return NA because the model is not fully initialized.
+model$simulate(model$getDependencies('ran_eff'))
+model$calculate() # Now the model is fully initialized: all nodes have valid values.
+model$setData('y') # Now the model has y marked as data, with values from simulation.
+```
+
+Finally, we will make a compiled version of the model.
+```{r eval=TRUE}
+Cmodel <- compileNimble(model)
+```
+
+Now we will build an HMC algorithm for the parameters and random effects in the model.
+```{r eval=TRUE}
+library(nimbleHMC)
+HMC <- buildHMC(model)
+CHMC <- compileNimble(HMC, project = model) # The compiled HMC will use the compiled model.
+samples <- runMCMC(CHMC, niter = 1000, nburnin = 500) # short run for illustration
+```
+
+We will not investigate results in detail, but here is a summary to see that reasonable results were generated.
+```{r eval=TRUE}
+summary(coda::as.mcmc(samples))
+```
+
+#### Automatic parameter transformation
+
+In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(#sec:parameter-transform).
+
 ### Customized log-likelihood evaluations: *RW_llFunction sampler*
  
 Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm [@Andrieu_Doucet_Holenstein_2010].  The `RW_llFunction` sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).

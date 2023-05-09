@@ -115,6 +115,9 @@ sampler_slice_CRP_base_param(model, mvSaved, target, control)
 \description{
 Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
 }
+\details{
+Derivative-based MCMC sampling algorithms, including Hamiltonian Monte Carlo (HMC), are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, use \code{help(HMC)} for details.
+}
 \section{\code{sampler_base}}{
  base class for new samplers
 
@@ -458,11 +461,17 @@ As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers
 \references{
 Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte Carlo Methods. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 72(3), 269-342.
 
+Hoffman, Matthew D., and Gelman, Andrew (2014). The No-U-Turn Sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. \emph{Journal of Machine Learning Research}, 15(1): 1593-1623.
+
+Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
+
 Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
 
 Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
 
 Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
+
+Neal, Radford M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 
 Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
 

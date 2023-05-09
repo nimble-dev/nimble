@@ -8,6 +8,7 @@ nimblePreevaluationFunctionNames <- c('+',
                                       'exp',
                                       'log',
                                       'pow',
+                                      'pow_int',
                                       '^',
                                       '%%',
                                       'equals',
@@ -336,7 +337,8 @@ BUGSdeclClass$methods(
                  context,
                  nimFunNames,
                  unknownIndexDeclInfo = NULL,
-                 contextID = NULL) {
+                 contextID = NULL,
+                 buildDerivs = FALSE) {
     ## sets the field symbolicparentNodes
             symbolicParentNodes <<-
                 unique(
@@ -345,7 +347,8 @@ BUGSdeclClass$methods(
                                            context$indexVarExprs,
                                            nimFunNames,
                                            contextID = contextID,
-                                           envir = envir)
+                                           envir = envir,
+                                           buildDerivs = buildDerivs)
                 ) 
         }
 )
@@ -406,7 +409,8 @@ BUGSdeclClass$methods(
     genReplacedTargetValueAndParentInfo = function(constantsNamesList,
                                                    context,
                                                    nimFunNames,
-                                                   contextID = NULL) {
+                                                   contextID = NULL,
+                                                   buildDerivs = FALSE) {
         ## This assumes codeReplaced is there.
         ## Generate hasBracket info:
         targetExprReplaced <<- codeReplaced[[2]]
@@ -425,7 +429,8 @@ BUGSdeclClass$methods(
                                          replacementNameExprs),
                                        nimFunNames,
                                        contextID = contextID,
-                                       envir = envir)
+                                       envir = envir,
+                                       buildDerivs = buildDerivs)
             )
     if(!nimbleOptions()$allowDynamicIndexing) {
         rhsVars <<-
@@ -636,7 +641,8 @@ getSymbolicParentNodes <- function(code,
                                    nimbleFunctionNames = list(),
                                    addDistNames = FALSE,
                                    contextID = NULL,
-                                   envir = .GlobalEnv) {
+                                   envir = .GlobalEnv,
+                                   buildDerivs = FALSE) {
     if(addDistNames)
         nimbleFunctionNames <- c(nimbleFunctionNames,
                                  getAllDistributionsInfo('namesExprList'))
@@ -645,11 +651,14 @@ getSymbolicParentNodes <- function(code,
                                          indexNames,
                                          nimbleFunctionNames,
                                          contextID,
-                                         envir)
+                                         envir,
+                                         buildDerivs = buildDerivs)
     return(ans$code)
 }
 
-getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list(), contextID = NULL, envir = .GlobalEnv) {
+getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(),
+                                          nimbleFunctionNames = list(), contextID = NULL,
+                                          envir = .GlobalEnv, buildDerivs = FALSE) {
     ## This takes as input some code and returns the variables in it.
     ## It expects one line of code, not a '{' expression.
     ##
@@ -740,7 +749,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                                          indexNames,
                                                          nimbleFunctionNames,
                                                          contextID,
-                                                         envir)
+                                                         envir,
+                                                         buildDerivs = buildDerivs)
                        )
             ## unpack the codes returned from recursion
             contentsCode <-
@@ -764,7 +774,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                               indexNames,
                                               nimbleFunctionNames,
                                               contextID,
-                                              envir)
+                                              envir,
+                                              buildDerivs = buildDerivs)
             
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex)
@@ -808,11 +819,15 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices (or constant vectors, which are not allowed)
                     if(!nimbleOptions()$allowDynamicIndexing) {
-                        warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ",
+                        message("  [Note] It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: `",
                                 safeDeparse(code),
-                                ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
+                                "`. Please set `nimbleOptions(allowDynamicIndexing = TRUE)`.")
                         dynamicIndexParent <- code[[2]]
                     } else {
+                        if(isTRUE(nimbleOptions("doADerrorTraps")))
+                          if(isTRUE(buildDerivs))
+                            message("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing (found in `", safeDeparse(code), "`).  Please set 'nimbleOptions(buildDerivs = FALSE)' to proceed with this model.")
+                      
                         if(any(
                             sapply(contentsCode,
                                    detectNonscalarIndex))
@@ -853,7 +868,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                                           indexNames,
                                                           nimbleFunctionNames,
                                                           contextID,
-                                                          envir)
+                                                          envir,
+                                                          buildDerivs = buildDerivs)
                     )
                 else ## foo(x): recurse on x
                     contents <- lapply(
@@ -864,7 +880,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                                           indexNames,
                                                           nimbleFunctionNames,
                                                           contextID,
-                                                          envir)
+                                                          envir,
+                                                          buildDerivs = buildDerivs)
                     )
                 ## unpack results of recursion
                 contentsCode <- unlist(

@@ -29,14 +29,22 @@
 double NimOptimProblem::fn(int n, double* par, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
-    std::copy(par, par + n, problem->par_.getPtr());
-    return problem->function() / problem->control_->fnscale;
+    double* problem_par = problem->par_.getPtr();
+    double* problem_parscale = problem->control_->parscale.getPtr();
+    for(int i = 0; i < n; ++i)
+        *problem_par++ = par[i] * problem_parscale[i];
+    double ans = problem->function() / problem->control_->fnscale;
+    if(isnan(ans)) ans = std::numeric_limits<double>::infinity();
+    return ans;
 }
 
 void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
-    std::copy(par, par + n, problem->par_.getPtr());
+    double* problem_par = problem->par_.getPtr();
+    double* problem_parscale = problem->control_->parscale.getPtr();
+    for(int i = 0; i < n; ++i)
+        *problem_par++ = par[i] * problem_parscale[i];
     problem->ans_.setSize(n, false, false);
     problem->gradient();
     for (int i = 0; i < n; ++i) {
@@ -48,15 +56,15 @@ nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
     nimSmartPtr<OptimControlNimbleList> control = new OptimControlNimbleList;
     control->trace = 0;
     control->fnscale = 1;
-    control->parscale.initialize(1.0, true, 1);
-    control->ndeps.initialize(1e-3, true, 1);
+    control->parscale.initialize(NA_REAL, true, 1);
+    control->ndeps.initialize(NA_REAL, true, 1);
     control->maxit = NA_INTEGER;  // Context-dependent.
     control->abstol = -INFINITY;
     control->reltol = std::sqrt(std::numeric_limits<double>::epsilon());
     control->alpha = 1.0;
     control->beta = 0.5;
     control->gamma = 2.0;
-    control->REPORT = 10;
+    control->REPORT = NA_INTEGER;
     control->type = 1;
     control->lmm = 5;
     control->factr = 1e7;
@@ -73,16 +81,9 @@ nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
 //   https://svn.r-project.org/R/trunk/src/library/stats/src/optim.c
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
-    NimArr<1, double>& par) {
-    NIM_ASSERT1(!par.isMap(), "Internal error: failed to handle mapped NimArr");
-    const int n = par.dimSize(0);
-
-    nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
-    result->par = par;
-    result->counts.initialize(NA_INTEGER, true, 2);
-    if (hessian_) {
-        result->hessian.initialize(NA_REAL, true, n, n);
-    }
+    NimArr<1, double>& init_par) {
+    NIM_ASSERT1(!init_par.isMap(), "Internal error: failed to handle mapped NimArr");
+    const int n = init_par.dimSize(0);
 
     // Set context-dependent default control_ values.
     if (control_->maxit == NA_INTEGER) {
@@ -92,6 +93,45 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
             control_->maxit = 100;
         }
     }
+    if(control_->parscale.size() == 1) {
+        if(R_IsNA(control_->parscale[0])) {
+            control_->parscale.initialize(1.0, true, n);
+        }
+    }
+    bool parscale_error = (control_->parscale.size() != n);
+    if(control_->ndeps.size() == 1) {
+        if(R_IsNA(control_->ndeps[0])) {
+            control_->ndeps.initialize(1e-3, true, n);
+        }
+    }
+
+    if(control_->ndeps.size() != n) {
+        if(parscale_error)
+            NIMERROR("In compiled optim (aka nimOptim) call: lengths for control parameters parscale and ndeps must equal length(par).");
+        else
+            NIMERROR("In compiled optim (aka nimOptim) call: length for control parameter ndeps must equal length(par).");
+    } else {
+        if(parscale_error)
+            NIMERROR("In compiled optim (aka nimOptim) call: length for control parameters parscale must equal length(par).");
+    }
+    if(control_->REPORT == NA_INTEGER) {
+        if (method_ == "BFGS" || method_ == "L-BFGS-B")
+            control_->REPORT = 10;
+        if (method_ == "SANN") // SANN is not even supported, but I'm including this so we don't forget if we ever do support SANN
+            control_->REPORT = 100;
+    }
+
+    NimArr<1, double> par = init_par;
+    for(int i = 0; i < n; ++i)
+        par[i] /= control_->parscale[i];
+
+    nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
+    result->par = par;
+    result->counts.initialize(NA_INTEGER, true, 2);
+    if (hessian_) {
+        result->hessian.initialize(NA_REAL, true, n, n);
+    }
+
 
     // Parameters common to all methods.
     double* dpar = par.getPtr();
@@ -108,6 +148,10 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
               control_->gamma, control_->trace, fncount, control_->maxit);
     } else if (method_ == "BFGS") {
         std::vector<int> mask(n, 1);
+	/* Shouldn't dpar be copied to X and X passed to the function? */
+	/* It looks like this method replaces X with the arg max result.*/
+	/* Oh, I see that instead, after vmmin, we have result->par = par,*/
+	/* This will place the last evaluated parameters in the result.*/
         vmmin(n, dpar, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
               control_->maxit, control_->trace, mask.data(), control_->abstol,
               control_->reltol, control_->REPORT, ex, fncount, grcount, fail);
@@ -138,9 +182,84 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     result->value *= control_->fnscale;
 
     // Compute Hessian.
+    // Parameters are still on the optimization scale,
+    // i.e. divided by parscale
     if (hessian_) {
-        Rf_warning("Hessian computation is not implemented");  // TODO
+        NimOptimProblem::calc_hessian(result->par, result->hessian);
     }
 
+    for(int i = 0; i < n; ++i)
+        result->par[i] *= control_->parscale[i];
     return result;
 }
+
+// This will be deprecated or updated.  It is only used in one place,
+// which is commented out just above.
+void NimOptimProblem::calc_hessian(NimArr<1, double> par,
+				   NimArr<2, double> &hessian) {
+  // Notice par is copied but hessian is by reference.
+    double *ndeps = control_->ndeps.getPtr();
+    double *parscale = control_->parscale.getPtr();
+    //  double ndeps = 0.001; //  This should be obtained from control list but is hard-wired for now.
+  double epsilon;
+  int n = par.dimSize(0);
+  void *ex = this;
+  double* dpar = par.getPtr(); // This is already divided by parscale
+  NimArr<1, double> ansUpper;
+  NimArr<1, double> ansLower;
+  ansUpper.setSize(n, false, false);
+  ansLower.setSize(n, false, false);
+  hessian.setSize(n, n, false, false);
+  int i, j;
+  for(i = 0; i < n; ++i) {
+      // It is strange to divide ndeps by parscale, but that's
+      // exactly what R's C code for optimhess does
+      epsilon = ndeps[i] / parscale[i];
+    dpar[i] += epsilon;
+    gr(n, dpar, ansUpper.getPtr(), ex);
+    dpar[i] -= 2*epsilon;
+    gr(n, dpar, ansLower.getPtr(), ex);
+    for(j = 0; j < n; ++j) {
+      // Following R's optimhess, we want to multiply by fnscale here to return answer to original scale.
+      hessian(i, j) = control_->fnscale * (ansUpper[j] - ansLower[j]) / (2.*epsilon*parscale[i]*parscale[j]);
+    }
+    dpar[i] += epsilon;
+  }
+  // Follow the "symmetrize" step of R's optimhess in stats, i.e. average the two relevant elements.
+  for(i = 0; i < n; ++i) {
+    for(j = 0; j < i; ++j) {
+      double tmp = 0.5* (hessian(i,j) + hessian(j,i));
+      hessian(i, j) = hessian(j, i) = tmp;
+    }
+  }
+}
+
+/*
+Notes on R's implementation of Hessian.
+---------------------------------------
+Source code of optim (type "optim" in R) uses .External2(C_optim, ...) followed by .External2(C_optimhess, ...).
+What each of these calls can be seen by stats:::C_optim and stats:::C_optimhess.
+They call "optim" and "optimhess" respectively.  These are in base package stats.
+Within R source code, these files are in src/library/stats/src.
+
+The .External2 format passes the R call in a standard four arguments, of which the third is a list of actual arguments.
+
+(We see that parscale is applied internally, which means if we want to imitate it's behavior, we'll have to implement it directly.)
+
+The actual optimization algorithms such as nmmin and vmmin can be found in src/appl/optim.c.
+
+optimhess calculates the Hessian.  We see that it uses finite element method for the gradient at points p + eps and p - eps, where eps comes from the
+ control list argument ndeps, which acccording to help(optim) can be user supplied or defaults to 0.001.  
+
+The gradient is evaluated via fmingr, which either uses the supplied gradient function or uses finite element differences of +/- eps.
+
+  For the finite element case, this means in effect that the function (fminfn) is evaluated at p + 2*eps, p [twice, once in each call to fmingr], and p - 2*eps.
+
+The exception is for a case with bounds (L-BFGS-B), in which case, inside fmingr, the p + eps and p-eps are reduced to upper boundary or lower boundary, 
+respectively, and the corresponding epsilons are adjusted. 
+
+fminfn and fmingr are defined in the same file as optim and optimhess.  (Our gr function above mimics the behavior of fmingr.)
+
+These functions wrap calls to the R evaluator for the provided 
+objective and gradient functions, respectively.  Within these functions, parscale and fnscale are applied. (Our fn and gr use fnscale but not parscale.)
+*/

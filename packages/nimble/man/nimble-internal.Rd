@@ -40,7 +40,6 @@
 \alias{keywordInfoClass-Class}
 \alias{MakeCustomModelClass-Class}
 \alias{makeCustomModelValuesClass-Class}
-\alias{makeStaticInitClass-Class}
 \alias{mapsClass-Class}
 \alias{modelDefInfoClass-Class}
 \alias{mvInfoClass-Class}
@@ -48,6 +47,7 @@
 \alias{nimbleGraphClass-Class}
 \alias{nimbleListDefClass-Class}
 \alias{nimbleProjectClass-Class}
+\alias{nimDerivsInfoClass-Class}
 \alias{nlCompilationInfoClass-Class}
 \alias{posteriorClass-Class}
 \alias{promptClass-Class}
@@ -104,6 +104,8 @@
 \alias{cc_getNodesInExpr}
 \alias{calcAdaptationFactor}
 \alias{is.nfGenerator}
+\alias{mcmc_createModelObject}
+\alias{nimOptim_model}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
 \description{

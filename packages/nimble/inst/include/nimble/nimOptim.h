@@ -25,6 +25,7 @@
 #include <nimble/NimArr.h>
 #include <nimble/predefinedNimbleLists.h>
 #include <nimble/smartPtrs.h>
+#include <nimble/nimbleCppAD.h>
 #include <algorithm>
 #include <string>
 
@@ -33,24 +34,24 @@
 //   object->method(par) == NimBoundMethod<T>(&T::method, object)(par);
 //                       == NimBind(&T::method, object)(par);
 //                       == std::bind(&T::method, object)(par);
-template <class T>
+template <class RT, class T>
 class NimBoundMethod {
    public:
-    NimBoundMethod(double (T::*method)(NimArr<1, double>&), T* object)
+    NimBoundMethod(RT (T::*method)(NimArr<1, double>&), T* object)
         : method_(method), object_(object) {}
-    double operator()(NimArr<1, double>& par) {
+    RT operator()(NimArr<1, double>& par) {
         return (object_->*method_)(par);
     }
 
    private:
-    double (T::*method_)(NimArr<1, double>&);
+    RT (T::*method_)(NimArr<1, double>&);
     T* object_;
 };
 
-template <class T>
-inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double>&),
+template <class RT, class T>
+inline NimBoundMethod<RT, T> NimBind(RT (T::*method)(NimArr<1, double>&),
                                  T* object) {
-    return NimBoundMethod<T>(method, object);
+  return NimBoundMethod<RT, T>(method, object);
 }
 
 // ---------------------------------------------------------------------------
@@ -73,7 +74,8 @@ class NimOptimProblem {
     // passed in as the final argument `void * ex`.
     static double fn(int, double*, void*);
     static void gr(int, double*, double*, void*);
-
+    void calc_hessian(NimArr<1, double> par,
+		      NimArr<2, double> &hessian);
    protected:
     // These are callbacks used internally by fn() and gr().
     virtual double function() = 0;
@@ -84,7 +86,7 @@ class NimOptimProblem {
     NimArr<1, double>& lower_;
     NimArr<1, double>& upper_;
     nimSmartPtr<OptimControlNimbleList> control_;
-    const bool hessian_;
+    bool hessian_;
 
     // Temporaries.
     NimArr<1, double> par_;  // Argument for fn() and gr().
@@ -110,36 +112,52 @@ class NimOptimProblem_Fun : public NimOptimProblem {
 
 template <class Fn>
 void NimOptimProblem_Fun<Fn>::gradient() {
+  // When gradient() is called (from NimOptimProblem::gr),
+  // parameters (par_) have already been multiplied by
+  // parscale elements to get to the scale used by the fn.
+  // However, the ndeps elements  (epsilons) get multiplied
+  // by parcale below.
     const int n = par_.dimSize(0);
     NIM_ASSERT_SIZE(ans_, n);
     NimArr<1, double>& ndeps = control_->ndeps;
-    if (ndeps.dimSize(0) == 1) ndeps.initialize(ndeps[0], true, n);
+    // Next line is no longer necessary because NimOptimProblem::solve()
+    // initializes ndeps to a vector of length n.
+    //    if (ndeps.dimSize(0) == 1) ndeps.initialize(ndeps[0], true, n);
     NIM_ASSERT_SIZE(ndeps, n);
     NimArr<1, double> par_h = par_;
+    double* parscale = control_->parscale.getPtr();
     if (method_ == "L-BFGS-B") {
         // Constrained optimization.
         for (int i = 0; i < n; ++i) {
-            const double h_pos = std::min(ndeps[i], upper_[i] - par_[i]);
-            const double h_neg = std::min(ndeps[i], par_[i] - lower_[i]);
+            const double h = ndeps[i]*parscale[i];
+            // Note that in the R source code where this is done
+            // (src/library/stats/src), the upper and lower bound
+            // vectors have been divided by parscale and so are
+            // checked on that scale.  Here the h and par_
+            // on the fn scale and so are upper_ and lower_.
+            const double h_pos = std::min(h, upper_[i] - par_[i]);
+            const double h_neg = std::min(h, par_[i] - lower_[i]);
             par_h[i] = par_[i] + h_pos;
             const double pos = fn_(par_h);
             par_h[i] = par_[i] - h_neg;
             const double neg = fn_(par_h);
             par_h[i] = par_[i];
-            ans_[i] = (pos - neg) / (h_pos + h_neg);
+            ans_[i] = parscale[i] * (pos - neg) / (h_pos + h_neg);
         }
     } else {
         // Unconstrained optimization.
         for (int i = 0; i < n; ++i) {
-            const double h = ndeps[i];
+            const double h = ndeps[i]*parscale[i];
             par_h[i] = par_[i] + h;
             const double pos = fn_(par_h);
             par_h[i] = par_[i] - h;
             const double neg = fn_(par_h);
             par_h[i] = par_[i];
-            ans_[i] = (pos - neg) / (2 * h);
+            ans_[i] = (pos - neg) / (2 * ndeps[i]);
         }
     }
+    // dividing the answer by fnscale is done by the calling
+    // function, NimOptimProblem::gr
 }
 
 template <class Fn, class Gr>
@@ -155,7 +173,17 @@ class NimOptimProblem_Fun_Grad : public NimOptimProblem {
 
    protected:
     virtual double function() { return fn_(par_); }
-    virtual void gradient() { ans_ = gr_(par_); }
+    virtual void gradient() {
+      // This should return gradient on par/parscale.
+      // But gr_ calculates the gradient wrt par.
+      // So we have to multiply by parscale.
+      ans_ = gr_(par_);
+      double* parscale = control_->parscale.getPtr();
+      const int n = par_.dimSize(0);
+      for (int i = 0; i < n; ++i) {
+        ans_[i] *= parscale[i];
+      }
+    }
 
    private:
     Fn fn_;

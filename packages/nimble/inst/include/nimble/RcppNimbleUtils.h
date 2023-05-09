@@ -42,13 +42,33 @@
 							   Rf_install(varName)))); \
   }
 
+#define COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(varName, derivsEnabled)	\
+  { \
+  std::string svarName(varName); \
+  std::string svarName_AD_(svarName + "_AD_"); \
+  populateValueMapAccessorsFromNodeNames_copyFromRobject(getObjectPtr(svarName), \
+							 PROTECT(Rf_findVarInFrame(S_xData, \
+										   Rf_install(varName))), \
+							 derivsEnabled, \
+							 getObjectPtr(svarName_AD_, false) \
+							 );		\
+  }
+
 #define COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(varName) \
   { \
   std::string svarName(varName); \
   populateNodeFxnVectorNew_copyFromRobject(getObjectPtr(svarName),\
 					   PROTECT(Rf_findVarInFrame(S_xData, \
 								     Rf_install(varName)))); \
-  }
+                    }
+
+#define COPY_NODE_FXN_VECTOR_DERIVS_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populateNodeFxnVectorNew_copyFromRobject_forDerivs(getObjectPtr(svarName),\
+					   PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+                    }
 
 #define COPY_NIMBLE_FXN_FROM_R_OBJECT(varName) \
   { \
@@ -348,8 +368,25 @@ SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
   return(Sans);
 }
 
+template<int ndim>
+void SEXP_list_2_NimArr_double_vec(SEXP Sn, vector<NimArr<ndim, double> > &ans) {
+			int numListElements = Rf_length(Sn);
+			ans.resize(numListElements);
+			for(int i = 0; i < numListElements; i++){
+				SEXP_2_NimArr<ndim>(VECTOR_ELT(Sn, i), ans[i]);
+			}
+}
 
- void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
+template<int ndim>
+void SEXP_list_2_NimArr_int_vec(SEXP Sn, vector<NimArr<ndim, int> > &ans) {
+			int numListElements = Rf_length(Sn);
+			ans.resize(numListElements);
+			for(int i = 0; i < numListElements; i++){
+				SEXP_2_NimArr<ndim>(VECTOR_ELT(Sn, i), ans[i]);
+			}
+}
+
+void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
 void row2NimArr(SEXP &matrix, NimArrBase<int> &nimPtr, int startPoint, int len, int nRows);
 
 template <class T>

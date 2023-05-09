@@ -8,7 +8,8 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 #' @param contains Not yet functional
 #' @param run      A NIMBLE function that will only be used to inspect its argument types and returnType.
 #' @param methods  An optional named list of NIMBLE functions that will also only be used for inspecting argument types and returnTypes.
-#' @param name     An optional name used internally by the NIMBLE compiled.  This is usually omitted and NIMBLE provides one.
+#' @param name     An optional name used internally by the NIMBLE compiler.  This is usually omitted and NIMBLE provides one.
+#' @param methodControl An optional list that allows specification of methods with defaults. 
 #'
 #' @author NIMBLE development team
 #'
@@ -22,11 +23,12 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 nimbleFunctionVirtual <- function(contains = NULL,
                                   run = function() { },
                                   methods     = list(),
-                                  name        = NA) {
+                                  name        = NA,
+                                  methodControl = list()) {
     virtual <- TRUE
     if(is.na(name)) name <- nf_refClassLabelMaker()
     className <- name
-    ## We make this look like a nimbleFunction in relevants ways for compilation
+    ## We make this look like a nimbleFunction in relevant ways for compilation
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     methodList <- lapply(methodList, nfMethodRC, check = FALSE)
     generatorFunction <- function() {}
@@ -34,7 +36,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
     nfRefClassDef <- nfRefClass <- NULL ## Existence of these makes this treated like a nfGenerator
     environment(generatorFunction) <- GFenv <- new.env()
     parent.env(GFenv) <- parent.frame()
-    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','run','methods','methodList','name', 'className', 'contains', 'virtual')) {
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','run','methods','methodList','name', 'className', 'contains', 'virtual', 'methodControl')) {
         GFenv[[var]] <- get(var)
     }
     return(generatorFunction)
@@ -49,7 +51,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @param methods An optional named list of NIMBLE function definitions for other class methods.
 #' @param globalSetup For internal use only
 #' @param contains An optional object returned from \code{\link{nimbleFunctionVirtual}} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
-#' @param enableDerivs EXPERIMENTAL A list of names of function methods to enable derivatives for.  Currently only for developer use.
+#' @param buildDerivs A list of names of function methods for which to build derivatives capabilities.
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
 #' @param check Boolean indicating whether to check the run code for function calls that NIMBLE cannot compile. Checking can be turned off for all calls to \code{nimbleFunction} using \code{nimbleOptions(checkNimbleFunction = FALSE)}.
 #' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
@@ -75,7 +77,7 @@ nimbleFunction <- function(setup         = NULL,
                            methods       = list(),
                            globalSetup   = NULL,
                            contains      = NULL,
-                           enableDerivs  = list(),
+                           buildDerivs  = list(),
                            name          = NA,
                            check         = getNimbleOption('checkNimbleFunction'),
                            where         = getNimbleFunctionEnvironment()
@@ -83,32 +85,89 @@ nimbleFunction <- function(setup         = NULL,
     force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
+    ## Ceck for correct entries in `buildDerivs` separately from `nfMethodRC$new()` because
+    ## that only has access to `thisBuildDerivs`, and we need to check if `buildDerivs` is set
+    ## for the method on which `nimDerivs` is called.
+    tmp <- sapply(c(list(run = run), methods), nf_checkDSLcode_buildDerivs, buildDerivs)
+    
     if(is.null(setup)) {
         if(length(methods) > 0) stop('Cannot provide multiple methods if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         if(!is.null(contains)) stop('Cannot provide a contains argument if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
-        return(RCfunction(run, name = name, check = check, where = where))
+        thisBuildDerivs <- FALSE
+        if(isTRUE(nimbleOptions("enableDerivs"))) {
+            if(isTRUE(buildDerivs)) buildDerivs <- list(run = list()) ## empty list means TRUE with no configuration information
+            if(isFALSE(buildDerivs)) buildDerivs <- list()
+            if(identical(buildDerivs, 'run')) buildDerivs <- list(run = list())
+            thisBuildDerivs <- buildDerivs[['run']]
+        }
+        return(RCfunction(run, name = name, check = check, buildDerivs = thisBuildDerivs, where = where))
     }
+
+    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(buildDerivs))
+        stop("'buildDerivs' cannot be 'TRUE' when a setup function is provided. Please specify the specific method(s) for which 'buildDerivs' should be set.")
 
     virtual <- FALSE
     # we now include the namespace in the name of the RefClass to avoid two nfs having RefClass of same name but existing in different namespaces
     if(is.na(name)) name <- nf_refClassLabelMaker(envName = environmentName(where))
     className <- name
-
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    if(nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
-    else if(!nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')
-    methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))), where = where)
+    if(isTRUE(nimbleOptions('enableDerivs'))
+       && length(buildDerivs)>0) {
+        ## convert buildDerivs to a format of name = list(controls...)
+        if(is.character(buildDerivs)) {
+            buildDerivs <- structure(
+                lapply(buildDerivs, function(x) list()),
+                names = buildDerivs)
+        }
+    } else if(!isTRUE(nimbleOptions('enableDerivs'))
+              && length(buildDerivs) > 0)
+        stop('To build nimbleFunction derivatives, you must first set "nimbleOptions(enableDerivs = TRUE)".')
+    origMethodList <- methodList
+    methodList <- list()
+    setupVarNames = c(all.vars(body(setup)), names(formals(setup)))
+
+    for(iM in seq_along(origMethodList)) {
+        thisBuildDerivs <- FALSE
+        if(nimbleOptions('enableDerivs')
+           && length(buildDerivs)>0) {
+            thisBuildDerivs <-  !is.null(buildDerivs[[ names(origMethodList)[iM] ]])
+        }
+        methodList[[iM]] <- nfMethodRC(origMethodList[[iM]],
+                                       check = check,
+                                       methodNames = names(origMethodList),
+                                       setupVarNames = setupVarNames,
+                                       buildDerivs = thisBuildDerivs,
+                                       where = where)
+    }
+    names(methodList) <- names(origMethodList)
+    
+    ## methodList <- lapply(methodList,
+    ##                      nfMethodRC,
+    ##                      check = check,
+    ##                      methodNames = names(methodList),
+    ##                      setupVarNames = c(all.vars(body(setup)), names(formals(setup))),
+    ##                      where = where)
+    ## if(nimbleOptions('enableDerivs')
+    ##    && length(buildDerivs)>0) {
+    ##     for(iM in seq_along(methodList)) {
+    ##         thisBuildDerivs <-  buildDerivs[[ names(methodList)[iM] ]]
+    ##         if(!is.null(thisBuildDerivs))
+    ##             methodList[[iM]]$buildDerivs <- thisBuildDerivs
+    ##     }
+    ## }
+    
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
     declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
     rm(setupOutputsDeclaration)
     ## create the reference class definition
     
-    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
+    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames, contains)
     nfRefClass    <- eval(nfRefClassDef)
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
-    .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
+    .namesToCopyFromGlobalSetup <- intersect(.namesToCopy,
+                                             if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
     ## create a list to hold all specializations (instances) of this nimble function.  The following objects are accessed in environment(generatorFunction) in the future
     ## create the generator function, which is returned from nimbleFunction()
@@ -125,34 +184,10 @@ nimbleFunction <- function(setup         = NULL,
         eval(body(globalSetup), envir = .globalSetupEnv)
     }
 
-    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','setup','run','methods','methodList','name', 'className', 'contains', 'enableDerivs', 'virtual', '.globalSetupEnv', '.namesToCopy', '.namesToCopyFromGlobalSetup', '.namesToCopyFromSetup','declaredSetupOutputNames','.globalSetupEnv')) {
+    for(var in c('generatorFunction','nfRefClassDef','nfRefClass','setup','run','methods','methodList','name', 'className', 'contains', 'buildDerivs', 'virtual', '.globalSetupEnv', '.namesToCopy', '.namesToCopyFromGlobalSetup', '.namesToCopyFromSetup','declaredSetupOutputNames','.globalSetupEnv')) {
         GFenv[[var]] <- get(var)
     }
     return(generatorFunction)
-}
-
-buildDerivMethods <- function(methodsList, enableDerivs) {
-    derivMethodsList <- list()
-    for(i in seq_along(enableDerivs)) {
-        if(length(which(names(methodsList) == enableDerivs[[i]])) == 0) stop(paste0('derivatives cannot be enabled for method ',
-                                                                                    enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
-        derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
-        derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
-        argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
-        if(enableDerivs[i] == getCalcADFunName()) isNode <- TRUE else isNode <- FALSE
-        if(!isNode)     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
-        else     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
-        newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
-        newFormalsList[[length(newFormalsList) - 1]] <- NULL 
-        
-        formals(derivMethodsList[[i]]) <- newFormalsList
-        if(!isNode) newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]])), as.name)))
-        else newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]]))[1], as.name)))
-        body(derivMethodsList[[i]]) <- substitute({return(getDerivs(NEWCALL, DERIVSINDEX)); returnType(ADNimbleList())}, 
-                                                  list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders')))
-        names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv')
-    }
-    derivMethodsList
 }
 
 ## See https://github.com/nimble-dev/nimble/wiki/Developer-backdoor-to-manually-replace-generated-C
@@ -215,10 +250,14 @@ nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase',
 
 
 ## template for the reference class internal to all nimble functions
-nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup, declaredSetupOutputNames) {
+nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup, declaredSetupOutputNames,
+                                 contains = NULL) {
     finalMethodList <- lapply(methodList, function(nfMethodRCobject) nfMethodRCobject$generateFunctionObject())
     finalMethodList[['show']] <- eval(substitute(function() writeLines(paste0('reference class object for nimble function class ', className)),
                                                  list(className = className)))
+    if(!is.null(contains)) {
+      finalMethodList <- c(finalMethodList, nf_getBaseClassMethods(methodList, contains))
+    }
     substitute(
         setRefClass(Class   = NFREFCLASS_CLASSNAME,
                     fields  = NFREFCLASS_FIELDS,
@@ -232,6 +271,28 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
         )
 }
 
+nf_getBaseClassMethods <- function(methodList, contains) {
+  contains_env <- environment(contains)
+  baseClassMethodNames <- names(contains_env$methods)
+  ## Including run seems to make this complete, although in fact missing run args to
+  ## nimbleFunction will result in an empty function, so it won't be missing.
+  if(is.function(contains_env$run)) baseClassMethodNames <- c("run", baseClassMethodNames)
+  for(mn in baseClassMethodNames) {
+    reqd <- TRUE # reqd FALSE means the method might be taken from contains
+    if(is.logical(contains_env$methodControl[[mn]][['required']]))
+      reqd <- contains_env$methodControl[[mn]][['required']][1]
+    provided <- mn %in% names(methodList)
+    if(!reqd) {
+      if(!provided)
+        methodList[[mn]] <- contains_env$methods[[mn]]
+    }
+    if(reqd) {
+      if(!provided)
+        messageIfVerbose("  [Warning] method ", mn, " is required from the contains (base) class, but was not provided.")
+    }
+  }
+  methodList
+}
 
 ## creates a list of the fields (setupOutputs) for a nimble function reference class
 nf_createRefClassDef_fields <- function(setup, methodList, globalSetup, declaredSetupOutputNames) {
@@ -252,9 +313,6 @@ nf_createSetupOutputNames <- function(setup, methodList, declaredSetupOutputName
     return(setupOutputNames)
 }
 
-
-
-
 nf_assignmentLHSvars <- function(code) {
   if(!is.call(code))     return(character(0))
   isAssign <- code[[1]] == '<-' | code[[1]] == '='
@@ -267,8 +325,6 @@ nf_getVarFromAssignmentLHScode <- function(code) {
     if(is.name(code)) return(deparse(code))
     return(nf_getVarFromAssignmentLHScode(code[[2]]))
 }
-
-
 
 ## creates a list of all the names of all variables and functions in the code of methodList functions
 nf_createAllNamesFromMethodList <- function(methodList, onlyArgsAndReturn = F) {

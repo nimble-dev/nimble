@@ -36,7 +36,7 @@ public:
   map< string, void * > namedObjects;
   map< string, void * > &getNamedObjects() {return(namedObjects);}
   void NO_hw();
-  virtual void* getObjectPtr( string &name );
+  virtual void* getObjectPtr( string &name, bool warn_not_found = true );
    virtual void copyFromRobject( SEXP Robject ) {
     /* Base class method should never be called,
        but we implement it to avoid making this an abstract base class.
