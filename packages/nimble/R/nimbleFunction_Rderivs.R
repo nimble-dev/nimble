@@ -853,8 +853,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
                                                           'argument to ',
                                                           'nimDerivs(): ',
                                                           wrtArgs[i]))
-           ##argIndices <- eval(parse(text = sub('\\]', '', sub('^[a-z]*\\[',
-          ##'', wrtArgs[i]))))
+          ## argIndices <- eval(parse(text = sub('\\]', '', sub('^[a-z]*\\[','', wrtArgs[i]))))
           if(is.blank(wrtArgParsed[[i]]$argIndices[[1]]))
               argIndices <- 1:fxnArgsTotalSizes[wrtArgNames[i]]
           else {

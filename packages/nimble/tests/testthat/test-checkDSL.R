@@ -4,8 +4,6 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
-nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
 
 context('Testing of nimbleFunction (DSL) code checking')
 
@@ -303,8 +301,8 @@ test_that("Test of detection of nf methods in findMethods", {
         m[[mm$cc14]]$cc15()
         m[[mm$cc16()]]$cc17()
     })
-    expr <- RparseTree2ExprClasses(code)
-    expect_identical(findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
+    expr <- nimble:::RparseTree2ExprClasses(code)
+    expect_identical(nimble:::findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
 })
 
 test_that("Handling of negative indexing in nimbleFunction code", {
@@ -338,7 +336,7 @@ test_that("Test of error trapping for reduction functions", {
     nf <- nimbleFunction(
         run = function(x = double(0)) {
             returnType(double())
-            y = mean(x)
+            y <- mean(x)
             return(0)
         }
     ) 
@@ -347,7 +345,7 @@ test_that("Test of error trapping for reduction functions", {
     nf <- nimbleFunction(
         run = function(x = double(1)) {
             returnType(double())
-            y = mean(x)
+            y <- mean(x)
             return(0)
         }
     ) 
@@ -424,7 +422,7 @@ test_that("nimbleFunctionVirtual works with abstract and non-abstract methods", 
                               ) )
   expect_true(grepl("[Warning]", res))
 
-  ## Check for no warming: run is required but defaults to function(){}, so no warning is issued
+  ## Check for no warning: run is required but defaults to function(){}, so no warning is issued
   res <- capture_messages(
     dNFc <- nimbleFunction(
                            contains = baseNF,
@@ -464,4 +462,4 @@ test_that("nimbleFunctionVirtual works with abstract and non-abstract methods", 
 })
 
 options(warn = RwarnLevel)
-nimbleOptions(verbose = nimbleVerboseSetting)
+

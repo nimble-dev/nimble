@@ -10,5 +10,5 @@ MCMCsuite(...)
 \item{...}{arguments}
 }
 \description{
-This function has been moved to a separate package
+This function has been moved to a separate package.
 }

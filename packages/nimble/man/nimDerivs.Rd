@@ -2,6 +2,8 @@
 % Please edit documentation in R/nimbleFunction_Rderivs.R
 \name{nimDerivs}
 \alias{nimDerivs}
+\alias{derivs}
+\alias{AD}
 \title{Nimble Derivatives}
 \usage{
 nimDerivs(call = NA, wrt = NULL, order = nimC(0, 1, 2), model = NA, ...)
