@@ -99,6 +99,7 @@ nimbleFunction <- function(setup         = NULL,
             if(isFALSE(buildDerivs)) buildDerivs <- list()
             if(identical(buildDerivs, 'run')) buildDerivs <- list(run = list())
             thisBuildDerivs <- buildDerivs[['run']]
+            if(is.null(thisBuildDerivs)) thisBuildDerivs <- FALSE
         }
         return(RCfunction(run, name = name, check = check, buildDerivs = thisBuildDerivs, where = where))
     }
