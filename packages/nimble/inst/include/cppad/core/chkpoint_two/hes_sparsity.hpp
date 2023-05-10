@@ -64,7 +64,7 @@ bool chkpoint_two<Base>::hes_sparsity(
     for(size_t k = 0; k < nnz; ++k)
     {   size_t i = row[k];
         size_t j = col[k];
-        if( select_x[j] & select_x[i] )
+        if( select_x[j] && select_x[i] )
             ++nnz_out;
     }
 
@@ -74,7 +74,7 @@ bool chkpoint_two<Base>::hes_sparsity(
     for(size_t k = 0; k < nnz; ++k)
     {   size_t i = row[k];
         size_t j = col[k];
-        if( select_x[j] & select_x[i] )
+        if( select_x[j] && select_x[i] )
             pattern_out.set(ell++, i, j);
     }
     CPPAD_ASSERT_UNKNOWN( ell == nnz_out );

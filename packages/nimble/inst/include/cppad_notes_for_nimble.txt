@@ -59,3 +59,31 @@ In addition, copy COPYING and epl-2.0.txt from the CppAD (top) directory.  These
 
 6. Make the nimble-specific changes in steps 1-5 in the first section above, replacing and modifying files as needed, using the files copied in step 1 of this set of steps as source/reference.
 
+7. Starting round R 4.2.x or so (not sure exactly when), we started getting compiled warnings from CppAD code due to use of bitwise "|" or "&" where the arithmetic versions for logicals, "||" and "&&" are wanted. Per issue with discussion on CppAD GitHub, they do not want to change this. We change it to reduce warning verbosity. It is something of a pain to try to change compiler flags for the on-the-fly compilations, so we change the source code instead. Locations are:
+core/chkpoint_two/jac_sparsity.hpp:67       if( select_x[j] & select_y[i] ) --> if( select_x[j] && select_y[i] )
+core/chkpoint_two/jac_sparsity.hpp:77
+core/chkpoint_two/hes_sparsity.hpp:67
+core/chkpoint_two/hes_sparsity.hpp:77
+core/atomic/two/for_sparse_hes.hpp:316
+local/optimize/get_par_usage.hpp:475
+local/op/cskip_op.hpp:152
+core/cond_exp.hpp:183
+core/identical.hpp:44
+core/identical.hpp:59
+core/identical.hpp:74
+core/identical.hpp:95
+
+In core/cppad_assert.hpp (anywhere, really)
+// ADDED FOR NIMBLE, SO THAT LINES NEEDED ONLY IF ASSERTIONS ARE USED (NDEBUG defined)
+// CAN BE INCLUDED ONLY IF NECESSARY. SEE core/graph/to_graph.hpp:954 around surroundings
+# ifdef NDEBUG
+# define NIMBLE_CPPAD_INCLUDE_FOR_ASSERT_ONLY(exp)  // do nothing
+# else
+# define NIMBLE_CPPAD_INCLUDE_FOR_ASSERT_ONLY(exp)  exp
+# endif
+
+In core/graph/to_graph.hpp from 954-993, wrap any line using j_arg in
+NIMBLE_CPPAD_INCLUDE_FOR_ASSERT_ONLY,
+e.g. NIMBLE_CPPAD_INCLUDE_FOR_ASSERT_ONLY(size_t j_arg = 1);
+and NIMBLE_CPPAD_INCLUDE_FOR_ASSERT_ONLY(++j_arg);
+(leave CPPAD_ASSERT_UNKNOWN( j_arg == n_arg ) alone)

@@ -149,7 +149,7 @@ void forward_cskip_op_0(
     {   CPPAD_ASSERT_UNKNOWN( size_t(arg[3]) < num_par );
         right = parameter[ arg[3] ];
     }
-    bool ok_to_skip = IdenticalCon(left) & IdenticalCon(right);
+    bool ok_to_skip = IdenticalCon(left) && IdenticalCon(right);
     if( ! ok_to_skip )
         return;
 

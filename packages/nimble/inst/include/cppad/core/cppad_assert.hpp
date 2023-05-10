@@ -93,6 +93,15 @@ $end
 # include <iostream>
 # include <cppad/utility/error_handler.hpp>
 
+
+// ADDED FOR NIMBLE, SO THAT LINES NEEDED ONLY IF ASSERTIONS ARE USED (NDEBUG defined)
+// CAN BE INCLUDED ONLY IF NECESSARY. SEE core/graph/to_graph.hpp:954 around surroundings
+# ifdef NDEBUG
+# define NIMBLE_CPPAD_INCLUDE_FOR_ASSERT_ONLY(exp)  // do nothing
+# else
+# define NIMBLE_CPPAD_INCLUDE_FOR_ASSERT_ONLY(exp)  exp
+# endif
+
 /*!
 \def CPPAD_ASSERT_KNOWN(exp, msg)
 Check that exp is true, if not print msg and terminate execution.

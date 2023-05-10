@@ -180,7 +180,7 @@ AD<Base> CondExpOp(
     CPPAD_ASSERT_UNKNOWN( Parameter(result) );
 
     // check first case where do not need to tape
-    if( IdenticalCon(left) & IdenticalCon(right) )
+    if( IdenticalCon(left) && IdenticalCon(right) )
     {   switch( cop )
         {
             case CompareLt:

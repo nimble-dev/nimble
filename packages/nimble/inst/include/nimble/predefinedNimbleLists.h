@@ -146,4 +146,49 @@ extern "C" SEXP waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
 extern "C" SEXP waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
+class AGHQuad_params : public  NamedObjects, public pointedToBase {
+ public:
+  std::vector<string> names;
+  NimArr<1, double> estimates;
+  NimArr<1, double> stdErrors;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  AGHQuad_params();
+};
+
+extern "C" SEXP new_AGHQuad_params();
+
+extern "C" SEXP AGHQuad_params_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+
+extern "C" SEXP AGHQuad_params_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+
+class AGHQuad_summary : public  NamedObjects, public pointedToBase {
+ public:
+  nimSmartPtr<AGHQuad_params> params;
+  nimSmartPtr<AGHQuad_params> randomEffects;
+  NimArr<2, double> vcov;
+  string scale;
+
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  AGHQuad_summary();
+};
+
+extern "C" SEXP new_AGHQuad_summary();
+
+extern "C" SEXP AGHQuad_summary_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+
+extern "C" SEXP AGHQuad_summary_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+
+
 #endif  // __NIMBLE_PREDEFINEDNIMBLELISTS_H
