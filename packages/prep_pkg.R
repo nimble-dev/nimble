@@ -97,7 +97,8 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "nimbleUserNamespace",
                        "buildAGHQuad",
                        "buildOneAGHQuad",
-                       "buildOneAGHQuad1D")
+                       "buildOneAGHQuad1D",
+                       "AGHQuad_params")
 
 ## Not clear why we need this but this is not being put in NAMESPACE otherwise.
 ## It can't be in 'additionalExports' as it does have documentation.

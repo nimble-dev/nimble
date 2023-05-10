@@ -107,7 +107,6 @@
 \alias{mcmc_createModelObject}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
-\alias{buildAGHQuad}
 \alias{buildOneAGHQuad}
 \alias{buildOneAGHQuad1D}
 \description{

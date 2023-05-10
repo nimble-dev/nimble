@@ -113,7 +113,7 @@ Now we are ready to use some of the methods provided by `buildLaplace`. These in
 ```{r eval=eval}
 Cglmm_laplace$Laplace(c(0, 0, 1)) # Get the Laplace approximation for one set of parameter values.
 Cglmm_laplace$gr_Laplace(c(0, 0, 1)) # Get the corresponding gradient.
-MLE <- Cglmm_laplace$LaplaceMLE(c(0, 0, 1)) # Find the (approximate) MLE.
+MLE <- Cglmm_laplace$findMLE(c(0, 0, 1)) # Find the (approximate) MLE.
 MLE$par     # MLE parameter values
 MLE$value   # MLE log likelihood value
 ```

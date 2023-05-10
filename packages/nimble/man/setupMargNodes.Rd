@@ -10,8 +10,7 @@ setupMargNodes(
   paramNodes,
   randomEffectsNodes,
   calcNodes,
-  calcNodesExtra,
-  allowNonPriors = FALSE,
+  calcNodesOther,
   split = TRUE,
   warn = TRUE
 )
