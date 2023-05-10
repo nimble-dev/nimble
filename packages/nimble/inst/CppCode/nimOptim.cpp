@@ -30,7 +30,7 @@ double NimOptimProblem::fn(int n, double* par, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
     double* problem_par = problem->par_.getPtr();
-    double* problem_parscale = problem->control_->parscale.getPtr();
+    double* problem_parscale = problem->working_parscale.getPtr();
     for(int i = 0; i < n; ++i)
         *problem_par++ = par[i] * problem_parscale[i];
     double ans = problem->function() / problem->control_->fnscale;
@@ -42,7 +42,7 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
     double* problem_par = problem->par_.getPtr();
-    double* problem_parscale = problem->control_->parscale.getPtr();
+    double* problem_parscale = problem->working_parscale.getPtr();
     for(int i = 0; i < n; ++i)
         *problem_par++ = par[i] * problem_parscale[i];
     problem->ans_.setSize(n, false, false);
@@ -84,28 +84,28 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     NimArr<1, double>& init_par) {
     NIM_ASSERT1(!init_par.isMap(), "Internal error: failed to handle mapped NimArr");
     const int n = init_par.dimSize(0);
-
     // Set context-dependent default control_ values.
-    if (control_->maxit == NA_INTEGER) {
+    int working_maxit = control_->maxit;
+    if (working_maxit == NA_INTEGER) {
         if (method_ == "Nelder-Mead") {
-            control_->maxit = 500;
+            working_maxit = 500;
         } else {
-            control_->maxit = 100;
+            working_maxit = 100;
         }
     }
-    if(control_->parscale.size() == 1) {
-        if(R_IsNA(control_->parscale[0])) {
-            control_->parscale.initialize(1.0, true, n);
-        }
+    if((control_->parscale.size() == 1) && (R_IsNA(control_->parscale[0]))) {
+        working_parscale.initialize(1.0, true, n);
+    } else {
+        working_parscale = control_->parscale;
     }
-    bool parscale_error = (control_->parscale.size() != n);
-    if(control_->ndeps.size() == 1) {
-        if(R_IsNA(control_->ndeps[0])) {
-            control_->ndeps.initialize(1e-3, true, n);
-        }
+    bool parscale_error = (working_parscale.size() != n);
+    if((control_->ndeps.size() == 1) && (R_IsNA(control_->ndeps[0]))) {
+        working_ndeps.initialize(1e-3, true, n);
+    } else {
+        working_ndeps = control_->ndeps;
     }
 
-    if(control_->ndeps.size() != n) {
+    if(working_ndeps.size() != n) {
         if(parscale_error)
             NIMERROR("In compiled optim (aka nimOptim) call: lengths for control parameters parscale and ndeps must equal length(par).");
         else
@@ -114,16 +114,17 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         if(parscale_error)
             NIMERROR("In compiled optim (aka nimOptim) call: length for control parameters parscale must equal length(par).");
     }
-    if(control_->REPORT == NA_INTEGER) {
+    int working_REPORT = control_->REPORT;
+    if(working_REPORT == NA_INTEGER) {
         if (method_ == "BFGS" || method_ == "L-BFGS-B")
-            control_->REPORT = 10;
+            working_REPORT = 10;
         if (method_ == "SANN") // SANN is not even supported, but I'm including this so we don't forget if we ever do support SANN
-            control_->REPORT = 100;
+            working_REPORT = 100;
     }
 
     NimArr<1, double> par = init_par;
     for(int i = 0; i < n; ++i)
-        par[i] /= control_->parscale[i];
+        par[i] /= working_parscale[i];
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
     result->par = par;
@@ -145,7 +146,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     if (method_ == "Nelder-Mead") {
         nmmin(n, dpar, X, Fmin, NimOptimProblem::fn, fail, control_->abstol,
               control_->reltol, ex, control_->alpha, control_->beta,
-              control_->gamma, control_->trace, fncount, control_->maxit);
+              control_->gamma, control_->trace, fncount, working_maxit);
     } else if (method_ == "BFGS") {
         std::vector<int> mask(n, 1);
 	/* Shouldn't dpar be copied to X and X passed to the function? */
@@ -153,13 +154,13 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
 	/* Oh, I see that instead, after vmmin, we have result->par = par,*/
 	/* This will place the last evaluated parameters in the result.*/
         vmmin(n, dpar, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
-              control_->maxit, control_->trace, mask.data(), control_->abstol,
-              control_->reltol, control_->REPORT, ex, fncount, grcount, fail);
+              working_maxit, control_->trace, mask.data(), control_->abstol,
+              control_->reltol, working_REPORT, ex, fncount, grcount, fail);
         result->par = par;
     } else if (method_ == "CG") {
         cgmin(n, dpar, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
               control_->abstol, control_->reltol, ex, control_->type,
-              control_->trace, fncount, grcount, control_->maxit);
+              control_->trace, fncount, grcount, working_maxit);
     } else if (method_ == "L-BFGS-B") {
         if (lower_.dimSize(0) == 1) lower_.initialize(lower_[0], true, n);
         if (upper_.dimSize(0) == 1) upper_.initialize(upper_[0], true, n);
@@ -174,7 +175,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         lbfgsb(n, control_->lmm, X, lower_.getPtr(), upper_.getPtr(),
                nbd.data(), Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
                ex, control_->factr, control_->pgtol, fncount, grcount,
-               control_->maxit, msg, control_->trace, control_->REPORT);
+               working_maxit, msg, control_->trace, working_REPORT);
         result->message = msg;
     } else {
         NIMERROR("Unknown method_: %s", method_.c_str());
@@ -189,7 +190,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     }
 
     for(int i = 0; i < n; ++i)
-        result->par[i] *= control_->parscale[i];
+        result->par[i] *= working_parscale[i];
     return result;
 }
 
@@ -198,8 +199,8 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
 void NimOptimProblem::calc_hessian(NimArr<1, double> par,
 				   NimArr<2, double> &hessian) {
   // Notice par is copied but hessian is by reference.
-    double *ndeps = control_->ndeps.getPtr();
-    double *parscale = control_->parscale.getPtr();
+    double *ndeps = working_ndeps.getPtr();
+    double *parscale = working_parscale.getPtr();
     //  double ndeps = 0.001; //  This should be obtained from control list but is hard-wired for now.
   double epsilon;
   int n = par.dimSize(0);

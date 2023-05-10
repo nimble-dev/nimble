@@ -91,6 +91,12 @@ class NimOptimProblem {
     // Temporaries.
     NimArr<1, double> par_;  // Argument for fn() and gr().
     NimArr<1, double> ans_;  // Result of gradient.
+    // entries in the control_ list that might need to change
+    // dynamically with each call. These cannot change control_
+    // in place because it might be shared with other calls to nimOptim.
+    // Also nimArr<> are not strictly needed but we use them for now.
+    NimArr<1, double> working_parscale;
+    NimArr<1, double> working_ndeps;
 };
 
 template <class Fn>
@@ -119,17 +125,16 @@ void NimOptimProblem_Fun<Fn>::gradient() {
   // by parcale below.
     const int n = par_.dimSize(0);
     NIM_ASSERT_SIZE(ans_, n);
-    NimArr<1, double>& ndeps = control_->ndeps;
     // Next line is no longer necessary because NimOptimProblem::solve()
     // initializes ndeps to a vector of length n.
     //    if (ndeps.dimSize(0) == 1) ndeps.initialize(ndeps[0], true, n);
-    NIM_ASSERT_SIZE(ndeps, n);
+    NIM_ASSERT_SIZE(working_ndeps, n);
     NimArr<1, double> par_h = par_;
-    double* parscale = control_->parscale.getPtr();
+    double* parscale = working_parscale.getPtr();
     if (method_ == "L-BFGS-B") {
         // Constrained optimization.
         for (int i = 0; i < n; ++i) {
-            const double h = ndeps[i]*parscale[i];
+            const double h = working_ndeps[i]*parscale[i];
             // Note that in the R source code where this is done
             // (src/library/stats/src), the upper and lower bound
             // vectors have been divided by parscale and so are
@@ -147,13 +152,13 @@ void NimOptimProblem_Fun<Fn>::gradient() {
     } else {
         // Unconstrained optimization.
         for (int i = 0; i < n; ++i) {
-            const double h = ndeps[i]*parscale[i];
+            const double h = working_ndeps[i]*parscale[i];
             par_h[i] = par_[i] + h;
             const double pos = fn_(par_h);
             par_h[i] = par_[i] - h;
             const double neg = fn_(par_h);
             par_h[i] = par_[i];
-            ans_[i] = (pos - neg) / (2 * ndeps[i]);
+            ans_[i] = (pos - neg) / (2 * working_ndeps[i]);
         }
     }
     // dividing the answer by fnscale is done by the calling
@@ -178,7 +183,7 @@ class NimOptimProblem_Fun_Grad : public NimOptimProblem {
       // But gr_ calculates the gradient wrt par.
       // So we have to multiply by parscale.
       ans_ = gr_(par_);
-      double* parscale = control_->parscale.getPtr();
+      double* parscale = working_parscale.getPtr();
       const int n = par_.dimSize(0);
       for (int i = 0; i < n; ++i) {
         ans_[i] *= parscale[i];
