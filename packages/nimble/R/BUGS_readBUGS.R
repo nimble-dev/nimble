@@ -98,7 +98,8 @@ nimbleModel <- function(code,
     if(!returnModel) return(md)
     if(nimbleOptions("enableModelMacros")){
       # update constants in case any new ones were created
-      constants <- md$constantsList
+      newConstants <- md$constantsList[!names(md$constantsList) %in% names(constants)]
+      constants <- c(constants, newConstants)
     }
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
