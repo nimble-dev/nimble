@@ -29,6 +29,9 @@ how_to_add_a_new_predefined_nimbleList <- 'How to:
  package source code and will be used from there.
 '
 
+# NB: This script did not work when adding AGHQuad_params and AGHQuad_summary,
+#  so those were done by hand-coding.
+
 library(methods)
 suppressPackageStartupMessages(library(nimble))
 
