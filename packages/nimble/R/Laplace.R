@@ -1,17 +1,17 @@
 ## NIMBLE Laplace approximation
 ## Laplace base class
 #' @rdname laplace
-#' @export
+## #' @export
 AGHQuad_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-    logLik1 = function(p = double(1)){
+    calcLogLik1 = function(p = double(1)){
       returnType(double())
     },
-    logLik2 = function(p = double(1)){
+    calcLogLik2 = function(p = double(1)){
       returnType(double())
     },
-    logLik3 = function(p = double(1)){
+    calcLogLik3 = function(p = double(1)){
       returnType(double())
     },
     gr_logLik1 = function(p = double(1)){
@@ -43,13 +43,13 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
 
 ## A single Laplace approximation for only one scalar random effect node
 #' @rdname laplace
-#' @export
+## #' @export
 buildOneLaplace1D <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
   buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
 }
 
 #'
-#' @export
+## #' @export
 buildOneAGHQuad1D <- nimbleFunction(
   contains = AGHQuad_BASE,
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
@@ -418,7 +418,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         logLik3_previous_p <<- p
       }
     },
-    logLik3 = function(p = double(1)) {
+    calcLogLik3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
       logLik3_update(p)
       if(logLik3_saved_value > max_logLik) {
@@ -435,7 +435,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       returnType(double(1))
     },
     ## Laplace approximation 2: double tapping with separate components
-    logLik2 = function(p = double(1)){
+    calcLogLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
@@ -453,7 +453,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       returnType(double())
     },
     ## Laplace approximation 1: single tapping with separate components
-    logLik1 = function(p = double(1)){
+    calcLogLik1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik_internal(p)
@@ -524,13 +524,13 @@ buildOneAGHQuad1D <- nimbleFunction(
 
 ## A single Laplace approximation for models with more than one scalar random effect node
 #' @rdname laplace
-#' @export
+## #' @export
 buildOneLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
   buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
 }
 
 #'
-#' @export
+## #' @export
 buildOneAGHQuad <- nimbleFunction(
   contains = AGHQuad_BASE,
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
@@ -975,7 +975,7 @@ buildOneAGHQuad <- nimbleFunction(
         logLik3_previous_p <<- p
       }
     },
-    logLik3 = function(p = double(1)) {
+    calcLogLik3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
       logLik3_update(p)
       ans <- logLik3_saved_value
@@ -993,7 +993,7 @@ buildOneAGHQuad <- nimbleFunction(
       returnType(double(1))
     },
     ## Laplace approximation 2: double tapping with separate components
-    logLik2 = function(p = double(1)){
+    calcLogLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
@@ -1011,7 +1011,7 @@ buildOneAGHQuad <- nimbleFunction(
       returnType(double())
     },
     ## Laplace approximation 1: single tapping with separate components
-    logLik1 = function(p = double(1)){
+    calcLogLik1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik_internal(p)
@@ -1084,12 +1084,16 @@ buildOneAGHQuad <- nimbleFunction(
 #' Gauss-Hermite quadrature (AGHQuad) approximations
 #' @export
 setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
-                              calcNodesExtra, allowNonPriors = FALSE, split = TRUE,
-                              warn = TRUE) {
+                           calcNodesOther,
+                           split = TRUE,
+                           warn = TRUE) {
   paramProvided         <- !missing(paramNodes)
   reProvided            <- !missing(randomEffectsNodes)
   calcProvided          <- !missing(calcNodes)
-  calcExtraProvided <- !missing(calcNodesExtra)
+  calcOtherProvided <- !missing(calcNodesOther)
+  # We considered a feature to allow params to be nodes without priors. This is a placeholder in case
+  # we ever pursue that again.
+  allowNonPriors <- FALSE
   # We may need to use determ and stochastic dependencies of parameters multiple times below
   # Define these to avoid repeated computation
   # A note for future: determ nodes between parameters and calcNodes are needed inside buildOneAGHQuad
@@ -1099,78 +1103,23 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   paramDetermDepsCalculated <- FALSE
   paramStochDepsCalculated  <- FALSE
   
-  # 1. Default parameters are stochastic top-level nodes
-  #    unless allowNonPriors is TRUE, in which case they are all top-level stochastic 
-  #    nodes with no RHSonly nodes as parents and RHSonly nodes (excluding constants) that have stochastic dependencies 
-  #    Top-level stochastic nodes with RHSonly nodes as parents are essentially latent/data nodes,
-  #    some of which will be added to randomEffectsNodes below
+  # 1. Default parameters are stochastic top-level nodes.
+  #    We considered an argument allowNonPriors, defaulting to FALSE. If TRUE, the default params would be all top-level stochastic
+  #    nodes with no RHSonly nodes as parents and RHSonly nodes (handling of constants TBD, since non-scalars would be converted to data) that have stochastic dependencies
+  #    (And then top-level stochastic nodes with RHSonly nodes as parents are essentially latent/data nodes,
+  #    some of which would need to be added to randomEffectsNodes below.)
   stochTopNodes2reNodes <- character(0)
   if(!paramProvided) {
-    allTopNodes <- model$getNodeNames(topOnly = TRUE, includeRHSonly = TRUE)
-    stochTopNodes <- allTopNodes[model$isStoch(allTopNodes)]
-    if(!allowNonPriors) { 
-      paramNodes <- stochTopNodes
-    }
-    else { 
-      allRHSnodes <- allTopNodes[which(model$getNodeType(allTopNodes)=="RHSonly")]
-      numAllRHSnodes <- length(allRHSnodes)
-      # If RHSonly nodes have non-NA values, then they are constants and thus 
-      # excluded from parameters. A user must NOT add initial values to parameters 
-      # with no priors or declare them as constants. 
-      # In the future, might need to consider a multivariate RHSonly node with NA 
-      # values for some components; currently we regard all components as parameters
-      if(numAllRHSnodes){
-        isTrueRHSnodes <- logical(numAllRHSnodes)
-        for(i in 1:numAllRHSnodes){
-          if(any(is.na(model[[allRHSnodes[i]]]))) isTrueRHSnodes[i] <- TRUE
-        }
-      }
-      allRHSnodes <- allRHSnodes[isTrueRHSnodes]
-      # Select all RHSonly nodes with stochastic dependencies
-      allRHSwithStochDeps <- character(0)
-      numAllRHSnodes <- length(allRHSnodes)
-      if(numAllRHSnodes){
-        for(i in 1:numAllRHSnodes) {
-          if(length(model$getDependencies(allRHSnodes[i], stochOnly = TRUE))) 
-            allRHSwithStochDeps <- c(allRHSwithStochDeps, allRHSnodes[i])
-        }
-      }
-      # Exclude top-level stochastic nodes that have any of these nodes in allRHSwithStochDeps
-      # as parents, because they are essentially latent/data nodes and if latent
-      # they will be added into randomEffectsNodes below
-      numStochTopNodes <- length(stochTopNodes)
-      if(numStochTopNodes) {
-        isTrueStochTopNodes <- !logical(numStochTopNodes)
-        for(i in 1:numStochTopNodes){
-          if(any(model$getParents(stochTopNodes[i], includeRHSonly = TRUE) %in% allRHSwithStochDeps)) 
-            isTrueStochTopNodes[i] <- FALSE
-        }
-        # Top-level stoch nodes that are potentially random effects nodes
-        stochTopNodes2reNodes <- stochTopNodes[!isTrueStochTopNodes]
-        numStochTopNodes2reNodes <- length(stochTopNodes2reNodes)
-        isTrueREnodes <- logical(numStochTopNodes2reNodes)
-        if(numStochTopNodes2reNodes){
-          for(i in 1:numStochTopNodes2reNodes){
-            if(length(model$getDependencies(stochTopNodes2reNodes[i], self = FALSE, stochOnly = TRUE)))
-              isTrueREnodes[i] <- TRUE
-          }
-        }
-        # True top-level stoch nodes that are random effects
-        stochTopNodes2reNodes <- stochTopNodes2reNodes[isTrueREnodes]
-        # True top-level stoch nodes
-        stochTopNodes <- stochTopNodes[isTrueStochTopNodes]
-      }
-      paramNodes <- c(stochTopNodes, allRHSwithStochDeps)
-    }
-  }
-  else {
+    paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
+  } else {
     paramNodes <- model$expandNodeNames(paramNodes)
   }
+
   # 2. Default random effects are latent nodes that are stochastic dependencies of params.
   if((!reProvided) || warn) {
     paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
     paramStochDepsCalculated <- TRUE
-    latentNodes <- c(model$getNodeNames(latentOnly = TRUE), stochTopNodes2reNodes)
+    latentNodes <- model$getNodeNames(latentOnly = TRUE)
     reNodesDefault <- intersect(latentNodes, paramStochDeps)
   }
   if(reProvided){
@@ -1236,7 +1185,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     errorNodes <- calcCheck[model$getNodeType(calcCheck)=="stoch"]
     determCalcCheck <- setdiff(calcCheck, errorNodes)
     numDetermCalcCheck <- length(determCalcCheck)
-    # Check extra determ nodes
+    # Check other determ nodes
     if(numDetermCalcCheck){
       paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
       paramDetermDepsCalculated <- TRUE
@@ -1266,29 +1215,29 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   #    Default is a bit complicated: All dependencies from paramNodes to
   #    stochastic nodes that are not part of calcNodes. Note that calcNodes
   #    does not necessarily contain deterministic nodes between paramNodes and
-  #    randomEffectsNodes. We don't want to include those in calcNodesExtra.
-  #    (A deterministic that is needed for both calcNodes and calcNodesExtra should be included.)
+  #    randomEffectsNodes. We don't want to include those in calcNodesOther.
+  #    (A deterministic that is needed for both calcNodes and calcNodesOther should be included.)
   #    So we have to first do a setdiff on stochastic nodes and then fill in the
   #    deterministics that are needed.
-  if(!calcExtraProvided || warn) {
+  if(!calcOtherProvided || warn) {
     if(!paramStochDepsCalculated){
       paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
       paramStochDepsCalculated <- TRUE
     }
-    calcNodesExtraDefault <- setdiff(paramStochDeps, calcNodes)
+    calcNodesOtherDefault <- setdiff(paramStochDeps, calcNodes)
   }
-  if(calcExtraProvided){
-    if(is.null(calcNodesExtra) || isFALSE(calcNodesExtra)) calcNodesExtra <- character(0)
-    calcNodesExtra <- model$expandNodeNames(calcNodesExtra, sort = TRUE)
-    if((length(calcNodesExtra) > 0) && !any(model$getNodeType(calcNodesExtra)=="stoch")){
-      warning("There are no stochastic nodes in the calcNodesExtra provided for Laplace or AGHQuad approximation.")
+  if(calcOtherProvided){
+    if(is.null(calcNodesOther) || isFALSE(calcNodesOther)) calcNodesOther <- character(0)
+    calcNodesOther <- model$expandNodeNames(calcNodesOther, sort = TRUE)
+    if((length(calcNodesOther) > 0) && !any(model$getNodeType(calcNodesOther)=="stoch")){
+      warning("There are no stochastic nodes in the calcNodesOther provided for Laplace or AGHQuad approximation.")
     }
   }
-  if(!calcExtraProvided){
-    calcNodesExtra <- calcNodesExtraDefault
+  if(!calcOtherProvided){
+    calcNodesOther <- calcNodesOtherDefault
   }
-  if(calcExtraProvided && warn) {
-    calcNoLaplaceCheck <- setdiff(calcNodesExtraDefault, calcNodesExtra)
+  if(calcOtherProvided && warn) {
+    calcNoLaplaceCheck <- setdiff(calcNodesOtherDefault, calcNodesOther)
     if(length(calcNoLaplaceCheck)) {
       # We only check missing stochastic nodes; determ nodes will be added below
       missingStochNodesInds <- which((model$getNodeType(calcNoLaplaceCheck)) == "stoch")
@@ -1298,14 +1247,14 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         errorNodes <- paste0(head(missingStochNodes, n = 4), sep = "", collapse = ", ")
         if(numMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some model nodes (stochastic) that look like they should be\n",
-                       "included in the calcNodesExtra for parts of the likelihood calculation\n",
+                       "included in the calcNodesOther for parts of the likelihood calculation\n",
                        "outside of Laplace or AGHQuad approximation:\n",
                        errorNodes, "\n",
                        "To silence this warning, include \'warn = FALSE\' in the control list."))
       }
     }
     # Check redundant stochastic nodes
-    calcNoLaplaceCheck <- setdiff(calcNodesExtra, calcNodesExtraDefault)
+    calcNoLaplaceCheck <- setdiff(calcNodesOther, calcNodesOtherDefault)
     stochCalcNoLaplaceCheck <- calcNoLaplaceCheck[model$getNodeType(calcNoLaplaceCheck)=="stoch"]
     # Check redundant determ nodes
     determCalcNoLaplaceCheck <- setdiff(calcNoLaplaceCheck, stochCalcNoLaplaceCheck)
@@ -1327,17 +1276,17 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
-      warning(paste0("There are some nodes provided in calcNodesExtra that look like\n",
+      warning(paste0("There are some nodes provided in calcNodesOther that look like\n",
                      "they are not needed for parts of the likelihood calculation\n",
                      "outside of Laplace or AGHQuad approximation:\n",
                      outErrorNodes, "\n",
                      "To silence this warning, include \'warn = FALSE\' in the control list."))
     }
   }
-  # Check and add necessary (upstream) deterministic nodes into calcNodesExtra
-  # This ensures that deterministic nodes between paramNodes and calcNodesExtra are used.
-  num_calcNodesExtra <- length(calcNodesExtra)
-  if(num_calcNodesExtra > 0){
+  # Check and add necessary (upstream) deterministic nodes into calcNodesOther
+  # This ensures that deterministic nodes between paramNodes and calcNodesOther are used.
+  num_calcNodesOther <- length(calcNodesOther)
+  if(num_calcNodesOther > 0){
     if(!paramDetermDepsCalculated) {
       paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
       paramDetermDepsCalculated <- TRUE
@@ -1347,11 +1296,11 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       keep_paramDetermDeps <- logical(numParamDetermDeps)
       for(i in seq_along(paramDetermDeps)) {
         nextDeps <- model$getDependencies(paramDetermDeps[i])
-        keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesExtra)
+        keep_paramDetermDeps[i] <- any(nextDeps %in% calcNodesOther)
       }
       paramDetermDeps <- paramDetermDeps[keep_paramDetermDeps]
     }
-    calcNodesExtra <- model$expandNodeNames(c(paramDetermDeps, calcNodesExtra), sort = TRUE)
+    calcNodesOther <- model$expandNodeNames(c(paramDetermDeps, calcNodesOther), sort = TRUE)
   }
 
   # 7. Do the splitting into sets (if given) or conditionally independent sets (if TRUE)
@@ -1378,7 +1327,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   list(paramNodes = paramNodes,
        randomEffectsNodes = randomEffectsNodes,
        calcNodes = calcNodes,
-       calcNodesExtra = calcNodesExtra,
+       calcNodesOther = calcNodesOther,
        givenNodes = givenNodes,
        randomEffectsSets = reSets
        )
@@ -1387,21 +1336,24 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
 ## Main function for Laplace approximation
 #' @rdname laplace 
 #' @export
-buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesExtra,
+buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                                control = list()) {
- buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesExtra,
+ buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
    control)
 }
 
-#'
-#' @export
+## Main function for Adaptive Gauss-Hermite Quadratrue
+#' @rdname laplace
+## #' @export
 buildAGHQuad <- nimbleFunction(
   name = 'AGHQuad',
-  setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesExtra,
+  setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                    control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
     if(is.null(control$warn))   warn <- TRUE else  warn <- control$warn
-    if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
+    # Possible future feature
+    #if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
+    allowNonPriors <- FALSE
 
     MargNodes <- NULL
     if(!missing(paramNodes)) {
@@ -1414,26 +1366,26 @@ buildAGHQuad <- nimbleFunction(
       MargNodes <- setupMargNodes(model = model, paramNodes = paramNodes,
                                   randomEffectsNodes = randomEffectsNodes,
                                   calcNodes = calcNodes,
-                                  calcNodesExtra = calcNodesExtra,
-                                  allowNonPriors = allowNonPriors,
+                                  calcNodesOther = calcNodesOther,
+                                  # allowNonPriors = allowNonPriors,
                                   split = split,
                                   warn = warn)
     }
     paramNodes <- MargNodes$paramNodes
     randomEffectsNodes <- MargNodes$randomEffectsNodes
     calcNodes <- MargNodes$calcNodes
-    calcNodesExtra <- MargNodes$calcNodesExtra
-    num_calcNodesExtra <- length(calcNodesExtra)
+    calcNodesOther <- MargNodes$calcNodesOther
+    num_calcNodesOther <- length(calcNodesOther)
     # MargNodes$randomEffectsSets will be extracted below if needed
 
-    if(length(calcNodesExtra)) {
-      extraLogLik_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesExtra)
-      extraLogLik_updateNodes   <- extraLogLik_derivsInfo$updateNodes
-      extraLogLik_constantNodes <- extraLogLik_derivsInfo$constantNodes
+    if(length(calcNodesOther)) {
+      otherLogLik_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesOther)
+      otherLogLik_updateNodes   <- otherLogLik_derivsInfo$updateNodes
+      otherLogLik_constantNodes <- otherLogLik_derivsInfo$constantNodes
     }
-    else { ## calcNodesExtra is empty
-      extraLogLik_updateNodes   <- character(0)
-      extraLogLik_constantNodes <- character(0)
+    else { ## calcNodesOther is empty
+      otherLogLik_updateNodes   <- character(0)
+      otherLogLik_constantNodes <- character(0)
     }
     ## Out and inner optimization settings
     outOptControl   <- nimOptimDefaultControl()
@@ -1550,8 +1502,8 @@ buildAGHQuad <- nimbleFunction(
       reTransform_indices <- numeric(2)
       reNodesAsScalars_vec <- character(0)
       reNodesAsScalars_first <- character(1)
-      if(num_calcNodesExtra == 0)
-        stop("Both calcNodesExtra and randomEffectsNodes are empty for Laplace or AGHQuad for the given model.")
+      if(num_calcNodesOther == 0)
+        stop("Both calcNodesOther and randomEffectsNodes are empty for Laplace or AGHQuad for the given model.")
     }
     
     paramNodesAsScalars     <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
@@ -1573,12 +1525,8 @@ buildAGHQuad <- nimbleFunction(
     one_time_fixes_done <- FALSE
     ## Default calculation method for AGHQuad
     methodID <- 2
-    ## Define two nimbleLists for AGHQuad MLE output
-    AGHQuad_params <- nimbleList(names = character(1), estimates = double(1), stdErrors = double(1))
-    AGHQuad_summary <- nimbleList(params = AGHQuad_params(),
-                                 randomEffects = AGHQuad_params(),
-                                 vcov   = double(2),
-                                 scale  = character(0))
+    ## The nimbleList definitions AGHQuad_params and AGHQuad_summary
+    ## have moved to predefined nimbleLists.
   },## End of setup
   run = function(){},
   methods = list(
@@ -1615,52 +1563,52 @@ buildAGHQuad <- nimbleFunction(
       }
       one_time_fixes_done <<- TRUE
     },
-    ## Extra log-likelihood (parts not involving random effects, i.e. simply
+    ## Other log-likelihood (parts not involving random effects, i.e. simply
     ## additional calculations in the model) in terms of original parameters
-    extraLogLik = function(p = double(1)) {
-      if(num_calcNodesExtra == 0) stop("calcNodesExtra is empty: there is no exact likelihood component for the model")
+    otherLogLik = function(p = double(1)) {
+      if(num_calcNodesOther == 0) stop("calcNodesOther is empty: there is no exact likelihood component for the model")
       values(model, paramNodes) <<- p
-      ans <- model$calculate(calcNodesExtra)
+      ans <- model$calculate(calcNodesOther)
       return(ans)
       returnType(double())
     },
     ## Gradient of the exact log-likelihood w.r.t parameters
-    gr_extraLogLik_internal = function(p = double(1)) {
-      if(num_calcNodesExtra == 0) stop("calcNodesExtra is empty: there is no exact likelihood component for the model")
+    gr_otherLogLik_internal = function(p = double(1)) {
+      if(num_calcNodesOther == 0) stop("calcNodesOther is empty: there is no exact likelihood component for the model")
       if(!one_time_fixes_done) one_time_fixes()
-      ans <- derivs(extraLogLik(p), wrt = p_indices, order = 1, model = model,
-                    updateNodes = extraLogLik_updateNodes, constantNodes = extraLogLik_constantNodes)
+      ans <- derivs(otherLogLik(p), wrt = p_indices, order = 1, model = model,
+                    updateNodes = otherLogLik_updateNodes, constantNodes = otherLogLik_constantNodes)
       return(ans$jacobian[1,])
       returnType(double(1))
     },
     ## Double taping for efficiency
-    gr_extraLogLik = function(p = double(1)) {
-      if(num_calcNodesExtra == 0) stop("calcNodesExtra is empty: there is no exact likelihood component for the model")
+    gr_otherLogLik = function(p = double(1)) {
+      if(num_calcNodesOther == 0) stop("calcNodesOther is empty: there is no exact likelihood component for the model")
       if(!one_time_fixes_done) one_time_fixes()
-      ans <- derivs(gr_extraLogLik_internal(p), wrt = p_indices, order = 0, model = model,
-                    updateNodes = extraLogLik_updateNodes, constantNodes = extraLogLik_constantNodes)
+      ans <- derivs(gr_otherLogLik_internal(p), wrt = p_indices, order = 0, model = model,
+                    updateNodes = otherLogLik_updateNodes, constantNodes = otherLogLik_constantNodes)
       return(ans$value)
       returnType(double(1))
     },
     ## AGHQuad approximation in terms of original parameters
-    logLik = function(p = double(1), trans = logical(0, default = FALSE)) {
+    calcLogLik = function(p = double(1), trans = logical(0, default = FALSE)) {
       if(!one_time_fixes_done) one_time_fixes()
       if(trans) p <- paramsTransform$inverseTransform(p)
-      if(num_calcNodesExtra > 0) ans <- extraLogLik(p)
+      if(num_calcNodesOther > 0) ans <- otherLogLik(p)
       else ans <- 0
       if(nre > 0){
         for(i in seq_along(AGHQuad_nfl)){
-          if(methodID == 1) ans <- ans + AGHQuad_nfl[[i]]$logLik1(p)
-          else if(methodID == 2) ans <- ans + AGHQuad_nfl[[i]]$logLik2(p)
-          else ans <- ans + AGHQuad_nfl[[i]]$logLik3(p)
+          if(methodID == 1) ans <- ans + AGHQuad_nfl[[i]]$calcLogLik1(p)
+          else if(methodID == 2) ans <- ans + AGHQuad_nfl[[i]]$calcLogLik2(p)
+          else ans <- ans + AGHQuad_nfl[[i]]$calcLogLik3(p)
         }
       }
       if(is.nan(ans) | is.na(ans)) ans <- -Inf
       return(ans)
       returnType(double())
     },
-    Laplace = function(p = double(1)) {
-      ans <- logLik(p)
+    calcLaplace = function(p = double(1)) {
+      ans <- calcLogLik(p)
       return(ans)
       returnType(double())
     },
@@ -1671,7 +1619,7 @@ buildAGHQuad <- nimbleFunction(
         pDerivs <- derivs_pInverseTransform(p, c(0, 1))
         p <- pDerivs$value
       }
-      if(num_calcNodesExtra > 0) ans <- gr_extraLogLik(p)
+      if(num_calcNodesOther > 0) ans <- gr_otherLogLik(p)
       else ans <- numeric(length = npar)
       if(nre > 0){
         for(i in seq_along(AGHQuad_nfl)){
@@ -1692,12 +1640,12 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(1))
     },
     ## AGHQuad approximation in terms of transformed parameters
-    p_transformed_logLik = function(pTransform = double(1)) {
-      ## ans <- logLik(p, trans = TRUE)
-      if(!one_time_fixes_done) one_time_fixes()
-      p <- paramsTransform$inverseTransform(pTransform)
-      ans <- logLik(p)
-      if(is.nan(ans) | is.na(ans)) ans <- -Inf
+    calcLogLik_pTransformed = function(pTransform = double(1)) {
+      ans <- calcLogLik(pTransform, trans = TRUE)
+      ## if(!one_time_fixes_done) one_time_fixes()
+      ## p <- paramsTransform$inverseTransform(pTransform)
+      ## ans <- calcLogLik(p)
+      ## if(is.nan(ans) | is.na(ans)) ans <- -Inf
       return(ans)
       returnType(double())
     },
@@ -1730,25 +1678,26 @@ buildAGHQuad <- nimbleFunction(
       returnType(ADNimbleList())
     },
     ## Gradient of the AGHQuad approximation in terms of transformed parameters
-    p_transformed_gr_logLik = function(pTransform = double(1)) {
-      if(!one_time_fixes_done) one_time_fixes()
-      pDerivs <- derivs_pInverseTransform(pTransform, c(0, 1))
-      gr <- gr_logLik(pDerivs$value) ## pDerivs$value gives original param values
-      ans <- (gr %*% pDerivs$jacobian)[1,] 
+    gr_logLik_pTransformed = function(pTransform = double(1)) {
+      ans <- gr_logLik(pTransform, trans = TRUE)
+      ## if(!one_time_fixes_done) one_time_fixes()
+      ## pDerivs <- derivs_pInverseTransform(pTransform, c(0, 1))
+      ## gr <- gr_logLik(pDerivs$value) ## pDerivs$value gives original param values
+      ## ans <- (gr %*% pDerivs$jacobian)[1,]
       return(ans)
       returnType(double(1))
     },
     ## Calculate MLEs of parameters
     findMLE = function(pStart  = double(1, default = Inf),
-                          method  = character(0, default = "BFGS"),
-                          hessian = logical(0, default = TRUE)) {
+                       method  = character(0, default = "BFGS"),
+                       hessian = logical(0, default = TRUE)) {
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
       ## In case parameter nodes are not properly initialized 
       if(any_na(pStart) | any_nan(pStart) | any(abs(pStart)==Inf)) pStartTransform <- rep(0, pTransform_length)
       else pStartTransform <- paramsTransform$transform(pStart)
       ## In case bad start values are provided 
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
-      optRes <- optim(pStartTransform, p_transformed_logLik, p_transformed_gr_logLik, method = method, control = outOptControl, hessian = hessian)
+      optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outOptControl, hessian = hessian)
       if(optRes$convergence != 0) 
         print("Warning: optim has a non-zero convergence code: ", optRes$convergence, ".\n",
               "The control parameters of optim can be adjusted in the control argument of\n",
@@ -1994,8 +1943,8 @@ buildAGHQuad <- nimbleFunction(
   ),
   buildDerivs = list(pInverseTransform  = list(),
                      reInverseTransform = list(),
-                     extraLogLik = list(),
-                     gr_extraLogLik_internal = list()
+                     otherLogLik = list(),
+                     gr_otherLogLik_internal = list()
                      )
 )
 
@@ -2004,20 +1953,18 @@ buildAGHQuad <- nimbleFunction(
 #' Builds a Laplace approximation algorithm for a given NIMBLE model. 
 #' 
 #' @param model a NIMBLE model object, such as returned by \code{nimbleModel}.
-#'   The model must have automatic derivatives (AD) turned on, using
+#'   The model must have automatic derivatives (AD) turned on, e.g. by using
 #'   \code{buildDerivs=TRUE} in \code{nimbleModel}.
 #' @param paramNodes a character vector of names of parameter nodes in the
 #'   model; defaults to top-level stochastic nodes, as determined by
-#'   \code{model$getNodeNames(topOnly=TRUE, stochOnly=TRUE)}. If
-#'   \code{allowNonPriors} is \code{TRUE}, top-level determinisic nodes are also
-#'   treated as parameters (i.e. \code{stochOnly=FALSE}). Alternatively,
+#'   \code{model$getNodeNames(topOnly=TRUE, stochOnly=TRUE)}. Alternatively,
 #'   \code{paramNodes} can be a list in the format returned by
 #'   \code{setupMargNodes}, in which case \code{randomEffectsNodes},
-#'   \code{calcNodes}, and \code{calcNodesExtra} are not needed (and will be
+#'   \code{calcNodes}, and \code{calcNodesOther} are not needed (and will be
 #'   ignored).
 #' @param randomEffectsNodes a character vector of names of unobserved (latent)
-#'   nodes to marginalize (integrate) over using the Laplace approximation;
-#'   defaults to latent stochastic nodes that depend on \code{paramNodes}.
+#'   nodes to marginalize (integrate) over using Laplace approximation; defaults
+#'   to latent stochastic nodes that depend on \code{paramNodes}.
 #' @param calcNodes a character vector of names of nodes for calculating the
 #'   integrand for Laplace approximation; defaults to nodes that depend on
 #'   \code{randomEffectsNodes}, as determined by
@@ -2026,28 +1973,24 @@ buildAGHQuad <- nimbleFunction(
 #'   \code{paramNodes} and \code{randomEffectsNodes}. These will be included in
 #'   calculations automatically and thus do not need to be included in
 #'   \code{calcNodes} (but there is no problem if they are).
-#' @param calcNodesExtra a character vector of names of nodes for
-#'   calculating terms in the log-likelihood that do not depend on any
+#' @param calcNodesOther a character vector of names of nodes for calculating
+#'   terms in the log-likelihood that do not depend on any
 #'   \code{randomEffectsNodes}, and thus are not part of the marginalization,
 #'   but should be included for purposes of finding the MLE. This defaults to
 #'   stochastic nodes that depend on \code{paramNodes} but are not part of and
 #'   do not depend on \code{randomEffectsNodes}. There may be deterministic
-#'   nodes between \code{paramNodes} and \code{calcNodesExtra}. These will
-#'   be included in calculations automatically and thus do not need to be
-#'   included in \code{calcNodesExtra} (but there is no problem if they
-#'   are).
+#'   nodes between \code{paramNodes} and \code{calcNodesOther}. These will be
+#'   included in calculations automatically and thus do not need to be included
+#'   in \code{calcNodesOther} (but there is no problem if they are).
 #' @param optimControl a list of control parameters for the inner optimization
-#'   (of randomEffectsNodes) of Laplace approximation using \code{optim}. This
-#'   is used in the internal nimbleFunctions \code{buildOneAGHQuad} and
-#'   \code{buildOneAGHQuad1D}. See 'Details' of \code{\link{optim}} for further
-#'   information.
+#'   (of randomEffectsNodes) of Laplace approximation using \code{optim}. See
+#'   'Details' of \code{\link{optim}} for further information.
 #' @param optimMethod optimization method to be used in \code{optim} for the
-#'   inner optimization. This is used in the internal nimbleFunctions
-#'   \code{buildOneAGHQuad} and \code{buildOneAGHQuad1D}. See 'Details' of
-#'   \code{\link{optim}}. Currently \code{nimOptim} supports:
-#'   "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}". By
-#'   default, method "\code{CG}" is used for \code{buildOneAGHQuad1D} and
-#'   "\code{BFGS}" for \code{buildOneAGHQuad}.
+#'   inner optimization. See 'Details' of \code{\link{optim}}. Currently
+#'   \code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}",
+#'   "\code{L-BFGS-B}". By default, method "\code{CG}" is used when
+#'   marginalizing over a single (scalar) random effect, and "\code{BFGS}" is
+#'   used for multiple random effects being jointly marginalized over.
 #' @param optimStart choice of starting values for the inner optimization. This
 #'   could be \code{"last"}, \code{"last.best"}, or a vector of user provided
 #'   values. \code{"last"} means the most recent random effects values left in
@@ -2055,21 +1998,23 @@ buildAGHQuad <- nimbleFunction(
 #'   be the result of the most recent inner optimization, from the previous
 #'   parameter values. \code{"last.best"} means the random effects values
 #'   corresponding to the largest Laplace likelihood (from any call to the
-#'   `Laplace` method, including during an MLE search) will be used (even if it
-#'   was not the most recent Laplace likelihood). By default, the initial random
-#'   effects values will be used for inner optimization.
-#' @param control a named list (for \code{buildLaplace} only) that controls the
-#'   behavior of the Laplace approximation. See \code{control} section below.
+#'   `calcLaplace` method, including during an MLE search) will be used (even if
+#'   it was not the most recent Laplace likelihood). By default, the initial
+#'   random effects values will be used for inner optimization.
+#' @param control a named list (for \code{buildLaplace} only) for providing
+#'   additional settings used in Laplace approximation. See
+#'   \code{control} section below.
 #'
 #' @section \code{buildLaplace}:
 #'
-#' This is the main function for constructing the Laplace approximation for a
-#' given model. One only needs to provide a NIMBLE model object and then the
-#' function will construct the pieces necessary for Laplace approximation to
-#' marginalize over all latent states (aka random effects) in a model. To do so,
-#' it will determine default values for \code{paramNodes},
-#' \code{randomEffectsNodes}, \code{calcNodes}, and \code{calcNodesExtra} as
-#' described above.
+#' \code{buildLaplace} is the main function for constructing the Laplace
+#' approximation for a given model.
+#'
+#' One only needs to provide a NIMBLE model object and then the function will
+#' construct the pieces necessary for Laplace approximation to marginalize over
+#' all latent states (aka random effects) in a model. To do so, it will
+#' determine default values for \code{paramNodes}, \code{randomEffectsNodes},
+#' \code{calcNodes}, and \code{calcNodesOther} as described above.
 #'
 #' The default values are obtained by calling \code{setupMargNodes}, whose
 #' arguments match those here (except for a few arguments which are taken from
@@ -2089,16 +2034,33 @@ buildAGHQuad <- nimbleFunction(
 #' \code{sigma} is a standard deviation, declare it with a prior such as
 #' \code{sigma ~ dhalfflat()} to indicate that it must be greater than 0.
 #'
+#' For default determination of parameters, all parameters must have a prior
+#' distribution simply to indicate the range of valid values. For a param
+#' \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
+#'
 #' The object returned by \code{buildLaplace} is a nimbleFunction object with
 #' numerous methods (functions). The most useful ones are:
 #'
 #' \itemize{
 #'
-#' \item \code{Laplace(p)}. Laplace approximation to the marginal log-likelihood
-#'       function at parameter value \code{p}, which should match the order of
-#'       \code{paramNodes}. For any non-scalar nodes in \code{paramNodes}, the
-#'       order within the node is column-major (which can be seen for R objects
-#'       using \code{as.numeric}).
+#' \item \code{calcLogLik(p, trans)}. Calculate the Laplace approximation to
+#'       the marginal log-likelihood function at parameter value \code{p}, which
+#'       (if \code{trans} is FALSE, which is the default) should match the order
+#'       of \code{paramNodes}. For any non-scalar nodes in \code{paramNodes},
+#'       the order within the node is column-major (which can be seen for R
+#'       objects using \code{as.numeric}). Return value is the scalar
+#'       (approximate, marginal) log likelihood.
+#'
+#'       If \code{trans} is TRUE, then \code{p} is the vector of parameters on
+#'       the transformed scale, if any, described above. In this case, the
+#'       parameters on the original scale (as the model was written) will be
+#'       determined by calling the method \code{pInverseTransform(p)}. Note that
+#'       the length of the parameter vector on the transformed scale might not
+#'       be the same as on the original scale (because some constraints of
+#'       non-scalar parameters result in fewer free transformed parameters than
+#'       original parameters).
+#'
+#' \item \code{calcLaplace(p, trans)}. This is the same as \code{calcLaplace}.
 #'
 #' \item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
 #'         estimates of the Laplace-approximated marginal likelihood. Arguments
@@ -2108,7 +2070,9 @@ buildAGHQuad <- nimbleFunction(
 #'         \code{hessian}: whether to calculate and return the Hessian matrix
 #'         (defaults to \code{TRUE}). Second derivatives in the Hessian are
 #'         determined by finite differences of the gradients obtained by
-#'         automatic differentiation (AD).
+#'         automatic differentiation (AD). Return value is a nimbleList of type
+#'         \code{optimResultNimbleList}, similar to what is returned by R's
+#'         optim.
 #'
 #' \item \code{summary(MLEoutput, originalScale,
 #'        calcRandomEffectsStdError, returnJointCovariance)}. Summarize the
@@ -2116,7 +2080,7 @@ buildAGHQuad <- nimbleFunction(
 #'        \code{MLEoutput} that was returned by \code{findMLE}. The
 #'        summary can include a covariance matrix for the parameters, the random
 #'        effects, or both, and these can be returned on the original parameter
-#'        scale or on the potentially transformed scale(s) used in estimation.
+#'        scale or on the (potentially) transformed scale(s) used in estimation.
 #'
 #' In addition, \code{summary} accepts the following optional arguments:
 #'
@@ -2137,7 +2101,7 @@ buildAGHQuad <- nimbleFunction(
 #'
 #'        }
 #'
-#'        \code{summary} function returns a named list, with elements:
+#'        The object returned by \code{summary} is a nimbleList with elements:
 #'
 #'        \itemize{
 #'
@@ -2156,7 +2120,7 @@ buildAGHQuad <- nimbleFunction(
 #'           matrix of the random effects and parameters, on original or
 #'           transformed scale.
 #'
-#'           \item \code{scale}. \code{original} or \code{transformed}, the
+#'           \item \code{scale}. \code{"original"} or \code{"transformed"}, the
 #'        scale on which results were requested.
 #'
 #'        }
@@ -2169,7 +2133,7 @@ buildAGHQuad <- nimbleFunction(
 #'
 #'   \item \code{get_node_name_vec(returnParams)}. Return a vector (>1) of names
 #'   of parameters/random effects nodes, according to \code{returnParams =
-#'   TRUE/FALSE}. Use this is there is more than one parameter.
+#'   TRUE/FALSE}. Use this if there is more than one parameter.
 #'
 #'   \item \code{get_node_name_single(returnParams)}. Return the name of a
 #'   single parameter/random effect node, \code{returnParams = TRUE/FALSE}. Use
@@ -2185,35 +2149,22 @@ buildAGHQuad <- nimbleFunction(
 #'
 #'   \item \code{get_method()}. Return the current method ID.
 #'
-#'   \item \code{one_time_fixes()}. Users do not need to run this. Is is called
-#'   when necessary internally to fix dimensionality issues if there is only
-#'   one parameter in the model.
+#'   \item \code{gr_logLik(p, trans)}. Gradient of the Laplace-approximated
+#'   marginal likelihood at parameter value \code{p}. Argument \code{trans} is
+#'   similar to that in \code{calcLaplace}.
 #'
-#'   \item \code{extraLogLik(p)}. Calculate the \code{calcNodesExtra}
+#'   \item \code{gr_Laplace(p, trans)}. This is the same as \code{gr_logLik}.
+#'
+#'   \item \code{otherLogLik(p)}. Calculate the \code{calcNodesOther}
 #'   nodes, which returns the log-likelihood of the parts of the model that are
 #'   not included in the Laplace approximation. \code{p} is the vector of
 #'   parameter values in the order of \code{paramNames}.
 #'
-#'   \item \code{gr_extraLogLik_internal(p)}. Gradient (vector of
-#'   derivatives with respect to each parameter) of \code{extraLogLik(p)}.
-#'   This is obtained using automatic differentiation (AD) with single-taping.
-#'   First call will always be slower than later calls.
-#'
-#'   \item \code{gr_extraLogLik(p)}. Gradient (vector of derivatives with
-#'   respect to each parameter) of \code{extraLogLik(p)}. This is obtained
+#'   \item \code{gr_otherLogLik(p)}. Gradient (vector of derivatives with
+#'   respect to each parameter) of \code{otherLogLik(p)}. This is obtained
 #'   using automatic differentiation (AD) with double-taping. Results should
-#'   match \code{gr_extraLogLik_internal(p)} but may be more efficient after
+#'   match \code{gr_otherLogLik_internal(p)} but may be more efficient after
 #'   the first call.
-#'
-#'   \item \code{gr_Laplace(p)}. Gradient of the Laplace-approximated marginal
-#'   likelihood at parameter value \code{p}.
-#'
-#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at
-#'         transformed (unconstrained) parameter value \code{pTransform}. To
-#'         make maximizing the Laplace likelihood unconstrained, an automated
-#'         transformation via \code{\link{parameterTransform}} is performed on
-#'         any parameters with constraints indicated by their priors (even
-#'         though the prior probabilities are not used).
 #'
 #' }
 #'
@@ -2258,6 +2209,22 @@ buildAGHQuad <- nimbleFunction(
 #'    transformed random effects, evaluated at parameter value \code{p} and
 #'    transformed random effects \code{reTransform}.
 #'
+#'   \item \code{one_time_fixes()}. Users do not need to run this. Is is called
+#'   when necessary internally to fix dimensionality issues if there is only
+#'   one parameter in the model.
+#'
+#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at
+#'         transformed (unconstrained) parameter value \code{pTransform}. To
+#'         make maximizing the Laplace likelihood unconstrained, an automated
+#'         transformation via \code{\link{parameterTransform}} is performed on
+#'         any parameters with constraints indicated by their priors (even
+#'         though the prior probabilities are not used).
+#'
+#'   \item \code{gr_otherLogLik_internal(p)}. Gradient (vector of
+#'   derivatives with respect to each parameter) of \code{otherLogLik(p)}.
+#'   This is obtained using automatic differentiation (AD) with single-taping.
+#'   First call will always be slower than later calls.
+#'
 #' }
 #'
 #' @section \code{control} list:
@@ -2279,7 +2246,7 @@ buildAGHQuad <- nimbleFunction(
 #'
 #'   \item \code{warn}. If TRUE (default), a warning is issued if
 #'   \code{randomEffectsNodes} and/or \code{calcNodes} are provided but have
-#'   extra or missing elements relative to their defaults.
+#'   other or missing elements relative to their defaults.
 #'
 #'   \item \code{innerOptimControl}. See \code{optimControl}.
 #'
@@ -2290,13 +2257,6 @@ buildAGHQuad <- nimbleFunction(
 #'   \item \code{outOptimControl}. A list of control parameters for maximizing
 #'         the Laplace log-likelihood using \code{optim}. See 'Details' of
 #'         \code{\link{optim}} for further information.
-#'
-#'   \item \code{allowNonPriors} If FALSE (default), all parameter nodes must
-#'   have stochastic declarations (i.e. priors). These are not calculated as
-#'   part of Laplace approximation, but they are used to determine boundaries on
-#'   the valid ranges of parameters. If TRUE, parameters do not need
-#'   declarations, and those without one will be assumed to have no constraints
-#'   on valid values.
 #'
 #' }
 #'

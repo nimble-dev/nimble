@@ -24,7 +24,7 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
   }
   if(missing(opt)) {
     reset()
-    opt <- cL$LaplaceMLE()
+    opt <- cL$findMLE()
   }
   if(missing(summ_orig)){
     summ_orig <- cL$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
@@ -37,20 +37,20 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
     if(method != ref_method) {
       reset()
       cL$set_method(method)
-      opt_alt <- cL$LaplaceMLE()
+      opt_alt <- cL$findMLE()
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
       summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
       summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-      expect_equal(summ_orig$params$estimate, summ_orig_alt$params$estimate, tol = 1e-5)
-      expect_equal(summ_orig$random$estimate, summ_orig_alt$random$estimate, tol = 1e-5)
-      expect_equal(summ_orig$params$stdError, summ_orig_alt$params$stdError, tol = 1e-5)
-      expect_equal(summ_orig$random$stdError, summ_orig_alt$random$stdError, tol = 1e-5)
+      expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-5)
+      expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-5)
+      expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-5)
+      expect_equal(summ_orig$randomEffects$stdErrors, summ_orig_alt$randomEffects$stdErrors, tol = 1e-5)
       expect_equal(summ_orig$vcov, summ_orig_alt$vcov, tol = 1e-5)
-      expect_equal(summ_trans$params$estimate, summ_trans_alt$params$estimate, tol = 1e-5)
-      expect_equal(summ_trans$random$estimate, summ_trans_alt$random$estimate, tol = 1e-5)
-      expect_equal(summ_trans$params$stdError, summ_trans_alt$params$stdError, tol = 1e-5)
-      expect_equal(summ_trans$random$stdError, summ_trans_alt$random$stdError, tol = 1e-5)
+      expect_equal(summ_trans$params$estimates, summ_trans_alt$params$estimates, tol = 1e-5)
+      expect_equal(summ_trans$randomEffects$estimates, summ_trans_alt$randomEffects$estimates, tol = 1e-5)
+      expect_equal(summ_trans$params$stdErrors, summ_trans_alt$params$stdErrors, tol = 1e-5)
+      expect_equal(summ_trans$randomEffects$stdErrors, summ_trans_alt$randomEffects$stdErrors, tol = 1e-5)
       expect_equal(summ_trans$vcov, summ_trans_alt$vcov, tol = 1e-5)
     }
   }
@@ -117,7 +117,7 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   # V[a] = 9
   # V[y] = 9 + 4 = 13
   # Cov[a, y] = V[a] = 9 (not needed)
@@ -132,7 +132,7 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
   expect_equal(opt$hessian[1,1], -4^2/13, tol = 1e-4)
   summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, 4, tol = 1e-4)
+  expect_equal(summ$randomEffects$estimates, 4, tol = 1e-4)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(16/13, 1), ncol = 1) %*% (13/16) %*% t(matrix(c(16/13, 1), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-4)
@@ -142,7 +142,7 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   expect_equal(vcov, summ2$vcov, tol = 1e-4)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
+  optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -168,7 +168,7 @@ test_that("Laplace simplest 1D (constrained) with multiple data works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
   # Results are checked using those from TMB
   # TMB cpp code:
@@ -203,12 +203,12 @@ test_that("Laplace simplest 1D (constrained) with multiple data works", {
   # tmbvcov <- inverse(tmbrep$jointPrecision)
   expect_equal(opt$par, 0.2895238)
   expect_equal(opt$value, -10.47905, tol = 1e-7)
-  expect_equal(summ$random$estimate, -0.005608619)
+  expect_equal(summ$randomEffects$estimates, -0.005608619)
   vcov <- matrix(c(1.414499, -1.628299, -1.628299, 2.741033), nrow = 2, byrow = TRUE)
   expect_equal(summ$vcov, vcov, 1e-6)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
+  optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -234,7 +234,7 @@ test_that("Laplace simplest 1D (constrained) with deterministic intermediates an
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
   # Results are checked using those from TMB
   # TMB cpp code:
@@ -270,12 +270,12 @@ test_that("Laplace simplest 1D (constrained) with deterministic intermediates an
   # tmbvcov <- inverse(tmbrep$jointPrecision)
   expect_equal(opt$par, -2.639534, 1e-7)
   expect_equal(opt$value, -10.47905, tol = 1e-7)
-  expect_equal(summ$random$estimate, 1.603742, tol = 1e-7)
+  expect_equal(summ$randomEffects$estimates, 1.603742, tol = 1e-7)
   vcov <- matrix(c(1.415167, -3.258191, -3.258191, 10.967784), nrow = 2, byrow = TRUE)
   expect_equal(summ$vcov, vcov, 1e-7)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
+  optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -299,7 +299,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$LaplaceMLE() # some warnings are ok here.
+  opt <- cmLaplace$findMLE() # some warnings are ok here.
   expect_equal(opt$par, 40, tol = 1e-4) # 40 = 4 * (1/.2) * (1/.5)
   # V[a] = 9
   # V[y] = 0.2^2 * 9 + 4 = 4.36
@@ -311,13 +311,13 @@ test_that("Laplace 1D with deterministic intermediates works", {
   # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
   # Hessian of marginal loglik wrt param mu is -(0.2*0.5)^2/4.36 = -0.002293578
   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, 20, tol = 1e-4)
+  expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix 
   vcov <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(0.4587156, 1), ncol = 1) %*% (1/0.002293578) %*% t(matrix(c(0.4587156, 1), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-4)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -341,7 +341,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE() # some warnings are ok here.
+  opt <- cmLaplace$findMLE() # some warnings are ok here.
   # V[a] = 9
   # V[y] = 0.2^2 * 9 + 4 = 4.36
   # y ~ N(0.2*0.5*mu, 4.36)
@@ -355,7 +355,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(opt$hessian[1,1], -3.669725, tol = 1e-3)
   expect_equal(opt$value, dnorm(0.1*40, 0.1*40, sd = sqrt(4.36), log = TRUE))
   summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, 20, tol = 1e-4)
+  expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(18.34862, 1), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(18.34862, 1), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-3)
@@ -365,7 +365,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(vcov, summ2$vcov, tol = 1e-3)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -394,7 +394,7 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   expect_equal(opt$par, 12.5, tol = 1e-4) # 12.5 = mean(y) * (1/.8) * (1/.5) where mean(y) = 5
   # V[a] = 9
   # V[y[i]] = 0.8^2 * 9 + 4 = 9.76
@@ -417,14 +417,14 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   # Hessian of joint loglik wrt a: -(3*0.8^2/4 + 1/9)
   # Hessian of marginal loglik wrt mu: -0.02255639 (numerical, have not got AD work)
   summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, 6.25, tol = 1e-6)
+  expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
   # Covariance matrix 
   vcov <- matrix(c(1/(0.8^2*3/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(0.09398496, 1), ncol = 1) %*% (1/0.02255639) %*% t(matrix(c(0.09398496, 1), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
   
   # check that
   mLaplaceCheck <- buildLaplace(model = m, paramNodes = 'mu', randomEffectsNodes = 'a')
-  nim1D <-  mLaplace$laplace_nfl[[1]]
+  nim1D <-  mLaplace$AGHQuad_nfl[[1]]
   expect_identical(nim1D$paramNodes, "mu")
   expect_identical(nim1D$paramDeps, "mu_a")
   expect_identical(nim1D$randomEffectsNodes, "a")
@@ -436,7 +436,7 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   expect_identical(nim1D$joint_constantNodes, c("y[1]", "y[2]", "y[3]"))
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -465,7 +465,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   expect_equal(opt$par, 12.5, tol = 1e-4)
   # V[a] = 9
   # V[y[i]] = 0.8^2 * 9 + 4 = 9.76
@@ -489,7 +489,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(opt$value, res)
   # Check covariance matrix 
   summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, 6.25, tol = 1e-6)
+  expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(1/(0.8^2*3/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(1.174812, 1), ncol = 1) %*% (1/3.524436) %*% t(matrix(c(1.174812, 1), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-6)
@@ -499,7 +499,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(vcov, summ2$vcov, tol = 1e-5)
   # check that
   mLaplaceCheck <- buildLaplace(model = m, paramNodes = 'mu', randomEffectsNodes = 'a')
-  nim1D <-  mLaplace$laplace_nfl[[1]]
+  nim1D <-  mLaplace$AGHQuad_nfl[[1]]
   expect_identical(nim1D$paramNodes, "mu")
   expect_identical(nim1D$paramDeps, "mu_a")
   expect_identical(nim1D$randomEffectsNodes, "a")
@@ -511,7 +511,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_identical(nim1D$joint_constantNodes, c("y[1]", "y[2]", "y[3]"))
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -542,7 +542,7 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   expect_equal(opt$par, mean(y)/(0.8*0.5), tol = 1e-4) # optim's reltol is about 1e-8 but that is for the value, not param.
   # V[a] = 9
   # V[y[i]] = 0.8^2 * 9 + 4 = 9.76
@@ -570,13 +570,13 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   muhat <- mean(y)/(0.8*0.5)
   ahat <- c((9*0.8*sum(y[1,]) + 4*0.5*muhat)/(4+9*0.8^2*3), (9*0.8*sum(y[2,]) + 4*0.5*muhat)/(4+9*0.8^2*3))
   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, ahat, tol = 1e-6)
+  expect_equal(summ$randomEffects$estimates, ahat, tol = 1e-6)
   # Covariance matrix 
   vcov <- diag(c(rep(1/(3*0.8^2/4 + 1/9), 2), 0)) + matrix(c(rep(0.09398496, 2), 1), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(rep(0.09398496, 2), 1), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -610,7 +610,7 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   expect_equal(opt$par, mean(y)/(0.5), tol = 1e-4) # optim's reltol is about 1e-8 but that is for the value, not param.
   # V[a] = 9
   # V[y[1:2, i]] =  diag(2)*9 + cov_y = [ (9 + 2), 0 + 1.5; 0+1.5, (9+2)]
@@ -681,7 +681,7 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   expect_equal(summ$vcov[c(3,1,2), c(3,1,2)], tmbvcov, tol = 1e-6)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -715,7 +715,7 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   expect_equal(opt$par, mean(y)/(0.8*0.5), tol = 1e-4) # optim's reltol is about 1e-8 but that is for the value, not param.
   # V[a] = 9
   # V[y[1:2, i]] =  diag(2)*0.8^2 * 9 + cov_y = [ (5.76 + 2), 0 + 1.5; 0+1.5, (5.76+2)]
@@ -787,7 +787,7 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   expect_equal(summ$vcov[c(3,1,2), c(3,1,2)], tmbvcov, tol = 1e-6)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -825,7 +825,7 @@ test_that("Laplace with 2x2D random effects for 1D data that are separable works
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   
   ## Wei: I tested this using TMB instead of the code below
   # TMB cpp code:
@@ -915,7 +915,7 @@ test_that("Laplace with 2x2D random effects for 1D data that are separable works
   # expect_equal(opt$value, -opt_manual$value, tol = 1e-5)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-4)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -952,7 +952,7 @@ test_that("Laplace with 2x2D random effects for 2D data that need joint integrat
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   ## Check using TMB results
   expect_equal(opt$par, c(0.5603309, 11.7064674 ), tol = 1e-4)
   expect_equal(opt$value, -4.503796, tol = 1e-7)
@@ -969,7 +969,7 @@ test_that("Laplace with 2x2D random effects for 2D data that need joint integrat
   expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-4)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() # some warnings are ok here
+  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-4)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -1057,13 +1057,13 @@ test_that("simple LME case works", {
   mLaplace <- buildLaplace(model = m)
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-6)
-  expect_equal(nimres$params$estimate[1:3], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-5)
-  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-4)
-  expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-5)
+  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-6)
+  expect_equal(nimres$params$estimates[1:3], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-5)
+  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=1e-4)
+  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 1e-5)
 })
 
 test_that("simple LME with correlated intercept and slope works", {
@@ -1103,17 +1103,17 @@ test_that("simple LME with correlated intercept and slope works", {
   mLaplace <- buildLaplace(model = m)
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
-  sdparams <- nimres$params$estimate[-c(4,5)]
+  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
+  sdparams <- nimres$params$estimates[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=5e-3)
-  expect_equal(nimres$random$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
+  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=5e-3)
+  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 })
 
-test_that("Laplace with non-empty calcNodesNoLaplace works", {
+test_that("Laplace with non-empty calcNodesExtra works", {
   m <- nimbleModel(
     nimbleCode({
       for(i in 1:3) {
@@ -1139,7 +1139,7 @@ test_that("Laplace with non-empty calcNodesNoLaplace works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   expect_equal(opt$par, c(4, -2, 5), tol = 1e-3)
   expect_equal(opt$value, -6.420377, tol = 1e-6)
   
@@ -1187,7 +1187,7 @@ test_that("Laplace with non-empty calcNodesNoLaplace works", {
   expect_equal(summ$vcov[c(3:5, 1:2), c(3:5, 1:2)], tmbvcov, tol=1e-5)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
+  optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -1217,7 +1217,7 @@ test_that("Laplace with 2x1D parameters (one needs transformation) and non-norma
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   ## Compare with results from TMB
   expect_equal(opt$par, c(0.330241, 0.3059177), tol = 1e-4)
   expect_equal(opt$value, -9.703857, tol = 1e-6)
@@ -1234,10 +1234,10 @@ test_that("Laplace with 2x1D parameters (one needs transformation) and non-norma
   expect_equal(summ$vcov[c(6:7, 1:5), c(6:7, 1:5)], tmbvcov, tol=1e-4)
   ## Stand error for sigma (original parameter)
   summ2 <- cmLaplace$summary(opt, originalScale = TRUE)
-  expect_equal(summ2$params$stdError[2], 0.5472659, tol=1e-4)
+  expect_equal(summ2$params$stdErrors[2], 0.5472659, tol=1e-4)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
+  optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
@@ -1303,15 +1303,15 @@ test_that("Laplace with no random effects (simple linear regression) works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   summ <- cmLaplace$summary(opt)
   ## Compare results with those from TMB
   expect_equal(opt$par, c(-0.8899436, 1.1940911, 0.5744841), tol = 1e-5)
   expect_equal(opt$value, -4.323288, tol = 1e-7)
-  expect_equal(summ$params$stdError, c(0.2598061, 0.2988869, 0.1816661), tol = 1e-5)
+  expect_equal(summ$params$stdErrors, c(0.2598061, 0.2988869, 0.1816661), tol = 1e-5)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
+  optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt) # The warnings are normal
@@ -1344,183 +1344,185 @@ test_that("Laplace with no random effects (simple linear regression) works", {
   # tmbsumm <- summary(sdreport(obj))
 })
 
-test_that("Laplace with no priors for unconstrained parameters works", {
-  ## Here we re-use some of tests above and remove priors for parameters
-  ## Test 1
-  m <- nimbleModel(
-    nimbleCode({
-      y ~ dnorm(a, sd = 2)
-      a ~ dnorm(mu, sd = 3)
-      # mu ~ dnorm(0, sd = 5)
-    }), data = list(y = 4), inits = list(a = -1),
-    buildDerivs = TRUE
-  )
-  
-  mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
-  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
-  cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
-  cmLaplace <- cL$mLaplace
-  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
-  
-  opt <- cmLaplace$LaplaceMLE()
-  expect_equal(opt$par, 4, tol = 1e-4) 
-  expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
-  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-  expect_equal(summ$random$estimate, 4, tol = 1e-5)
-  # Covariance matrix 
-  vcov <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(4/13, 1), ncol = 1) %*% (13) %*% t(matrix(c(4/13, 1), ncol = 1))
-  expect_equal(vcov, summ$vcov, tol = 1e-6)
-  
-  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE()
-  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
-  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
-  
-  ## Test 2
-  set.seed(1)
-  x <- rnorm(5)
-  y <- sapply(-1 + x, rnorm, n = 1, sd = 1)
-  m <- nimbleModel(
-    nimbleCode({
-      sigma ~ dunif(0, 100)
-      for(i in 1:5){
-        mu_y[i] <- a + b*x[i]
-        y[i] ~ dnorm(mu_y[i], sd = sigma)
-      }
-    }),
-    constants = list(x = x),
-    data = list(y = y),
-    buildDerivs = TRUE
-  )
-  
-  mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
-  
-  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
-  cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
-  cmLaplace <- cL$mLaplace
-  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
-  
-  opt <- cmLaplace$LaplaceMLE()
-  summ <- cmLaplace$summary(opt)
-  ## Compare results with those from TMB
-  expect_equal(opt$par, c(0.5744841, -0.8899436, 1.1940911), tol = 1e-5)
-  expect_equal(opt$value, -4.323288, tol = 1e-7)
-  expect_equal(summ$params$stdError, c(0.1816661, 0.2598061, 0.2988869), tol = 1e-5)
-  
-  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
-  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
-  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt) 
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
-  
-  ## Test 3
-  set.seed(1)
-  y <- array(rnorm(8, 6, 5), dim = c(2, 2, 2)) 
-  cov_a <- matrix(c(2, 1.5, 1.5, 2), nrow = 2)
-  m <- nimbleModel(
-    nimbleCode({
-      # for(i in 1:2) mu[i] ~ dnorm(0, sd = 10)
-      mu_a[1] <- 0.8 * mu[1]
-      mu_a[2] <- 0.2 * mu[2]
-      for(i in 1:2) a[i, 1:2] ~ dmnorm(mu_a[1:2], cov = cov_a[1:2, 1:2])
-      for(i in 1:2) {
-        for(j in 1:2) {
-          y[1, j, i] ~ dnorm( 0.5 * a[i, 1], sd = 1.8) 
-          y[2, j, i] ~ dnorm( 0.1 * a[i, 2], sd = 1.2)
-        }
-      }
-    }),
-    data = list(y = y),
-    inits = list(a = matrix(c(-2, -3, 0,  -1), nrow = 2)),
-    constants = list(cov_a = cov_a),
-    buildDerivs = TRUE
-  )
-  
-  mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
-  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
-  cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
-  cmLaplace <- cL$mLaplace
-  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
-  
-  opt <- cmLaplace$LaplaceMLE()
-  
-  expect_equal(opt$par, c(12.98392, 406.04878), tol = 1e-4)
-  expect_equal(opt$value, -41.86976, tol = 1e-6)
-  # Check covariance matrix
-  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
-  tmbvcov <- matrix(nrow = 6, ncol = 6)
-  tmbvcov[1,] <- c(6.625000e+00, 4.687500e+00,  4.050000e+00,  4.050000e+00, -2.693817e-11, -2.695275e-11)
-  tmbvcov[2,] <- c(4.687500e+00, 9.250000e+02,  2.965628e-11,  2.967848e-11,  1.800000e+02,  1.800000e+02)
-  tmbvcov[3,] <- c(4.050000e+00, 2.951367e-11,  3.995242e+00,  2.484758e+00,  5.596302e-01, -5.596302e-01)
-  tmbvcov[4,] <- c(4.050000e+00, 2.951367e-11,  2.484758e+00,  3.995242e+00, -5.596302e-01,  5.596302e-01)
-  tmbvcov[5,] <- c(-2.691772e-11, 1.800000e+02,  5.596302e-01, -5.596302e-01,  3.684693e+01,  3.515307e+01)
-  tmbvcov[6,] <- c(-2.691772e-11, 1.800000e+02, -5.596302e-01,  5.596302e-01,  3.515307e+01,  3.684693e+01)
-  
-  expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-4)
-  
-  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
-  expect_equal(opt$par, optNoSplit$par, tol = 1e-4)
-  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
-  
-  ## Test 4
-  m <- nimbleModel(
-    nimbleCode({
-      # for(i in 1:3) {
-      #   mu[i] ~ dnorm(0, sd = 10)
-      # }
-      mu_a[1] <- mu[1] + mu[2]
-      mu_a[2] <- mu[2] + mu[3]
-      a[1] ~ dnorm(mu_a[1], sd = 2)
-      y[1] ~ dnorm(a[1], sd = 3)
-      a[2] ~ dnorm(mu_a[2], sd = 2)
-      y[2] ~ dnorm(a[2], sd =3)
-      y[3] ~ dnorm(mu[3], sd = 3)
-    }),
-    data = list(y = c(2, 3, 5)),
-    inits = list(a = c(1, 2)),
-    buildDerivs = TRUE
-  )
-  
-  mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
-  mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
-  cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
-  cmLaplace <- cL$mLaplace
-  cmLaplaceNoSplit <- cL$mLaplaceNoSplit
-  
-  opt <- cmLaplace$LaplaceMLE()
-  expect_equal(opt$par, c(4, -2, 5), tol = 1e-3)
-  expect_equal(opt$value, -6.420377, tol = 1e-6)
-  ## Check covariance matrix
-  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
-  
-  ## Covariance matrix from TMB
-  tmbvcov <- matrix(nrow = 5, ncol = 5)
-  tmbvcov[1,] <- c( 35, -2.20000e+01,  9.000000e+00,  9.000000e+00, -9.000000e+00)
-  tmbvcov[2,] <- c(-22,  2.20000e+01, -9.000000e+00,  8.463230e-13,  9.000000e+00)
-  tmbvcov[3,] <- c( 9,  -9.00000e+00,  9.000000e+00, -3.462231e-13,  3.462231e-13)
-  tmbvcov[4,] <- c( 9,   8.46323e-13, -3.462231e-13,  9.000000e+00,  3.462231e-13)
-  tmbvcov[5,] <- c(-9,   9.00000e+00,  3.462231e-13,  3.462231e-13,  9.000000e+00)
-  
-  expect_equal(summ$vcov[c(3:5, 1:2), c(3:5, 1:2)], tmbvcov, tol=1e-5)
-  
-  for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$LaplaceMLE() 
-  expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
-  expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+## Possible future feature (was drafted, not completed):
+##
+## test_that("Laplace with no priors for unconstrained parameters works", {
+##   ## Here we re-use some of tests above and remove priors for parameters
+##   ## Test 1
+##   m <- nimbleModel(
+##     nimbleCode({
+##       y ~ dnorm(a, sd = 2)
+##       a ~ dnorm(mu, sd = 3)
+##       # mu ~ dnorm(0, sd = 5)
+##     }), data = list(y = 4), inits = list(a = -1),
+##     buildDerivs = TRUE
+##   )
 
-})
+##   mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
+##   mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
+##   cm <- compileNimble(m)
+##   cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+##   cmLaplace <- cL$mLaplace
+##   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+
+##   opt <- cmLaplace$findMLE()
+##   expect_equal(opt$par, 4, tol = 1e-4)
+##   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
+##   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+##   expect_equal(summ$randomEffects$estimates, 4, tol = 1e-5)
+##   # Covariance matrix
+##   vcov <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(4/13, 1), ncol = 1) %*% (13) %*% t(matrix(c(4/13, 1), ncol = 1))
+##   expect_equal(vcov, summ$vcov, tol = 1e-6)
+
+##   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+##   optNoSplit <- cmLaplaceNoSplit$findMLE()
+##   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+##   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+##   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+##   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+
+##   ## Test 2
+##   set.seed(1)
+##   x <- rnorm(5)
+##   y <- sapply(-1 + x, rnorm, n = 1, sd = 1)
+##   m <- nimbleModel(
+##     nimbleCode({
+##       sigma ~ dunif(0, 100)
+##       for(i in 1:5){
+##         mu_y[i] <- a + b*x[i]
+##         y[i] ~ dnorm(mu_y[i], sd = sigma)
+##       }
+##     }),
+##     constants = list(x = x),
+##     data = list(y = y),
+##     buildDerivs = TRUE
+##   )
+
+##   mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
+
+##   mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
+##   cm <- compileNimble(m)
+##   cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+##   cmLaplace <- cL$mLaplace
+##   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+
+##   opt <- cmLaplace$findMLE()
+##   summ <- cmLaplace$summary(opt)
+##   ## Compare results with those from TMB
+##   expect_equal(opt$par, c(0.5744841, -0.8899436, 1.1940911), tol = 1e-5)
+##   expect_equal(opt$value, -4.323288, tol = 1e-7)
+##   expect_equal(summ$params$stdErrors, c(0.1816661, 0.2598061, 0.2988869), tol = 1e-5)
+
+##   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+##   optNoSplit <- cmLaplaceNoSplit$findMLE()
+##   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+##   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+##   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+##   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+
+##   ## Test 3
+##   set.seed(1)
+##   y <- array(rnorm(8, 6, 5), dim = c(2, 2, 2))
+##   cov_a <- matrix(c(2, 1.5, 1.5, 2), nrow = 2)
+##   m <- nimbleModel(
+##     nimbleCode({
+##       # for(i in 1:2) mu[i] ~ dnorm(0, sd = 10)
+##       mu_a[1] <- 0.8 * mu[1]
+##       mu_a[2] <- 0.2 * mu[2]
+##       for(i in 1:2) a[i, 1:2] ~ dmnorm(mu_a[1:2], cov = cov_a[1:2, 1:2])
+##       for(i in 1:2) {
+##         for(j in 1:2) {
+##           y[1, j, i] ~ dnorm( 0.5 * a[i, 1], sd = 1.8)
+##           y[2, j, i] ~ dnorm( 0.1 * a[i, 2], sd = 1.2)
+##         }
+##       }
+##     }),
+##     data = list(y = y),
+##     inits = list(a = matrix(c(-2, -3, 0,  -1), nrow = 2)),
+##     constants = list(cov_a = cov_a),
+##     buildDerivs = TRUE
+##   )
+
+##   mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
+##   mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
+##   cm <- compileNimble(m)
+##   cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+##   cmLaplace <- cL$mLaplace
+##   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+
+##   opt <- cmLaplace$findMLE()
+
+##   expect_equal(opt$par, c(12.98392, 406.04878), tol = 1e-4)
+##   expect_equal(opt$value, -41.86976, tol = 1e-6)
+##   # Check covariance matrix
+##   summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+##   tmbvcov <- matrix(nrow = 6, ncol = 6)
+##   tmbvcov[1,] <- c(6.625000e+00, 4.687500e+00,  4.050000e+00,  4.050000e+00, -2.693817e-11, -2.695275e-11)
+##   tmbvcov[2,] <- c(4.687500e+00, 9.250000e+02,  2.965628e-11,  2.967848e-11,  1.800000e+02,  1.800000e+02)
+##   tmbvcov[3,] <- c(4.050000e+00, 2.951367e-11,  3.995242e+00,  2.484758e+00,  5.596302e-01, -5.596302e-01)
+##   tmbvcov[4,] <- c(4.050000e+00, 2.951367e-11,  2.484758e+00,  3.995242e+00, -5.596302e-01,  5.596302e-01)
+##   tmbvcov[5,] <- c(-2.691772e-11, 1.800000e+02,  5.596302e-01, -5.596302e-01,  3.684693e+01,  3.515307e+01)
+##   tmbvcov[6,] <- c(-2.691772e-11, 1.800000e+02, -5.596302e-01,  5.596302e-01,  3.515307e+01,  3.684693e+01)
+
+##   expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-4)
+
+##   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+##   optNoSplit <- cmLaplaceNoSplit$findMLE()
+##   expect_equal(opt$par, optNoSplit$par, tol = 1e-4)
+##   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+##   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+##   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+
+##   ## Test 4
+##   m <- nimbleModel(
+##     nimbleCode({
+##       # for(i in 1:3) {
+##       #   mu[i] ~ dnorm(0, sd = 10)
+##       # }
+##       mu_a[1] <- mu[1] + mu[2]
+##       mu_a[2] <- mu[2] + mu[3]
+##       a[1] ~ dnorm(mu_a[1], sd = 2)
+##       y[1] ~ dnorm(a[1], sd = 3)
+##       a[2] ~ dnorm(mu_a[2], sd = 2)
+##       y[2] ~ dnorm(a[2], sd =3)
+##       y[3] ~ dnorm(mu[3], sd = 3)
+##     }),
+##     data = list(y = c(2, 3, 5)),
+##     inits = list(a = c(1, 2)),
+##     buildDerivs = TRUE
+##   )
+
+##   mLaplace <- buildLaplace(model = m, control = list(allowNonPriors = TRUE))
+##   mLaplaceNoSplit <- buildLaplace(model = m, control = list(split = FALSE, allowNonPriors = TRUE))
+##   cm <- compileNimble(m)
+##   cL <- compileNimble(mLaplace, mLaplaceNoSplit, project = m)
+##   cmLaplace <- cL$mLaplace
+##   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
+
+##   opt <- cmLaplace$findMLE()
+##   expect_equal(opt$par, c(4, -2, 5), tol = 1e-3)
+##   expect_equal(opt$value, -6.420377, tol = 1e-6)
+##   ## Check covariance matrix
+##   summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+
+##   ## Covariance matrix from TMB
+##   tmbvcov <- matrix(nrow = 5, ncol = 5)
+##   tmbvcov[1,] <- c( 35, -2.20000e+01,  9.000000e+00,  9.000000e+00, -9.000000e+00)
+##   tmbvcov[2,] <- c(-22,  2.20000e+01, -9.000000e+00,  8.463230e-13,  9.000000e+00)
+##   tmbvcov[3,] <- c( 9,  -9.00000e+00,  9.000000e+00, -3.462231e-13,  3.462231e-13)
+##   tmbvcov[4,] <- c( 9,   8.46323e-13, -3.462231e-13,  9.000000e+00,  3.462231e-13)
+##   tmbvcov[5,] <- c(-9,   9.00000e+00,  3.462231e-13,  3.462231e-13,  9.000000e+00)
+
+##   expect_equal(summ$vcov[c(3:5, 1:2), c(3:5, 1:2)], tmbvcov, tol=1e-5)
+
+##   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
+##   optNoSplit <- cmLaplaceNoSplit$findMLE()
+##   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
+##   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+##   check_laplace_alternative_methods(cmLaplace, cm, m, opt)
+##   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+
+## })
 
 test_that("Laplace with crossed random effects works", {
   library(lme4)
@@ -1561,17 +1563,17 @@ test_that("Laplace with crossed random effects works", {
   mLaplace <- buildLaplace(model = m)
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
-  opt <- cmLaplace$LaplaceMLE()
+  opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   
   lme4_fit <- lmer(diameter ~ 1 + (1|plate) + (1|sample), data = Penicillin, REML = FALSE)
   lme4res <- summary(lme4_fit)
   
-  expect_equal(nimres$params$estimate[1], lme4res$coefficients[,"Estimate"], tol=1e-6)
-  expect_equal(nimres$params$estimate[c(3,4,2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
-  expect_equal(nimres$params$stdError[1], lme4res$coefficients[,"Std. Error"], tol=5e-4)
-  expect_equal(nimres$random$estimate[25:30], as.vector(t(ranef(lme4_fit)$sample)), tol = 5e-5)
-  expect_equal(nimres$random$estimate[1:24], as.vector(t(ranef(lme4_fit)$plate)), tol = 5e-6)
+  expect_equal(nimres$params$estimates[1], lme4res$coefficients[,"Estimate"], tol=1e-6)
+  expect_equal(nimres$params$estimates[c(3,4,2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
+  expect_equal(nimres$params$stdErrors[1], lme4res$coefficients[,"Std. Error"], tol=5e-4)
+  expect_equal(nimres$randomEffects$estimates[25:30], as.vector(t(ranef(lme4_fit)$sample)), tol = 5e-5)
+  expect_equal(nimres$randomEffects$estimates[1:24], as.vector(t(ranef(lme4_fit)$plate)), tol = 5e-6)
 })
 
 test_that("Laplace with nested random effects works", {
@@ -1611,14 +1613,14 @@ test_that("Laplace with nested random effects works", {
   cmLaplace <- compileNimble(mLaplace, project = m)
   ## It seems that default start values (0, 1, 1, 1) for this example do not work well 
   ## for optimisation; use c(2, 2, 2, 2) instead
-  opt <- cmLaplace$LaplaceMLE(pStart = c(2,2,2,2))
+  opt <- cmLaplace$findMLE(pStart = c(2,2,2,2))
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   
-  expect_equal(nimres$params$estimate[1], lme4res$coefficients[,"Estimate"], tol = 1e-5)
-  expect_equal(nimres$params$estimate[c(4, 3, 2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
-  expect_equal(nimres$params$stdError[1], lme4res$coefficients[,"Std. Error"], tol = 5e-5)
-  expect_equal(nimres$random$estimate[seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$batch)), tol = 5e-4)
-  expect_equal(nimres$random$estimate[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
+  expect_equal(nimres$params$estimates[1], lme4res$coefficients[,"Estimate"], tol = 1e-5)
+  expect_equal(nimres$params$estimates[c(4, 3, 2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
+  expect_equal(nimres$params$stdErrors[1], lme4res$coefficients[,"Std. Error"], tol = 5e-5)
+  expect_equal(nimres$randomEffects$estimates[seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$batch)), tol = 5e-4)
+  expect_equal(nimres$randomEffects$estimates[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
 })
 
 

@@ -226,8 +226,8 @@ void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
 }
 
 bool check_inf_nan_gdi(double v) {
-  if(((v == -std::numeric_limits<double>::infinity()) |
-      (v == std::numeric_limits<double>::infinity())) | 
+  if(((v == -std::numeric_limits<double>::infinity()) ||
+      (v == std::numeric_limits<double>::infinity())) ||
      (std::isnan(v))) {
     return true;
   }

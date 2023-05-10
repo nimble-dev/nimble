@@ -150,6 +150,18 @@ R_CallMethodDef CallEntries[] = {
   FUN(waicDetailsNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
   FUN(waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
 
+  FUN(new_waicDetailsList, 0),
+  FUN(waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_AGHQuad_params, 0),
+  FUN(AGHQuad_params_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(AGHQuad_params_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_AGHQuad_summary, 0),
+  FUN(AGHQuad_summary_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(AGHQuad_summary_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
   {NULL, NULL, 0}
 };
 
