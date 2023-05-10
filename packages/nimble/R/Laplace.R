@@ -1,7 +1,5 @@
 ## NIMBLE Laplace approximation
 ## Laplace base class
-#' @rdname laplace
-## #' @export
 AGHQuad_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
@@ -42,14 +40,10 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
 )
 
 ## A single Laplace approximation for only one scalar random effect node
-#' @rdname laplace
-## #' @export
 buildOneLaplace1D <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
   buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
 }
 
-#'
-## #' @export
 buildOneAGHQuad1D <- nimbleFunction(
   contains = AGHQuad_BASE,
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
@@ -523,14 +517,10 @@ buildOneAGHQuad1D <- nimbleFunction(
 
 
 ## A single Laplace approximation for models with more than one scalar random effect node
-#' @rdname laplace
-## #' @export
 buildOneLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
   buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
 }
 
-#'
-## #' @export
 buildOneAGHQuad <- nimbleFunction(
   contains = AGHQuad_BASE,
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
@@ -1343,8 +1333,6 @@ buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcN
 }
 
 ## Main function for Adaptive Gauss-Hermite Quadratrue
-#' @rdname laplace
-## #' @export
 buildAGHQuad <- nimbleFunction(
   name = 'AGHQuad',
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,

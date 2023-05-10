@@ -521,6 +521,7 @@ AGHQuad_params <- nimbleList(
   predefined = TRUE
 )
 
+#' @export
 AGHQuad_summary <- nimbleList(
   list(
     nimbleType('params','AGHQuad_params', 0),

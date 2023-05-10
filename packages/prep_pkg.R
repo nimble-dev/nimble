@@ -93,11 +93,10 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calcAdaptationFactor",
                        "is.nfGenerator",
                        "mcmc_createModelObject",
+                       "AGHQuad_params",
+                       "AGHQuad_summary",
                        "nimbleInternalFunctions",
-                       "nimbleUserNamespace",
-                       "buildOneAGHQuad",
-                       "buildOneAGHQuad1D",
-                       "AGHQuad_params")
+                       "nimbleUserNamespace")
 
 ## Not clear why we need this but this is not being put in NAMESPACE otherwise.
 ## It can't be in 'additionalExports' as it does have documentation.
