@@ -95,7 +95,6 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "mcmc_createModelObject",
                        "nimbleInternalFunctions",
                        "nimbleUserNamespace",
-                       "buildAGHQuad",
                        "buildOneAGHQuad",
                        "buildOneAGHQuad1D",
                        "AGHQuad_params")
