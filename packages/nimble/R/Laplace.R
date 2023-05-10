@@ -1267,7 +1267,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       }
       for(i in 1:numDetermCalcNoLaplaceCheck){
         if(!(determCalcNoLaplaceCheck[i] %in% paramDetermDeps) || 
-           !(any(model$getDependencies(determCalcNoLaplaceCheck[i], self = FALSE) %in% calcNodesExtraDefault))){
+           !(any(model$getDependencies(determCalcNoLaplaceCheck[i], self = FALSE) %in% calcNodesOtherDefault))){
           errorNodes <- c(errorNodes, determCalcNoLaplaceCheck[i])
         }
       }
@@ -2004,6 +2004,7 @@ buildAGHQuad <- nimbleFunction(
 #' @param control a named list (for \code{buildLaplace} only) for providing
 #'   additional settings used in Laplace approximation. See
 #'   \code{control} section below.
+#' @param nQuad number of quadrature points. Default value of one for Laplace approximation. This is currently unused, but it will be used in the future for adaptive Gauss-Hermite quadrature. 
 #'
 #' @section \code{buildLaplace}:
 #'
