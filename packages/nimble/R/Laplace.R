@@ -1581,7 +1581,17 @@ buildAGHQuad <- nimbleFunction(
     ## AGHQuad approximation in terms of original parameters
     calcLogLik = function(p = double(1), trans = logical(0, default = FALSE)) {
       if(!one_time_fixes_done) one_time_fixes()
-      if(trans) p <- paramsTransform$inverseTransform(p)
+      if(trans) {
+        if(length(p) != pTransform_length) {
+          print("  [Warning] For calcLogLik (or calcLaplace) with trans = TRUE, p should be length ", pTransform_length, " but was provided with length ", length(p),".")
+          stop("Wrong length for p in calcLogLik  (or calcLaplace) with trans = TRUE.")
+        }
+        p <- paramsTransform$inverseTransform(p)
+      }
+      if(length(p) != npar) {
+        print("  [Warning] For calcLogLik (or calcLaplace), p should be length ", npar, " but is length ", length(p), ".")
+        stop("Wrong length for p in calcLogLik  (or calcLaplace).")
+      }
       if(num_calcNodesOther > 0) ans <- otherLogLik(p)
       else ans <- 0
       if(nre > 0){
@@ -1595,8 +1605,8 @@ buildAGHQuad <- nimbleFunction(
       return(ans)
       returnType(double())
     },
-    calcLaplace = function(p = double(1)) {
-      ans <- calcLogLik(p)
+    calcLaplace = function(p = double(1), trans = logical(0, default = FALSE)) {
+      ans <- calcLogLik(p, trans)
       return(ans)
       returnType(double())
     },
@@ -1604,8 +1614,16 @@ buildAGHQuad <- nimbleFunction(
     gr_logLik = function(p = double(1), trans = logical(0, default=FALSE)) {
       if(!one_time_fixes_done) one_time_fixes()
       if(trans) {
+        if(length(p) != pTransform_length) {
+          print("  [Warning] For gr_logLik (or gr_Laplace) with trans = TRUE, p should be length ", pTransform_length, " but was provided with length ", length(p),".")
+          stop("Wrong length for p in gr_logLik (or gr_Laplace) with trans = TRUE.")
+        }
         pDerivs <- derivs_pInverseTransform(p, c(0, 1))
         p <- pDerivs$value
+      }
+      if(length(p) != npar) {
+        print("    [Warning] For gr_logLik (or gr_Laplace), p should be length ", npar, " but is length ", length(p), ".")
+        stop("Wrong length for p in gr_logLik (or gr_Laplace).")
       }
       if(num_calcNodesOther > 0) ans <- gr_otherLogLik(p)
       else ans <- numeric(length = npar)
@@ -1622,8 +1640,8 @@ buildAGHQuad <- nimbleFunction(
       return(ans)
       returnType(double(1))
     },
-    gr_Laplace = function(p = double(1)) {
-      ans <- gr_logLik(p)
+    gr_Laplace = function(p = double(1), trans = logical(0, default=FALSE)) {
+      ans <- gr_logLik(p, trans)
       return(ans)
       returnType(double(1))
     },
@@ -1679,6 +1697,12 @@ buildAGHQuad <- nimbleFunction(
     findMLE = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE)) {
+      if(length(pStart) != npar) {
+        print("  [Warning] For findMLE, pStart should be length ", npar, " but is length ", length(pStart), ".")
+        ans <- optimResultNimbleList$new()
+        return(ans)
+#        stop("Wrong length for pStart in findMLE.")
+      }
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
       ## In case parameter nodes are not properly initialized 
       if(any_na(pStart) | any_nan(pStart) | any(abs(pStart)==Inf)) pStartTransform <- rep(0, pTransform_length)

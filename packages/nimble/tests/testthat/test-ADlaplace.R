@@ -1623,6 +1623,86 @@ test_that("Laplace with nested random effects works", {
   expect_equal(nimres$randomEffects$estimates[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
 })
 
+test_that("Laplace error trapping of wrong-length parameters works", {
+  m <- nimbleModel(
+    nimbleCode({
+      d[1:3] ~ ddirch(alpha[1:3]) # params
+      for(i in 1:3) x[i] ~ dnorm(d[i], 1) # randomEffects
+      for(i in 1:3) y[i] ~ dnorm(x[i], 1) # data
+    }),
+    data = list(y = rnorm(3), alpha = rep(1.1, 3)),
+    inits = list(x = rnorm(3), d = c(.2, .3, .5)),
+    buildDerivs = TRUE
+  )
+  m$calculate()
+  mLaplace <- buildLaplace(model = m)
+  cm <- compileNimble(m)
+  cmLaplace <- compileNimble(mLaplace, project = m)
+
+  cat("Eight messages beginning with [Warning] are expected:\n")
+
+  # should work
+  expect_no_error(cmLaplace$calcLogLik(c(.4, .5, .1)))
+  expect_no_error(cmLaplace$calcLaplace(c(.4, .5, .1)))
+  expect_no_error(cmLaplace$gr_logLik(c(.4, .5, .1)))
+  expect_no_error(cmLaplace$gr_Laplace(c(.4, .5, .1)))
+
+  # should throw errors
+  expect_error(cmLaplace$calcLogLik(c(.4, .5)))
+  expect_error(cmLaplace$calcLaplace(c(.4, .5)))
+  expect_error(cmLaplace$gr_logLik(c(.4, .5)))
+  expect_error(cmLaplace$gr_Laplace(c(.4, .5)))
+
+  # should work
+  expect_no_error(cmLaplace$calcLogLik(c(.4, .5), trans = TRUE))
+  expect_no_error(cmLaplace$calcLaplace(c(.4, .5), trans = TRUE))
+  expect_no_error(cmLaplace$gr_logLik(c(.4, .5), trans = TRUE))
+  expect_no_error(cmLaplace$gr_Laplace(c(.4, .5), trans = TRUE))
+
+  # should throw errors
+  expect_error(cmLaplace$calcLogLik(c(.4, .5, .1), trans = TRUE))
+  expect_error(cmLaplace$calcLaplace(c(.4, .5, .1), trans = TRUE))
+  expect_error(cmLaplace$gr_logLik(c(.4, .5, .1), trans = TRUE))
+  expect_error(cmLaplace$gr_Laplace(c(.4, .5, .1), trans = TRUE))
+
+  output <- cmLaplace$findMLE(c(.4, .5, .1))
+  expect_true(all(output$counts > 0))
+  # We couldn't throw an error from a nimbleList-returning method
+  # so we emit a message containing "[Warning]".
+  # I tried to use "capture.output" to check it, but that doesn't work in a test_that
+  # So I'm just checking that the iterations were 0
+  output <- cmLaplace$findMLE(c(.4, .5))
+  expect_identical(output$counts, integer())
+})
+
+test_that("Laplace works with different numbers of REs in different cond. ind. sets", {
+  # This checks on Issue #1312, which was really a bug with nimOptim
+  # that arose from having multiple nimOptim calls share the same
+  # control list.
+  # This test does not check correctness of result, only that it runs.
+  code <- nimbleCode({
+    for(i in 1:2) {
+      param[i] ~ dnorm(0, 1)
+      for(j in 1:num_re[i]) {
+        re[i,j] ~ dnorm(param[i], 1)
+      }
+      y[i] ~ dnorm(sum(re[i,1:num_re[i]]), 1)
+    }
+  })
+
+  num_re <- c(3,7)   ## different numbers of REs in two conditionally independent sets
+  constants <- list(num_re = num_re)
+  data <- list(y = c(0,0))
+
+  Rmodel <- nimbleModel(code, constants, data, buildDerivs = TRUE)
+  Rlaplace <- buildLaplace(Rmodel, 'param', 're')
+
+  Cmodel <- compileNimble(Rmodel)
+  Claplace <- compileNimble(Rlaplace, project = Rmodel)
+
+  expect_no_error(Claplace$findMLE(c(0,0)))
+})
+
 
 # To do:
 # Various structures of random effects groupings
