@@ -45,9 +45,10 @@ if (length(grep('^-', argv, invert = TRUE))) {
     # Avoid running these tests since they test experimental features.
     omitlist <- c(
         omitlist,
+        'test-ADdists.R',
         'test-ADfunctions.R',
         'test-ADmodels.R',
-        'test-ADdsl.R')
+        'test-ADmodels-bigmv')
         ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
     cat('SKIPPING', omitlist, sep = '\n  ')
     allTests <- setdiff(allTests, omitlist)
