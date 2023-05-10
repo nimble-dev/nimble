@@ -226,6 +226,7 @@ codeProcessModelMacros <- function(code,
                                    constants = list(),
                                    parameters = list(),
                                    env = parent.frame(),
+                                   indexCreator,
                                    recursionLabels = character()) {
     expandRecursionLabels <- function(possibleMacroName,
                                       labels = character()) {
@@ -247,7 +248,8 @@ codeProcessModelMacros <- function(code,
               macroOutput <- codeProcessModelMacros(code = code[[i]],
                                                   constants = constants,
                                                   parameters = parameters,
-                                                  env = env
+                                                  env = env,
+                                                  indexCreator = indexCreator
                                                   )
               code[[i]] <- macroOutput$code
               constants <- macroOutput$constants
@@ -260,7 +262,9 @@ codeProcessModelMacros <- function(code,
       macroOutput <- codeProcessModelMacros(code[[4]],
                                           constants = constants,
                                           parameters = parameters,
-                                          env = env)
+                                          env = env,
+                                          indexCreator = indexCreator
+                                          )
       code[[4]] <- macroOutput$code
         return(list(code=code, constants=macroOutput$constants, parameters=macroOutput$parameters))
     }
@@ -283,7 +287,10 @@ codeProcessModelMacros <- function(code,
     if(exists(possibleMacroName)) { ## may need to provide an envir argument
         possibleMacro <- get(possibleMacroName) ## ditto
         if(inherits(possibleMacro, "model_macro")) {
-            expandedInfo <- try(possibleMacro$process(code, .constants = constants, parameters = parameters, .env = env))
+            expandedInfo <- try(possibleMacro$process(code, .constants = constants, 
+                                                      parameters = parameters, .env = env,
+                                                      indexCreator = indexCreator
+                                                      ))
             if(inherits(expandedInfo, 'try-error'))
                 stop(paste0("Model macro ",
                             expandRecursionLabels(
@@ -317,6 +324,7 @@ codeProcessModelMacros <- function(code,
                                            constants = expandedInfo$constants,
                                            parameters = expandedInfo$parameters,
                                            env = env,
+                                           indexCreator = indexCreator,
                                            c(recursionLabels, possibleMacroName)
                                            )
             return(list(code=macroOutput$code, constants=macroOutput$constants,
@@ -328,8 +336,10 @@ codeProcessModelMacros <- function(code,
 
 processModelMacros <- function(code, constants, env){
   # No generated parameters before any macros run, so parameters = empty list
+  macroIndexCreator <- labelFunctionCreator("i")
   macroOutput <- codeProcessModelMacros(code=code, constants=constants, 
-                                        parameters=list(), env=env)
+                                        parameters=list(), env=env, 
+                                        indexCreator=macroIndexCreator)
   # Clean up extra brackets
   code <- removeExtraBrackets(macroOutput$code)
   constants <- macroOutput$constants
