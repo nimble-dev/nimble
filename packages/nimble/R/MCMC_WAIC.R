@@ -208,6 +208,7 @@ buildWAIC <- nimbleFunction(
     methods = list(
         updateStats = function() {
             ## Online updating of summary stats, called once per MCMC iteration that is used.
+            finalized <<- FALSE
             ticker <- 0  # indexes over MC subsets
             mcmcIter <<- mcmcIter + 1
             for (k in 1:niterMarginal) {  # loop over MC samples; for conditional, there is only one 'iteration'

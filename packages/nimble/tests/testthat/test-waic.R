@@ -191,6 +191,53 @@ test_that("Radon model WAIC is accurate", {
                  "To calculate WAIC in NIMBLE, all parameters")
 })
 
+test_that("Continuing an MCMC gets the same WAIC as doing all the sampling at once", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+    
+    mu <- rnorm(J, 0 , tau)
+    
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
+        }
+    })
+
+    inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
+                               mu = rnorm(J, 0, 0.5))
+
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits = inits)
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m, enableWAIC = TRUE)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out1 <- cmcmc$run(niter = 1000)
+    waic1 <- cmcmc$getWAIC()
+    out2 <- cmcmc$run(niter = 1000, reset = FALSE, resetWAIC = FALSE)
+    waic1 <- cmcmc$getWAIC()
+
+    cm$setInits(inits)
+    set.seed(1)
+    out <- cmcmc$run(niter = 2000)
+    waic2 <- cmcmc$getWAIC()
+    expect_identical(waic1$WAIC, waic2$WAIC)
+})
+
 
 test_that("New WAIC implementation matches old implementation for conditional, ungrouped", {
     set.seed(1)
