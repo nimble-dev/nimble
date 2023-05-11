@@ -2,8 +2,10 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 source(system.file(file.path('tests', 'testthat', 'AD_test_utils.R'), package = 'nimble'))
 EDopt <- nimbleOptions("enableDerivs")
 BMDopt <- nimbleOptions("buildModelDerivs")
+CCopt <- nimbleOptions("useClearCompiledInADTesting")
 nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
+nimbleOptions(useClearCompiledInADTesting = FALSE)
 
 context("Testing of derivatives for distributions and dsl functions")
 
@@ -387,6 +389,7 @@ lapply(distributionArgsList, function(x){
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
+nimbleOptions(useClearCompiledInADTesting = CCopt)
 
 do_test <- function(x){
     test_that(paste0('AD for distribution ', x$distnName),

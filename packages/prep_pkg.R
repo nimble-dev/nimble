@@ -75,6 +75,8 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "is.model",
                        "nf_preProcessMemberDataObject",
                        "samplesSummary",
+                       "AGHQuad_params",
+                       "AGHQuad_summary",
                        "messageIfVerbose")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
@@ -93,8 +95,6 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calcAdaptationFactor",
                        "is.nfGenerator",
                        "mcmc_createModelObject",
-                       "AGHQuad_params",
-                       "AGHQuad_summary",
                        "nimbleInternalFunctions",
                        "nimbleUserNamespace")
 

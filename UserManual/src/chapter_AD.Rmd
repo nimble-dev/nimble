@@ -111,7 +111,7 @@ Cglmm_laplace <- compileNimble(glmm_laplace, project = model)
 Now we are ready to use some of the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood.
 
 ```{r eval=eval}
-Cglmm_laplace$Laplace(c(0, 0, 1)) # Get the Laplace approximation for one set of parameter values.
+Cglmm_laplace$calcLaplace(c(0, 0, 1)) # Get the Laplace approximation for one set of parameter values.
 Cglmm_laplace$gr_Laplace(c(0, 0, 1)) # Get the corresponding gradient.
 MLE <- Cglmm_laplace$findMLE(c(0, 0, 1)) # Find the (approximate) MLE.
 MLE$par     # MLE parameter values
@@ -694,7 +694,7 @@ NIMBLE provides a nimbleFunction to automatically create a transformation from o
 - If scalar $x \in (-\infty, b)$, then $g(x) = -\log(b - x)$.
 - If scalar $x \in (a, b)$, then $g(x) = \logit((x-a)/(b-a))$. For example `x ~ dunif(a, b)` in a model means $x \in (a, b)$.
 - If matrix `x[1:n, 1:n] ~ dwishart` or `x[1:n, 1:n] ~ dinvwishart` in a model, then $g(x) = \chol(x)$ for non-diagonal elements of $\chol(x)$ and $g(x) = \log(\chol(x))$ for diagonal elements of $\chol(x)$, where $\chol(x)$ is the Cholesky decomposition of $x$. Note that $x$ in these cases follows a Wishart or inverse Wishart distribution, respectively, and thus is a random precision or covariance matrix. That means it must be positive definite and thus have positive diagonal elements of $\chol(x)$.
-- If vector `x[1:n] ~ ddirch` in a model, then $g(x[1]) = \logit(x[1])$ and $g(x[i]) = \logit(x[i] / (1-\sum_{k=1}^{i-1}x[i]))$ for $i \gt 1$. In this case, `x` follows a Dirichlet distribution and thus has the simplex constraint that $\sum_{i=1}^n x[i] = 1$.
+- If vector `x[1:n] ~ ddirch` in a model, then $g(x[1]) = \logit(x[1])$ and $g(x[i]) = \logit(x[i] / (1-\sum_{k=1}^{i-1}x[i]))$ for $i > 1$. In this case, `x` follows a Dirichlet distribution and thus has the simplex constraint that $\sum_{i=1}^n x[i] = 1$.
 - If vector `x[1:n] ~ dlkj_corr_cholesky`, $g(x)$ is the LKJ Cholesky transformation. This provides the LKJ prior for a covariance matrix.
 
 Note that the scalar transformations are all monotonic increasing functions of the original parameter.
