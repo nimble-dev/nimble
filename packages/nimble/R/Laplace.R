@@ -1697,14 +1697,14 @@ buildAGHQuad <- nimbleFunction(
     findMLE = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE)) {
+      if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
       if(length(pStart) != npar) {
         print("  [Warning] For findMLE, pStart should be length ", npar, " but is length ", length(pStart), ".")
         ans <- optimResultNimbleList$new()
         return(ans)
 #        stop("Wrong length for pStart in findMLE.")
       }
-      if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
-      ## In case parameter nodes are not properly initialized 
+      ## In case parameter nodes are not properly initialized
       if(any_na(pStart) | any_nan(pStart) | any(abs(pStart)==Inf)) pStartTransform <- rep(0, pTransform_length)
       else pStartTransform <- paramsTransform$transform(pStart)
       ## In case bad start values are provided 
