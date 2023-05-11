@@ -1,3 +1,41 @@
+#                            CHANGES IN VERSION 1.0.0 (May 2023) 
+
+This release introduces tools for automatic differentiation in NIMBLE.
+
+## USER LEVEL CHANGES
+
+
+- Reduce the default adaptation interval for the `AF_slice` sampler to 200.
+
+- Improve handling of resetting of scale when `adaptive=FALSE` (PR #1275).
+
+- Rework language in `help(buildMCMC)` to improve clarity.
+
+- Improve error message when user-defined distribution has incorrec dimension
+for `x`.
+
+- Improve error message when mistakenly using `T()` in assignment.
+
+## BUG FIXES
+
+- Update manual installation chapter and `INSTALL` links to gfortran on MacOS.
+
+## DEVELOPER LEVEL CHANGES
+
+- Remove use of C++11 standard in various configuration locations (PR #1292).
+
+- Fix compiler warnings on Windows, noted by CRAN checks.
+
+- Remove `nimOptim_model` functionality.
+
+- Update `Eigen` copyright dates.
+
+- Fix invisible return of `NULL` in nimbleFunctions without explicit return
+statements (PR #1254). 
+
+
+
+
 #                            CHANGES IN VERSION 0.13.1 (December 2022) 
 
 ## BUG FIXES
