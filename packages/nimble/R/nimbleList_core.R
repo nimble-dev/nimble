@@ -434,7 +434,7 @@ waicDetailsNimbleList <- nimbleList(
 )
 
 
-#' EXPERIMENTAL Data type for the return value of \code{\link{nimDerivs}}
+#' Data type for the return value of \code{\link{nimDerivs}}
 #'
 #' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimDerivs}}.
 #'
@@ -449,7 +449,7 @@ ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('hessian', 'double', 3)),
                             name = "NIMBLE_ADCLASS", predefined = TRUE)
 
-#' EXPERIMENTAL Data type for the return value of \code{\link{nimOptim}}
+#' Data type for the return value of \code{\link{nimOptim}}
 #'
 #' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimOptim}}.
 #'
@@ -479,7 +479,7 @@ optimResultNimbleList <- nimbleList(
     predefined = TRUE
 )
 
-#' EXPERIMENTAL Data type for the \code{control} parameter of \code{\link{nimOptim}}
+#' Data type for the \code{control} parameter of \code{\link{nimOptim}}
 #'
 #' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} input as the \code{control} parameter
 #' to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
