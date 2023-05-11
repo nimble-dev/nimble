@@ -218,7 +218,7 @@ Another important feature of AD is that sometimes values get "baked in" to AD ca
 
 See below for more thorough explanations.
 
-## Basics of obtaining derivatives in `nimbleFunctions`.
+## Basics of obtaining derivatives in `nimbleFunctions`
 
 Now that we have seen a derivative-enabled algorithm work, let's see how to obtain derivatives in methods you write. From here on, this part of the manual is oriented towards algorithm developers. We'll start by showing how derivatives work in nimbleFunctions *without* using a model. The AD system allows you to obtain derivatives of one function or method from another.
 
@@ -279,7 +279,7 @@ my_derivs_demo$derivsRun(d, x)
 
 We can see that the results are very close, but typically not identical, to those from the compiled version.
 
-### Holding some local variables out of derivative tracking.
+### Holding some local variables out of derivative tracking
 
 Sometimes one wants to omit tracking of certain variables in derivative calculations. Here is an example. Say that we write `exp(-d*x)` using a for-loop instead of a vectorized operation as above. It wouldn't make sense to track derivatives for the for-loop index (`i`), and indeed it would cause `compileNimble` to fail. The code to use a for-loop while telling `derivs` to ignore the for-loop index is:
 
@@ -363,7 +363,7 @@ C_my_derivs_demo3$derivsRun(d, x)$jacobian
 
 Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE`, `buildDerivs = 'run'`, or `buildDerivs = list(run = list())`. One can't take derivatives of `nf_sqrt` on its own, but it can be called by a method of a nimbleFunction that can have its derivatives taken (e.g. the `run` method of a `derivs_demo3` object). 
 
-### Understanding more about how AD works: *taping* of operations.
+### Understanding more about how AD works: *taping* of operations
 
 At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library [@bell-22]. AD methods work by following a set of calculations multiple times, sometimes in reverse order. 
 
@@ -632,7 +632,7 @@ There are several important new points here:
 
 - One can use double-taping, but if so *both* calls to `nimDerivs` need the `model`, `updateNodes`, and `constantNodes` arguments, which should normally be identical.
 
-#### Advanced topic: more about `constantNodes` and `updateNodes`.
+#### Advanced topic: more about `constantNodes` and `updateNodes`
 
 In most cases, you can obtain `constantNodes` and `updateNodes` from `makeModelDerivsInfo` without knowing exactly what they mean. But for advanced uses and possible debugging needs, let's explore these arguments in more detail. The purpose of `constantNodes` and `updateNodes` is to tell the AD system about all nodes that will be needed for taped model calculations. Specifically:
 
