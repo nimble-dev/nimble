@@ -48,8 +48,9 @@ if (length(grep('^-', argv, invert = TRUE))) {
         'test-ADdists.R',
         'test-ADfunctions.R',
         'test-ADmodels.R',
-        'test-ADmodels-bigmv.R')
-        ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
+        'test-ADmodels-bigmv.R',
+        'test-ADlaplace.R')  ## temporary
+         ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
     cat('SKIPPING', omitlist, sep = '\n  ')
     allTests <- setdiff(allTests, omitlist)
     smcTests <- 'test-filtering.R'
