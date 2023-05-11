@@ -25,7 +25,7 @@ Authors@R: c(
     person("Cliff", "Anderson-Bergman", role = "aut"),
     person("Fritz", "Obermeyer", role = "aut"),
     person("Claudia", "Wehrhahn Cortes", role = "aut", comment = "Bayesian nonparametrics system"),
-    person("Abel", "Rodr\u00ecguez", role = "aut", comment = "Bayesian nonparametrics system"),
+    person("Abel", "Rodr\u00edguez", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Duncan", "Temple Lang", role = "aut", comment = "packaging configuration"),
     person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
