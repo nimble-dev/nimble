@@ -192,6 +192,10 @@ For Mac:
 R CMD INSTALL -l location --build nimble # you should be in nimble/packages when invoking this
 # don't use --merge-multiarch for Mac as it provides only one architecture for R
 
+Alternatively (as Perry did 2023-05-11):
+R CMD build nimble
+R CMD INSTALL -l /Users/perry/Projects/nimble_binary_test_2023_05_11/ --build nimble_1.0.0.tar.gz
+
 For Windows (should one use the -l flag here too to avoid mucking up source repo?)
 R CMD build nimble  # to build tar.gz
 R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
