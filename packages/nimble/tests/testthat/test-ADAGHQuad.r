@@ -372,141 +372,47 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
       y[i] ~ dnorm(mean = mu[grp[i]], sd = sigma1)
     }}), constants = list(n=n, nobs=nobs, grp = grp),
     inits = list(b = rnorm(n, 0, 0.5), b0 = 3.5, sigma1 = 1.5, sigma2 = 0.5), buildDerivs = TRUE)
-    m$simulate('y')
-    m$calculate()  
+  m$simulate('y')
+  m$calculate()  
 
-    cm <- compileNimble(m)	  
-    mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(ndeps = rep(1e-8, 3)))
-    mLaplace <- buildAGHQuad(model = m, nQuad = 1)
-    cQL <- compileNimble(mQuad, mLaplace, project = m)
-    cmQuad <- cQL$mQuad
-    cmLaplace <- cQL$mLaplace
+  cm <- compileNimble(m)	  
+  mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outOptimControllist = list(reltol = 1e-16)))
+  mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outOptimControllist = list(reltol = 1e-16)))
+  cQL <- compileNimble(mQuad, mLaplace, project = m)
+  cmQuad <- cQL$mQuad
+  cmLaplace <- cQL$mLaplace
  
-    mod.lme4 <- lme4::lmer(m$y ~ 1 + (1|grp), REML = FALSE, 
-	control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
-    sprintf("%.16f",   summary(mod.lme4)$sigma)
-    sprintf("%.16f",   lme4::fixef(mod.lme4))
-    sprintf("%.16f",   attr(unclass(lme4::VarCorr(mod.lme4))[[1]], 'stddev'))  
+    # mod.lme4 <- lme4::lmer(m$y ~ 1 + (1|grp), REML = FALSE, 
+	# control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
+    # sprintf("%.16f",   summary(mod.lme4)$sigma)
+    # sprintf("%.16f",   lme4::fixef(mod.lme4))
+    # sprintf("%.16f",   attr(unclass(lme4::VarCorr(mod.lme4))[[1]], 'stddev'))  
 
     # mod.tmb <- glmmTMB::glmmTMB(m$y ~ 1 + (1|grp))
     # sprintf("%.16f",   summary(mod.tmb)$sigma)
     # sprintf("%.16f",   lme4::fixef(mod.tmb))
     # sprintf("%.16f",   attr(unclass(glmmTMB::VarCorr(mod.tmb))[[1]]$grp, 'stddev'))  
 
-    mleLME4 <- c( 3.5679609790094040, 1.4736809813876610, 0.3925194078627622 )
-    mleTMB <-  c( 3.5679629394855974, 1.4736809255475793, 0.3925215998142128 )
-    mleLaplace <- cmLaplace$calculateMLE()$par
-    mleQuad <- cmQuad$calculateMLE()$par
+  mleLME4 <- c( 3.5679609790094040, 1.4736809813876610, 0.3925194078627622 )
+  mleTMB <-  c( 3.5679629394855974, 1.4736809255475793, 0.3925215998142128 )
+  mleLaplace <- cmLaplace$calculateMLE()$par
+  mleQuad <- cmQuad$calculateMLE()$par
 
-    expect_equal(mleLaplace, mleLME4, tol = 1e-4)
-    expect_equal(mleQuad, mleLME4, tol = 1e-4)
-    expect_equal(mleQuad, mleLaplace, tol = 1e-4)
+  expect_equal(mleLaplace, mleLME4, tol = 1e-7)
+  expect_equal(mleQuad, mleLME4, tol = 1e-7)
+  expect_equal(mleQuad, mleLaplace, tol = 1e-7)
 
-    expect_equal(mleLaplace, mleTMB, tol = 1e-4)
-    expect_equal(mleQuad, mleTMB, tol = 1e-3)
+  expect_equal(mleLaplace, mleTMB, tol = 1e-6)
+  expect_equal(mleQuad, mleTMB, tol = 1e-6)
 
-    cmQuad$gr_margLogLik(mleLME4) ## Pretty good MLE...
-    
-    print(values(cm, c('b0', 'sigma1', 'sigma2')))
-    cmQuad$calcMargLogLik(round(mleLME4, 2))
+  gr_mle <- cmQuad$gr_margLogLik(mleLME4) ## MLE gradient check.
+  expect_equal(gr_mle, c(0,0,0), tol = 1e-5)
 
-    mle <- NULL
-    gr <- mle
-    res <- mle
-    for( i in 1:25 )
-    {
-	  mQuad <- buildAGHQuad(model = m, nQuad = i)
-      cmQuad <- compileNimble(mQuad, project = m)
-      # gr <- rbind(gr, cmQuad$gr_margLogLik(round(mleLME4, 2)))
-      # res <- c(res, cmQuad$calcMargLogLik(round(mleLME4, 2)))
-	  mle <- rbind(mle, cmQuad$calculateMLE(method = 'Nelder-Mead')$par)
-    }
-
-    par(mfrow = c(3,1))
-    plot(1:i, mle[,1], type = 'l')
-    abline(h = mleLME4[1], col = 'red')
-    plot(1:i, mle[,2], type = 'l')
-    abline(h = mleLME4[2], col = 'red')
-    plot(1:i, mle[,3], type = 'l')
-    abline(h = mleLME4[3], col = 'red')
-
-    par(mfrow = c(3,1))
-    plot(1:i, gr[,1], type = 'l')
-    plot(1:i, gr[,2], type = 'l')
-    plot(1:i, gr[,3], type = 'l')
-
-    par(mfrow = c(3,1))
-    plot(1:i, res, type = 'l')
- 
-    mleQ <- grQ <- resQ <- NULL
-    for(i in 1:50){
-	  mleQ <- rbind(mleQ, cmQuad$calculateMLE()$par)
-      resQ <- c(resQ, cmQuad$calcMargLogLik(mleQ[i,]))
-      grQ <- rbind(grQ, cmQuad$gr_margLogLik(mleQ[i,]))
-    }
-    # values(cm, c('b0', 'sigma1', 'sigma2'))
-    par(mfrow = c(3,1))
-    plot(1:i, mleQ[,1], type = 'l', xlab = 'iter', ylab = 'intercept')
-    abline(h = mleLME4[1], col = 'red')
-    plot(1:i, mleQ[,2], type = 'l', xlab = 'iter', ylab = expression(sigma))
-    abline(h = mleLME4[2], col = 'red')
-    plot(1:i, mleQ[,3], type = 'l', xlab = 'iter', ylab = expression(sigma[re]))
-    abline(h = mleLME4[3], col = 'red')
- 
-    par(mfrow = c(3,1))
-    plot(1:i, grQ[,1], type = 'l')
-    plot(1:i, grQ[,2], type = 'l')
-    plot(1:i, grQ[,3], type = 'l')
-
-  pstart <- values(cm, c("b0", "sigma1", "sigma2"))
-  pstart[2:3] <- log(pstart[2:3])
-  fit <- optim(pstart, cmQuad$p_transformed_margLogLik, cmQuad$p_transformed_gr_margLogLik, 
-	method = "BFGS", control =list(fnscale = -1, trace = 10, ndeps = rep(0.000000001, 3)), hessian = TRUE)
-  cmQuad$p_transformed_gr_margLogLik(fit$par)
-  fit.pars <- fit$par
-  fit.pars[2:3] <- exp(fit.pars[2:3])
-  cmQuad$gr_margLogLik(fit.pars)
-
-  nlminb(pstart, cmQuad$p_transformed_margLogLik, gradient = cmQuad$p_transformed_gr_margLogLik,
-       lower = -Inf, upper = Inf)
-
-  fit2 <- optim(values(cm, c("b0", "sigma1", "sigma2")), cmQuad$calcMargLogLik, cmQuad$gr_margLogLik, 
-	method = "BFGS", control =list(fnscale = -1, maxit = 1000), hessian = TRUE)
-  cmQuad$gr_margLogLik(fit2$par)
-
-
-  mle1 <- cmQuad$calculateMLE(pStart = c(2, 1, 0.8))$par
-  mle2 <- cmQuad$calculateMLE(pStart = c(3.5, 1.7, 0.5))$par
-  mle3 <- cmQuad$calculateMLE(pStart = mleLME4)$par
-
-  # Values from Laplace directly.
-  mLaplace <- buildLaplace(model = m, control = list(maxit = 500))
-  cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, project = m)
-  mleL1 <- cL$LaplaceMLE(pStart = c(2, 1, 0.8))$par
-  mleL2 <- cL$LaplaceMLE(pStart = c(3.5, 1.7, 0.5))$par
-  
-
-  mleL <- grL <- NULL
-  for(i in 1:25) {
-	mleL <- rbind(mleL, cL$LaplaceMLE(method= "Nelder-Mead")$par) 
-    grL <- rbind(grL, cL$gr_Laplace(mleL[i,]))
-  }
-  
-  par(mfrow = c(3,1))
-  plot(1:nrow(mleL), mleL[,1], type = 'l', xlab = 'iter', ylab = 'intercept')
-  abline(h = mleLME4[1], col = 'red')
-  plot(1:nrow(mleL), mleL[,2], type = 'l', xlab = 'iter', ylab = expression(sigma))
-  abline(h = mleLME4[2], col = 'red')
-  plot(1:nrow(mleL), mleL[,3], type = 'l', xlab = 'iter', ylab = expression(sigma[re]))
-  abline(h = mleLME4[3], col = 'red')
-
-  par(mfrow = c(3,1))
-  plot(1:nrow(grL), grL[,1], type = 'l')
-  plot(1:nrow(grL), grL[,2], type = 'l')
-  plot(1:nrow(grL), grL[,3], type = 'l')
-
-# lme4::lmer(m$y ~ 1 + (1|grp), REML = FALSE, control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
+  ## Compare MLE after running twice.
+  mleLaplace2 <- cmLaplace$calculateMLE()$par
+  mleQuad2 <- cmQuad$calculateMLE()$par
+  expect_equal(mleLaplace, mleLaplace2, tol = 1e-8) 
+  expect_equal(mleQuad, mleQuad2, tol = 1e-8)
 
 })
 
@@ -531,133 +437,44 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
       y[i] ~ dpois(mu[grp[i]])
     }}), constants = list(n=n, nobs=nobs, grp = grp),
     inits = list(b = rnorm(n, 0, 0.5), b0 = 3.5, sigma = 0.5), buildDerivs = TRUE)
-    m$simulate('y')
-    m$calculate()  
+  m$simulate('y')
+  m$calculate()  
 
-    cm <- compileNimble(m)	  
-    mQuad <- buildAGHQuad(model = m, nQuad = 21)
-    mLaplace <- buildAGHQuad(model = m, nQuad = 1)
-    cQL <- compileNimble(mQuad, mLaplace, project = m)
-    cmQuad <- cQL$mQuad
-    cmLaplace <- cQL$mLaplace
- 
-    mod.lme4 <- lme4::glmer(m$y ~ 1 + (1|grp), family = "poisson", nAGQ = 21,	## Choose equal number of nodes as lme4.
-	control = glmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
-    sprintf("%.16f",   lme4::fixef(mod.lme4))
-    sprintf("%.16f",   attr(unclass(lme4::VarCorr(mod.lme4))[[1]], 'stddev'))  
+  cm <- compileNimble(m)	  
+  mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outOptimControllist = list(reltol = 1e-16)))
+  mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outOptimControllist = list(reltol = 1e-16)))
+  cQL <- compileNimble(mQuad, mLaplace, project = m)
+  cmQuad <- cQL$mQuad
+  cmLaplace <- cQL$mLaplace
 
-    mleLME4 <- c( 3.5136587320416126, 0.4568722479747411)
-    mleLaplace <- cmLaplace$calculateMLE()$par
-    mleQuad <- cmQuad$calculateMLE()$par
+    # library(lme4)
+    # mod.lme4 <- lme4::glmer(m$y ~ 1 + (1|grp), family = "poisson", nAGQ = 1,	## nAGQ = 21 for nQuad = 21
+	  # control = glmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
+    # sprintf("%.16f",   lme4::fixef(mod.lme4))
+    # sprintf("%.16f",   attr(unclass(lme4::VarCorr(mod.lme4))[[1]], 'stddev'))  
+    # sprintf("%.16f", logLik(mod.lme4, fixed.only = TRUE) )
 
-    expect_equal(mleLaplace, mleLME4, tol = 1e-5)
-    expect_equal(mleQuad, mleLME4, tol = 1e-4)
-    expect_equal(mleQuad, mleLaplace, tol = 1e-4)
+  lme4_laplace <- -1695.4383630192869532
+	# lme4_nquad21 <- -360.6258864811468356  ## Only proportional in lme4, not the actual marginal. Can't use to compare.
 
-    expect_equal(mleLaplace, mleTMB, tol = 1e-4)
-    expect_equal(mleQuad, mleTMB, tol = 1e-3)
+  mleLME4_nquad21 <- c( 3.5136587320416126, 0.4568722479747411)
+  mleLME4_laplace <- c( 3.5136586190857675, 0.4568710881066258)
+  mleLaplace <- cmLaplace$calculateMLE()$par
+  mleQuad <- cmQuad$calculateMLE()$par
 
-    cmQuad$gr_margLogLik(mleLME4) ## Pretty good MLE...
-    
-    print(values(cm, c('b0', 'sigma1', 'sigma2')))
-    cmQuad$calcMargLogLik(round(mleLME4, 2))
+	## Compare the marginal log likelihood for the laplace method.
+  logLikLaplace <- cmLaplace$calcMargLogLik( mleLME4_laplace )
+  expect_equal(logLikLaplace, lme4_laplace, tol = 1e-11) ## Very very similar maximization. Even if slightly different estimates.
 
-    mle <- NULL
-    gr <- mle
-    res <- mle
-    for( i in 1:25 )
-    {
-	  mQuad <- buildAGHQuad(model = m, nQuad = i)
-      cmQuad <- compileNimble(mQuad, project = m)
-      # gr <- rbind(gr, cmQuad$gr_margLogLik(round(mleLME4, 2)))
-      # res <- c(res, cmQuad$calcMargLogLik(round(mleLME4, 2)))
-	  mle <- rbind(mle, cmQuad$calculateMLE(method = 'Nelder-Mead')$par)
-    }
-
-    par(mfrow = c(3,1))
-    plot(1:i, mle[,1], type = 'l')
-    abline(h = mleLME4[1], col = 'red')
-    plot(1:i, mle[,2], type = 'l')
-    abline(h = mleLME4[2], col = 'red')
-    plot(1:i, mle[,3], type = 'l')
-    abline(h = mleLME4[3], col = 'red')
-
-    par(mfrow = c(3,1))
-    plot(1:i, gr[,1], type = 'l')
-    plot(1:i, gr[,2], type = 'l')
-    plot(1:i, gr[,3], type = 'l')
-
-    par(mfrow = c(3,1))
-    plot(1:i, res, type = 'l')
- 
-    mleQ <- grQ <- resQ <- NULL
-    for(i in 1:50){
-	  mleQ <- rbind(mleQ, cmQuad$calculateMLE()$par)
-      resQ <- c(resQ, cmQuad$calcMargLogLik(mleQ[i,]))
-      grQ <- rbind(grQ, cmQuad$gr_margLogLik(mleQ[i,]))
-    }
-    # values(cm, c('b0', 'sigma1', 'sigma2'))
-    par(mfrow = c(3,1))
-    plot(1:i, mleQ[,1], type = 'l', xlab = 'iter', ylab = 'intercept')
-    abline(h = mleLME4[1], col = 'red')
-    plot(1:i, mleQ[,2], type = 'l', xlab = 'iter', ylab = expression(sigma))
-    abline(h = mleLME4[2], col = 'red')
-    plot(1:i, mleQ[,3], type = 'l', xlab = 'iter', ylab = expression(sigma[re]))
-    abline(h = mleLME4[3], col = 'red')
- 
-    par(mfrow = c(3,1))
-    plot(1:i, grQ[,1], type = 'l')
-    plot(1:i, grQ[,2], type = 'l')
-    plot(1:i, grQ[,3], type = 'l')
-
-  pstart <- values(cm, c("b0", "sigma1", "sigma2"))
-  pstart[2:3] <- log(pstart[2:3])
-  fit <- optim(pstart, cmQuad$p_transformed_margLogLik, cmQuad$p_transformed_gr_margLogLik, 
-	method = "BFGS", control =list(fnscale = -1, trace = 10, ndeps = rep(0.000000001, 3)), hessian = TRUE)
-  cmQuad$p_transformed_gr_margLogLik(fit$par)
-  fit.pars <- fit$par
-  fit.pars[2:3] <- exp(fit.pars[2:3])
-  cmQuad$gr_margLogLik(fit.pars)
-
-  nlminb(pstart, cmQuad$p_transformed_margLogLik, gradient = cmQuad$p_transformed_gr_margLogLik,
-       lower = -Inf, upper = Inf)
-
-  fit2 <- optim(values(cm, c("b0", "sigma1", "sigma2")), cmQuad$calcMargLogLik, cmQuad$gr_margLogLik, 
-	method = "BFGS", control =list(fnscale = -1, maxit = 1000), hessian = TRUE)
-  cmQuad$gr_margLogLik(fit2$par)
-
-
-  mle1 <- cmQuad$calculateMLE(pStart = c(2, 1, 0.8))$par
-  mle2 <- cmQuad$calculateMLE(pStart = c(3.5, 1.7, 0.5))$par
-  mle3 <- cmQuad$calculateMLE(pStart = mleLME4)$par
-
-  # Values from Laplace directly.
-  mLaplace <- buildLaplace(model = m, control = list(maxit = 500))
-  cm <- compileNimble(m)
-  cL <- compileNimble(mLaplace, project = m)
-  mleL1 <- cL$LaplaceMLE(pStart = c(2, 1, 0.8))$par
-  mleL2 <- cL$LaplaceMLE(pStart = c(3.5, 1.7, 0.5))$par
+  ## Compare mle for laplace to lme4 laplace
+  ## and nQuad = 21 for both methods
+  expect_equal(mleLaplace, mleLME4_laplace, tol = 1e-5)
+  expect_equal(mleQuad, mleLME4_nquad21, tol = 1e-5)
+  expect_equal(mleQuad, mleLaplace, tol = 1e-5)
   
-
-  mleL <- grL <- NULL
-  for(i in 1:25) {
-	mleL <- rbind(mleL, cL$LaplaceMLE(method= "Nelder-Mead")$par) 
-    grL <- rbind(grL, cL$gr_Laplace(mleL[i,]))
-  }
-  
-  par(mfrow = c(3,1))
-  plot(1:nrow(mleL), mleL[,1], type = 'l', xlab = 'iter', ylab = 'intercept')
-  abline(h = mleLME4[1], col = 'red')
-  plot(1:nrow(mleL), mleL[,2], type = 'l', xlab = 'iter', ylab = expression(sigma))
-  abline(h = mleLME4[2], col = 'red')
-  plot(1:nrow(mleL), mleL[,3], type = 'l', xlab = 'iter', ylab = expression(sigma[re]))
-  abline(h = mleLME4[3], col = 'red')
-
-  par(mfrow = c(3,1))
-  plot(1:nrow(grL), grL[,1], type = 'l')
-  plot(1:nrow(grL), grL[,2], type = 'l')
-  plot(1:nrow(grL), grL[,3], type = 'l')
-
-# lme4::lmer(m$y ~ 1 + (1|grp), REML = FALSE, control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
-
+  ## Compare MLE after running twice.
+  mleLaplace2 <- cmLaplace$calculateMLE()$par
+  mleQuad2 <- cmQuad$calculateMLE()$par
+  expect_equal(mleLaplace, mleLaplace2, tol = 1e-8) 
+  expect_equal(mleQuad, mleQuad2, tol = 1e-8)
 })
