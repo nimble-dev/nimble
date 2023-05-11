@@ -111,7 +111,8 @@ Cglmm_laplace <- compileNimble(glmm_laplace, project = model)
 Now we are ready to use some of the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood.
 
 ```{r eval=eval}
-Cglmm_laplace$calcLaplace(c(0, 0, 1)) # Get the Laplace approximation for one set of parameter values.
+# Get the Laplace approximation for one set of parameter values.
+Cglmm_laplace$calcLaplace(c(0, 0, 1)) 
 Cglmm_laplace$gr_Laplace(c(0, 0, 1)) # Get the corresponding gradient.
 MLE <- Cglmm_laplace$findMLE(c(0, 0, 1)) # Find the (approximate) MLE.
 MLE$par     # MLE parameter values
@@ -129,7 +130,8 @@ library(lme4)
 y <- as.numeric(model$y) # Rearrage inputs for call to glmer
 X <- as.numeric(X)
 group <- rep(1:10, 5)
-lme4_fit <- glmer(y ~ X + (1 | group), family = poisson) # There is a warning that seems to be innocuous.
+lme4_fit <- glmer(y ~ X + (1 | group), family = poisson)
+# The warning above seems to be innocuous.
 summary(lme4_fit)
 logLik(lme4_fit)
 ```
@@ -625,7 +627,8 @@ There are several important new points here:
 
 - The call to `nimDerivs` of `run`  must be told some information about the model calculations that will be done inside of `run`. `model` is of course the model that will be used. `constantNodes` is a vector of node names whose values are needed for the calculations but are not expected to change until you use `reset = TRUE`. Values of these nodes will be baked into the AD tape until `reset = TRUE`. `updateNodes` is a vector of node names whose values are needed for the calculations, might change between calls even with `reset = FALSE`, and are neither part of `wrt_nodes` nor a deterministic part of `calc_nodes`. The function `makeModelDerivsInfo`, as shown in the `setup` code, determines what is usually needed for `constantNodes` and `updateNodes`.
 
-- In Method 1 above, the NIMBLE compiler automatically determines `constantNodes` and `updateNodes` using `makeModelDerivsInfo` based on the inputs to `nimDerivs(model$calculate(...),...)`.
+- In Method 1 above, the NIMBLE compiler automatically determines `constantNodes` and `updateNodes` using `makeModelDerivsInfo` based on the inputs to
+`nimDerivs(model$calculate(...),...)`.
 
 - One can use double-taping, but if so *both* calls to `nimDerivs` need the `model`, `updateNodes`, and `constantNodes` arguments, which should normally be identical.
 
@@ -743,36 +746,42 @@ Now that the example model is set up, we'll write a nimbleFunction to provide th
 ```{r eval=eval}
 logLikelihood_nf <- nimbleFunction(
   setup = function(model, paramNodes) {
-    # Determine nodes for calculating the log likelihood for parameters given by paramNodes,
-    # ignoring any priors.
+    # Determine nodes for calculating the log likelihood for parameters given by
+    # paramNodes, ignoring any priors.
     calcNodes <- model$getDependencies(paramNodes, self = FALSE)
     # Set up the additional arguments for nimDerivs involving model$calculate
     derivsInfo <- makeModelDerivsInfo(model, paramNodes, calcNodes)
     updateNodes <- derivsInfo$updateNodes
     constantNodes <- derivsInfo$constantNodes
-    # Create a parameter transformation between original and unconstrained parameter spaces.
+    # Create a parameter transformation between original and unconstrained
+    # parameter spaces.
     transformer <- parameterTransform(model, paramNodes)
   },
   methods = list(
-    neg_logLikelihood_p = function(p = double(1)) { # Put values in model and calcualte neg log likelihood.
+    neg_logLikelihood_p = function(p = double(1)) {
+      # Put values in model and calculate negative log likelihood.
       values(model, paramNodes) <<- p
       return(-model$calculate(calcNodes))
       returnType(double())
     },
-    neg_logLikelihood = function(ptrans = double(1)) { # Objective function for optim,
-                                                       # using transformed parameter space
+    neg_logLikelihood = function(ptrans = double(1)) {
+      # Objective function for optim,
+      # using transformed parameter space.
       p <- transformer$inverseTransform(ptrans)
       return(neg_logLikelihood_p(p))
       returnType(double())
     },
-    gr_neg_logLikelihood = function(ptrans = double(1)) { # Gradient of neg log likelihood
+    gr_neg_logLikelihood = function(ptrans = double(1)) {
+      # Gradient of neg log likelihood
       p <- transformer$inverseTransform(ptrans)
       d <- derivs(neg_logLikelihood_p(p), wrt = 1:length(p), order = 1,
-                  model = model, updateNodes = updateNodes, constantNodes = constantNodes)
+                  model = model, updateNodes = updateNodes,
+                  constantNodes = constantNodes)
       return(d$jacobian[1,])
       returnType(double(1))
     },
-    transform = function(p = double(1)) {  # Give user access to the transformation ...
+    transform = function(p = double(1)) {
+      # Give user access to the transformation ...
       return(transformer$transform(p))
       returnType(double(1))
     },
@@ -798,7 +807,8 @@ Now let's see how the parameter transformation works for this model. For `beta`,
 
 ```{r eval=eval}
 Cll_glm$transform(c(0.2, 1))
-Cll_glm$inverse(c(-1.386294, 1)) # The inverse transformation goes back to the original parameters, within rounding.
+# The inverse transformation goes back to the original parameters, within rounding:
+Cll_glm$inverse(c(-1.386294, 1)) 
 ```
 
 Now we are ready to use the methods provided in `Cll_glm` in a call to R's `optim` to find the MLE.
@@ -806,9 +816,9 @@ Now we are ready to use the methods provided in `Cll_glm` in a call to R's `opti
 
 ```{r eval=eval}
 MLE <- optim(c(0,0), # initial values
-             fn = Cll_glm$neg_logLikelihood, # function to be minimized
-             gr = Cll_glm$gr_neg_logLikelihood, # gradient of function to be minimized
-             method = "BFGS") # optimization method to use
+         fn = Cll_glm$neg_logLikelihood, # function to be minimized
+         gr = Cll_glm$gr_neg_logLikelihood, # gradient of function to be minimized
+         method = "BFGS") # optimization method to use
 MLE$par
 -MLE$value
 ```

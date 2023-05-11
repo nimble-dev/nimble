@@ -940,7 +940,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 ### Hamiltonian Monte Carlo (HMC) {#subsec:HMC}
 
-As of version 1.0.0 NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha-AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
+As of version 1.0.0, NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha-AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
 
 
 The HMC sampler in package `nimbleHMC` implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.
@@ -990,8 +990,8 @@ In order to allow an algorithm to use AD for a specific model, that model must b
 
 ```{r eval=TRUE}
 inits <- list(intercept = 0, beta = 0.2, sigma = 0.5)
-model <- nimbleModel(model_code, constants = list(X = X), inits = inits, calculate = FALSE,
-                     buildDerivs = TRUE) # Here is the argument needed for AD.
+model <- nimbleModel(model_code, constants = list(X = X), inits = inits,
+      calculate = FALSE, buildDerivs = TRUE) # Here is the argument needed for AD.
 ```
 
 To finish setting up the example we need to put data values into the model. We could have provided data in the call to `nimbleModel`, but instead we will simulate them using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.
@@ -1012,7 +1012,8 @@ Now we will build an HMC algorithm for the parameters and random effects in the 
 ```{r eval=TRUE}
 library(nimbleHMC)
 HMC <- buildHMC(model)
-CHMC <- compileNimble(HMC, project = model) # The compiled HMC will use the compiled model.
+CHMC <- compileNimble(HMC, project = model)
+# The compiled HMC will use the compiled model.
 samples <- runMCMC(CHMC, niter = 1000, nburnin = 500) # short run for illustration
 ```
 
@@ -1023,7 +1024,7 @@ summary(coda::as.mcmc(samples))
 
 #### Automatic parameter transformation
 
-In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(#sec:parameter-transform).
+In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(sec:parameter-transform).
 
 ### Customized log-likelihood evaluations: *RW_llFunction sampler*
  
