@@ -139,11 +139,11 @@ Details: The return value is logical vector with an element for each node indica
                                   getUnrolledIndicesList = function(node) {
                                       di <- getDeclInfo(node)[[1]]
                                       if(length(which(di$nodeFunctionNames == node)) != 1)
-                                          stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+                                          stop(paste0('Unexpected error in processing model node: ', node), call. = FALSE)
                                       unrolledRowNumber <- which(di$nodeFunctionNames == node)
                                       indicesMatrix <- di$unrolledIndicesMatrix
                                       if(nrow(indicesMatrix) == 0) {
-                                          if(unrolledRowNumber > 1) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+                                          if(unrolledRowNumber > 1) stop(paste0('Unexpected error in processing model node: ', node), call. = FALSE)
                                           return(list())
                                       }
                                       unrolledIndices <- as.list(indicesMatrix[unrolledRowNumber, ])
