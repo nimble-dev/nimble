@@ -7,8 +7,6 @@ nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
-library(nimble)
-
 # check internal consistency of optim method variants
 check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
                                               cm, # compiled model
@@ -16,32 +14,38 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
                                               opt, # possibly already-run LaplaceMLE result,
                                               methods = 1:3, # methods to check
                                               summ_orig, # summarized Laplace MLE result (original)
-                                              summ_trans # summarized Laplace MLE result (transformed)
-) {
+                                              summ_trans, # summarized Laplace MLE result (transformed)
+                                              expected_warning = NULL,
+                                              expected_no_re = TRUE
+                                              ) {
+  expect_wrapper <- ifelse(is.null(expected_warning), expect_silent,
+                           function(expr)
+                               expect_output(eval(expr), expected_warning))
   vars <- cm$getVarNames()
   reset <- function() {
     for(v in vars) cm[[v]] <- m[[v]]
   }
   if(missing(opt)) {
     reset()
-    opt <- cL$findMLE()
+    expect_wrapper(opt <- cL$findMLE())
   }
   if(missing(summ_orig)){
-    summ_orig <- cL$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+    expect_wrapper(summ_orig <- cL$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
   }
   if(missing(summ_trans)){
-    summ_trans <- cL$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+    expect_wrapper(summ_trans <- cL$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
   }
   ref_method <- cL$get_method()
   for(method in methods) {
     if(method != ref_method) {
       reset()
-      cL$set_method(method)
-      opt_alt <- cL$findMLE()
+      if(expected_no_re)
+          expect_output(cL$set_method(method), "no random effects") else cL$set_method(method)
+      expect_wrapper(opt_alt <- cL$findMLE())
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
-      summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
-      summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+      expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
+      expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
       expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-5)
       expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-5)
       expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-5)
@@ -299,7 +303,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  opt <- cmLaplace$findMLE() # some warnings are ok here.
+  expect_output(opt <- cmLaplace$findMLE(), "optim does not converge for the inner optimization")
   expect_equal(opt$par, 40, tol = 1e-4) # 40 = 4 * (1/.2) * (1/.5)
   # V[a] = 9
   # V[y] = 0.2^2 * 9 + 4 = 4.36
@@ -310,18 +314,20 @@ test_that("Laplace 1D with deterministic intermediates works", {
   # Jacobian of ahat wrt mu is 4*0.5/(4+9*0.2^2) = 0.4587156
   # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
   # Hessian of marginal loglik wrt param mu is -(0.2*0.5)^2/4.36 = -0.002293578
-  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_output(summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE,
+                                          returnJointCovariance = TRUE),
+                "optim does not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix 
   vcov <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(0.4587156, 1), ncol = 1) %*% (1/0.002293578) %*% t(matrix(c(0.4587156, 1), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-4)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
+  expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(), "optim does not converge for the inner optimization")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = TRUE)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = TRUE)
 })
 
 test_that("Laplace 1D with a constrained parameter and deterministic intermediates works", {
@@ -341,7 +347,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  opt <- cmLaplace$findMLE() # some warnings are ok here.
+  expect_output(opt <- cmLaplace$findMLE(), "optim does not converge for the inner optimization")
   # V[a] = 9
   # V[y] = 0.2^2 * 9 + 4 = 4.36
   # y ~ N(0.2*0.5*mu, 4.36)
@@ -354,22 +360,27 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(opt$par, 40, tol = 1e-4) 
   expect_equal(opt$hessian[1,1], -3.669725, tol = 1e-3)
   expect_equal(opt$value, dnorm(0.1*40, 0.1*40, sd = sqrt(4.36), log = TRUE))
-  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+
+  expect_output(summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE,
+                                          returnJointCovariance = TRUE),
+                "optim does not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(18.34862, 1), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(18.34862, 1), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-3)
-  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  expect_output(summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE,
+                                           returnJointCovariance = TRUE),
+                "optim does not converge for the inner optimization")
   # Covariance matrix on original scale
   vcov <- diag(c(1,40)) %*% vcov_transform %*% diag(c(1,40))
   expect_equal(vcov, summ2$vcov, tol = 1e-3)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
+  expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(),  "optim does not converge for the inner optimization")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = TRUE)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = TRUE)
 })
 
 test_that("Laplace 1D with deterministic intermediates and multiple data works", {
@@ -1314,8 +1325,8 @@ test_that("Laplace with no random effects (simple linear regression) works", {
   optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt) # The warnings are normal
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_no_re = TRUE)
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, expected_no_re = TRUE)
   
   ## TMB cpp code
   #include <TMB.hpp>
@@ -1613,7 +1624,7 @@ test_that("Laplace with nested random effects works", {
   cmLaplace <- compileNimble(mLaplace, project = m)
   ## It seems that default start values (0, 1, 1, 1) for this example do not work well 
   ## for optimisation; use c(2, 2, 2, 2) instead
-  opt <- cmLaplace$findMLE(pStart = c(2,2,2,2))
+  expect_output(opt <- cmLaplace$findMLE(pStart = c(2,2,2,2)), "optim does not converge for the inner optimization")
   nimres <- cmLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
   
   expect_equal(nimres$params$estimates[1], lme4res$coefficients[,"Estimate"], tol = 1e-5)
@@ -1639,7 +1650,7 @@ test_that("Laplace error trapping of wrong-length parameters works", {
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
 
-  cat("Eight messages beginning with [Warning] are expected:\n")
+  ## cat("Eight messages beginning with [Warning] are expected:\n")
 
   # should work
   expect_no_error(cmLaplace$calcLogLik(c(.4, .5, .1)))
@@ -1648,10 +1659,10 @@ test_that("Laplace error trapping of wrong-length parameters works", {
   expect_no_error(cmLaplace$gr_Laplace(c(.4, .5, .1)))
 
   # should throw errors
-  expect_error(cmLaplace$calcLogLik(c(.4, .5)))
-  expect_error(cmLaplace$calcLaplace(c(.4, .5)))
-  expect_error(cmLaplace$gr_logLik(c(.4, .5)))
-  expect_error(cmLaplace$gr_Laplace(c(.4, .5)))
+  expect_output(expect_error(cmLaplace$calcLogLik(c(.4, .5))), "should be length")
+  expect_output(expect_error(cmLaplace$calcLaplace(c(.4, .5))), "should be length")
+  expect_output(expect_error(cmLaplace$gr_logLik(c(.4, .5))), "should be length")
+  expect_output(expect_error(cmLaplace$gr_Laplace(c(.4, .5))), "should be length")
 
   # should work
   expect_no_error(cmLaplace$calcLogLik(c(.4, .5), trans = TRUE))
@@ -1660,18 +1671,16 @@ test_that("Laplace error trapping of wrong-length parameters works", {
   expect_no_error(cmLaplace$gr_Laplace(c(.4, .5), trans = TRUE))
 
   # should throw errors
-  expect_error(cmLaplace$calcLogLik(c(.4, .5, .1), trans = TRUE))
-  expect_error(cmLaplace$calcLaplace(c(.4, .5, .1), trans = TRUE))
-  expect_error(cmLaplace$gr_logLik(c(.4, .5, .1), trans = TRUE))
-  expect_error(cmLaplace$gr_Laplace(c(.4, .5, .1), trans = TRUE))
+  expect_output(expect_error(cmLaplace$calcLogLik(c(.4, .5, .1), trans = TRUE)), "should be length")
+  expect_output(expect_error(cmLaplace$calcLaplace(c(.4, .5, .1), trans = TRUE)), "should be length")
+  expect_output(expect_error(cmLaplace$gr_logLik(c(.4, .5, .1), trans = TRUE)), "should be length")
+  expect_output(expect_error(cmLaplace$gr_Laplace(c(.4, .5, .1), trans = TRUE)), "should be length")
 
   output <- cmLaplace$findMLE(c(.4, .5, .1))
   expect_true(all(output$counts > 0))
   # We couldn't throw an error from a nimbleList-returning method
   # so we emit a message containing "[Warning]".
-  # I tried to use "capture.output" to check it, but that doesn't work in a test_that
-  # So I'm just checking that the iterations were 0
-  output <- cmLaplace$findMLE(c(.4, .5))
+  expect_output(output <- cmLaplace$findMLE(c(.4, .5)), "should be length")
   expect_identical(output$counts, integer())
 })
 
