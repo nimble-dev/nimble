@@ -16,7 +16,7 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
                                               summ_orig, # summarized Laplace MLE result (original)
                                               summ_trans, # summarized Laplace MLE result (transformed)
                                               expected_warning = NULL,
-                                              expected_no_re = TRUE
+                                              expected_no_re = FALSE
                                               ) {
   expect_wrapper <- ifelse(is.null(expected_warning), expect_silent,
                            function(expr)
@@ -326,8 +326,8 @@ test_that("Laplace 1D with deterministic intermediates works", {
   expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(), "optim does not converge for the inner optimization")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = TRUE)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = TRUE)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = "optim does not converge for the inner optimization")
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = "optim does not converge for the inner optimization")
 })
 
 test_that("Laplace 1D with a constrained parameter and deterministic intermediates works", {
@@ -379,8 +379,8 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(),  "optim does not converge for the inner optimization")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = TRUE)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = TRUE)
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = "optim does not converge for the inner optimization")
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = "optim does not converge for the inner optimization")
 })
 
 test_that("Laplace 1D with deterministic intermediates and multiple data works", {
