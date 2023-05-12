@@ -1210,6 +1210,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
+                if(!(exprText %in% model$getNodeNames(determOnly = TRUE))) return(expr)  ## exprText is a single element of a multivariate deterministic node
                 newExpr <- model$getValueExpr(exprText)
                 return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansionsNode))
             }
