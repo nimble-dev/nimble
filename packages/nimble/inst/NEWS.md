@@ -31,10 +31,20 @@ latent process values) and find the MLE.
     
     -- Improve clarity in `help(WAIC)`.
     
-
 - Reduce the default adaptation interval for the `AF_slice` sampler to 200.
 
-- (**DT**) (PR #1293)
+- Improved control of `addSampler` method of MCMC
+configuration objects (PR #1293):
+
+    -- `expandTarget` argument controls whether nodes specified in
+       `target` undegor expansion via `expandNodeNames`, adding a
+       separate sampler instance to each node.
+
+    -- When `expandTarget = TRUE`, the `scalarComponents` argument is
+       passed as the `returnScalarComponents` argument to `expandNodeNames`.
+
+    -- Removed `nodes` argument as redundant.  Target nodes are
+       uniquely specified using the `target` argument.
 
 - Improve handling of resetting of scale when `adaptive=FALSE` (PR #1275).
 
@@ -100,7 +110,7 @@ when `getWAIC` is called in the middle (PR #1310).
 
 - Fix compilation error when using `nimSeq` with integers (PR #1282).
 
-- [**DT**] (PR #1287).
+- Fix scoping of argument evaluation for `replaceSamplers` method (PR #1287).
 
 - Fix a corner case where particular indexing in model code prevents model
 building (PR #1279).
