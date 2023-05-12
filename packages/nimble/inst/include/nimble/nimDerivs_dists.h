@@ -1031,7 +1031,7 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
 /* The CondExp expressions may slow down CppAD tapes.*/
 //template<class Type>
 #define Type CppAD::AD<double>
-Type nimDerivs_pow(Type x, Type y) {
+inline Type nimDerivs_pow(Type x, Type y) {
 
   /* We experimented with CppAD conditionals but still had cases that 
      crashed or had constants baked into tapes when they shouldn't be
@@ -1055,13 +1055,13 @@ Type nimDerivs_pow(Type x, Type y) {
 
 // This may not longer ever be used from nimble-generated code.
 //template<class Type>
-Type nimDerivs_pow(Type x, int y) {
+inline Type nimDerivs_pow(Type x, int y) {
   Type outVal = nimDerivs_pow_int(x, y);
   return(outVal);
 }
 
 //template<class Type>
-Type nimDerivs_pow(Type x, double y) {
+inline Type nimDerivs_pow(Type x, double y) {
   Type outVal;
   if(fabs(y - round(y)) < 1e-8) // allows binary rounding error on computed indices
     outVal = nimDerivs_pow_int(x, round(y));
@@ -1087,19 +1087,19 @@ Type nimDerivs_pow(Type x, double y) {
 /* which is necessary because otherwise Eigen circumvents regular call to fabs. */
 #define T CppAD::AD<double>
 //template<class T>
-T nimDerivs_fabs(T x) {
+inline T nimDerivs_fabs(T x) {
   return fabs(x);
 }
 
 /* lfactorial */
 //template<class T>
-T nimDerivs_lfactorial(T x) {
+inline T nimDerivs_lfactorial(T x) {
   return nimDerivs_lgammafn(x + 1.);
 }
 
 /* factorial */
 //template<class Type>
-Type nimDerivs_factorial(Type x) {
+inline Type nimDerivs_factorial(Type x) {
   return nimDerivs_gammafn(x + 1.); // Even R does not restrict to x >= 0
 }
 #undef Type
