@@ -20,7 +20,7 @@
 #include "nimDerivs_atomic_cache.h"
 #include "nimDerivs_atomic_probit.h"
 
-CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x, int baseOrder, bool verbose = FALSE);
+CppAD::AD<double> nimDerivs_lgammafn_base(CppAD::AD<double> x, int baseOrder, bool verbose = FALSE);
 CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x);
 
 class atomic_lgamma_class : public unary_atomic_class<double> {

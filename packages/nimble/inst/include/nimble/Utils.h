@@ -171,16 +171,27 @@ static inline bool isTRUE(bool x) {return(x);}
 
 double pow_int(double a, double b);
 
+// All the nimDerivs_FOO functions
+// were templated, but in a rush we
+// had to change some generated code to
+// std::function< CppAD::AD<double>(CppAD::AD<double) >( nimDerivs_FOO )
+// That does not do template type inference. And there are cases
+// where nimDerivs_FOO is not a template.
+// Quick solution is to remove the templating here, since
+// in practice T is always CppAD::AD<double>, and get that
+// hard-wired in.  There is an #undef at the end.
+#define T CppAD::AD<double>
+
 // needed for link functions
 double ilogit(double x);
-template<class T>
-T nimDerivs_ilogit(T x){
+//template<class T>
+inline T nimDerivs_ilogit(T x){
   return(1./(1. + exp(-x)));
 }
 
 double icloglog(double x);
-template<class T>
-T nimDerivs_icloglog(T x){
+//template<class T>
+inline T nimDerivs_icloglog(T x){
   return(1.-exp(-exp(x)));
 }
 
@@ -189,14 +200,14 @@ double probit(double x);
 
 //double abs(double x);
 double cloglog(double x);
-template<class T>
-T nimDerivs_cloglog(T x){
+//template<class T>
+inline T nimDerivs_cloglog(T x){
   return(log(-log(T(1) - x)));
 }
 
 int nimEquals(double x1, double x2);
-template<class T>
-T nimDerivs_nimEquals(T x1, T x2){
+//template<class T>
+inline T nimDerivs_nimEquals(T x1, T x2){
   return(CondExpEq(x1, x2, T(1), T(0))); 
 }
 
@@ -205,80 +216,80 @@ double lfactorial(double x);
 double factorial(double x);
 //double loggam(double x);
 double logit(double x);
-template<class T>
-T nimDerivs_logit(T x) {
+//template<class T>
+inline T nimDerivs_logit(T x) {
   return(log(x / (T(1)-x)));
 }
 
 double nimRound(double x);
 double pairmax(double x1, double x2);
-template<class T>
-T nimDerivs_pairmax(T x1, T x2) {
+//template<class T>
+inline T nimDerivs_pairmax(T x1, T x2) {
   return(CondExpGt(x1, x2, x1, x2));
 }
 
 double pairmin(double x1, double x2);
-template<class T>
-T nimDerivs_pairmin(T x1, T x2) {
+//template<class T>
+inline T nimDerivs_pairmin(T x1, T x2) {
   return(CondExpLt(x1, x2, x1, x2));
 }
 
 //double phi(double x);
 int nimStep(double x); 
-template<class T>
-T nimDerivs_nimStep(T x){
+//template<class T>
+inline T nimDerivs_nimStep(T x){
 	return(CondExpGe(x, T(0), T(1), T(0)));
 } 
 
 double cube(double x);
-template<class T>
-T nimDerivs_cube(T x){
+//template<class T>
+inline T nimDerivs_cube(T x){
 	return(x*x*x);
 }
 
 double inprod(double v1, double v2);
-template<class T>
-T nimDerivs_inprod(T v1, T v2) {
+//template<class T>
+inline T nimDerivs_inprod(T v1, T v2) {
   return(v1*v2);
 }
 
-template<class T>
-T nimDerivs_atan(T x) {
+//template<class T>
+inline T nimDerivs_atan(T x) {
   return(CppAD::atan(x));
 }
 
-template<class T>
-T nimDerivs_cosh(T x) {
+//template<class T>
+inline T nimDerivs_cosh(T x) {
   return(CppAD::cosh(x));
 }
 
-template<class T>
-T nimDerivs_sinh(T x) {
+//template<class T>
+inline T nimDerivs_sinh(T x) {
   return(CppAD::sinh(x));
 }
 
-template<class T>
-T nimDerivs_tanh(T x) {
+//template<class T>
+inline T nimDerivs_tanh(T x) {
   return(CppAD::tanh(x));
 }
 
-template<class T>
-T nimDerivs_acosh(T x) {
+//template<class T>
+inline T nimDerivs_acosh(T x) {
   return(CppAD::acosh(x));
 }
 
-template<class T>
-T nimDerivs_asinh(T x) {
+//template<class T>
+inline T nimDerivs_asinh(T x) {
   return(CppAD::asinh(x));
 }
 
-template<class T>
-T nimDerivs_atanh(T x) {
+//template<class T>
+inline T nimDerivs_atanh(T x) {
   return(CppAD::atanh(x));
 }
 
-template<class T>
-T nimDerivs_log1p(T x) {
+//template<class T>
+inline T nimDerivs_log1p(T x) {
   return(CppAD::log1p(x));
 }
 
@@ -287,4 +298,7 @@ inline double nimble_NaN() {
     ? std::numeric_limits<double>::quiet_NaN()
     : (0./0.);
 }
+
+#undef T
+
 #endif

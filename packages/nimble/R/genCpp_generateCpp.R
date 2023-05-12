@@ -413,7 +413,7 @@ cppOutputEigExternalUnaryFunction <- function(code, symTab) {
     }
     paste0(
       '(', nimGenerateCpp(code$args[[1]], symTab),
-      ').unaryExpr(std::ptr_fun<',info2,', ',info3,'>(', info1, '))'
+      ').unaryExpr(std::function< ', info3,'(',info2,') >( static_cast<',info3 ,' (*)(' ,info2 , ')>(&', info1, ')))'
     )
 }
 
@@ -439,7 +439,7 @@ cppOutputEigMemberFunctionNoTranslate_specialAD <- function(code, symTab) {
         return(cppOutputEigMemberFunctionNoTranslate(code, symTab))
     paste0(
         '(', nimGenerateCpp(code$args[[1]], symTab),
-        ').unaryExpr(std::ptr_fun<CppAD::AD<double>, CppAD::AD<double> >(nimDerivs_fabs))')
+        ').unaryExpr(std::function<CppAD::AD<double>(CppAD::AD<double>) >( static_cast<CppAD::AD<double> (*)(CppAD::AD<double>) >(&nimDerivs_fabs)))')
 }
 
 cppOutputMemberFunctionDeref <- function(code, symTab) {

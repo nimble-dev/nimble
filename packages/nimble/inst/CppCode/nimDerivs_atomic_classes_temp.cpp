@@ -325,7 +325,7 @@ bool atomic_lgamma_class::forward(
     std::cout<<"atomic info:"<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<"\n";
   }
      if((order_low <= 0) && (order_up >= 0)) {
-       taylor_y[0] = nimDerivs_lgammafn_base(taylor_x[0], baseOrder, verbose); // This puts it in the new tape being recorded
+       taylor_y[0] = nimDerivs_lgammafn(taylor_x[0], baseOrder, verbose); // This puts it in the new tape being recorded
 	  if(verbose) {
 	    std::cout<<"taylor_y[0] "<<CppAD::Value(taylor_y[0])<<" ";
 	  }
@@ -335,7 +335,7 @@ bool atomic_lgamma_class::forward(
      
      CppAD::AD<double> fprime;
      if((order_low <= 2) && (order_up >= 1)) {
-       fprime = nimDerivs_lgammafn_base(taylor_x[0], baseOrder+1, verbose);
+       fprime = nimDerivs_lgammafn(taylor_x[0], baseOrder+1, verbose);
 	  if(verbose) std::cout<<"fprime "<<CppAD::Value(fprime)<<" ";
      }
      if((order_low <= 1) && (order_up >= 1)) {
@@ -343,7 +343,7 @@ bool atomic_lgamma_class::forward(
 	  if(verbose) std::cout<<"taylor_x[1] "<<CppAD::Value(taylor_x[1])<<" taylor_y[1] "<<CppAD::Value(taylor_y[1])<<" ";
      }
      if((order_low <= 2) && (order_up >= 2)) {
-       taylor_y[2] = 0.5 * (nimDerivs_lgammafn_base(taylor_x[0], baseOrder+2, verbose) * taylor_x[1] * taylor_x[1] +
+       taylor_y[2] = 0.5 * (nimDerivs_lgammafn(taylor_x[0], baseOrder+2, verbose) * taylor_x[1] * taylor_x[1] + 
 			       fprime * 2 * taylor_x[2]);
 	  if(verbose) std::cout<<"taylor_x[2] "<<CppAD::Value(taylor_x[2])<<" taylor_y[2] "<<CppAD::Value(taylor_y[2])<<" ";
      }
@@ -368,11 +368,11 @@ bool atomic_lgamma_class::reverse(
 
   partial_x[0] = CppAD::AD<double>(0);
      if(order_up >= 1) partial_x[1] = CppAD::AD<double>(0);
-     CppAD::AD<double> fprime = nimDerivs_lgammafn_base(taylor_x[0], baseOrder+1, verbose);
+     CppAD::AD<double> fprime = nimDerivs_lgammafn(taylor_x[0], baseOrder+1, verbose);
      if(verbose) std::cout<<"fprime "<<CppAD::Value(fprime)<<" ";
      if(order_up >= 1) {
 	  partial_x[1] += partial_y[1] * fprime;
-	  partial_x[0] += partial_y[1] * nimDerivs_lgammafn_base(taylor_x[0], baseOrder+2, verbose) * taylor_x[1];
+	  partial_x[0] += partial_y[1] * nimDerivs_lgammafn(taylor_x[0], baseOrder+2, verbose) * taylor_x[1];
 	  if(verbose) std::cout<<"partial_x[1] "<<CppAD::Value(partial_x[1])<<" first step of partial_x[0] "<<CppAD::Value(partial_x[0])<<" ";
      }
      partial_x[0] += partial_y[0] * fprime;
@@ -383,7 +383,7 @@ bool atomic_lgamma_class::reverse(
      return true;
 }
 
-CppAD::AD<double> nimDerivs_lgammafn_base(CppAD::AD<double> x, int baseOrder, bool verbose) {
+CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x, int baseOrder, bool verbose) {
   if(verbose) {
     return nimDerivs_lgammafn_verbose(x, baseOrder);
   }
@@ -422,7 +422,7 @@ CppAD::AD<double> nimDerivs_lgammafn_base(CppAD::AD<double> x, int baseOrder, bo
 }
 
 CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x) {
-  return nimDerivs_lgammafn_base(x, 0); // a relic of a problem with default value when writing this previously using templates.
+  return nimDerivs_lgammafn(x, 0); // a relic of a problem with default value when writing this previously using templates.
 }
 
 /***************************************/
@@ -513,7 +513,7 @@ bool atomic_gammafn_class::forward(
   }
   CppAD::AD<double> lgamma_prime;
   if((order_low <= 2) && (order_up >= 1)) {
-    lgamma_prime = nimDerivs_lgammafn_base(taylor_x[0], 1);
+    lgamma_prime = nimDerivs_lgammafn(taylor_x[0], 1);
   }
   if((order_low <= 1) && (order_up >= 1)) {
     taylor_y[1] = lgamma_prime * taylor_y[0] * taylor_x[1];
@@ -521,7 +521,7 @@ bool atomic_gammafn_class::forward(
   }
   if((order_low <= 2) && (order_up >= 2)) {
     taylor_y[2] = 0.5 * taylor_y[0] *
-      ((nimDerivs_lgammafn_base(taylor_x[0], 2) + lgamma_prime*lgamma_prime) * taylor_x[1] * taylor_x[1] +
+      ((nimDerivs_lgammafn(taylor_x[0], 2) + lgamma_prime*lgamma_prime) * taylor_x[1] * taylor_x[1] + 
        lgamma_prime * 2 * taylor_x[2]);
     if(verbose) std::cout<<"taylor_x[2] "<<CppAD::Value(taylor_x[2])<<" taylor_y[2] "<<CppAD::Value(taylor_y[2])<<" ";
   }
@@ -541,12 +541,12 @@ bool atomic_gammafn_class::reverse(
   bool verbose = false;
   partial_x[0] = CppAD::AD<double>(0);
   if(order_up >= 1) partial_x[1] = CppAD::AD<double>(0);
-  CppAD::AD<double> lgamma_prime = nimDerivs_lgammafn_base(taylor_x[0], 1);
+  CppAD::AD<double> lgamma_prime = nimDerivs_lgammafn(taylor_x[0], 1);
   CppAD::AD<double>  fprime = lgamma_prime * taylor_y[0];
   if(verbose) std::cout<<"fprime "<<CppAD::Value(fprime)<<" ";
   if(order_up >= 1) {
     partial_x[1] += partial_y[1] * fprime;
-    CppAD::AD<double> fprimeprime = (nimDerivs_lgammafn_base(taylor_x[0], 2) + lgamma_prime * lgamma_prime) * taylor_y[0];
+    CppAD::AD<double> fprimeprime = (nimDerivs_lgammafn(taylor_x[0], 2) + lgamma_prime * lgamma_prime) * taylor_y[0];
     partial_x[0] += partial_y[1] * fprimeprime * taylor_x[1];
     if(verbose) std::cout<<"partial_x[1] "<<CppAD::Value(partial_x[1])<<" first step of partial_x[0] "<<CppAD::Value(partial_x[0])<<" ";
   }
