@@ -5,22 +5,22 @@
 AGHQuad_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-    AGHQuad1 = function(p = double(1)){
+    calcLogLik1 = function(p = double(1)){
       returnType(double())
     },
-    AGHQuad2 = function(p = double(1)){
+    calcLogLik2 = function(p = double(1)){
       returnType(double())
     },
-    AGHQuad3 = function(p = double(1)){
+    calcLogLik3 = function(p = double(1)){
       returnType(double())
     },
-    gr_AGHQuad1 = function(p = double(1)){
+    gr_calcLogLik1 = function(p = double(1)){
       returnType(double(1))
     },
-    gr_AGHQuad2 = function(p = double(1)){
+    gr_calcLogLik2 = function(p = double(1)){
       returnType(double(1))
     },
-    gr_AGHQuad3 = function(p = double(1)){
+    gr_calcLogLik3 = function(p = double(1)){
       returnType(double(1))
     },
     negHess = function(p = double(1), reTransform = double(1)){
@@ -120,7 +120,7 @@ nimOneAGHQuad1D <- nimbleFunction(
     ## Automated transformation for random effects to ensure range of (-Inf, Inf) 
     reTrans <- parameterTransform(model, randomEffectsNodes)
     
-    ## The following are used for caching values and gradient in the AGHQuad3 system
+    ## The following are used for caching values and gradient in the calcLogLik3 system
     max_inner_logLik_saved_par <- as.numeric(c(1, -1))
     max_inner_logLik_saved_value <- numeric(1)
     max_inner_logLik_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
@@ -381,7 +381,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       return(ans$value)
       returnType(double(1))
     },
-    ## Put everything (gradient and Hessian) together for AGHQuad3
+    ## Put everything (gradient and Hessian) together for calcLogLik3
     joint_logLik_with_grad_and_hess = function(p = double(1), reTransform = double(1)) {
       # This returns a vector of  concatenated key quantities (see comment below for details)
       # reTransform is the arg max of the inner logLik
@@ -417,7 +417,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       return(ans)
       returnType(double(1))
     },
-    update_AGHQuad3_with_gr = function(p = double(1), reset = logical(0, default = FALSE)) {
+    update_calcLogLik3_with_gr = function(p = double(1), reset = logical(0, default = FALSE)) {
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
       }
@@ -463,14 +463,14 @@ nimOneAGHQuad1D <- nimbleFunction(
 	  return(ans$value)
       returnType(double(1))
     },
-    AGHQuad3_update = function(p = double(1)) {
+    calcLogLik3_update = function(p = double(1)) {
       if(any(p != quadrature_previous_p)) {
-        update_AGHQuad3_with_gr(p)
+        update_calcLogLik3_with_gr(p)
       }
     },
-    AGHQuad3 = function(p = double(1)) {
+    calcLogLik3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      AGHQuad3_update(p)
+      calcLogLik3_update(p)
       if(marginal_log_lik > max_AGHQuad) {
         max_AGHQuad <<- marginal_log_lik
         max_AGHQuad_saved_re_value <<- max_inner_logLik_saved_par
@@ -478,14 +478,14 @@ nimOneAGHQuad1D <- nimbleFunction(
       return(marginal_log_lik)
       returnType(double())
     },
-    gr_AGHQuad3 = function(p = double(1)) {
+    gr_calcLogLik3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      AGHQuad3_update(p)
+      calcLogLik3_update(p)
       return(AGHQuad_saved_gr)
       returnType(double(1))
     },
     ## AGHQuad approximation 2: double tapping with separate components
-    AGHQuad2 = function(p = double(1)){
+    calcLogLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
@@ -496,7 +496,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       returnType(double())
     },
     ## AGHQuad approximation 1: single tapping with separate components
-    AGHQuad1 = function(p = double(1)){
+    calcLogLik1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik_internal(p)
@@ -547,7 +547,7 @@ nimOneAGHQuad1D <- nimbleFunction(
       }
     },
     ## Gradient of the AGHQuad approximation (version 1) w.r.t. parameters
-    gr_AGHQuad2 = function(p = double(1)){
+    gr_calcLogLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
@@ -581,7 +581,7 @@ nimOneAGHQuad1D <- nimbleFunction(
 	  returnType(double(1))
 	},
     ## Gradient of the AGHQuad approximation (version 1) w.r.t. parameters
-    gr_AGHQuad1 = function(p = double(1)){
+    gr_calcLogLik1 = function(p = double(1)){
 		if(!one_time_fixes_done) one_time_fixes()
 		if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
 			update_max_inner_logLik_internal(p)
@@ -1036,7 +1036,7 @@ buildAGHQuad <- nimbleFunction(
         if(nre > 1) {
 			nimCat('  [Note] Adaptive Gauss-Hermite quadrature is not implemented for multivariate integration.\n Defaulting to Laplace Approximation.')
 			AGHQuad_nfl[[1]] <- nimOneLaplace(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-		}else AGHQuad_nfl[[1]] <- nimOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, nQuad, innerOptControl, "CG", innerOptStart)
+		}else AGHQuad_nfl[[1]] <- nimOnecalcLogLik1D(model, paramNodes, randomEffectsNodes, calcNodes, nQuad, innerOptControl, "CG", innerOptStart)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- AGHQuadNodes$randomEffectsSets
@@ -1076,7 +1076,7 @@ buildAGHQuad <- nimbleFunction(
 		 	nimCat('  [Note] Adaptive Gauss-Hermite quadrature is not implemented for multivariate integration.\n Defaulting to Laplace Approximation.')
             AGHQuad_nfl[[i]] <- nimOneLaplace(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
           }
-          else AGHQuad_nfl[[i]] <- nimOneAGHQuad1D(model, paramNodes, these_reNodes, these_calcNodes, nQuad, innerOptControl, "CG", innerOptStart)
+          else AGHQuad_nfl[[i]] <- nimOnecalcLogLik1D(model, paramNodes, these_reNodes, these_calcNodes, nQuad, innerOptControl, "CG", innerOptStart)
         }
       }
       if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
@@ -1205,9 +1205,9 @@ buildAGHQuad <- nimbleFunction(
       else ans <- 0
       if(nre > 0){
         for(i in seq_along(AGHQuad_nfl)){
-          if(methodID == 1) ans <- ans + AGHQuad_nfl[[i]]$AGHQuad1(p)
-          else if(methodID == 2) ans <- ans + AGHQuad_nfl[[i]]$AGHQuad2(p)
-          else ans <- ans + AGHQuad_nfl[[i]]$AGHQuad3(p)
+          if(methodID == 1) ans <- ans + AGHQuad_nfl[[i]]$calcLogLik1(p)
+          else if(methodID == 2) ans <- ans + AGHQuad_nfl[[i]]$calcLogLik2(p)
+          else ans <- ans + AGHQuad_nfl[[i]]$calcLogLik3(p)
         }
       }
       return(ans)
@@ -1220,9 +1220,9 @@ buildAGHQuad <- nimbleFunction(
       else ans <- numeric(length = npar)
       if(nre > 0){
         for(i in seq_along(AGHQuad_nfl)){
-          if(methodID == 1) ans <- ans + AGHQuad_nfl[[i]]$gr_AGHQuad1(p)
-          else if(methodID == 2) ans <- ans + AGHQuad_nfl[[i]]$gr_AGHQuad2(p)
-          else ans <- ans + AGHQuad_nfl[[i]]$gr_AGHQuad3(p)
+          if(methodID == 1) ans <- ans + AGHQuad_nfl[[i]]$gr_calcLogLik1(p)
+          else if(methodID == 2) ans <- ans + AGHQuad_nfl[[i]]$gr_calcLogLik2(p)
+          else ans <- ans + AGHQuad_nfl[[i]]$gr_calcLogLik3(p)
         }
       }
       return(ans)
@@ -1723,8 +1723,8 @@ buildAGHQuad <- nimbleFunction(
 #'   this if there is only one parameter.
 #'
 #'   \item \code{set_method(method)}. Set method ID for calculating the AGHQuad
-#'   approximation and gradient: 1 (\code{AGHQuad1}), 2 (\code{AGHQuad2},
-#'   default method), or 3 (\code{AGHQuad3}). See below for more details. Users
+#'   approximation and gradient: 1 (\code{calcLogLik1}), 2 (\code{calcLogLik2},
+#'   default method), or 3 (\code{calcLogLik3}). See below for more details. Users
 #'   wanting to explore efficiency can try switching from method 2 (default) to
 #'   methods 1 or 3 and comparing performance. The first AGHQuad approximation
 #'   with each method will be (much) slower than subsequent AGHQuad
@@ -1870,25 +1870,25 @@ buildAGHQuad <- nimbleFunction(
 #'
 #' \itemize{
 #'
-#'   \item \code{AGHQuad1(p)}. AGHQuad approximation evaluated at the parameter
+#'   \item \code{calcLogLik1(p)}. AGHQuad approximation evaluated at the parameter
 #'   value \code{p}. This function uses single AD taping for gradient and
 #'   Hessian calculations and separate components.
 #'
-#'   \item \code{AGHQuad2(p)}. AGHQuad approximation evaluated at the parameter
+#'   \item \code{calcLogLik2(p)}. AGHQuad approximation evaluated at the parameter
 #'   value \code{p}. This function uses double AD taping for gradient and
 #'   Hessian calculations and separate components.
 #'
-#'   \item \code{AGHQuad3(p)}. AGHQuad approximation evaluated at the parameter
+#'   \item \code{calcLogLik3(p)}. AGHQuad approximation evaluated at the parameter
 #'   value \code{p}. This function uses double AD taping for gradient and
 #'   Hessian calculations and packs everything together.
 #'
-#'   \item \code{gr_AGHQuad1(p)}. Gradient of \code{AGHQuad1} with respect to
+#'   \item \code{gr_calcLogLik1(p)}. Gradient of \code{calcLogLik1} with respect to
 #'   parameters evaluated at the parameter value \code{p}.
 #'
-#'   \item \code{gr_AGHQuad2(p)}. Gradient of \code{AGHQuad2} with respect to
+#'   \item \code{gr_calcLogLik2(p)}. Gradient of \code{calcLogLik2} with respect to
 #'   parameters evaluated at the parameter value \code{p}.
 #'
-#'   \item \code{gr_AGHQuad3(p)}. Gradient of \code{AGHQuad3} with respect to
+#'   \item \code{gr_calcLogLik3(p)}. Gradient of \code{calcLogLik3} with respect to
 #'   parameters evaluated at the parameter value \code{p}.
 #'
 #' }
