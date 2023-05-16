@@ -90,7 +90,7 @@ Once CRAN package accepted:
 
 (make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload, since we should use the updated pdf manual as part of Zenodoversion)
 
-create new version with package tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
+create new version with package tarball and manual in Zenodo (search for 10.5281/zenodo.1211190 in Google; finding using `nimble` in the Zenodo search bar is a pain). Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
 However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
