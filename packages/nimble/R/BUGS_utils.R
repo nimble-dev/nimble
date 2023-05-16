@@ -97,7 +97,7 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
 makeSizeAndDimListForIndexedInfo <- function(code, nodeNamesToSkip,
                                              unrolledIndicesMatrix = NULL, allSizeAndDimList = list()){
   if(is.call(code)){
-    if((deparse(code[[1]]) == 'getNodeFunctionIndexedInfo') && length(code) == 3) {
+    if((safeDeparse(code[[1]]) == 'getNodeFunctionIndexedInfo') && length(code) == 3) {
       thisCodeExprList <- list(indexColumn = code[[3]])
       thisConstName <- colnames(unrolledIndicesMatrix)[code[[3]]]
       if(is.null(allSizeAndDimList[[thisConstName]])) allSizeAndDimList[[thisConstName]][[1]] <- thisCodeExprList
@@ -106,7 +106,7 @@ makeSizeAndDimListForIndexedInfo <- function(code, nodeNamesToSkip,
     }
   }
   if(length(code) > 1){
-    if(!((deparse(code[[1]]) == '[') && (deparse(code[[2]]) %in% nodeNamesToSkip))){
+    if(!((safeDeparse(code[[1]]) == '[') && (safeDeparse(code[[2]]) %in% nodeNamesToSkip))){
       for(i in 2:length(code)){
         allSizeAndDimList <- makeSizeAndDimListForIndexedInfo(code[[i]], nodeNamesToSkip, unrolledIndicesMatrix, allSizeAndDimList)
       }
