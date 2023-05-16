@@ -1,3 +1,11 @@
+#                            CHANGES IN VERSION 0.13.2 (May 2023) 
+
+## DEVELOPER LEVEL CHANGES
+
+- Remove code triggering Windows warnings about writing bytes into region of size 0 by modifying `setLength`.
+
+- Remove use of C++11 standard, per CRAN requirements. As part of this, replace use of `std::ptr_fun`.
+
 #                            CHANGES IN VERSION 0.13.1 (December 2022) 
 
 ## BUG FIXES

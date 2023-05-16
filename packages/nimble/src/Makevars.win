@@ -1,3 +1,2 @@
 PKG_CPPFLAGS= -DR_NO_REMAP -I../inst/include
 PKG_LIBS=-lRlapack -lRblas
-CXX_STD = CXX11

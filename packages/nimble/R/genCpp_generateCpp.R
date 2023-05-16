@@ -337,7 +337,18 @@ cppOutputMemberFunctionGeneric <- function(code, symTab) { ##cppMemberFunction(m
 cppOutputEigExternalUnaryFunction <- function(code, symTab) {
     info <-  eigProxyTranslateExternalUnary[[code$name]]
     if(length(info) < 3) stop(paste0("Invalid information entry for outputting eigen version of ", code$name), call. = FALSE)
-    paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').unaryExpr(std::ptr_fun<',info[2],', ',info[3],'>(', info[1], '))')
+    info1 <- info[1]
+    info2 <- info[2]
+    info3 <- info[3]
+    if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+      info1 <- paste0('nimDerivs_', info1)
+      info2 <- paste0('CppAD::AD<', info2, '>')
+      info3 <- paste0('CppAD::AD<', info3, '>')
+    }
+    paste0(
+      '(', nimGenerateCpp(code$args[[1]], symTab),
+      ').unaryExpr(std::function< ', info3,'(',info2,') >( static_cast<',info3 ,' (*)(' ,info2 , ')>(&', info1, ')))'
+    )
 }
 
 ## like cppOutputCallAsIs but using eigProxyTranslate on the name
@@ -351,6 +362,15 @@ cppOutputEigMemberFunction <- function(code, symTab) {
 
 cppOutputEigMemberFunctionNoTranslate <- function(code, symTab) {
     paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').', paste0(code$name, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab) ), collapse = ', '), ')' ))
+}
+
+cppOutputEigMemberFunctionNoTranslate_specialAD <- function(code, symTab) {
+    ## currently only for cwiseAbs, for which Eigen needs to be circumvented
+    if(!identical(nimbleUserNamespace$cppADCode, 2L))
+        return(cppOutputEigMemberFunctionNoTranslate(code, symTab))
+    paste0(
+        '(', nimGenerateCpp(code$args[[1]], symTab),
+        ').unaryExpr(std::function<CppAD::AD<double>(CppAD::AD<double>) >( static_cast<CppAD::AD<double> (*)(CppAD::AD<double>) >(&nimDerivs_fabs)))')
 }
 
 cppOutputMemberFunctionDeref <- function(code, symTab) {
