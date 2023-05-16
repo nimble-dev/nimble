@@ -137,9 +137,12 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(nimbleOptions("enableModelMacros")){
-      macroOutput <- processModelMacros(code=code, constants=constants, env=userEnv)
+      modelInfo <- list(constants = constants, dimensions = dimensions, inits = inits)
+      macroOutput <- processModelMacros(code=code, modelInfo = modelInfo, env = userEnv)
       code <- macroOutput$code
-      constants <- macroOutput$constants
+      constants <- macroOutput$modelInfo$constants
+      dimensions <- macroOutput$modelInfo$dimensions
+      inits <- macroOutput$modelInfo$inits
     }
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
@@ -223,10 +226,8 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
 
 ## This function recurses through a block of code and expands any submodels
 codeProcessModelMacros <- function(code,
-                                   constants = list(),
-                                   parameters = list(),
+                                   modelInfo,
                                    env = parent.frame(),
-                                   indexCreator,
                                    recursionLabels = character()) {
     expandRecursionLabels <- function(possibleMacroName,
                                       labels = character()) {
@@ -246,27 +247,22 @@ codeProcessModelMacros <- function(code,
             ## Recurse on each line
             for(i in 2:codeLength){
               macroOutput <- codeProcessModelMacros(code = code[[i]],
-                                                  constants = constants,
-                                                  parameters = parameters,
-                                                  env = env,
-                                                  indexCreator = indexCreator
-                                                  )
+                                                    modelInfo = modelInfo,
+                                                    env = env
+                                                    )
               code[[i]] <- macroOutput$code
-              constants <- macroOutput$constants
-              parameters <- macroOutput$parameters
+              modelInfo <- macroOutput$modelInfo
             }
-        return(list(code=code, constants=constants, parameters=parameters))
+        return(list(code=code, modelInfo=modelInfo))
     }
     ## If this is a for loop, recurse on the body of the loop
     if(code[[1]] == 'for') {
       macroOutput <- codeProcessModelMacros(code[[4]],
-                                          constants = constants,
-                                          parameters = parameters,
-                                          env = env,
-                                          indexCreator = indexCreator
-                                          )
+                                            modelInfo = modelInfo,
+                                            env = env
+                                           )
       code[[4]] <- macroOutput$code
-        return(list(code=code, constants=macroOutput$constants, parameters=macroOutput$parameters))
+      return(list(code=code, modelInfo=macroOutput$modelInfo))
     }
     ## Check if this line invokes a submodel.
     ## This can be done in two ways:
@@ -287,9 +283,9 @@ codeProcessModelMacros <- function(code,
     if(exists(possibleMacroName)) { ## may need to provide an envir argument
         possibleMacro <- get(possibleMacroName) ## ditto
         if(inherits(possibleMacro, "model_macro")) {
-            expandedInfo <- try(possibleMacro$process(code, .constants = constants, 
-                                                      parameters = parameters, .env = env,
-                                                      indexCreator = indexCreator
+            expandedInfo <- try(possibleMacro$process(code, 
+                                                      modelInfo=modelInfo,
+                                                      .env = env
                                                       ))
             if(inherits(expandedInfo, 'try-error'))
                 stop(paste0("Model macro ",
@@ -321,34 +317,29 @@ codeProcessModelMacros <- function(code,
             ## content in the future.  We recurse on the returned code
             ## to expand macros that it might contain.
             macroOutput <- codeProcessModelMacros(expandedInfo$code,
-                                           constants = expandedInfo$constants,
-                                           parameters = expandedInfo$parameters,
+                                           modelInfo = expandedInfo$modelInfo,
                                            env = env,
-                                           indexCreator = indexCreator,
                                            c(recursionLabels, possibleMacroName)
                                            )
-            return(list(code=macroOutput$code, constants=macroOutput$constants,
-                        parameters=macroOutput$parameters))
+            return(list(code=macroOutput$code, modelInfo=macroOutput$modelInfo))
         }
     }
-    list(code=code, constants=constants, parameters=parameters)
+    list(code=code, modelInfo=modelInfo)
 }
 
-processModelMacros <- function(code, constants, env){
+processModelMacros <- function(code, modelInfo, env){
   # No generated parameters before any macros run, so parameters = empty list
-  macroIndexCreator <- labelFunctionCreator("i")
-  macroOutput <- codeProcessModelMacros(code=code, constants=constants, 
-                                        parameters=list(), env=env, 
-                                        indexCreator=macroIndexCreator)
+  modelInfo$indexCreator <- labelFunctionCreator("i")
+  modelInfo$parameters <- list()
+  macroOutput <- codeProcessModelMacros(code=code, modelInfo=modelInfo, env=env)
   # Clean up extra brackets
   code <- removeExtraBrackets(macroOutput$code)
-  constants <- macroOutput$constants
   # Convert factors to numeric
-  constants <- lapply(macroOutput$constants, function(x){
+  macroOutput$modelInfo$constants <- lapply(macroOutput$modelInfo$constants, function(x){
     if(is.factor(x)) x <- as.numeric(x)
     x
   })
-  list(code = code, constants = constants, parameters = macroOutput$parameters)
+  list(code = code, modelInfo = macroOutput$modelInfo)
 }
 
 # Remove extra brackets in BUGS code (typically resulting from macros)

@@ -145,7 +145,7 @@ model_macro_builder <- function(fun,
                                 use3pieces = TRUE,
                                 unpackArgs = TRUE ) {
     if(use3pieces) {
-        wrapper <- function(code, .constants, .env) {
+        wrapper <- function(code, modelInfo, .env) {
             args <- as.list(code)
             args[[1]] <- args[[1]] == '~'
             names(args) <- c('stoch','LHS','RHS')
@@ -160,16 +160,16 @@ model_macro_builder <- function(fun,
             args <-  lapply(args,
                             function(x)
                                 substitute(quote(X), list(X = x)))
-            do.call(fun, c(args, list(.constants = .constants, .env = .env)))
+            do.call(fun, c(args, list(modelInfo = modelInfo, .env = .env)))
         }
     } else {
         if(unpackArgs) {
-            wrapper <- function(code, .constants, .env) {
+            wrapper <- function(code, modelInfo, .env) {
                 args <- as.list(code)[-1]
                 args <-  lapply(args,
                             function(x)
                                 substitute(quote(X), list(X = x)))
-                do.call(fun, c(args, list(.constants = .constants, .env = .env)))
+                do.call(fun, c(args, list(modelInfo = modelInfo, .env = .env)))
             }
         } else {
             wrapper <- fun
