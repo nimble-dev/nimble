@@ -239,6 +239,19 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        writeDynamicRegistrationsDotCpp(cppName, dllName)
                                        nimbleUserNamespace$sessionSpecificDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
                                    },
+                                 compile_nimbleCppADbaseClass = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                   timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
+                                   dllName <- paste0("nimbleCppADbaseClass_", timeStamp)
+                                   cppName <- "nimbleCppADbaseClass.cpp"
+                                   origFile <-  system.file(file.path("include","nimble", cppName), package = "nimble")
+                                   if(nchar(origFile) == 0) {
+                                     warning("Could not compile nimbleCppADbaseClass. Subsequent steps will likely generate errors.")
+                                     return(NULL)
+                                   }
+                                   file.copy(origFile, cppName)
+                                   # We don't need this DLL, but we might as well hold onto it since it exists.
+                                   nimbleUserNamespace$nimbleCppADbaseClassDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
+                                 },
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
                                        names <- Rname2CppName(names)
@@ -272,7 +285,13 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
                                            compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
                                        }
-
+                                       isTRUE(nimbleOptions("enableDerivs")) {
+                                         if(any(grepl("^nimbleCppADbaseClass.o$", Oincludes))) {
+                                           if(is.null(nimbleUserNamespace$nimbleCppADbaseClassDll)) {
+                                             compile_nimbleCppADbaseClass(showCompilerOutput = showCompilerOutput)
+                                           }
+                                         }
+                                       }
                                        origSHLIBcmd <- SHLIBcmd
                                        if(isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {## used only for testing, when we want to go quickly and skip linking and bail out
                                            ## get the dry run commands, run only those that contain -c for compile-only (don't link)
