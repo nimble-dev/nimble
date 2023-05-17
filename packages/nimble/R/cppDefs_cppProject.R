@@ -285,7 +285,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
                                            compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
                                        }
-                                       isTRUE(nimbleOptions("enableDerivs")) {
+                                       if(isTRUE(nimbleOptions("enableDerivs"))) {
                                          if(any(grepl("^nimbleCppADbaseClass.o$", Oincludes))) {
                                            if(is.null(nimbleUserNamespace$nimbleCppADbaseClassDll)) {
                                              compile_nimbleCppADbaseClass(showCompilerOutput = showCompilerOutput)
