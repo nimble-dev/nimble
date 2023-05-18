@@ -1834,7 +1834,7 @@ model <- readBUGSmodel(model = file.path(tempdir(), "leuk.bug"), data = system.f
 out <- model$calculate()
 newConstantNodes <- list(dN = matrix(rpois(17*42, 2), 17))
 test_ADModelCalculate(model, newConstantNodes = newConstantNodes, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'leuk', useFasterRderivs = TRUE, absTolThreshold = 1e-12)
-}
+
 ## 2022-06-25: Some fairly extreme 2d11 discrepancies
 ## Detected some values out of tolerance   :  rOutput2d11$jacobian   cOutput2d11$jacobian .
 ##            [,1]     [,2]     [,3]

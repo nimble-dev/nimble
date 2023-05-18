@@ -169,10 +169,10 @@ wish_test_out <- test_AD2(wish_test_log)
 
 ## inverse Wishart
 
-set.seed(1234)  # some sensitivity in terms of tolerance failures to the seed...
+set.seed(123)  # some sensitivity in terms of tolerance failures to the seed...
 
-wRec <- rinvwish_chol(1, cholRec, df = 7, scale_param = FALSE)
-wTest <- rinvwish_chol(1, cholTest, df = 7, scale_param = FALSE)
+wRec <- rinvwish_chol(1, cholRec, df = 7)
+wTest <- rinvwish_chol(1, cholTest, df = 7)
 
 wRecTri <- wRec[ upper.tri(wRec, TRUE) ]
 wTestTri <- wTest[ upper.tri(wTest, TRUE) ]

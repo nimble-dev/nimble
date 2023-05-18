@@ -433,7 +433,7 @@ test_AD2 <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   if (isTRUE(catch_failures) && inherits(Cobj, 'try-error')) {
     warning(
       paste0(
-        'The test of ', opParam$name,
+        'The test of ', param$opParam$name,
         ' failed to compile.\n'
       ),
       call. = FALSE,
