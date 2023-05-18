@@ -622,18 +622,18 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
                                        SEXP Snodes,
                                        SEXP SgivenNodes,
                                        SEXP Somit,
-                                       SEXP SstartUp,
-                                       SEXP SstartDown,
+                                       SEXP SgoUp,
+                                       SEXP SgoDown,
                                        SEXP SunknownsAsGiven) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> givenNodes = SEXP_2_vectorInt(SgivenNodes, -1); 
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
   std::sort(omit.begin(), omit.end());
-  bool startUp = SEXP_2_bool(SstartUp);
-  bool startDown = SEXP_2_bool(SstartDown);
+  bool goUp = SEXP_2_bool(SgoUp);
+  bool goDown = SEXP_2_bool(SgoDown);
   bool unknownsAsGiven = SEXP_2_bool(SunknownsAsGiven);
-  vector<vector<int> > result = graphPtr->getAllCondIndSets(nodes, givenNodes, omit, startUp, startDown,
+  vector<vector<int> > result = graphPtr->getAllCondIndSets(nodes, givenNodes, omit, goUp, goDown,
                                                             unknownsAsGiven);
   /* sort sets by first node in each set. */
   /* I'm not sure when this would matter, but at least for testing purposes */ 
@@ -671,40 +671,58 @@ SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
 vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
                                                     const vector<int> &CgivenNodes,
                                                     const vector<int> &Comit,
-                                                    bool startUp,
-                                                    bool startDown,
+                                                    bool goUp,
+                                                    bool goDown,
                                                     bool unknownsAsGiven) {
   vector<vector<int> > results;
   if(!Cnodes.size()) return results;
 
+  // In cases of overlaps, the precedence will be:
+  // omit > given > latent
+  // In other words, if a node is in omit, it will not be considered as given or latent even if included in those
+  // And if a node is in given, it will not also be considered in latent.
+  // It is the job of the calling function to check for overlaps if one wants error-trapping.
+
+  // omit nodes may be deterministic or stochastic
+  // givenNodes may be deterministic or stochastic
+  // nodes must be stochastic
+
+  // Touch Comit for use by all iterations
+  for(size_t i = 0; i < Comit.size(); i++) {
+    graphNodeVec[ Comit[i] ]->touched = true;
+  }
+  // Make isGivenVec.
+  vector<bool> isGivenVec(numNodes, false);
+  for(size_t i = 0; i < CgivenNodes.size(); ++i) {
+    if(!graphNodeVec[ CgivenNodes[i] ]->touched) // precendence of omit
+      isGivenVec[ CgivenNodes[i] ] = true;
+  }
   // Make isLatentVec and populate it only if it will be needed
   vector<bool> isLatentVec;
   if(unknownsAsGiven) {
     isLatentVec.resize(numNodes, false);
     for(size_t i = 0; i < Cnodes.size(); ++i) {
-      isLatentVec[ Cnodes[i] ] = true;
+      if(((!graphNodeVec[ Cnodes[i] ]->touched) &&  // precendence of omit
+          (!isGivenVec[ Cnodes[i] ])) &&            // precendence of given
+         (graphNodeVec[Cnodes[i] ]->type == STOCH)) // silently ignore non-stoch nodes
+        isLatentVec[ Cnodes[i] ] = true;
     }
   }
-  // Make isGivenVec.
-  vector<bool> isGivenVec(numNodes, false);
-  for(size_t i = 0; i < CgivenNodes.size(); ++i) {
-    isGivenVec[ CgivenNodes[i] ] = true;
-  }
-  
-  // Touch Comit for use by all iterations
-  for(size_t i = 0; i < Comit.size(); i++) {
-    graphNodeVec[ Comit[i] ]->touched = true;
-  }
+  // At this point, the omits (first set of touched nodes), givens and latents should be guaranteed to be mutually exclusive.
 
   // Get first seed node
   size_t iCurrentInputNode = 0;
   vector<int> inputNodes(1);
   do {
     int inputNodeID = Cnodes[iCurrentInputNode];
-    inputNodes[0] = inputNodeID;
-    // get conditionally independent set for that node
-    results.push_back(getCondIndSet(inputNodes, isGivenVec, isLatentVec, Comit, startUp, startDown,
+    if(((!graphNodeVec[ inputNodeID ]->touched) && // precendence of omit (need to check here for first iteration; later iterations have checked this below)
+       (!isGivenVec[ inputNodeID ])) &&              // precendence of given
+       (graphNodeVec[ inputNodeID ]->type == STOCH)) {
+      // get conditionally independent set for that node
+      inputNodes[0] = inputNodeID;
+      results.push_back(getCondIndSet(inputNodes, isGivenVec, isLatentVec, Comit, goUp, goDown,
                                     unknownsAsGiven));
+    }
     // Find next available seed node not already in a set
     bool done(false);
     while(!done) {
@@ -725,12 +743,12 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
   return results;
 }
 
-  vector<int> nimbleGraph::getCondIndSet(const vector<int> &Cnodes,
+vector<int> nimbleGraph::getCondIndSet(const vector<int> &Cnodes,
                                          const vector<bool>  &isGivenVec,
                                          const vector<bool>  &isLatentVec,
                                          const vector<int> &Comit,
-                                         bool startUp,
-                                         bool startDown,
+                                         bool goUp,
+                                         bool goDown,
                                          bool unknownsAsGiven) {
   // Cnodes are C (0-based) indices for stochastic nodes to seed the search
   // for a conditionally independent set.  It makes most sense for this to be
@@ -749,9 +767,9 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
   // prior to entry to this function.  If it doesn't, reasonable results
   // should still be returned.
   //
-  // startUp and startDown say whether recursion should start up and/or start down
-  // If Cnodes are latent nodes, then startUp and startDown should both be true.
-  // If e.g. Cnodes give data nodes, then startUp should be true and startDown false.
+  // goUp and goDown say whether recursion should explore up and/or explore down
+  // If Cnodes are latent nodes, then goUp and goDown should both be true.
+  // If e.g. Cnodes give data nodes, then goUp should be true and goDown false.
   //
   // In this algo, LHSINFERRED nodes can be treated like any others.
   int i;
@@ -760,28 +778,128 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
   int n = Cnodes.size();
   graphNode *thisGraphNode;
   int thisGraphNodeID;
-  //  vector<int>::const_iterator omitFinder;
   for(i = 0; i < n; i++) {
     thisGraphNodeID = Cnodes[i];
-    if(std::binary_search(Comit.begin(), Comit.end(), thisGraphNodeID)) continue;
-    //    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
-    //    if(omitFinder != Comit.end()) continue; // it was in omits
     thisGraphNode = graphNodeVec[ thisGraphNodeID ];
     if(!thisGraphNode->touched) { // It has not been found starting from another input node
       bool isGiven = isGivenVec[thisGraphNodeID];
-      if(thisGraphNode->type == STOCH && (!isGiven))
-	ans.push_back(thisGraphNodeID);
-      thisGraphNode->touched = true;
-      expandCondIndSet(ans, thisGraphNodeID, startUp, startDown, isGivenVec, isLatentVec,
-                       unknownsAsGiven, 1);
+      if(thisGraphNode->type == STOCH && (!isGiven)) {// Calling from getAllCondIndSets guaranteees it is not given, anyway, so having this here is defensive.
+        ans.push_back(thisGraphNodeID);
+        thisGraphNode->touched = true;
+        if(goUp)
+          exploreUp(ans, thisGraphNodeID, isGivenVec, isLatentVec, unknownsAsGiven, 1);
+        if(goDown)
+          exploreDown(ans, thisGraphNodeID, isGivenVec, isLatentVec, unknownsAsGiven, 1);
+//        expandCondIndSet(ans, thisGraphNodeID, goUp, goDown, isGivenVec, isLatentVec,
+//                         unknownsAsGiven, 1);
+      }
     }
   }
-  /* The purpose of storing tempAns  was so the touched flags could be cleared here: */
   std::sort(ans.begin(), ans.end());
   return(ans);
 }
 
-  void nimbleGraph::expandCondIndSet(vector<int> &deps,
+// void myindent(int i) {
+//   for(int ii = 0; ii < i; ++ii) std::cout<<"\t";
+// }
+
+void nimbleGraph::exploreUp(vector<int> &deps,
+                            int CgraphID,
+                            const vector<bool> &isGivenVec,
+                            const vector<bool> &isLatentVec,
+                            bool unknownsAsGiven,
+                            unsigned int recursionDepth) {
+  graphNode *thisGraphNode = graphNodeVec[CgraphID];
+  // myindent(recursionDepth);
+  // std::cout<<"exploreUp from "<<thisGraphNode->name<<std::endl;
+  graphNode *thisParentNode;
+  int numParents = thisGraphNode->parents.size();
+  int thisParentCgraphID;
+  for(int i = 0; i < numParents; i++) {
+    thisParentNode = thisGraphNode->parents[i];
+    // myindent(recursionDepth);
+    // std::cout<<"\t"<<"Looking at "<<thisParentNode->name<<std::endl;
+    if(thisParentNode->touched) continue; // If it's already been handled, continue
+    thisParentCgraphID = thisParentNode->CgraphID;
+
+    bool isGiven = isGivenVec[thisParentCgraphID];
+    bool isStoch = thisParentNode->type == STOCH;
+      // myindent(recursionDepth);
+      // std::cout<<"\t\t"<<isGiven<<" "<<isStoch;
+    if((!isGiven) && isStoch && unknownsAsGiven) {
+      bool isLatent = isLatentVec[thisParentCgraphID];
+      if(!isLatent) isGiven = true;
+    }
+   // std::cout<<" "<<isGiven<<std::endl;
+    if(isStoch) {
+      if(!isGiven)
+        deps.push_back(thisParentCgraphID); // Record latent stochastic nodes for results
+      thisParentNode->touched = true; // don't touch it now if deterministic
+    }
+
+    if(!isGiven) {
+      exploreUp(deps, thisParentCgraphID,
+                isGivenVec, isLatentVec, unknownsAsGiven, recursionDepth + 1);
+      if(isStoch)
+        exploreDown(deps, thisParentCgraphID,
+                    isGivenVec, isLatentVec, unknownsAsGiven, recursionDepth + 1);
+    }
+    thisParentNode->touched = true; // Touch it now in case it was deterministic and hence not touched above
+  }
+  // myindent(recursionDepth);
+  // std::cout<<"Exiting exploreUp from "<<thisGraphNode->name<<std::endl;
+}
+
+void nimbleGraph::exploreDown(vector<int> &deps,
+                              int CgraphID,
+                              const vector<bool> &isGivenVec,
+                              const vector<bool> &isLatentVec,
+                              bool unknownsAsGiven,
+                              unsigned int recursionDepth) {
+  graphNode *thisGraphNode = graphNodeVec[CgraphID];
+  // myindent(recursionDepth);
+  // std::cout<<"exploreDown from "<<thisGraphNode->name<<std::endl;
+  graphNode *thisChildNode;
+  int numChildren = thisGraphNode->numChildren;
+  int thisChildCgraphID;
+  for(int i = 0; i < numChildren; i++) {
+    thisChildNode = thisGraphNode->children[i];
+    // myindent(recursionDepth);
+    // std::cout<<"\t"<<"Looking at "<<thisChildNode->name<<std::endl;
+    if(thisChildNode->touched) continue; // If it's already been handled, continue
+    thisChildCgraphID = thisChildNode->CgraphID;
+
+    bool isGiven = isGivenVec[thisChildCgraphID];
+    bool isStoch = thisChildNode->type == STOCH;
+    // myindent(recursionDepth);
+    // std::cout<<"\t\t"<<isGiven<<" "<<isStoch;
+    if((!isGiven) && isStoch && unknownsAsGiven) {
+      bool isLatent = isLatentVec[thisChildCgraphID];
+      if(!isLatent) isGiven = true;
+    }
+    // std::cout<<" "<<isGiven<<std::endl;
+
+    if(isStoch && (!isGiven)) {
+      deps.push_back(thisChildCgraphID); // Record latent stochastic nodes for results
+      thisChildNode->touched = true;
+    }
+
+    if(isGiven || isStoch) {
+      thisChildNode->touched = true;
+      exploreUp(deps, thisChildCgraphID,
+                isGivenVec, isLatentVec, unknownsAsGiven, recursionDepth + 1);
+    }
+    if(!isGiven) {
+      exploreDown(deps, thisChildCgraphID,
+                  isGivenVec, isLatentVec, unknownsAsGiven, recursionDepth + 1);
+      thisChildNode->touched = true;
+    }
+  }
+  // myindent(recursionDepth);
+  // std::cout<<"Exiting exploreDown from "<<thisGraphNode->name<<std::endl;
+}
+
+void nimbleGraph::expandCondIndSet(vector<int> &deps,
                                      int CgraphID,
                                      bool goUp,
                                      bool goDown,
@@ -789,7 +907,6 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
                                      const vector<bool> &isLatentVec,
                                      bool unknownsAsGiven,
                                      unsigned int recursionDepth) {
-  // We don't need a tempDeps in this algo b/c we untouch the entire graph when done.
   graphNode *thisGraphNode = graphNodeVec[CgraphID];
   for(int dir = 0; dir < 2; ++dir) { // 0 for down, 1 for up
     bool goingDown = dir == 0;
@@ -820,25 +937,6 @@ vector<vector<int> > nimbleGraph::getAllCondIndSets(const vector<int> &Cnodes,
       if(thisRelNode->type == STOCH && (!isGiven)) // Record latent stochastic nodes for results
         deps.push_back(thisRelNode->CgraphID);
 
-      // if(thisRelNode->type == STOCH) {
-      // bool isGiven = isGivenVec[thisRelCgraphID];
-      // bool isLatent = isLatentVec[thisRelCgraphID];
-      // if(thisRelNode->type == STOCH) {
-      //   bool isUnknown = (!isGiven) && (!isLatent);
-      //   if(isUnknown) {
-      //     if (unknownsAsGiven) {
-      //       isGiven = true;
-      //     } else { // unknownsAsLatent must be true
-      //       isLatent = true;
-      //     }
-      //   }
-      //   if(!isGiven) {
-      //     deps.push_back(thisRelNode->CgraphID);
-      //   }
-      // }
-
-  //     if(thisRelNode->type == STOCH && (!isGiven)) // Record latent stochastic nodes for results
-	// deps.push_back(thisRelNode->CgraphID);
       if((thisRelNode->type == STOCH) | goingDown)
         thisRelNode->touched = true; // don't touch it now if going up and deterministic
 

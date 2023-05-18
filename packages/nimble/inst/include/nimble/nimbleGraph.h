@@ -87,6 +87,18 @@ public:
                             bool startUp,
                             bool startDown,
                             bool unknownsAsGiven);
+  void exploreUp(vector<int> &deps,
+                 int CgraphID,
+                 const vector<bool> &isGivenVec,
+                 const vector<bool> &isLatentVec,
+                 bool unknownsAsGiven,
+                 unsigned int recursionDepth);
+  void exploreDown(vector<int> &deps,
+                   int CgraphID,
+                   const vector<bool> &isGivenVec,
+                   const vector<bool> &isLatentVec,
+                   bool unknownsAsGiven,
+                   unsigned int recursionDepth);
   void expandCondIndSet(vector<int> &deps,
                         int CgraphID,
                         bool goUp,

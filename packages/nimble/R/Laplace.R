@@ -1083,7 +1083,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   calcOtherProvided <- !missing(calcNodesOther)
   # We considered a feature to allow params to be nodes without priors. This is a placeholder in case
   # we ever pursue that again.
-  allowNonPriors <- FALSE
+  # allowNonPriors <- FALSE
   # We may need to use determ and stochastic dependencies of parameters multiple times below
   # Define these to avoid repeated computation
   # A note for future: determ nodes between parameters and calcNodes are needed inside buildOneAGHQuad
@@ -1093,29 +1093,62 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   paramDetermDepsCalculated <- FALSE
   paramStochDepsCalculated  <- FALSE
   
-  # 1. Default parameters are stochastic top-level nodes.
-  #    We considered an argument allowNonPriors, defaulting to FALSE. If TRUE, the default params would be all top-level stochastic
-  #    nodes with no RHSonly nodes as parents and RHSonly nodes (handling of constants TBD, since non-scalars would be converted to data) that have stochastic dependencies
-  #    (And then top-level stochastic nodes with RHSonly nodes as parents are essentially latent/data nodes,
-  #    some of which would need to be added to randomEffectsNodes below.)
-  stochTopNodes2reNodes <- character(0)
+  # 1. Default parameters are stochastic top-level nodes. (We previously
+  #    considered an argument allowNonPriors, defaulting to FALSE. If TRUE, the
+  #    default params would be all top-level stochastic nodes with no RHSonly
+  #    nodes as parents and RHSonly nodes (handling of constants TBD, since
+  #    non-scalars would be converted to data) that have stochastic dependencies
+  #    (And then top-level stochastic nodes with RHSonly nodes as parents are
+  #    essentially latent/data nodes, some of which would need to be added to
+  #    randomEffectsNodes below.) However this got too complicated. It is
+  #    simpler and clearer to require "priors" for parameters, even though prior
+  #    probs may not be used.
   if(!paramProvided) {
-    paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
+    paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE, includePredictive = FALSE)
   } else {
     paramNodes <- model$expandNodeNames(paramNodes)
   }
 
-  # 2. Default random effects are latent nodes that are stochastic dependencies of params.
+  # 2. Default random effects are latent nodes that are downstream stochastic dependencies of params.
+  #    In step 3, default random effects are also limited to those that are upstream parents of calcNodes
   if((!reProvided) || warn) {
-    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-    paramStochDepsCalculated <- TRUE
-    latentNodes <- model$getNodeNames(latentOnly = TRUE)
-    reNodesDefault <- intersect(latentNodes, paramStochDeps)
+    latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE,
+                                      includeData = FALSE, includePredictive = FALSE)
+    latentDiscrete <- model$isDiscrete(latentNodes)
+    if(any(latentDiscrete)) latentNodes <- latentNodes[!latentDiscrete]
+    paramDownstream <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE,
+                                             downstream = TRUE, includePredictive = FALSE)
+#    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+#    paramStochDepsCalculated <- TRUE
+    reNodesDefault <- intersect(latentNodes, paramDownstream)
+
+    # Next, if calcNodes were not provided, we create a temporary
+    # dataNodesDefault for purposes of updating reNodesDefault if needed. The
+    # idea is that reNodesDefault should be trimmed to include only nodes
+    # upstream of "data" nodes, where "data" means nodes in the role of data for
+    # purposes of marginalization.
+    # The tempDataNodesDefault is either dependencies of RE nodes if provided, or
+    # actual data nodes in the model if RE nodes not provided.
+    # If calcNodes were provided, then they are used directly to trim reNodesDefault.
+    if(!calcProvided) {
+      if(reProvided)
+        tempDataNodesDefault <- model$getDependencies(randomEffectsNodes, stochOnly = TRUE,
+                                                      self = FALSE, includePredictive = FALSE)
+      else
+        tempDataNodesDefault <- model$getNodeNames(dataOnly = TRUE)
+      tempDataNodesDefault <- setdiff(tempDataNodesDefault, paramNodes)
+      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE)
+      reNodesDefault <- intersect(reNodesDefault, tempDataNodesDefaultParents)
+    } else {
+      # Update reNodesDefault to exclude nodes that lack downstream connection to a calcNode
+      reNodesDefault <- intersect(reNodesDefault, calcNodes)
+    }
   }
   if(reProvided){
     if(is.null(randomEffectsNodes) || isFALSE(randomEffectsNodes)) randomEffectsNodes <- character(0)
     randomEffectsNodes <- model$expandNodeNames(randomEffectsNodes)
   }
+
   # 3. Optionally check random effects if they were provided (not default)
   if(reProvided && warn) {
     # First check is for random effects that should have been included but weren't
@@ -1141,17 +1174,16 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "To silence this warning, include \'warn = FALSE\' in the control list."))
     }
   }
-  # End of step 2
+  # Set final choice of randomEffectsNodes
   if(!reProvided) {
     randomEffectsNodes <- reNodesDefault
   }
-  # 4. Default calc nodes are dependencies of random effects
-  #    Note that the internal Laplace nimbleFunctions (one for each conditionally independent set)
-  #    will fill in deterministic nodes between paramNodes and randomEffectsNodes
+
+  # Set actual default calcNodes. This time it has self=TRUE (default)
   if((!calcProvided) || warn) {
-    calcNodesDefault <- model$getDependencies(randomEffectsNodes)
+    calcNodesDefault <- model$getDependencies(randomEffectsNodes, includePredictive = FALSE)
   }
-  if(calcProvided){
+  if(calcProvided) {
     if(is.null(calcNodes) || isFALSE(calcNodes)) calcNodes <- character(0)
     calcNodes <- model$expandNodeNames(calcNodes)
   }
@@ -1173,19 +1205,22 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     # then that's ok and we should not throw a warning message. 
     calcCheck <- setdiff(calcNodes, calcNodesDefault)
     errorNodes <- calcCheck[model$getNodeType(calcCheck)=="stoch"]
-    determCalcCheck <- setdiff(calcCheck, errorNodes)
-    numDetermCalcCheck <- length(determCalcCheck)
-    # Check other determ nodes
-    if(numDetermCalcCheck){
-      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-      paramDetermDepsCalculated <- TRUE
-      for(i in 1:numDetermCalcCheck){
-        if(!(determCalcCheck[i] %in% paramDetermDeps) || 
-           !(any(model$getDependencies(determCalcCheck[i], self = FALSE) %in% calcNodesDefault))){
-          errorNodes <- c(errorNodes, determCalcCheck[i])
-        }
-      }
-    }
+    # N.B. I commented out this checking of deterministic nodes for now.
+    #      Iterating through individual nodes for getDependencies can be slow
+    #      and I'd like to think more about how to do this. -Pery
+    ## determCalcCheck <- setdiff(calcCheck, errorNodes)
+    ## lengthDetermCalcCheck <- length(determCalcCheck)
+    ## # Check other determ nodes
+    ## if(lengthDetermCalcCheck){
+    ##   paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE, includePredictive = FALSE)
+    ##   paramDetermDepsCalculated <- TRUE
+    ##   for(i in 1:lengthDetermCalcCheck){
+    ##     if(!(determCalcCheck[i] %in% paramDetermDeps) ||
+    ##        !(any(model$getDependencies(determCalcCheck[i], self = FALSE) %in% calcNodesDefault))){
+    ##       errorNodes <- c(errorNodes, determCalcCheck[i])
+    ##     }
+    ##   }
+    ## }
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
@@ -1200,7 +1235,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(!calcProvided){
     calcNodes <- calcNodesDefault
   }
-  # 6. Default calcNodesNoLaplce: nodes needed for full model likelihood but
+  # 6. Default calcNodesOther: nodes needed for full model likelihood but
   #    that are not involved in the marginalization done by Laplace.
   #    Default is a bit complicated: All dependencies from paramNodes to
   #    stochastic nodes that are not part of calcNodes. Note that calcNodes
@@ -1210,13 +1245,11 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   #    So we have to first do a setdiff on stochastic nodes and then fill in the
   #    deterministics that are needed.
   if(!calcOtherProvided || warn) {
-    if(!paramStochDepsCalculated){
-      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-      paramStochDepsCalculated <- TRUE
-    }
+    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, # Should this be dataOnly=TRUE?
+                                            self = FALSE, includePredictive = FALSE)
     calcNodesOtherDefault <- setdiff(paramStochDeps, calcNodes)
   }
-  if(calcOtherProvided){
+  if(calcOtherProvided) {
     if(is.null(calcNodesOther) || isFALSE(calcNodesOther)) calcNodesOther <- character(0)
     calcNodesOther <- model$expandNodeNames(calcNodesOther, sort = TRUE)
     if((length(calcNodesOther) > 0) && !any(model$getNodeType(calcNodesOther)=="stoch")){
@@ -1227,15 +1260,15 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     calcNodesOther <- calcNodesOtherDefault
   }
   if(calcOtherProvided && warn) {
-    calcNoLaplaceCheck <- setdiff(calcNodesOtherDefault, calcNodesOther)
-    if(length(calcNoLaplaceCheck)) {
+    calcOtherCheck <- setdiff(calcNodesOtherDefault, calcNodesOther)
+    if(length(calcOtherCheck)) {
       # We only check missing stochastic nodes; determ nodes will be added below
-      missingStochNodesInds <- which((model$getNodeType(calcNoLaplaceCheck)) == "stoch")
-      numMissingStochNodes <- length(missingStochNodesInds)
-      missingStochNodes <- calcNoLaplaceCheck[missingStochNodesInds]
-      if(numMissingStochNodes){
+      missingStochNodesInds <- which((model$getNodeType(calcOtherCheck)) == "stoch")
+      lengthMissingStochNodes <- length(missingStochNodesInds)
+      if(lengthMissingStochNodes){
+        missingStochNodes <- calcOtherCheck[missingStochNodesInds]
         errorNodes <- paste0(head(missingStochNodes, n = 4), sep = "", collapse = ", ")
-        if(numMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
+        if(lengthMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some model nodes (stochastic) that look like they should be\n",
                        "included in the calcNodesOther for parts of the likelihood calculation\n",
                        "outside of Laplace or AGHQuad approximation:\n",
@@ -1244,25 +1277,27 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       }
     }
     # Check redundant stochastic nodes
-    calcNoLaplaceCheck <- setdiff(calcNodesOther, calcNodesOtherDefault)
-    stochCalcNoLaplaceCheck <- calcNoLaplaceCheck[model$getNodeType(calcNoLaplaceCheck)=="stoch"]
+    calcOtherCheck <- setdiff(calcNodesOther, calcNodesOtherDefault)
+    stochCalcOtherCheck <- calcOtherCheck[model$getNodeType(calcOtherCheck)=="stoch"]
+    errorNodes <- stochCalcOtherCheck
     # Check redundant determ nodes
-    determCalcNoLaplaceCheck <- setdiff(calcNoLaplaceCheck, stochCalcNoLaplaceCheck)
-    numDetermCalcNoLaplaceCheck <- length(determCalcNoLaplaceCheck)
-    errorNodes <- character(0)
-    if(numDetermCalcNoLaplaceCheck){
-      if(!paramDetermDepsCalculated) {
-        paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-        paramDetermDepsCalculated <- TRUE
-      }
-      for(i in 1:numDetermCalcNoLaplaceCheck){
-        if(!(determCalcNoLaplaceCheck[i] %in% paramDetermDeps) || 
-           !(any(model$getDependencies(determCalcNoLaplaceCheck[i], self = FALSE) %in% calcNodesOtherDefault))){
-          errorNodes <- c(errorNodes, determCalcNoLaplaceCheck[i])
-        }
-      }
-    }
-    errorNodes <- c(stochCalcNoLaplaceCheck, errorNodes)
+    # N.B. I commented-out this deterministic node checking for reasons similar to above. -Perry
+    ## determCalcOtherCheck <- setdiff(calcOtherCheck, stochCalcOtherCheck)
+    ## lengthDetermCalcOtherCheck <- length(determCalcOtherCheck)
+    ## errorNodes <- character(0)
+    ## if(lengthDetermCalcOtherCheck){
+    ##   if(!paramDetermDepsCalculated) {
+    ##     paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE, includePredictive = FALSE)
+    ##     paramDetermDepsCalculated <- TRUE
+    ##   }
+    ##   for(i in 1:lengthDetermCalcOtherCheck){
+    ##     if(!(determCalcOtherCheck[i] %in% paramDetermDeps) ||
+    ##        !(any(model$getDependencies(determCalcOtherCheck[i], self = FALSE) %in% calcNodesOtherDefault))){
+    ##       errorNodes <- c(errorNodes, determCalcOtherCheck[i])
+    ##     }
+    ##   }
+    ## }
+    ## errorNodes <- c(stochCalcOtherCheck, errorNodes)
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
@@ -1278,7 +1313,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   num_calcNodesOther <- length(calcNodesOther)
   if(num_calcNodesOther > 0){
     if(!paramDetermDepsCalculated) {
-      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE, includePredictive = FALSE)
       paramDetermDepsCalculated <- TRUE
     }
     numParamDetermDeps <- length(paramDetermDeps)
@@ -1301,12 +1336,13 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       reSets <- list(randomEffectsNodes)
     } else {
       if(isTRUE(split)) {
+        # givenNodes should only be stochastic
         givenNodes <- setdiff(c(paramNodes, calcNodes),
                               c(randomEffectsNodes,
                                 model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
         reSets <- model$getConditionallyIndependentSets(
           nodes = randomEffectsNodes, givenNodes = givenNodes,
-          unknownAsGiven = allowNonPriors)
+          unknownAsGiven = TRUE)
       }
       else if(is.numeric(split)){
         reSets <- split(randomEffectsNodes, split)

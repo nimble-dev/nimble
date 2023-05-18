@@ -248,14 +248,54 @@ test_that("getConditionallyIndependentSets works in model with a couple of sets"
   m <- nimbleModel(mc, data = list(z = 1:2))
 
   expect_identical(m$getConditionallyIndependentSets(), list(c('x[1]', 'y[1]'), c('x[2]', 'y[2]')))
-  expect_identical(m$getConditionallyIndependentSets('y[2]', inputType = "param"), list('y[2]'))
-  expect_identical(m$getConditionallyIndependentSets('x[1:2]', inputType = "data"), list(c('x[1]'), c('x[2]')))
+  expect_identical(m$getConditionallyIndependentSets('y[2]', explore = "down"), list('y[2]'))
+  expect_identical(m$getConditionallyIndependentSets('x[1:2]', explore = "up"), list(c('x[1]'), c('x[2]')))
   expect_true(nimble:::testConditionallyIndependentSets(m, m$getConditionallyIndependentSets()))
   expect_identical(m$getConditionallyIndependentSets(omit = 'y[2]'), list(c('x[1]', 'y[1]'), c('x[2]')))
   expect_identical(m$getConditionallyIndependentSets(omit = 5), list(c('x[1]', 'y[1]'), c('x[2]')))
+  expect_identical(m$getConditionallyIndependentSets('x[1]'), list(c('x[1]')))
+  expect_identical(m$getConditionallyIndependentSets('x[1]', unknownAsGiven=FALSE), list(c('x[1]', 'y[1]')))
 })
 
-test_that("getConditionallyIndependentSets works in model with a couple of sets", {
+test_that("getConditionallyIndependentSets works in model with one set and deterministic intermediates", {
+  m <- nimbleModel(
+    nimbleCode({
+      P1 ~ dnorm(0,1)
+      D1 <- P1 + 1
+
+      REA1 ~ dnorm(D1, 1)
+      D2 <- REA1 + 1
+      REA2 ~ dnorm(D2, 1)
+      D3 <- REA2 + 1
+
+      REB1 ~ dnorm(D1, 1)
+      C2 <- REB1 + 1
+      REB2 ~ dnorm(C2, 1)
+      C3 <- REB2 + 1
+
+      D3C3 <- D3 + C3
+      Y1 ~ dnorm(D3C3, 1)
+    }),
+    data = list(Y1 = 1)
+  )
+  # All sets
+  expect_identical(m$getConditionallyIndependentSets(), list(c("REA1", "REB1", "REA2", "REB2")))
+  # first-stage latents stay separated
+  expect_identical(m$getConditionallyIndependentSets(c("REA1", "REB1")), list("REA1", "REB1"))
+  # first-stage latents are combined if unknownAsGiven is FALSE
+  expect_identical(m$getConditionallyIndependentSets(c("REA1", "REB1"), unknownAsGiven=FALSE), list(c("REA1", "REB1", "REA2", "REB2")))
+  # second-stage latents are connected
+  expect_identical(m$getConditionallyIndependentSets(c("REA2", "REB2")), list(c("REA2", "REB2")))
+  # Using determinstics as given works
+  expect_identical(m$getConditionallyIndependentSets(givenNodes = c("D1", "D3C3")), list(c("REA1", "REB1", "REA2", "REB2")))
+  # Using determinstics as given works
+  expect_identical(m$getConditionallyIndependentSets(givenNodes = c("D1", "D3", "C3")), list(c("REA1", "REA2"), c("REB1", "REB2")))
+  expect_identical(m$getConditionallyIndependentSets(givenNodes = c("D1", "D3")), list(c("REA1", "REA2"), c("REB1", "REB2")))
+  expect_identical(m$getConditionallyIndependentSets(givenNodes = c("D3")), list(c("REA1", "REA2"), c("REB1", "REB2")))
+  expect_identical(m$getConditionallyIndependentSets(givenNodes = c("D3"), unknownAsGiven=FALSE), list(c("P1", "REA1", "REB1", "REA2", "REB2", "Y1")))
+}
+
+test_that("getConditionallyIndependentSets works in state-space model with a couple of sets", {
   # Two state-space models, one of which has data at the end.
   mc <- nimbleCode({
     x[1] ~ dnorm(0, 1)
@@ -319,7 +359,6 @@ test_that("getConditionallyIndependentSets works in double-state state-space mod
                    list(c("x[1]", "w[1]", "x[2]", "w[2]"), c("x[4]", "w[4]")))
   expect_true(nimble:::testConditionallyIndependentSets(m, m$getConditionallyIndependentSets()))
 })
-
 
 test_that("getConditionallyIndependentSets works in model with LHSinferred (aka split) nodes", {
   c3 <- nimbleCode({

@@ -167,29 +167,42 @@ getConditionallyIndependentSets <- function(model,
                                             nodes,
                                             givenNodes,
                                             omit = integer(),
-                                            inputType = c("latent", "param", "data"),
-                                            stochOnly = TRUE,
-                                            unknownAsGiven = FALSE,
+                                            explore = c("both", "down", "up"),
+                                            unknownAsGiven = TRUE,
                                             returnType = 'names',
-                                            returnScalarComponents = FALSE) {
-  inputType <- match.arg(inputType)
-  if(missing(nodes)) { # default to latent nodes
-    nodeIDs <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, returnType = 'ids')
-  } else {
-    if(is.character(nodes))
-      nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
-    else
-      nodeIDs <- nodes
-  }
-  if(missing(givenNodes)) { # default to top nodes and data nodes. need to be deliberate about end nodes
-    givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, returnType = 'ids'),
-                      model$getNodeNames(dataOnly = TRUE, returnType = 'ids'))
+                                            returnScalarComponents = FALSE,
+                                            endAsGiven = FALSE) {
+  explore <- match.arg(explore)
+
+  # Make default givenNodes if not provided.
+  # default to stochastic top nodes and data nodes.
+  # NB We do not assume end nodes should be givenNodes.
+  if(missing(givenNodes)) {
+    givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, stochOnly = TRUE, returnType = 'ids'),
+                      model$getNodeNames(dataOnly = TRUE, stochOnly = TRUE, returnType = 'ids'))
+    if(endAsGiven)
+      givenNodeIDs <- unique(c(givenNodeIDs, model$getNodeNames(endAsGiven = TRUE)))
   } else {
     if(is.character(givenNodes))
         givenNodeIDs <- model$expandNodeNames(givenNodes, returnType = 'ids')
     else if(is.numeric(givenNodes))
         givenNodeIDs <- givenNodes
   }
+
+  # Make default nodes (i.e. latents in a typical use case) if not provided.
+  # Default to structurally latent nodes that are stochastic, not data, and
+  # somewhere have a descendant that is a givenNode
+  if(missing(nodes)) {
+    nodeIDs <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
+    allGivenParents <- model$getParents(givenNodeIDs, upstream = TRUE, returnType = 'ids')
+    nodeIDs <- intersect(nodeIDs, allGivenParents)
+  } else {
+    if(is.character(nodes))
+      nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+    else
+      nodeIDs <- nodes
+  }
+
   if(!missing(nodes)) {
     if(missing(givenNodes))
       givenNodesIDs <- setdiff(givenNodeIDs, nodeIDs)
@@ -198,11 +211,11 @@ getConditionallyIndependentSets <- function(model,
     nodeIDs <- setdiff(nodeIDs, givenNodeIDs)
   }
 
-  if(isTRUE(nimbleOptions("groupDetermWithGivenInCondIndSets"))) {
-    givenNodeIDs <- unique(c(givenNodeIDs, model$getDependencies(givenNodeIDs, determOnly = TRUE, self = FALSE, returnType = 'ids')))
-  }
+  ## if(isTRUE(nimbleOptions("groupDetermWithGivenInCondIndSets"))) {
+  ##   givenNodeIDs <- unique(c(givenNodeIDs, model$getDependencies(givenNodeIDs, determOnly = TRUE, self = FALSE, returnType = 'ids')))
+  ## }
   if(is.character(omit)) {
-    # This mimcs getDependencies.  I think it allows omit to include split nodes, whereas getNodeNames would not.
+    # This mimcs code in getDependencies.  I think it allows omit to include split nodes, whereas getNodeNames would not.
     # It would not make sense for nodes or givenNode to include split nodes.
     elementIDs <- model$modelDef$nodeName2GraphIDs(omit, FALSE)
     omitIDs <- unique(model$modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
@@ -214,8 +227,8 @@ getConditionallyIndependentSets <- function(model,
     omitIDs <- omit
 
   startUp <- startDown <- TRUE
-  if(inputType == "param") startUp <- FALSE
-  if(inputType == "data") startDown <- FALSE
+  if(explore == "down") startUp <- FALSE
+  if(explore == "up")   startDown <- FALSE
   result <- model$modelDef$maps$nimbleGraph$getConditionallyIndependentSets(
     nodeIDs = nodeIDs,
     givenNodeIDs = givenNodeIDs,
@@ -227,7 +240,6 @@ getConditionallyIndependentSets <- function(model,
     warning("NIMBLE development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
   result <- lapply(result,
                    function(IDs) {
-                     if(stochOnly) IDs <- IDs[model$modelDef$maps$types[IDs] == 'stoch']
                      if(returnType == 'ids') IDs
                      if(returnType == 'names') {
                        if(returnScalarComponents)
