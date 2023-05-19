@@ -781,7 +781,7 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                       }
                                   },
 
-                                  getDependencyPathCountOneNode = function(node) {
+                                  getDependencyPathCountOneNode = function(node, max = .Machine$integer.max) {
                                       if(length(node) > 1)
                                           stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
                                       if(is.character(node)) {
@@ -789,7 +789,7 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                       }
                                       if(!is.numeric(node))
                                           stop("getDependencyPathCountOneNode: argument 'node' should be a character node name or a numeric node ID.")
-                                      modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node)
+                                      modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node, max = max)
                                   },
 getDependencyPaths = function(node) {
     if(length(node) > 1)
