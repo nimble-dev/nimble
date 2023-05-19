@@ -207,11 +207,11 @@ public:
     }
   }
   void show_report() {
-      printf("Reporting time for %s (%i): %g (%i)\n",
-	     name.c_str(),
-	     totalticks,
-	     totaltime,
-	     static_cast<int>(touched));
+    printf("Reporting time for %s (%i): %g (%i)\n",
+           name.c_str(),
+           totalticks,
+           totaltime,
+           static_cast<int>(touched));
   }
 };
 
@@ -444,107 +444,107 @@ class nimbleCppADrecordingInfoClass {
 void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v, ManyVariablesMapAccessor &MVA_AD, ManyVariablesMapAccessor &MVA_orig, nimbleCppADrecordingInfoClass &recordingInfo);
 
 void update_dynamicVars(NodeVectorClassNew_derivs &NV,
-			nimbleCppADinfoClass &ADinfo);
+                        nimbleCppADinfoClass &ADinfo);
 void update_dynamicVars(nimbleCppADinfoClass &ADinfo);
 //std::vector<double> &dynamicVars,
-//			CppAD::ADFun<double>* &tapePtr);
+//CppAD::ADFun<double>* &tapePtr);
 void update_dynamicVars_meta(NodeVectorClassNew_derivs &NV,
-			     nimbleCppADinfoClass &ADinfo);
+                             nimbleCppADinfoClass &ADinfo);
 void update_dynamicVars_meta(nimbleCppADinfoClass &ADinfo);
 //std::vector< CppAD::AD<double> > &dynamicVars,
-//			     CppAD::ADFun<double>* &tapePtr);
+//CppAD::ADFun<double>* &tapePtr);
 
 /* nimbleFunctionCppADbase is a base class to be inherited by all
    CppAD-enabled nimbleFunctions. Some of these functions might
    make more sense as stand-alone functions.  Let's see. */
-class nimbleFunctionCppADbase {
-public:
-  void getDerivs(nimbleCppADinfoClass &ADinfo,
-		 const NimArr<1, double> &derivOrders,
-		 const NimArr<1, double> &wrtVector,
-		 nimSmartPtr<NIMBLE_ADCLASS> &ansList);
-  
-  nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
-						const NimArr<1, double> &derivOrders,
-						const NimArr<1, double> &wrtVector){
-    nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
-    getDerivs(ADinfo, derivOrders, wrtVector, ansList);
-    return(ansList);
-  }
-  
-  void getDerivs_meta(nimbleCppADinfoClass &ADinfo,
-		      const NimArr<1, double> &derivOrders,
-		      const NimArr<1, double> &wrtVector,
-		      const nimbleCppADrecordingInfoClass &nimRecInfo,
-		      nimSmartPtr<NIMBLE_ADCLASS_META> &ansList);
-  
-  nimSmartPtr<NIMBLE_ADCLASS_META> getDerivs_wrapper_meta(nimbleCppADinfoClass &ADinfo,
-							  const NimArr<1, double> &derivOrders,
-							  const NimArr<1, double> &wrtVector,
-							  const nimbleCppADrecordingInfoClass &nimRecInfo){
-    nimSmartPtr<NIMBLE_ADCLASS_META> ansList = new NIMBLE_ADCLASS_META;
-    getDerivs_meta(ADinfo, derivOrders, wrtVector, nimRecInfo, ansList);
-    return(ansList);
-  }
+// class nimbleFunctionCppADbase {
+// public:
+//   void getDerivs(nimbleCppADinfoClass &ADinfo,
+//                  const NimArr<1, double> &derivOrders,
+//                  const NimArr<1, double> &wrtVector,
+//                  nimSmartPtr<NIMBLE_ADCLASS> &ansList);
 
-  void getDerivs_calculate_internal(nimbleCppADinfoClass &ADinfo,
-				    //		    CppAD::ADFun<double>* &tapePtr,
-				    NodeVectorClassNew_derivs &nodes,
-				    const NimArr<1, double> &derivOrders,
-				    const NimArr<1, double> &wrtVector,
-            bool do_update,
-				    bool reset,
-				    nimSmartPtr<NIMBLE_ADCLASS> ansList);
-  /* This form is not actually generated in code at the time of this writing:*/
-  nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
-						  //		  CppAD::ADFun<double>* &tapePtr,
-						  NodeVectorClassNew_derivs &nodes,
-						  const NimArr<1, double> &derivOrders,
-						  const NimArr<1, double> &wrtVector,
-              bool do_update,
-						  bool reset){
-    nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
-    getDerivs_calculate_internal(ADinfo,// tapePtr,
-				 nodes, derivOrders, wrtVector, do_update, reset, ansList);
-    return(ansList);
-  }
-  /* This is the form that would be generated in code, with no wrtVector*/
-  nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
-						  //	  CppAD::ADFun<double>* &tapePtr,
-						  NodeVectorClassNew_derivs &nodes,
-						  const NimArr<1, double> &derivOrders,
-              bool do_update,
-						  bool reset) {
-    NimArr<1, double> wrtVector; // with new default functionality, this could be set to simply length 1 with value -1
-    int totlen = nodes.model_wrt_accessor.getTotalLength();
-    wrtVector.setSize(totlen,
-		      false,
-		      false);
-    for(int ii = 0; ii < totlen; ++ii) {
-      wrtVector[ii] = ii + 1; // This gets -1 in use, as if it were from R.
-    }
-    nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
-    getDerivs_calculate_internal(ADinfo, //tapePtr,
-				 nodes, derivOrders, wrtVector, do_update, reset, ansList);
-    return(ansList);
-  }
-};
+//   nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
+//                                                 const NimArr<1, double> &derivOrders,
+//                                                 const NimArr<1, double> &wrtVector){
+//     nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
+//     getDerivs(ADinfo, derivOrders, wrtVector, ansList);
+//     return(ansList);
+//   }
+
+//   void getDerivs_meta(nimbleCppADinfoClass &ADinfo,
+//                       const NimArr<1, double> &derivOrders,
+//                       const NimArr<1, double> &wrtVector,
+//                       const nimbleCppADrecordingInfoClass &nimRecInfo,
+//                       nimSmartPtr<NIMBLE_ADCLASS_META> &ansList);
+
+//   nimSmartPtr<NIMBLE_ADCLASS_META> getDerivs_wrapper_meta(nimbleCppADinfoClass &ADinfo,
+//                                                           const NimArr<1, double> &derivOrders,
+//                                                           const NimArr<1, double> &wrtVector,
+//                                                           const nimbleCppADrecordingInfoClass &nimRecInfo){
+//     nimSmartPtr<NIMBLE_ADCLASS_META> ansList = new NIMBLE_ADCLASS_META;
+//     getDerivs_meta(ADinfo, derivOrders, wrtVector, nimRecInfo, ansList);
+//     return(ansList);
+//   }
+
+//   void getDerivs_calculate_internal(nimbleCppADinfoClass &ADinfo,
+//                                     //CppAD::ADFun<double>* &tapePtr,
+//                                     NodeVectorClassNew_derivs &nodes,
+//                                     const NimArr<1, double> &derivOrders,
+//                                     const NimArr<1, double> &wrtVector,
+//                                     bool do_update,
+//                                     bool reset,
+//                                     nimSmartPtr<NIMBLE_ADCLASS> ansList);
+//   /* This form is not actually generated in code at the time of this writing:*/
+//   nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
+//                                                   //CppAD::ADFun<double>* &tapePtr,
+//                                                   NodeVectorClassNew_derivs &nodes,
+//                                                   const NimArr<1, double> &derivOrders,
+//                                                   const NimArr<1, double> &wrtVector,
+//                                                   bool do_update,
+//                                                   bool reset){
+//     nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
+//     getDerivs_calculate_internal(ADinfo,// tapePtr,
+//                                  nodes, derivOrders, wrtVector, do_update, reset, ansList);
+//     return(ansList);
+//   }
+//   /* This is the form that would be generated in code, with no wrtVector*/
+//   nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(nimbleCppADinfoClass &ADinfo,
+//                                                   //CppAD::ADFun<double>* &tapePtr,
+//                                                   NodeVectorClassNew_derivs &nodes,
+//                                                   const NimArr<1, double> &derivOrders,
+//                                                   bool do_update,
+//                                                   bool reset) {
+//     NimArr<1, double> wrtVector; // with new default functionality, this could be set to simply length 1 with value -1
+//     int totlen = nodes.model_wrt_accessor.getTotalLength();
+//     wrtVector.setSize(totlen,
+//                       false,
+//                       false);
+//     for(int ii = 0; ii < totlen; ++ii) {
+//       wrtVector[ii] = ii + 1; // This gets -1 in use, as if it were from R.
+//     }
+//     nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
+//     getDerivs_calculate_internal(ADinfo, //tapePtr,
+//                                  nodes, derivOrders, wrtVector, do_update, reset, ansList);
+//     return(ansList);
+//   }
+// };
 
 inline nimbleCppADinfoClass& set_tape_ptr(nimbleCppADinfoClass &ADtapeSetup,
-					  CppAD::ADFun<double>* &ADtapePtr,
-					  bool do_this) {
+                                          CppAD::ADFun<double>* &ADtapePtr,
+                                          bool do_this) {
   if(!ADtapePtr) ADtapePtr = new CppAD::ADFun<double>;
   if(do_this) ADtapeSetup.ADtape() = ADtapePtr;
   return ADtapeSetup;
 }
 
 nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
-    NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
+                                                NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
-    NodeVectorClassNew_derivs &nodes, const double derivOrders);
+                                                NodeVectorClassNew_derivs &nodes, const double derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
-    NodeVectorClassNew_derivs &nodes, int iNodeFunction,
-    NimArr<1, double> &derivOrders);
+                                                NodeVectorClassNew_derivs &nodes, int iNodeFunction,
+                                                NimArr<1, double> &derivOrders);
 
 NimArr<1, double> make_vector_if_necessary(int);
 NimArr<1, double> make_vector_if_necessary(double);

@@ -520,8 +520,14 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                 }
 
                                                 if(ADinUse) {
+                                                  Hincludes <<- c(nimbleIncludeFile("nimbleCppADbaseClass.h"),
+                                                                  Hincludes)
                                                   CPPincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
-                                                                  nimbleIncludeFile("nimDerivs_dists.h"), CPPincludes)
+                                                                    nimbleIncludeFile("nimDerivs_dists.h"),
+                                                                    ## The ".cpp" extension make it end up linked as a .o
+                                                                    ## in cppProjectClass$writeFiles. Prior to that, it is
+                                                                    ## copied and locally compiled by cppProjectClass
+                                                                    "nimbleCppADbaseClass.cpp", CPPincludes)
                                                   addInheritance("nimbleFunctionCppADbase")
                                                   addADinfoObjects(.self)
                                                 }
