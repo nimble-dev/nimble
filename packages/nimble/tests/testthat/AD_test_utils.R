@@ -286,43 +286,45 @@ test_AD2_oneCall <- function(Robj, Cobj,
   }
 
   if(check.equality) {
-    pass <- TRUE
-    for(res in list(resRecord, resTest))
-      for(o in as.character(order)) {
-        ansSet <- res[[o]]
-        splitAnsSet <- split(ansSet,
-                             c("C", "R")[as.integer(grepl("^R", names(ansSet)))+1])
-        RansSet <- splitAnsSet[["R"]]
-        CansSet <- splitAnsSet[["C"]]
-        if(length(RansSet) > 1) {
-          pass <- pass && all_equal_list(RansSet[[1]], RansSet[-1], tol = RRrelTol[[o]],
-                                         abs_threshold = RRabsThresh,
-                                         info = paste0("(RR order ", o,")"))
-          if(!pass) {
-            cat(paste('Some R-to-R derivatives do not match for order', o, '.\n'))
-            # browser()
-          }
-        }
-        if(length(RansSet) > 0 && length(CansSet) > 0) {
-          pass <- pass && all_equal_list(RansSet[[1]], CansSet, tol = RCrelTol[[o]],
-                                         abs_threshold = RCabsThresh,
-                                         info = paste0("(RC order ", o,")"))
-          if(!pass) {
-            cat(paste('Some C-to-R derivatives to not match for order', o, '.\n'))
-            # browser()
-          }
-        }
-        if(length(CansSet) > 1) {
-          pass <- pass && all_equal_list(CansSet[[1]], CansSet[-1], CCrelTol[[o]],
-                                         abs_threshold = CCabsThresh,
-                                         info = paste0("(CC order ", o, ")"))
-          if(!pass) {
-            cat(paste('Some C-to-C derivatives to not match for order', o, '.\n'))
-            # browser()
-          }
-        }
-      }
-    expect_true(pass)
+    test_that("comparison of R and C derivatives for distributions", {
+        pass <- TRUE
+        for(res in list(resRecord, resTest))
+            for(o in as.character(order)) {
+                ansSet <- res[[o]]
+                splitAnsSet <- split(ansSet,
+                                     c("C", "R")[as.integer(grepl("^R", names(ansSet)))+1])
+                RansSet <- splitAnsSet[["R"]]
+                CansSet <- splitAnsSet[["C"]]
+                if(length(RansSet) > 1) {
+                    localPass <- all_equal_list(RansSet[[1]], RansSet[-1], tol = RRrelTol[[o]],
+                                                   abs_threshold = RRabsThresh,
+                                                   info = paste0("(RR order ", o,")"))
+                    pass <- pass && localPass
+                    if(verbose && !pass) {
+                        cat(paste('Some R-to-R derivatives do not match for order', o, '.\n'))
+                    }
+                }
+                if(length(RansSet) > 0 && length(CansSet) > 0) {
+                    localPass <- all_equal_list(RansSet[[1]], CansSet, tol = RCrelTol[[o]],
+                                                   abs_threshold = RCabsThresh,
+                                                info = paste0("(RC order ", o,")"))
+                    pass <- pass && localPass
+                    if(verbose && !pass) {
+                        cat(paste('Some C-to-R derivatives to not match for order', o, '.\n'))
+                    }
+                }
+                if(length(CansSet) > 1) {
+                    localPass <- all_equal_list(CansSet[[1]], CansSet[-1], CCrelTol[[o]],
+                                                   abs_threshold = CCabsThresh,
+                                                info = paste0("(CC order ", o, ")"))
+                    pass <- pass && localPass
+                    if(verbose && !pass) {
+                        cat(paste('Some C-to-C derivatives to not match for order', o, '.\n'))
+                    }
+                }
+            }
+        expect_true(pass)
+    })
   }
   list(resRecord = resRecord, resTest = resTest)
 }

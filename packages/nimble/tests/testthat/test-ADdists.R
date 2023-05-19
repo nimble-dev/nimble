@@ -121,8 +121,8 @@ set.seed(123)
 cholRec <- chol(makeARcov(4, .6, 2))
 cholTest <- chol(makeARcov(4, .55, 3))
 
-wRec <- rwish_chol(1, cholRec, df = 7, scale_param = FALSE)
-wTest <- rwish_chol(1, cholTest, df = 7, scale_param = FALSE)
+wRec <- rwish_chol(1, cholRec, df = 7)
+wTest <- rwish_chol(1, cholTest, df = 7)
 
 cholRecTri <- cholRec[ upper.tri(cholRec, TRUE)]
 cholTestTri <-cholTest[ upper.tri(cholTest, TRUE)]
@@ -169,7 +169,7 @@ wish_test_out <- test_AD2(wish_test_log)
 
 ## inverse Wishart
 
-set.seed(123)  # some sensitivity in terms of tolerance failures to the seed...
+set.seed(123)  
 
 wRec <- rinvwish_chol(1, cholRec, df = 7)
 wTest <- rinvwish_chol(1, cholTest, df = 7)
