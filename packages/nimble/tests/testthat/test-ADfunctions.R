@@ -506,13 +506,9 @@ logdet_test_out <- test_AD2(logdet_test)
 ## See notes there on Spring 2022 update to "version 2" with f(g(x)) and g(f(x)) test variants as well.
 
 ## Do both inner and outer for atomics.
-## 2023-05-07: Errors with "double free or corruption (!prev)" if clearCompiled is on.
 ## Using `try` as with some seeds, we get out of tolerance errors.
-nimbleOptions(useClearCompiledInADTesting = FALSE)
 try(test_AD_batch(unaryAtomicOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)) # 400 sec.
-## This is seg faulting, even with clearCompiled off (2023-05-08)
 ## try(test_AD_batch(unaryAtomicOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE))
-nimbleOptions(useClearCompiledInADTesting = TRUE)
 
 ## Do only one of the three sets.
 ## test_AD_batch(unaryOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) 
@@ -535,12 +531,9 @@ test_AD_batch(powOpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFai
 test_AD_batch(powOpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 
 ## Keep all pow tests.
-## 2023-04-27: Errors with "double free or corruption (!prev)" if clearCompiled is on.
-nimbleOptions(useClearCompiledInADTesting = FALSE)
 test_AD_batch(pow_int_OpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 42 sec.
 test_AD_batch(pow_int_OpTests2_inner, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
 test_AD_batch(pow_int_OpTests2_outer, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE)
-nimbleOptions(useClearCompiledInADTesting = TRUE)
 
 # inprod
 test_AD_batch(binaryReductionOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 14 sec.
@@ -550,15 +543,9 @@ test_AD_batch(binaryReductionOpTests2_outer, testFun = test_AD2, knownFailures =
 resetTols()
 
 ## chol and logdet tests have been moved to manual tests above
-## 2023-04-27: Errors with "address 0x10, cause 'memory not mapped'" if clearCompiled is on.
-nimbleOptions(useClearCompiledInADTesting = FALSE)
 test_AD_batch(squareMatrixOpTests2, testFun = test_AD2, knownFailure = AD_knownFailures, verbose=FALSE) # 120 sec.
-nimbleOptions(useClearCompiledInADTesting = TRUE)
 
-## 2023-04-27: This segfaults in similar fashion to other seg faults experienced in AD testing if clearCompiled is on.
-nimbleOptions(useClearCompiledInADTesting = FALSE)
 test_AD_batch(binaryMatrixOpTests2, testFun = test_AD2, knownFailures = AD_knownFailures, verbose = FALSE) # 150 sec.
-nimbleOptions(useClearCompiledInADTesting = TRUE)
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
