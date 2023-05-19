@@ -111,7 +111,8 @@ test_AD2_oneCall <- function(Robj, Cobj,
                              CCrelTol = c(rep(sqrt(.Machine$double.eps), 3), 1e-14),
                              Rmodel = NULL, Cmodel = NULL,
                              recordInits = NULL, testInits = NULL,
-                             nodesToChange = NULL) {
+                             nodesToChange = NULL,
+                             verbose = nimbleOptions('verbose')) {
   resRecord <- list()
   resTest <- list()
 
@@ -460,10 +461,11 @@ test_AD2 <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
                                 wrt = wrt,
                                 RRrelTol = RRrelTol,
                                 RCrelTol = RCrelTol,
-                                CCrelTol = CCrelTol))
+                                CCrelTol = CCrelTol,
+                                verbose = verbose))
     if (inherits(res, 'try-error')) {
       msg <- paste(
-        'Something failed in test', opParam$name, '.\n'
+        'Something failed in test', param$opParam$name, '.\n'
       )
       if (isTRUE(catch_failures)) ## continue to compilation
         warning(msg, call. = FALSE, immediate. = TRUE)

@@ -117,7 +117,7 @@ makeARcov <- function(n, rho, sigma) {
   }
   ans
 }
-set.seed(123)
+set.seed(1234)
 cholRec <- chol(makeARcov(4, .6, 2))
 cholTest <- chol(makeARcov(4, .55, 3))
 
