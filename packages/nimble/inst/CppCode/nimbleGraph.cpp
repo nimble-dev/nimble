@@ -304,7 +304,7 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int Cgra
 int nimbleGraph::getDependencyPathCountOneNode(const int Cnode, const int max) {
   int result(0);
   int i(0);
-  int tmp;
+  int currentCount;
   graphNode *thisGraphNode;
   graphNode *thisChildNode;
 
@@ -325,14 +325,20 @@ int nimbleGraph::getDependencyPathCountOneNode(const int Cnode, const int max) {
 #ifdef _DEBUG_GETPATHS
       PRINTF("node %i has child %i\n", Cnode, thisChildNode->CgraphID);
 #endif
+      // Formulation here with checks compared to `max` will avoid overflow.
       if(thisChildNode->type == STOCH) {
+        if(max - result <= 1) {
+          thisGraphNode->numPaths = max;
+          return(max);
+        }
         result++;
-        if(result >= max)
-          return(result);
       } else {
-        tmp = getDependencyPathCountOneNode(thisChildNode->CgraphID);
-        if(tmp >= max - result)   // this check will avoid overflow, if max is integer max
-          return(max)
+        currentCount = getDependencyPathCountOneNode(thisChildNode->CgraphID, max);
+        if(max - result <= currentCount) {   
+          thisGraphNode->numPaths = max;
+          return(max);
+        } 
+        result += currentCount;
       }
     }
   }
