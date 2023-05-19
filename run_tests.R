@@ -39,13 +39,12 @@ if (length(grep('^-', argv, invert = TRUE))) {
     allTests <- list.files('packages/nimble/tests/testthat')
     allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
-    # Avoid running these omitlisted tests, since they take too long.
+    # Avoid running these omitlisted tests, since they take too long
+    # or involve experimental features.
     omitlist <- c(
         'test-benchmark-building-steps.R')
-    # Avoid running these tests since they test experimental features.
     omitlist <- c(
         omitlist,
-        'test-ADdists.R',
         'test-ADfunctions.R',
         'test-ADmodels.R',
         'test-ADmodels-bigmv.R'
