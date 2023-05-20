@@ -345,3 +345,64 @@ test_that("getConditionallyIndependentSets works with unknownAsGiven=TRUE or FAL
     m$getConditionallyIndependentSets("a", givenNodes = c("y"), unknownAsGiven=TRUE),
     list(c('a[1]','a[2]'), c('a[3]','a[4]')))
 })
+
+test_that("setupMargNodes/GCIS works with random effects without parameters", {
+  m <- nimbleModel({
+    nimbleCode({
+      P ~ dnorm(0,1)
+      for(i in 1:2) RE[i] ~ dnorm(0,1)
+      sigma ~ dunif(0,1)
+      for(i in 1:2) mu[i] <- P + RE[i] * sigma
+      for(i in 1:2) Y[i] ~ dnorm(mu[i], 1)
+    })
+  }, data = list(Y = rnorm(2)))
+
+  SMN <- setupMargNodes(m)
+  expect_identical(SMN$randomEffectsNodes, character())
+
+  SMN <- setupMargNodes(m, randomEffectsNodes = 'RE')
+  expect_identical(SMN$randomEffectsNodes, c('RE[1]', 'RE[2]'))
+  expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
+  expect_identical(SMN$paramNodes, character())
+
+  SMN <- setupMargNodes(m, paramNodes = "P", randomEffectsNodes = 'RE')
+  expect_identical(SMN$randomEffectsNodes, c('RE[1]', 'RE[2]'))
+  expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
+  expect_identical(SMN$paramNodes, c("P"))
+
+  SMN <- setupMargNodes(m, paramNodes = c("P", "sigma"), randomEffectsNodes = 'RE')
+  expect_identical(SMN$randomEffectsNodes, c('RE[1]', 'RE[2]'))
+  expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
+  expect_identical(SMN$paramNodes, c("P", "sigma"))
+
+  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P", "sigma"), randomEffectsNodes = 'RE',
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
+  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P"), randomEffectsNodes = 'RE',
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
+                                        # The next one can't really create meaningful results anyway.
+  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P"),
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
+})
+
+test_that("setupMargNodes works with determimistic node as parameter", {
+  # This case is not generally useful because it is not supported in buildLaplace,
+  # where all params need priors for purpose of determining valid range and
+  # distinguishing from covariates and such.
+  # However, the setupMargNodes step should work with a deterministic parameter, so
+  # here is a test.
+  m <- nimbleModel({
+    nimbleCode({
+      Pstoch ~ dnorm(0,1)
+      P <- Pstoch + 1
+      for(i in 1:2) RE[i] ~ dnorm(0,1)
+      sigma ~ dunif(0,1)
+      for(i in 1:2) mu[i] <- P + RE[i] * sigma
+      for(i in 1:2) Y[i] ~ dnorm(mu[i], 1)
+    })
+  }, data = list(Y = rnorm(2)))
+
+  SMN <- setupMargNodes(m, paramNodes = "P", randomEffectsNodes = 'RE')
+  expect_identical(SMN$randomEffectsNodes, c('RE[1]', 'RE[2]'))
+  expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
+  expect_identical(SMN$paramNodes, c("P"))
+})

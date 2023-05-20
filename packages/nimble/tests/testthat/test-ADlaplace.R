@@ -1712,48 +1712,93 @@ test_that("Laplace works with different numbers of REs in different cond. ind. s
   expect_no_error(Claplace$findMLE(c(0,0)))
 })
 
-## test_that("Laplace with N(0,1) random effects works", {
-##   set.seed(1)
-##   code <- nimbleCode({
-##     sigma ~ dhalfflat()
-##     beta0 ~ dflat()
-##     beta1 ~ dflat()
-##     for(i in 1:5) eps[i] ~ dnorm(0, 1)
-##     for(i in 1:5) sigma_eps[i] <- eps[i] * sigma
-##     for(i in 1:25) {
-##       y[i] ~ dpois(beta0 + beta1*X[i] + sigma_eps[group[i]])
-##     }
-##     for(i in 1:10) z[i] ~ dnorm(2*beta0, 1) #calcNodesOther
-##     foo <- step(beta0)
-##   })
-##   X <- rnorm(25)
-##   group <- rep(1:5, each = 5)
-##   eps <- rnorm(5, 0, sd = 2)
-##   y <- rpois(25, exp(3 + .2*X + rep(eps, each=5)))
-##   z <- rnorm(10, 2*3, sd = 1)
-##   m <- nimbleModel(code, data = list(y = y, z = z),
-##                    constants = list(X = X, group=group), buildDerivs=TRUE)
+test_that("Laplace with N(0,1) random effects works", {
+  # This test also uses dflat and dhalfflat
+  set.seed(1)
+  code <- nimbleCode({
+    sigma ~ dhalfflat()
+    beta0 ~ dflat()
+    beta1 ~ dflat()
+    for(i in 1:5) eps[i] ~ dnorm(0, 1)
+    for(i in 1:5) sigma_eps[i] <- eps[i] * sigma
+    for(i in 1:25) {
+      y[i] ~ dpois(exp(beta0 + beta1*X[i] + sigma_eps[group[i]]))
+    }
+    for(i in 1:10) z[i] ~ dnorm(2*beta0, 1) #calcNodesOther
+    foo <- step(beta0)
+  })
+  X <- rnorm(25)
+  group <- rep(1:5, each = 5)
+  eps <- rnorm(5, 0, sd = 2)
+  y <- rpois(25, exp(3 + .2*X + rep(eps, each=5)))
+  z <- rnorm(10, 2*3, sd = 1)
+  m <- nimbleModel(code, data = list(y = y, z = z),
+                   constants = list(X = X, group=group), buildDerivs=TRUE)
 
-##   # Defaults not expected to be useful
-##   SMN <- setupMargNodes(m)
-##   expect_identical(SMN$randomEffectsNodes, character())
+  # Defaults not expected to be useful
+  SMN <- setupMargNodes(m)
+  expect_identical(SMN$randomEffectsNodes, character())
 
-##   SMN <- setupMargNodes(m, paramNodes = c("beta0", "beta1", "sigma"),
-##                         randomEffectsNodes = 'eps[1:5]')
-##   expect_identical(SMN$randomEffectsSets,
-##                    list('eps[1]','eps[2]','eps[3]','eps[4]','eps[5]'))
-##   expect_identical(SMN$calcNodesOther,
-##                    m$expandNodeNames(c('lifted_d2_times_beta0', 'z[1:10]')))
+  SMN <- setupMargNodes(m, paramNodes = c("beta0", "beta1", "sigma"),
+                        randomEffectsNodes = 'eps[1:5]')
+  expect_identical(SMN$randomEffectsSets,
+                   list('eps[1]','eps[2]','eps[3]','eps[4]','eps[5]'))
+  expect_identical(SMN$calcNodesOther,
+                   m$expandNodeNames(c('lifted_d2_times_beta0', 'z[1:10]')))
 
-##   mLaplace <- buildLaplace(m, SMN)
-##   cm <- compileNimble(m)
+  mLaplace <- buildLaplace(m, SMN)
+  cm <- compileNimble(m)
+  cmLaplace <- compileNimble(mLaplace, project = m)
+  res <- cmLaplace$findMLE(c(0,0,1))
+  # TMB code in test_N01.cpp
+##   #include <TMB.hpp>
+## template<class Type>
+## Type objective_function<Type>::operator() ()
+## {
+##   DATA_VECTOR(y);
+##   DATA_VECTOR(z);
+##   DATA_VECTOR(X);
+##   DATA_IVECTOR(group);
+##   PARAMETER_VECTOR(eps);
+##   PARAMETER_VECTOR(beta);
+##   PARAMETER(sigma);
+##   int i;
+##   // Negative log-likelihood
+##   Type ans = Type(0.);
+##   for(i = 0; i < 5; ++i)
+##     ans -= dnorm(eps[i], Type(0.), Type(1.), true);
+##   for(i = 0; i < 25; ++i)
+##     ans -= dpois(y[i], exp(beta[0] + beta[1] * X[i] + sigma*eps[group[i]]), true);
+##   for(i = 0; i < 10; ++i)
+##     ans -= dnorm(z[i], Type(2.)*beta[0], Type(1.), true);
+##   return ans;
+## }
+##   library(TMB)
+## compile("test_N01.cpp")
+## dyn.load(dynlib("test_N01"))
+## data <- list(y = y, X = X, group = group-1, z = z)
+## parameters <- list(beta = c(0, 0), sigma = 1, eps = rep(0, 5))
+## obj <- MakeADFun(data = data, parameters = parameters, random = "eps", DLL = "test_N01")
+## tmbres <- nlminb(obj$par, obj$fn, obj$gr)
+## tmbrep <- sdreport(obj, getJointPrecision = TRUE)
+  ## tmbvcov <- solve(tmbrep$jointPrecision)
+  ##write.table(tmbvcov, file = "", sep=",",col.names = FALSE, row.names=FALSE)
+  expect_equal(res$par, c(3.1276930, 0.1645356, 1.5657498), tolerance = 1e-6 )
+  summ <- cmLaplace$summary(res, calcRandomEffectsStdError=TRUE, returnJointCovariance=TRUE)
+  ## From the write.table call just above
+  ## (which is symmetric anyway, so byrow =TRUE doesn't really matter)
+  TMB_vcov <- matrix(byrow = TRUE, nrow = 8, data =
+    c(c(0.0153602444576517,0.0117648503870507,0.0284134827252613,0.0199805060648755,0.00318486286937286,-0.0141707177248526,-0.00040366417968837,0.018866970112233),
+      c(0.0117648503870507,0.0180821401472876,0.0412180770222714,0.0268113103701797,-0.00119093828503259,-0.013523875123908,-0.000258765680997534,0.0314340905527759),
+      c(0.0284134827252614,0.0412180770222714,0.36562970159108,0.167252131855179,-0.0909996094062978,0.00047823545907378,0.000125154168856971,0.28920161604805),
+      c(0.0199805060648755,0.0268113103701797,0.167252131855179,0.10843325451055,-0.0439547462832083,-0.00708716995685574,-0.000521588459390236,0.154869927065379),
+      c(0.00318486286937281,-0.00119093828503263,-0.0909996094062981,-0.0439547462832083,0.0453386248870613,-0.0201751621932702,-0.000656047342397189,-0.0981200179208084),
+      c(-0.0141707177248526,-0.013523875123908,0.000478235459074001,-0.00708716995685565,-0.0201751621932703,0.0245443674575151,-9.27215078179135e-06,0.0144354576429851),
+      c(-0.00040366417968837,-0.000258765680997534,0.00012515416885698,-0.000521588459390233,-0.000656047342397191,-9.27215078179097e-06,0.00290834901828464,0.000631332975051338),
+      c(0.0188669701122331,0.031434090552776,0.28920161604805,0.154869927065379,-0.0981200179208082,0.0144354576429849,0.000631332975051331,0.283268865188007)))
 
-##   cmLaplace <- compileNimble(mLaplace, project = m)
-
-## })
-
-# To do:
-# Various structures of random effects groupings
+  expect_equal(summ$vcov, TMB_vcov, tol = 1e-5)
+})
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

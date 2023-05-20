@@ -12,6 +12,8 @@
 #' 
 #' The `parameterTransform` nimbleFunction is an unspecialized function.  Calling `parameterTransform(model, nodes)` will generate and return a specialized nimbleFunction, which provides transformation functionality for the specificed hierarchical model and set of model nodes.  The `nodes` argument can represent mutliple model nodes arising from distinct prior distributions, which will be simultaneously transformed according to their respective distributions and constraints.
 #'
+#' The `control` argument is a list that supports one additional setting. If `control$allowDeterm=FALSE` (the default), deterministic nodes are not allowed in the `nodes` argument.  If `control$allowDeterm=TRUE`, deterministic nodes are allowed and assumed to have no constraints on valid values.
+#'
 #' This specialized nimbleFunction has the following methods:
 #'
 #' \code{transform}: Transforms a numeric vector of values from the original constrained model scale to a vector of values on the unconstrained scale.
@@ -79,6 +81,10 @@ parameterTransform <- nimbleFunction(
         if(!allowDeterm){
           if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
           if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
+        } else {
+          boolDeterm <- model$isDeterm(nodesExpanded)
+          nodesExpandedNotDeterm <- nodesExpanded[!boolDeterm]
+          if(any(model$isDiscrete(nodesExpandedNotDeterm))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpandedNotDeterm)], collapse = ', ')))
         }
         nNodes <- length(nodesExpanded)
         if(nNodes < 1) stop('parameterTransform requires at least one model node')
