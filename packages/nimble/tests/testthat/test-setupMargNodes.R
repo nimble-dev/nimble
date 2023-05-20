@@ -61,15 +61,16 @@ test_that("getConditionallyIndependentSets works in model with a couple of sets"
 test_that("setupMargNodes/GCIS works in model with an extra edge among random effects", {
   mc <- nimbleCode({
     mu ~ dnorm(0,1)
+    sigma ~ dunif(0,1)
     for(i in 1:2) {
       x[i] ~ dnorm(mu, 1)
-      y[i] ~ dnorm(x[i], 1)
+      y[i] ~ dnorm(x[i], sigma)
       z[i] ~ dnorm(y[i] + x[i], 1)
     }
   })
   m <- nimbleModel(mc, data = list(z = 1:2))
   SMN <- setupMargNodes(m)
-  expect_identical(SMN$paramNodes, "mu")
+  expect_identical(SMN$paramNodes, c("mu", "sigma"))
   expect_identical(SMN$randomEffectsNodes, c("x[1]", "x[2]", "y[1]", "y[2]"))
 
   expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "z[1]"))
@@ -77,30 +78,37 @@ test_that("setupMargNodes/GCIS works in model with an extra edge among random ef
   expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("x[1]","y[1]", "z[1]")))
   expect_warning(SMN <- setupMargNodes(m, paramNodes = "mu", randomEffectsNodes = "y[1]"))
   SMN <- setupMargNodes(m, paramNodes = "x[1]", randomEffectsNodes = "y[1]")
-  expect_identical(SMN$calcNodes,c('y[1]','lifted_y_oBi_cB_plus_x_oBi_cB_L5[1]','z[1]'))
+  expect_identical(SMN$calcNodes,c('y[1]','lifted_y_oBi_cB_plus_x_oBi_cB_L6[1]','z[1]'))
 })
 
 test_that("setupMargNodes/GCIS works in model with an extra edge from param to random effects", {
   mc <- nimbleCode({
     mu ~ dnorm(0,1)
+    sigma ~ dunif(0,1)
     for(i in 1:2) {
       x[i] ~ dnorm(mu, 1)
       y[i] ~ dnorm(x[i], 1)
-      z[i] ~ dnorm(y[i] + mu, 1)
+      z[i] ~ dnorm(y[i] + mu, sd = sigma)
     }
   })
   m <- nimbleModel(mc, data = list(z = 1:2))
   SMN <- setupMargNodes(m)
-  expect_identical(SMN$paramNodes, "mu")
+  expect_identical(SMN$paramNodes, c("mu", "sigma"))
   expect_identical(SMN$randomEffectsNodes, c("x[1]", "x[2]", "y[1]", "y[2]"))
 
   SMN <- setupMargNodes(m, randomEffectsNodes = c("y[1]", "x[2]"))
-  expect_identical(SMN$paramNodes, c("mu", "x[1]"))
+  expect_identical(SMN$paramNodes, c("mu", "x[1]", "sigma"))
 
-  # This gives a spurious warning that we live with
   SMN <- setupMargNodes(m, randomEffectsNodes = c("mu", "x[1]"))
-  expect_identical(SMN$paramNodes, character())
-  expect_identical(SMN$givenNodes, c('x[2]','y[1]','z[1]','z[2]'))
+  expect_identical(SMN$paramNodes, c("sigma", "y[2]"))
+  expect_identical(SMN$givenNodes, c('sigma','y[2]','x[2]','y[1]','z[1]','z[2]'))
+
+  # Warning from missing deterministic nodes
+  expect_warning(SMN <- setupMargNodes(m, calcNodes = c("x[1]","x[2]","y[1]","y[2]","z[1]","z[2]")))
+
+  SMN <- setupMargNodes(m, calcNodes = m$getDependencies('x',downstream=TRUE))
+  expect_identical(SMN$paramNodes, c("mu","sigma"))
+  expect_identical(SMN$randomEffectsNodes, c("x[1]","x[2]","y[1]","y[2]"))
 })
 
 test_that("setupMargNodes/GCIS catches discrete randomEffectsNode", {
@@ -167,7 +175,7 @@ test_that("getConditionallyIndependentSets works in model with one set and deter
   expect_identical(SMN$calcNodes, c('REA2','D3','D3C3','Y1'))
 
   SMN <- setupMargNodes(m, calcNodes = m$getDependencies("REB2"))
-  expect_identical(SMN$paramNodes, "REB1")
+  expect_identical(SMN$paramNodes, c("REB1", "REA2"))
 
   SMN <- setupMargNodes(m, randomEffectsNodes = c("P1", "REA1","REA2", "REB1","REB2"))
   expect_identical(SMN$paramNodes, character())
@@ -363,7 +371,7 @@ test_that("setupMargNodes/GCIS works with random effects without parameters", {
   SMN <- setupMargNodes(m, randomEffectsNodes = 'RE')
   expect_identical(SMN$randomEffectsNodes, c('RE[1]', 'RE[2]'))
   expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
-  expect_identical(SMN$paramNodes, character())
+  expect_identical(SMN$paramNodes, c("P","sigma"))
 
   SMN <- setupMargNodes(m, paramNodes = "P", randomEffectsNodes = 'RE')
   expect_identical(SMN$randomEffectsNodes, c('RE[1]', 'RE[2]'))

@@ -1143,7 +1143,11 @@ buildOneAGHQuad <- nimbleFunction(
 #'   \code{calcNodes} but not \code{randomEffectsNodes} was provided, then the
 #'   default for \code{randomEffectsNodes} is determined first, and then
 #'   \code{paramNodes} defaults to stochastic parents of
-#'   \code{randomEffectsNodes}.
+#'   \code{randomEffectsNodes}. Finally, any stochastic parents of
+#'   \code{calcNodes} (whether provided or default) that are not in
+#'   \code{calcNodes} are added to the default for \code{paramNodes}, but only
+#'   after \code{paramNodes} has been used to determine the defaults for
+#'   \code{randomEffectsNodes}, if necessary.
 #'
 #' Note that to obtain sensible defaults, some nodes must have been marked as
 #'   data, either by the \code{data} argument in \code{nimbleModel} or by
@@ -1295,9 +1299,10 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         paramsHandled <- FALSE
       }
     } else {
-      paramNodes <- model$getParents(randomEffectsNodes, self=FALSE, stochOnly=TRUE)
+      nodesToFindParentsFrom <- randomEffectsNodes
+      paramNodes <- model$getParents(nodesToFindParentsFrom, self=FALSE, stochOnly=TRUE)
       # self=FALSE doesn't omit if one RE node is a parent of another, so we have to do the next step
-      paramNodes <- setdiff(paramNodes, randomEffectsNodes)
+      paramNodes <- setdiff(paramNodes, nodesToFindParentsFrom)
     }
     if(paramsHandled) {
       if(calcProvided) paramNodes <- setdiff(paramNodes, calcNodes)
@@ -1349,7 +1354,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       reNodesDefault <- intersect(reNodesDefault, tempDataNodesDefaultParents)
     } else {
       # Update reNodesDefault to exclude nodes that lack downstream connection to a calcNode
-      if(paramsHandled) # This means reProvided OR paramsProvided
+      if(paramsHandled) # This means reProvided OR paramsProvided. Including parents allows checking of potentially missing REs
         reNodesDefault <- intersect(reNodesDefault,
                                     model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE))
       else # This means !paramsHandled and hence !reProvided AND !paramsProvided
@@ -1464,6 +1469,13 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(!calcProvided){
     calcNodes <- calcNodesDefault
   }
+  if(!paramProvided) {
+    possibleNewParamNodes <- model$getParents(calcNodes, self=FALSE, stochOnly=TRUE)
+    # self=FALSE doesn't omit if one node is a parent of another, so we have to do the next step
+    possibleNewParamNodes <- setdiff(possibleNewParamNodes, calcNodesDefault)
+    paramNodes <- unique(c(paramNodes, possibleNewParamNodes))
+  }
+
   # 6. Default calcNodesOther: nodes needed for full model likelihood but
   #    that are not involved in the marginalization done by Laplace.
   #    Default is a bit complicated: All dependencies from paramNodes to
