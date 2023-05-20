@@ -180,7 +180,7 @@ test_that("getConditionallyIndependentSets works in model with one set and deter
   SMN <- setupMargNodes(m, randomEffectsNodes = c("P1", "REA1","REA2", "REB1","REB2"))
   expect_identical(SMN$paramNodes, character())
   expect_identical(SMN$calcNodes, c('P1','D1','REA1','REB1','D2','C2','REA2','REB2','D3','C3','D3C3','Y1'))
-}
+})
 
 test_that("getConditionallyIndependentSets works in state-space model with a couple of sets", {
   # Two state-space models, one of which has data at the end.
@@ -234,8 +234,6 @@ test_that("getConditionallyIndependentSets works in model with diamond shape", {
 
   SMN <- setupMargNodes(m)
 })
-
-
 
 test_that("getConditionallyIndependentSets works in double-state state-space model", {
   # two stae-space chains of latent states with one data set that depends on both
