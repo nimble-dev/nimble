@@ -2,8 +2,7 @@
 % Please edit documentation in R/Laplace.R
 \name{setupMargNodes}
 \alias{setupMargNodes}
-\title{Process model to organize nodes for marginalization as by Laplace or adaptive
-Gauss-Hermite quadrature (AGHQuad) approximations}
+\title{Organize model nodes for marginalization}
 \usage{
 setupMargNodes(
   model,
@@ -12,10 +11,174 @@ setupMargNodes(
   calcNodes,
   calcNodesOther,
   split = TRUE,
-  warn = TRUE
+  check = TRUE
 )
 }
+\arguments{
+\item{model}{A nimble model such as returned by \code{nimbleModel}.}
+
+\item{paramNodes}{A character vector of names of stochastic nodes that are
+parameters of nodes to be marginalized over (\code{randomEffectsNodes}).
+See details for default.}
+
+\item{randomEffectsNodes}{A character vector of nodes to be marginalized over
+(or "integrated out"). In the case of calculating the likelihood of a model
+with continuous random effects, the nodes to be marginalied over are the
+random effects, hence the name of this argument. However, one can
+marginalize over any nodes desired. See details for default.}
+
+\item{calcNodes}{A character vector of nodes to be calculated as the
+integrand for marginalization. Typically this will include
+\code{randomEffectsNodes} and some data nodes. Se details for default.}
+
+\item{calcNodesOther}{A character vector of nodes to be calculated as part of
+the log likelihood that are not connected to the \code{randomEffectNodes}
+and so are not actually part of the marginalization. These are somewhat
+extraneous to the purpose of this function, but it is convenient to handle
+them here because often the purpose of marginalization is to calculate log
+likelihoods, including from "other" parts of the model.}
+
+\item{split}{A logical indicating whether to split \code{randomEffectsNodes}
+into conditionally independent sets that can be marginalized separately
+(\code{TRUE}) or to keep them all in one set for a single marginalization
+calculation.}
+
+\item{check}{A logical indicating whether to try to give reasonable warnings
+of badly formed inputs that might be missing important nodes or include
+unnecessary nodes..}
+}
+\value{
+A list is returned with elements:
+
+\itemize{
+
+\item \code{paramNodes}: final processed version of \code{paramNodes}
+
+\item \code{randomEffectsNodes}: final processed version of \code{randomEffectsNodes}
+
+\item \code{calcNodes}: final processed version of \code{calcNodes}
+
+\item \code{calcNodesOther}: final processed version of \code{calcNodesOther}
+
+\item \code{givenNodes}: Input to \code{model$getConditionallyIndependentSets}, if \code{split=TRUE}.
+
+\item \code{randomEffectsSets}: Output from
+  \code{model$getConditionallyIndependentSets}, if \code{split=TRUE}. This
+  will be a list of vectors of node names. The node names in one list element
+  can be marginalized independently from those in other list elements. The
+  union of the list elements should be all of \code{randomEffectsNodes}. If
+  \code{split=FALSE}, \code{randomEffectsSets} will be a list with one
+  element, simply containing \code{randomEffectsNodes}. If \code{split} is a
+  numeric vector,  \code{randomEffectsSets} will be the result of
+  \code{split}(\code{randomEffectsNodes}, \code{control$split}).
+
+}
+}
 \description{
-Process model to organize nodes for marginalization as by Laplace or adaptive
-Gauss-Hermite quadrature (AGHQuad) approximations
+Process model to organize nodes for marginalization (integration over latent
+or random effects) as by Laplace approximation.
+}
+\details{
+This function is used by \code{buildLaplace} to organize model nodes into
+roles needed for setting up the (approximate) marginalization done by Laplace
+approximation. It is also possible to call this function directly and pass
+the resulting list (possibly modified for your needs) to \code{buildLaplace}.
+
+Any of the input node vectors, when provided, will be processed using
+  \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
+  \code{paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
+  any of the inputs to include node-name-like syntax that might contain
+  multiple nodes. For example, \code{paramNodes = 'beta[1:10]'} can be
+  provided if there are actually 10 scalar parameters, 'beta[1]' through
+  'beta[10]'. The actual node names in the model will be determined by the
+  \code{exapndNodeNames} step.
+
+This function does not do any of the marginalization calculations. It only
+organizes nodes into roles of parameters, random effects, integrand
+calculations, and other log likelihood calculations.
+
+The checking done if `check=TRUE` tries to be reasonable, but it can't cover
+all cases perfectly. If it gives an unnecessary warning, simply set `check=FALSE`.
+
+If \code{paramNodes} is not provided, its default depends on what other
+  arguments were provided. If neither \code{randomEffectsNodes} nor
+  \code{calcNodes} were provided, \code{paramNodes} defaults to all
+  top-level, stochastic nodes, excluding any posterior predictive nodes
+  (those with no data anywhere downstream). These are determined by
+  \code{model$getNodeNames(topOnly = TRUE, stochOnly = TRUE,
+  includePredictive = FALSE)}. If \code{randomEffectsNodes} was provided,
+  \code{paramNodes} defaults to stochastic parents of
+  \code{randomEffectsNodes}. In these cases, any provided \code{calcNodes} or
+  \code{calcNodesOther} are excluded from default \code{paramNodes}. If
+  \code{calcNodes} but not \code{randomEffectsNodes} was provided, then the
+  default for \code{randomEffectsNodes} is determined first, and then
+  \code{paramNodes} defaults to stochastic parents of
+  \code{randomEffectsNodes}.
+
+Note that to obtain sensible defaults, some nodes must have been marked as
+  data, either by the \code{data} argument in \code{nimbleModel} or by
+  \code{model$setData}. Otherwise, all nodes will appear to be posterior
+  predictive nodes, and the default \code{paramNodes} may be empty.
+
+For purposes of \code{buildLaplace}, \code{paramNodes} does not need to (but
+  may) include deterministic nodes between the parameters and any
+  \code{calcNodes}. Such deterministic nodes will be included in
+  calculations automatically when needed.
+
+If \code{randomEffectsNodes} is missing, the default is a bit complicated: it
+  includes all latent nodes that are descendants (or "downstream") of
+  \code{paramNodes} (if provided) and are either (i) ancestors (or
+  "upstream") of data nodes (if \code{calcNodes} is missing), or (ii)
+  ancestors or elements of \code{calcNodes} (if \code{calcNodes} and
+  \code{paramNodes} are provided), or (iii) elements of \code{calcNodes} (if
+  \code{calcNodes} is provided but \code{paramNodes} is missing). In all
+  cases, discrete nodes (with warning if \code{check=TRUE}), posterior
+  predictive nodes and \code{paramNodes} are excluded.
+
+\code{randomEffectsNodes} should only include stochastic nodes.
+
+If \code{calcNodes} is missing, the default is \code{randomEffectsNodes} and
+  their descendants to the next stochastic nodes, excluding posterior
+  predictive nodes. These are determined by
+  \code{model$getDependencies(randomEffectsNodes, includePredictive=FALSE)}.
+
+If \code{calcNodesOther} is missing, the default is all stochastic
+  descendants of \code{paramNodes}, excluding posterior predictive nodes
+  (from \code{model$getDependencies(paramNodes, stochOnly=TRUE, self=FALSE,
+  includePosterior=FALSE)}) that are not part of \code{calcNodes}.
+
+For purposes of \code{buildLaplace}, neither \code{calcNodes} nor
+  \code{calcNodesOther} needs to (but may) contain deterministic nodes
+  between \code{paramNodes} and \code{calcNodes} or \code{calcNodesOther},
+  respectively. These will be included in calculations automatically when
+  needed.
+
+If \code{split} is \code{TRUE}, \code{model$getConditionallyIndependentSets}
+  is used to determine sets of the \code{randomEffectsNodes} that can be
+  independently marginalized. The \code{givenNodes} are the
+  \code{paramNodes} and \code{calcNodes} excluding any
+  \code{randomEffectsNodes} and their deterministic descendants. The
+  \code{nodes} (to be split into sets) are the \code{randomEffectsNodes}.
+
+If \code{split} is a numeric vector, \code{randomEffectsNodes} will be split
+  by \code{split}(\code{randomEffectsNodes}, \code{control$split}). The last
+  option allows arbitrary control over how \code{randomEffectsNodes} are
+  blocked.
+
+If \code{check=TRUE}, then defaults for each of the four categories of nodes
+  are created even if the corresponding argument was provided. Then warnings
+  are emitted if there are any extra (potentially unnecessary) nodes provided
+  compared to the default or if there are any nodes in the default that were
+  not provided (potentially necessary). These checks are not perfect and may
+  be simply turned off if you are confident in your inputs.
+
+(If \code{randomEffectsNodes} was provided but \code{calcNodes} was not
+  provided, the default (for purposes of \code{check=TRUE} only) for
+  \code{randomEffectsNodes} differs from the above description. It uses
+  stochastic descendants of \code{randomEffectsNodes} in place of the
+  "data nodes" when determining ancestors of data nodes. And it uses item
+  (ii) instead of (iii) in the list above.)
+}
+\author{
+Wei Zhang, Perry de Valpine
 }

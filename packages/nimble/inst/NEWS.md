@@ -82,6 +82,9 @@ a block of a variable (PR #1289).
 
 - Better error trap wrong size/dimensions of in `setInits` (PR #1260).
 
+- Export `clearCompiled`, allowing users to clear compiled objects and unload 
+the shared library produced during nimble's compilation process.
+
 ## BUG FIXES
 
 - Fix bug producing integer overflow in `getDependencyPathCountOneNode`

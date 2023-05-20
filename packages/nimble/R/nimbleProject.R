@@ -1061,9 +1061,24 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
     )
 )
 
+#' Clear compiled objects from a project and unload shared library
+#'
+#' Clear all compiled objects from a project and unload the shared library produced by the C++ compiler. Has no effect on Windows.
+#' 
+#' @param obj A compiled nimbleFunction or nimble model
+#'
+#' @details
+#'
+#' This will clear all compiled objects associated with your NIMBLE project.  For example, if \code{cModel} is a compiled model, \code{clearCompiled(cModel)} will clear both the model and all associated nimbleFunctions such as compiled MCMCs that use that model.
+#'
+#' Use of this function can be dangerous.  There is some risk that if you have copies of the R objects that interfaced to compiled C++ objects that have been removed, and you attempt to use those R objects after clearing their compiled counterparts, you will crash R.  We have tried to minimize that risk, but we can't guarantee safe behavior.
+#' 
+#' @export
 clearCompiled <- function(obj) { # for now just take one obj as input
-    np <- getNimbleProject(obj)
-    np$clearCompiled()
+    if(.Platform$OS.type != "windows") {
+        np <- getNimbleProject(obj)
+        np$clearCompiled()
+    }
 }
 
 #' compile NIMBLE models and nimbleFunctions

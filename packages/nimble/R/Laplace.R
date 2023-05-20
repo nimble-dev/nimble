@@ -1103,7 +1103,7 @@ buildOneAGHQuad <- nimbleFunction(
 #'   (\code{TRUE}) or to keep them all in one set for a single marginalization
 #'   calculation.
 #'
-#' @param warn A logical indicating whether to try to give reasonable warnings
+#' @param check A logical indicating whether to try to give reasonable warnings
 #'   of badly formed inputs that might be missing important nodes or include
 #'   unnecessary nodes..
 #'
@@ -1116,7 +1116,7 @@ buildOneAGHQuad <- nimbleFunction(
 #'
 #' Any of the input node vectors, when provided, will be processed using
 #'   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
-#'   \code{\paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
+#'   \code{paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
 #'   any of the inputs to include node-name-like syntax that might contain
 #'   multiple nodes. For example, \code{paramNodes = 'beta[1:10]'} can be
 #'   provided if there are actually 10 scalar parameters, 'beta[1]' through
@@ -1186,7 +1186,7 @@ buildOneAGHQuad <- nimbleFunction(
 #' If \code{split} is \code{TRUE}, \code{model$getConditionallyIndependentSets}
 #'   is used to determine sets of the \code{randomEffectsNodes} that can be
 #'   independently marginalized. The \code{givenNodes} are the
-#'   \code{\paramNodes} and \code{calcNodes} excluding any
+#'   \code{paramNodes} and \code{calcNodes} excluding any
 #'   \code{randomEffectsNodes} and their deterministic descendants. The
 #'   \code{nodes} (to be split into sets) are the \code{randomEffectsNodes}.
 #'
@@ -2266,7 +2266,7 @@ buildAGHQuad <- nimbleFunction(
 #'
 #' Any of the input node vectors, when provided, will be processed using
 #'   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
-#'   \code{\paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
+#'   \code{paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
 #'   any of the inputs to include node-name-like syntax that might contain
 #'   multiple nodes. For example, \code{paramNodes = 'beta[1:10]'} can be
 #'   provided if there are actually 10 scalar parameters, 'beta[1]' through
@@ -2277,7 +2277,7 @@ buildAGHQuad <- nimbleFunction(
 #'   and then the function will construct reasonable defaults necessary for
 #'   Laplace approximation to marginalize over all latent states (aka random
 #'   effects) in a model. The default values for the four groups of nodes are
-#'   obtained by calling \link{\code{setupMargNodes}}, whose arguments match
+#'   obtained by calling \code{\link{setupMargNodes}}, whose arguments match
 #'   those here (except for a few arguments which are taken from control list
 #'   elements here).
 #'

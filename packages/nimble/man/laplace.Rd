@@ -21,23 +21,20 @@ The model must have automatic derivatives (AD) turned on, e.g. by using
 \code{buildDerivs=TRUE} in \code{nimbleModel}.}
 
 \item{paramNodes}{a character vector of names of parameter nodes in the
-model; defaults to top-level stochastic nodes, as determined by
-\code{model$getNodeNames(topOnly=TRUE, stochOnly=TRUE)}. Alternatively,
-\code{paramNodes} can be a list in the format returned by
+model; defaults are provided by \code{\link{setupMargNodes}}.
+Alternatively, \code{paramNodes} can be a list in the format returned by
 \code{setupMargNodes}, in which case \code{randomEffectsNodes},
 \code{calcNodes}, and \code{calcNodesOther} are not needed (and will be
 ignored).}
 
 \item{randomEffectsNodes}{a character vector of names of unobserved (latent)
 nodes to marginalize (integrate) over using Laplace approximation; defaults
-to latent stochastic nodes that depend on \code{paramNodes}.}
+are provided by \code{\link{setupMargNodes}}.}
 
 \item{calcNodes}{a character vector of names of nodes for calculating the
-integrand for Laplace approximation; defaults to nodes that depend on
-\code{randomEffectsNodes}, as determined by
-\code{model$geteDependencies(randomEffectsNodes)} (which will include
-\code{randomEffectsNodes}). There may be deterministic nodes between
-\code{paramNodes} and \code{randomEffectsNodes}. These will be included in
+integrand for Laplace approximation; defaults are provided by
+\code{\link{setupMargNodes}}. There may be deterministic nodes between
+\code{paramNodes} and \code{calcNodes}. These will be included in
 calculations automatically and thus do not need to be included in
 \code{calcNodes} (but there is no problem if they are).}
 
@@ -51,70 +48,82 @@ nodes between \code{paramNodes} and \code{calcNodesOther}. These will be
 included in calculations automatically and thus do not need to be included
 in \code{calcNodesOther} (but there is no problem if they are).}
 
-\item{control}{a named list (for \code{buildLaplace} only) for providing
-additional settings used in Laplace approximation. See
-\code{control} section below.}
-
-\item{optimControl}{a list of control parameters for the inner optimization
-(of randomEffectsNodes) of Laplace approximation using \code{optim}. See
-'Details' of \code{\link{optim}} for further information.}
-
-\item{optimMethod}{optimization method to be used in \code{optim} for the
-inner optimization. See 'Details' of \code{\link{optim}}. Currently
-\code{nimOptim} supports: "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}",
-"\code{L-BFGS-B}". By default, method "\code{CG}" is used when
-marginalizing over a single (scalar) random effect, and "\code{BFGS}" is
-used for multiple random effects being jointly marginalized over.}
-
-\item{optimStart}{choice of starting values for the inner optimization. This
-could be \code{"last"}, \code{"last.best"}, or a vector of user provided
-values. \code{"last"} means the most recent random effects values left in
-the model will be used. When finding the MLE, the most recent values will
-be the result of the most recent inner optimization, from the previous
-parameter values. \code{"last.best"} means the random effects values
-corresponding to the largest Laplace likelihood (from any call to the
-`calcLaplace` method, including during an MLE search) will be used (even if
-it was not the most recent Laplace likelihood). By default, the initial
-random effects values will be used for inner optimization.}
-
-\item{nQuad}{number of quadrature points. Default value of one for Laplace approximation. This is currently unused, but it will be used in the future for adaptive Gauss-Hermite quadrature.}
+\item{control}{a named list for providing additional settings used in Laplace
+approximation. See \code{control} section below.}
 }
 \description{
-Builds a Laplace approximation algorithm for a given NIMBLE model.
+Build a Laplace approximation algorithm for a given NIMBLE model.
 }
 \section{\code{buildLaplace}}{
 
 
 \code{buildLaplace} is the main function for constructing the Laplace
-approximation for a given model.
+  approximation for a given model or part of a model.
 
-One only needs to provide a NIMBLE model object and then the function will
-construct the pieces necessary for Laplace approximation to marginalize over
-all latent states (aka random effects) in a model. To do so, it will
-determine default values for \code{paramNodes}, \code{randomEffectsNodes},
-\code{calcNodes}, and \code{calcNodesOther} as described above.
+Any of the input node vectors, when provided, will be processed using
+  \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
+  \code{paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
+  any of the inputs to include node-name-like syntax that might contain
+  multiple nodes. For example, \code{paramNodes = 'beta[1:10]'} can be
+  provided if there are actually 10 scalar parameters, 'beta[1]' through
+  'beta[10]'. The actual node names in the model will be determined by the
+  \code{exapndNodeNames} step.
 
-The default values are obtained by calling \code{setupMargNodes}, whose
-arguments match those here (except for a few arguments which are taken from
-control list elements here). One can call that function to see exactly how
-nodes will be arranged for Laplace approximation. One can also call it,
-customize the returned list, and then provide that to \code{buildLaplace} as
-\code{paramNodes}.
+In many (but not all) cases, one only needs to provide a NIMBLE model object
+  and then the function will construct reasonable defaults necessary for
+  Laplace approximation to marginalize over all latent states (aka random
+  effects) in a model. The default values for the four groups of nodes are
+  obtained by calling \code{\link{setupMargNodes}}, whose arguments match
+  those here (except for a few arguments which are taken from control list
+  elements here).
+
+\code{setupMargNodes} tries to give sensible defaults from
+  any combination of \code{paramNodes}, \code{randomEffectsNodes},
+  \code{calcNodes}, and \code{calcNodesOther} that are provided. For example,
+  if you provide only \code{randomEffectsNodes} (perhaps you want to
+  marginalize over only some of the random effects in your model),
+  \code{setupMargNodes} will try to determine appropriate choices for the
+  others.
+
+These defaults make general assumptions such as that
+  \code{randomEffectsNodes} have \code{paramNodes} as parents. However, The
+  steps for determining defaults are not simple, and it is possible that they
+  will be refined in the future. It is also possible that they simply don't
+  give what you want for a particular model. One example where they will not
+  give desired results can occur when random effects have no prior
+  parameters, such as `N(0,1)` nodes that will be multiplied by a scale
+  factor (e.g. sigma) and added to other explanatory terms in a model. Such
+  nodes look like top-level parameters in terms of model structure, so
+  you must provide a \code{randomEffectsNodes} argument to indicate which
+  they are.
+
+It can be helpful to use \code{setupMargNodes} directly to see exactly how
+  nodes will be arranged for Laplace approximation. For example, you may want
+  to verify the choice of \code{randomEffectsNodes} or get the order of
+  parameters it has established to use for making sense of the MLE and
+  results from the \code{summary} method. One can also call
+  \code{setupMargNodes}, customize the returned list, and then provide that
+  to \code{buildLaplace} as \code{paramNodes}. In that case,
+  \code{setupMargNodes} will not be called (again) by \code{buildLaplace}.
+
+If \code{setupMargNodes} is emitting an unnecessary warning, simply use
+  \code{control=list(check=FALSE)}.
 
 If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
-effects / latent states) have constraints on the range of valid values
-(because of the distribution they follow), they will be used on a transformed
-scale determined by \code{parameterTransform}. This means the Laplace
-approximation itself will be done on the transformed scale for random effects
-and finding the MLE will be done on the transformed scale for parameters. For
-parameters, any prior distributions are not included in calculations, but
-they are used to determine valid parameter ranges. For example, if
-\code{sigma} is a standard deviation, declare it with a prior such as
-\code{sigma ~ dhalfflat()} to indicate that it must be greater than 0.
+  effects / latent states) have constraints on the range of valid values
+  (because of the distribution they follow), they will be used on a
+  transformed scale determined by \code{parameterTransform}. This means the
+  Laplace approximation itself will be done on the transformed scale for
+  random effects and finding the MLE will be done on the transformed scale
+  for parameters. For parameters, prior distributions are not included in
+  calculations, but they are used to determine valid parameter ranges. For
+  example, if \code{sigma} is a standard deviation, you can declare it with a
+  prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
+  greater than 0.
 
 For default determination of parameters, all parameters must have a prior
-distribution simply to indicate the range of valid values. For a param
-\code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
+  distribution simply to indicate the range of valid values. For a param
+  \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
 
 The object returned by \code{buildLaplace} is a nimbleFunction object with
 numerous methods (functions). The most useful ones are:
@@ -150,17 +159,17 @@ numerous methods (functions). The most useful ones are:
         determined by finite differences of the gradients obtained by
         automatic differentiation (AD). Return value is a nimbleList of type
         \code{optimResultNimbleList}, similar to what is returned by R's
-        optim.
+        optim. See \code{help(nimOptim)}.
 
-\item \code{summary(MLEoutput, originalScale,
-       calcRandomEffectsStdError, returnJointCovariance)}. Summarize the
-       maximum likelihood estimation results, given object
-       \code{MLEoutput} that was returned by \code{findMLE}. The
-       summary can include a covariance matrix for the parameters, the random
-       effects, or both, and these can be returned on the original parameter
-       scale or on the (potentially) transformed scale(s) used in estimation.
+\item \code{summary(MLEoutput, originalScale, calcRandomEffectsStdError,
+       returnJointCovariance)}. Summarize the maximum likelihood estimation
+       results, given object \code{MLEoutput} that was returned by
+       \code{findMLE}. The summary can include a covariance matrix for the
+       parameters, the random effects, or both),
+       and these can be returned on the original parameter scale or on the
+       (potentially) transformed scale(s) used in estimation.
 
-In addition, \code{summary} accepts the following optional arguments:
+In more detail, \code{summary} accepts the following optional arguments:
 
        \itemize{
 
@@ -239,8 +248,7 @@ Additional methods to access or control more details of the Laplace approximatio
   parameter values in the order of \code{paramNames}.
 
   \item \code{gr_otherLogLik(p)}. Gradient (vector of derivatives with
-  respect to each parameter) of \code{otherLogLik(p)}. This is obtained
-  using automatic differentiation (AD) with double-taping. Results should
+  respect to each parameter) of \code{otherLogLik(p)}. Results should
   match \code{gr_otherLogLik_internal(p)} but may be more efficient after
   the first call.
 
@@ -287,7 +295,7 @@ Finally, methods that are primarily for internal use by other methods include:
    transformed random effects, evaluated at parameter value \code{p} and
    transformed random effects \code{reTransform}.
 
-  \item \code{one_time_fixes()}. Users do not need to run this. Is is called
+  \item \code{one_time_fixes()}. Users never need to run this. Is is called
   when necessary internally to fix dimensionality issues if there is only
   one parameter in the model.
 
@@ -324,9 +332,11 @@ Finally, methods that are primarily for internal use by other methods include:
         last option allows arbitrary control over how
         \code{randomEffectsNodes} are blocked.
 
-  \item \code{warn}. If TRUE (default), a warning is issued if
-  \code{randomEffectsNodes} and/or \code{calcNodes} are provided but have
-  other or missing elements relative to their defaults.
+  \item \code{check}. If TRUE (default), a warning is issued if
+        \code{paramNodes}, \code{randomEffectsNodes} and/or \code{calcNodes}
+        are provided but seek to have missing elements or unnecessary
+        elements based on some default inspection of the model. If
+        unnecessary warnings are emitted, simply set \code{check=FALSE}.
 
   \item \code{innerOptimControl}. See \code{optimControl}.
 
@@ -339,68 +349,6 @@ Finally, methods that are primarily for internal use by other methods include:
         \code{\link{optim}} for further information.
 
 }
-}
-
-\section{\code{AGHQuad_BASE}}{
-
-
-Laplace base class, upon which specific Laplace algorithm classes are based
-by including \code{contains = AGHQuad_BASE}. This declares a list of
-nimbleFunctions for a single Laplace approximation. Intended for internal use
-only.
-}
-
-\section{\code{buildOneAGHQuad1D}}{
-
-
-This function constructs a single Laplace approximation when
-\code{randomEffectsNodes} contains only one scalar node. It is mostly for
-internal use by `buildLaplace`, when a scalar random effect is conditionally
-independent from any other random effects. To use it directly, one has to
-provide full inputs for all the arguments; there are no defaults.
-
-This function generates an object that comprises a set of methods (functions), 
-each accomplishing one piece of many calculations to obtain the Laplace 
-approximation and its gradient w.r.t. model parameters. 
-
-Among these methods, six are most useful to a user:
-
-\itemize{
-
-  \item \code{Laplace1(p)}. Laplace approximation evaluated at the parameter
-  value \code{p}. This function uses single AD taping for gradient and
-  Hessian calculations and separate components.
-
-  \item \code{Laplace2(p)}. Laplace approximation evaluated at the parameter
-  value \code{p}. This function uses double AD taping for gradient and
-  Hessian calculations and separate components.
-
-  \item \code{Laplace3(p)}. Laplace approximation evaluated at the parameter
-  value \code{p}. This function uses double AD taping for gradient and
-  Hessian calculations and packs everything together.
-
-  \item \code{gr_Laplace1(p)}. Gradient of \code{Laplace1} with respect to
-  parameters evaluated at the parameter value \code{p}.
-
-  \item \code{gr_Laplace2(p)}. Gradient of \code{Laplace2} with respect to
-  parameters evaluated at the parameter value \code{p}.
-
-  \item \code{gr_Laplace3(p)}. Gradient of \code{Laplace3} with respect to
-  parameters evaluated at the parameter value \code{p}.
-
-}
-}
-
-\section{\code{buildOneAGHQuad}}{
-
-
-This function constructs a single Laplace approximation when
-\code{randomEffectsNodes} contains more than one dimension (i.e. has a
-non-scalar node and/or multiple scalar nodes). It is mostly for internal use
-by `buildLaplace`. To use it directly, one has to provide full inputs for all
-the arguments; there are no defaults.
-
-The methods generated by this function are the same as \code{buildOneAGHQuad1D}.
 }
 
 \examples{

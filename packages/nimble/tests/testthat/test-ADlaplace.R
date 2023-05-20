@@ -1752,44 +1752,6 @@ test_that("Laplace works with different numbers of REs in different cond. ind. s
 
 ## })
 
-foo <- nimbleFunction(
-  setup = TRUE,
-  run = function(b = double()) {
-    a <- step(b)                ## This is correctly error-trapped
-    c <- dinterval(b, 2, 4)     ## This is correctly error-trapped
-    return(a + c)
-    returnType(double())
-  },
-  methods = list(
-    derivsRun = function(b = double()) {
-      ans <- derivs(run(b), wrt = 1, order = 0:2)
-      return(ans)
-      returnType(ADNimbleList())
-    }
-  ),
-  buildDerivs = 'run'
-) # error trapping works
-
-foo <- nimbleFunction(
-  run = function(b = double()) {
-    a <- step(b)                ## This is correctly error-trapped
-    c <- dinterval(b, 2, 4)     ## This is correctly error-trapped
-    return(a + c)
-    returnType(double())
-  },
-  buildDerivs = 'run'
-) # error-trapping also works in this situation (no setup code)
-
-m <- nimbleModel(
-  nimbleCode({
-    b <- 0.5
-    a <- step(b) # not supported for AD, but not trapped
-    c ~ dinterval(2, 4) # not supported for AD, but not trapped
-  }), buildDerivs = TRUE
-) # no trapping occurs
-
-cm <- compileNimble(m) # Errors out only at C++ compiler
-
 # To do:
 # Various structures of random effects groupings
 

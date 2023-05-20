@@ -3,7 +3,7 @@
 \docType{data}
 \name{ADNimbleList}
 \alias{ADNimbleList}
-\title{EXPERIMENTAL Data type for the return value of \code{\link{nimDerivs}}}
+\title{Data type for the return value of \code{\link{nimDerivs}}}
 \format{
 An object of class \code{list} of length 1.
 }

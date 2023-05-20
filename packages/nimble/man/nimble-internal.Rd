@@ -88,6 +88,8 @@
 \alias{is.model}
 \alias{nf_preProcessMemberDataObject}
 \alias{samplesSummary}
+\alias{AGHQuad_params}
+\alias{AGHQuad_summary}
 \alias{messageIfVerbose}
 \alias{calc_dmnormConjugacyContributions}
 \alias{calc_dmnormAltParams}
@@ -105,8 +107,6 @@
 \alias{calcAdaptationFactor}
 \alias{is.nfGenerator}
 \alias{mcmc_createModelObject}
-\alias{AGHQuad_params}
-\alias{AGHQuad_summary}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
 \description{

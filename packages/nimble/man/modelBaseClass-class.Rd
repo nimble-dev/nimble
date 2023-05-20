@@ -87,11 +87,11 @@ unique: should names be the unique names or should original ordering of nodes (a
   nodes,
   givenNodes,
   omit = integer(),
-  inputType = c("latent", "param", "data"),
-  stochOnly = TRUE,
-  unknownAsGiven = FALSE,
+  explore = c("both", "down", "up"),
+  unknownAsGiven = TRUE,
   returnType = "names",
-  returnScalarComponents = FALSE
+  returnScalarComponents = FALSE,
+  endAsGiven = FALSE
 )}}{see "help(getConditionallyIndependentSets)", which this calls with the model as the first argument.}
 
 \item{\code{getDependencies(
