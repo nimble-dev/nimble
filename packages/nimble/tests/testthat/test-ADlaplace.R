@@ -1712,6 +1712,83 @@ test_that("Laplace works with different numbers of REs in different cond. ind. s
   expect_no_error(Claplace$findMLE(c(0,0)))
 })
 
+## test_that("Laplace with N(0,1) random effects works", {
+##   set.seed(1)
+##   code <- nimbleCode({
+##     sigma ~ dhalfflat()
+##     beta0 ~ dflat()
+##     beta1 ~ dflat()
+##     for(i in 1:5) eps[i] ~ dnorm(0, 1)
+##     for(i in 1:5) sigma_eps[i] <- eps[i] * sigma
+##     for(i in 1:25) {
+##       y[i] ~ dpois(beta0 + beta1*X[i] + sigma_eps[group[i]])
+##     }
+##     for(i in 1:10) z[i] ~ dnorm(2*beta0, 1) #calcNodesOther
+##     foo <- step(beta0)
+##   })
+##   X <- rnorm(25)
+##   group <- rep(1:5, each = 5)
+##   eps <- rnorm(5, 0, sd = 2)
+##   y <- rpois(25, exp(3 + .2*X + rep(eps, each=5)))
+##   z <- rnorm(10, 2*3, sd = 1)
+##   m <- nimbleModel(code, data = list(y = y, z = z),
+##                    constants = list(X = X, group=group), buildDerivs=TRUE)
+
+##   # Defaults not expected to be useful
+##   SMN <- setupMargNodes(m)
+##   expect_identical(SMN$randomEffectsNodes, character())
+
+##   SMN <- setupMargNodes(m, paramNodes = c("beta0", "beta1", "sigma"),
+##                         randomEffectsNodes = 'eps[1:5]')
+##   expect_identical(SMN$randomEffectsSets,
+##                    list('eps[1]','eps[2]','eps[3]','eps[4]','eps[5]'))
+##   expect_identical(SMN$calcNodesOther,
+##                    m$expandNodeNames(c('lifted_d2_times_beta0', 'z[1:10]')))
+
+##   mLaplace <- buildLaplace(m, SMN)
+##   cm <- compileNimble(m)
+
+##   cmLaplace <- compileNimble(mLaplace, project = m)
+
+## })
+
+foo <- nimbleFunction(
+  setup = TRUE,
+  run = function(b = double()) {
+    a <- step(b)                ## This is correctly error-trapped
+    c <- dinterval(b, 2, 4)     ## This is correctly error-trapped
+    return(a + c)
+    returnType(double())
+  },
+  methods = list(
+    derivsRun = function(b = double()) {
+      ans <- derivs(run(b), wrt = 1, order = 0:2)
+      return(ans)
+      returnType(ADNimbleList())
+    }
+  ),
+  buildDerivs = 'run'
+) # error trapping works
+
+foo <- nimbleFunction(
+  run = function(b = double()) {
+    a <- step(b)                ## This is correctly error-trapped
+    c <- dinterval(b, 2, 4)     ## This is correctly error-trapped
+    return(a + c)
+    returnType(double())
+  },
+  buildDerivs = 'run'
+) # error-trapping also works in this situation (no setup code)
+
+m <- nimbleModel(
+  nimbleCode({
+    b <- 0.5
+    a <- step(b) # not supported for AD, but not trapped
+    c ~ dinterval(2, 4) # not supported for AD, but not trapped
+  }), buildDerivs = TRUE
+) # no trapping occurs
+
+cm <- compileNimble(m) # Errors out only at C++ compiler
 
 # To do:
 # Various structures of random effects groupings
