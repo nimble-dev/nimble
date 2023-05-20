@@ -72,7 +72,7 @@ public:
   void getDependenciesOneNode(vector<int> &deps, vector<int> &tempDeps, int CgraphID, bool downstream, unsigned int recursionDepth, bool followLHSinferred = true);
   vector<int> getParents(const vector<int> &Cnodes, const vector<int> &Comit, bool upstream, bool oneStep);
   void getParentsOneNode(vector<int> &deps, vector<int> &tempDeps, int CgraphID, bool upstream, unsigned int recursionDepth, bool recurse = true, bool followLHSinferred = true);
-  int getDependencyPathCountOneNode(const int Cnode);
+  int getDependencyPathCountOneNode(const int Cnode, const int max);
   
   vector<vector<int> > getAllCondIndSets(const vector<int> &Cnodes,
                                          const vector<int> &CgivenNodes,
@@ -118,7 +118,7 @@ extern "C" {
   SEXP C_anyStochParents(SEXP SextPtr);
   SEXP C_getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
   SEXP C_getParents(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP upstream, SEXP SoneStep);
-  SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
+  SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode, SEXP Smax);
   SEXP C_getConditionallyIndependentSets(SEXP SgraphExtPtr,
                                          SEXP Snodes,
                                          SEXP SgivenNodes,

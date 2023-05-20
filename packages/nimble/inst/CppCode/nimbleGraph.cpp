@@ -145,10 +145,11 @@ SEXP C_getParents(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream, 
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
 }
 
-SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
+SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode, SEXP Smax) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   int node = SEXP_2_int(Snode, 0)-1; // subtract 1 index for C
-  int result = graphPtr->getDependencyPathCountOneNode(node);
+  int max = SEXP_2_int(Smax);
+  int result = graphPtr->getDependencyPathCountOneNode(node, max);
   return(int_2_SEXP(result)); 
 }
 
@@ -300,9 +301,10 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int Cgra
 
 //#define _DEBUG_GETPATHS
 
-int nimbleGraph::getDependencyPathCountOneNode(const int Cnode) {
+int nimbleGraph::getDependencyPathCountOneNode(const int Cnode, const int max) {
   int result(0);
   int i(0);
+  int currentCount;
   graphNode *thisGraphNode;
   graphNode *thisChildNode;
 
@@ -323,10 +325,20 @@ int nimbleGraph::getDependencyPathCountOneNode(const int Cnode) {
 #ifdef _DEBUG_GETPATHS
       PRINTF("node %i has child %i\n", Cnode, thisChildNode->CgraphID);
 #endif
+      // Formulation here with checks compared to `max` will avoid overflow.
       if(thisChildNode->type == STOCH) {
+        if(max - result <= 1) {
+          thisGraphNode->numPaths = max;
+          return(max);
+        }
         result++;
       } else {
-        result += getDependencyPathCountOneNode(thisChildNode->CgraphID); 
+        currentCount = getDependencyPathCountOneNode(thisChildNode->CgraphID, max);
+        if(max - result <= currentCount) {   
+          thisGraphNode->numPaths = max;
+          return(max);
+        } 
+        result += currentCount;
       }
     }
   }

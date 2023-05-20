@@ -223,11 +223,21 @@ conjugacyRelationshipsClass <- setRefClass(
                 #    if(not conj) next
 
                 # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stickbreaking
-                numPaths <- sapply(nodeIDsFromOneDecl, model$getDependencyPathCountOneNode)
                 deps <- lapply(nodeIDsFromOneDecl, function(x) model$getDependencies(x, stochOnly = TRUE, self = FALSE))
                 numDeps <- sapply(deps, length)
+                sumNumDeps <- sum(numDeps)
+                maxNumPaths <- 0
+                ## We only need check until we get to as many paths as `sumNumDeps`.
+                ## This also avoids integer overflow that can occur with recursive indexing.
+                for(nodeID in nodeIDsFromOneDecl) {
+                    numPaths <- model$getDependencyPathCountOneNode(nodeID, max = sumNumDeps + 1)
+                    if(numPaths > maxNumPaths)
+                        maxNumPaths <- numPaths
+                    if(maxNumPaths > sumNumDeps)
+                        break
+                }
 
-                if(max(numPaths) > sum(numDeps)) {
+                if(maxNumPaths > sumNumDeps) {
                     # max(numPaths) is reasonable guess at number of unique (by node) paths (though it overestimates number of unique (by declaration ID) paths; if we have to evaluate conjugacy for more paths than we would by simply looking at all pairs of target-dependent nodes, then just use node pairs
                     # note that it's not clear what criterion to use here since computational time is combination of time for finding all paths and then for evaluating conjugacy for unique (by declaration ID) paths, but the hope is to make a crude cut here that avoids path calculations when there would be a lot of them
                     ansList[[length(ansList)+1]] <- lapply(seq_along(nodeIDsFromOneDecl),
