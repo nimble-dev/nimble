@@ -1131,12 +1131,13 @@ buildOneAGHQuad <- nimbleFunction(
 #' all cases perfectly. If it gives an unnecessary warning, simply set `check=FALSE`.
 #'
 #' If \code{paramNodes} is not provided, its default depends on what other
-#'   arguments were provided. If neither \code{randomEffectsNodes} not
+#'   arguments were provided. If neither \code{randomEffectsNodes} nor
 #'   \code{calcNodes} were provided, \code{paramNodes} defaults to all
-#'   top-level, stochastic nodes, excluding any posterior predictive nodes.
-#'   These are determined by \code{model$getNodeNames(topOnly = TRUE, stochOnly
-#'   = TRUE, includePredictive = FALSE)}. If \code{randomEffectsNodes} was
-#'   provided, \code{paramNodes} defaults to stochastic parents of
+#'   top-level, stochastic nodes, excluding any posterior predictive nodes
+#'   (those with no data anywhere downstream). These are determined by
+#'   \code{model$getNodeNames(topOnly = TRUE, stochOnly = TRUE,
+#'   includePredictive = FALSE)}. If \code{randomEffectsNodes} was provided,
+#'   \code{paramNodes} defaults to stochastic parents of
 #'   \code{randomEffectsNodes}. In these cases, any provided \code{calcNodes} or
 #'   \code{calcNodesOther} are excluded from default \code{paramNodes}. If
 #'   \code{calcNodes} but not \code{randomEffectsNodes} was provided, then the
@@ -1151,7 +1152,7 @@ buildOneAGHQuad <- nimbleFunction(
 #'
 #' For purposes of \code{buildLaplace}, \code{paramNodes} does not need to (but
 #'   may) include deterministic nodes between the parameters and any
-#'   \code{randomEffectsNodes}. Such deterministic nodes will be included in
+#'   \code{calcNodes}. Such deterministic nodes will be included in
 #'   calculations automatically when needed.
 #'
 #' If \code{randomEffectsNodes} is missing, the default is a bit complicated: it
@@ -1161,8 +1162,8 @@ buildOneAGHQuad <- nimbleFunction(
 #'   ancestors or elements of \code{calcNodes} (if \code{calcNodes} and
 #'   \code{paramNodes} are provided), or (iii) elements of \code{calcNodes} (if
 #'   \code{calcNodes} is provided but \code{paramNodes} is missing). In all
-#'   cases, discrete nodes, posterior predictive nodes and \code{paramNodes} are
-#'   excluded.
+#'   cases, discrete nodes (with warning if \code{check=TRUE}), posterior
+#'   predictive nodes and \code{paramNodes} are excluded.
 #'
 #' \code{randomEffectsNodes} should only include stochastic nodes.
 #'
@@ -1176,10 +1177,11 @@ buildOneAGHQuad <- nimbleFunction(
 #'   (from \code{model$getDependencies(paramNodes, stochOnly=TRUE, self=FALSE,
 #'   includePosterior=FALSE)}) that are not part of \code{calcNodes}.
 #'
-#' For purposes of \code{buildLaplace}, neither \code{paramNodes} nor
+#' For purposes of \code{buildLaplace}, neither \code{calcNodes} nor
 #'   \code{calcNodesOther} needs to (but may) contain deterministic nodes
-#'   between \code{paramNodes} nor \code{calcNodesOther}. These will be included
-#'   in calculations automatically when needed.
+#'   between \code{paramNodes} and \code{calcNodes} or \code{calcNodesOther},
+#'   respectively. These will be included in calculations automatically when
+#'   needed.
 #'
 #' If \code{split} is \code{TRUE}, \code{model$getConditionallyIndependentSets}
 #'   is used to determine sets of the \code{randomEffectsNodes} that can be
@@ -2225,7 +2227,7 @@ buildAGHQuad <- nimbleFunction(
 
 #' Laplace approximation
 #' 
-#' Builds a Laplace approximation algorithm for a given NIMBLE model. 
+#' Build a Laplace approximation algorithm for a given NIMBLE model.
 #' 
 #' @param model a NIMBLE model object, such as returned by \code{nimbleModel}.
 #'   The model must have automatic derivatives (AD) turned on, e.g. by using
@@ -2242,7 +2244,7 @@ buildAGHQuad <- nimbleFunction(
 #' @param calcNodes a character vector of names of nodes for calculating the
 #'   integrand for Laplace approximation; defaults are provided by
 #'   \code{\link{setupMargNodes}}. There may be deterministic nodes between
-#'   \code{paramNodes} and \code{randomEffectsNodes}. These will be included in
+#'   \code{paramNodes} and \code{calcNodes}. These will be included in
 #'   calculations automatically and thus do not need to be included in
 #'   \code{calcNodes} (but there is no problem if they are).
 #' @param calcNodesOther a character vector of names of nodes for calculating
@@ -2262,12 +2264,6 @@ buildAGHQuad <- nimbleFunction(
 #' \code{buildLaplace} is the main function for constructing the Laplace
 #'   approximation for a given model or part of a model.
 #'
-#' One only needs to provide a NIMBLE model object and then the function will
-#'   construct the pieces necessary for Laplace approximation to marginalize
-#'   over all latent states (aka random effects) in a model. To do so, it will
-#'   determine default values for \code{paramNodes}, \code{randomEffectsNodes},
-#'   \code{calcNodes}, and \code{calcNodesOther}.
-#'
 #' Any of the input node vectors, when provided, will be processed using
 #'   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
 #'   \code{\paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
@@ -2277,31 +2273,42 @@ buildAGHQuad <- nimbleFunction(
 #'   'beta[10]'. The actual node names in the model will be determined by the
 #'   \code{exapndNodeNames} step.
 #'
-#' The default values for the four groups of nodes are obtained by calling
-#'   \code{setupMargNodes}, whose arguments match those here (except for a few
-#'   arguments which are taken from control list elements here). One can call
-#'   that function to see exactly how nodes will be arranged for Laplace
-#'   approximation. One can also call it, customize the returned list, and then
-#'   provide that to \code{buildLaplace} as \code{paramNodes}.
+#' In many (but not all) cases, one only needs to provide a NIMBLE model object
+#'   and then the function will construct reasonable defaults necessary for
+#'   Laplace approximation to marginalize over all latent states (aka random
+#'   effects) in a model. The default values for the four groups of nodes are
+#'   obtained by calling \link{\code{setupMargNodes}}, whose arguments match
+#'   those here (except for a few arguments which are taken from control list
+#'   elements here).
 #'
-#' \code{setupMargNodes} tries to gives sensible defaults from any combination
-#'   of \code{paramNodes}, \code{randomEffectsNodes}, \code{calcNodes}, and
-#'   \code{calcNodesOther} that are provided. For example, if you provide only
-#'   \code{randomEffectsNodes} (perhaps you want to marginalize over only some
-#'   of the random effects in your model), \code{setupMargNodes} will try to
-#'   determine appropriate choices for the others. It can be helpful to use
-#'   \code{setupMargNodes} directly so that you can see, for example, the order
-#'   of parameters it has established.
+#' \code{setupMargNodes} tries to give sensible defaults from
+#'   any combination of \code{paramNodes}, \code{randomEffectsNodes},
+#'   \code{calcNodes}, and \code{calcNodesOther} that are provided. For example,
+#'   if you provide only \code{randomEffectsNodes} (perhaps you want to
+#'   marginalize over only some of the random effects in your model),
+#'   \code{setupMargNodes} will try to determine appropriate choices for the
+#'   others.
 #'
-#' The steps for determining defaults are not simple, and it is possible that
-#'   they will be refined in the future. It is also possible that they simply
-#'   don't give what you want for a particular model. One example where they
-#'   will not give desired results can occur when random effects have no prior
+#' These defaults make general assumptions such as that
+#'   \code{randomEffectsNodes} have \code{paramNodes} as parents. However, The
+#'   steps for determining defaults are not simple, and it is possible that they
+#'   will be refined in the future. It is also possible that they simply don't
+#'   give what you want for a particular model. One example where they will not
+#'   give desired results can occur when random effects have no prior
 #'   parameters, such as `N(0,1)` nodes that will be multiplied by a scale
-#'   factor (e.g. sigma) and added to other explanatory terms in a model. In
-#'   such a case, they are similar to top-level parameters in terms of model
-#'   structure, so you must provide a \code{randomEffectsNodes} argument to
-#'   indicate which they are.
+#'   factor (e.g. sigma) and added to other explanatory terms in a model. Such
+#'   nodes look like top-level parameters in terms of model structure, so
+#'   you must provide a \code{randomEffectsNodes} argument to indicate which
+#'   they are.
+#'
+#' It can be helpful to use \code{setupMargNodes} directly to see exactly how
+#'   nodes will be arranged for Laplace approximation. For example, you may want
+#'   to verify the choice of \code{randomEffectsNodes} or get the order of
+#'   parameters it has established to use for making sense of the MLE and
+#'   results from the \code{summary} method. One can also call
+#'   \code{setupMargNodes}, customize the returned list, and then provide that
+#'   to \code{buildLaplace} as \code{paramNodes}. In that case,
+#'   \code{setupMargNodes} will not be called (again) by \code{buildLaplace}.
 #'
 #' If \code{setupMargNodes} is emitting an unnecessary warning, simply use
 #'   \code{control=list(check=FALSE)}.
@@ -2312,7 +2319,7 @@ buildAGHQuad <- nimbleFunction(
 #'   transformed scale determined by \code{parameterTransform}. This means the
 #'   Laplace approximation itself will be done on the transformed scale for
 #'   random effects and finding the MLE will be done on the transformed scale
-#'   for parameters. For parameters, any prior distributions are not included in
+#'   for parameters. For parameters, prior distributions are not included in
 #'   calculations, but they are used to determine valid parameter ranges. For
 #'   example, if \code{sigma} is a standard deviation, you can declare it with a
 #'   prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
