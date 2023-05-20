@@ -339,11 +339,12 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsq
                                    "dbinom", "dbeta", "dchisq", "dlogis", "dt",
                                    "dt_nonstandard", "nimArr_dmulti", "nimArr_dcat", "dnbinom", "dunif", "pairmax", "pairmin", 
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", 
-				   "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
+                                   "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
                                    "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial",
                                    "logit", "floor", "ceil", "nimRound", "ftrunc",
-                                   "cube", "inprod")
+                                   "cube", "inprod",
+                                   "nimStep", "dflat", "dhalfflat")
 
 ## Reflects distribution funs that support recycling rule with AD -- see nimDerivs_TMB.h.
 recyclingRuleOperatorsAD <- c(

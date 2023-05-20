@@ -774,6 +774,37 @@ Type nimDerivs_dexp_logFixed(Type x, Type scale, int give_log)
 	return(res);
 }
 
+template<class Type>
+Type nimDerivs_dflat(Type x, Type give_log)
+{
+  Type res = CppAD::CondExpEq(give_log, Type(1), Type(0), Type(1));
+  return(res);
+}
+template<class Type>
+Type nimDerivs_dflat_logFixed(Type x, int give_log)
+{
+  if(give_log) return(Type(0));
+  return(Type(1));
+}
+template<class Type>
+Type nimDerivs_dhalfflat(Type x, Type give_log)
+{
+  Type res = CppAD::CondExpGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
+  res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+  return(res);
+}
+template<class Type>
+Type nimDerivs_dhalfflat_logFixed(Type x, int give_log)
+{
+  Type res;
+  if(give_log) {
+    res = CppAD::CondExpGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
+  } else {
+    res = CppAD::CondExpGe(x, Type(0), Type(1), Type(0));
+  }
+  return(res);
+}
+
 /* dunif: uniform distribution */
 /* TMB does not have these cases. */
 template<class Type> 
