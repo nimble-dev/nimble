@@ -907,7 +907,7 @@ Details: The upward search for dependent nodes propagates through deterministic 
     parentIDs = unique(parentIDs, FALSE, FALSE, NA)
   if(returnType == 'ids') {
     if(returnScalarComponents) warning("NIMBLE development warning: calling getParents with returnType = ids and returnScalarComponents may not be meaningful.")
-    return(depIDs)
+    return(parentIDs)
   }
   if(returnType == 'names') {
     if(returnScalarComponents)
@@ -922,21 +922,21 @@ Details: The upward search for dependent nodes propagates through deterministic 
 getConditionallyIndependentSets = function(nodes,
                                            givenNodes,
                                            omit = integer(),
-                                           inputType = c("latent", "param", "data"),
-                                           stochOnly = TRUE,
-                                           unknownAsGiven = FALSE,
+                                           explore = c("both", "down", "up"),
+                                           unknownAsGiven = TRUE,
                                            returnType = 'names',
-                                           returnScalarComponents = FALSE) {
+                                           returnScalarComponents = FALSE,
+                                           endAsGiven = FALSE) {
 '
 see "help(getConditionallyIndependentSets)", which this calls with the model as the first argument.
 '
-  inputType <- match.arg(inputType)
+  explore <- match.arg(explore)
   nimble:::getConditionallyIndependentSets(model = .self, nodes = nodes, givenNodes = givenNodes,
-                                           omit = omit, inputType = inputType,
-                                           stochOnly = stochOnly,
+                                           omit = omit, explore = explore,
                                            unknownAsGiven = unknownAsGiven,
                                            returnType = returnType,
-                                           returnScalarComponents = returnScalarComponents)
+                                           returnScalarComponents = returnScalarComponents,
+                                           endAsGiven = endAsGiven)
 },
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,

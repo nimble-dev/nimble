@@ -75,121 +75,123 @@ nimbleGraphClass <- setRefClass(
     ))
 
 
-# The following roxygen is basically redundant with the method documentation for
-# modelBaseClass::getConditionallyIndependentSets. Not sure we need both.
+# The roxygen for modelBaseClass$getConditionallyIndependentSets refers users to
+# here:
 
 #' Get a list of conditionally independent sets of nodes in a nimble model
 #'
-#' Conditionally independent sets of nodes are typically groups of latent states
-#' whose joint probability (density) will not change even if any other non-fixed
-#' node is changed. Default fixed nodes are data nodes and parameter nodes (with
-#' no parent nodes), but this can be controlled.
+#' A conditionally independent set of nodes is such that the joint probability
+#' (density) of nodes in the set will not change even if any non-given
+#' node outside the set is changed. Default given nodes are data nodes and
+#' parameter nodes (aka "top-level" nodes, i.e. nodes with no parent nodes), but
+#' this can be controlled.
 #'
-#' @param model A nimble model object (uncompiled or compiled).
+#' @param model A nimble model object (uncompiled or compiled), such as returned
+#'   by \code{nimbleModel}.
 #'
-#' @param nodes A vector of node names or their graph IDs that are the starting
-#'   nodes from which conditionally independent sets of nodes should be found.
-#'   If omitted, the default will be all latent nodes, defined as stochastic
-#'   nodes that are not data and have at least one stochastic parent node
-#'   (possible with determinstic nodes in between). Note that this will omit
-#'   latent states that have no hyperparameters. An example is the first latent
-#'   state in some state-space (time-series) models, which is sometimes declared
-#'   with known prior. See \code{type} because it relates to the interpretation
-#'   of \code{nodes}.
+#' @param nodes A vector of stochastic node names (or their graph IDs) to split
+#'   into conditionally independent sets, conditioned on the \code{givenNodes}.
+#'   If \code{unknownAsGiven=FALSE}, the \code{nodes} are the starting nodes
+#'   from which conditionally independent sets of nodes should be found,
+#'   possibly including additional nodes not included in the \code{nodes}
+#'   argument. If \code{nodes} is omitted, the default will be all latent nodes
+#'   (defined as stochastic nodes that are not data and have at least one
+#'   stochastic parent node, possibly with determinstic nodes in-between) that
+#'   are a parent of a \code{givenNode} (either provided or default). Note that
+#'   this will omit latent states that have no hyperparameters. An example is
+#'   the first latent state in some state-space (time-series) models, which is
+#'   sometimes declared with known prior.
 #'
 #' @param givenNodes A vector of node names or their graph IDs that should be
-#'   considered as fixed and hence can be conditioned on. If omitted, the
-#'   default will be all data nodes and all parameter nodes, the latter defined
-#'   as nodes with no stochastic parent nodes (skipping over deterministic
-#'   parent nodes).
+#'   considered as fixed (given) and hence can be conditioned on. If omitted,
+#'   the default will be all data nodes and all parameter nodes, the latter
+#'   defined as nodes with no stochastic parent nodes (skipping over
+#'   deterministic parent nodes). See \code{endAsGiven} for a variant on
+#'   defaults.
 #'
 #' @param omit A vector of node names or their graph IDs that should be omitted
 #'   and should block further graph exploration.
 #'
-#' @param inputType The method of graph exploration depends on what the \code{nodes}
-#'   argument represents. For "\code{latent}", the input \code{nodes} are
-#'   interpreted as latent states, from which both parent and descendent graph
-#'   exploration should be done to find nodes in the same set (nodes that are
-#'   NOT conditionally independent from each other). For "\code{param}", the input
-#'   \code{nodes} are interpreted as parameters, so graph exploration begins
-#'   from the top (input) and explores descendents. For "\code{data}", the input
-#'   \code{nodes} are interpreted as data nodes, so graph exploration begins
-#'   from the bottom (input) explores parent nodes.
-#'
-#' @param stochOnly Logical for whether only stochastic nodes should be returned
-#'   (default = TRUE). If FALSE, both deterministic and stochastic nodes are
-#'   returned.
+#' @param explore The method of graph exploration, which may corresond to what
+#'   the \code{nodes} argument represents. For "down", graph exploration starts
+#'   only down (towards descendants) from \code{nodes}. For "up", graph
+#'   exploration starts only up (towards ancestors) from \code{nodes}. For
+#'   "both" (the default and normal setting), both directions are explored.
 #'
 #' @param unknownAsGiven Logical for whether a model node not in \code{nodes} or
-#'   \code{givenNodes} should be treated as given (default = FALSE). Otherwise
+#'   \code{givenNodes} should be treated as given (default = TRUE). Otherwise
 #'   (and by default) such a node may be grouped into a conditionally
-#'   independent set.
+#'   independent set, resulting in more output nodes than input \code{nodes}.
 #'
-#' @param returnType Either \code{names} for returned nodes to be node names or
-#'   \code{ids} for returned nodes to be graph IDs.
+#' @param returnType Either "names" for returned nodes to be node names or
+#'   "ids" for returned nodes to be graph IDs.
 #'
 #' @param returnScalarComponents If FALSE (default), multivariate nodes are
 #'   returned as full names (e.g. \code{x[1:3]}). If TRUE, they are returned as
 #'   scalar elements (e.g. \code{x[1]}, \code{x[2]}, \code{x[3]}).
 #'
+#' @param endAsGiven If TRUE, end nodes (defined as nodes with stochastic
+#'   parents but no stochastic children, skipping through deterministic nodes)
+#'   are included in the default for \code{givenNodes}.
+#'
 #' @author Perry de Valpine
 #'
 #' @details This function returns sets of conditionally independent nodes.
-#'   Multiple input \code{nodes} might be in the same set or different sets, and
-#'   other nodes (not in \code{nodes}) will be included.
+#'   Multiple input \code{nodes} might be in the same set or different sets.
 #'
-#' By default, deterministic dependencies of givenNodes are also
-#' counted as given nodes.  This is relevant only for parent nodes.
-#' This allows the givenNodes to include only stochastic nodes.  Say
-#' we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent
-#' node.  B is a deterministic node.  By default, B is considered
-#' given.  Otherwise, other dependent networks of nodes that that depend on B would be grouped
-#' in the same output set as C, but this is usually what is wanted.
-#' Any use of the resulting output must ensure that B is calculated when
-#' necessary, as usual with nimble's model-generic programming.  To
-#' turn off this feature, set
-#' \code{nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE)}.
+#' The \code{nodes} input and the returned sets include only stochastic nodes
+#' because conditional independence is a property of random variables.
+#' Deterministic nodes are considered in determining the sets. \code{givenNodes}
+#' may contain stochastic or deterministic nodes.
 #'
 #' @return List of nodes that are in conditionally independent sets. With each
 #'   set, nodes are returned in topologically sorted order. The sets themselves
 #'   are returned in topologically sorted order of their first nodes.
 #'
-#' @seealso There is a non-exported function
-#'   \code{nimble:::testConditionallyIndependentSets(model, sets, initialize =
-#'   TRUE)} that tests whether the conditional independence of sets is valid. It
-#'   should be the case that
-#'   \code{nimble:::testConditionallyIndependentSets(model,
-#'   getConditionallyIndependentSets(model), initialize = TRUE)} returns
-#'   \code{TRUE}.
+#' Other nodes (not in \code{nodes}) may be included in the output if
+#'   \code{unknownAsGiven=FALSE}.
 #'
 #' @export
 getConditionallyIndependentSets <- function(model,
                                             nodes,
                                             givenNodes,
                                             omit = integer(),
-                                            inputType = c("latent", "param", "data"),
-                                            stochOnly = TRUE,
-                                            unknownAsGiven = FALSE,
+                                            explore = c("both", "down", "up"),
+                                            unknownAsGiven = TRUE,
                                             returnType = 'names',
-                                            returnScalarComponents = FALSE) {
-  inputType <- match.arg(inputType)
-  if(missing(nodes)) { # default to latent nodes
-    nodeIDs <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, returnType = 'ids')
-  } else {
-    if(is.character(nodes))
-      nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
-    else
-      nodeIDs <- nodes
-  }
-  if(missing(givenNodes)) { # default to top nodes and data nodes. need to be deliberate about end nodes
-    givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, returnType = 'ids'),
-                      model$getNodeNames(dataOnly = TRUE, returnType = 'ids'))
+                                            returnScalarComponents = FALSE,
+                                            endAsGiven = FALSE) {
+  explore <- match.arg(explore)
+
+  # Make default givenNodes if not provided.
+  # default to stochastic top nodes and data nodes.
+  # NB We do not assume end nodes should be givenNodes.
+  if(missing(givenNodes)) {
+    givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, stochOnly = TRUE, returnType = 'ids'),
+                      model$getNodeNames(dataOnly = TRUE, stochOnly = TRUE, returnType = 'ids'))
+    if(endAsGiven)
+      givenNodeIDs <- unique(c(givenNodeIDs, model$getNodeNames(endOnly = TRUE, returnType = 'ids')))
   } else {
     if(is.character(givenNodes))
         givenNodeIDs <- model$expandNodeNames(givenNodes, returnType = 'ids')
     else if(is.numeric(givenNodes))
         givenNodeIDs <- givenNodes
   }
+
+  # Make default nodes (i.e. latents in a typical use case) if not provided.
+  # Default to structurally latent nodes that are stochastic, not data, and
+  # somewhere have a descendant that is a givenNode
+  if(missing(nodes)) {
+    nodeIDs <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE, includeData = FALSE, returnType = 'ids')
+    allGivenParents <- model$getParents(givenNodeIDs, upstream = TRUE, returnType = 'ids')
+    nodeIDs <- intersect(nodeIDs, allGivenParents)
+  } else {
+    if(is.character(nodes))
+      nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
+    else
+      nodeIDs <- nodes
+  }
+
   if(!missing(nodes)) {
     if(missing(givenNodes))
       givenNodesIDs <- setdiff(givenNodeIDs, nodeIDs)
@@ -198,11 +200,11 @@ getConditionallyIndependentSets <- function(model,
     nodeIDs <- setdiff(nodeIDs, givenNodeIDs)
   }
 
-  if(isTRUE(nimbleOptions("groupDetermWithGivenInCondIndSets"))) {
-    givenNodeIDs <- unique(c(givenNodeIDs, model$getDependencies(givenNodeIDs, determOnly = TRUE, self = FALSE, returnType = 'ids')))
-  }
+  ## if(isTRUE(nimbleOptions("groupDetermWithGivenInCondIndSets"))) {
+  ##   givenNodeIDs <- unique(c(givenNodeIDs, model$getDependencies(givenNodeIDs, determOnly = TRUE, self = FALSE, returnType = 'ids')))
+  ## }
   if(is.character(omit)) {
-    # This mimcs getDependencies.  I think it allows omit to include split nodes, whereas getNodeNames would not.
+    # This mimcs code in getDependencies.  I think it allows omit to include split nodes, whereas getNodeNames would not.
     # It would not make sense for nodes or givenNode to include split nodes.
     elementIDs <- model$modelDef$nodeName2GraphIDs(omit, FALSE)
     omitIDs <- unique(model$modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
@@ -214,8 +216,8 @@ getConditionallyIndependentSets <- function(model,
     omitIDs <- omit
 
   startUp <- startDown <- TRUE
-  if(inputType == "param") startUp <- FALSE
-  if(inputType == "data") startDown <- FALSE
+  if(explore == "down") startUp <- FALSE
+  if(explore == "up")   startDown <- FALSE
   result <- model$modelDef$maps$nimbleGraph$getConditionallyIndependentSets(
     nodeIDs = nodeIDs,
     givenNodeIDs = givenNodeIDs,
@@ -227,7 +229,6 @@ getConditionallyIndependentSets <- function(model,
     warning("NIMBLE development warning: calling getConditionallyIndependentSets with returnType = ids and returnScalarComponents may not be meaningful.")
   result <- lapply(result,
                    function(IDs) {
-                     if(stochOnly) IDs <- IDs[model$modelDef$maps$types[IDs] == 'stoch']
                      if(returnType == 'ids') IDs
                      if(returnType == 'names') {
                        if(returnScalarComponents)
@@ -252,6 +253,17 @@ getConditionallyIndependentSets <- function(model,
 #         If sets[[i]] is really conditionally independent of other sets, its logProb should be unchanged by having simulated with all other sets.
 #
 # Example: testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), TRUE)
+#
+# Removed from roxygen draft for getConditionallyIndependentSets:
+#' @seealso There is a non-exported function
+#'   \code{nimble:::testConditionallyIndependentSets(model, sets, initialize =
+#'   TRUE)} that tests whether the conditional independence of sets is valid. It
+#'   should be the case that
+#'   \code{nimble:::testConditionallyIndependentSets(model,
+#'   getConditionallyIndependentSets(model), initialize = TRUE)} returns
+#'   \code{TRUE}.
+#'
+#
 testConditionallyIndependentSets <- function(model, sets, initialize = TRUE) {
   if(initialize) { # would be better to use our initializeModel method, but I am doing a quick-and-dirty version here:
     model$simulate()

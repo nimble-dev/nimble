@@ -1070,20 +1070,202 @@ buildOneAGHQuad <- nimbleFunction(
                      negHess_inner_logLik_internal           = list())
 ) ## End of buildOneAGHQuad
 
-#' Process model to organize nodes for marginalization as by Laplace or adaptive
-#' Gauss-Hermite quadrature (AGHQuad) approximations
+#' Organize model nodes for marginalization
+#'
+#' Process model to organize nodes for marginalization (integration over latent
+#' or random effects) as by Laplace approximation.
+#'
+#' @param model A nimble model such as returned by \code{nimbleModel}.
+#'
+#' @param paramNodes A character vector of names of stochastic nodes that are
+#'   parameters of nodes to be marginalized over (\code{randomEffectsNodes}).
+#'   See details for default.
+#'
+#' @param randomEffectsNodes A character vector of nodes to be marginalized over
+#'   (or "integrated out"). In the case of calculating the likelihood of a model
+#'   with continuous random effects, the nodes to be marginalied over are the
+#'   random effects, hence the name of this argument. However, one can
+#'   marginalize over any nodes desired. See details for default.
+#'
+#' @param calcNodes A character vector of nodes to be calculated as the
+#'   integrand for marginalization. Typically this will include
+#'   \code{randomEffectsNodes} and some data nodes. Se details for default.
+#'
+#' @param calcNodesOther A character vector of nodes to be calculated as part of
+#'   the log likelihood that are not connected to the \code{randomEffectNodes}
+#'   and so are not actually part of the marginalization. These are somewhat
+#'   extraneous to the purpose of this function, but it is convenient to handle
+#'   them here because often the purpose of marginalization is to calculate log
+#'   likelihoods, including from "other" parts of the model.
+#'
+#' @param split A logical indicating whether to split \code{randomEffectsNodes}
+#'   into conditionally independent sets that can be marginalized separately
+#'   (\code{TRUE}) or to keep them all in one set for a single marginalization
+#'   calculation.
+#'
+#' @param warn A logical indicating whether to try to give reasonable warnings
+#'   of badly formed inputs that might be missing important nodes or include
+#'   unnecessary nodes..
+#'
+#' @details
+#'
+#' This function is used by \code{buildLaplace} to organize model nodes into
+#' roles needed for setting up the (approximate) marginalization done by Laplace
+#' approximation. It is also possible to call this function directly and pass
+#' the resulting list (possibly modified for your needs) to \code{buildLaplace}.
+#'
+#' Any of the input node vectors, when provided, will be processed using
+#'   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
+#'   \code{\paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
+#'   any of the inputs to include node-name-like syntax that might contain
+#'   multiple nodes. For example, \code{paramNodes = 'beta[1:10]'} can be
+#'   provided if there are actually 10 scalar parameters, 'beta[1]' through
+#'   'beta[10]'. The actual node names in the model will be determined by the
+#'   \code{exapndNodeNames} step.
+#'
+#' This function does not do any of the marginalization calculations. It only
+#' organizes nodes into roles of parameters, random effects, integrand
+#' calculations, and other log likelihood calculations.
+#'
+#' The checking done if `check=TRUE` tries to be reasonable, but it can't cover
+#' all cases perfectly. If it gives an unnecessary warning, simply set `check=FALSE`.
+#'
+#' If \code{paramNodes} is not provided, its default depends on what other
+#'   arguments were provided. If neither \code{randomEffectsNodes} nor
+#'   \code{calcNodes} were provided, \code{paramNodes} defaults to all
+#'   top-level, stochastic nodes, excluding any posterior predictive nodes
+#'   (those with no data anywhere downstream). These are determined by
+#'   \code{model$getNodeNames(topOnly = TRUE, stochOnly = TRUE,
+#'   includePredictive = FALSE)}. If \code{randomEffectsNodes} was provided,
+#'   \code{paramNodes} defaults to stochastic parents of
+#'   \code{randomEffectsNodes}. In these cases, any provided \code{calcNodes} or
+#'   \code{calcNodesOther} are excluded from default \code{paramNodes}. If
+#'   \code{calcNodes} but not \code{randomEffectsNodes} was provided, then the
+#'   default for \code{randomEffectsNodes} is determined first, and then
+#'   \code{paramNodes} defaults to stochastic parents of
+#'   \code{randomEffectsNodes}.
+#'
+#' Note that to obtain sensible defaults, some nodes must have been marked as
+#'   data, either by the \code{data} argument in \code{nimbleModel} or by
+#'   \code{model$setData}. Otherwise, all nodes will appear to be posterior
+#'   predictive nodes, and the default \code{paramNodes} may be empty.
+#'
+#' For purposes of \code{buildLaplace}, \code{paramNodes} does not need to (but
+#'   may) include deterministic nodes between the parameters and any
+#'   \code{calcNodes}. Such deterministic nodes will be included in
+#'   calculations automatically when needed.
+#'
+#' If \code{randomEffectsNodes} is missing, the default is a bit complicated: it
+#'   includes all latent nodes that are descendants (or "downstream") of
+#'   \code{paramNodes} (if provided) and are either (i) ancestors (or
+#'   "upstream") of data nodes (if \code{calcNodes} is missing), or (ii)
+#'   ancestors or elements of \code{calcNodes} (if \code{calcNodes} and
+#'   \code{paramNodes} are provided), or (iii) elements of \code{calcNodes} (if
+#'   \code{calcNodes} is provided but \code{paramNodes} is missing). In all
+#'   cases, discrete nodes (with warning if \code{check=TRUE}), posterior
+#'   predictive nodes and \code{paramNodes} are excluded.
+#'
+#' \code{randomEffectsNodes} should only include stochastic nodes.
+#'
+#' If \code{calcNodes} is missing, the default is \code{randomEffectsNodes} and
+#'   their descendants to the next stochastic nodes, excluding posterior
+#'   predictive nodes. These are determined by
+#'   \code{model$getDependencies(randomEffectsNodes, includePredictive=FALSE)}.
+#'
+#' If \code{calcNodesOther} is missing, the default is all stochastic
+#'   descendants of \code{paramNodes}, excluding posterior predictive nodes
+#'   (from \code{model$getDependencies(paramNodes, stochOnly=TRUE, self=FALSE,
+#'   includePosterior=FALSE)}) that are not part of \code{calcNodes}.
+#'
+#' For purposes of \code{buildLaplace}, neither \code{calcNodes} nor
+#'   \code{calcNodesOther} needs to (but may) contain deterministic nodes
+#'   between \code{paramNodes} and \code{calcNodes} or \code{calcNodesOther},
+#'   respectively. These will be included in calculations automatically when
+#'   needed.
+#'
+#' If \code{split} is \code{TRUE}, \code{model$getConditionallyIndependentSets}
+#'   is used to determine sets of the \code{randomEffectsNodes} that can be
+#'   independently marginalized. The \code{givenNodes} are the
+#'   \code{\paramNodes} and \code{calcNodes} excluding any
+#'   \code{randomEffectsNodes} and their deterministic descendants. The
+#'   \code{nodes} (to be split into sets) are the \code{randomEffectsNodes}.
+#'
+#' If \code{split} is a numeric vector, \code{randomEffectsNodes} will be split
+#'   by \code{split}(\code{randomEffectsNodes}, \code{control$split}). The last
+#'   option allows arbitrary control over how \code{randomEffectsNodes} are
+#'   blocked.
+#'
+#' If \code{check=TRUE}, then defaults for each of the four categories of nodes
+#'   are created even if the corresponding argument was provided. Then warnings
+#'   are emitted if there are any extra (potentially unnecessary) nodes provided
+#'   compared to the default or if there are any nodes in the default that were
+#'   not provided (potentially necessary). These checks are not perfect and may
+#'   be simply turned off if you are confident in your inputs.
+#'
+#' (If \code{randomEffectsNodes} was provided but \code{calcNodes} was not
+#'   provided, the default (for purposes of \code{check=TRUE} only) for
+#'   \code{randomEffectsNodes} differs from the above description. It uses
+#'   stochastic descendants of \code{randomEffectsNodes} in place of the
+#'   "data nodes" when determining ancestors of data nodes. And it uses item
+#'   (ii) instead of (iii) in the list above.)
+#'
+#' @author Wei Zhang, Perry de Valpine
+#' @return
+#'
+#' A list is returned with elements:
+#'
+#' \itemize{
+#'
+#' \item \code{paramNodes}: final processed version of \code{paramNodes}
+#'
+#' \item \code{randomEffectsNodes}: final processed version of \code{randomEffectsNodes}
+#'
+#' \item \code{calcNodes}: final processed version of \code{calcNodes}
+#'
+#' \item \code{calcNodesOther}: final processed version of \code{calcNodesOther}
+#'
+#' \item \code{givenNodes}: Input to \code{model$getConditionallyIndependentSets}, if \code{split=TRUE}.
+#'
+#' \item \code{randomEffectsSets}: Output from
+#'   \code{model$getConditionallyIndependentSets}, if \code{split=TRUE}. This
+#'   will be a list of vectors of node names. The node names in one list element
+#'   can be marginalized independently from those in other list elements. The
+#'   union of the list elements should be all of \code{randomEffectsNodes}. If
+#'   \code{split=FALSE}, \code{randomEffectsSets} will be a list with one
+#'   element, simply containing \code{randomEffectsNodes}. If \code{split} is a
+#'   numeric vector,  \code{randomEffectsSets} will be the result of
+#'   \code{split}(\code{randomEffectsNodes}, \code{control$split}).
+#'
+#' }
+#'
 #' @export
 setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                            calcNodesOther,
                            split = TRUE,
-                           warn = TRUE) {
-  paramProvided         <- !missing(paramNodes)
-  reProvided            <- !missing(randomEffectsNodes)
-  calcProvided          <- !missing(calcNodes)
+                           check = TRUE) {
+  paramProvided     <- !missing(paramNodes)
+  reProvided        <- !missing(randomEffectsNodes)
+  calcProvided      <- !missing(calcNodes)
   calcOtherProvided <- !missing(calcNodesOther)
+
+  normalizeNodes <- function(nodes, sort = FALSE) {
+    if(is.null(nodes) || isFALSE(nodes)) character(0)
+    else model$expandNodeNames(nodes, sort = sort)
+  }
+  if(paramProvided) paramNodes         <- normalizeNodes(paramNodes)
+  if(reProvided)    randomEffectsNodes <- normalizeNodes(randomEffectsNodes)
+  if(calcProvided)  calcNodes          <- normalizeNodes(calcNodes, sort = TRUE)
+  if(calcOtherProvided) calcNodesOther <- normalizeNodes(calcNodesOther, sort = TRUE)
+
+  if(reProvided) {
+    if(check)
+      if(any(model$isDiscrete(randomEffectsNodes)))
+        warning("Some randomEffectsNodes follow discrete distributions. That is likely to cause problems.")
+  }
+
   # We considered a feature to allow params to be nodes without priors. This is a placeholder in case
   # we ever pursue that again.
-  allowNonPriors <- FALSE
+  # allowNonPriors <- FALSE
   # We may need to use determ and stochastic dependencies of parameters multiple times below
   # Define these to avoid repeated computation
   # A note for future: determ nodes between parameters and calcNodes are needed inside buildOneAGHQuad
@@ -1093,31 +1275,100 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   paramDetermDepsCalculated <- FALSE
   paramStochDepsCalculated  <- FALSE
   
-  # 1. Default parameters are stochastic top-level nodes.
-  #    We considered an argument allowNonPriors, defaulting to FALSE. If TRUE, the default params would be all top-level stochastic
-  #    nodes with no RHSonly nodes as parents and RHSonly nodes (handling of constants TBD, since non-scalars would be converted to data) that have stochastic dependencies
-  #    (And then top-level stochastic nodes with RHSonly nodes as parents are essentially latent/data nodes,
-  #    some of which would need to be added to randomEffectsNodes below.)
-  stochTopNodes2reNodes <- character(0)
+  # 1. Default parameters are stochastic top-level nodes. (We previously
+  #    considered an argument allowNonPriors, defaulting to FALSE. If TRUE, the
+  #    default params would be all top-level stochastic nodes with no RHSonly
+  #    nodes as parents and RHSonly nodes (handling of constants TBD, since
+  #    non-scalars would be converted to data) that have stochastic dependencies
+  #    (And then top-level stochastic nodes with RHSonly nodes as parents are
+  #    essentially latent/data nodes, some of which would need to be added to
+  #    randomEffectsNodes below.) However this got too complicated. It is
+  #    simpler and clearer to require "priors" for parameters, even though prior
+  #    probs may not be used.
+  paramsHandled <- TRUE
   if(!paramProvided) {
-    paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
-  } else {
-    paramNodes <- model$expandNodeNames(paramNodes)
+    if(!reProvided) {
+      if(!calcProvided) {
+        paramNodes <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE, includePredictive = FALSE)
+      } else {
+        # calcNodes were provided, but RE nodes were not, so delay creating default params
+        paramsHandled <- FALSE
+      }
+    } else {
+      paramNodes <- model$getParents(randomEffectsNodes, self=FALSE, stochOnly=TRUE)
+      # self=FALSE doesn't omit if one RE node is a parent of another, so we have to do the next step
+      paramNodes <- setdiff(paramNodes, randomEffectsNodes)
+    }
+    if(paramsHandled) {
+      if(calcProvided) paramNodes <- setdiff(paramNodes, calcNodes)
+      if(calcOtherProvided) paramNodes <- setdiff(paramNodes, calcNodesOther)
+    }
   }
 
-  # 2. Default random effects are latent nodes that are stochastic dependencies of params.
-  if((!reProvided) || warn) {
-    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-    paramStochDepsCalculated <- TRUE
-    latentNodes <- model$getNodeNames(latentOnly = TRUE)
-    reNodesDefault <- intersect(latentNodes, paramStochDeps)
+  # 2. Default random effects are latent nodes that are downstream stochastic dependencies of params.
+  #    In step 3, default random effects are also limited to those that are upstream parents of calcNodes
+  if((!reProvided) || check) {
+    latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE,
+                                      includeData = FALSE, includePredictive = FALSE)
+    latentDiscrete <- model$isDiscrete(latentNodes)
+    if(any(latentDiscrete)) {
+      if((!reProvided) && check) {
+        warning("In trying to determine default randomEffectsNodes, there are some nodes\n",
+                "that follow discrete distributions. These will be omitted.")
+      }
+      latentNodes <- latentNodes[!latentDiscrete]
+    }
+    if(paramsHandled) {
+      paramDownstream <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE,
+                                               downstream = TRUE, includePredictive = FALSE)
+      #    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
+      #    paramStochDepsCalculated <- TRUE
+      reNodesDefault <- intersect(latentNodes, paramDownstream)
+    } else {
+      reNodesDefault <- latentNodes
+    }
+    # Next, if calcNodes were not provided, we create a temporary
+    # dataNodesDefault for purposes of updating reNodesDefault if needed. The
+    # idea is that reNodesDefault should be trimmed to include only nodes
+    # upstream of "data" nodes, where "data" means nodes in the role of data for
+    # purposes of marginalization.
+    # The tempDataNodesDefault is either dependencies of RE nodes if provided, or
+    # actual data nodes in the model if RE nodes not provided.
+    # If calcNodes were provided, then they are used directly to trim reNodesDefault.
+    if(!calcProvided) {
+      if(reProvided)
+        tempDataNodesDefault <- model$getDependencies(randomEffectsNodes, stochOnly = TRUE,
+                                                      self = FALSE, includePredictive = FALSE)
+      else
+        tempDataNodesDefault <- model$getNodeNames(dataOnly = TRUE)
+      if(paramsHandled)
+        tempDataNodesDefault <- setdiff(tempDataNodesDefault, paramNodes)
+      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE)
+      # See comment above about why this is necessary:
+      tempDataNodesDefaultParents <- setdiff(tempDataNodesDefaultParents, tempDataNodesDefault)
+      reNodesDefault <- intersect(reNodesDefault, tempDataNodesDefaultParents)
+    } else {
+      # Update reNodesDefault to exclude nodes that lack downstream connection to a calcNode
+      if(paramsHandled) # This means reProvided OR paramsProvided
+        reNodesDefault <- intersect(reNodesDefault,
+                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE))
+      else # This means !paramsHandled and hence !reProvided AND !paramsProvided
+        reNodesDefault <- intersect(reNodesDefault,
+                                    calcNodes)
+    }
   }
-  if(reProvided){
-    if(is.null(randomEffectsNodes) || isFALSE(randomEffectsNodes)) randomEffectsNodes <- character(0)
-    randomEffectsNodes <- model$expandNodeNames(randomEffectsNodes)
+
+  # If only calcNodes were provided, we have now created reNodesDefault from calcNodes,
+  # and are now ready to create default paramNodes
+  if(!paramsHandled) {
+    paramNodes <- model$getParents(reNodesDefault, self=FALSE, stochOnly=TRUE)
+    # See comment above about why this is necessary:
+    paramNodes <- setdiff(paramNodes, reNodesDefault)
+    if(calcOtherProvided) paramNodes <- setdiff(paramNodes, calcNodesOther)
   }
+
   # 3. Optionally check random effects if they were provided (not default)
-  if(reProvided && warn) {
+  if(reProvided && check) {
     # First check is for random effects that should have been included but weren't
     reCheck <- setdiff(reNodesDefault, randomEffectsNodes)
     if(length(reCheck)) {
@@ -1127,36 +1378,44 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "like they should be included in randomEffectsNodes for Laplace or AGHQuad approximation\n",
                      "for the provided (or default) paramNodes:\n",
                      errorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in the control list."))
+                     "To silence this warning, include \'check = FALSE\' in the control list\n",
+                     "to buildLaplace or as an argument to setupMargNodes."))
     }
     # Second check is for random effects that were included but look unnecessary
     reCheck <- setdiff(randomEffectsNodes, reNodesDefault)
     if(length(reCheck)) {
-      errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
-      if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
-      warning(paste0("There are some randomEffectsNodes provided that look like\n",
-                     "they are not needed for Laplace or AGHQuad approximation for the\n",
-                     "provided (or default) paramNodes:\n",
-                     errorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in the control list."))
+      # Top nodes should never trigger warning.
+      # Descendants of top nodes that are in randomEffectsNodes should not trigger warning
+      topNodes <- model$getNodeNames(topOnly=TRUE)
+      reCheckTopNodes <- intersect(reCheck, topNodes)
+      if(length(reCheckTopNodes)) {
+        # Simple downstream=TRUE here is not a perfect check of connection among all nodes
+        # but it will avoid false alarms
+        reCheck <- setdiff(reCheck, model$getDependencies(reCheckTopNodes, downstream=TRUE, stochOnly=TRUE))
+      }
+      if(length(reCheck)) {
+        errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
+        if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
+        warning(paste0("There are some randomEffectsNodes provided that look like\n",
+                       "they are not needed for Laplace or AGHQuad approximation for the\n",
+                       "provided (or default) paramNodes:\n",
+                       errorNodes, "\n",
+                       "To silence this warning, include \'check = FALSE\' in the control list\n",
+                       "to buildLaplace or as an argument to setupMargNodes."))
+      }
     }
   }
-  # End of step 2
+  # Set final choice of randomEffectsNodes
   if(!reProvided) {
     randomEffectsNodes <- reNodesDefault
   }
-  # 4. Default calc nodes are dependencies of random effects
-  #    Note that the internal Laplace nimbleFunctions (one for each conditionally independent set)
-  #    will fill in deterministic nodes between paramNodes and randomEffectsNodes
-  if((!calcProvided) || warn) {
-    calcNodesDefault <- model$getDependencies(randomEffectsNodes)
-  }
-  if(calcProvided){
-    if(is.null(calcNodes) || isFALSE(calcNodes)) calcNodes <- character(0)
-    calcNodes <- model$expandNodeNames(calcNodes)
+
+  # Set actual default calcNodes. This time it has self=TRUE (default)
+  if((!calcProvided) || check) {
+    calcNodesDefault <- model$getDependencies(randomEffectsNodes, includePredictive = FALSE)
   }
   # 5. Optionally check calcNodes if they were provided (not default)
-  if(calcProvided && warn) {
+  if(calcProvided && check) {
     # First check is for calcNodes that look necessary but were omitted
     calcCheck <- setdiff(calcNodesDefault, calcNodes)
     if(length(calcCheck)) {
@@ -1166,26 +1425,30 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "included in the calcNodes for Laplace or AGHQuad approximation because\n",
                      "they are dependencies of some randomEffectsNodes:\n",
                      errorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in the control list."))
+                     "To silence this warning, include \'check = FALSE\' in the control list\n",
+                     "to buildLaplace or as an argument to setupMargNodes."))
     }
     # Second check is for calcNodes that look unnecessary
     # If some determ nodes between paramNodes and randomEffectsNodes are provided in calcNodes 
     # then that's ok and we should not throw a warning message. 
     calcCheck <- setdiff(calcNodes, calcNodesDefault)
     errorNodes <- calcCheck[model$getNodeType(calcCheck)=="stoch"]
-    determCalcCheck <- setdiff(calcCheck, errorNodes)
-    numDetermCalcCheck <- length(determCalcCheck)
-    # Check other determ nodes
-    if(numDetermCalcCheck){
-      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-      paramDetermDepsCalculated <- TRUE
-      for(i in 1:numDetermCalcCheck){
-        if(!(determCalcCheck[i] %in% paramDetermDeps) || 
-           !(any(model$getDependencies(determCalcCheck[i], self = FALSE) %in% calcNodesDefault))){
-          errorNodes <- c(errorNodes, determCalcCheck[i])
-        }
-      }
-    }
+    # N.B. I commented out this checking of deterministic nodes for now.
+    #      Iterating through individual nodes for getDependencies can be slow
+    #      and I'd like to think more about how to do this. -Perry
+    ## determCalcCheck <- setdiff(calcCheck, errorNodes)
+    ## lengthDetermCalcCheck <- length(determCalcCheck)
+    ## # Check other determ nodes
+    ## if(lengthDetermCalcCheck){
+    ##   paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE, includePredictive = FALSE)
+    ##   paramDetermDepsCalculated <- TRUE
+    ##   for(i in 1:lengthDetermCalcCheck){
+    ##     if(!(determCalcCheck[i] %in% paramDetermDeps) ||
+    ##        !(any(model$getDependencies(determCalcCheck[i], self = FALSE) %in% calcNodesDefault))){
+    ##       errorNodes <- c(errorNodes, determCalcCheck[i])
+    ##     }
+    ##   }
+    ## }
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
@@ -1193,14 +1456,15 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "they are not needed for Laplace or AGHQuad approximation over\n",
                      "the provided (or default) randomEffectsNodes:\n",
                      outErrorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in the control list."))
+                     "To silence this warning, include \'check = FALSE\' in the control list\n",
+                     "to buildLaplace or as an argument to setupMargNodes."))
     }
   }
   # Finish step 4
   if(!calcProvided){
     calcNodes <- calcNodesDefault
   }
-  # 6. Default calcNodesNoLaplce: nodes needed for full model likelihood but
+  # 6. Default calcNodesOther: nodes needed for full model likelihood but
   #    that are not involved in the marginalization done by Laplace.
   #    Default is a bit complicated: All dependencies from paramNodes to
   #    stochastic nodes that are not part of calcNodes. Note that calcNodes
@@ -1209,16 +1473,12 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   #    (A deterministic that is needed for both calcNodes and calcNodesOther should be included.)
   #    So we have to first do a setdiff on stochastic nodes and then fill in the
   #    deterministics that are needed.
-  if(!calcOtherProvided || warn) {
-    if(!paramStochDepsCalculated){
-      paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE)
-      paramStochDepsCalculated <- TRUE
-    }
+  if(!calcOtherProvided || check) {
+    paramStochDeps <- model$getDependencies(paramNodes, stochOnly = TRUE, # Should this be dataOnly=TRUE?
+                                            self = FALSE, includePredictive = FALSE)
     calcNodesOtherDefault <- setdiff(paramStochDeps, calcNodes)
   }
-  if(calcOtherProvided){
-    if(is.null(calcNodesOther) || isFALSE(calcNodesOther)) calcNodesOther <- character(0)
-    calcNodesOther <- model$expandNodeNames(calcNodesOther, sort = TRUE)
+  if(calcOtherProvided) {
     if((length(calcNodesOther) > 0) && !any(model$getNodeType(calcNodesOther)=="stoch")){
       warning("There are no stochastic nodes in the calcNodesOther provided for Laplace or AGHQuad approximation.")
     }
@@ -1226,43 +1486,46 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(!calcOtherProvided){
     calcNodesOther <- calcNodesOtherDefault
   }
-  if(calcOtherProvided && warn) {
-    calcNoLaplaceCheck <- setdiff(calcNodesOtherDefault, calcNodesOther)
-    if(length(calcNoLaplaceCheck)) {
+  if(calcOtherProvided && check) {
+    calcOtherCheck <- setdiff(calcNodesOtherDefault, calcNodesOther)
+    if(length(calcOtherCheck)) {
       # We only check missing stochastic nodes; determ nodes will be added below
-      missingStochNodesInds <- which((model$getNodeType(calcNoLaplaceCheck)) == "stoch")
-      numMissingStochNodes <- length(missingStochNodesInds)
-      missingStochNodes <- calcNoLaplaceCheck[missingStochNodesInds]
-      if(numMissingStochNodes){
+      missingStochNodesInds <- which((model$getNodeType(calcOtherCheck)) == "stoch")
+      lengthMissingStochNodes <- length(missingStochNodesInds)
+      if(lengthMissingStochNodes){
+        missingStochNodes <- calcOtherCheck[missingStochNodesInds]
         errorNodes <- paste0(head(missingStochNodes, n = 4), sep = "", collapse = ", ")
-        if(numMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
+        if(lengthMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
         warning(paste0("There are some model nodes (stochastic) that look like they should be\n",
                        "included in the calcNodesOther for parts of the likelihood calculation\n",
                        "outside of Laplace or AGHQuad approximation:\n",
                        errorNodes, "\n",
-                       "To silence this warning, include \'warn = FALSE\' in the control list."))
+                     "To silence this warning, include \'check = FALSE\' in the control list\n",
+                     "to buildLaplace or as an argument to setupMargNodes."))
       }
     }
     # Check redundant stochastic nodes
-    calcNoLaplaceCheck <- setdiff(calcNodesOther, calcNodesOtherDefault)
-    stochCalcNoLaplaceCheck <- calcNoLaplaceCheck[model$getNodeType(calcNoLaplaceCheck)=="stoch"]
+    calcOtherCheck <- setdiff(calcNodesOther, calcNodesOtherDefault)
+    stochCalcOtherCheck <- calcOtherCheck[model$getNodeType(calcOtherCheck)=="stoch"]
+    errorNodes <- stochCalcOtherCheck
     # Check redundant determ nodes
-    determCalcNoLaplaceCheck <- setdiff(calcNoLaplaceCheck, stochCalcNoLaplaceCheck)
-    numDetermCalcNoLaplaceCheck <- length(determCalcNoLaplaceCheck)
-    errorNodes <- character(0)
-    if(numDetermCalcNoLaplaceCheck){
-      if(!paramDetermDepsCalculated) {
-        paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
-        paramDetermDepsCalculated <- TRUE
-      }
-      for(i in 1:numDetermCalcNoLaplaceCheck){
-        if(!(determCalcNoLaplaceCheck[i] %in% paramDetermDeps) || 
-           !(any(model$getDependencies(determCalcNoLaplaceCheck[i], self = FALSE) %in% calcNodesOtherDefault))){
-          errorNodes <- c(errorNodes, determCalcNoLaplaceCheck[i])
-        }
-      }
-    }
-    errorNodes <- c(stochCalcNoLaplaceCheck, errorNodes)
+    # N.B. I commented-out this deterministic node checking for reasons similar to above. -Perry
+    ## determCalcOtherCheck <- setdiff(calcOtherCheck, stochCalcOtherCheck)
+    ## lengthDetermCalcOtherCheck <- length(determCalcOtherCheck)
+    ## errorNodes <- character(0)
+    ## if(lengthDetermCalcOtherCheck){
+    ##   if(!paramDetermDepsCalculated) {
+    ##     paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE, includePredictive = FALSE)
+    ##     paramDetermDepsCalculated <- TRUE
+    ##   }
+    ##   for(i in 1:lengthDetermCalcOtherCheck){
+    ##     if(!(determCalcOtherCheck[i] %in% paramDetermDeps) ||
+    ##        !(any(model$getDependencies(determCalcOtherCheck[i], self = FALSE) %in% calcNodesOtherDefault))){
+    ##       errorNodes <- c(errorNodes, determCalcOtherCheck[i])
+    ##     }
+    ##   }
+    ## }
+    ## errorNodes <- c(stochCalcOtherCheck, errorNodes)
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
@@ -1270,7 +1533,8 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "they are not needed for parts of the likelihood calculation\n",
                      "outside of Laplace or AGHQuad approximation:\n",
                      outErrorNodes, "\n",
-                     "To silence this warning, include \'warn = FALSE\' in the control list."))
+                     "To silence this warning, include \'check = FALSE\' in the control list\n",
+                     "to buildLaplace or as an argument to setupMargNodes."))
     }
   }
   # Check and add necessary (upstream) deterministic nodes into calcNodesOther
@@ -1278,7 +1542,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   num_calcNodesOther <- length(calcNodesOther)
   if(num_calcNodesOther > 0){
     if(!paramDetermDepsCalculated) {
-      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE)
+      paramDetermDeps <- model$getDependencies(paramNodes, determOnly = TRUE, includePredictive = FALSE)
       paramDetermDepsCalculated <- TRUE
     }
     numParamDetermDeps <- length(paramDetermDeps)
@@ -1301,12 +1565,13 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       reSets <- list(randomEffectsNodes)
     } else {
       if(isTRUE(split)) {
+        # givenNodes should only be stochastic
         givenNodes <- setdiff(c(paramNodes, calcNodes),
                               c(randomEffectsNodes,
                                 model$getDependencies(randomEffectsNodes, determOnly=TRUE)))
         reSets <- model$getConditionallyIndependentSets(
           nodes = randomEffectsNodes, givenNodes = givenNodes,
-          unknownAsGiven = allowNonPriors)
+          unknownAsGiven = TRUE)
       }
       else if(is.numeric(split)){
         reSets <- split(randomEffectsNodes, split)
@@ -1338,7 +1603,7 @@ buildAGHQuad <- nimbleFunction(
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                    control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
-    if(is.null(control$warn))   warn <- TRUE else  warn <- control$warn
+    if(is.null(control$check))   check <- TRUE else  check <- control$check
     # Possible future feature
     #if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
     allowNonPriors <- FALSE
@@ -1357,7 +1622,7 @@ buildAGHQuad <- nimbleFunction(
                                   calcNodesOther = calcNodesOther,
                                   # allowNonPriors = allowNonPriors,
                                   split = split,
-                                  warn = warn)
+                                  check = check)
     }
     paramNodes <- MargNodes$paramNodes
     randomEffectsNodes <- MargNodes$randomEffectsNodes
@@ -1962,27 +2227,24 @@ buildAGHQuad <- nimbleFunction(
 
 #' Laplace approximation
 #' 
-#' Builds a Laplace approximation algorithm for a given NIMBLE model. 
+#' Build a Laplace approximation algorithm for a given NIMBLE model.
 #' 
 #' @param model a NIMBLE model object, such as returned by \code{nimbleModel}.
 #'   The model must have automatic derivatives (AD) turned on, e.g. by using
 #'   \code{buildDerivs=TRUE} in \code{nimbleModel}.
 #' @param paramNodes a character vector of names of parameter nodes in the
-#'   model; defaults to top-level stochastic nodes, as determined by
-#'   \code{model$getNodeNames(topOnly=TRUE, stochOnly=TRUE)}. Alternatively,
-#'   \code{paramNodes} can be a list in the format returned by
+#'   model; defaults are provided by \code{\link{setupMargNodes}}.
+#'   Alternatively, \code{paramNodes} can be a list in the format returned by
 #'   \code{setupMargNodes}, in which case \code{randomEffectsNodes},
 #'   \code{calcNodes}, and \code{calcNodesOther} are not needed (and will be
 #'   ignored).
 #' @param randomEffectsNodes a character vector of names of unobserved (latent)
 #'   nodes to marginalize (integrate) over using Laplace approximation; defaults
-#'   to latent stochastic nodes that depend on \code{paramNodes}.
+#'   are provided by \code{\link{setupMargNodes}}.
 #' @param calcNodes a character vector of names of nodes for calculating the
-#'   integrand for Laplace approximation; defaults to nodes that depend on
-#'   \code{randomEffectsNodes}, as determined by
-#'   \code{model$geteDependencies(randomEffectsNodes)} (which will include
-#'   \code{randomEffectsNodes}). There may be deterministic nodes between
-#'   \code{paramNodes} and \code{randomEffectsNodes}. These will be included in
+#'   integrand for Laplace approximation; defaults are provided by
+#'   \code{\link{setupMargNodes}}. There may be deterministic nodes between
+#'   \code{paramNodes} and \code{calcNodes}. These will be included in
 #'   calculations automatically and thus do not need to be included in
 #'   \code{calcNodes} (but there is no problem if they are).
 #' @param calcNodesOther a character vector of names of nodes for calculating
@@ -1994,42 +2256,78 @@ buildAGHQuad <- nimbleFunction(
 #'   nodes between \code{paramNodes} and \code{calcNodesOther}. These will be
 #'   included in calculations automatically and thus do not need to be included
 #'   in \code{calcNodesOther} (but there is no problem if they are).
-#' @param control a named list for providing
-#'   additional settings used in Laplace approximation. See
-#'   \code{control} section below.
+#' @param control a named list for providing additional settings used in Laplace
+#'   approximation. See \code{control} section below.
 #'
 #' @section \code{buildLaplace}:
 #'
 #' \code{buildLaplace} is the main function for constructing the Laplace
-#' approximation for a given model.
+#'   approximation for a given model or part of a model.
 #'
-#' One only needs to provide a NIMBLE model object and then the function will
-#' construct the pieces necessary for Laplace approximation to marginalize over
-#' all latent states (aka random effects) in a model. To do so, it will
-#' determine default values for \code{paramNodes}, \code{randomEffectsNodes},
-#' \code{calcNodes}, and \code{calcNodesOther} as described above.
+#' Any of the input node vectors, when provided, will be processed using
+#'   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
+#'   \code{\paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
+#'   any of the inputs to include node-name-like syntax that might contain
+#'   multiple nodes. For example, \code{paramNodes = 'beta[1:10]'} can be
+#'   provided if there are actually 10 scalar parameters, 'beta[1]' through
+#'   'beta[10]'. The actual node names in the model will be determined by the
+#'   \code{exapndNodeNames} step.
 #'
-#' The default values are obtained by calling \code{setupMargNodes}, whose
-#' arguments match those here (except for a few arguments which are taken from
-#' control list elements here). One can call that function to see exactly how
-#' nodes will be arranged for Laplace approximation. One can also call it,
-#' customize the returned list, and then provide that to \code{buildLaplace} as
-#' \code{paramNodes}.
+#' In many (but not all) cases, one only needs to provide a NIMBLE model object
+#'   and then the function will construct reasonable defaults necessary for
+#'   Laplace approximation to marginalize over all latent states (aka random
+#'   effects) in a model. The default values for the four groups of nodes are
+#'   obtained by calling \link{\code{setupMargNodes}}, whose arguments match
+#'   those here (except for a few arguments which are taken from control list
+#'   elements here).
+#'
+#' \code{setupMargNodes} tries to give sensible defaults from
+#'   any combination of \code{paramNodes}, \code{randomEffectsNodes},
+#'   \code{calcNodes}, and \code{calcNodesOther} that are provided. For example,
+#'   if you provide only \code{randomEffectsNodes} (perhaps you want to
+#'   marginalize over only some of the random effects in your model),
+#'   \code{setupMargNodes} will try to determine appropriate choices for the
+#'   others.
+#'
+#' These defaults make general assumptions such as that
+#'   \code{randomEffectsNodes} have \code{paramNodes} as parents. However, The
+#'   steps for determining defaults are not simple, and it is possible that they
+#'   will be refined in the future. It is also possible that they simply don't
+#'   give what you want for a particular model. One example where they will not
+#'   give desired results can occur when random effects have no prior
+#'   parameters, such as `N(0,1)` nodes that will be multiplied by a scale
+#'   factor (e.g. sigma) and added to other explanatory terms in a model. Such
+#'   nodes look like top-level parameters in terms of model structure, so
+#'   you must provide a \code{randomEffectsNodes} argument to indicate which
+#'   they are.
+#'
+#' It can be helpful to use \code{setupMargNodes} directly to see exactly how
+#'   nodes will be arranged for Laplace approximation. For example, you may want
+#'   to verify the choice of \code{randomEffectsNodes} or get the order of
+#'   parameters it has established to use for making sense of the MLE and
+#'   results from the \code{summary} method. One can also call
+#'   \code{setupMargNodes}, customize the returned list, and then provide that
+#'   to \code{buildLaplace} as \code{paramNodes}. In that case,
+#'   \code{setupMargNodes} will not be called (again) by \code{buildLaplace}.
+#'
+#' If \code{setupMargNodes} is emitting an unnecessary warning, simply use
+#'   \code{control=list(check=FALSE)}.
 #'
 #' If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
-#' effects / latent states) have constraints on the range of valid values
-#' (because of the distribution they follow), they will be used on a transformed
-#' scale determined by \code{parameterTransform}. This means the Laplace
-#' approximation itself will be done on the transformed scale for random effects
-#' and finding the MLE will be done on the transformed scale for parameters. For
-#' parameters, any prior distributions are not included in calculations, but
-#' they are used to determine valid parameter ranges. For example, if
-#' \code{sigma} is a standard deviation, declare it with a prior such as
-#' \code{sigma ~ dhalfflat()} to indicate that it must be greater than 0.
+#'   effects / latent states) have constraints on the range of valid values
+#'   (because of the distribution they follow), they will be used on a
+#'   transformed scale determined by \code{parameterTransform}. This means the
+#'   Laplace approximation itself will be done on the transformed scale for
+#'   random effects and finding the MLE will be done on the transformed scale
+#'   for parameters. For parameters, prior distributions are not included in
+#'   calculations, but they are used to determine valid parameter ranges. For
+#'   example, if \code{sigma} is a standard deviation, you can declare it with a
+#'   prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
+#'   greater than 0.
 #'
 #' For default determination of parameters, all parameters must have a prior
-#' distribution simply to indicate the range of valid values. For a param
-#' \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
+#'   distribution simply to indicate the range of valid values. For a param
+#'   \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
 #'
 #' The object returned by \code{buildLaplace} is a nimbleFunction object with
 #' numerous methods (functions). The most useful ones are:
@@ -2065,17 +2363,17 @@ buildAGHQuad <- nimbleFunction(
 #'         determined by finite differences of the gradients obtained by
 #'         automatic differentiation (AD). Return value is a nimbleList of type
 #'         \code{optimResultNimbleList}, similar to what is returned by R's
-#'         optim.
+#'         optim. See \code{help(nimOptim)}.
 #'
-#' \item \code{summary(MLEoutput, originalScale,
-#'        calcRandomEffectsStdError, returnJointCovariance)}. Summarize the
-#'        maximum likelihood estimation results, given object
-#'        \code{MLEoutput} that was returned by \code{findMLE}. The
-#'        summary can include a covariance matrix for the parameters, the random
-#'        effects, or both, and these can be returned on the original parameter
-#'        scale or on the (potentially) transformed scale(s) used in estimation.
+#' \item \code{summary(MLEoutput, originalScale, calcRandomEffectsStdError,
+#'        returnJointCovariance)}. Summarize the maximum likelihood estimation
+#'        results, given object \code{MLEoutput} that was returned by
+#'        \code{findMLE}. The summary can include a covariance matrix for the
+#'        parameters, the random effects, or both),
+#'        and these can be returned on the original parameter scale or on the
+#'        (potentially) transformed scale(s) used in estimation.
 #'
-#' In addition, \code{summary} accepts the following optional arguments:
+#' In more detail, \code{summary} accepts the following optional arguments:
 #'
 #'        \itemize{
 #'
@@ -2154,8 +2452,7 @@ buildAGHQuad <- nimbleFunction(
 #'   parameter values in the order of \code{paramNames}.
 #'
 #'   \item \code{gr_otherLogLik(p)}. Gradient (vector of derivatives with
-#'   respect to each parameter) of \code{otherLogLik(p)}. This is obtained
-#'   using automatic differentiation (AD) with double-taping. Results should
+#'   respect to each parameter) of \code{otherLogLik(p)}. Results should
 #'   match \code{gr_otherLogLik_internal(p)} but may be more efficient after
 #'   the first call.
 #'
@@ -2202,7 +2499,7 @@ buildAGHQuad <- nimbleFunction(
 #'    transformed random effects, evaluated at parameter value \code{p} and
 #'    transformed random effects \code{reTransform}.
 #'
-#'   \item \code{one_time_fixes()}. Users do not need to run this. Is is called
+#'   \item \code{one_time_fixes()}. Users never need to run this. Is is called
 #'   when necessary internally to fix dimensionality issues if there is only
 #'   one parameter in the model.
 #'
@@ -2237,9 +2534,11 @@ buildAGHQuad <- nimbleFunction(
 #'         last option allows arbitrary control over how
 #'         \code{randomEffectsNodes} are blocked.
 #'
-#'   \item \code{warn}. If TRUE (default), a warning is issued if
-#'   \code{randomEffectsNodes} and/or \code{calcNodes} are provided but have
-#'   other or missing elements relative to their defaults.
+#'   \item \code{check}. If TRUE (default), a warning is issued if
+#'         \code{paramNodes}, \code{randomEffectsNodes} and/or \code{calcNodes}
+#'         are provided but seek to have missing elements or unnecessary
+#'         elements based on some default inspection of the model. If
+#'         unnecessary warnings are emitted, simply set \code{check=FALSE}.
 #'
 #'   \item \code{innerOptimControl}. See \code{optimControl}.
 #'
