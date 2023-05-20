@@ -181,7 +181,7 @@ getConditionallyIndependentSets <- function(model,
     givenNodeIDs <- c(model$getNodeNames(topOnly = TRUE, stochOnly = TRUE, returnType = 'ids'),
                       model$getNodeNames(dataOnly = TRUE, stochOnly = TRUE, returnType = 'ids'))
     if(endAsGiven)
-      givenNodeIDs <- unique(c(givenNodeIDs, model$getNodeNames(endAsGiven = TRUE)))
+      givenNodeIDs <- unique(c(givenNodeIDs, model$getNodeNames(endOnly = TRUE, returnType = 'ids')))
   } else {
     if(is.character(givenNodes))
         givenNodeIDs <- model$expandNodeNames(givenNodes, returnType = 'ids')
