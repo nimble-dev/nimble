@@ -84,6 +84,12 @@ a block of a variable (PR #1289).
 
 ## BUG FIXES
 
+- Fix bug producing integer overflow in `getDependencyPathCountOneNode`
+and improve efficiency of checking maximum number of paths in conjugacy
+checking (PR #1322).
+
+- Fix long-standing memory leak in `dinvwish_chol` (PR #1320).
+
 - Fix bug giving incorrect results for `runCrossValidate`, when using the 
 default MSE loss function and any user-defined loss functions, 
 but not the 'predictive' loss function. Also, calculate loss when using
@@ -127,9 +133,8 @@ building (PR #1279).
 
 ## DEVELOPER LEVEL CHANGES
 
-- Remove use of C++11 standard in various configuration locations (PR #1292).
-
-- Fix compiler warnings on Windows, noted by CRAN checks.
+- Take `nimbleCppADbaseClass` out of `libnimble.a` and instead makes a 
+session-specific .o file from it to address AD-related crashes. (PR #1318)
 
 - Remove `nimOptim_model` functionality.
 
@@ -143,6 +148,15 @@ statements (PR #1254).
 - Fix build warning on MacOS involving `nimOptim` (PR #1276).
 
 - Remove references to unsupported `trace` (issue #1262).
+
+
+#                            CHANGES IN VERSION 0.13.1 (May 2023) 
+
+## DEVELOPER LEVEL CHANGES
+
+- Remove code triggering Windows warnings about writing bytes into region of size 0 by modifying `setLength`.
+
+- Remove use of C++11 standard, per CRAN requirements. As part of this, replace use of `std::ptr_fun` (PR #1292).
 
 
 #                            CHANGES IN VERSION 0.13.1 (December 2022) 
