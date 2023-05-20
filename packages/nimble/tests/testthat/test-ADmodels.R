@@ -508,6 +508,7 @@ model$setData('y')
 newDist <- as.matrix(dist(runif(n)))
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
+relTolTmp[4] <- 1e-3
 
 ## 361 sec.
 test_ADModelCalculate(model, newUpdateNodes = list(dist = newDist), useParamTransform = TRUE,

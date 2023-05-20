@@ -62,10 +62,10 @@ nimbleGraphClass <- setRefClass(
                 startDown,
                 unknownAsGiven)
         },
-        getDependencyPathCountOneNode = function(node) {
+        getDependencyPathCountOneNode = function(node, max = .Machine$integer.max) {
             if(length(node) > 1)
                 stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
-            .Call(C_getDependencyPathCountOneNode, graphExtPtr, node)
+            .Call(C_getDependencyPathCountOneNode, graphExtPtr, node, max)
         },
         getDependencyPaths = function(node) {
             if(length(node) > 1)
