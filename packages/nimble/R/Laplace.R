@@ -2095,7 +2095,8 @@ buildAGHQuad <- nimbleFunction(
           ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects at MLEs
           inv_negHess <- inverse_negHess(p, optreTransform)
           jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
-          jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
+          #jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
+          jointInvNegHessZero[(npar+1):ntot, (npar+1):ntot] <- inv_negHess
           ## Hessian of log-likelihood wrt to params and transformed random effects
           hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
           ## Derivative of inverse transformation for params
@@ -2103,22 +2104,26 @@ buildAGHQuad <- nimbleFunction(
           JacobpInvTransform   <- derivspInvTransform$jacobian
           ## Jacobian of optimized random effects wrt transformed parameters
           JacobOptreWrtParams <- inv_negHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
-          jointJacob <- matrix(NA, nrow = ntot, ncol = npar)
-          jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
-          jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
+          jointJacob <- matrix(init = FALSE, nrow = ntot, ncol = npar)
+          #jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
+          jointJacob[(npar+1):ntot, 1:npar] <- JacobOptreWrtParams
+          #jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
+          jointJacob[1:npar, 1:npar] <- diag(npar)
           ## Joint covariance matrix on transformed scale
           vcov_Transform <- jointInvNegHessZero + jointJacob %*% vcov_pTransform %*% t(jointJacob)
           if(originalScale){
             derivs_reInvTransform <- derivs_reInverseTransform(optreTransform, c(0, 1))
             Jacob_reInvTransform  <- derivs_reInvTransform$jacobian
             Jacob_JointInvTransform <- matrix(0, nrow = ntot, ncol = ntot)
-            Jacob_JointInvTransform[1:nre, 1:nre] <- Jacob_reInvTransform
-            Jacob_JointInvTransform[(nre+1):ntot, (nre+1):ntot] <- JacobpInvTransform
+            #Jacob_JointInvTransform[1:nre, 1:nre] <- Jacob_reInvTransform
+            Jacob_JointInvTransform[(npar+1):ntot, (npar+1):ntot] <- Jacob_reInvTransform
+            #Jacob_JointInvTransform[(nre+1):ntot, (nre+1):ntot] <- JacobpInvTransform
+            Jacob_JointInvTransform[1:npar, 1:npar] <- JacobpInvTransform
             vcov <- Jacob_JointInvTransform %*% vcov_Transform %*% t(Jacob_JointInvTransform)
-            stdErr_re_p <- sqrt(diag(vcov))
-            stdErr_p <- stdErr_re_p[(nre+1):ntot]
+            stdErr_p_re <- sqrt(diag(vcov))
+            stdErr_p <- stdErr_p_re[1:npar]
             if(calcRandomEffectsStdError){
-              ranres$stdErrors <- stdErr_re_p[1:nre]
+              ranres$stdErrors <- stdErr_p_re[(npar+1):ntot]
             }
             else{
               ranres$stdErrors <- numeric(0)
@@ -2130,7 +2135,7 @@ buildAGHQuad <- nimbleFunction(
           }## End of if(originalScale)
           else { ## On transformed scale
             if(calcRandomEffectsStdError){
-              stdErr_reTransform <- sqrt(diag(vcov_Transform)[1:nre])
+              stdErr_reTransform <- sqrt(diag(vcov_Transform)[(npar+1):ntot])
               ranres$stdErrors <- stdErr_reTransform
             }
             else{
@@ -2138,7 +2143,7 @@ buildAGHQuad <- nimbleFunction(
             }
             ans$vcov <- vcov_Transform
             pres$estimates <- pTransform
-            pres$stdErrors <- sqrt(diag(vcov_Transform)[(nre+1):ntot])
+            pres$stdErrors <- sqrt(diag(vcov_Transform)[1:npar])
             ranres$estimates <- optreTransform
           }
         }## End of if(returnJointCovariance)
@@ -2236,6 +2241,39 @@ buildAGHQuad <- nimbleFunction(
                      gr_otherLogLik_internal = list()
                      )
 )
+
+summaryLaplace <- function(laplace, MLEresult,
+                           originalScale =TRUE,
+                           calcRandomEffectsStdError = FALSE,
+                           returnJointCovariance = FALSE) {
+  summary <- laplace$summary(MLEresult, originalScale = originalScale,
+                             calcRandomEffectsStdError = calcRandomEffectsStdError,
+                             returnJointCovariance = returnJointCovariance)
+  paramNames <- summary$params$names
+  paramEsts <- summary$params$estimates
+  if(length(paramEsts) < length(paramNames)) paramNames <- paramNames[1:(length(paramNames)-1)]
+  names(paramEsts) <- paramNames
+  stdErrParams <- summary$params$stdErrors
+  paramsDF <- data.frame(estimate = paramEsts, se = stdErrParams, row.names = paramNames)
+
+  REnames <- summary$randomEffects$names
+  REests <- summary$randomEffects$estimates
+  if(length(REests) < length(REnames)) REnames <- REnames[1:(length(REnames)-1)]
+  REstdErrs <- summary$randomEffects$stdErrors
+  if(length(REstdErrs))
+    REDF <- data.frame(estimate = REests, se = REstdErrs, row.names = REnames)
+  else
+    REDF <- data.frame(estimate = REests, row.names = REnames)
+
+  vcov <- summary$vcov
+  if(length(vcov)) {
+    colnames(vcov) <- rownames(vcov) <- c(paramNames, REnames)
+  }
+  list(params = paramsDF,
+       randomEffects = REDF,
+       vcov = vcov,
+       originalScale = originalScale)
+}
 
 #' Laplace approximation
 #' 

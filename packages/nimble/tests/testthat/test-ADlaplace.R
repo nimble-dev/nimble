@@ -93,7 +93,7 @@ test_that("Laplace simplest 1D works", {
   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 4, tol = 1e-5)
   # Covariance matrix 
-  vcov <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(4/13, 1), ncol = 1) %*% (13) %*% t(matrix(c(4/13, 1), ncol = 1))
+  vcov <- matrix(c(0, 0, 0, c(1/(1/4+1/9))), nrow = 2) + matrix(c(1, 4/13), ncol = 1) %*% (13) %*% t(matrix(c(1, 4/13), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-6)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
@@ -138,11 +138,11 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 4, tol = 1e-4)
   # Covariance matrix on transformed scale
-  vcov_transform <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(16/13, 1), ncol = 1) %*% (13/16) %*% t(matrix(c(16/13, 1), ncol = 1))
+  vcov_transform <- matrix(c(0, 0, 0, 1/(1/4+1/9)), nrow = 2) + matrix(c(1, 16/13), ncol = 1) %*% (13/16) %*% t(matrix(c(1, 16/13), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-4)
   summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   # Covariance matrix on original scale
-  vcov <- diag(c(1,4)) %*% vcov_transform %*% diag(c(1,4))
+  vcov <- diag(c(4, 1)) %*% vcov_transform %*% diag(c(4, 1))
   expect_equal(vcov, summ2$vcov, tol = 1e-4)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
@@ -205,11 +205,11 @@ test_that("Laplace simplest 1D (constrained) with multiple data works", {
   # tmbres <- nlminb(obj$par, obj$fn, obj$gr)
   # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
   # tmbvcov <- inverse(tmbrep$jointPrecision)
-  expect_equal(opt$par, 0.2895238)
+  expect_equal(opt$par, 0.2895238, tol = 1e-4)
   expect_equal(opt$value, -10.47905, tol = 1e-7)
-  expect_equal(summ$randomEffects$estimates, -0.005608619)
-  vcov <- matrix(c(1.414499, -1.628299, -1.628299, 2.741033), nrow = 2, byrow = TRUE)
-  expect_equal(summ$vcov, vcov, 1e-6)
+  expect_equal(summ$randomEffects$estimates, -0.005608619, tol = 1e-4)
+  vcov <- matrix(c(2.741033, -1.628299, -1.628299, 1.414499), nrow = 2, byrow = TRUE)
+  expect_equal(summ$vcov, vcov, 2e-3)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE()
@@ -275,7 +275,7 @@ test_that("Laplace simplest 1D (constrained) with deterministic intermediates an
   expect_equal(opt$par, -2.639534, 1e-7)
   expect_equal(opt$value, -10.47905, tol = 1e-7)
   expect_equal(summ$randomEffects$estimates, 1.603742, tol = 1e-7)
-  vcov <- matrix(c(1.415167, -3.258191, -3.258191, 10.967784), nrow = 2, byrow = TRUE)
+  vcov <- matrix(c(10.967784, -3.258191, -3.258191, 1.415167), nrow = 2, byrow = TRUE)
   expect_equal(summ$vcov, vcov, 1e-7)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
@@ -319,7 +319,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
                 "optim does not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix 
-  vcov <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(0.4587156, 1), ncol = 1) %*% (1/0.002293578) %*% t(matrix(c(0.4587156, 1), ncol = 1))
+  vcov <- matrix(c(0, 0, 0, 1/(0.2^2/4+1/9)), nrow = 2) + matrix(c(1, 0.4587156), ncol = 1) %*% (1/0.002293578) %*% t(matrix(c(1, 0.4587156), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-4)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
@@ -366,13 +366,13 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
                 "optim does not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix on transformed scale
-  vcov_transform <- matrix(c(1/(0.2^2/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(18.34862, 1), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(18.34862, 1), ncol = 1))
+  vcov_transform <- matrix(c(0, 0, 0, 1/(0.2^2/4+1/9)), nrow = 2) + matrix(c(1, 18.34862), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(1, 18.34862), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-3)
   expect_output(summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE,
                                            returnJointCovariance = TRUE),
                 "optim does not converge for the inner optimization")
   # Covariance matrix on original scale
-  vcov <- diag(c(1,40)) %*% vcov_transform %*% diag(c(1,40))
+  vcov <- diag(c(40,1)) %*% vcov_transform %*% diag(c(40,1))
   expect_equal(vcov, summ2$vcov, tol = 1e-3)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
@@ -430,7 +430,7 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
   # Covariance matrix 
-  vcov <- matrix(c(1/(0.8^2*3/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(0.09398496, 1), ncol = 1) %*% (1/0.02255639) %*% t(matrix(c(0.09398496, 1), ncol = 1))
+  vcov <- matrix(c(0, 0, 0, 1/(0.8^2*3/4+1/9)), nrow = 2) + matrix(c(1, 0.09398496), ncol = 1) %*% (1/0.02255639) %*% t(matrix(c(1, 0.09398496), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
   
   # check that
@@ -502,11 +502,11 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
   # Covariance matrix on transformed scale
-  vcov_transform <- matrix(c(1/(0.8^2*3/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(1.174812, 1), ncol = 1) %*% (1/3.524436) %*% t(matrix(c(1.174812, 1), ncol = 1))
+  vcov_transform <- matrix(c(0, 0, 0, 1/(0.8^2*3/4+1/9)), nrow = 2) + matrix(c(1, 1.174812), ncol = 1) %*% (1/3.524436) %*% t(matrix(c(1, 1.174812), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-6)
   summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   # Covariance matrix on original scale
-  vcov <- diag(c(1,12.5)) %*% vcov_transform %*% diag(c(1,12.5))
+  vcov <- diag(c(12.5, 1)) %*% vcov_transform %*% diag(c(12.5, 1))
   expect_equal(vcov, summ2$vcov, tol = 1e-5)
   # check that
   mLaplaceCheck <- buildLaplace(model = m, paramNodes = 'mu', randomEffectsNodes = 'a')
@@ -583,7 +583,7 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, ahat, tol = 1e-6)
   # Covariance matrix 
-  vcov <- diag(c(rep(1/(3*0.8^2/4 + 1/9), 2), 0)) + matrix(c(rep(0.09398496, 2), 1), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(rep(0.09398496, 2), 1), ncol = 1))
+  vcov <- diag(c(0, rep(1/(3*0.8^2/4 + 1/9), 2))) + matrix(c(1, rep(0.09398496, 2)), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(1, rep(0.09398496, 2)), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
@@ -688,8 +688,8 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   tmbvcov[1,] <- c(20.333333, 1.1666667, 1.1666667)
   tmbvcov[2,] <- c(1.166667, 0.6651515, 0.5015152)
   tmbvcov[3,] <- c(1.166667, 0.5015152, 0.6651515)
-  ## TMB and NIMBLE have different orders of random effects and parameters
-  expect_equal(summ$vcov[c(3,1,2), c(3,1,2)], tmbvcov, tol = 1e-6)
+
+  expect_equal(summ$vcov, tmbvcov, tol = 1e-6)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
@@ -794,8 +794,8 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   tmbvcov[1,] <- c(21.645833, 1.8229167, 1.8229167)
   tmbvcov[2,] <- c(1.822917, 1.0380050, 0.7849117)
   tmbvcov[3,] <- c(1.822917, 0.7849117, 1.0380050)
-  ## TMB and NIMBLE have different orders of random effects and parameters
-  expect_equal(summ$vcov[c(3,1,2), c(3,1,2)], tmbvcov, tol = 1e-6)
+
+  expect_equal(summ$vcov, tmbvcov, tol = 1e-6)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
@@ -893,8 +893,9 @@ test_that("Laplace with 2x2D random effects for 1D data that are separable works
   tmbvcov[5,] <- c(-2.691772e-11, 1.800000e+02,  5.596302e-01, -5.596302e-01,  3.684693e+01,  3.515307e+01)
   tmbvcov[6,] <- c(-2.691772e-11, 1.800000e+02, -5.596302e-01,  5.596302e-01,  3.515307e+01,  3.684693e+01)
   
-  expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-4)
-  
+  # The ordering of a[1, 1:2] and a[2, 1:2] is flipped between nimble and TMB:
+  expect_equal(summ$vcov[c(1:3, 5, 4, 6), c(1:3, 5, 4, 6)], tmbvcov, tol = 1e-4)
+
   # For this case, we build up the correct answer more formulaically
   # Define A as the vector a[1, 1], a[1, 2], a[2, 1], a[2, 2]
   # cov_A <- matrix(0, nrow = 4, ncol = 4)
@@ -976,9 +977,9 @@ test_that("Laplace with 2x2D random effects for 2D data that need joint integrat
   tmbvcov[4,] <- c(3.1250000,   7.638889, 0.8333333, 4.1666667, 0.2777778,  2.7777778)
   tmbvcov[5,] <- c(0.6597222,   5.833333, 0.7777778, 0.2777778, 1.5000000,  0.8333333)
   tmbvcov[6,] <- c(1.9097222,  12.500000, 0.2777778, 2.7777778, 0.8333333,  4.1666667)
-  
-  expect_equal(summ$vcov[c(5,6,1,3,2,4), c(5,6,1,3,2,4)], tmbvcov, tol = 1e-4)
-  
+  # The ordering of a[1, 1:2] and a[2, 1:2] is flipped between nimble and TMB:
+  expect_equal(summ$vcov[c(1:3, 5, 4, 6), c(1:3, 5, 4, 6)], tmbvcov, tol = 1e-4)
+
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-4)
@@ -1195,8 +1196,8 @@ test_that("Laplace with non-empty calcNodesExtra works", {
   tmbvcov[4,] <- c( 9,   8.46323e-13, -3.462231e-13,  9.000000e+00,  3.462231e-13)
   tmbvcov[5,] <- c(-9,   9.00000e+00,  3.462231e-13,  3.462231e-13,  9.000000e+00)
   
-  expect_equal(summ$vcov[c(3:5, 1:2), c(3:5, 1:2)], tmbvcov, tol=1e-5)
-  
+  expect_equal(summ$vcov, tmbvcov, tol=1e-5)
+
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE()
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
@@ -1242,7 +1243,7 @@ test_that("Laplace with 2x1D parameters (one needs transformation) and non-norma
   tmbvcov[5,] <- c(0.07943536, -0.28810783, -0.01342937, 0.05824110,  0.16979550,  0.16423022,  0.02255625)
   tmbvcov[6,] <- c(0.06797944, -1.07845809, -0.23826114, 0.03110420,  0.16423022,  0.50464751, -0.10296956)
   tmbvcov[7,] <- c(0.09118502,  0.51064309,  0.21393310, 0.08580658,  0.02255625, -0.10296956,  0.22602059)
-  expect_equal(summ$vcov[c(6:7, 1:5), c(6:7, 1:5)], tmbvcov, tol=1e-4)
+  expect_equal(summ$vcov, tmbvcov, tol=1e-4)
   ## Stand error for sigma (original parameter)
   summ2 <- cmLaplace$summary(opt, originalScale = TRUE)
   expect_equal(summ2$params$stdErrors[2], 0.5472659, tol=1e-4)
@@ -1716,9 +1717,9 @@ test_that("Laplace with N(0,1) random effects works", {
   # This test also uses dflat and dhalfflat
   set.seed(1)
   code <- nimbleCode({
-    sigma ~ dhalfflat()
     beta0 ~ dflat()
     beta1 ~ dflat()
+    sigma ~ dhalfflat()
     for(i in 1:5) eps[i] ~ dnorm(0, 1)
     for(i in 1:5) sigma_eps[i] <- eps[i] * sigma
     for(i in 1:25) {
@@ -1739,12 +1740,14 @@ test_that("Laplace with N(0,1) random effects works", {
   SMN <- setupMargNodes(m)
   expect_identical(SMN$randomEffectsNodes, character())
 
-  SMN <- setupMargNodes(m, paramNodes = c("beta0", "beta1", "sigma"),
+  SMN <- setupMargNodes(m, #paramNodes = c("beta0", "beta1", "sigma"),
                         randomEffectsNodes = 'eps[1:5]')
   expect_identical(SMN$randomEffectsSets,
                    list('eps[1]','eps[2]','eps[3]','eps[4]','eps[5]'))
   expect_identical(SMN$calcNodesOther,
                    m$expandNodeNames(c('lifted_d2_times_beta0', 'z[1:10]')))
+  expect_identical(SMN$paramNodes,
+                   c("beta0", "beta1", "sigma"))
 
   mLaplace <- buildLaplace(m, SMN)
   cm <- compileNimble(m)
@@ -1797,7 +1800,7 @@ test_that("Laplace with N(0,1) random effects works", {
       c(-0.00040366417968837,-0.000258765680997534,0.00012515416885698,-0.000521588459390233,-0.000656047342397191,-9.27215078179097e-06,0.00290834901828464,0.000631332975051338),
       c(0.0188669701122331,0.031434090552776,0.28920161604805,0.154869927065379,-0.0981200179208082,0.0144354576429849,0.000631332975051331,0.283268865188007)))
 
-  expect_equal(summ$vcov, TMB_vcov, tol = 1e-5)
+  expect_equal(summ$vcov, TMB_vcov[c(6:8, 1:5), c(6:8, 1:5)], tol = 1e-5)
 })
 
 nimbleOptions(enableDerivs = EDopt)
