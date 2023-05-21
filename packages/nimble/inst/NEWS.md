@@ -15,7 +15,8 @@ This release introduces tools for automatic differentiation in NIMBLE.
     -- Functionality that enables Hamiltonian Monte Carlo (provided in the
     `nimbleHMC` package).
     
-    -- A parameter transformation system.
+    -- A parameter transformation system to work in unconstrained parameter
+    spaces when model parameters have constrained domains.
         
 - Add Laplace approximation algorithm, allowing a user to approximate
 the marginal likelihood (integration/marginalizing over random effects/
@@ -37,8 +38,8 @@ latent process values) and find the MLE.
 configuration objects (PR #1293):
 
     -- `expandTarget` argument controls whether nodes specified in
-       `target` undegor expansion via `expandNodeNames`, adding a
-       separate sampler instance to each node.
+       `target` undergo expansion via `expandNodeNames`, adding a
+       separate sampler instance for each resulting node.
 
     -- When `expandTarget = TRUE`, the `scalarComponents` argument is
        passed as the `returnScalarComponents` argument to `expandNodeNames`.
@@ -62,10 +63,11 @@ including differences from JAGS.
 
 - Add information on predefined nimbleLists to the User Manual.
 
-- Improve error message when user-defined distribution has incorrec dimension
+- Improve error message when user-defined distribution has incorrect dimension
 for `x`.
 
-- Improve error message when mistakenly using `T()` in assignment.
+- Improve error message when mistakenly using `T()` in deterministic rather than
+  stochastic model declaration.
 
 - Improve error-trapping when a loop index is incorrectly used in indexing
 a block of a variable (PR #1289).
@@ -80,10 +82,11 @@ a block of a variable (PR #1289).
 
 - Error trap setting deterministic nodes as data in `setData` (PR #1269).
 
-- Better error trap wrong size/dimensions of in `setInits` (PR #1260).
+- Better error trap of wrong size/dimensions of in `setInits` (PR #1260).
 
-- Export `clearCompiled`, allowing users to clear compiled objects and unload 
-the shared library produced during nimble's compilation process.
+- Export `clearCompiled`, allowing users to clear compiled objects and unload
+the shared library produced during nimble's compilation process (on non-Windows
+operating systems).
 
 ## BUG FIXES
 
@@ -130,16 +133,21 @@ building (PR #1279).
 - Error trap and fix a bug in handling particular cases in list-like subsetting
 (PR #1259).
 
-- [**PdV**] (commitf54a8db on fix of optimDefaultControlList) 
+- Make optimDefaultControlList handle default values completely and with
+  consistent compiled and uncompiled behavior.
+  
+- make nimOptim respect parscale control parameter.
 
 - Update manual installation chapter and `INSTALL` links to gfortran on MacOS.
 
 ## DEVELOPER LEVEL CHANGES
 
-- Take `nimbleCppADbaseClass` out of `libnimble.a` and instead makes a 
-session-specific .o file from it to address AD-related crashes. (PR #1318)
+- Take `nimbleCppADbaseClass` out of `libnimble.a` and instead make a
+session-specific .o file from it to address AD-related crashes on some OSes. (PR
+#1318)
 
-- Remove `nimOptim_model` functionality.
+- Remove `nimOptim_model` functionality. This fixes build warning on MacOS
+  involving `nimOptim` (PR #1276).
 
 - Update `Eigen` copyright dates.
 
@@ -147,8 +155,6 @@ session-specific .o file from it to address AD-related crashes. (PR #1318)
 statements (PR #1254). 
 
 - Fix inconsistent use of offset in internal conversion functions (PR #1277).
-
-- Fix build warning on MacOS involving `nimOptim` (PR #1276).
 
 - Remove references to unsupported `trace` (issue #1262).
 
