@@ -1354,12 +1354,16 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       reNodesDefault <- intersect(reNodesDefault, tempDataNodesDefaultParents)
     } else {
       # Update reNodesDefault to exclude nodes that lack downstream connection to a calcNode
-      if(paramsHandled) # This means reProvided OR paramsProvided. Including parents allows checking of potentially missing REs
+      if(paramsHandled) { # This means reProvided OR paramsProvided. Including parents allows checking
+        # of potentially missing REs.
         reNodesDefault <- intersect(reNodesDefault,
                                     model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE))
-      else # This means !paramsHandled and hence !reProvided AND !paramsProvided
+      } else { # This means !paramsHandled and hence !reProvided AND !paramsProvided
         reNodesDefault <- intersect(reNodesDefault,
                                     calcNodes)
+        reNodesDefault <- intersect(reNodesDefault,
+                                    model$getParents(calcNodes, upstream=TRUE, self=FALSE, stochOnly = TRUE))
+      }
     }
   }
 

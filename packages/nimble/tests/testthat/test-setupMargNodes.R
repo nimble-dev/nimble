@@ -412,3 +412,20 @@ test_that("setupMargNodes works with determimistic node as parameter", {
   expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
   expect_identical(SMN$paramNodes, c("P"))
 })
+
+test_that("setupMargNodes finds correct randomEffectsNodes based on calcNodes input", {
+  code <- nimbleCode({
+    for(i in 1:2){
+      p[i] ~ dnorm(0, 1)
+      r[i] ~ dnorm(p[i], 1)
+      s[i] ~ dnorm(r[i], 1)
+    }
+    p[3] ~ dnorm(0, 1)
+    y[1] ~ dnorm(p[3], 1)
+    y[2] ~ dnorm(s[1] + s[2], 1)
+  })
+  m <- nimbleModel(code, data = list(y = c(1, 2)))
+  SMN <- setupMargNodes(m, calcNodes = c("r", "s"))
+  expect_identical(SMN$randomEffectsNodes, c("r[1]","r[2]"))
+  expect_identical(SMN$paramNodes, c("p[1]","p[2]"))
+})

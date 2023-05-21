@@ -46,7 +46,7 @@ callsNotAllowedInAD <- c(
   '%%',
   'nimMod',
   'trace',
-  'nimStep',
+#  'nimStep',
   'nimEigen',
   'nimSvd',
   'nimOptim',
