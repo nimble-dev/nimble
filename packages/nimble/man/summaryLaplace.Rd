@@ -8,8 +8,8 @@ summaryLaplace(
   laplace,
   MLEoutput,
   originalScale = TRUE,
-  calcRandomEffectsStdError = FALSE,
-  calcJointCovariance = FALSE
+  randomEffectsStdError = FALSE,
+  jointCovariance = FALSE
 )
 }
 \arguments{
@@ -28,10 +28,10 @@ Transformations are used for any parameters and/or random effects that have
 constrained ranges of valid values, so that in the transformed parameter
 space there are no constraints.}
 
-\item{calcRandomEffectsStdError}{If TRUE, calculate the standard error of the
+\item{randomEffectsStdError}{If TRUE, calculate the standard error of the
 estimates of random effects values.}
 
-\item{calcJointCovariance}{If TRUE, calculate the joint covariance matrix of 
+\item{jointCovariance}{If TRUE, calculate the joint covariance matrix of
 the parameters and random effects together. If FALSE, calculate the 
 covariance matrix of the parameters.}
 }

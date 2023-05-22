@@ -166,8 +166,8 @@ numerous methods (functions). The most useful ones are:
         \code{optimResultNimbleList}, similar to what is returned by R's
         optim. See \code{help(nimOptim)}.
 
-\item \code{summary(MLEoutput, originalScale, calcRandomEffectsStdError,
-       calcJointCovariance)}. Summarize the maximum likelihood estimation
+\item \code{summary(MLEoutput, originalScale, randomEffectsStdError,
+       jointCovariance)}. Summarize the maximum likelihood estimation
        results, given object \code{MLEoutput} that was returned by
        \code{findMLE}. The summary can include a covariance matrix for the
        parameters, the random effects, or both),
@@ -183,11 +183,11 @@ In more detail, \code{summary} accepts the following optional arguments:
           otherwise, it returns results on the transformed scale(s). If there
           are no constraints, the two scales are identical. Defaults to TRUE.
 
-          \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard
+          \item \code{randomEffectsStdError}. Logical. If TRUE, standard
           errors of random effects will be calculated.
           Defaults to FALSE.
 
-          \item \code{calcJointCovariance}. Logical. If TRUE, the joint
+          \item \code{jointCovariance}. Logical. If TRUE, the joint
           variance-covariance matrix of the parameters and the random effects
           will be returned. If FALSE, the variance-covariance matrix of the 
           parameters will be returned. Defaults to FALSE.
@@ -203,15 +203,15 @@ In more detail, \code{summary} accepts the following optional arguments:
           chosen by \code{originalScale}).
 
           \item \code{randomEffects}. A list that contains estimates of random
-          effects and, if requested (\code{calcRandomEffectsStdError=TRUE})
+          effects and, if requested (\code{randomEffectsStdError=TRUE})
           their standard errors, on original or transformed scale. Standard
           errors are calculated following the generalized delta method of
           Kass and Steffey (1989).
 
           \item \code{vcov}. If requested (i.e.
-          \code{calcJointCovariance=TRUE}), the joint variance-covariance
+          \code{jointCovariance=TRUE}), the joint variance-covariance
           matrix of the parameters and random effects, on original or
-          transformed scale. If \code{calcJointCovariance=FALSE}, the 
+          transformed scale. If \code{jointCovariance=FALSE}, the
           covariance matrix of the parameters, on original or transformed 
           scale.
 
@@ -226,15 +226,15 @@ Additional methods to access or control more details of the Laplace approximatio
 
 \itemize{
 
-  \item \code{get_node_names_vec(returnParams)}. Return a vector (>1) of names
+  \item \code{getNodeNamesVec(returnParams)}. Return a vector (>1) of names
   of parameters/random effects nodes, according to \code{returnParams =
   TRUE/FALSE}. Use this if there is more than one node.
 
-  \item \code{get_node_name_single(returnParams)}. Return the name of a
+  \item \code{getNodeNameSingle(returnParams)}. Return the name of a
   single parameter/random effect node, according to \code{returnParams = 
   TRUE/FALSE}. Use this if there is only one node.
 
-  \item \code{set_method(method)}. Set method ID for calculating the Laplace
+  \item \code{setMethod(method)}. Set method ID for calculating the Laplace
   approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2},
   default method), or 3 (\code{Laplace3}). See below for more details. Users
   wanting to explore efficiency can try switching from method 2 (default) to
@@ -242,13 +242,13 @@ Additional methods to access or control more details of the Laplace approximatio
   with each method will be (much) slower than subsequent Laplace
   approximations.
 
-  \item \code{get_method()}. Return the current method ID for Laplace.
+  \item \code{getMethod()}. Return the current method ID for Laplace.
 
   \item \code{gr_logLik(p, trans)}. Gradient of the Laplace-approximated
   marginal log-likelihood at parameter value \code{p}. Argument \code{trans} 
   is similar to that in \code{calcLaplace}. If there are multiple parameters,
   the vector \code{p} is given in the order of parameter names returned by 
-  \code{get_node_names_vec(returnParams=TRUE)}.
+  \code{getNodeNamesVec(returnParams=TRUE)}.
 
   \item \code{gr_Laplace(p, trans)}. This is the same as \code{gr_logLik}.
 
@@ -386,7 +386,7 @@ CpumpLaplace <- compileNimble(pumpLaplace, project = pump)
 # Calculate MLEs of parameters
 MLEres <- CpumpLaplace$findMLE()
 # Calculate estimates and standard errors for parameters and random effects on original scale
-allres <- CpumpLaplace$summary(MLEres, calcRandomEffectsStdError = TRUE)
+allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
 }
 
 }
