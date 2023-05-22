@@ -30,7 +30,6 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         CppAD_directory = NA,
         enableDerivs = TRUE,
         buildModelDerivs = FALSE,
-        checkModelADcalls = TRUE,
         doADerrorTraps = TRUE,
         useADreconfigure = TRUE,
         determinePredictiveNodesInModel = TRUE,

@@ -507,13 +507,15 @@ BUGSdeclClass$methods(
 BUGSdeclClass$methods(
     genReplacementsAndCodeReplaced = function(constantsNamesList,
                                               context,
-                                              nimFunNames) {
+                                              nimFunNames,
+                                              checkAD = FALSE) {
         replacementsAndCode <-
             genReplacementsAndCodeRecurse(code,
                                           c(constantsNamesList,
                                             context$indexVarExprs),
                                           nimFunNames,
-                                          envir = envir)
+                                          envir = envir,
+                                          checkAD = checkAD)
         replacements <<- replacementsAndCode$replacements
         codeReplaced <<- replacementsAndCode$codeReplaced
         
@@ -950,7 +952,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                           nimbleFunctionNames,
                                           replaceVariableLHS = TRUE,
                                           debug = FALSE,
-                                          envir = .GlobalEnv) {
+                                          envir = .GlobalEnv,
+                                          checkAD = FALSE) {
     if(debug) browser()
     if(is.numeric(code) || is.logical(code) ||
        (nimbleOptions()$allowDynamicIndexing &&
@@ -987,7 +990,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                                   constAndIndexNames,
                                                   nimbleFunctionNames,
                                                   debug = debug,
-                                                  envir = envir)
+                                                  envir = envir,
+                                                  checkAD = checkAD)
             )
             contentsCodeReplaced <-
                 lapply(contents, function(x) x$codeReplaced)
@@ -1001,7 +1005,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                                   constAndIndexNames,
                                                   nimbleFunctionNames,
                                                   debug = debug,
-                                                  envir = envir)
+                                                  envir = envir,
+                                                  checkAD = checkAD)
                 if(variable$replaceable &&
                    all(contentsReplaceable))
                     return(replaceAllCodeSuccessfully(code))
@@ -1024,7 +1029,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                                           constAndIndexNames,
                                                           nimbleFunctionNames,
                                                           replaceVariableLHS = FALSE, debug,
-                                                          envir = envir)
+                                                          envir = envir,
+                                                          checkAD = checkAD)
                         ),
                         lapply(
                             code[-c(1,2)],
@@ -1033,7 +1039,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                                               constAndIndexNames,
                                                               nimbleFunctionNames,
                                                               debug = debug,
-                                                              envir = envir))
+                                                              envir = envir,
+                                                              checkAD = checkAD))
                     )
             } else {
                 contents <- lapply(
@@ -1043,7 +1050,8 @@ genReplacementsAndCodeRecurse <- function(code,
                                                       constAndIndexNames,
                                                       nimbleFunctionNames,
                                                       debug = debug,
-                                                      envir = envir))
+                                                      envir = envir,
+                                                      checkAD = checkAD))
             }
             contentsCodeReplaced <- lapply(contents, function(x) x$codeReplaced)
             contentsReplacements <- lapply(contents, function(x) x$replacements)
@@ -1090,7 +1098,18 @@ genReplacementsAndCodeRecurse <- function(code,
                         '\" has non-replaceable node values as arguments.  Must be a nimble function.')
                  )
         if(isRfunction & allContentsReplaceable)
-            return(replaceAllCodeSuccessfully(code))
+          return(replaceAllCodeSuccessfully(code))
+
+        if(checkAD && isTRUE(nimbleOptions('doADerrorTraps'))) {
+          thisCallName <- safeDeparse(code[[1]])
+          thisCheck <- try(any(thisCallName==fxnsNotAllowedInAD))
+          if(isTRUE(thisCheck)) {
+            message("  [Warning] function ", thisCallName, " is not supported for derivatives.\n",
+                    "This model will not compile. If you don't need derivatives, use buildDerivs=FALSE.\n",
+                    "To silence this message, do nimbleOptions(doADerrorTraps=FALSE).")
+          }
+        }
+
         return(replaceWhatWeCan(code,
                                 contentsCodeReplaced,
                                 contentsReplacements,

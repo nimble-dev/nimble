@@ -42,7 +42,11 @@ nimKeyWords <- list(copy = 'nimCopy',
                     max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
-callsNotAllowedInAD <- c(
+distsNotAllowedInAD <- c(
+  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper', 'constraint'))
+)
+
+fxnsNotAllowedInAD <- c(
   '%%',
   'nimMod',
   'trace',
@@ -62,7 +66,6 @@ callsNotAllowedInAD <- c(
   paste0('r', c('binom', 'nbinom', 'pois','beta','chisq',
                 'dexp','exp_nimble','flat','halfflat','gamma','invgamma','sqrtinvgamma','lnorm',
                 'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
-  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper', 'constraint')),
   paste0('r', c('cat', 'interval', 'car_normal', 'car_proper',
                 'dirch','mnorm_chol','multi','mvt_chol','lkj_corr_cholesky','wish_chol',
                 'invwish_chol')),
@@ -77,6 +80,8 @@ callsNotAllowedInAD <- c(
   'ISNAN','ISNA',
   'nimCopy','carMinBound','carMaxBound'
 )
+
+callsNotAllowedInAD <- c(distsNotAllowedInAD, fxnsNotAllowedInAD)
 
 nfMethodRCinterface <- setRefClass(
     Class = 'nfMethodRCinterface',

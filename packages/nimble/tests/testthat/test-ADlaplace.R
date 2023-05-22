@@ -30,10 +30,10 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
     expect_wrapper(opt <- cL$findMLE())
   }
   if(missing(summ_orig)){
-    expect_wrapper(summ_orig <- cL$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
+    expect_wrapper(summ_orig <- cL$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE))
   }
   if(missing(summ_trans)){
-    expect_wrapper(summ_trans <- cL$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
+    expect_wrapper(summ_trans <- cL$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE))
   }
   ref_method <- cL$get_method()
   for(method in methods) {
@@ -44,8 +44,8 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
       expect_wrapper(opt_alt <- cL$findMLE())
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
-      expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
-      expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE))
+      expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE))
+      expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE))
       expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-5)
       expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-5)
       expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-5)
@@ -90,9 +90,15 @@ test_that("Laplace simplest 1D works", {
   # Jacobian of ahat wrt mu is 4/13
   # Hessian of joint loglik wrt a: -(1/4 + 1/9)
   # Hessian of marginal loglik wrt mu is -1/13
-  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 4, tol = 1e-5)
-  # Covariance matrix 
+  # check behavior of summaryLaplace
+  summ2 <- summaryLaplace(cmLaplace, opt, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
+  expect_equal(nrow(summ2$randomEffects), 1)
+  expect_equal(nrow(summ2$params), 1)
+  expect_equal(row.names(summ2$randomEffects), "a")
+  expect_equal(row.names(summ2$params), "mu")
+  # Covariance matrix
   vcov <- matrix(c(0, 0, 0, c(1/(1/4+1/9))), nrow = 2) + matrix(c(1, 4/13), ncol = 1) %*% (13) %*% t(matrix(c(1, 4/13), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-6)
 
@@ -135,12 +141,17 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   expect_equal(opt$par, 4, tol = 1e-4)
   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
   expect_equal(opt$hessian[1,1], -4^2/13, tol = 1e-4)
-  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 4, tol = 1e-4)
+  expect_equal(summ$params$estimates, log(4), tol = 1e-4)
+  # check summaryLaplace
+  summL <- summaryLaplace(cmLaplace, opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
+  expect_equal(summL$params['mu','estimate'], log(4), tol = 1e-4)
+
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(0, 0, 0, 1/(1/4+1/9)), nrow = 2) + matrix(c(1, 16/13), ncol = 1) %*% (13/16) %*% t(matrix(c(1, 16/13), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-4)
-  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
   # Covariance matrix on original scale
   vcov <- diag(c(4, 1)) %*% vcov_transform %*% diag(c(4, 1))
   expect_equal(vcov, summ2$vcov, tol = 1e-4)
@@ -173,7 +184,7 @@ test_that("Laplace simplest 1D (constrained) with multiple data works", {
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
   opt <- cmLaplace$findMLE()
-  summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcJointCovariance = TRUE)
   # Results are checked using those from TMB
   # TMB cpp code:
   #include <TMB.hpp>
@@ -239,7 +250,7 @@ test_that("Laplace simplest 1D (constrained) with deterministic intermediates an
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
   opt <- cmLaplace$findMLE()
-  summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcJointCovariance = TRUE)
   # Results are checked using those from TMB
   # TMB cpp code:
   # #include <TMB.hpp>
@@ -315,7 +326,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
   # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
   # Hessian of marginal loglik wrt param mu is -(0.2*0.5)^2/4.36 = -0.002293578
   expect_output(summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE,
-                                          returnJointCovariance = TRUE),
+                                          calcJointCovariance = TRUE),
                 "optim does not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix 
@@ -362,14 +373,14 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(opt$value, dnorm(0.1*40, 0.1*40, sd = sqrt(4.36), log = TRUE))
 
   expect_output(summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE,
-                                          returnJointCovariance = TRUE),
+                                          calcJointCovariance = TRUE),
                 "optim does not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(0, 0, 0, 1/(0.2^2/4+1/9)), nrow = 2) + matrix(c(1, 18.34862), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(1, 18.34862), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-3)
   expect_output(summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE,
-                                           returnJointCovariance = TRUE),
+                                           calcJointCovariance = TRUE),
                 "optim does not converge for the inner optimization")
   # Covariance matrix on original scale
   vcov <- diag(c(40,1)) %*% vcov_transform %*% diag(c(40,1))
@@ -427,7 +438,7 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   # Jacobian of ahat wrt mu is 4*0.5/(4+9*0.8^2*3) = 0.09398496
   # Hessian of joint loglik wrt a: -(3*0.8^2/4 + 1/9)
   # Hessian of marginal loglik wrt mu: -0.02255639 (numerical, have not got AD work)
-  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
   # Covariance matrix 
   vcov <- matrix(c(0, 0, 0, 1/(0.8^2*3/4+1/9)), nrow = 2) + matrix(c(1, 0.09398496), ncol = 1) %*% (1/0.02255639) %*% t(matrix(c(1, 0.09398496), ncol = 1))
@@ -499,12 +510,12 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   res <- dmnorm_chol(c(4, 5, 6), 0.8*0.5*12.5, cholesky = chol_cov, prec_param=FALSE, log = TRUE)
   expect_equal(opt$value, res)
   # Check covariance matrix 
-  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(0, 0, 0, 1/(0.8^2*3/4+1/9)), nrow = 2) + matrix(c(1, 1.174812), ncol = 1) %*% (1/3.524436) %*% t(matrix(c(1, 1.174812), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-6)
-  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
   # Covariance matrix on original scale
   vcov <- diag(c(12.5, 1)) %*% vcov_transform %*% diag(c(12.5, 1))
   expect_equal(vcov, summ2$vcov, tol = 1e-5)
@@ -580,7 +591,7 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   # Hessian of marginal loglik wrt mu: -0.04511278 (numerical, have not got AD work)
   muhat <- mean(y)/(0.8*0.5)
   ahat <- c((9*0.8*sum(y[1,]) + 4*0.5*muhat)/(4+9*0.8^2*3), (9*0.8*sum(y[2,]) + 4*0.5*muhat)/(4+9*0.8^2*3))
-  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
   expect_equal(summ$randomEffects$estimates, ahat, tol = 1e-6)
   # Covariance matrix 
   vcov <- diag(c(0, rep(1/(3*0.8^2/4 + 1/9), 2))) + matrix(c(1, rep(0.09398496, 2)), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(1, rep(0.09398496, 2)), ncol = 1))
@@ -645,7 +656,7 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   res <- dmnorm_chol(as.numeric(y), mean(y), cholesky = chol_cov, prec_param=FALSE, log = TRUE)
   expect_equal(opt$value, res)
   # Check covariance matrix
-  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, calcJointCovariance = TRUE)
   # Covariance matrix from TMB:
   # TMB cpp code (test.cpp) below:
   # include <TMB.hpp>
@@ -690,7 +701,10 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   tmbvcov[3,] <- c(1.166667, 0.5015152, 0.6651515)
 
   expect_equal(summ$vcov, tmbvcov, tol = 1e-6)
-  
+
+  summL <- summaryLaplace(cmLaplace, opt, calcJointCovariance = TRUE)
+  expect_equal(nrow(summL$randomEffects), 2)
+
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
@@ -751,7 +765,7 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   expect_equal(opt$value, res)
   
   # Check covariance matrix
-  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, calcJointCovariance = TRUE)
   # Covariance matrix from TMB:
   # TMB cpp code (test.cpp) below:
   # include <TMB.hpp>
@@ -884,7 +898,7 @@ test_that("Laplace with 2x2D random effects for 1D data that are separable works
   expect_equal(opt$par, c(12.98392, 406.04878), tol = 1e-4)
   expect_equal(opt$value, -41.86976, tol = 1e-6)
   # Check covariance matrix
-  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, calcJointCovariance = TRUE)
   tmbvcov <- matrix(nrow = 6, ncol = 6)
   tmbvcov[1,] <- c(6.625000e+00, 4.687500e+00,  4.050000e+00,  4.050000e+00, -2.693817e-11, -2.695275e-11)
   tmbvcov[2,] <- c(4.687500e+00, 9.250000e+02,  2.965628e-11,  2.967848e-11,  1.800000e+02,  1.800000e+02)
@@ -895,6 +909,9 @@ test_that("Laplace with 2x2D random effects for 1D data that are separable works
   
   # The ordering of a[1, 1:2] and a[2, 1:2] is flipped between nimble and TMB:
   expect_equal(summ$vcov[c(1:3, 5, 4, 6), c(1:3, 5, 4, 6)], tmbvcov, tol = 1e-4)
+
+  summL <- summaryLaplace(cmLaplace, opt, calcJointCovariance = TRUE)
+  expect_identical(summL$randomEffects$estimate, summ$randomEffects$estimates)
 
   # For this case, we build up the correct answer more formulaically
   # Define A as the vector a[1, 1], a[1, 2], a[2, 1], a[2, 2]
@@ -969,7 +986,7 @@ test_that("Laplace with 2x2D random effects for 2D data that need joint integrat
   expect_equal(opt$par, c(0.5603309, 11.7064674 ), tol = 1e-4)
   expect_equal(opt$value, -4.503796, tol = 1e-7)
   # Check covariance matrix
-  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, calcJointCovariance = TRUE)
   tmbvcov <- matrix(nrow = 6, ncol = 6)
   tmbvcov[1,] <- c(4.4270833,  11.111111, 1.4583333, 3.1250000, 0.6597222,  1.9097222)
   tmbvcov[2,] <- c(11.1111111, 70.833333, 2.6388889, 7.6388889, 5.8333333, 12.5000000)
@@ -1156,7 +1173,7 @@ test_that("Laplace with non-empty calcNodesExtra works", {
   expect_equal(opt$value, -6.420377, tol = 1e-6)
   
   ## Check covariance matrix
-  summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, calcJointCovariance = TRUE)
   ## TMB cpp code:
   #include <TMB.hpp>
   #template<class Type>
@@ -1234,7 +1251,7 @@ test_that("Laplace with 2x1D parameters (one needs transformation) and non-norma
   expect_equal(opt$par, c(0.330241, 0.3059177), tol = 1e-4)
   expect_equal(opt$value, -9.703857, tol = 1e-6)
   ## Check covariance matrix on the transformed scale
-  summ <- cmLaplace$summary(opt, originalScale = FALSE, returnJointCovariance = TRUE)
+  summ <- cmLaplace$summary(opt, originalScale = FALSE, calcJointCovariance = TRUE)
   tmbvcov <- matrix(nrow = 7, ncol = 7)
   tmbvcov[1,] <- c(0.10337427,  0.04574391,  0.09719623, 0.08526807,  0.07943536,  0.06797944,  0.09118502)
   tmbvcov[2,] <- c(0.04574391,  3.21994672,  0.91522073, 0.10980129, -0.28810783, -1.07845809,  0.51064309)
@@ -1328,7 +1345,10 @@ test_that("Laplace with no random effects (simple linear regression) works", {
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_no_re = TRUE)
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, expected_no_re = TRUE)
-  
+
+  summL <- summaryLaplace(cmLaplace, opt, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
+  expect_equal(nrow(summL$randomEffects), 0)
+  expect_equal(nrow(summL$vcov), 3)
   ## TMB cpp code
   #include <TMB.hpp>
   #template<class Type>
@@ -1380,7 +1400,7 @@ test_that("Laplace with no random effects (simple linear regression) works", {
 ##   opt <- cmLaplace$findMLE()
 ##   expect_equal(opt$par, 4, tol = 1e-4)
 ##   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
-##   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, returnJointCovariance = TRUE)
+##   summ <- cmLaplace$summary(opt, originalScale = TRUE, calcRandomEffectsStdError = TRUE, calcJointCovariance = TRUE)
 ##   expect_equal(summ$randomEffects$estimates, 4, tol = 1e-5)
 ##   # Covariance matrix
 ##   vcov <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(4/13, 1), ncol = 1) %*% (13) %*% t(matrix(c(4/13, 1), ncol = 1))
@@ -1467,7 +1487,7 @@ test_that("Laplace with no random effects (simple linear regression) works", {
 ##   expect_equal(opt$par, c(12.98392, 406.04878), tol = 1e-4)
 ##   expect_equal(opt$value, -41.86976, tol = 1e-6)
 ##   # Check covariance matrix
-##   summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+##   summ <- cmLaplace$summary(opt, calcJointCovariance = TRUE)
 ##   tmbvcov <- matrix(nrow = 6, ncol = 6)
 ##   tmbvcov[1,] <- c(6.625000e+00, 4.687500e+00,  4.050000e+00,  4.050000e+00, -2.693817e-11, -2.695275e-11)
 ##   tmbvcov[2,] <- c(4.687500e+00, 9.250000e+02,  2.965628e-11,  2.967848e-11,  1.800000e+02,  1.800000e+02)
@@ -1515,7 +1535,7 @@ test_that("Laplace with no random effects (simple linear regression) works", {
 ##   expect_equal(opt$par, c(4, -2, 5), tol = 1e-3)
 ##   expect_equal(opt$value, -6.420377, tol = 1e-6)
 ##   ## Check covariance matrix
-##   summ <- cmLaplace$summary(opt, returnJointCovariance = TRUE)
+##   summ <- cmLaplace$summary(opt, calcJointCovariance = TRUE)
 
 ##   ## Covariance matrix from TMB
 ##   tmbvcov <- matrix(nrow = 5, ncol = 5)
@@ -1787,7 +1807,7 @@ test_that("Laplace with N(0,1) random effects works", {
   ## tmbvcov <- solve(tmbrep$jointPrecision)
   ##write.table(tmbvcov, file = "", sep=",",col.names = FALSE, row.names=FALSE)
   expect_equal(res$par, c(3.1276930, 0.1645356, 1.5657498), tolerance = 1e-6 )
-  summ <- cmLaplace$summary(res, calcRandomEffectsStdError=TRUE, returnJointCovariance=TRUE)
+  summ <- cmLaplace$summary(res, calcRandomEffectsStdError=TRUE, calcJointCovariance=TRUE)
   ## From the write.table call just above
   ## (which is symmetric anyway, so byrow =TRUE doesn't really matter)
   TMB_vcov <- matrix(byrow = TRUE, nrow = 8, data =

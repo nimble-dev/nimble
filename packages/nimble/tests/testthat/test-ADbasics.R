@@ -10,6 +10,73 @@ RCrelTol0 <- 1e-12
 RCrelTol1 <- 1e-6
 RCrelTol2 <- 1e-4
 
+## This set of tests works if you run the code inside test_that
+## However, test_that disables capture.output, so they these tests
+## don't work that way.
+## test_that("AD error-trapping of unsupported dists and fxns in models works", {
+
+##   origOption <- nimbleOptions('doADerrorTraps')
+
+##   output <- capture.output(
+##     m <- nimbleModel(
+##     quote({
+##       a ~ dcat(p[1:2])
+##     })
+##   ), type = "message")
+##   expect_false(any(grepl("does not have support for derivatives", output)))
+
+##   output <- capture.output(
+##     m <- nimbleModel(
+##     quote({
+##       a ~ dcat(p[1:2])
+##     }),
+##     buildDerivs = TRUE
+##     ), type = 'message')
+##   .GlobalEnv$output <- output
+##   expect_true(any(grepl("does not have support for derivatives", output)))
+
+##   nimbleOptions(doADerrorTraps = FALSE)
+##   output <- capture.output(
+##     m <- nimbleModel(
+##     quote({
+##       a ~ dcat(p[1:2])
+##     }),
+##     buildDerivs = TRUE
+##   ), type = 'message')
+##   expect_false(any(grepl("does not have support for derivatives", output)))
+##   nimbleOptions(doADerrorTraps = TRUE)
+
+##   output <- capture.output(
+##     m <- nimbleModel(
+##     quote({
+##       a <- b %% c
+##     })
+##   ), type = 'message')
+##   expect_false(any(grepl("not supported for derivatives", output)))
+
+##   output <- capture.output(
+##     m <- nimbleModel(
+##     quote({
+##       a <- b %% c
+##     }),
+##     buildDerivs = TRUE
+##   ), type = 'message')
+##   expect_true(any(grepl("not supported for derivatives", output)))
+
+##   nimbleOptions(doADerrorTraps = FALSE)
+##   output <- capture.output(
+##     m <- nimbleModel(
+##     quote({
+##       a <- b %% c
+##     }),
+##     buildDerivs = TRUE
+##   ), type = 'message')
+##   expect_false(any(grepl("not supported for derivatives", output)))
+
+##   nimbleOptions(doADerrorTraps = origOption)
+
+## })
+
 test_that('AD works from character buildDerivs with setup = TRUE', {
   adfun <- nimbleFunction(
     setup = TRUE,

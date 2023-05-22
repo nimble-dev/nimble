@@ -1214,7 +1214,7 @@ modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)) {
-        declInfo[[i]]$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
+        declInfo[[i]]$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames, checkAD = buildDerivs)
     }
 })
 
