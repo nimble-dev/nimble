@@ -2324,8 +2324,10 @@ summaryLaplace <- function(laplace, MLEoutput,
     REDF <- data.frame(estimate = REests, row.names = REnames)
 
   vcov <- summary$vcov
-  if(length(vcov)) {
-    colnames(vcov) <- rownames(vcov) <- c(paramNames, REnames)
+  if (dim(vcov)[1] == length(paramNames)) {
+      colnames(vcov) <- rownames(vcov) <- c(paramNames)
+  } else {
+      colnames(vcov) <- rownames(vcov) <- c(paramNames, REnames)
   }
   list(params = paramsDF,
        randomEffects = REDF,
