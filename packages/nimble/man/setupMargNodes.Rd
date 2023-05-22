@@ -113,7 +113,11 @@ If \code{paramNodes} is not provided, its default depends on what other
   \code{calcNodes} but not \code{randomEffectsNodes} was provided, then the
   default for \code{randomEffectsNodes} is determined first, and then
   \code{paramNodes} defaults to stochastic parents of
-  \code{randomEffectsNodes}.
+  \code{randomEffectsNodes}. Finally, any stochastic parents of
+  \code{calcNodes} (whether provided or default) that are not in
+  \code{calcNodes} are added to the default for \code{paramNodes}, but only
+  after \code{paramNodes} has been used to determine the defaults for
+  \code{randomEffectsNodes}, if necessary.
 
 Note that to obtain sensible defaults, some nodes must have been marked as
   data, either by the \code{data} argument in \code{nimbleModel} or by

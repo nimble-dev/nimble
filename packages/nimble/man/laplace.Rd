@@ -60,6 +60,10 @@ Build a Laplace approximation algorithm for a given NIMBLE model.
 \code{buildLaplace} is the main function for constructing the Laplace
   approximation for a given model or part of a model.
 
+See method \code{summary} below and the separation function
+  \code{\link{summaryLaplace}} for processing maximum likelihood estimates
+  obtained by method \code{findMLE} below.
+
 Any of the input node vectors, when provided, will be processed using
   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
   \code{paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
@@ -162,7 +166,7 @@ numerous methods (functions). The most useful ones are:
         optim. See \code{help(nimOptim)}.
 
 \item \code{summary(MLEoutput, originalScale, calcRandomEffectsStdError,
-       returnJointCovariance)}. Summarize the maximum likelihood estimation
+       calcJointCovariance)}. Summarize the maximum likelihood estimation
        results, given object \code{MLEoutput} that was returned by
        \code{findMLE}. The summary can include a covariance matrix for the
        parameters, the random effects, or both),
@@ -182,8 +186,9 @@ In more detail, \code{summary} accepts the following optional arguments:
           errors of random effects will be calculated.
           Defaults to FALSE.
 
-          \item \code{returnJointCovariance}. Logical. If TRUE, the joint
+          \item \code{calcJointCovariance}. Logical. If TRUE, the joint
           variance-covariance matrix of the parameters and the random effects
+          will be returned. If FALSE, variance-covariance matrix of the parameters 
           will be returned. Defaults to FALSE.
 
        }
@@ -203,7 +208,7 @@ In more detail, \code{summary} accepts the following optional arguments:
           Kass and Steffey (1989).
 
           \item \code{vcov}. If requested (i.e.
-          \code{returnJointCovariance=TRUE}), the joint variance-covariance
+          \code{calcJointCovariance=TRUE}), the joint variance-covariance
           matrix of the random effects and parameters, on original or
           transformed scale.
 

@@ -6,8 +6,7 @@
 \usage{
 nimbleFunctionVirtual(
   contains = NULL,
-  run = function() {
- },
+  run = function() { },
   methods = list(),
   name = NA,
   methodControl = list()

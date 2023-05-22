@@ -17,6 +17,8 @@ parameterTransform(model, nodes, control = list())
 \details{
 The `parameterTransform` nimbleFunction is an unspecialized function.  Calling `parameterTransform(model, nodes)` will generate and return a specialized nimbleFunction, which provides transformation functionality for the specificed hierarchical model and set of model nodes.  The `nodes` argument can represent mutliple model nodes arising from distinct prior distributions, which will be simultaneously transformed according to their respective distributions and constraints.
 
+The `control` argument is a list that supports one additional setting. If `control$allowDeterm=FALSE` (the default), deterministic nodes are not allowed in the `nodes` argument.  If `control$allowDeterm=TRUE`, deterministic nodes are allowed and assumed to have no constraints on valid values.
+
 This specialized nimbleFunction has the following methods:
 
 \code{transform}: Transforms a numeric vector of values from the original constrained model scale to a vector of values on the unconstrained scale.

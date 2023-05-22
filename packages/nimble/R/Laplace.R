@@ -1072,8 +1072,8 @@ buildOneAGHQuad <- nimbleFunction(
 
 #' Organize model nodes for marginalization
 #'
-#' Process model to organize nodes for marginalization (integration over latent
-#' or random effects) as by Laplace approximation.
+#' Process model to organize nodes for marginalization (integration over latent 
+#' nodes or random effects) as by Laplace approximation.
 #'
 #' @param model A nimble model such as returned by \code{nimbleModel}.
 #'
@@ -1083,9 +1083,10 @@ buildOneAGHQuad <- nimbleFunction(
 #'
 #' @param randomEffectsNodes A character vector of nodes to be marginalized over
 #'   (or "integrated out"). In the case of calculating the likelihood of a model
-#'   with continuous random effects, the nodes to be marginalied over are the
+#'   with continuous random effects, the nodes to be marginalized over are the
 #'   random effects, hence the name of this argument. However, one can
-#'   marginalize over any nodes desired. See details for default.
+#'   marginalize over any nodes desired as long as they are continuous. 
+#'   See details for default.
 #'
 #' @param calcNodes A character vector of nodes to be calculated as the
 #'   integrand for marginalization. Typically this will include
@@ -1105,7 +1106,7 @@ buildOneAGHQuad <- nimbleFunction(
 #'
 #' @param check A logical indicating whether to try to give reasonable warnings
 #'   of badly formed inputs that might be missing important nodes or include
-#'   unnecessary nodes..
+#'   unnecessary nodes.
 #'
 #' @details
 #'
@@ -1516,8 +1517,8 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                        "included in the calcNodesOther for parts of the likelihood calculation\n",
                        "outside of Laplace or AGHQuad approximation:\n",
                        errorNodes, "\n",
-                     "To silence this warning, include \'check = FALSE\' in the control list\n",
-                     "to buildLaplace or as an argument to setupMargNodes."))
+                       "To silence this warning, include \'check = FALSE\' in the control list\n",
+                       "to buildLaplace or as an argument to setupMargNodes."))
       }
     }
     # Check redundant stochastic nodes
@@ -1775,7 +1776,7 @@ buildAGHQuad <- nimbleFunction(
         stop("Both calcNodesOther and randomEffectsNodes are empty for Laplace or AGHQuad for the given model.")
     }
     
-    paramNodesAsScalars     <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
+    paramNodesAsScalars <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
     npar <- length(paramNodesAsScalars)
     paramNodesAsScalars_vec <- paramNodesAsScalars
     if(npar == 1) paramNodesAsScalars_vec <- c(paramNodesAsScalars, "_EXTRA_")
@@ -2047,10 +2048,10 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(2))
     },
     ## Summarise AGHQuad MLE results
-    summary = function(MLEoutput          = optimResultNimbleList(),
+    summary = function(MLEoutput                 = optimResultNimbleList(),
                        originalScale             = logical(0, default = TRUE),
                        calcRandomEffectsStdError = logical(0, default = FALSE), 
-                       calcJointCovariance     = logical(0, default = FALSE)){
+                       calcJointCovariance       = logical(0, default = FALSE)){
       if(dim(MLEoutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace or AGHQuad MLE")
       ## Output lists
       ans <- AGHQuad_summary$new()
@@ -2152,59 +2153,67 @@ buildAGHQuad <- nimbleFunction(
           }
         }## End of if(calcJointCovariance)
         else { ## Do not return joint covariance matrix
-          ans$vcov <- matrix(nrow = 0, ncol = 0)
           if(originalScale){## On original scale
             pres$estimates <- p
             ranres$estimates <- optre
             if(calcRandomEffectsStdError){
               ## Joint covariance matrix on transform scale
               inv_negHess <- inverse_negHess(p, optreTransform)
-              jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
-              jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
+              # jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
+              # jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
               ## Hessian of log-likelihood wrt to params and transformed random effects
               hessLoglikwrtpre <- hess_logLik_wrt_p_wrt_re(p, optreTransform)
               ## Derivative of inverse transformation for params
               derivspInvTransform  <- derivs_pInverseTransform(pTransform, c(0, 1))
               JacobpInvTransform   <- derivspInvTransform$jacobian
+              ## Covariance matrix for params on the original scale
+              vcov_p <- JacobpInvTransform %*% vcov_pTransform %*% t(JacobpInvTransform)
               ## Jacobian of optimized random effects wrt transformed parameters
               JacobOptreWrtParams <- inv_negHess %*% t(hessLoglikwrtpre) %*% JacobpInvTransform
-              jointJacob <- matrix(NA, nrow = ntot, ncol = npar)
-              jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
-              jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
+              # jointJacob <- matrix(NA, nrow = ntot, ncol = npar)
+              # jointJacob[1:nre, 1:npar] <- JacobOptreWrtParams
+              # jointJacob[(nre+1):ntot, 1:npar] <- diag(npar)
               ## Join covariance matrix on transformed scale
-              vcov_Transform <- jointInvNegHessZero + jointJacob %*% vcov_pTransform %*% t(jointJacob)
+              # vcov_Transform <- jointInvNegHessZero + jointJacob %*% vcov_pTransform %*% t(jointJacob)
+              ## Covariance matrix for random effects (transformed) 
+              vcov_reTransform <- inv_negHess + JacobOptreWrtParams %*% vcov_pTransform %*% t(JacobOptreWrtParams)
               ## Derivatives information
               derivs_reInvTransform <- derivs_reInverseTransform(optreTransform, c(0, 1))
               Jacob_reInvTransform  <- derivs_reInvTransform$jacobian
-              Jacob_JointInvTransform <- matrix(0, nrow = ntot, ncol = ntot)
-              Jacob_JointInvTransform[1:nre, 1:nre] <- Jacob_reInvTransform
-              Jacob_JointInvTransform[(nre+1):ntot, (nre+1):ntot] <- JacobpInvTransform
-              stdErr <- numeric(ntot)
-              for(i in 1:ntot){
-                var_i <- (Jacob_JointInvTransform[i,,drop=FALSE] %*% vcov_Transform %*% t(Jacob_JointInvTransform[i,,drop=FALSE]))[1,1]
-                stdErr[i] <- sqrt(var_i)
+              # Jacob_JointInvTransform <- matrix(0, nrow = ntot, ncol = ntot)
+              # Jacob_JointInvTransform[1:nre, 1:nre] <- Jacob_reInvTransform
+              # Jacob_JointInvTransform[(nre+1):ntot, (nre+1):ntot] <- JacobpInvTransform
+              stdErr_re <- numeric(nre)
+              for(i in 1:nre){
+                var_i <- (Jacob_reInvTransform[i,,drop=FALSE] %*% vcov_reTransform %*% t(Jacob_reInvTransform[i,,drop=FALSE]))[1,1]
+                stdErr_re[i] <- sqrt(var_i)
               }
-              stdErr_p <- stdErr[(nre+1):ntot]
-              stdErr_re <- stdErr[1:nre]
+              stdErr_p <- sqrt(diag(vcov_p))
               pres$stdErrors   <- stdErr_p
               ranres$stdErrors <- stdErr_re
+              ans$vcov <- vcov_p
             }## End of if(calcRandomEffectsStdError)
             else { ## Do not calculate standard errors of random effects estimates
               derivspInvTransform  <- derivs_pInverseTransform(pTransform, c(0, 1))
               JacobpInvTransform   <- derivspInvTransform$jacobian
-              stdErr_p <- numeric(npar)
-              for(i in 1:npar){
-                var_p_i <- (JacobpInvTransform[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobpInvTransform[i,,drop=FALSE]))[1,1]
-                stdErr_p[i] <- sqrt(var_p_i)
-              }
+              ## Covariance matrix for params on the original scale
+              vcov_p <- JacobpInvTransform %*% vcov_pTransform %*% t(JacobpInvTransform)
+              # stdErr_p <- numeric(npar)
+              # for(i in 1:npar){
+              #   var_p_i <- (JacobpInvTransform[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobpInvTransform[i,,drop=FALSE]))[1,1]
+              #   stdErr_p[i] <- sqrt(var_p_i)
+              # }
+              stdErr_p <- sqrt(diag(vcov_p))
               pres$stdErrors <- stdErr_p
               ranres$stdErrors <- numeric(0)
+              ans$vcov <- vcov_p
             }
           }## End of if(originalScale)
           else {## On transformed scale
             pres$estimates <- pTransform
             pres$stdErrors <- stdErr_pTransform
             ranres$estimates <- optreTransform
+            ans$vcov <- vcov_pTransform
             if(calcRandomEffectsStdError){
               inv_negHess <- inverse_negHess(p, optreTransform)
               jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
@@ -2264,18 +2273,19 @@ buildAGHQuad <- nimbleFunction(
 #'   parameterization used internally by the Laplace approximation (FALSE).
 #'   Transformations are used for any parameters and/or random effects that have
 #'   constrained ranges of valid values, so that in the transformed parameter
-#'   space there are no constraints.
+#'   space there are no constraints. 
 #'
 #' @param calcRandomEffectsStdError If TRUE, calculate the standard error of the
 #'   estimates of random effects values.
 #'
-#' @param calcJointCovariance If TRUE, calculate the covariance matrix of the
-#'   parameters and random effects together.
+#' @param calcJointCovariance If TRUE, calculate the joint covariance matrix of 
+#'   the parameters and random effects together. If FALSE, calculate the 
+#'   covariance matrix of the parameters.
 #'
 #' @details
 #'
 #' The numbers obtained by this function can be obtained more directly by
-#' `laplace$summary(...)`, which calls a (usually compiled) method of a the
+#' `laplace$summary(...)`, which calls a (usually compiled) method of the
 #' `laplace` nimbleFunction. The added benefit of `summaryLaplace` is to arrange
 #' the results into data frames (for parameters and random effects), with row
 #' names for the model nodes, and also adding row and column names to the
@@ -2490,7 +2500,8 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #'           \item \code{calcJointCovariance}. Logical. If TRUE, the joint
 #'           variance-covariance matrix of the parameters and the random effects
-#'           will be returned. Defaults to FALSE.
+#'           will be returned. If FALSE, the variance-covariance matrix of the 
+#'           parameters will be returned. Defaults to FALSE.
 #'
 #'        }
 #'
@@ -2502,7 +2513,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'           errors of parameters (on the original or transformed scale, as
 #'           chosen by \code{originalScale}).
 #'
-#'           \item \code{random}. A list that contains estimates of random
+#'           \item \code{randomEffects}. A list that contains estimates of random
 #'           effects and, if requested (\code{calcRandomEffectsStdError=TRUE})
 #'           their standard errors, on original or transformed scale. Standard
 #'           errors are calculated following the generalized delta method of
