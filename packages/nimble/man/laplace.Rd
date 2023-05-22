@@ -27,9 +27,9 @@ Alternatively, \code{paramNodes} can be a list in the format returned by
 \code{calcNodes}, and \code{calcNodesOther} are not needed (and will be
 ignored).}
 
-\item{randomEffectsNodes}{a character vector of names of unobserved (latent)
-nodes to marginalize (integrate) over using Laplace approximation; defaults
-are provided by \code{\link{setupMargNodes}}.}
+\item{randomEffectsNodes}{a character vector of names of continuous unobserved 
+(latent) nodes to marginalize (integrate) over using Laplace approximation; 
+defaults are provided by \code{\link{setupMargNodes}}.}
 
 \item{calcNodes}{a character vector of names of nodes for calculating the
 integrand for Laplace approximation; defaults are provided by
@@ -75,11 +75,11 @@ Any of the input node vectors, when provided, will be processed using
 
 In many (but not all) cases, one only needs to provide a NIMBLE model object
   and then the function will construct reasonable defaults necessary for
-  Laplace approximation to marginalize over all latent states (aka random
-  effects) in a model. The default values for the four groups of nodes are
-  obtained by calling \code{\link{setupMargNodes}}, whose arguments match
-  those here (except for a few arguments which are taken from control list
-  elements here).
+  Laplace approximation to marginalize over all continuous latent states 
+  (aka random effects) in a model. The default values for the four groups of 
+  nodes are obtained by calling \code{\link{setupMargNodes}}, whose arguments 
+  match those here (except for a few arguments which are taken from control 
+  list elements here).
 
 \code{setupMargNodes} tries to give sensible defaults from
   any combination of \code{paramNodes}, \code{randomEffectsNodes},
@@ -151,13 +151,14 @@ numerous methods (functions). The most useful ones are:
       non-scalar parameters result in fewer free transformed parameters than
       original parameters).
 
-\item \code{calcLaplace(p, trans)}. This is the same as \code{calcLaplace}.
+\item \code{calcLaplace(p, trans)}. This is the same as \code{calcLogLik}.
 
 \item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
-        estimates of the Laplace-approximated marginal likelihood. Arguments
-        include \code{pStart}: initial parameter values (defaults to
-        parameter values currently in the model); \code{method}: (outer)
-        optimization method to use in \code{optim} (defaults to "BFGS"); and
+        estimates of parameters using the Laplace-approximated marginal 
+        likelihood. Arguments include \code{pStart}: initial parameter values 
+        (defaults to parameter values currently in the model); 
+        \code{method}: (outer) optimization method to use in \code{optim} 
+        (defaults to "BFGS"); and
         \code{hessian}: whether to calculate and return the Hessian matrix
         (defaults to \code{TRUE}). Second derivatives in the Hessian are
         determined by finite differences of the gradients obtained by
@@ -188,8 +189,8 @@ In more detail, \code{summary} accepts the following optional arguments:
 
           \item \code{calcJointCovariance}. Logical. If TRUE, the joint
           variance-covariance matrix of the parameters and the random effects
-          will be returned. If FALSE, variance-covariance matrix of the parameters 
-          will be returned. Defaults to FALSE.
+          will be returned. If FALSE, the variance-covariance matrix of the 
+          parameters will be returned. Defaults to FALSE.
 
        }
 
@@ -201,7 +202,7 @@ In more detail, \code{summary} accepts the following optional arguments:
           errors of parameters (on the original or transformed scale, as
           chosen by \code{originalScale}).
 
-          \item \code{random}. A list that contains estimates of random
+          \item \code{randomEffects}. A list that contains estimates of random
           effects and, if requested (\code{calcRandomEffectsStdError=TRUE})
           their standard errors, on original or transformed scale. Standard
           errors are calculated following the generalized delta method of
@@ -209,12 +210,14 @@ In more detail, \code{summary} accepts the following optional arguments:
 
           \item \code{vcov}. If requested (i.e.
           \code{calcJointCovariance=TRUE}), the joint variance-covariance
-          matrix of the random effects and parameters, on original or
-          transformed scale.
+          matrix of the parameters and random effects, on original or
+          transformed scale. If \code{calcJointCovariance=FALSE}, the 
+          covariance matrix of the parameters, on original or transformed 
+          scale.
 
           \item \code{scale}. \code{"original"} or \code{"transformed"}, the
-       scale on which results were requested.
-
+          scale on which results were requested.
+          
        }
 
     }
@@ -223,13 +226,13 @@ Additional methods to access or control more details of the Laplace approximatio
 
 \itemize{
 
-  \item \code{get_node_name_vec(returnParams)}. Return a vector (>1) of names
+  \item \code{get_node_names_vec(returnParams)}. Return a vector (>1) of names
   of parameters/random effects nodes, according to \code{returnParams =
-  TRUE/FALSE}. Use this if there is more than one parameter.
+  TRUE/FALSE}. Use this if there is more than one node.
 
   \item \code{get_node_name_single(returnParams)}. Return the name of a
-  single parameter/random effect node, \code{returnParams = TRUE/FALSE}. Use
-  this if there is only one parameter.
+  single parameter/random effect node, according to \code{returnParams = 
+  TRUE/FALSE}. Use this if there is only one node.
 
   \item \code{set_method(method)}. Set method ID for calculating the Laplace
   approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2},
@@ -239,18 +242,19 @@ Additional methods to access or control more details of the Laplace approximatio
   with each method will be (much) slower than subsequent Laplace
   approximations.
 
-  \item \code{get_method()}. Return the current method ID.
+  \item \code{get_method()}. Return the current method ID for Laplace.
 
   \item \code{gr_logLik(p, trans)}. Gradient of the Laplace-approximated
-  marginal likelihood at parameter value \code{p}. Argument \code{trans} is
-  similar to that in \code{calcLaplace}.
+  marginal log-likelihood at parameter value \code{p}. Argument \code{trans} 
+  is similar to that in \code{calcLaplace}. If there are multiple parameters,
+  the vector \code{p} is given in the order of parameter names returned by 
+  \code{get_node_names_vec(returnParams=TRUE)}.
 
   \item \code{gr_Laplace(p, trans)}. This is the same as \code{gr_logLik}.
 
   \item \code{otherLogLik(p)}. Calculate the \code{calcNodesOther}
   nodes, which returns the log-likelihood of the parts of the model that are
-  not included in the Laplace approximation. \code{p} is the vector of
-  parameter values in the order of \code{paramNames}.
+  not included in the Laplace approximation. 
 
   \item \code{gr_otherLogLik(p)}. Gradient (vector of derivatives with
   respect to each parameter) of \code{otherLogLik(p)}. Results should

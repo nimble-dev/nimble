@@ -31,8 +31,9 @@ space there are no constraints.}
 \item{calcRandomEffectsStdError}{If TRUE, calculate the standard error of the
 estimates of random effects values.}
 
-\item{calcJointCovariance}{If TRUE, calculate the covariance matrix of the
-parameters and random effects together.}
+\item{calcJointCovariance}{If TRUE, calculate the joint covariance matrix of 
+the parameters and random effects together. If FALSE, calculate the 
+covariance matrix of the parameters.}
 }
 \value{
 A list with data frames `params` and `randomEffects`, each with columns for
@@ -47,7 +48,7 @@ into a more useful format.
 }
 \details{
 The numbers obtained by this function can be obtained more directly by
-`laplace$summary(...)`, which calls a (usually compiled) method of a the
+`laplace$summary(...)`, which calls a (usually compiled) method of the
 `laplace` nimbleFunction. The added benefit of `summaryLaplace` is to arrange
 the results into data frames (for parameters and random effects), with row
 names for the model nodes, and also adding row and column names to the

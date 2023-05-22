@@ -159,7 +159,7 @@ statements (PR #1254).
 - Remove references to unsupported `trace` (issue #1262).
 
 
-#                            CHANGES IN VERSION 0.13.1 (May 2023) 
+#                            CHANGES IN VERSION 0.13.2 (May 2023) 
 
 ## DEVELOPER LEVEL CHANGES
 

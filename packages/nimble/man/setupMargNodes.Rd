@@ -23,9 +23,10 @@ See details for default.}
 
 \item{randomEffectsNodes}{A character vector of nodes to be marginalized over
 (or "integrated out"). In the case of calculating the likelihood of a model
-with continuous random effects, the nodes to be marginalied over are the
+with continuous random effects, the nodes to be marginalized over are the
 random effects, hence the name of this argument. However, one can
-marginalize over any nodes desired. See details for default.}
+marginalize over any nodes desired as long as they are continuous. 
+See details for default.}
 
 \item{calcNodes}{A character vector of nodes to be calculated as the
 integrand for marginalization. Typically this will include
@@ -45,7 +46,7 @@ calculation.}
 
 \item{check}{A logical indicating whether to try to give reasonable warnings
 of badly formed inputs that might be missing important nodes or include
-unnecessary nodes..}
+unnecessary nodes.}
 }
 \value{
 A list is returned with elements:
@@ -75,8 +76,8 @@ A list is returned with elements:
 }
 }
 \description{
-Process model to organize nodes for marginalization (integration over latent
-or random effects) as by Laplace approximation.
+Process model to organize nodes for marginalization (integration over latent 
+nodes or random effects) as by Laplace approximation.
 }
 \details{
 This function is used by \code{buildLaplace} to organize model nodes into

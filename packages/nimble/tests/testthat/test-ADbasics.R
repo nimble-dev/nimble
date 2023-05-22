@@ -10,72 +10,73 @@ RCrelTol0 <- 1e-12
 RCrelTol1 <- 1e-6
 RCrelTol2 <- 1e-4
 
-## This set of tests works if you run the code inside test_that
-## However, test_that disables capture.output, so they these tests
-## don't work that way.
-## test_that("AD error-trapping of unsupported dists and fxns in models works", {
+test_that("AD error-trapping of unsupported dists and fxns in models works", {
+  ## No easy way to check that there is output but that it doesn't include a given message.
+  ## test_that disables `capture.output`. Can run these manually without use of test_that.
+    
+  ## origOption <- nimbleOptions('doADerrorTraps')
 
-##   origOption <- nimbleOptions('doADerrorTraps')
+  ## nimbleOptions(buildModelDerivs = FALSE)
+  ## expect_message(
+  ##   m <- nimbleModel(
+  ##   quote({
+  ##     a ~ dcat(p[1:2])
+  ##   })
+  ##   ), "Defining modelBuilding model")
 
-##   output <- capture.output(
-##     m <- nimbleModel(
-##     quote({
-##       a ~ dcat(p[1:2])
-##     })
-##   ), type = "message")
-##   expect_false(any(grepl("does not have support for derivatives", output)))
+  ## expect_silent(
+  ##   m <- nimbleModel(
+  ##   quote({
+  ##     a <- b %% c
+  ##   })
+  ## ))
+  ## nimbleOptions(buildModelDerivs = TRUE)
+  
+  expect_message(
+    m <- nimbleModel(
+    quote({
+      a ~ dcat(p[1:2])
+    }),
+    buildDerivs = TRUE
+    ), "does not have support for derivatives")
 
-##   output <- capture.output(
-##     m <- nimbleModel(
-##     quote({
-##       a ~ dcat(p[1:2])
-##     }),
-##     buildDerivs = TRUE
-##     ), type = 'message')
-##   .GlobalEnv$output <- output
-##   expect_true(any(grepl("does not have support for derivatives", output)))
+  expect_message(
+    m <- nimbleModel(
+    quote({
+      a <- b %% c
+    }),
+    buildDerivs = TRUE
+  ), "is not supported for derivatives")
 
-##   nimbleOptions(doADerrorTraps = FALSE)
-##   output <- capture.output(
-##     m <- nimbleModel(
-##     quote({
-##       a ~ dcat(p[1:2])
-##     }),
-##     buildDerivs = TRUE
-##   ), type = 'message')
-##   expect_false(any(grepl("does not have support for derivatives", output)))
-##   nimbleOptions(doADerrorTraps = TRUE)
+  expect_message(
+    m <- nimbleModel(
+    quote({
+      a <- exp(b %% c)
+    }),
+    buildDerivs = TRUE
+  ), "is not supported for derivatives")
 
-##   output <- capture.output(
-##     m <- nimbleModel(
-##     quote({
-##       a <- b %% c
-##     })
-##   ), type = 'message')
-##   expect_false(any(grepl("not supported for derivatives", output)))
+  ## nimbleOptions(doADerrorTraps = FALSE)
+  
+  ## expect_silent(
+  ##   m <- nimbleModel(
+  ##   quote({
+  ##     a ~ dcat(p[1:2])
+  ##   }),
+  ##   buildDerivs = TRUE
+  ## ))
 
-##   output <- capture.output(
-##     m <- nimbleModel(
-##     quote({
-##       a <- b %% c
-##     }),
-##     buildDerivs = TRUE
-##   ), type = 'message')
-##   expect_true(any(grepl("not supported for derivatives", output)))
+  ## expect_silent(
+  ##   m <- nimbleModel(
+  ##   quote({
+  ##     a <- b %% c
+  ##   }),
+  ##   buildDerivs = TRUE
+  ## ))
 
-##   nimbleOptions(doADerrorTraps = FALSE)
-##   output <- capture.output(
-##     m <- nimbleModel(
-##     quote({
-##       a <- b %% c
-##     }),
-##     buildDerivs = TRUE
-##   ), type = 'message')
-##   expect_false(any(grepl("not supported for derivatives", output)))
+  ## nimbleOptions(doADerrorTraps = origOption)
 
-##   nimbleOptions(doADerrorTraps = origOption)
-
-## })
+})
 
 test_that('AD works from character buildDerivs with setup = TRUE', {
   adfun <- nimbleFunction(

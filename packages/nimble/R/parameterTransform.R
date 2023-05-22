@@ -2,17 +2,19 @@
 
 #' Automated transformations of model nodes to unconstrained scales
 #'
-#' `parameterTransform` provides general transformations of constrained continuous-valued model nodes (parameters) to an unconstrained scale.  It handles the cases of interval-bounded parameters (e.g. uniform or beta distributions), semi-interval-bounded parameters (e.g. exponential or gamma distributions), and the multivariate Wishart, inverse Wishart, Dirichlet, and LKJ distributions.  Utilities are provided to transform paramters to an unconstrained scale, back-transform from the unconstrained scale to the original scale of the constrained parameterization, and to calculate the natural logarithm of the determinant of the Jacobian matrix of the inverse transformation, calculated at any location in the transformed (unconstrained) space.
+#' Provide general transformations of constrained continuous-valued model nodes (parameters) to unconstrained scales.  It handles the cases of interval-bounded parameters (e.g. uniform or beta distributions), semi-interval-bounded parameters (e.g. exponential or gamma distributions), and the multivariate Wishart, inverse Wishart, Dirichlet, and LKJ distributions.  Utilities are provided to transform paramters to an unconstrained scale, back-transform from the unconstrained scale to the original scale of the constrained parameterization, and to calculate the natural logarithm of the determinant of the Jacobian matrix of the inverse transformation, calculated at any location in the transformed (unconstrained) space.
 #'
-#' @param model A `nimble` model object.  See details.
+#' @param model A nimble model object.  See details.
 #' 
 #' @param nodes A character vector specifying one or more model node names to undergo transformation.  See details.
 #'
+#' @param control An optional list allowing for additional control of the transformation. This currently supports a single element \code{allowDeterm}.
+#'
 #' @details
 #' 
-#' The `parameterTransform` nimbleFunction is an unspecialized function.  Calling `parameterTransform(model, nodes)` will generate and return a specialized nimbleFunction, which provides transformation functionality for the specificed hierarchical model and set of model nodes.  The `nodes` argument can represent mutliple model nodes arising from distinct prior distributions, which will be simultaneously transformed according to their respective distributions and constraints.
+#' The \code{parameterTransform} nimbleFunction is an unspecialized function.  Calling \code{parameterTransform(model, nodes)} will generate and return a specialized nimbleFunction, which provides transformation functionality for the specified hierarchical model and set of model nodes.  The \code{nodes} argument can represent mutliple model nodes arising from distinct prior distributions, which will be simultaneously transformed according to their respective distributions and constraints.
 #'
-#' The `control` argument is a list that supports one additional setting. If `control$allowDeterm=FALSE` (the default), deterministic nodes are not allowed in the `nodes` argument.  If `control$allowDeterm=TRUE`, deterministic nodes are allowed and assumed to have no constraints on valid values.
+#' The \code{control} argument is a list that supports one additional setting. If \code{control$allowDeterm=FALSE} (the default), deterministic nodes are not allowed in the \code{nodes} argument.  If \code{control$allowDeterm=TRUE}, deterministic nodes are allowed and assumed to have no constraints on valid values.
 #'
 #' This specialized nimbleFunction has the following methods:
 #'
@@ -20,17 +22,17 @@
 #'
 #' \code{inverseTransform}: Transforms a numeric vector of values from the unconstrained scale to the original constrained parameterization scale.
 #'
-#' The unconstrained scale may have different dimensionality from the original constrained scale of the model parameters.  For example, a d-dimensional dirichlet distribution is constrained to reside on a simplex in d-dimensional space.  In contrast, the corresponding unconstrained parameterization is unrestrained in (d-1) dimensional space.  The specialized `parameterTransform` nimbleFunction also provides utilities to return the dimensionality of the original (constrained) parameterization, and the transformed (unconstrained) parameterization:
+#' The unconstrained scale may have different dimensionality from the original constrained scale of the model parameters.  For example, a d-dimensional dirichlet distribution is constrained to reside on a simplex in d-dimensional space.  In contrast, the corresponding unconstrained parameterization is unrestrained in (d-1) dimensional space.  The specialized \code{parameterTransform} nimbleFunction also provides utilities to return the dimensionality of the original (constrained) parameterization, and the transformed (unconstrained) parameterization:
 #'
 #' \code{getOriginalLength}: Returns the dimensionality (number of scalar elements) of the original constrained parameterization.
 #'
 #' \code{getTransformedLength}: Returns the dimensionality (number of scalar elements) comprising the transformed unconstrained parameterization.
 #'
-#' The specialized `parameterTransform` nimbleFunction also provides a method for calculating the natural logarithm of the jacobian of the inverse transformation, calculated at any point in the transformed (unconstrained) space:
+#' The specialized \code{parameterTransform} nimbleFunction also provides a method for calculating the natural logarithm of the jacobian of the inverse transformation, calculated at any point in the transformed (unconstrained) space:
 #'
 #' \code{logDetJacobian}
 #'
-#' The `parameterTransformation` function has no facility for handling discrete-valued parameters.
+#' The \code{parameterTransformation} function has no facility for handling discrete-valued parameters.
 #'
 #' @examples
 #' \dontrun{
