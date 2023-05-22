@@ -1800,22 +1800,22 @@ buildAGHQuad <- nimbleFunction(
   },## End of setup
   run = function(){},
   methods = list(
-    get_node_names_vec = function(returnParams = logical(0, default = TRUE)) {
+    getNodeNamesVec = function(returnParams = logical(0, default = TRUE)) {
       returnType(character(1))
       if(returnParams) return(paramNodesAsScalars_vec)
       else return(reNodesAsScalars_vec)
     },
-    get_node_name_single = function(returnParams = logical(0, default = TRUE)) {
+    getNodeNameSingle = function(returnParams = logical(0, default = TRUE)) {
       returnType(character())
       if(returnParams) return(paramNodesAsScalars_first)
       else return(reNodesAsScalars_first)
     },
-    set_method = function(method = integer()) {
+    setMethod = function(method = integer()) {
       if(nre == 0) print("AGHQuad or Laplace approximation is not needed for the given model: no random effects")
       if(!any(c(1, 2, 3) == method)) stop("Choose a valid method ID from 1, 2, and 3")
       methodID <<- method
     },
-    get_method = function() {
+    getMethod = function() {
       return(methodID)
       returnType(integer())
     },
@@ -2050,8 +2050,8 @@ buildAGHQuad <- nimbleFunction(
     ## Summarise AGHQuad MLE results
     summary = function(MLEoutput                 = optimResultNimbleList(),
                        originalScale             = logical(0, default = TRUE),
-                       calcRandomEffectsStdError = logical(0, default = FALSE), 
-                       calcJointCovariance       = logical(0, default = FALSE)){
+                       randomEffectsStdError = logical(0, default = FALSE),
+                       jointCovariance       = logical(0, default = FALSE)){
       if(dim(MLEoutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace or AGHQuad MLE")
       ## Output lists
       ans <- AGHQuad_summary$new()
@@ -2069,7 +2069,7 @@ buildAGHQuad <- nimbleFunction(
           derivspInvTransform  <- derivs_pInverseTransform(pTransform, c(0, 1))
           JacobpInvTransform   <- derivspInvTransform$jacobian
           stdErr_p <- numeric(npar)
-          if(calcJointCovariance) {
+          if(jointCovariance) {
             vcov <- JacobpInvTransform %*% vcov_pTransform %*% t(JacobpInvTransform)
             stdErr_p <- sqrt(diag(vcov))
             ans$vcov <- vcov
@@ -2087,7 +2087,7 @@ buildAGHQuad <- nimbleFunction(
         else {
           pres$estimates <- pTransform
           pres$stdErrors <- stdErr_pTransform
-          if(calcJointCovariance) ans$vcov <- vcov_pTransform
+          if(jointCovariance) ans$vcov <- vcov_pTransform
           else ans$vcov <- matrix(0, nrow = 0, ncol = 0)
         }
       }
@@ -2096,7 +2096,7 @@ buildAGHQuad <- nimbleFunction(
         optreTransform <- optimRandomEffects(pTransform)
         optre <- reInverseTransform(optreTransform)
         ntot <- npar + nre
-        if(calcJointCovariance) {
+        if(jointCovariance) {
           ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects at MLEs
           inv_negHess <- inverse_negHess(p, optreTransform)
           jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
@@ -2127,7 +2127,7 @@ buildAGHQuad <- nimbleFunction(
             vcov <- Jacob_JointInvTransform %*% vcov_Transform %*% t(Jacob_JointInvTransform)
             stdErr_p_re <- sqrt(diag(vcov))
             stdErr_p <- stdErr_p_re[1:npar]
-            if(calcRandomEffectsStdError){
+            if(randomEffectsStdError){
               ranres$stdErrors <- stdErr_p_re[(npar+1):ntot]
             }
             else{
@@ -2139,7 +2139,7 @@ buildAGHQuad <- nimbleFunction(
             ranres$estimates <- optre
           }## End of if(originalScale)
           else { ## On transformed scale
-            if(calcRandomEffectsStdError){
+            if(randomEffectsStdError){
               stdErr_reTransform <- sqrt(diag(vcov_Transform)[(npar+1):ntot])
               ranres$stdErrors <- stdErr_reTransform
             }
@@ -2151,12 +2151,12 @@ buildAGHQuad <- nimbleFunction(
             pres$stdErrors <- sqrt(diag(vcov_Transform)[1:npar])
             ranres$estimates <- optreTransform
           }
-        }## End of if(calcJointCovariance)
+        }## End of if(jointCovariance)
         else { ## Do not return joint covariance matrix
           if(originalScale){## On original scale
             pres$estimates <- p
             ranres$estimates <- optre
-            if(calcRandomEffectsStdError){
+            if(randomEffectsStdError){
               ## Joint covariance matrix on transform scale
               inv_negHess <- inverse_negHess(p, optreTransform)
               # jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
@@ -2192,7 +2192,7 @@ buildAGHQuad <- nimbleFunction(
               pres$stdErrors   <- stdErr_p
               ranres$stdErrors <- stdErr_re
               ans$vcov <- vcov_p
-            }## End of if(calcRandomEffectsStdError)
+            }## End of if(randomEffectsStdError)
             else { ## Do not calculate standard errors of random effects estimates
               derivspInvTransform  <- derivs_pInverseTransform(pTransform, c(0, 1))
               JacobpInvTransform   <- derivspInvTransform$jacobian
@@ -2214,7 +2214,7 @@ buildAGHQuad <- nimbleFunction(
             pres$stdErrors <- stdErr_pTransform
             ranres$estimates <- optreTransform
             ans$vcov <- vcov_pTransform
-            if(calcRandomEffectsStdError){
+            if(randomEffectsStdError){
               inv_negHess <- inverse_negHess(p, optreTransform)
               jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
               jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
@@ -2275,10 +2275,10 @@ buildAGHQuad <- nimbleFunction(
 #'   constrained ranges of valid values, so that in the transformed parameter
 #'   space there are no constraints. 
 #'
-#' @param calcRandomEffectsStdError If TRUE, calculate the standard error of the
+#' @param randomEffectsStdError If TRUE, calculate the standard error of the
 #'   estimates of random effects values.
 #'
-#' @param calcJointCovariance If TRUE, calculate the joint covariance matrix of 
+#' @param jointCovariance If TRUE, calculate the joint covariance matrix of
 #'   the parameters and random effects together. If FALSE, calculate the 
 #'   covariance matrix of the parameters.
 #'
@@ -2302,11 +2302,11 @@ buildAGHQuad <- nimbleFunction(
 #' @export
 summaryLaplace <- function(laplace, MLEoutput,
                            originalScale =TRUE,
-                           calcRandomEffectsStdError = FALSE,
-                           calcJointCovariance = FALSE) {
+                           randomEffectsStdError = FALSE,
+                           jointCovariance = FALSE) {
   summary <- laplace$summary(MLEoutput, originalScale = originalScale,
-                             calcRandomEffectsStdError = calcRandomEffectsStdError,
-                             calcJointCovariance = calcJointCovariance)
+                             randomEffectsStdError = randomEffectsStdError,
+                             jointCovariance = jointCovariance)
   paramNames <- summary$params$names
   paramEsts <- summary$params$estimates
   if(length(paramEsts) < length(paramNames)) paramNames <- paramNames[1:(length(paramNames)-1)]
@@ -2478,8 +2478,8 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'         \code{optimResultNimbleList}, similar to what is returned by R's
 #'         optim. See \code{help(nimOptim)}.
 #'
-#' \item \code{summary(MLEoutput, originalScale, calcRandomEffectsStdError,
-#'        calcJointCovariance)}. Summarize the maximum likelihood estimation
+#' \item \code{summary(MLEoutput, originalScale, randomEffectsStdError,
+#'        jointCovariance)}. Summarize the maximum likelihood estimation
 #'        results, given object \code{MLEoutput} that was returned by
 #'        \code{findMLE}. The summary can include a covariance matrix for the
 #'        parameters, the random effects, or both),
@@ -2495,11 +2495,11 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'           otherwise, it returns results on the transformed scale(s). If there
 #'           are no constraints, the two scales are identical. Defaults to TRUE.
 #'
-#'           \item \code{calcRandomEffectsStdError}. Logical. If TRUE, standard
+#'           \item \code{randomEffectsStdError}. Logical. If TRUE, standard
 #'           errors of random effects will be calculated.
 #'           Defaults to FALSE.
 #'
-#'           \item \code{calcJointCovariance}. Logical. If TRUE, the joint
+#'           \item \code{jointCovariance}. Logical. If TRUE, the joint
 #'           variance-covariance matrix of the parameters and the random effects
 #'           will be returned. If FALSE, the variance-covariance matrix of the 
 #'           parameters will be returned. Defaults to FALSE.
@@ -2515,15 +2515,15 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'           chosen by \code{originalScale}).
 #'
 #'           \item \code{randomEffects}. A list that contains estimates of random
-#'           effects and, if requested (\code{calcRandomEffectsStdError=TRUE})
+#'           effects and, if requested (\code{randomEffectsStdError=TRUE})
 #'           their standard errors, on original or transformed scale. Standard
 #'           errors are calculated following the generalized delta method of
 #'           Kass and Steffey (1989).
 #'
 #'           \item \code{vcov}. If requested (i.e.
-#'           \code{calcJointCovariance=TRUE}), the joint variance-covariance
+#'           \code{jointCovariance=TRUE}), the joint variance-covariance
 #'           matrix of the parameters and random effects, on original or
-#'           transformed scale. If \code{calcJointCovariance=FALSE}, the 
+#'           transformed scale. If \code{jointCovariance=FALSE}, the
 #'           covariance matrix of the parameters, on original or transformed 
 #'           scale.
 #'
@@ -2538,15 +2538,15 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #' \itemize{
 #'
-#'   \item \code{get_node_names_vec(returnParams)}. Return a vector (>1) of names
+#'   \item \code{getNodeNamesVec(returnParams)}. Return a vector (>1) of names
 #'   of parameters/random effects nodes, according to \code{returnParams =
 #'   TRUE/FALSE}. Use this if there is more than one node.
 #'
-#'   \item \code{get_node_name_single(returnParams)}. Return the name of a
+#'   \item \code{getNodeNameSingle(returnParams)}. Return the name of a
 #'   single parameter/random effect node, according to \code{returnParams = 
 #'   TRUE/FALSE}. Use this if there is only one node.
 #'
-#'   \item \code{set_method(method)}. Set method ID for calculating the Laplace
+#'   \item \code{setMethod(method)}. Set method ID for calculating the Laplace
 #'   approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2},
 #'   default method), or 3 (\code{Laplace3}). See below for more details. Users
 #'   wanting to explore efficiency can try switching from method 2 (default) to
@@ -2554,13 +2554,13 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'   with each method will be (much) slower than subsequent Laplace
 #'   approximations.
 #'
-#'   \item \code{get_method()}. Return the current method ID for Laplace.
+#'   \item \code{getMethod()}. Return the current method ID for Laplace.
 #'
 #'   \item \code{gr_logLik(p, trans)}. Gradient of the Laplace-approximated
 #'   marginal log-likelihood at parameter value \code{p}. Argument \code{trans} 
 #'   is similar to that in \code{calcLaplace}. If there are multiple parameters,
 #'   the vector \code{p} is given in the order of parameter names returned by 
-#'   \code{get_node_names_vec(returnParams=TRUE)}.
+#'   \code{getNodeNamesVec(returnParams=TRUE)}.
 #'
 #'   \item \code{gr_Laplace(p, trans)}. This is the same as \code{gr_logLik}.
 #'
@@ -2701,7 +2701,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' # Calculate MLEs of parameters
 #' MLEres <- CpumpLaplace$findMLE()
 #' # Calculate estimates and standard errors for parameters and random effects on original scale
-#' allres <- CpumpLaplace$summary(MLEres, calcRandomEffectsStdError = TRUE)
+#' allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
 #' }
 #'
 #' @references
