@@ -39,14 +39,31 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
   )
 )
 
+## Function to return nodes for Adaptive Gauss-Hermite Quadrature: 
+Rget_AGHQ_nodes <- function(n = double()) {
+	## If n=1 or is miswritten, do Laplace.
+	if(n <= 1){	
+		z <- c(0,-1)	## For one time fixes
+		w_star <- c(sqrt(2*pi), -1)
+	}else{
+		## Gauss-Hermite Nodes
+		gh_nodes <- pracma::gaussHermite(n)
+		## Convert to z = sqrt(2)*z, and wgt = exp(x^2)*sqrt(2)
+		z <- sqrt(2) * gh_nodes$x
+		w_star <- exp(gh_nodes$x^2 + log(gh_nodes$w)) * sqrt(2)
+	}
+	return(list("z_nodes" = z, "weights" = w_star))
+}
+
+
 ## A single Laplace approximation for only one scalar random effect node
 buildOneLaplace1D <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
-  buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
+  buildOneAGHQuad1D(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
 }
 
 buildOneAGHQuad1D <- nimbleFunction(
   contains = AGHQuad_BASE,
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
+  setup = function(model, nQuad, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
     ## Check the number of random effects is 1
     nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
     if(length(nre) != 1) stop("Number of random effects for buildOneAGHQuad1D or buildOneLaplace1D must be 1.")
@@ -102,20 +119,38 @@ buildOneAGHQuad1D <- nimbleFunction(
     ## Automated transformation for random effects to ensure range of (-Inf, Inf) 
     reTrans <- parameterTransform(model, randomEffectsNodes)
     
-    ## The following are used for caching values and gradient in the Laplace3 system
-    logLik3_saved_value <- numeric(1)
-    logLik3_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
-    logLik3_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
-    ## The following are used for caching values and gradient in the Laplace3 system
+    ## The following are used for caching values and gradient in the calcLogLik3 system
     max_inner_logLik_saved_par <- as.numeric(c(1, -1))
     max_inner_logLik_saved_value <- numeric(1)
     max_inner_logLik_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
     cache_inner_max <- TRUE
-    ## Record the maximum Laplace loglikelihood value for obtaining inner optimization start values
-    max_logLik <- -Inf
-    max_logLik_saved_re_value <- as.numeric(c(1, -1))
+    ## Record the maximum AGHQuad loglikelihood value for obtaining inner optimization start values
+    max_AGHQuad <- -Inf 
+    max_AGHQuad_saved_re_value <- as.numeric(c(1, -1))
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE
+	
+	## Adaptive Gauss-Hermite Quadrature Setup:
+	AGHQnodes <- Rget_AGHQ_nodes(nQuad)
+	wgt <- AGHQnodes$weights
+	z_node <- AGHQnodes$z_nodes
+	middle_node <- -1
+	if(nQuad %% 2 == 0) middle_node <- (nQuad + 1)/2
+	
+	## Useful cached values for quadrature:
+	wi_lik_i <- numeric(nQuad + 1)	## Add an extra zero for scalar compilation error.
+	sum_wi_lik <- numeric(1)
+    quadrature_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
+    logdetNegHessian <- numeric(1)
+	marginal_log_lik <- numeric(1)
+	AGHQuad_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
+	
+	## Gradients needed to cache for general sum functionality under 3 different approximation methods.
+    gr_sigmahatwrtre <- numeric(1)
+    gr_sigmahatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
+    gr_rehatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1)) # double(1)
+	gr_QuadSum_value <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))	
+	
   },
   run = function(){},
   methods = list(
@@ -146,14 +181,21 @@ buildOneAGHQuad1D <- nimbleFunction(
       re_indices <<- fix_one_vec(re_indices)
       re_indices_inner <<- fix_one_vec(re_indices_inner)
       max_inner_logLik_saved_par <<- fix_one_vec(max_inner_logLik_saved_par)
-      max_logLik_saved_re_value <<- fix_one_vec(max_logLik_saved_re_value)
+      max_AGHQuad_saved_re_value <<- fix_one_vec(max_AGHQuad_saved_re_value)
       if(startID == 3) optStart <<- fix_one_vec(optStart)
       if(npar == 1) {
         p_indices <<- fix_one_vec(p_indices)
-        logLik3_saved_gr <<- fix_one_vec(logLik3_saved_gr)
-        logLik3_previous_p <<- fix_one_vec(logLik3_previous_p)
         max_inner_logLik_previous_p <<- fix_one_vec(max_inner_logLik_previous_p)
-      }
+		quadrature_previous_p <<- fix_one_vec(quadrature_previous_p)	## Added by Paul.		
+		AGHQuad_saved_gr <<- fix_one_vec(AGHQuad_saved_gr)
+		gr_sigmahatwrtp <<- fix_one_vec(gr_sigmahatwrtp)
+		gr_rehatwrtp <<- fix_one_vec(gr_rehatwrtp)
+		gr_QuadSum_value <<- fix_one_vec(gr_QuadSum_value)
+	  }
+	  if(nQuad == 1) {
+	  	wgt <<- fix_one_vec(wgt)
+		z_node <<- fix_one_vec(z_node)
+	  } 
       reInit <- values(model, randomEffectsNodes)
       set_reInit(reInit)
       one_time_fixes_done <<- TRUE
@@ -375,7 +417,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       return(ans)
       returnType(double(1))
     },
-    update_logLik3_with_gr = function(p = double(1), reset = logical(0, default = FALSE)) {
+    update_calcLogLik3_with_gr = function(p = double(1), reset = logical(0, default = FALSE)) {
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
       }
@@ -387,7 +429,9 @@ buildOneAGHQuad1D <- nimbleFunction(
       # all "logLik" here is joint log likelihood (i.e. for p and re)
       gr_logLik_wrt_p <- numeric(value = ans$value[(ind):(ind + npar - 1)], length = npar)
       ind <- ind + npar
-      logdetNegHess_value <- ans$value[ind]
+      # logdetNegHess_value <- ans$value[ind]
+	  logdetNegHessian <<- ans$value[ind]
+	  
       ind <- ind + 1
       # chol_negHess <- matrix(ans$value[(ind):(ind + nre*nre - 1)], nrow = nre, ncol = nre)
       negHessValue <- ans$value[ind]
@@ -398,105 +442,222 @@ buildOneAGHQuad1D <- nimbleFunction(
       ind <- ind + npar
       gr_logdetNegHess_wrt_re_v <- ans$value[ind]
       
-      logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
-      logLik3_saved_value <<- logLik_value
-      
-      gr_logLik_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
-      logLik3_saved_gr <<- gr_logLik_v
-      return(ans$value)
+	  #logdetNegHessian <- logdetNegHess(p, reTransform) ## Renamed logdetNegHess_value
+	  sigma_hat <- exp(-0.5 * logdetNegHessian)
+	
+	  ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+	  gr_rehatwrtp <<- hess_cross_terms/negHessValue
+
+	  ## dsigma_hat/dp (needed at real scale)
+	  gr_sigmahatwrtp <<- -0.5*gr_logdetNegHess_wrt_p_v*sigma_hat
+	  gr_sigmahatwrtre <<- -0.5*gr_logdetNegHess_wrt_re_v*sigma_hat
+
+	  gr_marg_loglik_wrt_p <- numeric(value = 0, length = length(p))
+
+	  ## AGHQ main call.
+	  QuadSum(p) # Caches each log lik evaluations and marginalized log-lik.
+	  gr_QuadSum(p, 2)
+	  gr_AGHQuad_v <- gr_QuadSum_value  - 0.5 * (gr_logdetNegHess_wrt_p_v + gr_logdetNegHess_wrt_re_v * gr_rehatwrtp)
+
+	  AGHQuad_saved_gr <<- gr_AGHQuad_v
+	  return(ans$value)
       returnType(double(1))
     },
-    logLik3_update = function(p = double(1)) {
-      if(any(p != logLik3_previous_p)) {
-        update_logLik3_with_gr(p)
-        logLik3_previous_p <<- p
+    calcLogLik3_update = function(p = double(1)) {
+      if(any(p != quadrature_previous_p)) {
+        update_calcLogLik3_with_gr(p)
       }
     },
     calcLogLik3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      logLik3_update(p)
-      if(logLik3_saved_value > max_logLik) {
-        max_logLik <<- logLik3_saved_value
-        max_logLik_saved_re_value <<- max_inner_logLik_saved_par
+      calcLogLik3_update(p)
+      if(marginal_log_lik > max_AGHQuad) {
+        max_AGHQuad <<- marginal_log_lik
+        max_AGHQuad_saved_re_value <<- max_inner_logLik_saved_par
       }
-      return(logLik3_saved_value)
+      return(marginal_log_lik)
       returnType(double())
     },
     gr_logLik3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      logLik3_update(p)
-      return(logLik3_saved_gr)
+      calcLogLik3_update(p)
+      return(AGHQuad_saved_gr)
       returnType(double(1))
     },
-    ## Laplace approximation 2: double tapping with separate components
+    ## AGHQuad approximation 2: double tapping with separate components
     calcLogLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
       }
-      reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value
-      logdetNegHessian <- logdetNegHess(p, reTransform)
-      ## Laplace approximation
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
-      if(ans > max_logLik) {
-        max_logLik <<- ans
-        max_logLik_saved_re_value <<- max_inner_logLik_saved_par
-      }
-      return(ans)
+	  logdetNegHessian <<- logdetNegHess(p, max_inner_logLik_saved_par)
+	  QuadSum(p)
+      return(marginal_log_lik)	#Cached and updated by QuadSum
       returnType(double())
     },
-    ## Laplace approximation 1: single tapping with separate components
+    ## AGHQuad approximation 1: single tapping with separate components
     calcLogLik1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik_internal(p)
       }
-      reTransform <- max_inner_logLik_saved_par
-      maxValue <- max_inner_logLik_saved_value
-      logdetNegHessian <- logdetNegHess(p, reTransform)
-      ## Laplace approximation
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
-      if(ans > max_logLik) {
-        max_logLik <<- ans
-        max_logLik_saved_re_value <<- max_inner_logLik_saved_par
-      }
-      return(ans)
+	  logdetNegHessian <<- logdetNegHess(p, max_inner_logLik_saved_par)
+	  QuadSum(p)
+      return(marginal_log_lik)	#Cached and updated by QuadSum
       returnType(double())
+    },	
+	## Quadrature sum for both taping methods.
+	QuadSum = function(p = double(1)){
+	  ## Defaults to using double taping update just in case called somewhere else.
+      if(!one_time_fixes_done) one_time_fixes()
+      if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
+        update_max_inner_logLik(p)
+      }
+
+	  ## Track last call of function to match with cached values for gradient.
+	  quadrature_previous_p <<- p
+	  
+	  ## General Quadrature Sum
+      reTransform <- max_inner_logLik_saved_par
+	  # logdetNegHessian <<- logdetNegHess(p, reTransform)
+      maxValue <- max_inner_logLik_saved_value
+	  if( nQuad == 1 ){	## Laplace Approx.
+		ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+		wi_lik_i[1] <<- exp(ans)
+	  }else{
+        ## AGH approximation:
+	    sigma_hat <- exp(- 0.5 * logdetNegHessian)
+	    for( i in seq_along(z_node) ){
+	      if( middle_node == i ){	## This value we know should be evaluated at the node.
+		   wi_lik_i[i] <<- wgt[i]	## exp(maxValue - maxValue) = 1.
+		  }else{
+	        reTrans_i <- reTransform + sigma_hat*z_node[i]
+		    log_lik_i <- joint_logLik(p = p, reTransform = reTrans_i) - maxValue
+		    wi_lik_i[i] <<- exp(log_lik_i)*wgt[i]
+	      }
+	    }
+		sum_wi_lik <<- sum(wi_lik_i[1:nQuad])	## Needed for gradient.
+	    ans <- log(sum_wi_lik) - 0.5 * logdetNegHessian + maxValue
+	  }
+	  ## Update internally.
+   	  marginal_log_lik <<- ans
+      if(ans > max_AGHQuad) {
+        max_AGHQuad <<- ans
+        max_AGHQuad_saved_re_value <<- max_inner_logLik_saved_par
+      }
     },
-    ## Gradient of the Laplace approximation (version 2) w.r.t. parameters
+    ## Gradient of the AGHQuad approximation (version 1) w.r.t. parameters
     gr_logLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
       }
-      reTransform <- max_inner_logLik_saved_par
-      negHessian <- negHess(p, reTransform)[1, 1]
-      # invNegHessian <- inverse(negHessian)
-      grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
-      grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)[1]
-      hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)[,1]
-      p1 <- gr_joint_logLik_wrt_p(p, reTransform)
-      ans <- p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
-      return(ans)
-      returnType(double(1))
-    },
-    ## Gradient of the Laplace approximation (version 1) w.r.t. parameters
+	  ## Cached transformed RE MLE
+	  reTransform <- max_inner_logLik_saved_par
+
+	  ## Need to update cached values for gradient calculation if called 
+	  ## before quadrature, which means that we haven't actually calculated
+	  if(any(p != quadrature_previous_p ) | marginal_log_lik == 0) {
+		logdetNegHessian <<- logdetNegHess(p, reTransform)
+		QuadSum(p)
+	  }
+	  sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
+
+      ## Double taped gradients.
+	  negHessian <- negHess(p, reTransform)[1, 1]
+	  grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
+	  grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)[1]
+	  hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)[,1]
+	  
+	  ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+	  gr_rehatwrtp <<- hesslogLikwrtpre/negHessian
+	  ## dsigma_hat/dp (needed at real scale)
+	  gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
+	  gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
+
+	  gr_QuadSum(p, 2)
+	  AGHQuad_saved_gr <<- gr_QuadSum_value - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+	  return(AGHQuad_saved_gr)
+	  returnType(double(1))
+	},
+    ## Gradient of the AGHQuad approximation (version 1) w.r.t. parameters
     gr_logLik1 = function(p = double(1)){
-      if(!one_time_fixes_done) one_time_fixes()
-      if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
-        update_max_inner_logLik_internal(p)
-      }
+		if(!one_time_fixes_done) one_time_fixes()
+		if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
+			update_max_inner_logLik_internal(p)
+		}
+	  ## Cached transformed RE MLE
+	  reTransform <- max_inner_logLik_saved_par
+
+	  ## Need to update cached values for gradient calculation if called 
+	  ## before quadrature, which means that we haven't actually calculated
+	  if(any(p != quadrature_previous_p ) | marginal_log_lik == 0) {
+		logdetNegHessian <<- logdetNegHess(p, reTransform)
+		QuadSum(p)
+	  }
+	  sigma_hat <- exp(-0.5 * logdetNegHessian) ## logdetNegHessian is cached
+
+      ## Double taped gradients.
+	  negHessian <- negHess_internal(p, reTransform)[1, 1]
+	  grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
+	  grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1]
+	  hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]
+	  
+	  ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+	  gr_rehatwrtp <<- hesslogLikwrtpre/negHessian
+	  ## dsigma_hat/dp (needed at real scale)
+	  gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
+	  gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
+
+	  gr_QuadSum(p, 1)
+	  AGHQuad_saved_gr <<- gr_QuadSum_value - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+	  return(AGHQuad_saved_gr)
+	  returnType(double(1))
+	},
+	## General Quadrature Gradient Summation for all 3 methods.
+	## Must be called internally as it does not safe check for previous QuadSum call etc.
+	gr_QuadSum = function(p = double(1), method = double())
+	{
+	  gr_lik_wrt_p <- numeric(value = 0, length = length(p))
+
       reTransform <- max_inner_logLik_saved_par
-      negHessian <- negHess_internal(p, reTransform)[1, 1]
-      ## invNegHessian <- inverse(negHessian)
-      grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
-      grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1]
-      hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]
-      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
-        0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
-      return(ans)
-      returnType(double(1))
+	  sigma_hat <- exp(-0.5 * logdetNegHessian)
+	  
+	  ## Method 2 implies double taping.
+	  if( method == 2 ) {
+		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p(p, reTransform)
+	  }else {
+		gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p_internal(p, reTransform)
+	  }
+	  
+	  if( nQuad == 1 ){	## Laplace Approx from existing code
+	    ## dll/dp + log(sigma)/dp + d^2ll/dre^2 * dre/dp
+		gr_QuadSum_value <<- gr_jointlogLikwrtp
+	  }else{
+	    for( i in seq_along(z_node) ){
+	      if( middle_node == i ){	## Try and avoid this set up. Ask Chris where I should put this then?
+		    gr_lik_wrt_p <- gr_lik_wrt_p + wi_lik_i[i]*gr_jointlogLikwrtp
+		  }else {			
+	        reTrans_i <- reTransform + sigma_hat*z_node[i]
+		    ## Chain Rule: dll/dre * ( dre_hat/dp + dsigma_hat/dp*z_i )##Improve name
+		    ## dll/dp
+		    ## Double Taping Version
+		    if( method == 2 ) {
+		      gr_logLikwrtrewrtp_i <- gr_joint_logLik_wrt_re(p, reTrans_i)[1] * 
+				( (1 + gr_sigmahatwrtre*z_node[i]) * gr_rehatwrtp  +  gr_sigmahatwrtp*z_node[i] )
+		      gr_logLikewrtp_i <- gr_joint_logLik_wrt_p(p, reTrans_i)	## single call for both RE and p.					
+		    }else {
+		      ## Single Taping
+		      gr_logLikwrtrewrtp_i <- gr_joint_logLik_wrt_re_internal(p, reTrans_i)[1] * 
+				( (1 + gr_sigmahatwrtre*z_node[i]) * gr_rehatwrtp  +  gr_sigmahatwrtp*z_node[i] )
+		      gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)	## single call for both RE and p.										
+		    }
+		    ## The weighted gradient for the ith sum.
+		    gr_lik_wrt_p <- gr_lik_wrt_p + wi_lik_i[i]*(gr_logLikewrtp_i +  gr_logLikwrtrewrtp_i)
+	      }
+	    }	
+	    gr_QuadSum_value <<- gr_lik_wrt_p/sum_wi_lik
+ 	  }
     }
   ),
   buildDerivs = list(inner_logLik                            = list(),
@@ -1610,11 +1771,13 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
 #' @export
 buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                                control = list()) {
- buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
+buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
    control)
 }
 
-## Main function for Adaptive Gauss-Hermite Quadratrue
+## Main function for Adaptive Gauss-Hermite Quadrature
+#' @rdname AGHQuad
+#' @export
 buildAGHQuad <- nimbleFunction(
   name = 'AGHQuad',
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
@@ -1712,7 +1875,7 @@ buildAGHQuad <- nimbleFunction(
         }
         ## Build AGHQuad
         if(nre > 1) AGHQuad_nfl[[1]] <- buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-        else AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+        else AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- MargNodes$randomEffectsSets
@@ -1751,7 +1914,7 @@ buildAGHQuad <- nimbleFunction(
           if(nre_these > 1){
             AGHQuad_nfl[[i]] <- buildOneAGHQuad(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
           }
-          else AGHQuad_nfl[[i]] <- buildOneAGHQuad1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
+          else AGHQuad_nfl[[i]] <- buildOneAGHQuad1D(model, nQuad = nQuad, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
         }
       }
       if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
