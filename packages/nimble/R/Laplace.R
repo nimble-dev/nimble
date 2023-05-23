@@ -124,9 +124,11 @@ buildOneAGHQuad1D <- nimbleFunction(
     max_inner_logLik_saved_value <- numeric(1)
     max_inner_logLik_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
     cache_inner_max <- TRUE
-    ## Record the maximum AGHQuad loglikelihood value for obtaining inner optimization start values
-    max_AGHQuad <- -Inf 
-    max_AGHQuad_saved_re_value <- as.numeric(c(1, -1))
+    
+    ## Record the maximum Laplace loglikelihood value for obtaining inner optimization start values
+    max_logLik <- -Inf
+    max_logLik_saved_re_value <- as.numeric(c(1, -1))    
+
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE
 	
@@ -181,7 +183,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       re_indices <<- fix_one_vec(re_indices)
       re_indices_inner <<- fix_one_vec(re_indices_inner)
       max_inner_logLik_saved_par <<- fix_one_vec(max_inner_logLik_saved_par)
-      max_AGHQuad_saved_re_value <<- fix_one_vec(max_AGHQuad_saved_re_value)
+      max_logLik_saved_re_value <<- fix_one_vec(max_logLik_saved_re_value)
       if(startID == 3) optStart <<- fix_one_vec(optStart)
       if(npar == 1) {
         p_indices <<- fix_one_vec(p_indices)
@@ -471,9 +473,9 @@ buildOneAGHQuad1D <- nimbleFunction(
     calcLogLik3 = function(p = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
       calcLogLik3_update(p)
-      if(marginal_log_lik > max_AGHQuad) {
-        max_AGHQuad <<- marginal_log_lik
-        max_AGHQuad_saved_re_value <<- max_inner_logLik_saved_par
+      if(marginal_log_lik > max_logLik) {
+        max_logLik <<- marginal_log_lik
+        max_logLik_saved_re_value <<- max_inner_logLik_saved_par
       }
       return(marginal_log_lik)
       returnType(double())
@@ -541,9 +543,9 @@ buildOneAGHQuad1D <- nimbleFunction(
 	  }
 	  ## Update internally.
    	  marginal_log_lik <<- ans
-      if(ans > max_AGHQuad) {
-        max_AGHQuad <<- ans
-        max_AGHQuad_saved_re_value <<- max_inner_logLik_saved_par
+      if(ans > max_logLik) {
+        max_logLik <<- ans
+        max_logLik_saved_re_value <<- max_inner_logLik_saved_par
       }
     },
     ## Gradient of the AGHQuad approximation (version 1) w.r.t. parameters
@@ -1771,7 +1773,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
 #' @export
 buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                                control = list()) {
-buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
+ buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
    control)
 }
 
