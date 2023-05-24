@@ -1825,8 +1825,8 @@ buildAGHQuad <- nimbleFunction(
     ## Out and inner optimization settings
     outOptControl   <- nimOptimDefaultControl()
     innerOptControl <- nimOptimDefaultControl()
-    optimControlArgNames <- c("trace", "fnscale", "parscale", "ndeps", "maxit", "abstol", "reltol", "alpha", 
-                              "beta", "gamma", "REPORT", "type", "lmm", "factr", "pgtol", "temp", "tmax")
+    optimControlArgNames <- c("trace", "fnscale", "parscale", "ndeps", "maxit", "abstol", "reltol", "alpha", "beta", "gamma", "REPORT", "type", "lmm", "factr", "pgtol", "temp", "tmax")
+	
     if(!is.null(control$outOptimControl)){
       validNames <- intersect(names(control$outOptimControl), optimControlArgNames)
       numValidNames <- length(validNames)
@@ -1876,8 +1876,14 @@ buildAGHQuad <- nimbleFunction(
           innerOptStart <- all_reTransform$inverseTransform(rep(0, all_reTransform_length))
         }
         ## Build AGHQuad
-        if(nre > 1) AGHQuad_nfl[[1]] <- buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-        else AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+        if(nre > 1) {
+		  if(nQuad > 1) nimCat('  [Note] Adaptive Gauss-Hermite quadrature is not implemented for      multivariate integration.\n Defaulting to Laplace approximation.')
+		  
+		  AGHQuad_nfl[[1]] <- buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes,
+  		    innerOptControl, innerOptMethod, innerOptStart)
+        } else { 
+		  AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+		}  
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- MargNodes$randomEffectsSets
@@ -1914,6 +1920,8 @@ buildAGHQuad <- nimbleFunction(
           }
           ## Build AGHQuad for each set
           if(nre_these > 1){
+		    if(nQuad > 1) nimCat('  [Note] Adaptive Gauss-Hermite quadrature is not implemented for multivariate integration.\n Defaulting to Laplace Approximation.')
+
             AGHQuad_nfl[[i]] <- buildOneAGHQuad(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
           }
           else AGHQuad_nfl[[i]] <- buildOneAGHQuad1D(model, nQuad = nQuad, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
