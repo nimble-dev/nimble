@@ -327,9 +327,13 @@ codeProcessModelMacros <- function(code,
     list(code=code, modelInfo=modelInfo)
 }
 
+# Index generator for all macros
+macroIndexCreator <- labelFunctionCreator("i")
+
 processModelMacros <- function(code, modelInfo, env){
   # No generated parameters before any macros run, so parameters = empty list
-  modelInfo$indexCreator <- labelFunctionCreator("i")
+  macroIndexCreator(reset = TRUE)
+  modelInfo$indexCreator <- macroIndexCreator
   modelInfo$parameters <- list()
   macroOutput <- codeProcessModelMacros(code=code, modelInfo=modelInfo, env=env)
   # Clean up extra brackets
