@@ -551,6 +551,36 @@ test_that("processModelMacros makes index generator available", {
 
 })
 
+test_that("generated parameters are stored in model definition",{  
+  testMacro <- list(process = function(code, modelInfo, .env){
+      code[[3]] <- quote(dnorm(alpha, 1))
+      modelInfo$parameters$testMacro <- "alpha"
+      list(code = code, modelInfo=modelInfo)
+    }
+  )
+  class(testMacro) <- "model_macro"
+
+  temporarilyAssignInGlobalEnv(testMacro)
+
+  code <- nimbleCode({
+    x ~ testMacro()
+  })
+
+  mod <- nimbleModel(code, constants=list(), returnDef=TRUE)
+  
+  expect_equal(
+    mod$macroParameters,
+    list(testMacro = "alpha")
+  )
+
+  mod <- nimbleModel(code, constants=list())
+  expect_equal(
+    mod$getMacroParameters(),
+    list(testMacro = "alpha")
+  )
+
+})
+
 test_that("removeExtraBrackets cleans up output from codeProcessModelMacros",{
 
   code <- nimbleCode({
