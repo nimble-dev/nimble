@@ -2929,10 +2929,10 @@ NULL
 #' @param control a named list for providing additional settings used in Laplace
 #'   approximation. See \code{control} section below.
 #'
-#' @section \code{buildLaplace}:
+#' @section \code{buildAGHQuad}:
 #'
-#' \code{buildLaplace} is the main function for constructing the Laplace
-#'   approximation for a given model or part of a model.
+#' \code{buildAGHQuad} is the main function for constructing the adaptive Gauss-Hermite 
+#'   quadrature approximation for a given model or part of a model.
 #'
 #' See method \code{summary} below and the separation function
 #'   \code{\link{summaryLaplace}} for processing maximum likelihood estimates
@@ -3003,14 +3003,14 @@ NULL
 #'   distribution simply to indicate the range of valid values. For a param
 #'   \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
 #'
-#' The object returned by \code{buildLaplace} is a nimbleFunction object with
+#' The object returned by \code{buildAGHQuad} is a nimbleFunction object with
 #' numerous methods (functions). The most useful ones are:
 #'
 #' \itemize{
 #'
-#' \item \code{calcLogLik(p, trans)}. Calculate the Laplace approximation to
-#'       the marginal log-likelihood function at parameter value \code{p}, which
-#'       (if \code{trans} is FALSE, which is the default) should match the order
+#' \item \code{calcLogLik(p, trans)}. Calculate the adaptive Gauss-Hermite quadrature 
+#'       approximation to the marginal log-likelihood function at parameter value \code{p}, 
+#'       which (if \code{trans} is FALSE, which is the default) should match the order
 #'       of \code{paramNodes}. For any non-scalar nodes in \code{paramNodes},
 #'       the order within the node is column-major (which can be seen for R
 #'       objects using \code{as.numeric}). Return value is the scalar
@@ -3024,8 +3024,6 @@ NULL
 #'       be the same as on the original scale (because some constraints of
 #'       non-scalar parameters result in fewer free transformed parameters than
 #'       original parameters).
-#'
-#' \item \code{calcLaplace(p, trans)}. This is the same as \code{calcLogLik}.
 #'
 #' \item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
 #'         estimates of parameters using the Laplace-approximated marginal 
@@ -3096,7 +3094,8 @@ NULL
 #'
 #'     }
 #'
-#' Additional methods to access or control more details of the Laplace approximation include:
+#' Additional methods to access or control more details of the adaptive 
+#' Gauss-Hermite quadrature approximation include:
 #'
 #' \itemize{
 #'
@@ -3109,22 +3108,19 @@ NULL
 #'   TRUE/FALSE}. Use this if there is only one node.
 #'
 #'   \item \code{setMethod(method)}. Set method ID for calculating the Laplace
-#'   approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2},
-#'   default method), or 3 (\code{Laplace3}). See below for more details. Users
+#'   approximation and gradient: 1 (\code{calcLogLik1}), 2 (\code{calcLogLik2},
+#'   default method), or 3 (\code{calcLogLik3}). See below for more details. Users
 #'   wanting to explore efficiency can try switching from method 2 (default) to
-#'   methods 1 or 3 and comparing performance. The first Laplace approximation
-#'   with each method will be (much) slower than subsequent Laplace
-#'   approximations.
+#'   methods 1 or 3 and comparing performance. The first AGH quadrature approximation
+#'   with each method will be (much) slower than subsequent AGH quadrature approximations.
 #'
 #'   \item \code{getMethod()}. Return the current method ID for Laplace.
 #'
-#'   \item \code{gr_logLik(p, trans)}. Gradient of the Laplace-approximated
+#'   \item \code{gr_logLik(p, trans)}. Gradient of the AGHQuad-approximated
 #'   marginal log-likelihood at parameter value \code{p}. Argument \code{trans} 
-#'   is similar to that in \code{calcLaplace}. If there are multiple parameters,
+#'   is similar to that in \code{calcLogLik}. If there are multiple parameters,
 #'   the vector \code{p} is given in the order of parameter names returned by 
 #'   \code{getNodeNamesVec(returnParams=TRUE)}.
-#'
-#'   \item \code{gr_Laplace(p, trans)}. This is the same as \code{gr_logLik}.
 #'
 #'   \item \code{otherLogLik(p)}. Calculate the \code{calcNodesOther}
 #'   nodes, which returns the log-likelihood of the parts of the model that are
@@ -3231,7 +3227,7 @@ NULL
 #'
 #' }
 #'
-#' @author Wei Zhang, Perry de Valpine
+#' @author Wei Zhang, Perry de Valpine, Paul van Dam-Bates
 #' 
 #' @name AGHQuad
 #' 
@@ -3253,17 +3249,22 @@ NULL
 #' pump <- nimbleModel(code = pumpCode, name = "pump", constants = pumpConsts, 
 #'                     data = pumpData, inits = pumpInits, buildDerivs = TRUE)
 #'                     
-#' # Build Laplace approximation
-#' pumpLaplace <- buildLaplace(pump)
 #' 
 #' \dontrun{
+#' # Compare Laplace approximation w/ AGHQuad
+#' pumpQuad <- buildAGHQuad(model = m, nQuad = 21)
+#' pumpLaplace <- buildAGHQuad(model = m, nQuad = 1)
+#' 
 #' # Compile the model
-#' Cpump <- compileNimble(pump)
-#' CpumpLaplace <- compileNimble(pumpLaplace, project = pump)
+#' cPumpQL <- compileNimble(pumpQuad, pumpLaplace, project = pump)
+#' cpumpQuad <- cQL$pumpQuad
+#' cpumpLaplace <- cQL$pumpLaplace
 #' # Calculate MLEs of parameters
-#' MLEres <- CpumpLaplace$findMLE()
+#' MLEresLaplace <- CpumpLaplace$findMLE()
+#' MLEresQuad <- CpumpQuad$findMLE()
 #' # Calculate estimates and standard errors for parameters and random effects on original scale
-#' allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
+#' allresLaplace <- CpumpLaplace$summary(MLEresLaplace, randomEffectsStdError = TRUE)
+#' allresQuad <- CpumpQuad$summary(MLEresQuad, randomEffectsStdError = TRUE)
 #' }
 #'
 #' @references

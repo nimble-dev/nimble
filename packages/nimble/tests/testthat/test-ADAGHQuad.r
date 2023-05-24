@@ -27,8 +27,8 @@ m <- nimbleModel(nimbleCode({
   }}), data = list(y=rnorm(n, 5, sqrt(1 + 0.5^2))), constants = list(n=n),
   inits = list(b0 = 3.5, sigma1 = 1, sigma2 = 1), buildDerivs = TRUE)
 	  
-  mQuad <- nimble:::buildAGHQuad(model = m, nQuad = 5)
-  mLaplace <- nimble:::buildAGHQuad(model = m, nQuad = 1)
+  mQuad <- buildAGHQuad(model = m, nQuad = 5)
+  mLaplace <- buildAGHQuad(model = m, nQuad = 1)
   cm <- compileNimble(m)
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
@@ -133,7 +133,7 @@ test_that("AGH Quadrature 1D Poisson-Gamma for checking nQuad", {
     inits = list(a = 10, b = 2), buildDerivs = TRUE)
 
   cm <- compileNimble(m)
-  mQuad <- nimble:::buildAGHQuad(model = m, nQuad = 20)
+  mQuad <- buildAGHQuad(model = m, nQuad = 20)
   cmQuad <- compileNimble(mQuad, project = m)
   test.val1 <- c(10, 2)
   test.val2 <- c(1, 5)
@@ -171,7 +171,7 @@ test_that("AGH Quadrature 1D Poisson-Gamma for checking nQuad", {
   res <- NULL; gr <- NULL
   for( i in 1:25 )
   {
-	mQuad <- nimble:::buildAGHQuad(model = m, nQuad = i)
+	mQuad <- buildAGHQuad(model = m, nQuad = i)
     cmQuad <- compileNimble(mQuad, project = m)
 	expect_equal(cmQuad$calcLogLik(c(50,2)), tru.logLik, tol = 0.01^(sqrt(i)))
 	expect_equal(cmQuad$gr_logLik(c(50,2)), tru.gr, tol = 0.01^(sqrt(i)))
@@ -298,7 +298,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
     buildDerivs = TRUE)
   
   cm <- compileNimble(m)
-  mQuad <- nimble:::buildAGHQuad(model = m, nQuad = 5)
+  mQuad <- buildAGHQuad(model = m, nQuad = 5)
   cmQuad <- compileNimble(mQuad, project = m)
 
   ## Check gradient and marginalization accuracy.
@@ -340,7 +340,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
   expect_equal(mle.quad$value, mle.tru$value, tol = 1e-03)
   
   ## Check with 51 quad points.
-  mQuad <- nimble:::buildAGHQuad(model = m, nQuad = 51)
+  mQuad <- buildAGHQuad(model = m, nQuad = 51)
   cmQuad <- compileNimble(mQuad, project = m)
   mle.quad51 <- cmQuad$findMLE(pStart = c(10,2))
   expect_equal(mle.quad51$par, mle.par, tol = 1e-04)
@@ -373,8 +373,8 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   m$calculate()  
 
   cm <- compileNimble(m)	  
-  mQuad <- nimble:::buildAGHQuad(model = m, nQuad = 21, control = list(outOptimControllist = list(reltol = 1e-16)))
-  mLaplace <- nimble:::buildAGHQuad(model = m, nQuad = 1, control = list(outOptimControllist = list(reltol = 1e-16)))
+  mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outOptimControllist = list(reltol = 1e-16)))
+  mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outOptimControllist = list(reltol = 1e-16)))
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
@@ -439,8 +439,8 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   m$calculate()  
 
   cm <- compileNimble(m)	  
-  mQuad <- nimble:::buildAGHQuad(model = m, nQuad = 21, control = list(outOptimControllist = list(reltol = 1e-16)))
-  mLaplace <- nimble:::buildAGHQuad(model = m, nQuad = 1, control = list(outOptimControllist = list(reltol = 1e-16)))
+  mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outOptimControllist = list(reltol = 1e-16)))
+  mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outOptimControllist = list(reltol = 1e-16)))
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
