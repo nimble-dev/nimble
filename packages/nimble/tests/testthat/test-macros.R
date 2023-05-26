@@ -632,6 +632,8 @@ test_that("checkMacroPars removes intermediate parameters and renames parameter 
   out <- nimble:::checkMacroPars(pars, old, new)
 
   expect_equal(out, list(testMacro__1 = c("alpha", "beta")))
+
+  # add test when there are no macros
 })
 
 test_that("nimbleModel creates and stores list of macro-generated parameters", {

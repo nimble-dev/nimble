@@ -253,7 +253,8 @@ codeProcessModelMacros <- function(code,
             for(i in 2:codeLength){
               macroOutput <- codeProcessModelMacros(code = code[[i]],
                                                     modelInfo = modelInfo,
-                                                    env = env
+                                                    env = env,
+                                                    recursionLabels
                                                     )
               code[[i]] <- macroOutput$code
               modelInfo <- macroOutput$modelInfo
@@ -264,7 +265,8 @@ codeProcessModelMacros <- function(code,
     if(code[[1]] == 'for') {
       macroOutput <- codeProcessModelMacros(code[[4]],
                                             modelInfo = modelInfo,
-                                            env = env
+                                            env = env,
+                                            recursionLabels
                                            )
       code[[4]] <- macroOutput$code
       return(list(code=code, modelInfo=macroOutput$modelInfo))
@@ -322,6 +324,14 @@ codeProcessModelMacros <- function(code,
             # Check for newly created parameters
             newPars <- list(newMacroPars(code, expandedInfo$code))
             names(newPars) <- possibleMacroName
+            macroComment <- possibleMacroName
+            if(length(recursionLabels > 0)){
+              spacer <- paste(rep("  ", length(recursionLabels) - 1), collapse="")
+              bracket <- "|__"
+              macroComment <- paste0(spacer, bracket, macroComment)
+            }
+            commentLine <- substitute(MACRO, list(MACRO = macroComment))
+            expandedInfo$code <- as.call(c(list(quote(`{`)), list(commentLine, expandedInfo$code)))
             curPars <- modelInfo$parameters
             expandedInfo$modelInfo$parameters <- c(curPars, newPars)
 
@@ -331,7 +341,7 @@ codeProcessModelMacros <- function(code,
             macroOutput <- codeProcessModelMacros(expandedInfo$code,
                                            modelInfo = expandedInfo$modelInfo,
                                            env = env,
-                                           c(recursionLabels, possibleMacroName)
+                                           recursionLabels = c(recursionLabels, possibleMacroName)
                                            )
             return(list(code=macroOutput$code, modelInfo=macroOutput$modelInfo))
         }
@@ -395,6 +405,8 @@ checkMacroPars <- function(parameters, startCode, endCode){
 
   # Find new parameters all at once
   all_pars <- newMacroPars(startCode, endCode)
+
+  if(length(all_pars) == 0) return(NULL)
 
   # Remove intermediate parameters that don't end up final code
   final_pars <- lapply(parameters, function(x){
@@ -643,7 +655,8 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
             lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber, userEnv = userEnv)
         }
-        if(!safeDeparse(code[[i]][[1]], warn = TRUE) %in% c('~', '<-', 'for', '{')) 
+        checkLine <- safeDeparse(code[[i]][[1]], warn = TRUE)
+        if(! (is.character(checkLine) | checkLine %in% c('~', '<-', 'for', '{'))) 
             stop("Error: ", safeDeparse(code[[i]][[1]]), " not allowed in BUGS code in ", safeDeparse(code[[i]]))
     }
     lineNumber
