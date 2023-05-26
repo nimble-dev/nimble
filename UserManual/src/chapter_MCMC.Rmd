@@ -491,6 +491,30 @@ Note that if you compile the MCMC with another object (the model in this case), 
 Cmcmc$Rmcmc$run(niter = 1000)
 ```
 
+## Initializing MCMC {#sec:initMCMC}
+
+To see how to provide initial values, see `help(runMCMC)`, `help(nimbleMCMC)`, or `help(nimbleModel)`.
+
+It is often important to provide valid and reasonable initial values to an MCMC, either as fixed values or via an initialization function.
+
+Not doing so can cause slow convergence or even failure of an MCMC algorithm (e.g., if the values the model is initialized with are not valid). When starting an MCMC, when NIMBLE encounters a missing parameter value, it simulates from the prior distribution. NIMBLE can be more sensitive to missing or bad starting values than some MCMC packages.
+
+The following cases are particularly important to consider when initializing:
+  - In a model with flat priors (i.e., using `x~dflat()` or `x~dhalfflat()`), NIMBLE cannot generate initial values from those priors.
+  - In a model with diffuse priors, initializing from the prior can give unreasonable/extreme initial values. 
+  - In a model with stochastic indices (e.g., `x[idx[i]]` with `idx[i]` unknown), those indices should have (valid) initial values.
+  - In a model with constraints (via `dconstraint`), the model should be initialized such that the constraints are satisfied.
+  - In a model with censoring (via `dinterval`), the initial value(s) of `t` in `dinterval` for the censored node(s) should be consistent with the censoring that is specified.
+
+That said, some MCMC algorithms (such a conjugate samplers) don't use the initial values, so flat or diffuse priors on nodes assigned such samplers will not be a problem with regard to initialization.
+
+Many user questions and problems end up being related to missing or bad initial values. Some suggestions for diagnosing initialization problems include:
+
+ - Run `model$initializeInfo()` to find uninitialized nodes.
+ - Run `model$calculate()` to see if the full model log probability density can be calculated (values of `-Inf`, `NA`, `NaN` indicate there are missing or invalid initial values).
+ - To debug the specific node(s) whose initial value(s) are causing problems, run `model$calculate(nodes)` on specific `nodes` to find their log probability density values, looking look for values of `-Inf`, `NA`, or `NaN`.
+ - For the node(s) with invalid log probability density, inspect the values of the node(s) and parameter(s) of the distribution(s) assigned to those node(s). You can inspect values of a variable in the model using natural R syntax, `model$variable_name`.
+ - With a compiled or uncompiled model, you can run the model initialization (but no MCMC iterations) with `mcmc$run(niter = 0)`. Then inspect the values of model variables to see the results of initialization.
 
 
 ## User-friendly execution of MCMC algorithms: *runMCMC* {#sec:runMCMC}
@@ -569,7 +593,7 @@ The `run` method has an optional `reset` argument.  When `reset = TRUE` (the def
 
 This means that one can begin a new run of an existing MCMC without having to rebuild or recompile the model or the MCMC. This can be helpful if one wants to use the same model and MCMC configuration, but with different initial values, different values of data nodes (but which nodes are data nodes must be the same), changes to covariate values(or other non-data, non-parameter values) in the model, or a different number of MCMC iterations, thinning interval or burn-in.
 
-In contrast, when `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.
+In contrast, when `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states. (Similarly, if using WAIC, one can use `resetWAIC = FALSE` so that the WAIC calculation is based on all the samples from the expanded set of samples.)
 
 The `run` method also has an optional `resetMV` argument. This argument is only considered when`'reset` is set to `FALSE`. When `mcmc$run(niter, reset = FALSE, resetMV = TRUE)` is called the internal modelValues objects `mvSamples` and `mvSamples2` are each resized to the appropriate length for holding the requested number of samples (`niter/thin`, and `niter/thin2`, respectively) and the MCMC carries on from where it left off. In other words, the previously obtained samples are deleted (e.g. to reduce memory usage) prior to continuing the MCMC. The default value of  `resetMV`  is  `FALSE`. 
 
@@ -913,6 +937,94 @@ If one wants information about conjugate node relationships for other purposes, 
 <!---  The `crossLevel` sampler can be customized using the `control` list argument to set the initial proposal covariance and the adaptive properties for the Metropolis-Hastings sampling of the higher-level nodes.  See `help(samplers)` for details.  -->
 
 <!---  The requirement that all stochastic descendants of the `target` nodes must themselves have only conjugate descendants will be checked when the MCMC algorithm is built.  This sampler is useful when there is strong dependence across the levels of a model that causes problems with convergence or mixing. -->
+
+### Hamiltonian Monte Carlo (HMC) {#subsec:HMC}
+
+As of version 1.0.0, NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha-AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
+
+
+The HMC sampler in package `nimbleHMC` implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.
+
+At its core, HMC in NIMBLE is just another MCMC sampler that can be used in NIMBLE's general MCMC system, possibly along with other samplers. For convenience, `nimbleHMC` provides different ways to set up and run HMC that allow different degrees of control:
+
+- `nimbleHMC` is analogous to `nimbleMCMC`: It takes model `code`, `data`, `inits` and `constants` and does all steps from building the model to running one or more MCMC chains. Use this if you want one call to get default HMC samples of the entire model.
+- `configureHMC` is analogous to `configureMCMC`: It sets up a default MCMC configuration that comprises one HMC sampler for all model nodes (or nodes you choose). You can then use `addSampler` and other methods of the configuration to fully customize it before building and using the MCMC.  Use `configureHMC` if you want to do MCMC with both HMC and other samplers and you find it easier to start with HMC in the configuration first.
+- `buildHMC` is analogous to `buildMCMC`: It builds a configuration that, if not provided, will be created by `configureHMC`. Use this if you want to manage MCMC runs through `runMCMC` instead of `nimbleHMC` and you don't need to customize the configuration by doing `configureHMC` yourself.
+- `addHMC`: This manages use of `addSampler` for an MCMC configuration to add specifically an HMC sampler for a chosen set of nodes. It optionally removes other samplers for those nodes first. Use this if you want to do MCMC with both HMC and other samplers and you find it easier to start with the other sampler in the configuration, i.e. from the result of `configureMCMC`. 
+- For the most fine-grained control, you can call `configureMCMC` and then use the `addSampler` with `type="HMC"` to add HMC sampler(s).
+
+More information on these is available from the help pages, e.g. `help(configureHMC)`.
+
+#### HMC example {#subsec:HMC-example}
+
+Here we will configure and build an MCMC to use HMC on a GLMM example. In this case we'll use HMC for the whole model, i.e., all parameters and latent states.
+
+We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC (and also for Laplace approximation in \@ref(sec:use-derivs)). There will be 10 groups (indexed by `i`) of 5 observations (indexed by `j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
+
+```{r eval=TRUE}
+model_code <- nimbleCode({
+  # priors 
+  intercept ~ dnorm(0, sd = 100)
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 10)
+  # random effects and data  
+  for(i in 1:10) {
+    # random effects
+    ran_eff[i] ~ dnorm(0, sd = sigma)
+    for(j in 1:5) {
+      # data
+      y[i,j] ~ dpois(exp(intercept + beta*X[i,j] + ran_eff[i]))
+    }
+  }
+})
+```
+
+We'll simulate some values for `X`.
+
+```{r eval=TRUE}
+set.seed(123)
+X <- matrix(rnorm(50), nrow = 10)
+```
+
+In order to allow an algorithm to use AD for a specific model, that model must be created with `buildDerivs = TRUE`. (Note that if you use the one-step method `nimbleHMC` described above, then you do not need to build the model yourself and so you do not need to provide this `buildDerivs` option.)
+
+```{r eval=TRUE}
+inits <- list(intercept = 0, beta = 0.2, sigma = 0.5)
+model <- nimbleModel(model_code, constants = list(X = X), inits = inits,
+      calculate = FALSE, buildDerivs = TRUE) # Here is the argument needed for AD.
+```
+
+To finish setting up the example we need to put data values into the model. We could have provided data in the call to `nimbleModel`, but instead we will simulate them using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.
+
+```{r eval=TRUE}
+model$calculate() # This will return NA because the model is not fully initialized.
+model$simulate(model$getDependencies('ran_eff'))
+model$calculate() # Now the model is fully initialized: all nodes have valid values.
+model$setData('y') # Now the model has y marked as data, with values from simulation.
+```
+
+Finally, we will make a compiled version of the model.
+```{r eval=TRUE}
+Cmodel <- compileNimble(model)
+```
+
+Now we will build an HMC algorithm for the parameters and random effects in the model.
+```{r eval=TRUE}
+library(nimbleHMC)
+HMC <- buildHMC(model)
+CHMC <- compileNimble(HMC, project = model)
+# The compiled HMC will use the compiled model.
+samples <- runMCMC(CHMC, niter = 1000, nburnin = 500) # short run for illustration
+```
+
+We will not investigate results in detail, but here is a summary to see that reasonable results were generated.
+```{r eval=TRUE}
+summary(coda::as.mcmc(samples))
+```
+
+#### Automatic parameter transformation
+
+In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(sec:parameter-transform).
 
 ### Customized log-likelihood evaluations: *RW_llFunction sampler*
  

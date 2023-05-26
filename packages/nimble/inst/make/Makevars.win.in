@@ -28,6 +28,6 @@ ifndef ARCH_SUFFIX
 ARCH_SUFFIX=$(patsubst /%,_%, $(R_ARCH))
 endif
 
-PKG_CPPFLAGS= -DR_NO_REMAP -I"${NIMBLE_INC_DIR}" -I"${EIGEN_INC_DIR}" -I"$(CPPAD_INC_DIR)" -DEIGEN_MPL2_ONLY=1 -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations
+PKG_CPPFLAGS= -DR_NO_REMAP -I"${NIMBLE_INC_DIR}" -I"${EIGEN_INC_DIR}" -I"$(CPPAD_INC_DIR)" -DEIGEN_MPL2_ONLY=1 -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations -std=c++11
 PKG_LIBS=-L"${NIMBLE_LIB_DIR}" -lnimble$(ARCH_SUFFIX) -lRlapack -lRblas
 

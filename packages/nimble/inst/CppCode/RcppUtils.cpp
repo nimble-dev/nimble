@@ -232,7 +232,7 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   return(ans);
 }
 
-int SEXP_2_int(SEXP Sn, int i, int offset ) {
+int SEXP_2_int(SEXP Sn, int i ) {
   if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_int called for SEXP that is not numeric or logical\n");
   if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_int called for element %i% >= length of %i.\n", i, LENGTH(Sn));
   if(Rf_isInteger(Sn) || Rf_isLogical(Sn)) {
@@ -242,7 +242,7 @@ int SEXP_2_int(SEXP Sn, int i, int offset ) {
       return(LOGICAL(Sn)[i]);
   } else {
     if(Rf_isReal(Sn)) {
-      double ans = REAL(Sn)[i] + offset;
+      double ans = REAL(Sn)[i];
       if(ans != floor(ans)) PRINTF("Warning from SEXP_2_int: input element is a real with a non-integer value\n");
       return(static_cast<int>(ans));
     } else {

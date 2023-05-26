@@ -1,10 +1,171 @@
+#                            CHANGES IN VERSION 1.0.0 (May 2023) 
+
+This release introduces tools for automatic differentiation in NIMBLE.
+
+## USER LEVEL CHANGES
+
+- Add tools for automatic differentiation. Functionality includes:
+
+    -- The ability to differentiate nimbleFunctions with respect
+    to input arguments in a flexible way.
+    
+    -- The ability to differentiate `model$calculate()` calls
+    with respect to model node elements.
+    
+    -- Functionality that enables Hamiltonian Monte Carlo (provided in the
+    `nimbleHMC` package).
+    
+    -- A parameter transformation system to work in unconstrained parameter
+    spaces when model parameters have constrained domains.
+        
+- Add Laplace approximation algorithm, allowing a user to approximate
+the marginal likelihood (integration/marginalizing over random effects/
+latent process values) and find the MLE.
+
+- Improve aspects of WAIC (PR #1256):
+
+    -- Provide aggregate and per-chain WAIC when `perChainWAIC` is `TRUE`.
+
+    -- Report number of `pWAIC` values greater than 0.4.
+    
+    -- Warn user if WAIC is enabled but not set to `TRUE` in `runMCMC`.
+    
+    -- Improve clarity in `help(WAIC)`.
+    
+- Reduce the default adaptation interval for the `AF_slice` sampler to 200.
+
+- Improved control of `addSampler` method of MCMC
+configuration objects (PR #1293):
+
+    -- `expandTarget` argument controls whether nodes specified in
+       `target` undergo expansion via `expandNodeNames`, adding a
+       separate sampler instance for each resulting node.
+
+    -- When `expandTarget = TRUE`, the `scalarComponents` argument is
+       passed as the `returnScalarComponents` argument to `expandNodeNames`.
+
+    -- Removed `nodes` argument as redundant.  Target nodes are
+       uniquely specified using the `target` argument.
+
+- Improve handling of resetting of scale when `adaptive=FALSE` (PR #1275).
+
+- Allow `dcat` to have a `prob` vector of length 1 (PR #1251).
+
+- Add error trapping for MCMC `thin` argument not positive and integer-valued
+(PR #1250).
+
+- Enhance discussion of MCMC initialization in the User Manual (issue #1247).
+
+- Enhance discussion of indexing in loops and variables in User Manual,
+including differences from JAGS.
+
+- Rework language in `help(buildMCMC)` to improve clarity.
+
+- Add information on predefined nimbleLists to the User Manual.
+
+- Improve error message when user-defined distribution has incorrect dimension
+for `x`.
+
+- Improve error message when mistakenly using `T()` in deterministic rather than
+  stochastic model declaration.
+
+- Improve error-trapping when a loop index is incorrectly used in indexing
+a block of a variable (PR #1289).
+
+- Error trap use of reduction operations on scalars (PR #1281).
+
+- Error trap some cases of incorrect return type in user-defined simulation
+('r') functions (PR #1280).
+
+- Error trap case where a variable name is also used as a loop index variable
+(PR #1278).
+
+- Error trap setting deterministic nodes as data in `setData` (PR #1269).
+
+- Better error trap of wrong size/dimensions of in `setInits` (PR #1260).
+
+- Export `clearCompiled`, allowing users to clear compiled objects and unload
+the shared library produced during nimble's compilation process (on non-Windows
+operating systems).
+
+## BUG FIXES
+
+- Fix bug producing integer overflow in `getDependencyPathCountOneNode`
+and improve efficiency of checking maximum number of paths in conjugacy
+checking (PR #1322).
+
+- Fix long-standing memory leak in `dinvwish_chol` (PR #1320).
+
+- Fix bug giving incorrect results for `runCrossValidate`, when using the 
+default MSE loss function and any user-defined loss functions, 
+but not the 'predictive' loss function. Also, calculate loss when using
+the predictive loss using the compiled model rather than the uncompiled model.
+(PRs #1298, #1299).
+
+- Fix bug in conjugacy checking that caused incorrect identification of
+conjugate relationships with subsets and supersets of multivariate nodes,
+as well as inconsistent slices of multivariate nodes (PR #1290).
+
+- Fix `runMCMC` to reset the WAIC state when rerun (PR #1256).
+
+- Fix reset mechanism for WAIC so that one can get WAIC from all the samples
+in a chain that is created by multiple calls to the MCMC `$run` method even
+when `getWAIC` is called in the middle (PR #1310).
+
+- Fix bug affecting `d=2` case in uncompiled `RW_lkj_corr_cholesky` sampler
+(PR #1273).
+
+- Fix aliasing issue arising in assignment operations such as 
+`nf$a <- nf$a[1:3]` (PR 1301).
+
+- Fix assignment into a block of a model variable (PR #1300).
+
+- Fix compilation error when using `nimSeq` with integers (PR #1282).
+
+- Fix scoping of argument evaluation for `replaceSamplers` method (PR #1287).
+
+- Fix a corner case where particular indexing in model code prevents model
+building (PR #1279).
+
+- Fix handling of right-hand side only nodes so not flagged as deterministic
+(issue #1269).
+
+- Error trap and fix a bug in handling particular cases in list-like subsetting
+(PR #1259).
+
+- Make optimDefaultControlList handle default values completely and with
+  consistent compiled and uncompiled behavior.
+  
+- make nimOptim respect parscale control parameter.
+
+- Update manual installation chapter and `INSTALL` links to gfortran on MacOS.
+
+## DEVELOPER LEVEL CHANGES
+
+- Take `nimbleCppADbaseClass` out of `libnimble.a` and instead make a
+session-specific .o file from it to address AD-related crashes on some OSes. (PR
+#1318)
+
+- Remove `nimOptim_model` functionality. This fixes build warning on MacOS
+  involving `nimOptim` (PR #1276).
+
+- Update `Eigen` copyright dates.
+
+- Fix invisible return of `NULL` in nimbleFunctions without explicit return
+statements (PR #1254). 
+
+- Fix inconsistent use of offset in internal conversion functions (PR #1277).
+
+- Remove references to unsupported `trace` (issue #1262).
+
+
 #                            CHANGES IN VERSION 0.13.2 (May 2023) 
 
 ## DEVELOPER LEVEL CHANGES
 
 - Remove code triggering Windows warnings about writing bytes into region of size 0 by modifying `setLength`.
 
-- Remove use of C++11 standard, per CRAN requirements. As part of this, replace use of `std::ptr_fun`.
+- Remove use of C++11 standard, per CRAN requirements. As part of this, replace use of `std::ptr_fun` (PR #1292).
 
 #                            CHANGES IN VERSION 0.13.1 (December 2022) 
 
@@ -159,7 +320,7 @@ nimbleFunction code (PR #1205).
 - Fix a bug preventing use of recursion in nimbleFunctions without setup code 
 (PR #1203).
 
-- Fix a bug in handling `nimSeq` default `by` value (PR # 1199).
+- Fix a bug in handling `nimSeq` default `by` value (PR #1199).
 
 - Fix a bug in name mangling affecting certain long names of lifted nodes 
 (PR #1192).

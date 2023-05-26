@@ -302,7 +302,21 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         ## Should be ok in terms of running the model inside a function, so long as
         ## the simulate function is not called, which it shouldn't be as it is a dummy.
         assign(simulateName, eval(parse(text = nfCode)), userEnv)
-
+    } else {
+        drcf <- get(densityName, pos = userEnv)
+        rrcf <- get(simulateName, pos = userEnv)
+        dtype <- environment(drcf)$nfMethodRCobject$argInfo[['x']]
+        rtype <- environment(rrcf)$nfMethodRCobject$returnType
+        ## Deal with type() vs type(0) ambiguity.
+        if(length(dtype) == 1)
+            dtype <- substitute(x(0), list(x = dtype[[1]]))
+        if(length(rtype) == 1)
+            rtype <- substitute(x(0), list(x = rtype[[1]]))
+        if(!identical(dtype, rtype)) {
+            if(identical(sort(c(deparse(dtype[[1]]), deparse(rtype[[1]]))), c("double", "integer"))) {
+                messageIfVerbose("  [Warning] Random generation function `", simulateName, "` has a `returnType` that does not match the type of the `x` argument to the corresponding density function. NIMBLE uses the `double` type internally for calculations, so it is best to use `double` even in the case of discrete distributions.")
+            } else stop("checkDistributionFunctions: random generation function `", simulateName, "` is missing `returnType` or `returnType` does not match the type of the `x` argument to the corresponding density function.")
+        }
     }
 
     dargs <- args <- formals(get(densityName, pos = userEnv))

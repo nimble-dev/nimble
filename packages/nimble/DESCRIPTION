@@ -14,8 +14,8 @@ Description: A system for writing hierarchical statistical models largely
     'BUGS'/'JAGS' language for writing models, one can use 'NIMBLE' for writing
     arbitrary other kinds of model-generic algorithms as well. A full User Manual is
     available at <https://r-nimble.org>.
-Version: 0.13.2
-Date: 2023-05-14
+Version: 1.0.0
+Date: 2023-05-24
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
     person("Perry", "de Valpine", role = "aut"),
@@ -25,10 +25,12 @@ Authors@R: c(
     person("Cliff", "Anderson-Bergman", role = "aut"),
     person("Fritz", "Obermeyer", role = "aut"),
     person("Claudia", "Wehrhahn Cortes", role = "aut", comment = "Bayesian nonparametrics system"),
-    person("Abel", "Rodr\u00ecguez", role = "aut", comment = "Bayesian nonparametrics system"),
+    person("Abel", "Rodr\u00edguez", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Duncan", "Temple Lang", role = "aut", comment = "packaging configuration"),
+    person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
+    person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
     person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
     person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")
@@ -36,10 +38,11 @@ Authors@R: c(
 Depends:
     R (>= 3.1.2)
 Imports:
-    methods,igraph,coda,R6
+    methods,igraph,coda,R6,pracma,numDeriv
 Suggests:
     testthat
 URL: https://r-nimble.org, https://github.com/nimble-dev/nimble
+BugReports: https://github.com/nimble-dev/nimble/issues
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
 Copyright: See COPYRIGHTS file.
@@ -91,6 +94,7 @@ Collate:
     nimbleFunction_core.R
     nimbleFunction_nodeFunction.R
     nimbleFunction_nodeFunctionNew.R
+    nimbleFunction_Rderivs.R
     nimbleFunction_Rexecution.R
     nimbleFunction_compile.R
     nimbleFunction_keywordProcessing.R
@@ -122,7 +126,9 @@ Collate:
     cppInterfaces_otherTypes.R
     nimbleProject.R
     initializeModel.R
+    parameterTransform.R
     CAR.R
+    Laplace.R
     MCMC_utils.R
     MCMC_configuration.R
     MCMC_build.R
@@ -143,4 +149,4 @@ Collate:
     registration.R
     nimble-package.r
     zzz.R
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.2

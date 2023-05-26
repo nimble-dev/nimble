@@ -1,9 +1,9 @@
 You can install NIMBLE as an R package from CRAN in the usual way.
 
 You can install from the source file using
-   R CMD INSTALL nimble_0.13.2.tar.gz
+   R CMD INSTALL nimble_1.0.0.tar.gz
 or
-  install.packages("nimble_0.13.2.tar.gz", repos = NULL)
+  install.packages("nimble_1.0.0.tar.gz", repos = NULL)
 
 You can also install the package directly from the NIMBLE repository 
   install.packages("nimble", repos = "https://r-nimble.org")
@@ -21,12 +21,8 @@ i.e. not Windows.
     By default, we will use the Eigen distribution included with the package.
 
 We can specify any or all of these with
-  R CMD INSTALL nimble_0.13.2.tar.gz  --configure-args="--enable-dylib=true --with-eigen=/Users/duncan/local"
+  R CMD INSTALL nimble_1.0.0.tar.gz  --configure-args="--enable-dylib=true --with-eigen=/Users/duncan/local"
 or
   install.packages("nimble", configure.args = "--enable-dylib=true --with-eigen=/Users/duncan/local")
 
-Note that if you install on MacOS from the source file provided by CRAN, you will need this gfortran package installed: 
-     http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2
-This version:
-      https://cran.r-project.org/bin/macosx/tools/gfortran-4.2.3.pkg
-will NOT work because of path issues. In contrast, if you install from source from r-nimble.org, we leave out $FLIBS from src/Makevars.in so you won't need any gfortran package installed.
+Note that if you install on MacOS from the source file provided by CRAN, you will need to install the GNU Fortran compiler package, as discussed at https://mac.r-project.org/tools. In contrast, if you install from source from r-nimble.org, we leave out $FLIBS from src/Makevars.in so you won't need any gfortran package installed.

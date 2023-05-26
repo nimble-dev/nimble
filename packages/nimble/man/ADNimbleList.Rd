@@ -3,7 +3,7 @@
 \docType{data}
 \name{ADNimbleList}
 \alias{ADNimbleList}
-\title{EXPERIMENTAL Data type for the return value of \code{\link{nimDerivs}}}
+\title{Data type for the return value of \code{\link{nimDerivs}}}
 \format{
 An object of class \code{list} of length 1.
 }
@@ -18,11 +18,9 @@ ADNimbleList
 \describe{
 \item{\code{value}}{The value of the function evaluated at the given input arguments.}
 
-\item{\code{gradient}}{The gradient of the function evaluated at the given input arguments.}
+\item{\code{jacobian}}{The Jacobian of the function evaluated at the given input arguments.}
 
 \item{\code{hessian}}{The Hessian of the function evaluated at the given input arguments.}
-
-\item{\code{thirdDerivs}}{Currently unused.}
 }}
 
 \seealso{

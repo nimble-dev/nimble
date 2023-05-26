@@ -85,7 +85,7 @@ example, if `pumpData` is a named list of data values (as above),
 then `pump$setData(pumpData)` sets the named variables to the
 values in the list.
 
-`setData` does two things: it sets the values of the data nodes,
+`setData` does two things: it sets the values of the (stochastic) data nodes,
 and it flags those nodes as containing data.  nimbleFunction
 programmers can then use that information to control whether an
 algorithm should over-write data or not.  For example, NIMBLE's
@@ -93,6 +93,10 @@ algorithm should over-write data or not.  For example, NIMBLE's
 can be told to do so.  Values of data variables can be replaced, and
 the indication of which nodes should be treated as data can be reset
 by using the `resetData` method, e.g. `pump$resetData()`.
+
+Data nodes cannot be deterministic, and using `setData` on
+deterministic nodes (or passing values for deterministic nodes
+via the `data` argument to `nimbleModel`) will produce an error.
 
 To change data values without any modification of which nodes are
 flagged as containing data, simply use R's usual assignment syntax

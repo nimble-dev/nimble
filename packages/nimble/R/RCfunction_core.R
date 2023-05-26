@@ -42,6 +42,47 @@ nimKeyWords <- list(copy = 'nimCopy',
                     max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
+distsNotAllowedInAD <- c(
+  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper', 'constraint'))
+)
+
+fxnsNotAllowedInAD <- c(
+  '%%',
+  'nimMod',
+  'trace',
+#  'nimStep',
+  'nimEigen',
+  'nimSvd',
+  'nimOptim',
+  'getParam',
+  'getBound',
+  'bessel_k',
+  paste0('p', c('binom', 'nbinom', 'pois','beta','chisq',
+                'dexp','exp_nimble','gamma','invgamma','lnorm',
+                'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
+  paste0('q', c('binom', 'nbinom', 'pois','beta','chisq',
+                'dexp','exp_nimble','gamma','invgamma','lnorm',
+                'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
+  paste0('r', c('binom', 'nbinom', 'pois','beta','chisq',
+                'dexp','exp_nimble','flat','halfflat','gamma','invgamma','sqrtinvgamma','lnorm',
+                'logis','norm','t_nonstandard','unif','weibull', 't','exp')),
+  paste0('r', c('cat', 'interval', 'car_normal', 'car_proper',
+                'dirch','mnorm_chol','multi','mvt_chol','lkj_corr_cholesky','wish_chol',
+                'invwish_chol')),
+  paste0('nimArr_d', c('cat', 'dcar_normal', 'dcar_proper', 'interval')),
+  paste0('nimArr_r', c('mnorm_chol','mvt_chol', 'lkj_corr_cholesky','wish_chol',
+                       'invwish_chol', 'car_normal','car_proper','multi','dirch') ),
+  'getLogProb',
+  'decide',
+  'rankSample',
+  'any_na',
+  'any_nan',
+  'ISNAN','ISNA',
+  'nimCopy','carMinBound','carMaxBound'
+)
+
+callsNotAllowedInAD <- c(distsNotAllowedInAD, fxnsNotAllowedInAD)
+
 nfMethodRCinterface <- setRefClass(
     Class = 'nfMethodRCinterface',
     fields = list(
@@ -58,7 +99,8 @@ nfMethodRC <- setRefClass(
         code       = 'ANY',
         neededRCfuns = 'ANY',		#list
         externalHincludes = 'ANY',
-        externalCPPincludes = 'ANY'
+        externalCPPincludes = 'ANY',
+        buildDerivs = 'ANY'
     ),
     methods = list(
         initialize = function(method,
@@ -66,6 +108,7 @@ nfMethodRC <- setRefClass(
                               check = FALSE,
                               methodNames = NULL,
                               setupVarNames = NULL,
+                              buildDerivs = FALSE,
                               where = NULL) {
             ## uniqueName is only needed for a pure RC function.
             ## It is not needed for a nimbleFunction method.
@@ -81,14 +124,19 @@ nfMethodRC <- setRefClass(
             ## check all code except nimble package nimbleFunctions
             generateArgs()
 
-            if(check && "package:nimble" %in% search()) 
+            if(check && "package:nimble" %in% search()) {
                 nf_checkDSLcode(code, methodNames, setupVarNames, names(arguments), where)
-
+                if(isTRUE(nimbleOptions("doADerrorTraps"))) {
+                   if(!isFALSE(buildDerivs) && !is.null(buildDerivs))
+                       nf_checkDSLcode_derivs(code, names(arguments), callsNotAllowedInAD)
+                }
+            }
             generateTemplate() ## used for argument matching
             removeAndSetReturnType(check = check)
             ## Includes for .h and .cpp files when making external calls:
             ## If needed, these will be populated by nimbleExternalCall
-            externalHincludes <<- externalCPPincludes <<- list() 
+            externalHincludes <<- externalCPPincludes <<- list()
+            buildDerivs <<- buildDerivs
         },
         generateArgs = function() {
             argsList <- nf_createAList(names(argInfo))
@@ -185,6 +233,36 @@ findMethodsInExprClass <- function(expr) {
         }
     } 
     return(NULL)
+}
+
+nf_checkDSLcode_derivs <- function(code, args, calls_not_allowed) {
+    calls <- setdiff(all.names(code),
+                     c(all.vars(code), args))
+    problem_calls <- calls[ calls %in% calls_not_allowed ]
+    if(length(problem_calls)) {
+        message("  [Note] Detected use of function(s) that are not supported for derivative tracking in a function or method for which `buildDerivs` has been requested: ", paste(unique(problem_calls), collapse = ", "), ".")
+    }
+    NULL
+}
+
+nf_checkDSLcode_buildDerivs <- function(code, buildDerivs) {
+    code <- body(code)
+    codeNames <- all.names(code)
+    derivsLocn <- which(codeNames %in% c('derivs', 'nimDerivs'))
+    if(length(derivsLocn)) {
+        for(i in seq_along(derivsLocn)) {
+            if(!(length(codeNames) >= derivsLocn[i]+3 && codeNames[derivsLocn[i]+1] == '$'
+                && codeNames[derivsLocn[i]+3] == 'calculate')) {
+                methodName <- codeNames[derivsLocn[i]+1]
+                if(isFALSE(buildDerivs) || !length(buildDerivs) || is.null(buildDerivs) ||
+                    (is.character(buildDerivs) && !methodName %in% buildDerivs) ||
+                   (is.list(buildDerivs) && !methodName %in% names(buildDerivs)))
+                    message("  [Note] Detected use of `nimDerivs` with a function or method, `", methodName, "`, for which `buildDerivs` has not been set. This nimbleFunction cannot be compiled.") 
+            }
+
+        }
+    }
+    invisible(NULL)
 }
 
 nf_checkDSLcode <- function(code, methodNames, setupVarNames, args, where = NULL) {

@@ -2,22 +2,26 @@
 % Please edit documentation in R/MCMC_build.R
 \name{buildMCMC}
 \alias{buildMCMC}
-\title{Create an MCMC function from a NIMBLE model, or an MCMC configuration object}
+\title{Create an MCMC object from a NIMBLE model, or an MCMC configuration object}
 \usage{
 buildMCMC(conf, ...)
 }
 \arguments{
-\item{conf}{An MCMC configuration object of class \code{MCMCconf} that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMC configuration objects.  Alternatively, \code{conf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.}
+\item{conf}{Either an MCMC configuration object of class \code{MCMCconf} or a NIMBLE model object. An MCMC configuration object would be returned from \code{configureMCMC} and contains information on the model, samplers, monitors, and thinning intervals to be used. Alternatively, \code{conf} may a NIMBLE model object, in which case default configuration from calling \code{configureMCMC(model, ...l)} will be used.}
 
 \item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object (see \code{help(configureMCMC)}).}
 }
 \description{
-First required argument, which may be of class \code{MCMCconf} (an MCMC configuration object), or inherit from class \code{modelBaseClass} (a NIMBLE model object).  Returns an uncompiled executable MCMC function.  See details.
+First required argument, which may be of class \code{MCMCconf} (an MCMC configuration object), or inherit from class \code{modelBaseClass} (a NIMBLE model object).  Returns an uncompiled executable MCMC object.  See details.
 }
 \details{
-Calling buildMCMC(conf) will produce an uncompiled MCMC function object.  The uncompiled MCMC function will have arguments:
+Calling buildMCMC(conf) will produce an uncompiled MCMC object. The object contains several methods, including the main \code{run} function for running the MCMC, a \code{getTimes} function for determining the computation time spent in each sampler (see 'getTimes' section below), and functions related to WAIC (\code{getWAIC}, \code{getWAICdetails}, \code{calculateWAIC} (see \code{help(waic)}).
+
+The uncompiled \code{run} function will have arguments:
 
 \code{niter}: The number of iterations to run the MCMC.
+
+\code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 
 \code{thin}: The thinning interval for the \code{monitors} that were specified in the MCMC configuration.  If this argument is provided at MCMC runtime, it will take precedence over the \code{thin} interval that was specified in the MCMC configuration.  If omitted, the \code{thin} interval from the MCMC configuration will be used.
 
@@ -27,8 +31,9 @@ Calling buildMCMC(conf) will produce an uncompiled MCMC function object.  The un
 
 \code{resetMV}: Boolean specifying whether to begin recording posterior sample chains anew. This argument is only considered when using \code{reset = FALSE}.  Specifying \code{reset = FALSE, resetMV = TRUE} allows the MCMC algorithm to continue running from where it left off, but without appending the new posterior samples to the already existing samples, i.e. all previously obtained samples will be erased. This option can help reduce memory usage during burn-in (default = FALSE).
 
-\code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
+\code{resetWAIC}: Boolean specifying whether to reset the WAIC summary statistics to their initial states and thereby begin the WAIC calculation anew (default = TRUE). Specifying \code{resetWAIC = FALSE} allows the WAIC calculation to continue running from where it left off. 
 
+\code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain and after_chain methods.  The value for this argument is specified automatically from invocation via runMCMC, and genernally need not be supplied when calling mcmc$run (default = 1).
 \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 
 \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
@@ -43,8 +48,14 @@ These may be accessed and converted into R matrix or list objects via:
 The uncompiled MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
 \code{Cmcmc <- compileNimble(Rmcmc, project = Rmodel)}
 
-The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
+The compiled object will function identically to the uncompiled object except acting on the compiled model object.
 }
+\section{Timing the MCMC samplers}{
+
+
+If you want to obtain the computation time spent in each sampler, you can set \code{time=TRUE} as a run-time argument to \code{run()} and then use the method \code{getTimes()} to obtain the times.
+}
+
 \section{Calculating WAIC}{
 
 
@@ -63,13 +74,21 @@ conf <- configureMCMC(Rmodel, monitors = c('mu', 'x'), enableWAIC = TRUE)
 Rmcmc <- buildMCMC(conf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
+
+## Running the MCMC with `run`
 Cmcmc$run(10000)
 samples <- as.matrix(Cmcmc$mvSamples)
 samplesAsList <- as.list(Cmcmc$mvSamples)
 head(samples)
+
+## Getting WAIC
 waicInfo <- Cmcmc$getWAIC()
 waicInfo$WAIC
 waicInfo$pWAIC
+
+## Timing the samplers (must set `time = TRUE` when running the MCMC)
+Cmcmc$run(10000, time = TRUE)
+Cmcmc$getTimes()
 }
 
 }

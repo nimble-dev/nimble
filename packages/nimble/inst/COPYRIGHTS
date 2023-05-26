@@ -1,10 +1,14 @@
 Files: R/*
-Copyright: Copyright (C) 2014-2022 the NIMBLE authors.
+Copyright: Copyright (C) 2014-2023 the NIMBLE authors.
 License: BSD_3_clause
 
 Files: CppCode/* include/nimble/*
-Copyright: Copyright (C) 2014-2022 the NIMBLE authors, unless otherwise stated.
+Copyright: Copyright (C) 2014-2023 the NIMBLE authors, unless otherwise stated.
 License: GPL (>=2)
+
+Files: inst/cppad/*
+Copyright: Copyright (C) 2003-2022 Bradley M. Bell
+License: Eclipse Public License Version 2.0
 
 Files: inst/include/Eigen/SparseLU inst/include/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h
 inst/include/Eigen/src/SparseLU/SparseLU_column_bmod.h inst/include/Eigen/src/SparseLU/SparseLU_panel_bmod.h
@@ -18,7 +22,7 @@ License: MPL-2
 
 Files: inst/include/Eigen/src/SVD/BDCSVD.h
 Copyright: Copyright (C) 2013 Gauthier Brun, Nicolas Carre, Jean Ceccato, Pierre Zoppitelli, Jitse Niesen
-Copyright: Copyright (C) 2014-2016 Gael Guennebaud 
+Copyright: Copyright (C) 2014-2017 Gael Guennebaud 
 License: MPL-2
 
 Files: inst/include/Eigen/src/SVD/UpperBidiagonalization.h
@@ -553,6 +557,10 @@ Files: inst/include/Eigen/src/Core/arch/Default/Settings.h inst/include/Eigen/sr
 Copyright: Copyright (C) 2006-2008 Benoit Jacob
 License: MPL-2
 
+Files: inst/include/Eigen/src/Core/arch/Default/ConjHelper.h inst/include/Eigen/src/Core/IndexedView.h inst/include/Eigen/src/Core/ArithmeticSequence.h inst/include/Eigen/src/Core/util/SymbolicIndex.h inst/include/Eigen/src/Core/util/IntegralConstant.h inst/include/Eigen/src/Core/util/IndexedViewHelper.h inst/include/Eigen/src/plugins/IndexedViewMethods.h
+Copyright: Copyright (C) 2017 Gael Guennebaud
+License: MPL-2
+
 Files: inst/include/Eigen/src/Core/MathFunctionsImpl.h
 Copyright: Copyright (C) 2014 Pedro Gonnet
 Copyright: Copyright (C) 2016 Gael Guennebaud
@@ -721,6 +729,12 @@ Copyright: Copyright (C) 2011-2014 Gael Guennebaud
 Copyright: Copyright (C) 2012 Désiré Nuentsa-Wakam
 License: MPL-2
 
+Files: inst/include/Eigen/src/KLUSupport/KLUSupport.h
+Copyright: Copyright (C) 2017 Kyle Macfarlan
+License: MPL-2
+
+
+
 Files: inst/include/Eigen/src/StlSupport/StdList.h
 Copyright: Copyright (C) 2009 Hauke Heibel
 License: MPL-2
@@ -771,3 +785,13 @@ Files: classic-bugs/*
 Copyright: Copyright (C) Martyn Plummer
 License:
    GPL version 2 and MIT licenses
+
+Files: inst/include/TMB/atomic_macro.hpp inst/include/TMB/atomic_math.hpp
+inst/include/TMB/distributions_R.hpp inst/include/TMB/lgamma.hpp
+Copyright: Copyright (C) 2013-2015 Kasper Kristensen
+Copyright: Copyright (C) 2018 the NIMBLE authors
+License: GPL version 2
+
+Files: inst/include/TMB/tmbutils/*
+Copyright: Copyright (C) 2013-2015 Kasper Kristensen
+License: GPL version 2

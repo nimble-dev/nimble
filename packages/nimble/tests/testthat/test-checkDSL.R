@@ -4,8 +4,6 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
-nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
 
 context('Testing of nimbleFunction (DSL) code checking')
 
@@ -303,8 +301,8 @@ test_that("Test of detection of nf methods in findMethods", {
         m[[mm$cc14]]$cc15()
         m[[mm$cc16()]]$cc17()
     })
-    expr <- RparseTree2ExprClasses(code)
-    expect_identical(findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
+    expr <- nimble:::RparseTree2ExprClasses(code)
+    expect_identical(nimble:::findMethodsInExprClass(expr), c('cc2', 'cc3', 'cc6', 'cc7', 'cc9', 'cc10', 'cc12', 'cc13', 'cc15', 'cc17', 'cc16'))
 })
 
 test_that("Handling of negative indexing in nimbleFunction code", {
@@ -334,6 +332,134 @@ test_that("Handling of negative indexing in nimbleFunction code", {
     
 })
 
+test_that("Test of error trapping for reduction functions", {
+    nf <- nimbleFunction(
+        run = function(x = double(0)) {
+            returnType(double())
+            y <- mean(x)
+            return(0)
+        }
+    ) 
+    expect_error(cnf <- compileNimble(nf), "does not support reduction")
+    
+    nf <- nimbleFunction(
+        run = function(x = double(1)) {
+            returnType(double())
+            y <- mean(x)
+            return(0)
+        }
+    ) 
+    cnf <- compileNimble(nf)
+})
+
+
+test_that("nimbleFunctionVirtual works with abstract and non-abstract methods", {
+  # methods in nimbleFunctionVirtual are by default *abstract*, which means they
+  # are declared in the base class but are not defined. (In C++ they have "=0" at the
+  # end of the declaration.)  Hence they can't be called.
+  # This means that any derived class *must* provide a definition to become a
+  # fully defined (non-abstract) class and thus be usable.
+  #
+  # In order to provide nimbleFunctionVirtual methods that are not abstract,
+  # make an entry in the methodControl list setting abstract=FALSE,
+  # as shown in baseNF below. 
+  # non-abstract methods are limited to default do-nothing ({}) behavior.
+  # This means that to do anything interesting, a method must still be defined in
+  # a derived class.  But the do-nothing behavior allows the method to be
+  # simply ignored in a derived class that doesn't want to define it.
+  # This is a bare-bones feature that could be expanded in the future (e.g.
+  # by a meaningful base class method definition instead of simply {}).
+  baseNF <- nimbleFunctionVirtual(
+    run = function(x = double()) {returnType(double())},
+    methods = list(
+      foo = function(x = double(1)) {returnType(double(1))},
+      hw = function(x = double(1)) {a <- 1; returnType(void())}    ),
+    methodControl = list(hw = list(required = FALSE))
+  )
+
+  dNFa <- nimbleFunction(
+    contains = baseNF,
+    setup = TRUE,
+    run = function(x = double()) {
+      return(x + 1)
+      returnType(double())
+    },
+    methods = list(
+      foo = function(x = double(1)) {
+        return(x + 1)
+        returnType(double(1))
+      },
+      hw = function(x = double(1)) {
+        cat("hello world from a dNFa object.\n")
+      }
+    )
+  )
+
+  dNFb <- nimbleFunction(
+    contains = baseNF,
+    setup = TRUE,
+    run = function(x = double()) {
+      return(x + 2)
+      returnType(double())
+    },
+    methods = list(
+      foo = function(x = double(1)) {
+        return(x + 2)
+        returnType(double(1))
+      } # NO how method provided.
+    )
+  )
+
+  ## message capturing in testthat is a pain
+  ## Check for warnings: foo was required but not provided
+  res <- capture_messages(    dNFc <- nimbleFunction(
+                                contains = baseNF,
+                                setup = TRUE,
+                                run = function(x = double()) {
+                                  return(x + 2)
+                                  returnType(double())
+                                }
+                              ) )
+  expect_true(grepl("[Warning]", res))
+
+  ## Check for no warning: run is required but defaults to function(){}, so no warning is issued
+  res <- capture_messages(
+    dNFc <- nimbleFunction(
+                           contains = baseNF,
+                           setup = TRUE,
+                           methods = list(
+                             foo = function(x = double(1)) {
+                               return(x + 2)
+                               returnType(double(1))
+                             } # NO hw method provided, but not required
+                           )
+    )
+  )
+  expect_identical(res, character())
+
+  useBase <- nimbleFunction(
+    setup = function() {
+      NFlist <- nimbleFunctionList(baseNF)
+      NFlist[[1]] <- dNFa()
+      NFlist[[2]] <- dNFb()
+    },
+    run = function(x = double(1)) {
+      for(i in 1:2) {
+        x[1] <- NFlist[[i]]$run(x[1])
+        x <- NFlist[[i]]$foo(x)
+        NFlist[[i]]$hw(x)
+      }
+      return(x)
+      returnType(double(1))
+    }
+  )
+
+  useBase1 <- useBase()
+  CuseBase1 <- compileNimble(useBase1)
+  res <- capture.output(ans <- CuseBase1$run( c(10, 100) ))
+  expect_identical(ans, c(16, 103))
+  expect_true(grepl("hello world", res)) 
+})
 
 options(warn = RwarnLevel)
-nimbleOptions(verbose = nimbleVerboseSetting)
+

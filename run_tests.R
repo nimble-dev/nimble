@@ -39,15 +39,17 @@ if (length(grep('^-', argv, invert = TRUE))) {
     allTests <- list.files('packages/nimble/tests/testthat')
     allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
-    # Avoid running these omitlisted tests, since they take too long.
+    # Avoid running these omitlisted tests, since they take too long
+    # or involve experimental features.
     omitlist <- c(
         'test-benchmark-building-steps.R')
-    # Avoid running these tests since they test experimental features.
     omitlist <- c(
         omitlist,
         'test-ADfunctions.R',
-        'test-ADmodels.R')
-        ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
+        'test-ADmodels.R',
+        'test-ADmodels-bigmv.R'
+        ) 
+         ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
     cat('SKIPPING', omitlist, sep = '\n  ')
     allTests <- setdiff(allTests, omitlist)
     smcTests <- 'test-filtering.R'

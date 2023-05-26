@@ -3,6 +3,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                              fields = list(
                                  SEXPinterfaceFun = 'ANY',
                                  SEXPinterfaceCname = 'ANY',	## character
+                                 ADtemplateFun = 'ANY',
                                  RCfunProc = 'ANY'              ## RCfunProcessing object
                                  ), 
                              methods = list(
@@ -13,7 +14,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                      "<Rinternals.h>",
                                                      nimbleIncludeFile("accessorClasses.h"),
                                                      nimbleIncludeFile("nimDists.h"),
-                                                     nimbleIncludeFile("nimOptim.h"))
+                                                     nimbleIncludeFile("nimOptim.h"),
+                                                     nimbleIncludeFile("nimbleCppAD.h"),
+                                                     nimbleIncludeFile("nimDerivs_dists.h"))
                                      CPPincludes <<- c(CPPincludes,
                                                        '<Rmath.h>',
                                                        '<math.h>',
@@ -24,8 +27,10 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      callSuper(...)
                                  },
                                  getDefs = function() {
-                                     list(.self,
-                                          if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun)
+                                     c(list(.self),
+                                       if(!inherits(SEXPinterfaceFun, 'uninitializedField')) list(SEXPinterfaceFun) else list(),
+                                       if(!inherits(ADtemplateFun, 'uninitializedField')) list(ADtemplateFun) else list()
+                                       )
                                  },
                                  getHincludes = function() {
                                      Hinc <- c(Hincludes,
@@ -89,6 +94,15 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      ## For external calls:
                                      CPPincludes <<- c(CPPincludes, RCfunProc$RCfun$externalCPPincludes)
                                      Hincludes <<- c(Hincludes, RCfunProc$RCfun$externalHincludes)
+
+                                     ## to be wrapped in conditional
+                                     buildADtemplateFun <- FALSE
+                                     if(isTRUE(nimbleOptions("enableDerivs")))
+                                         if(is.list(RCfunProc$RCfun$buildDerivs))
+                                             buildADtemplateFun <- TRUE
+                                     if(buildADtemplateFun)
+                                         ADtemplateFun <<- makeTypeTemplateFunction(name, .self, derivControl = RCfunProc$RCfun$buildDerivs)$fun
+                                     
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
@@ -108,6 +122,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                                       
                                    for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                    if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
+
+                                   returnInvisible <- FALSE
                                    if(returnArgsAsList) {
                                      ansReturnName <- substitute(ans$return, list())
                                      argNamesAssign <- if(length(argNames) > 0) paste0('\"',argNames, '\"') else character(0)
@@ -120,8 +136,10 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      ansReturnName <- substitute(ans, list())
                                      if(length(argNames)+!returnVoid > 0 & !returnVoid)
                                        namesAssign <- parse(text = paste0('ans <- ans[[',length(argNames)+!returnVoid,']]'), keep.source = FALSE)[[1]]
-                                     else
-                                       namesAssign <- quote(ans <- invisible(NULL))
+                                     else {
+                                         namesAssign <- quote(ans <- NULL)
+                                         returnInvisible <- TRUE
+                                     }
                                    }
                                    
                                    argNamesCall = argNames
@@ -152,13 +170,17 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      bodyCode <- substitute({
                                        if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
                                        if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
-                                       ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
-                                                                               DOTSELFNAME = includeDotSelf))
+                                       ans <- DOTCALL; NAMESASSIGN; RETURN}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
+                                                                                  DOTSELFNAME = includeDotSelf,
+                                                                                  RETURN = if(returnInvisible) quote(invisible(ans)) else quote(ans)
+                                                                                  ))
                                    else
                                      bodyCode <- substitute({
                                        if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
-                                       ans <- DOTCALL; NAMESASSIGN;ans}, 
-                                       list(DOTCALL = dotCall,  NAMESASSIGN = namesAssign))
+                                       ans <- DOTCALL; NAMESASSIGN; RETURN}, 
+                                       list(DOTCALL = dotCall,  NAMESASSIGN = namesAssign,
+                                            RETURN = if(returnInvisible) quote(invisible(ans)) else quote(ans)
+                                            ))
                                    funCode[[3]] <- bodyCode
                                    funCode[[4]] <- NULL
                                    if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
@@ -193,6 +215,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 					   copyLineCounter <- 1
 					   
 					   for(i in seq_along(argNames)) {
+					     if(exists('const', RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]), inherits=FALSE)){
+					       objects$symbols[[i]] <- symbolDouble(objects$symbols[[i]]$name,   NA, 1)$genCppVar() ## remove 'const' local vars from sexpInterfaceFun
+					     }
 					     Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
 					     ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
 					     interfaceArgs$addSymbol(cppSEXP(name = Snames[i]))

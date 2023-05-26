@@ -75,6 +75,8 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "is.model",
                        "nf_preProcessMemberDataObject",
                        "samplesSummary",
+                       "AGHQuad_params",
+                       "AGHQuad_summary",
                        "messageIfVerbose")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
@@ -92,6 +94,7 @@ additionalExports <- c("calc_dmnormConjugacyContributions",
                        "cc_getNodesInExpr",
                        "calcAdaptationFactor",
                        "is.nfGenerator",
+                       "mcmc_createModelObject",
                        "nimbleInternalFunctions",
                        "nimbleUserNamespace")
 
@@ -155,7 +158,11 @@ importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
                  "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile",
-                 "parallel, mclapply")
+                 "utils, head",
+                 "parallel, mclapply",
+                 "pracma, hessian",
+                 "numDeriv, genD, grad, jacobian"
+                 )
 ##                 "R2WinBUGS, bugs",
 ##                 "rjags, jags.model",
 ##                 "rjags, coda.samples",

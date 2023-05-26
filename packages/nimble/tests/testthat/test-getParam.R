@@ -1,3 +1,7 @@
+## Note 6/15/22: This test file is passing when run in a fresh R session.
+##  I am observing failures when run individually after others have been run.
+##  E.g. test_package("nimble", filter = "^getParam$")
+##  I have not tracked down why this would occur.  Modifications in nimbleUserNamespace might be a reason.
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
@@ -156,7 +160,7 @@ test_that("Testing invalid parameter name in getParam", {
 
 test_that('getParam, user-defined integer-valued', {
     dtest <- nimbleFunction(
-        run = function(x = integer(0), thetaInt = integer(0), thetaDbl = double(0), log = integer(0, default = 0)) {
+        run = function(x = double(0), thetaInt = integer(0), thetaDbl = double(0), log = integer(0, default = 0)) {
             returnType(double(0))
             return(0)
         })

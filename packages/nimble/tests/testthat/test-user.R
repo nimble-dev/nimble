@@ -443,6 +443,79 @@ test_that("Test that non-scalar integer in user-defined distributions is trapped
     m <- nimbleModel(code)
 })
 
+test_that("Test that missing/mismatched returnType in 'r' function is trapped", {
+    dDist <- nimbleFunction(
+        run = function(x = double(1), log = integer(0, default = 0)) {
+            returnType(double())
+            return(0)
+        }
+    )
+    
+    rDist <- nimbleFunction(
+        run = function(n = integer()) {
+            ##returnType(double(1))   ## FAILED TO PROVIDE
+            return(rep(1,2))
+        })
+    
+    code <- nimbleCode({ x[1,1:2] ~ dDist()})
+    
+    expect_error(Rmodel <- nimbleModel(code), "missing `returnType`")
+    
+    dDist <- nimbleFunction(
+        run = function(x = double(1), log = integer(0, default = 0)) {
+            returnType(double())
+            return(0)
+        }
+    )
+    
+    rDist <- nimbleFunction(
+        run = function(n = integer()) {
+            returnType(double(1))
+            return(rep(1,2))
+        })
+    
+    code <- nimbleCode({ x[1,1:2] ~ dDist()})
+    
+    Rmodel <- nimbleModel(code)
+    deregisterDistributions('dDist')
+    
+    dDist <- nimbleFunction(
+        run = function(x = double(1), log = integer(0, default = 0)) {
+            returnType(double())
+            return(0)
+        }
+    )
+    
+    rDist <- nimbleFunction(
+        run = function(n = integer()) {
+            returnType(double(0))
+            return(rep(1,2))
+        })
+    
+    code <- nimbleCode({ x[1,1:2] ~ dDist()})
+    
+    expect_error(Rmodel <- nimbleModel(code), "missing `returnType`")
+
+    ## double() vs. double(0) should be fine
+    dDist <- nimbleFunction(
+        run = function(x = double(0), log = integer(0, default = 0)) {
+            returnType(double())
+            return(0)
+        }
+    )
+    
+    rDist <- nimbleFunction(
+        run = function(n = integer()) {
+            returnType(double())
+            return(1)
+        })
+    
+    code <- nimbleCode({ x ~ dDist()})
+    
+    Rmodel <- nimbleModel(code)
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {

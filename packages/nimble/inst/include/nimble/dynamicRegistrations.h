@@ -55,6 +55,7 @@ R_CallMethodDef CallEntries[] = {
   FUN(varAndIndices2mapParts, 3),
   FUN(var2mapParts, 3),
   FUN(populateNodeFxnVectorNew_byDeclID, 4),
+  FUN(populateNodeFxnVectorNew_byDeclID_forDerivs, 5),
   FUN(populateIndexedNodeInfoTable, 2),
   FUN(populateValueMapAccessorsFromNodeNames, 4),
   FUN(populateValueMapAccessors, 3),
@@ -141,17 +142,24 @@ R_CallMethodDef CallEntries[] = {
   FUN(NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
   FUN(NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
 
-  FUN(new_waicList, 0),
-  FUN(waicList_castPtrPtrToNamedObjectsPtrSEXP, 1),
-  FUN(waicList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  FUN(new_waicNimbleList, 0),
+  FUN(waicNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(waicNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
   
-  FUN(new_waicDetailsList, 0),
-  FUN(waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP, 1),
-  FUN(waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  FUN(new_waicDetailsNimbleList, 0),
+  FUN(waicDetailsNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_AGHQuad_params, 0),
+  FUN(AGHQuad_params_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(AGHQuad_params_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_AGHQuad_summary, 0),
+  FUN(AGHQuad_summary_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(AGHQuad_summary_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
 
   {NULL, NULL, 0}
 };
-
 
 /* Reference prototype: */
 /* R_CMethodDef CEntries[] = { */

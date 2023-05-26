@@ -78,7 +78,7 @@ inline void nimble_free(T *ptr) {
 #endif  // NIMBLE_ALIGNED_MALLOC
 }
 
-enum nimType { INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1 };
+enum class nimType { INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1 };
 
 class NimArrType {
  public:
@@ -130,13 +130,20 @@ class NimArrBase : public NimArrType {
   virtual int calculateIndex(vector<int> &i) const = 0;
   T *getPtr() { return (&((*vPtr)[0])); }
   const T *getConstPtr() const { return (&((*vPtr)[0])); }
+  vector<int> getSizeVec() {
+    vector<int> ans;
+    ans.resize(numDims());
+    for(int i = 0; i < numDims(); ++i)
+      ans[i] = dim()[i];
+    return ans;
+  }
   virtual void setSize(vector<int> sizeVec, bool copyValues = true,
                        bool fillZeros = true) = 0;
   // Warning, this does not make sense if vPtr is pointing to someone else's
   // vMemory.
   void setLength(int l, bool copyValues = true, bool fillZeros = true) {
     if (NAlength == l) {
-      if ((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0));
+      if ((!copyValues) && fillZeros) fillAllValues(static_cast<T>(0));
       return;
     }
     T *new_v = nimble_malloc<T>(l);
@@ -180,13 +187,13 @@ class NimArrBase : public NimArrType {
     }
   }
   void setMyType() {
-    myType = UNDEFINED;
+    myType = nimType::UNDEFINED;
     if (typeid(T) == typeid(int)) {
-      myType = INT;
+      myType = nimType::INT;
     } else if (typeid(T) == typeid(double)) {
-      myType = DOUBLE;
+      myType = nimType::DOUBLE;
     } else if (typeid(T) == typeid(bool)) {
-      myType = BOOL;
+      myType = nimType::BOOL;
     }
   }
   virtual ~NimArrBase() {
@@ -228,13 +235,13 @@ class VecNimArrBase : public NimVecType {
   }
 
   VecNimArrBase() {
-    myType = UNDEFINED;
+    myType = nimType::UNDEFINED;
     if (typeid(T) == typeid(int)) {
-      myType = INT;
+      myType = nimType::INT;
     } else if (typeid(T) == typeid(double)) {
-      myType = DOUBLE;
+      myType = nimType::DOUBLE;
     } else if (typeid(T) == typeid(bool)) {
-      myType = BOOL;
+      myType = nimType::BOOL;
     }
   }
 

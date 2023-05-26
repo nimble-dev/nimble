@@ -319,6 +319,15 @@ outerNimList$xList$someText <- "hello, world"
 
 Note that definitions for inner, or nested, nimbleLists must be created before the definition for an outer nimbleList.
 
+### Pre-defined nimbleList types {#sec:predef-nimbleLists}
+
+Several types of nimbleLists are predefined in NIMBLE for use with particular kinds of nimbleFunctions. 
+
+- `eigenNimbleList` and `svdNimbleList` are the return types of the `eigen` and `svd` functions (Section \@ref(sec:eigen-nimFunctions}).
+- `waicNimbleList` is the type provided for WAIC output from an MCMC.
+- `waicDetailsNimbleList` is the type provided for detailed WAIC output from an MCMC.
+- `optimResultNimbleList` is the return type of `nimOptim`.
+- `optimControlNimbleList` is the type for the control list input to `nimOptim`.
 
 ### Using *eigen* and *svd* in nimbleFunctions {#sec:eigen-nimFunctions}
 

@@ -43,7 +43,7 @@ calcCrossVal <- function(i,
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
-  if(!silent) compileNimble(newModel, dirName = dirName)
+  if(!silent) Cmodel <- compileNimble(newModel, dirName = dirName)
   else Cmodel <- suppressMessages(compileNimble(newModel, dirName = dirName))
   predLoss <- FALSE
   if(is.character(lossFunction) && lossFunction == 'predictive'){
@@ -51,9 +51,9 @@ calcCrossVal <- function(i,
     dependencies <- model$getDependencies(paramNames)
     missingDataNames <- leaveOutNames
     lossFunction <- function(posteriorSamples, observedData){
-      values(model, paramNames) <- posteriorSamples
-      model$calculate(dependencies)
-      return(exp(model$calculate(missingDataNames)))
+      values(Cmodel, paramNames) <- posteriorSamples
+      Cmodel$calculate(dependencies)
+      return(exp(Cmodel$calculate(missingDataNames)))
     }
     leaveOutNames <- paramNames
     predLoss <- TRUE
@@ -61,9 +61,9 @@ calcCrossVal <- function(i,
   if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames, print = silent)
   else modelMCMCConf <- suppressMessages(configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames, print = silent))
   if(!predLoss) {
-      for(i in seq_along(modelMCMCConf$samplerConfs)) {
-          sConf <- modelMCMCConf$samplerConfs[[i]]
-          conf$addSampler(target=sConf$target, type=sConf$samplerFunction, control=sConf$control, silent=TRUE)
+      for(i in seq_along(conf$samplerConfs)) {
+          sConf <- conf$samplerConfs[[i]]
+          modelMCMCConf$addSampler(target=sConf$target, type=sConf$samplerFunction, control=sConf$control, silent=TRUE)
       }
   }
   MCMCwarnUnsampledStochasticNodes_current <- nimbleOptions('MCMCwarnUnsampledStochasticNodes')

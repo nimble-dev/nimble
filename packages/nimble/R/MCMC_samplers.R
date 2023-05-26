@@ -10,7 +10,13 @@
 sampler_BASE <- nimbleFunctionVirtual(
     name = 'sampler_BASE',
     methods = list(
-        reset = function() { }
+        reset        = function() { },
+        before_chain = function(MCMCniter = double(), MCMCnburnin = double(), MCMCchain = double()) { },
+        after_chain  = function() { }
+    ),
+    methodControl = list(
+        before_chain = list(required = FALSE),
+        after_chain  = list(required = FALSE)
     )
 )
 
@@ -263,6 +269,10 @@ sampler_RW <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+        },
         getScaleHistory = function() {       ## scaleHistory
             returnType(double(1))
             if(saveMCMChistory) {
@@ -419,6 +429,17 @@ sampler_RW_block <- nimbleFunction(
                 timesRan <<- 0
                 timesAccepted <<- 0
             }
+        },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+            chol_propCov_scale <<- chol_propCov * scale
+        },
+        setPropCov = function(newPropCov = double(2)) {
+            propCov         <<- newPropCov
+            propCovOriginal <<- newPropCov
+            chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
         },
         getScaleHistory = function() {  ## scaleHistory
             if(!saveMCMChistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
@@ -764,7 +785,7 @@ sampler_AF_slice <- nimbleFunction(
         widthVec               <- extractControlElement(control, 'sliceWidths',              'oneVec')
         maxSteps               <- extractControlElement(control, 'sliceMaxSteps',            100)
         adaptFactorMaxIter     <- extractControlElement(control, 'sliceAdaptFactorMaxIter',  15000)
-        adaptFactorInterval    <- extractControlElement(control, 'sliceAdaptFactorInterval', 1000)
+        adaptFactorInterval    <- extractControlElement(control, 'sliceAdaptFactorInterval', 200)
         adaptWidthMaxIter      <- extractControlElement(control, 'sliceAdaptWidthMaxIter',   512)
         adaptWidthTolerance    <- extractControlElement(control, 'sliceAdaptWidthTolerance', 0.1)
         maxContractions        <- extractControlElement(control, 'maxContractions',          1000)
@@ -936,7 +957,6 @@ sampler_AF_slice <- nimbleFunction(
         }
     )
 )
-
 
 
 
@@ -1596,12 +1616,14 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
             ## Calculate canonical partial correlations (z) and partial sums (remaining lengths of U columns)
             z[1, 2:d] <<- x[1, 2:d]
             partialSums[2, 2] <<- 1 - x[1, 2]^2
-            for(i in 3:d) {
-                for(j in 2:(i-1)) {
-                    partialSums[j, i] <<- partialSums[j-1, i] - x[j-1, i]^2
-                    z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
+            if(d >= 3) {
+                for(i in 3:d) {
+                    for(j in 2:(i-1)) {
+                        partialSums[j, i] <<- partialSums[j-1, i] - x[j-1, i]^2
+                        z[j, i] <<- x[j, i] / sqrt(partialSums[j, i])
+                    }
+                    partialSums[i, i] <<- partialSums[i-1, i] - x[i-1, i]^2
                 }
-                partialSums[i, i] <<- partialSums[i-1, i] - x[i-1, i]^2
             }
         },
         reset = function() {
@@ -2164,6 +2186,8 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
 #'
+#' Derivative-based MCMC sampling algorithms, including Hamiltonian Monte Carlo (HMC), are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, use \code{help(HMC)} for details.
+#'
 #' @param model (uncompiled) model on which the MCMC is to be run
 #' @param mvSaved \code{modelValues} object to be used to store MCMC samples
 #' @param target node(s) on which the sampler will be used
@@ -2201,6 +2225,8 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' The RW sampler cannot be used with options log=TRUE and reflective=TRUE, i.e. it cannot do reflective sampling on a log scale.
 #'
+#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
+#'
 #' @section RW_block sampler:
 #'
 #' The RW_block sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr
@@ -2215,6 +2241,10 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' \item tries. The number of times this sampler will repeatedly operate on each MCMC iteration.  Each try consists of a new proposed transition and an accept/reject decision of this proposal.  Specifying tries > 1 can help increase the overall sampler acceptance rate and therefore chain mixing. (default = 1)
 #' }
+#'
+#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
+#'
+#' Operating analogous to the setScale method, the RW_block sampler also has a setPropCov method.  This method accepts a single matrix-valued argument, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal covariance.
 #'
 #' Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases. 
 #'
@@ -2263,7 +2293,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item sliceWidths.  A numeric vector of initial slice widths.  The length of the vector must be equal to the sum of the lengths of all nodes being used by the automated factor slice sampler.  Defaults to a vector of 1's.
 #' \item sliceAdaptFactorMaxIter.  The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation. (default = 15000)
-#' \item sliceAdaptFactorInterval.  The interval on which to perform factor adaptation. (default = 1000)
+#' \item sliceAdaptFactorInterval.  The interval on which to perform factor adaptation. (default = 200)
 #' \item sliceAdaptWidthMaxIter.  The maximum number of iterations for which to adapt the widths for a given set of factors. (default = 512)
 #' \item sliceAdaptWidthTolerance. The tolerance for when widths no longer need to adapt, between 0 and 0.5. (default = 0.1)
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
@@ -2473,11 +2503,17 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte Carlo Methods. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 72(3), 269-342.
 #'
+#' Hoffman, Matthew D., and Gelman, Andrew (2014). The No-U-Turn Sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. \emph{Journal of Machine Learning Research}, 15(1): 1593-1623.
+#'
+#' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
+#'
 #' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
 #'
 #' Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
 #'
 #' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
+#'
+#' Neal, Radford M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 #'
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
 #'

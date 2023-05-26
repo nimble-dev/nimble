@@ -31,21 +31,21 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 		
 d_gamma_keywordInfo <- keywordInfoClass(
     keyword = 'dgamma',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         code <- handleScaleAndRateForGamma(code)
 	return(code)
     }) 
 
 pq_gamma_keywordInfo <- keywordInfoClass(
     keyword = 'pq_gamma',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         code <- handleScaleAndRateForGamma(code)
 	return(code)
     })
 
 rgamma_keywordInfo <- keywordInfoClass(
     keyword = 'rgamma',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         code <- handleScaleAndRateForGamma(code)
         return(code)
     }
@@ -53,21 +53,21 @@ rgamma_keywordInfo <- keywordInfoClass(
 
 d_exp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'dexp_nimble',
-	processor = function(code, nfProc){
+	processor = function(code, nfProc, RCfunProc){
 		code <- handleScaleAndRateForExpNimble(code)
 	return(code)
 	}) 
 
 pq_exp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'pq_exp_nimble',
-	processor = function(code, nfProc){
+	processor = function(code, nfProc, RCfunProc){
 		code <- handleScaleAndRateForExpNimble(code)
 	return(code)
 })
 
 rexp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'rexp_nimble',
-	processor = function(code, nfProc){
+	processor = function(code, nfProc, RCfunProc){
 		code <- handleScaleAndRateForExpNimble(code)
 		return(code)
 	}
@@ -75,7 +75,7 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 
 besselK_keywordInfo <- keywordInfoClass(
     keyword = 'besselK',
-    processor = function(code, nfProc) {
+    processor = function(code, nfProc, RCfunProc) {
         expon.scaledArg <- code$expon.scaled
         if(is.null(expon.scaledArg))
             expon.scaledArg <- FALSE
@@ -89,7 +89,7 @@ besselK_keywordInfo <- keywordInfoClass(
 
 nimSeq_keywordInfo <- keywordInfoClass(
     keyword = 'nimSeq',
-    processor = function(code, nfProc) {
+    processor = function(code, nfProc, RCfunProc) {
         useBy <- !isCodeArgBlank(code, 'by')
         useLen <- !isCodeArgBlank(code, 'length.out')
         if(useBy && useLen)
@@ -109,7 +109,7 @@ nimSeq_keywordInfo <- keywordInfoClass(
 
 values_keywordInfo <- keywordInfoClass(
     keyword = 'values',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
       if(!isCodeArgBlank(code, 'accessor'))
       	return(code)
       if(isCodeArgBlank(code, 'model'))
@@ -139,7 +139,7 @@ values_keywordInfo <- keywordInfoClass(
 
 getParam_keywordInfo <- keywordInfoClass(
     keyword = 'getParam',
-    processor = function(code, nfProc) {
+    processor = function(code, nfProc, RCfunProc) {
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
         errorContext <- deparse(code)
@@ -187,7 +187,7 @@ getParam_keywordInfo <- keywordInfoClass(
 
 getBound_keywordInfo <- keywordInfoClass(
     keyword = 'getBound',
-    processor = function(code, nfProc) {
+    processor = function(code, nfProc, RCfunProc) {
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
         errorContext <- deparse(code)
@@ -236,12 +236,28 @@ getBound_keywordInfo <- keywordInfoClass(
 
 calculate_keywordInfo <- keywordInfoClass(
     keyword = 'calculate',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
         errorContext <- deparse(code)
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
+
+        buildDerivs <- FALSE
+        withDerivsOutputOnly <- FALSE
+        if(isTRUE(nimbleOptions("enableDerivs"))) {
+          derivControl <- environment(nfProc$nfGenerator)$buildDerivs[[RCfunProc$name]]
+          ## There are two cases.
+          ## If buildDerivs has an entry, then derivatives are enabled either
+          ## explicitly or because of a nimDerivs(model$calculate), i.e. a direct line into derivs for just a model calculation.
+          ##
+          ## These need to be disambiguated for use below to choose the right setup template case
+          buildDerivs <- !is.null(derivControl) | !is.null(code$wrt)
+          withDerivsOutputOnly <- buildDerivs & is.null(code$wrt) ## This is the case of *not* nimDerivs(model$calculate)
+        }
         
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, wrtNodes = code$wrt,
+                                   includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
+
+        ##
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
                 stop('nodes argument cannot be provided to calculate if nodeFunctionIndex is specified')
@@ -257,28 +273,45 @@ calculate_keywordInfo <- keywordInfoClass(
         }
         useNodeFunctionVectorByIndex <- FALSE
         if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
+            if(buildDerivs)
+                stop(paste0('Derivatives for an indexed node are not allowed.\n',
+                            'Use nimDerivs(model$calculate(nodes), ...) instead of \n',
+                            'nimDerivs(model$calculate(nodes[i]).\n'))
             useNodeFunctionVectorByIndex <- TRUE
-            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            if(length(nodeFunVec_ArgList$nodes) != 3)
+                stop(paste0('Problem with ',
+                            deparse(code),
+                            '. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE
         }
 
-        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
-        addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
-        if(!useNodeFunctionVectorByIndex)
+        if(!withDerivsOutputOnly) { ## This is regular mode, including without derivs at all and with buildDerivs but not nimDerivs(model$calculate...)
+          nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+          addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+        } else {
+          nodeFunName <- nodeFunctionVector_WithDerivsOutput_SetupTemplate$makeName(nodeFunVec_ArgList)	
+          addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_WithDerivsOutput_SetupTemplate, nfProc)
+        }
+        if(!useNodeFunctionVectorByIndex){
             newRunCode <- substitute(calculate(nodeFxnVector = NODEFUNVEC_NAME),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-        else
-            newRunCode <- substitute(calculate(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
-                                 list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
-        return(newRunCode)	
+        }
+        else{
+            newRunCode <- substitute(
+                calculate(nodeFxnVector = NODEFUNVEC_NAME,
+                          nodeFunctionIndex = NODEFUNVECINDEX),
+                list(NODEFUNVEC_NAME = as.name(nodeFunName),
+                     NODEFUNVECINDEX = nodesIndexExpr))
+        }
+        return(newRunCode)
     }
 )
 
 calculateDiff_keywordInfo <- keywordInfoClass(
     keyword = 'calculateDiff',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
         errorContext <- deparse(code)
@@ -321,7 +354,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
 
 simulate_keywordInfo <- keywordInfoClass(
     keyword = 'simulate',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector')){
             return(substitute(simulate(nodeFxnVector = NODEFXNVECTOR), list(NODEFXNVECTOR = code$nodeFxnVector) ) )
         }
@@ -366,7 +399,7 @@ simulate_keywordInfo <- keywordInfoClass(
 
 getLogProb_keywordInfo <- keywordInfoClass(
     keyword = 'getLogProb',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
         errorContext <- deparse(code)
@@ -407,7 +440,7 @@ getLogProb_keywordInfo <- keywordInfoClass(
 
 nimCopy_keywordInfo <- keywordInfoClass(
 	keyword = 'nimCopy',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         if(is.null(nfProc)) stop("Can\'t call copy (nimCopy) from a nimbleFunction without setup code")
 		possibleObjects <- c('symbolModel', 'symbolModelValues', 'symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
 		modelValuesTypes <- c('symbolModelValues', 'symbolModelValuesAccessorVector')
@@ -515,7 +548,8 @@ nimCopy_keywordInfo <- keywordInfoClass(
 
 doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
+        callerCode <- code[[2]]
         if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
         possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList', 'symbolNimbleList')
         class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
@@ -532,7 +566,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
           #  myNimbleList[['myVar']]
           nl_charName <- as.character(callerCode)
           nl_fieldName <-as.character(code[[3]])
-          newRunCode <- substitute(nlVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+          newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
           return(newRunCode)
         }
         if(class == 'symbolModel'){
@@ -575,7 +609,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
                 ## ## we treat it like model$a, which handles either
                 if(useMap & length(varAndIndices$indices) == 0) {
                     return(
-                        keywordList[['$']]$processor(code, nfProc)
+                        keywordList[['$']]$processor(code, nfProc, RCfunProc)
                     )
                 }
                 ## ## Following line adds up 0 for each scalar index
@@ -608,7 +642,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
 
 modelMemberFun_keywordInfo <- keywordInfoClass(
     keyword = 'multiple',
-    processor = function(code, nfProc) {
+    processor = function(code, nfProc, RCfunProc) {
         ## if we get here it must be model$member(args)
         ## We will turn it into member(model, args)
         newRunCode <- do.call("call",
@@ -621,7 +655,7 @@ modelMemberFun_keywordInfo <- keywordInfoClass(
 
 dollarSign_keywordInfo <- keywordInfoClass(
     keyword = '$',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         callerCode <- code[[2]]
         
         if(is.null(nfProc)) { 
@@ -646,7 +680,7 @@ dollarSign_keywordInfo <- keywordInfoClass(
                                         #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
         if(length(callerCode) > 1){
             if(callerCode[[1]] == '$'){ ## nested NL or NF case
-                callerCode <- processKeyword(callerCode, nfProc)
+                callerCode <- processKeyword(callerCode, nfProc, RCfunProc)
             }
         }
                                         #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
@@ -716,7 +750,7 @@ dollarSign_keywordInfo <- keywordInfoClass(
     
 singleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[',
-    processor = function(code, nfProc){
+    processor = function(code, nfProc, RCfunProc){
         if(is.null(nfProc)) return (code)
         class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
         if(class == 'symbolModelValues'){
@@ -739,7 +773,7 @@ singleBracket_keywordInfo <- keywordInfoClass(
 
 length_char_keywordInfo <- keywordInfoClass(
     keyword = 'length',
-    processor = function(code, nfProc) {
+    processor = function(code, nfProc, RCfunProc) {
         if(is.null(nfProc)) return(code)
         if(length(code) < 2) stop('length() used without an argument')
         class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
@@ -752,7 +786,131 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
+nimDerivs_keywordInfo <- keywordInfoClass(
+  keyword = 'nimDerivs',
+  processor = function(code, nfProc, RCfunProc) {
+    wrtArgs <- code[['wrt']]
+    ## First check to see if nimFxn argument is a method.
+    fxnCall <- code[[2]][[1]]
+    order <- code[['order']]
 
+    calculateCase <- FALSE
+    if(deparse(fxnCall) == 'calculate'){
+        calculateCase <- TRUE
+    } 
+    else if(length(fxnCall) == 3 &&
+            (deparse(fxnCall[[1]]) == '$' &&
+             deparse(fxnCall[[3]]) == 'calculate')){
+        ## re-arrange nimDerivs(model$calculate(...), ...) to nimDerivs(calculate(model, ...), ...)
+        code[[2]] <- modelMemberFun_keywordInfo$processor(code[[2]], nfProc)
+        code[[2]] <- matchKeywordCode(code[[2]], nfProc)
+        calculateCase <- TRUE
+    }
+    if(calculateCase) {
+        innerCode <- code[[2]]
+        if(length(code$wrt)==1)
+          if(!is.name(code$wrt))
+            if(is.na(code$wrt[1]))
+              stop("Derivatives of a call to 'calculate()' must have 'wrt' argument specified.")
+        innerCode$wrt <- code$wrt
+        newCode <- calculate_keywordInfo$processor(innerCode, nfProc, RCfunProc)
+        newCode[[1]] <- as.name('nimDerivs_calculate')
+        newCode$orderVector <- code$order
+        newCode$reset <- if(is.null(code[['reset']])) FALSE else code[['reset']]
+        newCode$do_update <- if(is.null(code[['do_update']])) TRUE else code[['do_update']]
+        return(newCode)
+    }
+    ## Not a calculate case:
+    if(!is.null(nfProc$origMethods[[deparse(fxnCall)]])) {
+      derivMethod <- nfProc$origMethods[[deparse(fxnCall)]]
+      derivMethodArgs <- derivMethod$getArgInfo()
+
+      ## Only make the wrt substitution if the names are baked in as character
+      wrtArg <- code$wrt
+      doPreprocess <- FALSE
+      if(is.numeric(wrtArg) | is.logical(wrtArg)) {
+        if(any(is.na(wrtArg[1]))) { ## wrt = NULL (default), set to NA, which will become -1 by convertWrtArgToIndices and then c(-1, -1) in the setup code
+          doPreprocess <- TRUE
+        }
+      } else if(is.name(wrtArg)) { ## wrt = some_index_var_maybe_from_setup
+        ## do nothing
+      } else if(deparse(wrtArg[[1]]) == 'nimC') { ## wrt = c('x', ...)
+        if(is.character(wrtArg[[2]]))
+          doPreprocess <- TRUE
+      } else if(is.character(wrtArg)) { ## wrt = 'x'
+        doPreprocess <- TRUE
+      } ## In any other setting, it must be an index vector and we leave it alone here.
+      ##
+      if(doPreprocess) {
+        wrt_argList <- list(fxnCall = fxnCall,
+                            wrt = code$wrt,
+                            #                   vector = wrtArgIndices
+                            derivMethodArgs = derivMethodArgs)
+        accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
+        addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
+        code[['wrt']] <- substitute(VECNAME,
+                                    list(VECNAME = as.name(accessName)))
+      }
+      ## Check if model and updateNodes are provided.
+      ## If so, create a nodeFxnVector for them.
+      modelProvided <-  is.name(code[['model']])
+      updateNodesProvided <- is.name(code[['updateNodes']])
+      if(!updateNodesProvided)
+        if(is.character(code[['updateNodes']]))
+          updateNodesProvided <- !is.na(code[['updateNodes']][1])
+      constantNodesProvided <- is.name(code[['constantNodes']])
+      if(!constantNodesProvided)
+        if(is.character(code[['constantNodes']]))
+
+          constantNodesProvided <- !is.na(code[['constantNodes']][1])
+      if(xor(modelProvided, updateNodesProvided || constantNodesProvided))
+        stop('nimDerivs arguments model and at least one of updateNodes or constantNodes must be provided together or not at all.')
+      if(modelProvided) { ## At this point that means both were provided
+        DMUNargList <- list(model = code$model,
+                            updateNodes = if(updateNodesProvided) code[["updateNodes"]] else NULL,
+                            constantNodes = if(constantNodesProvided) code[["constantNodes"]] else NULL)
+        accessName <- nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate$makeName(DMUNargList)
+        addNecessarySetupCode(accessName, DMUNargList, nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate, nfProc)
+        ## code[['model']] <- NULL
+        ## if(updateNodesProvided) code[['updateNodes']] <- NULL
+        ## if(constantNodesProvided) code[['constantNodes']] <- NULL
+        code[['updateNodesName']] <- accessName
+      }
+      code[['model']] <- NULL
+      code[['updateNodes']] <- NULL
+      code[['constantNodes']] <- NULL
+    }
+    return(code)
+  }
+)
+
+derivInfo_keywordInfo <- keywordInfoClass(
+  keyword = 'derivInfo',
+  processor = function(code, nfProc, RCfunProc) {
+    fxnCall <- code[[2]][[1]]
+    calculateCase <- FALSE
+    if(deparse(fxnCall) == 'calculate'){
+      calculateCase <- TRUE
+    } 
+    else if(length(fxnCall) == 3 &&
+              (deparse(fxnCall[[1]]) == '$' &&
+                 deparse(fxnCall[[3]]) == 'calculate')){
+      ## re-arrange nimDerivs(model$calculate(...), ...) to nimDerivs(calculate(model, ...), ...)
+      code[[2]] <- modelMemberFun_keywordInfo$processor(code[[2]], nfProc)
+      code[[2]] <- matchKeywordCode(code[[2]], nfProc)
+      calculateCase <- TRUE
+    }
+    if(!calculateCase) {
+      stop('The first argument to derivInfo must be a call to calculate(model, ...) or model$calculate(...)')
+    }
+    innerCode <- code[[2]]
+    if(is.null(code$wrt))
+      stop("derivInfo must provide 'wrt' argument.")
+    innerCode$wrt <- code$wrt
+    newCode <- calculate_keywordInfo$processor(innerCode, nfProc, RCfunProc)
+    return(newCode)
+  }
+)
 
 #	KeywordList
 keywordList <- new.env()
@@ -798,6 +956,9 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
+keywordList[['nimDerivs']] <- nimDerivs_keywordInfo
+keywordList[['derivInfo']] <- derivInfo_keywordInfo
+
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
 keywordListModelMemberFuns[['simulate']] <- modelMemberFun_keywordInfo
@@ -831,7 +992,12 @@ matchFunctions[['nimOptim']] <- nimOptim
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
-matchFunctions[['nimDerivs']] <- nimDerivs
+matchFunctions[['nimDerivs']] <- function(call = NA,
+                                          order = nimC(0,1,2),
+                                          wrt = NA,
+                                          model = NA, updateNodes = NA, constantNodes = NA,
+                                          do_update = TRUE, reset = FALSE) {}
+matchFunctions[['derivInfo']] <- derivInfo
 matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
@@ -907,14 +1073,14 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 addDistList2matchFunctions(matchDistList, matchFunctions)
 
 #	processKeyword function to be called by nfProc
-processKeyword <- function(code, nfProc){
+processKeyword <- function(code, nfProc, RCfunProc){
   thisKeywordInfo <- keywordList[[ as.character(code[[1]]) ]]
   if(!is.null(thisKeywordInfo))
-    return(thisKeywordInfo$processor(code, nfProc))
+    return(thisKeywordInfo$processor(code, nfProc, RCfunProc))
   return(code)
 }
 
-processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b(c) as one unit
+processKeywordCodeMemberFun <- function(code, nfProc, RCfunProc) { ## handle cases like a$b(c) as one unit
     ## this includes nf$method()
     ## nfList[[i]]$method
     ## model$calculate(nodes)
@@ -934,37 +1100,37 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
         if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code)))
         rearrangedCode <- thisKeywordInfo$processor(code, nfProc)
         rearrangedCode <- matchKeywordCode(rearrangedCode, nfProc)
-        return(processKeywords_recurse(rearrangedCode, nfProc))
+        return(processKeywords_recurse(rearrangedCode, nfProc, RCfunProc))
     } else {
         ## same as processKeywords_recurse
         ## first line here creates something like nfMethod(model, method)(args)
         ## which is handled as a chainedCall in later processing
-        code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        code[[1]] <- processKeywords_recurse(code[[1]], nfProc, RCfunProc)
         cl <- length(code)
         if(cl >= 2) {
             for(i in 2:cl) {
-                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc, RCfunProc)
             }
         }
         return(code)
     }
 }
 
-processKeywords_recurse <- function(code, nfProc = NULL) {
+processKeywords_recurse <- function(code, nfProc = NULL, RCfunProc) {
     cl = length(code)
     if(cl == 1) {
         if(is.call(code)) {
             if(length(code[[1]]) > 1)
                 if(deparse(code[[1]][[1]] == '$'))
-                    code <- processKeywordCodeMemberFun(code, nfProc)
+                    code <- processKeywordCodeMemberFun(code, nfProc, RCfunProc)
                 else
-                    code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+                    code[[1]] <- processKeywords_recurse(code[[1]], nfProc, RCfunProc)
         }
         return(code)
     }
     
     if(length(code[[1]]) == 1) {
-        code <- processKeyword(code, nfProc)
+        code <- processKeyword(code, nfProc, RCfunProc)
     }
     
     cl = length(code)
@@ -972,14 +1138,14 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
     if(is.call(code)) {
         if(length(code[[1]]) > 1) {
             if(deparse(code[[1]][[1]] == '$')) {
-                code <- processKeywordCodeMemberFun(code, nfProc) ## case like model$calculate(nodes)
+                code <- processKeywordCodeMemberFun(code, nfProc, RCfunProc) ## case like model$calculate(nodes)
                 return(code) ## don't recurse on arguments of anything in this category
             }
-            code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+            code[[1]] <- processKeywords_recurse(code[[1]], nfProc, RCfunProc)
         }
         if(cl >= 2) {
             for(i in 2:cl) {
-                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc, RCfunProc)
             }
         }
     }
@@ -987,6 +1153,29 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 }
 
 #####	SETUPCODE TEMPLATES
+
+wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
+    makeName = function(argList){Rname2CppName(paste0('wrtVec_',
+                                                      deparse(argList$fxn),
+                                                      paste(deparse(argList$wrt), sep='_'),
+                                                      '_'))},
+  codeTemplate = quote(
+  {
+      WRTVEC <- nimble:::convertWrtArgToIndices(WRT, #code$wrt
+                                                 DERIVMETHODARGS,
+                                                 FXNNAME)
+      if(length(WRTVEC) == 1)
+          WRTVEC <- c(WRTVEC, -1)
+  }
+  ),
+  makeCodeSubList = function(resultName, argList){
+      list(WRTVEC = as.name(resultName),
+           WRT = argList$wrt
+          ,DERIVMETHODARGS = argList$derivMethodArgs
+          ,FXNNAME = deparse(argList$fxnCall)
+           )##argList$vector)
+  }
+)
 
 length_char_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList) {Rname2CppName(paste0(paste("length", deparse(argList$string), sep='_'), '_KNOWN_'))},
@@ -1033,20 +1222,89 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
              LOGPROBONLY = argList$logProbOnly)
     })
 
+
+nodeFunctionVector_WithDerivsOutput_SetupTemplate <- setupCodeTemplateClass(
+  makeName = function(argList){
+    Rname2CppName(paste(deparse(argList$model),
+                        deparse(argList$nodes),
+                        'nodeFxnVector_WithDerivsOutput', ## The "_derivs_" tag is used later to determine the right class - klugey
+                        deparse(argList$includeData),
+                        if(argList$sortUnique) "SU" else "notSU",
+                        '_derivs_',
+                        sep = '_')
+                  )
+  },
+  codeTemplate = quote(
+    NODEFXNVECNAME <- nimble:::nodeFunctionVector_WithDerivsOutputNodes(
+      model = MODEL,
+      calcNodes = CALCNODES,
+      excludeData = EXCLUDEDATA,
+      sortUnique = SORTUNIQUE)
+  ), 
+  makeCodeSubList = function(resultName, argList){
+    list(NODEFXNVECNAME = as.name(resultName),
+         MODEL = argList$model,
+         CALCNODES = argList$nodes,
+         EXCLUDEDATA = !argList$includeData,
+         SORTUNIQUE = argList$sortUnique
+         )
+  })
+
+
+nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate <- setupCodeTemplateClass(
+  makeName = function(argList){
+    Rname2CppName(paste(deparse(argList$model),
+                        deparse(argList[['updateNodes']]),
+                        deparse(argList[['constantNodes']]),
+                        'nodeFxnVector_DerivsModelUpdateNodes_derivs_', ## The "_derivs_" tag is used later to determine the right class - klugey
+                        sep = '_')
+                  )
+  },
+  codeTemplate = quote(
+    NODEFXNVECNAME <- nimble:::nodeFunctionVector_DerivsModelUpdateNodes(
+      model = MODEL,
+      updateNodes = UPDATENODES,
+      constantNodes = CONSTANTNODES)
+  ), 
+  makeCodeSubList = function(resultName, argList){
+    list(NODEFXNVECNAME = as.name(resultName),
+         MODEL = argList$model,
+         UPDATENODES = argList[["updateNodes"]],
+         CONSTANTNODES = argList[["constantNodes"]]
+         )
+  })
+
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
                                         #Note to programmer: required fields of argList are model, nodes and includeData
     
-    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), if(argList$sortUnique) "SU" else "notSU", sep = '_'))},
-    codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA, sortUnique = SORTUNIQUE, errorContext = ERRORCONTEXT)), 
+    makeName = function(argList){
+        Rname2CppName(paste(deparse(argList$model),
+                            deparse(argList$nodes),
+                            'nodeFxnVector_includeData',
+                            deparse(argList$includeData),
+                            if(argList$sortUnique) "SU" else "notSU",
+                            if(is.null(argList$wrtNodes)) '' else '_derivs_', sep = '_')
+                      )
+    },
+    codeTemplate = quote(
+        NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL,
+                                                      nodeNames = NODES,
+                                                      wrtNodes = WRTNODES,
+                                                      excludeData = EXCLUDEDATA,
+                                                      sortUnique = SORTUNIQUE,
+                                                      errorContext = ERRORCONTEXT)
+    ), 
     makeCodeSubList = function(resultName, argList){
         list(NODEFXNVECNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
+             WRTNODES = argList$wrtNodes,
              EXCLUDEDATA = !argList$includeData,
              SORTUNIQUE = argList$sortUnique,
              ERRORCONTEXT = argList$errorContext
              )
     })
+
 
 paramInfo_SetupTemplate <- setupCodeTemplateClass(
     #Note to programmer: required fields of argList are model, node and param
@@ -1310,6 +1568,8 @@ matchAndFill.call <- function(def, call){
 determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     allNDims <- lapply(nfProc$instances, function(x) {
         model <- eval(modelExpr, envir = x)
+        if(length(varOrNodeExpr) > 1)
+            stop("One must request a node from a model using syntax like `model[[node]]` and not syntax such as `model[[nodes[i]]]`. For the latter case use `values()` instead.")
         if(!exists(as.character(varOrNodeExpr), x, inherits = FALSE) ) {
             stop(paste0('Problem accessing node or variable ', deparse(varOrNodeExpr), '.'), call. = FALSE)
         }
@@ -1664,3 +1924,309 @@ handleScaleAndRateForExpNimble <- function(code){
     code$scale <- NULL
     return(code)
 }
+
+## wrtNodes are nodes with respect to which derivatives will be taken
+##     (i.e. denominator of dy/dx).  wrtNodes may or may not be part of
+##     calcNodes
+## extraInputNodes are nodes needed in calculation of derivatives but
+##     are not wrtNodes.  They include two categories: (i) parents of
+##     any calcNodes that are not themselves calcNodes or wrtNodes;
+##     (ii) any stochastic calcNodes, because the node values are needed.
+##     However, stochastic calcNodes that are in constantNodes are not
+##     included in extraInputNodes.
+## constantNodes are nodes that are assumed to be constant for all
+##     derivative calls throughout the life of the nimbleFunction.
+##     They will be baked in to the CppAD tape and cannot then be changed.
+##     They will typically be model data.
+## modelOutputNodes are nodes whose values are calculated as part of the
+##     tape "forward-zero" stage (value calculation) and need to be stored
+##     in the model.  It appears more efficient to copy them in to the model
+##     than to use the regular model$calculate() itself.
+##     modelOutputNodes will include all deterministic nodes in calcNodes
+##     as well as the logProb_ node for any stochastic nodes in calcNodes.
+## calcNodes is the same as calcNodes for model$calculate(calcNodes).  It is
+##     the ordered sequence of nodes to be calculated
+nimDerivsInfoClass_init_impl <- function(.self
+                                       , wrtNodes
+                                       , calcNodes
+                                       , model) {
+    .self$model <- model
+
+    ## wrt nodes
+    wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+    wrtNodesAccessor <- modelVariableAccessorVector(model,
+                                               wrtNodes,
+                                               logProb = FALSE)
+    .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
+
+    # See comment in makeModelDerivsInfo for explanation of why both of the next
+    # two lines are necessary.
+    calcNodes <- model$expandNodeNames(calcNodes)
+    calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
+    derivsInfo <- makeModelDerivsInfo_impl(model,
+                                      wrtNodes,
+                                      calcNodes,
+                                      dataAsConstantNodes = TRUE)
+    constantNodes <- derivsInfo$constantNodes
+    updateNodes <- derivsInfo$updateNodes
+    
+    extraInputNodesAccessor <- modelVariableAccessorVector(model,
+                                                           updateNodes,
+                                                           logProb = FALSE)
+    .self$extraInputMapInfo <-
+        makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
+
+    constantNodesAccessor <- modelVariableAccessorVector(model,
+                                                         constantNodes,
+                                                         logProb = FALSE)
+    .self$constantMapInfo <- makeMapInfoFromAccessorVectorFaster(constantNodesAccessor)
+
+    
+    ## output nodes: deterministic nodes in calcNodes plus logProb nodes
+    ##   but not the actual data nodes.
+
+    modelOutputNodes <- makeOutputNodes(model, calcNodes)
+    
+    modelOutputNodesAccessor <- modelVariableAccessorVector(model,
+                                                            modelOutputNodes,
+                                                            logProb = FALSE)
+    .self$modelOutputMapInfo <-
+        makeMapInfoFromAccessorVectorFaster(modelOutputNodesAccessor)
+    NULL
+}
+
+makeOutputNodes <- function(model,
+                            calcNodes) {
+  calcNodeNames <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
+  logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
+  isDetermCalcNodes <- model$isDeterm(calcNodeNames)
+  modelOutputNodes <- c(calcNodeNames[isDetermCalcNodes],
+                        logProbCalcNodeNames)
+  modelOutputNodes
+}
+
+nimDerivsInfoClass_output_init_impl <- function(.self,
+                                                calcNodes,
+                                                model) {
+  .self$model <- model
+  wrtNodesAccessor <- modelVariableAccessorVector(model,
+                                                  character(),
+                                                  logProb = FALSE)
+  .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
+  
+  constantNodesAccessor <- modelVariableAccessorVector(model,
+                                                       character(),
+                                                       logProb = FALSE)
+  .self$constantMapInfo <- makeMapInfoFromAccessorVectorFaster(constantNodesAccessor)
+
+  extraInputNodesAccessor <- modelVariableAccessorVector(model,
+                                                         character(),
+                                                         logProb = FALSE)
+  .self$extraInputMapInfo <-
+    makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
+
+  modelOutputNodes <- makeOutputNodes(model, calcNodes)
+  modelOutputNodesAccessor <- modelVariableAccessorVector(model,
+                                                          modelOutputNodes,
+                                                          logProb = FALSE)
+  .self$modelOutputMapInfo <-
+    makeMapInfoFromAccessorVectorFaster(modelOutputNodesAccessor)
+
+  NULL
+}
+
+#' Information on model structure used for derivatives
+#'
+#' Inspect structure of a nimble model to determine nodes needed as "update"
+#' and/or "constant" entries in usage of nimDerivs. This will typically be used
+#' in the setup code of a nimbleFunction.
+#'
+#' @param model a nimble model object, such as returned from \code{nimbleModel}.
+#' @param wrtNodes a character vector of node names in the model with respect to
+#'   which derivatives will be taken through a call to \code{nimDerivs} (same as
+#'   \code{derivs}).
+#' @param calcNodes a character vector of node names in the model that will be
+#'   used in \code{model$calculate(calcNodes)} while derivatives are being
+#'   recorded.
+#' @param dataAsConstantNodes logical indicating whether data nodes in the model
+#'   should automatically be treated as "constant" entries (TRUE) or "update"
+#'   entries (FALSE). Defaults to TRUE.
+#'
+#' @details In the compilable parts of a \code{nimbleFunction} (i.e. \code{run}
+#'   or other method code, not \code{setup} code), a call like
+#'   \code{nimDerivs(foo(x), ...)} records derivatives of \code{foo(x)}. If
+#'   \code{foo} contains any calls to \code{model$calculate(calcNodes)}, it may
+#'   be necessary to provide auxiliary information about the model in further
+#'   arguments to \code{nimDerivs}, specifically the \code{model},
+#'   \code{updateNodes} and \code{constantNodes} arguments.
+#'   `makeModelDerivsInfo` is a utility to set up that information for typical
+#'   use cases. It returns a list with elements \code{updateNodes} and
+#'   \code{constantNodes} to be passed as arguments of the same name to
+#'   \code{nimDerivs} (along with passing the \code{model} as the \code{model}
+#'   argument).
+#'
+#' The reason auxiliary information is needed is that recording of derivatives
+#' uses a different model than for regular calculations. Together,
+#' \code{updateNodes} and \code{constantNodes} should contain all nodes whose
+#' values are needed for the model calculations being recorded and that are not
+#' part of \code{wrtNodes}. These may include parents of nodes that are in
+#' \code{calcNodes} but are not themselves in \code{calcNodes}, as well as the
+#' values of stochastic nodes in \code{calcNodes}, which are needed to calculate
+#' the corresponding log probabilities. \code{updateNodes} will have their
+#' values updated from the regular model every time that recorded derivative
+#' calculations are used. \code{constantNodes} will not be updated every time,
+#' which means their values will be permanently fixed either the first time the
+#' call to `nimDerivs` is invoked or on any subsequent call that has
+#' \code{reset=TRUE}. Use of \code{constantNodes} can be slightly more
+#' efficient, but one must be careful to be aware that values will not be
+#' updated unless \code{reset=TRUE}. See the automatic differentiation section
+#' of the User Manual for more information.
+#'
+#' In the above explanation, care must be taken to understand what should be
+#' included in \code{wrtNodes}. In a typical use case, some arguments to
+#' \code{foo} are put into the model using \code{values(model, nodes) <-
+#' some_foo_arguments}. Next there is typically a call to
+#' \code{model$calculate(calcNodes)}. Here the \code{nodes} are considered
+#' "with-respect-to" nodes because derivative tracking will follow the arguments
+#' of \code{foo}, including when they are put into a model and hence used in
+#' \code{model$calculate}. Therefore these \code{nodes} should be the
+#' \code{wrtNodes} for \code{makeModelDerivsInfo}.
+#'
+#' @return A list with elements \code{updateNodes} and \code{constantNodes}.
+#'   These shouls be provided as the same-named arguments to \code{nimDerivs}
+#'   (same as \code{derivs}).
+#'
+#' When using double-taping of derivatives (i.e. \code{foo} contains another
+#' call to \code{nimDerivs}), both calls to \code{nimDerivs} should include the
+#' \code{model}, \code{updateNodes}, and \code{constantNodes} arguments.
+#'
+#' @export
+makeModelDerivsInfo <- function(model,
+                           wrtNodes,
+                           calcNodes,
+                           dataAsConstantNodes = TRUE) {
+  wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+  # This ensures that elements of a non-scalar node become the entire non-scalare node
+  calcNodes <- model$expandNodeNames(calcNodes)
+  # And then this splits into scalar components.
+  # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
+  # the above call gets `mu[1:3]` and then the below call splits it.
+  calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE) 
+  makeModelDerivsInfo_impl(model,
+                      wrtNodes,
+                      calcNodes,
+                      dataAsConstantNodes)
+}
+
+getImmediateParentNodes <- function(nodes, model) { 
+  ## adapted from BUGS_modelDef creation of edgesFrom2To
+  maps <- model$modelDef$maps
+  maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
+  
+  edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
+  fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
+  edgesTo2From <- split(maps$edgesFrom, fedgesTo)
+  nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
+  fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
+  fromNodes <- maps$graphID_2_nodeName[fromIDs]
+  fromNodes
+}
+
+makeModelDerivsInfo_impl <- function(model,
+                                wrtNodes,
+                                 calcNodes,
+                                dataAsConstantNodes = TRUE) {
+  nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
+  nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes, returnScalarComponents = TRUE)
+  nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]  
+  ## Some duplication of work in expandNodeNames
+  parentNodes <- getImmediateParentNodes(calcNodes, model)
+  parentNodes <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+  neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodeNames))
+  extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
+                                             nonWrtStochCalcNodeNames),
+                                           returnScalarComponents = TRUE,
+                                           sort = TRUE)
+  constantNodes <- character()
+  if(dataAsConstantNodes) {
+    boolData <- model$isData(extraInputNodes)
+    constantNodes <- extraInputNodes[boolData]
+    extraInputNodes <- extraInputNodes[!boolData]
+  }
+  list(updateNodes = extraInputNodes,
+       constantNodes = constantNodes)
+}
+
+nimDerivsInfoClass_update_init_impl <- function(.self,
+                                                updateNodes = NULL,
+                                                constantNodes = NULL,
+                                                model) {  
+  if(is.null(updateNodes)) updateNodes <- character()
+  if(is.null(constantNodes)) constantNodes <- character()
+
+  .self$model <- model
+  wrtNodesAccessor <- modelVariableAccessorVector(model,
+                                                  character(),
+                                                  logProb = FALSE)
+  .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
+  
+  constantNodesAccessor <- modelVariableAccessorVector(model,
+                                                       constantNodes,
+                                                       logProb = FALSE)
+  .self$constantMapInfo <- makeMapInfoFromAccessorVectorFaster(constantNodesAccessor)
+
+  extraInputNodesAccessor <- modelVariableAccessorVector(model,
+                                                         updateNodes,
+                                                         logProb = FALSE)
+  .self$extraInputMapInfo <-
+    makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
+  
+  modelOutputNodesAccessor <- modelVariableAccessorVector(model,
+                                                          character(),
+                                                          logProb = FALSE)
+  .self$modelOutputMapInfo <-
+    makeMapInfoFromAccessorVectorFaster(modelOutputNodesAccessor)
+
+  NULL
+}
+
+nimDerivsInfoClass <- setRefClass(
+    'nimDerivsInfoClass',
+    fields = list(
+        wrtMapInfo = 'ANY'
+      , extraInputMapInfo = 'ANY'
+      , modelOutputMapInfo = 'ANY'
+      , constantMapInfo = 'ANY'
+      , model = 'ANY'
+    ),
+    methods = list(
+        initialize = function(wrtNodes = NULL,
+                              calcNodes = NULL,
+                              updateNodes = NULL,
+                              constantNodes = NULL,
+                              thisModel = NULL,
+                              case = "nimDerivsCalculate",
+                              ...) {
+          if(!isTRUE(thisModel$modelDef$buildDerivs)) {
+            stop(paste0("To use automatic differentiation involving model calculations,\n",
+                        "include 'buildDerivs = TRUE' in the call to 'nimbleModel' or set\n",
+                        "'nimbleOptions(buildModelDerivs = TRUE)' before calling 'nimbleModel'."), call. = FALSE)
+          }
+          switch(case,
+                 nimDerivsCalculate = nimDerivsInfoClass_init_impl(.self = .self,
+                                                                   wrtNodes = wrtNodes,
+                                                                   calcNodes = calcNodes,
+                                                                   model = thisModel),
+                 
+                 updateOnly = nimDerivsInfoClass_update_init_impl(.self = .self,
+                                                                  updateNodes = updateNodes,
+                                                                  constantNodes = constantNodes,
+                                                                  model = thisModel),
+                 
+                 outputOnly = nimDerivsInfoClass_output_init_impl(.self = .self,
+                                                                  calcNodes = calcNodes,
+                                                                  model = thisModel)
+                 )
+        }
+    )
+)

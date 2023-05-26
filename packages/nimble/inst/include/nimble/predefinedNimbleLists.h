@@ -10,6 +10,8 @@
 #include <nimble/NimArr.h>
 #include <nimble/accessorClasses.h>
 #include <nimble/nimDists.h>
+#include <nimble/smartPtrs.h>
+#include <nimble/nodeFun.h>
 #undef eval
 
 extern "C" SEXP new_EIGEN_EIGENCLASS();
@@ -87,29 +89,13 @@ extern "C" SEXP OptimControlNimbleList_castPtrPtrToNamedObjectsPtrSEXP(
 extern "C" SEXP OptimControlNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(
     SEXP input);
 
-class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
- public:
-  NimArr<1, double> value;
-  NimArr<2, double> gradient;
-  NimArr<3, double> hessian;
-  NimArr<4, double> thirdDerivs;
-  SEXP RObjectPointer;
-  bool RCopiedFlag;
-  void copyFromSEXP(SEXP S_nimList_);
-  SEXP copyToSEXP();
-  void createNewSEXP();
-  void resetFlags();
-  void copyFromRobject(SEXP Robject);
-  NIMBLE_ADCLASS();
-};
-
 extern "C" SEXP new_NIMBLE_ADCLASS();
 
 extern "C" SEXP NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
 extern "C" SEXP NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
-class waicList : public NamedObjects, public pointedToBase {
+class waicNimbleList : public NamedObjects, public pointedToBase {
  public:
   double WAIC;
   double lppd;
@@ -121,16 +107,16 @@ class waicList : public NamedObjects, public pointedToBase {
   void createNewSEXP();
   void resetFlags();
   void copyFromRobject(SEXP Robject);
-  waicList();
+  waicNimbleList();
 };
 
-extern "C" SEXP new_waicList();
+extern "C" SEXP new_waicNimbleList();
 
-extern "C" SEXP waicList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+extern "C" SEXP waicNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
-extern "C" SEXP waicList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+extern "C" SEXP waicNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
-class waicDetailsList : public NamedObjects, public pointedToBase {
+class waicDetailsNimbleList : public NamedObjects, public pointedToBase {
  public:
   bool marginal;
   double niterMarginal;
@@ -151,13 +137,58 @@ class waicDetailsList : public NamedObjects, public pointedToBase {
   void createNewSEXP();
   void resetFlags();
   void copyFromRobject(SEXP Robject);
-  waicDetailsList();
+  waicDetailsNimbleList();
 };
 
-extern "C" SEXP new_waicDetailsList();
+extern "C" SEXP new_waicDetailsNimbleList();
 
-extern "C" SEXP waicDetailsList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+extern "C" SEXP waicDetailsNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
-extern "C" SEXP waicDetailsList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+extern "C" SEXP waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+
+class AGHQuad_params : public  NamedObjects, public pointedToBase {
+ public:
+  std::vector<string> names;
+  NimArr<1, double> estimates;
+  NimArr<1, double> stdErrors;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  AGHQuad_params();
+};
+
+extern "C" SEXP new_AGHQuad_params();
+
+extern "C" SEXP AGHQuad_params_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+
+extern "C" SEXP AGHQuad_params_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+
+class AGHQuad_summary : public  NamedObjects, public pointedToBase {
+ public:
+  nimSmartPtr<AGHQuad_params> params;
+  nimSmartPtr<AGHQuad_params> randomEffects;
+  NimArr<2, double> vcov;
+  string scale;
+
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  AGHQuad_summary();
+};
+
+extern "C" SEXP new_AGHQuad_summary();
+
+extern "C" SEXP AGHQuad_summary_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+
+extern "C" SEXP AGHQuad_summary_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+
 
 #endif  // __NIMBLE_PREDEFINEDNIMBLELISTS_H

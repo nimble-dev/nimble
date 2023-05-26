@@ -92,7 +92,7 @@ test_that("voter model WAIC is accurate", {
   Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
   Cvotermcmc$run(50000)
   expect_output(waic <- Cvotermcmc$getWAIC()$WAIC,
-                 "There are individual pWAIC values that are greater than 0.4")
+                 "individual pWAIC values that are greater than 0.4")
   expect_lt(abs(waic - 87.2), 2.0)
   
   ## additional testing of validity of monitored nodes below
@@ -191,6 +191,53 @@ test_that("Radon model WAIC is accurate", {
                  "To calculate WAIC in NIMBLE, all parameters")
 })
 
+test_that("Continuing an MCMC gets the same WAIC as doing all the sampling at once", {
+    set.seed(1)
+    J <- 5
+    I <- 10
+    tau <- 1
+    sigma <- 1
+    
+    mu <- rnorm(J, 0 , tau)
+    
+    y <- matrix(0, J, I)
+    for(j in 1:J) 
+        y[j, ] <- rnorm(I, mu[j], sigma)
+
+    code <- nimbleCode({
+        tau ~ dunif(0, 10)
+        sigma ~ dunif(0, 10)
+        mu0 ~ dnorm(0, 10)
+        for(j in 1:J) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            for(i in 1:I)
+                y[j, i] ~ dnorm(mu[j], sd = sigma)
+        }
+    })
+
+    inits <- list(mu0 = 0, tau = 0.5, sigma = 1.5,
+                               mu = rnorm(J, 0, 0.5))
+
+    m <- nimbleModel(code, data = list(y = y),
+                     constants = list(I = I, J = J),
+                     inits = inits)
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m, enableWAIC = TRUE)
+    cmcmc <- compileNimble(mcmc, project = m)
+    set.seed(1)
+    out1 <- cmcmc$run(niter = 1000)
+    waic1 <- cmcmc$getWAIC()
+    out2 <- cmcmc$run(niter = 1000, reset = FALSE, resetWAIC = FALSE)
+    waic1 <- cmcmc$getWAIC()
+
+    cm$setInits(inits)
+    set.seed(1)
+    out <- cmcmc$run(niter = 2000)
+    waic2 <- cmcmc$getWAIC()
+    expect_identical(waic1$WAIC, waic2$WAIC)
+})
+
 
 test_that("New WAIC implementation matches old implementation for conditional, ungrouped", {
     set.seed(1)
@@ -244,7 +291,7 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     expect_equal(waic2$WAIC, waic1)
     expect_identical(c(waic2$WAIC, waic2$lppd, waic2$pWAIC), c(out2$WAIC$WAIC, out2$WAIC$lppd, out2$WAIC$pWAIC))
 
-    waic2full <- cmcmc$getWAICdetails(returnElements = TRUE)
+    expect_silent(waic2full <- cmcmc$getWAICdetails(returnElements = TRUE))
     expect_identical(waic2full$thin, FALSE)
     expect_identical(waic2full$online, TRUE)
     expect_identical(waic2full$marginal, FALSE)
@@ -273,8 +320,8 @@ test_that("New WAIC implementation matches old implementation for conditional, u
     set.seed(1)
     out3 <- runMCMC(cmcmc, niter = 1000, nchains = 3, WAIC = TRUE, inits = inits, perChainWAIC = TRUE)
     waic3 <- cmcmc$calculateWAIC()
-    expect_identical(out3$WAIC[3], waic3)
-    expect_identical(out3$WAIC[1], waic1)
+    expect_identical(out3$WAIC, waic3)
+    expect_identical(out3$perChainWAIC[1], waic1)
 
 })
 
@@ -630,7 +677,7 @@ test_that("use of extra burnin of online WAIC", {
     out3 <- runMCMC(cmcmc, niter = 500, nburnin = 50)
     waic3 <- calculateWAIC(cmcmc, nburnin = 50)
 
-    expect_equal(waic1, waic2)
+    expect_gt(abs(waic1$WAIC - waic2$WAIC), .01)
     expect_equal(waic1, waic3)
 })
 

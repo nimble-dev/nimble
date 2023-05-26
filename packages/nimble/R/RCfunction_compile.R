@@ -143,10 +143,10 @@ RCvirtualFunProcessing <- setRefClass(
     )
 )
 
-RCfunction <- function(f, name = NA, returnCallable = TRUE, check, where = NULL) {
+RCfunction <- function(f, name = NA, returnCallable = TRUE, check, buildDerivs = FALSE, where = NULL) {
     if(is.na(name))
         name <- rcFunLabelMaker(envName = environmentName(where))
-    nfm <- nfMethodRC$new(f, name, check = check, where = where)
+    nfm <- nfMethodRC$new(f, name, check = check, buildDerivs = buildDerivs, where = where)
     if(returnCallable)
         nfm$generateFunctionObject(keep.nfMethodRC = TRUE, where = where)
     else
@@ -323,6 +323,7 @@ RCfunProcessing <- setRefClass(
             compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
             compileInfo$typeEnv[['.allowFunctionAsArgument']] <<- FALSE ## will be TRUE when recursing on optim. See sizeOptim.
             compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
+            compileInfo$typeEnv[['.new_ignore']] <<- character()
             compileInfo$typeEnv[['.myUniqueName']] <<- RCfun$uniqueName
             
             passedArgNames <-
@@ -476,7 +477,7 @@ RCfunProcessing <- setRefClass(
         },
         processKeywords = function(nfProc = NULL) {
             compileInfo$newRcode <<-
-                processKeywords_recurse(compileInfo$origRcode, nfProc)
+                processKeywords_recurse(compileInfo$origRcode, nfProc, .self)
         },
         matchKeywords = function(nfProc = NULL) {
             compileInfo$origRcode <<-

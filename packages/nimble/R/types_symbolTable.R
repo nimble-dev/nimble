@@ -75,7 +75,7 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
     if(type == "internalType") {
         return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }
-    if(type %in% c('double', 'integer', 'character', 'logical', 'void')){
+    if(type %in% c('double', 'integer', 'character', 'logical', 'void', 'constDouble')){
       nDim <- if(length(AT)==1) 0 else AT[[2]]
       if(!is.numeric(nDim) || nDim %% 1 != 0)
           stop("argType2symbol: unexpected dimension, '", AT[[2]], "', found in argument '", deparse(AT), "'. Dimension should be integer-valued.")
@@ -92,7 +92,11 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
               size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
           }
           return(symbolString(name = name, type = "character", nDim = nDim, size = size))
-      }  else {
+      }
+      if(type == "constDouble"){
+        type <- 'double'
+        return(symbolConstDouble(name = name, type = type, nDim = nDim, size = size, const = TRUE))
+      } else {
           return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
       }
     }
@@ -287,6 +291,23 @@ symbolBasic <-
                         })
     )
 
+
+symbolConstDouble <- setRefClass(
+  Class = "symbolConstDouble",
+  contains = "symbolBasic",
+  fields = list(const = 'ANY'),
+  methods = list(
+    show = function() writeLines(paste('symbolConstDouble', name)),
+    genCppVar = function(functionArg = FALSE) {
+      cppNimArr(name = name,
+                nDim = nDim,
+                type = 'double',
+                ref = functionArg,
+                const = TRUE)
+    })
+)
+
+
 symbolSEXP <- setRefClass(
     Class = "symbolSEXP",
     contains = "symbolBase",
@@ -325,6 +346,21 @@ symbolSEXP <- setRefClass(
     })
 )
 
+## symbolADinfo <- setRefClass(
+##     Class = "symbolADinfo",
+##     contains = "symbolBase",
+##     methods = list(
+##         initialize = function(...) {
+##             callSuper(...)
+##             type <<- 'Ronly'  
+##         },
+##         show = function() writeLines(paste("symbolADinfo", name)),
+##         genCppVar = function(...) {
+##             cppVar(name = name,
+##                    ptr = 0,
+##                    baseType = "nimbleCppADinfoClass")
+##         })
+## )
 
 symbolString <- setRefClass(
     Class = "symbolString",
@@ -395,6 +431,21 @@ symbolNodeFunctionVector <-
                         type <<- 'symbolNodeFunctionVector'  
                     },
                     show = function() writeLines(paste('symbolNodeFunctionVector', name)),
+                    genCppVar = function(...) {
+                        return(cppNodeFunctionVector(name = name)) 
+                    }
+                    )
+                )
+
+symbolNodeFunctionVector_nimDerivs <- 
+    setRefClass(Class = 'symbolNodeFunctionVector_nimDerivs',
+                contains = 'symbolBase',
+                methods = list(
+                    initialize = function(...) {
+                        callSuper(...)
+                        type <<- 'symbolNodeFunctionVector_nimDerivs'  
+                    },
+                    show = function() writeLines(paste('symbolNodeFunctionVector_nimDerivs', name)),
                     genCppVar = function(...) {
                         return(cppNodeFunctionVector(name = name)) 
                     }
@@ -488,10 +539,25 @@ symbolNimbleFunction <-
                     initialize = function(...) {callSuper(...)},
                     show = function() writeLines(paste('symbolNimbleFunction', name)),
                     genCppVar = function(...) {
-                        return(cppVarFull(name = name, baseType = environment(nfProc$nfGenerator)$name, ptr = 1)) ## selfDerefence idea is not general for A$B$C, selfDereference = TRUE))
+                        cppName <- if(name == ".self") "this" else name
+                        return(cppVarFull(name = cppName, baseType = environment(nfProc$nfGenerator)$name, ptr = 1)) 
                     }
                     ))
 
+symbolNimbleFunctionSelf <-
+    setRefClass(Class = 'symbolNimbleFunctionSelf',
+                contains = 'symbolBase',
+                fields = list(baseType = 'ANY'),
+                methods = list(
+                    initialize = function(name, nfProc) {
+                        callSuper(name = name, type = "Ronly");
+                        baseType <<- environment(nfProc$nfGenerator)$name
+                    },
+                    show = function() writeLines(paste('symbolNimbleFunctionSelf', name)),
+                    genCppVar = function(...) {
+                        stop("Should not be creating a cppVar from a symbolNimbleFunctionSelf")
+                    }
+                ))
 
 symbolVoidPtr <- setRefClass(Class = 'symbolVoidPtr',
                              contains = 'symbolBase',

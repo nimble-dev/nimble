@@ -41,7 +41,6 @@ sink_with_messages(outputFile)
 
 
 ## tests of classic BUGS examples
-
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
@@ -1663,7 +1662,6 @@ test_that('RW_dirichlet sampler more complicated', {
                 info = 'non-conjugate agreement between RW_dirichlet and component gamma sampling: sd')
 })
 
-
 ## testing dmnorm-dnorm conjugacies we don't detect
 
 test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
@@ -1912,31 +1910,31 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
         quote(structureExpr(z[1] * exp(w * beta[1]), a + z[2] * (d + w * beta[2]))),
         'beta[2]')
     expect_identical(is.list(output), TRUE)  ## should be a list with scale/offset
-    
 })
 
 
 test_that('MCMC with logProb variable being monitored builds and compiles.', {
-  cat('===== Starting MCMC test of logProb variable monitoring =====')
-  code <- nimbleCode({
-    prob[1] <- p
-    prob[2] <- 1-p
-    x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
-    y      ~ dbinom(   size = N, prob = p)
-  })
-  set.seed(0)
-  N <- 100
-  p <- 0.3
-  x1 <- rbinom(1, size=N, prob=p)
-  x2 <- N - x1
-  inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
-  Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
-  Cmodel <- compileNimble(Rmodel)
-  expect_silent(conf <- configureMCMC(Rmodel, monitors = 'logProb_y'))
-  expect_silent(Rmcmc  <- buildMCMC(conf))
-  expect_silent(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
-  Cmcmc$run(10)
+    cat('===== Starting MCMC test of logProb variable monitoring =====')
+    code <- nimbleCode({
+        prob[1] <- p
+        prob[2] <- 1-p
+        x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
+        y      ~ dbinom(   size = N, prob = p)
+    })
+    set.seed(0)
+    N <- 100
+    p <- 0.3
+    x1 <- rbinom(1, size=N, prob=p)
+    x2 <- N - x1
+    inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
+    Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
+    Cmodel <- compileNimble(Rmodel)
+    expect_silent(conf <- configureMCMC(Rmodel, monitors = 'logProb_y'))
+    expect_silent(Rmcmc  <- buildMCMC(conf))
+    expect_silent(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
+    Cmcmc$run(10)
 })
+
 
 test_that('slice sampler bails out of loop', {
     code <- nimbleCode({
@@ -1995,6 +1993,7 @@ test_that('cc_checkScalar operates correctly', {
     expect_false(nimble:::cc_checkScalar(quote(foo(lambda))))
 
 })
+
 
 test_that('cc_stripExpr operates correctly', {
     expr <- 'coeff * (log(value) - offset) * taulog'
@@ -2602,7 +2601,7 @@ test_that('mcmc_determineCalcAndCopyNodes works correctly in different situation
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     conf <- configureMCMC(Rmodel, nodes = NULL)
     conf$addSampler(c('a', 'b', 'pp1'), 'RW_block')
-    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    expect_no_error(Rmcmc <- buildMCMC(conf))
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
     conf <- configureMCMC(Rmodel, nodes = NULL)
@@ -2652,12 +2651,12 @@ test_that('cannot assign sampler jointly to PP and non-PP nodes', {
     ##
     Rmodel$resetData()
     Rmodel$setData(list(y = 3, c = 3))
-    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    expect_no_error(Rmcmc <- buildMCMC(conf))
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
     Rmodel$resetData()
     Rmodel$setData(list(y = 3))
-    expect_error(Rmcmc <- buildMCMC(conf), NA)
+    expect_no_error(Rmcmc <- buildMCMC(conf))
     ##
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
 })
@@ -2781,6 +2780,86 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
 
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
 
+})
+
+test_that('Check MCMC sampler dependencies with and without predictive nodes included', {
+    code <- nimbleCode({
+        for(i in 1:N)
+            x[i] ~ dnorm(0, 1)
+        z2[1:2] ~ dmnorm(mu[1:2], Q[1:2,1:2])
+        z3[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])
+        y ~ dnorm(sum(x[1:N]) + z2[1] + z3[1], 1)
+    })
+    N <- 10
+    Rmodel <- nimbleModel(code = code, constants = list(N=N), data = list(y=0), inits = list(x=rep(0,N), z2=c(0,0), z3=c(0,0,0), mu=c(0,0,0), Q=diag(3)))
+    conf <- configureMCMC(Rmodel, nodes = NULL, print = FALSE)
+    ##
+    conf$addSampler(c('x', 'z2', 'z3'), default = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers('x')) == N)
+    expect_true(conf$getSamplers('x[1]')[[1]]$name == 'RW')
+    expect_true(conf$getSamplers('z2')[[1]]$name == 'RW_block')
+    expect_true(conf$getSamplers('z3')[[1]]$name == 'RW_block')
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', print = FALSE)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_identical(conf$getSamplers()[[1]]$target, c('x', 'z2', 'z3'))
+    expect_identical(conf$getSamplers()[[1]]$name, 'AF_slice')
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', scalarComponents = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_identical(conf$getSamplers()[[1]]$target, c('x', 'z2', 'z3'))
+    expect_identical(conf$getSamplers()[[1]]$name, 'AF_slice')
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', expandTarget = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers()) == 12)
+    ##
+    conf$setSamplers()
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', expandTarget = TRUE, scalarComponents = TRUE, print = FALSE)
+    expect_true(length(conf$getSamplers()) == 15)
+    expect_identical(sapply(conf$getSamplers(), `[[`, 'target'), Rmodel$expandNodeNames(c('x', 'z2', 'z3'), returnScalarComponents = TRUE))
+    expect_identical(sapply(conf$getSamplers(), `[[`, 'name'), rep('AF_slice', 15))
+})
+
+test_that('Conjugacy checking does not return conjugate for subsets (or supersets) of multivariate nodes', {
+    ## the changes unerlying this test have to do with the handling of structureExprs
+    code <- nimbleCode({
+        mu[1:2] ~ dmnorm(mu0[1:2], Q[1:2,1:2])
+        y[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,3), Q=diag(3)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:2]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+    ##
+    code <- nimbleCode({
+        mu[1:4] ~ dmnorm(mu0[1:4], Q[1:4,1:4])
+        y[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,4), Q=diag(4)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:4]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+    ##
+    code <- nimbleCode({
+        mu[1:3] ~ dmnorm(mu0[1:3], Q[1:3,1:3])
+        y[1:3] ~ dmnorm(mu[2:4], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,4), Q=diag(3)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:3]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+    ##
+    code <- nimbleCode({
+        mu[1:5] ~ dmnorm(mu0[1:5], Q[1:5,1:5])
+        y[1:3] ~ dmnorm(mu[2:4], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,5), Q=diag(5)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:5]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
 })
 
 

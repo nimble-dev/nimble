@@ -70,9 +70,7 @@ testsDynIndex <- list(
             for(i in 1:4) {
                 y[i] ~ dnorm(mu[k[i]], sd = 1)
             }
-            for(j in 1:5) {
                 mu[1:5] ~ dmnorm(z[1:5], pr[1:5,1:5])
-            }
         }), 
         dims = list(mu = 5), inits = list(mu = rnorm(5), k = rep(1,4),
                                           z = rep(0,5), pr = diag(5)), 
@@ -209,10 +207,10 @@ testsDynIndex <- list(
             for(i in 1:4) {
                 y[i] ~ dnorm(mu[k[i], 2, k[i]+j[i]], sd = 1)
             }
-            for(j in 1:5) 
+            for(jj in 1:5) 
                 for(l in 1:3) 
                     for(m in 1:8)
-                mu[j,l,m] ~ dnorm(0, 1)
+                mu[jj,l,m] ~ dnorm(0, 1)
         }), 
         inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1:4)), 
         data = list(y = rnorm(4)),
@@ -432,8 +430,8 @@ testsDynIndex <- list(
                 j[i] ~ dcat(q[1:3])
             }
             for(i in 1:5)
-                for(j in 1:3)
-                    mu[i,j] ~ dnorm(0,1)
+                for(jj in 1:3)
+                    mu[i,jj] ~ dnorm(0,1)
         }),
         data = list(y = rnorm(4), z = rnorm(8)),
         inits = list(k = rep(1,4), j = rep(1, 8), mu = matrix(rnorm(15), 5, 3)),

@@ -3,9 +3,9 @@ waicClass_base <- nimbleFunctionVirtual(
     methods = list(
         reset = function() {},
         updateStats = function() {},
-        get = function() { returnType(waicList()) },
-        getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsList()) },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { returnType(waicList()) }
+        get = function() { returnType(waicNimbleList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) { returnType(waicDetailsNimbleList()) },
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { returnType(waicNimbleList()) }
     )
 )
 
@@ -17,9 +17,9 @@ buildDummyWAIC <- nimbleFunction(
     methods = list(
         reset = function() {},
         updateStats = function() {},
-        get = function() { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) },
-        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
+        get = function() { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE, nburnin_extra = 0));  returnType(waicDetailsNimbleList()) },
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) }
     )
 )
 
@@ -45,7 +45,7 @@ buildOfflineWAIC <- nimbleFunction(
     methods = list(
         reset = function() {},
         updateStats = function() {},
-        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE));  returnType(waicDetailsList()) },
+        getDetails = function(returnElements = logical(default = FALSE)) {return(waicDetailsNimbleList$new(marginal = FALSE, niterMarginal = 0, thin = FALSE, online = FALSE, nburnin_extra = 0));  returnType(waicDetailsNimbleList()) },
         calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) {
             nburninPostThinning <- ceiling(nburnin/thin)
             numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
@@ -78,18 +78,18 @@ buildOfflineWAIC <- nimbleFunction(
             if(is.nan(WAIC)) cat('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.\n')
             finalized <<- TRUE
 
-            returnType(waicList())
+            returnType(waicNimbleList())
             return(get())
         },
         get = function() {
             ## Extract WAIC summary information.
-            returnType(waicList())
+            returnType(waicNimbleList())
             ## Ideally we would call finalize if needed, but to mimic old offline behavior,
             ## we need to pass in nburnin, and finalize method for online WAIC doesn't
             ## take arguments.
             if(!finalized)
                 stop("Please execute the 'calculateWAIC' method of the offline WAIC object before running 'get'.")
-            output <- waicList$new()
+            output <- waicNimbleList$new()
 
             output$WAIC <- WAIC
             output$lppd <- lppd
@@ -100,7 +100,7 @@ buildOfflineWAIC <- nimbleFunction(
     )
 )
 
-## waicList and waicDetailsList definitions are in nimbleList_core.R.
+## waicNimbleList and waicDetailsNimbleList definitions are in nimbleList_core.R.
 
 buildWAIC <- nimbleFunction(
     name = 'waicClass',
@@ -208,6 +208,7 @@ buildWAIC <- nimbleFunction(
     methods = list(
         updateStats = function() {
             ## Online updating of summary stats, called once per MCMC iteration that is used.
+            finalized <<- FALSE
             ticker <- 0  # indexes over MC subsets
             mcmcIter <<- mcmcIter + 1
             for (k in 1:niterMarginal) {  # loop over MC samples; for conditional, there is only one 'iteration'
@@ -281,16 +282,16 @@ buildWAIC <- nimbleFunction(
         },
         get = function() {
             ## Extract WAIC summary information.
-            returnType(waicList())
+            returnType(waicNimbleList())
             if(!finalized)
                 finalize()
             if(mcmcIter > 1) {
-                badpWAIC <- any( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4 )
+                badpWAIC <- length(which( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4 ))
                 if(badpWAIC) {  
-                    cat("  [Warning] There are individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.\n" )
+                    cat("  [Warning] There are ", badpWAIC, " individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.\n" )
                 }
             }
-            output <- waicList$new()
+            output <- waicNimbleList$new()
             
             output$WAIC <- WAIC[lengthConvCheck]
             output$lppd <- lppd[lengthConvCheck]
@@ -300,11 +301,11 @@ buildWAIC <- nimbleFunction(
         },
         getDetails = function(returnElements = logical(default = FALSE)) {
             ## Extract WAIC detailed information.
-            returnType(waicDetailsList())
+            returnType(waicDetailsNimbleList())
             if(!finalized)
                 finalize()
 
-            output <- waicDetailsList$new()
+            output <- waicDetailsNimbleList$new()
             
             output$marginal <- marginal
             output$thin <- thin
@@ -342,7 +343,7 @@ buildWAIC <- nimbleFunction(
             logProbMat <<- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
             finalized <<- FALSE
         },
-        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicList()) }
+        calculateWAIC = function(nburnin = integer(default = 0), thin = double(default = 1)) { return(waicNimbleList$new(WAIC = NA, lppd = NA, pWAIC = NA)); returnType(waicNimbleList()) }
     )
 )
 
@@ -373,12 +374,11 @@ buildWAIC <- nimbleFunction(
 #' @details
 #'
 #' The ability to calculate WAIC post hoc after all MCMC sampling has been done
-#' has certain advantages (e.g., allowing a user to exclude additional burnin
-#' samples beyond that specified initially for the MCMC) in addition to
-#' providing compatibility with versions of NIMBLE before 0.12.0. This
-#' functionality includes the ability to call the \code{calculateWAIC} function
-#' on an MCMC object or matrix of samples after running an MCMC and without
-#' setting up the MCMC initially to use WAIC.
+#' has certain advantages (e.g., allowing a user to calculate WAIC from MCMC 
+#' chains run separately) in addition to providing compatibility with versions
+#' of NIMBLE before 0.12.0. This functionality includes the ability to call
+#' the \code{calculateWAIC} function on an MCMC object or matrix of samples
+#' after running an MCMC and without setting up the MCMC initially to use WAIC.
 #'
 #' Important: The necessary variables to compute WAIC (all stochastic parent
 #' nodes of the data nodes) must have been monitored when setting up the MCMC.
@@ -563,9 +563,11 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
 #' 
 #' @details
 #'
-#' To use WAIC, set \code{enableWAIC = TRUE} when configuring or (if not using
-#' \code{configureMCMC} building an MCMC) and set \code{WAIC = TRUE} when
-#' calling \code{nimbleMCMC} and optionally when calling \code{runMCMC}.
+#' To obtain WAIC, set \code{WAIC = TRUE} in nimbleMCMC. If using a more
+#' customized workflow, set \code{enableWAIC = TRUE} in \code{configureMCMC}
+#' or (if skipping \code{configureMCMC}) in \code{buildMCMC}, followed by
+#' setting \code{WAIC = TRUE} in \code{runMCMC}, if using runMCMC to manage
+#' sample generation.
 #'
 #' By default, NIMBLE calculates WAIC using an online algorithm that updates
 #' required summary statistics at each post-burnin iteration of the MCMC.
@@ -658,6 +660,9 @@ calculateWAIC <- function(mcmc, model, nburnin = 0, thin = 1) {
 #' \code{thin}: Whether WAIC was calculated based only on thinned samples.
 #' 
 #' \code{online}: Whether WAIC was calculated during MCMC sampling.
+#'
+#' \code{nburnin_extra}: Number of additional iterations discarded as burnin,
+#' in addition to original MCMC burnin.
 #' 
 #' \code{WAIC_partialMC}, \code{lppd_partialMC}, \code{pWAIC_partialMC}: The
 #' computed marginal WAIC, lppd, and pWAIC based on fewer Monte Carlo
