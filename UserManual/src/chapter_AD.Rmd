@@ -133,17 +133,17 @@ summaryLaplace(Cglmm_laplace, MLE)$params
 
 `buildLaplace` actually offers several choices in how computations are done, differing in how they use *double taping* for derivatives or not. In some cases one or another choice might be more efficient. See `help(buildLaplace)` if you want to explore it further.
 
-Finally, let's confirm that it worked by comparing to results from package `lme4`. In this case, `lme4` will be faster because it is highly specialized to GLMMs. Here our interest is in checking that nimble's Laplace approximation worked correctly in a case where we have an established tool such as `lme4`.
+Finally, let's confirm that it worked by comparing to results from package `glmmTMB`. In this case, nimble's Laplace approximation is faster than `glmmTMB`, but it is not the point of this example. Here our interest is in checking that nimble's Laplace approximation worked correctly in a case where we have an established tool such as `glmmTMB`.
 
 ```{r eval=eval}
-library(lme4)
-y <- as.numeric(model$y) # Rearrage inputs for call to glmer
+library(glmmTMB)
+y <- as.numeric(model$y) # Re-arrage inputs for call to glmmTMB
 X <- as.numeric(X)
 group <- rep(1:10, 5)
-lme4_fit <- glmer(y ~ X + (1 | group), family = poisson)
-# The warning above seems to be innocuous.
-summary(lme4_fit)
-logLik(lme4_fit)
+data <- as.data.frame(cbind(X,y,group))
+tmb_fit <- glmmTMB(y ~ X + (1 | group), family = poisson, data = data)
+summary(tmb_fit)
+logLik(tmb_fit)
 ```
 
 The results match within numerical tolerance typical of optimization problems. Specifically, the coefficients for `(Intercept)` and `X` match nimble's `Intercept` and `beta`, the random effects standard deviation for `group` matches nimble's `sigma`, and the maximum likelihood values match.

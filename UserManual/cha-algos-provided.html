@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.30 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 8 Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -90,7 +90,7 @@ code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code span.at { color: #7d9029; } /* Attribute */
 code span.bn { color: #40a070; } /* BaseN */
-code span.bu { } /* BuiltIn */
+code span.bu { color: #008000; } /* BuiltIn */
 code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
 code span.ch { color: #4070a0; } /* Char */
 code span.cn { color: #880000; } /* Constant */
@@ -103,7 +103,7 @@ code span.er { color: #ff0000; font-weight: bold; } /* Error */
 code span.ex { } /* Extension */
 code span.fl { color: #40a070; } /* Float */
 code span.fu { color: #06287e; } /* Function */
-code span.im { } /* Import */
+code span.im { color: #008000; font-weight: bold; } /* Import */
 code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
 code span.kw { color: #007020; font-weight: bold; } /* Keyword */
 code span.op { color: #666666; } /* Operator */
@@ -117,6 +117,10 @@ code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
 <style type="text/css">
 /* Used with Pandoc 2.11+ new --citeproc when CSL is used */
 div.csl-bib-body { }
@@ -709,7 +713,7 @@ use in the particle filter. See <code>help(samplers)</code> for details. The
 MCMC configuration for the <code>timeModel</code> in the previous section will
 serve as an example for the use of our PMCMC sampler. Here we use the
 identity matrix as our proposal covariance matrix.</p>
-<div class="sourceCode" id="cb214"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb214-1"><a href="cha-algos-provided.html#cb214-1" aria-hidden="true" tabindex="-1"></a>timeConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(rTimeModel)   <span class="co"># default MCMC configuration</span></span>
+<div class="sourceCode" id="cb214"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb214-1"><a href="cha-algos-provided.html#cb214-1" aria-hidden="true" tabindex="-1"></a>timeConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(rTimeModel, <span class="at">nodes =</span> <span class="cn">NULL</span>) <span class="co"># empty MCMC configuration</span></span>
 <span id="cb214-2"><a href="cha-algos-provided.html#cb214-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb214-3"><a href="cha-algos-provided.html#cb214-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Add random walk PMCMC sampler with particle number optimization.</span></span>
 <span id="cb214-4"><a href="cha-algos-provided.html#cb214-4" aria-hidden="true" tabindex="-1"></a>timeConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;mu_0&quot;</span>), <span class="at">type =</span> <span class="st">&quot;RW_PF_block&quot;</span>,</span>
