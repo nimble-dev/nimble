@@ -55,6 +55,21 @@ Rget_AGHQ_nodes <- function(n = double()) {
 	return(list("z_nodes" = z, "weights" = w_star))
 }
 
+# Rget_AGHQ_nodes_multivariate <- function(n = double(), dm = double(), prune=NULL) {
+  # gh  <-  Rget_AGHQ_nodes(n)
+
+  # idx <- as.matrix(expand.grid(rep(list(1:n),dm)))
+  # pts <- matrix(gh$z_nodes[idx],nrow(idx),dm)
+  # wts <- apply(matrix(gh$weights[idx],nrow(idx),dm), 1, prod)
+  
+  # prune
+  # if(!is.null(prune)) {
+    # qwt <- quantile(wts, probs=prune)
+    # pts <- pts[wts > qwt,]
+    # wts <- wts[wts > qwt]
+  # }
+  
+# }
 
 ## A single Laplace approximation for only one scalar random effect node
 buildOneLaplace1D <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
