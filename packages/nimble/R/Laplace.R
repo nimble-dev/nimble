@@ -1614,7 +1614,7 @@ buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcN
    control)
 }
 
-## Main function for Adaptive Gauss-Hermite Quadratrue
+## Main function for Adaptive Gauss-Hermite Quadrature
 buildAGHQuad <- nimbleFunction(
   name = 'AGHQuad',
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
