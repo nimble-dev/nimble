@@ -43,7 +43,7 @@ thetalog <- nimbleModel(code = thetalogCode,
                         constants = list(N = N), 
                         data = list(y = dat),
                         inits = list(logr0 = 0, logpsi = 0, logK = 6, logQ = 0, logR = 0,  u = rep(0, N)),
-                        buildDerivs = T
+                        buildDerivs = TRUE
                         )
 ## Compile the model
 Cthetalog <- compileNimble(thetalog)
@@ -54,27 +54,33 @@ calcNodes <- thetalog$getDependencies(randomEffectsNodes)
 ## We exclude u[1] here
 calcNodes <- setdiff(calcNodes, "u[1]") 
 paramNodes <- c("logr0", "logpsi", "logK", "logQ", "logR")
-## Parameters values
-p <- values(thetalog, paramNodes)
 
 ## Build Laplace
-## Note that currently the default setting of buildLaplace does not work properly for this model (the initial state is a headache)
-thetalogLaplace <- buildLaplace(thetalog, paramNodes, randomEffectsNodes, calcNodes, 
-                                control= list(split = FALSE, warn = FALSE))
-CthetalogLaplace <- compileNimble(thetalogLaplace, project = thetalog)
-CthetalogLaplace$Laplace(p)
-CthetalogLaplace$gr_Laplace(p)
+## Note that currently the default setting of buildLaplace does not work properly 
+## for this model (the initial state is a headache)
+laplace <- buildLaplace(thetalog, paramNodes, randomEffectsNodes, calcNodes, 
+                        control= list(split = FALSE, check = FALSE))
+cLaplace <- compileNimble(laplace, project = thetalog)
+
+## A single evaluation of Laplace and its gradient
+cLaplace$calcLaplace(c(0,0,6,0,0))
+cLaplace$gr_Laplace(c(0,0,6,0,0))
 
 ## Calculate MLEs and standard errors
-nimtime <- system.time(opt <- CthetalogLaplace$LaplaceMLE(p-1))
-nimtime2 <- system.time(nimres <- CthetalogLaplace$summary(opt, calcRandomEffectsStdError = TRUE))
+## Warnings here can be safely ignored
+nimtime <- system.time(opt <- cLaplace$findMLE(c(0,0,6,0,0)-1))
+nimtime2 <- system.time(nimres <- cLaplace$summary(opt, randomEffectsStdError = TRUE))
+
+## Call nlminb for the optimization, which is faster
+fn <- function(x) -cLaplace$calcLaplace(x)
+gr <- function(x) -cLaplace$gr_Laplace(x)
+nimtime3 <- system.time(opt2 <- nlminb(c(0,0,6,0,0)-1, fn, gr))
 
 ## Run TMB code
 source("thetalogTMB.R") 
 
-## Compare runtimes, MLEs, and standard errors
-rbind(nimtime + nimtime2, tmbtime + tmbtime2)
-rbind(nimres$params$estimate, tmbres$par)
-rbind(nimres$params$stdError, tmbsumm[1:5, "Std. Error"])
-max(abs(nimres$random$estimate - tmbsumm[6:205, "Estimate"]))
-max(abs(nimres$random$stdError - tmbsumm[6:205, "Std. Error"]))
+## Compare MLEs and standard errors
+rbind(nimres$params$estimates, tmbres$par)
+rbind(nimres$params$stdErrors, tmbsumm[1:5, "Std. Error"])
+max(abs(nimres$randomEffects$estimates - tmbsumm[6:205, "Estimate"]))
+max(abs(nimres$randomEffects$stdErrors - tmbsumm[6:205, "Std. Error"]))

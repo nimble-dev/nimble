@@ -33,8 +33,8 @@ laplace <- buildLaplace(pump)
 cLaplace <- compileNimble(laplace, project = pump)
 
 ## Calculate MLEs and standard errors
-nimtime <- system.time(opt <- cLaplace$LaplaceMLE())
-nimres <- cLaplace$summary(opt, calcRandomEffectsStdError = TRUE)
+nimtime <- system.time(opt <- cLaplace$findMLE())
+nimres <- cLaplace$summary(opt, randomEffectsStdError = TRUE)
 
 ## Run TMB code
 source("pumpTMB.R")
@@ -42,9 +42,9 @@ source("pumpTMB.R")
 ## Compare results
 rbind(nimtime, tmbtime) 
 ## Estimates
-rbind(c(nimres$params$estimate, nimres$random$estimate), tmbsumm[,"Estimate"])
+rbind(c(nimres$params$estimates, nimres$randomEffects$estimates), tmbsumm[,"Estimate"])
 ## Standard errors
-rbind(c(nimres$params$stdError, nimres$random$stdError), tmbsumm[,"Std. Error"])
+rbind(c(nimres$params$stdErrors, nimres$randomEffects$stdErrors), tmbsumm[,"Std. Error"])
 
 ## Use Laplace with within MCMC:
 ## 1: Integrate out all elements of theta and use MCMC for parameters
@@ -54,7 +54,7 @@ llFun_Laplace <- nimbleFunction(
   },
   run = function() {
     pvals <- values(model, paramNodes)
-    ll <- laplace$Laplace(pvals)
+    ll <- laplace$calcLaplace(pvals)
     returnType(double())
     return(ll)
   }
@@ -70,7 +70,7 @@ for(tarNode in c("alpha", "beta")){
 }
 ## Build and run MCMC
 mcmc1 <- buildMCMC(mcmcConf1)
-Cmcmc1 <- compileNimble(mcmc1, project = pump, resetFunctions = T)
+Cmcmc1 <- compileNimble(mcmc1, project = pump, resetFunctions = TRUE)
 time1 <- system.time(
   MCMCres1 <- runMCMC(Cmcmc1, 
                      niter = 10000, 
@@ -82,7 +82,7 @@ summRes1 <- summary(MCMCres1)
 ## 2: Run MCMC for all of the nodes 
 mcmcConf2 <- configureMCMC(pump, monitors = c("alpha", "beta", "theta[]"))
 mcmc2 <- buildMCMC(mcmcConf2)
-Cmcmc2 <- compileNimble(mcmc2, project = pump, resetFunctions = T)
+Cmcmc2 <- compileNimble(mcmc2, project = pump, resetFunctions = TRUE)
 time2 <- system.time(
   MCMCres2 <- runMCMC(Cmcmc2, 
                       niter = 10000, 
@@ -103,7 +103,7 @@ llFun_Laplace <- nimbleFunction(
   run = function() {
     ll <- model$calculate(otherNodes)
     pvals <- values(model, paramNodes)
-    ll <- ll + laplace$Laplace(pvals)
+    ll <- ll + laplace$calcLaplace(pvals)
     returnType(double())
     return(ll)
   }
@@ -117,7 +117,7 @@ for(tarNode in c("alpha", "beta")){
 mcmcConf3$addMonitors("theta[9]", "theta[10]") 
 ## Build and run MCMC
 mcmc3 <- buildMCMC(mcmcConf3)
-Cmcmc3 <- compileNimble(mcmc3, project = pump, resetFunctions = T)
+Cmcmc3 <- compileNimble(mcmc3, project = pump, resetFunctions = TRUE)
 time3 <- system.time(
   MCMCres3 <- runMCMC(Cmcmc3, 
                       niter = 10000, 

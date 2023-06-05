@@ -50,19 +50,21 @@ model <- nimbleModel(code, constants, data, inits, buildDerivs = TRUE)
 cmodel <- compileNimble(model)
 cmodel$calculate()
 
-## Build Laplace
+## Build and compile Laplace
 laplace <- buildLaplace(model)
-## Compile Laplace 
 Claplace <- compileNimble(laplace, project = model)
-opt <- Claplace$LaplaceMLE()
-nimtime <- system.time(nimres <- Claplace$summary(opt, calcRandomEffectsStdError = TRUE))
+
+## Calculate MLEs
+opt <- Claplace$findMLE()
+## Calculate random effects estimates and standard errors
+nimres <- Claplace$summary(opt, randomEffectsStdError = TRUE)
 
 ## Fit the model using glmmTMB
-tmbtime <- system.time(tmbres <- glmmTMB(cbind(incidence, size-incidence) ~ period + (1|herd), 
-                                         family=binomial, data=cbpp))
+tmbres <- glmmTMB(cbind(incidence, size-incidence) ~ period + (1|herd), 
+                  family=binomial, data=cbpp)
 tmbsumm <- summary(tmbres)
 
 ## Compare results
-rbind(nimres$params$estimate, tmbres$fit$par)
-rbind(nimres$params$stdError[1:4], tmbsumm$coefficients$cond[,"Std. Error"])
+rbind(nimres$params$estimates, tmbres$fit$par)
+rbind(nimres$params$stdErrors[1:4], tmbsumm$coefficients$cond[,"Std. Error"])
 

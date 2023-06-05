@@ -66,23 +66,24 @@ Cpmodel$calculate()
 ## Laplace approximation 
 plaplace <- buildLaplace(pmodel)
 Cplaplace <- compileNimble(plaplace, project = pmodel)
-Cplaplace$Laplace(rep(1, 9))
+## A single evaluation of Laplace and its gradient
+Cplaplace$calcLaplace(rep(1, 9))
 Cplaplace$gr_Laplace(rep(1, 9))
 
 ## Calculate MLEs and standard errors
-nimtimep  <- system.time(popt <- Cplaplace$LaplaceMLE())
-nimtimep2 <- system.time(nimresp <- Cplaplace$summary(popt, calcRandomEffectsStdError = TRUE))
+## Warnings here can be safely ignored
+popt <- Cplaplace$findMLE()
+nimresp <- Cplaplace$summary(popt, randomEffectsStdError = TRUE)
 
 ## Fit the model using glmmTMB
-## TMB is slightly slower here, but the time includes that for compilation etc
-tmbtimep <- system.time(tmbresp <- glmmTMB(count ~ spp + mined + (1|site), Salamanders, family=poisson))
+tmbresp <- glmmTMB(count ~ spp + mined + (1|site), Salamanders, family=poisson)
 tmbsummp <- summary(tmbresp)
 
 ## MLEs are very close: 
-rbind(nimresp$params$estimate, tmbresp$fit$par)
+rbind(nimresp$params$estimates, tmbresp$fit$par)
 
 ## Std. errors for regression coefficients
-rbind(nimresp$params$stdError[1:8], tmbsummp$coefficients$cond[,"Std. Error"])
+rbind(nimresp$params$stdErrors[1:8], tmbsummp$coefficients$cond[,"Std. Error"])
 
 ##------------------------------------------------------------------------------
 ## Negative binomial model
@@ -117,7 +118,7 @@ nbmodel <- nimbleModel(code = nbcode,
                        constants = list(N=N, n=n, site=site, nsites=nsites, X=X), 
                        data = list(y = Salamanders$count),
                        inits = list(beta = rep(0, n),  mu = rep(0, nsites), log_sigma = 0, log_phi = 0),
-                       buildDerivs = T)
+                       buildDerivs = TRUE)
 ## Compile the model
 Cnbmodel <- compileNimble(nbmodel)
 Cnbmodel$calculate()
@@ -126,22 +127,25 @@ Cnbmodel$calculate()
 # randomEffectsNodes <- "mu"
 # calcNodes <- nbmodel$getDependencies(randomEffectsNodes)
 # paramNodes <- c("beta", "log_phi", "log_sigma")
+
 ## Laplace approximation 
 nblaplace <- buildLaplace(nbmodel)
 Cnblaplace <- compileNimble(nblaplace, project = nbmodel)
-Cnblaplace$Laplace(rep(0, 10))
+## A single evaluation of Laplace and its gradient
+Cnblaplace$calcLaplace(rep(0, 10))
 Cnblaplace$gr_Laplace(rep(0, 10))
 
 ## Calculate MLEs and standard errors
-nimtime <- system.time(nbopt <- Cnblaplace$LaplaceMLE())
-nimres <- Cnblaplace$summary(nbopt, calcRandomEffectsStdError = TRUE)
+## Warnings here can be safely ignored
+nbopt <- Cnblaplace$findMLE()
+nimres <- Cnblaplace$summary(nbopt, randomEffectsStdError = TRUE)
 
 ## Use glmmTMB
-tmbtimenb <- system.time(tmbresnb <- glmmTMB(count ~ spp + mined + (1|site), Salamanders, family=nbinom2))
+tmbresnb <- glmmTMB(count ~ spp + mined + (1|site), Salamanders, family=nbinom2)
 tmbsummnb <- summary(tmbresnb)
 
 ## MLEs are very close: 
-rbind(nimres$params$estimate, tmbresnb$fit$par)
+rbind(nimres$params$estimates, tmbresnb$fit$par)
 
 ## Standard errors of regression coefficients: very close 
-rbind(nimres$params$stdError[1:8], tmbsummnb$coefficients$cond[,"Std. Error"])
+rbind(nimres$params$stdErrors[1:8], tmbsummnb$coefficients$cond[,"Std. Error"])
