@@ -1,6 +1,6 @@
 ## USER LEVEL CHANGES
 
-- Improved error trapping in MCMC sampler for categorical distributions.
+- Improved error trapping in MCMC sampler for categorical distributions (PR #1325).
 
 
 #                            CHANGES IN VERSION 1.0.0 (May 2023) 
