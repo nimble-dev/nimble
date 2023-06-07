@@ -1,3 +1,8 @@
+## USER LEVEL CHANGES
+
+- Improved error trapping in MCMC sampler for categorical distributions.
+
+
 #                            CHANGES IN VERSION 1.0.0 (May 2023) 
 
 This release introduces tools for automatic differentiation in NIMBLE.
