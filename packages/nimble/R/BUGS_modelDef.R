@@ -324,14 +324,22 @@ codeProcessModelMacros <- function(code,
             # Check for newly created parameters
             newPars <- list(newMacroPars(code, expandedInfo$code))
             names(newPars) <- possibleMacroName
-            macroComment <- possibleMacroName
-            if(length(recursionLabels > 0)){
-              spacer <- paste(rep("  ", length(recursionLabels) - 1), collapse="")
-              bracket <- "|__"
-              macroComment <- paste0(spacer, bracket, macroComment)
+
+            # Add automatic comments showing code added by macros
+            if(getNimbleOption("enableMacroComments")){
+              macroComment <- paste("#", possibleMacroName)
+              macroEnd <- "# ----"
+              if(length(recursionLabels > 0)){
+                spacer <- paste(rep("  ", length(recursionLabels)), collapse="")
+                hashes <- paste(rep("#", length(recursionLabels)+1), collapse="")
+                macroComment <- paste0(spacer, hashes, " ", possibleMacroName)
+                macroEnd <- paste0(spacer, hashes, " ----")
+              }
+              macroStartLine <- substitute(MACRO, list(MACRO = macroComment))
+              macroEndLine <- substitute(END, list(END = macroEnd))
+              expandedInfo$code <- as.call(c(list(quote(`{`)), list(macroStartLine, expandedInfo$code, macroEndLine)))
             }
-            commentLine <- substitute(MACRO, list(MACRO = macroComment))
-            expandedInfo$code <- as.call(c(list(quote(`{`)), list(commentLine, expandedInfo$code)))
+
             curPars <- modelInfo$parameters
             expandedInfo$modelInfo$parameters <- c(curPars, newPars)
 
