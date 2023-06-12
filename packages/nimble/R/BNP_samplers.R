@@ -1369,7 +1369,7 @@ sampler_CRP <- nimbleFunction(
     for(varIdx in seq_along(clusterVarInfo$clusterVars)) {
         if(length(unique(clusterVarInfo$clusterNodes[[varIdx]])) != length(clusterVarInfo$clusterNodes[[varIdx]]))
             stop("sampler_CRP: cluster parameters in different clusters must be part of conditionally independent nodes.")
-        if(any(model$isDeterm(clusterVarInfo$clusterNodes[[varIdx]])))
+        if(any(model$isDeterm(clusterVarInfo$clusterNodes[[varIdx]], includeRHSonly = TRUE)))
             stop("findClusterNodes: detected that deterministic nodes are being clustered. Please use the dCRP-distributed node to cluster stochastic nodes.")
     }
     
@@ -2086,7 +2086,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo, n, gammaDist = '
     clusterNodes1 <- clusterVarInfo$clusterNodes[[1]]
     clusterNodes2 <- clusterVarInfo$clusterNodes[[2]]
 
-    if(!any(model$isDeterm(c(clusterNodes1, clusterNodes2))) &&
+    if(!any(model$isDeterm(c(clusterNodes1, clusterNodes2), includeRHSonly = TRUE)) &&
        length(clusterNodes1) == length(clusterNodes2) &&
        identical(clusterVarInfo$clusterIDs[[1]], clusterVarInfo$clusterIDs[[2]])) {
         dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
@@ -2180,7 +2180,7 @@ checkNormalInvWishartConjugacy <- function(model, clusterVarInfo, n, wishartDist
     clusterNodes1 <- clusterVarInfo$clusterNodes[[1]]
     clusterNodes2 <- clusterVarInfo$clusterNodes[[2]]
 
-    if(!any(model$isDeterm(c(clusterNodes1, clusterNodes2))) &&
+    if(!any(model$isDeterm(c(clusterNodes1, clusterNodes2), includeRHSonly = TRUE)) &&
        length(clusterNodes1) == length(clusterNodes2) &&
        identical(clusterVarInfo$clusterIDs[[1]], clusterVarInfo$clusterIDs[[2]])) {
         dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
