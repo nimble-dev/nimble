@@ -126,8 +126,8 @@ test_that("weird character input produces error", {
     expect_error(model$setData(c('a','d'),'b'))
 })
 
-test_that("deterministic nodes produce error", {
-    expect_error(
+test_that("deterministic data nodes produce warning", {
+    expect_message(
         model <- nimbleModel(
             nimbleCode({
                 for(i in 1:5) {
@@ -136,10 +136,11 @@ test_that("deterministic nodes produce error", {
                 z[6] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), data = list(z = rnorm(6), y = rnorm(1))),
-        "Deterministic nodes cannot be specified"
+        "Deterministic node values will not be flagged as 'data'"
     )
+    expect_identical(model$isData('z', 1), c(rep(FALSE, 5), TRUE))
 
-    expect_error(
+    expect_message(
         model <- nimbleModel(
             nimbleCode({
                 for(i in 1:5) {
@@ -148,17 +149,17 @@ test_that("deterministic nodes produce error", {
                 z[6] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), constants = list(z = rnorm(6))),
-        "Deterministic nodes cannot be specified"
+        "Deterministic node values will not be flagged as 'data'"
     )
 
-    expect_error(
+    expect_message(
         model <- nimbleModel(
             nimbleCode({
                 z[1:2] <- mu[1:2]
                 z[3] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), data = list(z = rnorm(3), y = rnorm(1))),
-        "Deterministic nodes cannot be specified"
+        "Deterministic node values will not be flagged as 'data'"
     )
 
     expect_message(

@@ -329,7 +329,7 @@ test_that("setInits works in complicated case", {
                      constants = list(f = c(1, 2),
                                       n = 3),
                      data = data,
-                     inits = inits), "Ignoring non-NA values in inits")
+                     inits = inits), "Ignoring non-NA values in `inits`")
 
     ## This model defines x[1, 1], x[1, 2], x[1, 3], x[2, 2], and x[2, 3]. 
     ## x[2,1] is not a node in the model.
@@ -344,6 +344,8 @@ test_that("setInits works in complicated case", {
     ##[1,]  100  100    5
     ##[2,]    2    4    6
     expect_equal(m$x, matrix(c(100, 2, 100, 4, 5, 6), nrow = 2))
+    expect_identical(m$isDataEnv$'x', matrix(c(TRUE,FALSE,TRUE,FALSE,FALSE,FALSE),2))
+    expect_length(m$isData('x[2,1]'), 0)
 }
 )
 

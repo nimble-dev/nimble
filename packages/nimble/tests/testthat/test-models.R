@@ -358,7 +358,7 @@ test_that("test of preventing overwriting of data values by inits:", {
     xVal <- c(3, NA)
     xInit <- c(4, 4)
 
-    expect_message(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
+    expect_message(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in `inits` for values specified via `data`")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")
@@ -368,7 +368,7 @@ test_that("test of preventing overwriting of data values by inits:", {
         x[2] ~ dnorm(mu,1)
         mu ~ dnorm(0, 1)
     })
-    expect_message(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
+    expect_message(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in `inits` for values specified via `data`")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
