@@ -275,7 +275,7 @@ Details: The return value is a character vector with an element for each node in
                                   return(out)
                                 },
 
-                                isDeterm = function(nodes, nodesAlreadyExpanded = FALSE) {
+                                isDeterm = function(nodes, includeRHSonly = FALSE, nodesAlreadyExpanded = FALSE) {
                                   '
 Determines whether one or more nodes are deterministic
 
@@ -290,7 +290,9 @@ Details: The return value is a character vector with an element for each node in
                                   if(!nodesAlreadyExpanded)
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE) else nodeNames <- nodes
                                   type <- getNodeType(nodeNames)
-                                  out <- type == "determ"
+                                  if(includeRHSonly) {
+                                      out <- type %in% c("determ", "RHSonly")
+                                  } else out <- type == "determ"
                                   names(out) <- nodeNames
                                   return(out)
                                 },
@@ -575,13 +577,13 @@ Resets the \'data\' property of ALL model nodes to FALSE.  Subsequent to this ca
 
                                   setData = function(..., warnAboutMissingNames = TRUE) {
 '
-Sets the \'data\' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
+Sets the \'data\' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes. This also allows one to set the \'data\' flag for nodes appearing only on the right-hand side of model declarations, thereby preventing their values from being overwritten via \'inits\'.
 
 Arguments:
 
 ...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData(\'x\', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list(\'x\', y = 1:10)) is equivalent.  setData(c(\'x\',\'y\')) or setData(\'x\',\'y\') will mark both x and y as data.
 
-Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) is allowed, but \'isData()\' will report such a node as being \'data\', calculations with the node will generally return NA, and MCMC samplers will not be assigned to such nodes.
+Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will be ignored.  Designating part of a multivariate node as \'data\' and part as non-data (NA) is allowed, but \'isData()\' will report such a node as being \'data\', calculations with the node will generally return NA, and MCMC samplers will not be assigned to such nodes.
 '
                                           ## new functionality for setData():
                                           ## ... can be a list, a character vector of variable names, or a mix of both
@@ -653,18 +655,29 @@ Details: If a provided value (or the current value in the model when only a name
                                           if(length(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(nimble::nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
 
-                                          expandedNodeNames <- expandNodeNames(varName, returnScalarComponents = TRUE)
-                                          determElements <- .self$isDeterm(expandedNodeNames, nodesAlreadyExpanded = TRUE)
-                                          if(any(determElements))
-                                              if(any(!is.na(varValue[which(determElements)])))
-                                                  stop("setData: '", varName, "' contains deterministic nodes. Deterministic nodes cannot be specified as 'data' or 'constants'.")
-                                          
+                                         
                                           .self[[varName]] <- varValue
-                                          ## Values set as NA are not flagged as data nor are RHSonly elements.
+                                          ## Values set as NA are not flagged as data.
                                           isDataVarValue <- !is.na(varValue)
-                                          isDataVarValue[!.self$isStoch(expandedNodeNames, nodesAlreadyExpanded = TRUE)] <- FALSE
                                           names(isDataVarValue) <- NULL
                                           assign(varName, isDataVarValue, envir = isDataEnv)
+
+                                          ## Nor are deterministic elements.
+                                          expandedNodeNames <- expandNodeNames(varName, returnScalarComponents = TRUE)
+                                          determElements <- .self$isDeterm(expandedNodeNames, includeRHSonly = FALSE, nodesAlreadyExpanded = TRUE)
+                                          if(any(determElements)) {
+                                              varValueEnv <- new.env(parent = baseenv())
+                                              varValueEnv[[varName]] <- varValue
+                                              if(any(!is.na(
+                                                       sapply(expandedNodeNames[determElements],
+                                                              function(nn)
+                                                                  return(eval(parse(text=nn, keep.source = FALSE)[[1]], envir=varValueEnv))))))
+                                                 messageIfVerbose("  [Warning] `", varName, "` contains deterministic nodes not specified as `NA`. Deterministic node values will not be flagged as 'data'.")
+                                              tmp <- sapply(expandedNodeNames[determElements],
+                                                            function(nn)
+                                                                eval(substitute(VALUE <- FALSE, list(VALUE = parse(text=nn, keep.source = FALSE)[[1]])),
+                                                                     envir = isDataEnv))
+                                          }
                                       }
                                    ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
                                       setPredictiveNodeIDs()
@@ -1066,24 +1079,25 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               messageIfVerbose("  [Note] '", names(inits)[i], "' has initial values but is not a variable in the model and is being ignored.")
                                               next
                                           }
+                                          inputDim <- nimbleInternalFunctions$dimOrLength(inits[[i]])
+                                          varInfo <- .self$modelDef$varInfo[[names(inits)[i]]]
+                                          mismatch <- FALSE
+                                          if(length(inputDim) == 1 && inputDim == 1) {  # scalar could be scalar or vector of length 1
+                                              if(!(varInfo$nDim == 0 || (varInfo$nDim > 0 && identical(varInfo$maxs, rep(1, varInfo$nDim)))))
+                                                  mismatch <- TRUE
+                                          } else {
+                                              if(length(inputDim) != varInfo$nDim || any(inputDim != varInfo$maxs))
+                                                  mismatch <- TRUE
+                                          }
+                                          if(mismatch)
+                                              message("  [Warning] Incorrect size or dimension of initial value for '", names(inits)[i], "'.\n         Initial value will not be used in compiled model.")
+                                           
                                           dataVals <- .self$isDataEnv[[names(inits)[[i]] ]]
                                           if(any(dataVals)) {
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
                                               if(any(!is.na(inits[[i]][dataVals])))
-                                                  messageIfVerbose("  [Note] Ignoring non-NA values in inits for data nodes: ", names(inits)[[i]], ".")
+                                                  messageIfVerbose("  [Note] Ignoring non-NA values in `inits` for data nodes: ", names(inits)[[i]], ".")
                                           } else {
-                                              inputDim <- nimbleInternalFunctions$dimOrLength(inits[[i]])
-                                              varInfo <- .self$modelDef$varInfo[[names(inits)[i]]]
-                                              mismatch <- FALSE
-                                              if(length(inputDim) == 1 && inputDim == 1) {  # scalar could be scalar or vector of length 1
-                                                  if(!(varInfo$nDim == 0 || (varInfo$nDim > 0 && identical(varInfo$maxs, rep(1, varInfo$nDim)))))
-                                                      mismatch <- TRUE
-                                              } else {
-                                                  if(length(inputDim) != varInfo$nDim || any(inputDim != varInfo$maxs))
-                                                      mismatch <- TRUE
-                                              }
-                                              if(mismatch)
-                                                  message("  [Warning] Incorrect size or dimension of initial value for '", names(inits)[i], "'.\n         Initial value will not be used in compiled model.")
                                               .self[[names(inits)[i]]] <- inits[[i]]
                                           }
                                       }
