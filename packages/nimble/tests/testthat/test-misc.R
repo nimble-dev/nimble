@@ -349,8 +349,32 @@ test_that("setInits works in complicated case", {
 }
 )
 
-test_that("missing return statement is trapped",
-{
+test_that("error trapping bad dimension size in setInits", {
+    code <- nimbleCode({
+        for(i in 1:3)
+            for(j in 1:3)
+                y[i,j]~dnorm(0,1)
+    })
+    m <- nimbleModel(code)
+    expect_message(m$setInits(list(y = rnorm(3))), "Incorrect size or dimension of initial value")
+
+    code <- nimbleCode({
+        for(i in 1:3)
+            for(j in 1:3)
+                y[i,j]~dnorm(0,1)
+    })
+    m <- nimbleModel(code, data = list(y = matrix(rnorm(9),3)))
+    expect_message(m$setInits(list(y = rnorm(3))), "Incorrect size or dimension of initial value")
+    
+    code <- nimbleCode({
+        for(i in 1:3)
+            for(j in 1:3)
+                y[i,j]~dnorm(0,1)
+    })
+    expect_error(m <- nimbleModel(code, inits = list(y = rnorm(3))), "inconsistent dimensionality")
+})
+
+test_that("missing return statement is trapped", {
     ## capture.output here just suppresses the print()ed error
     ## message to keep it out of Travis log files.
     expect_error(msg <- capture.output({a <- nimbleFunction(

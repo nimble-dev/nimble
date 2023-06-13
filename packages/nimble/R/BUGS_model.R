@@ -674,10 +674,11 @@ Details: If a provided value (or the current value in the model when only a name
 
                                           ## Nor are RHSonly or deterministic elements.
                                           nonStochElements <- !.self$isStoch(expandedNodeNames, nodesAlreadyExpanded = TRUE)
-                                          tmp <- sapply(expandedNodeNames[nonStochElements],
-                                                 function(nn)
-                                                     eval(substitute(VALUE <- FALSE, list(VALUE = parse(text=nn, keep.source = FALSE)[[1]])),
-                                                          envir = isDataEnv))
+                                          if(any(nonStochElements)) 
+                                              tmp <- sapply(expandedNodeNames[nonStochElements],
+                                                            function(nn)
+                                                                eval(substitute(VALUE <- FALSE, list(VALUE = parse(text=nn, keep.source = FALSE)[[1]])),
+                                                                     envir = isDataEnv))
                                       }
                                       ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
                                       setPredictiveNodeIDs()

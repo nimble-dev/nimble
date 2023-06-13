@@ -246,7 +246,38 @@ test_that("mixed data/NAs in multivariate nodes treated as a data node", {
     expect_true(m$isData('y[1:3]'))
     expect_identical(m$isDataEnv$y, c(TRUE, FALSE, TRUE, FALSE))
 })
-    
+
+test_that("mixed data and non-data in variable with 'missing' nodes" {
+    ## This is meant to mimic capture-recapture type situations,
+    ## and test bug in issue 1326 (and issue 1324).
+    set.seed(1)
+    code <- nimbleCode({
+        for(i in 1:3)
+            for(j in (start[i]+1):end[i])
+                mu[i,j] ~ dnorm(mu[i,j-1],1)
+        mu[1,1] <- 7  # add deterministic to check that too
+    })
+    start <- c(3,1,5)
+    end <- c(5,2,8)
+
+    data <- list(mu = matrix(rnorm(3*8),3))
+    data$mu[1,5] <- NA
+    data$mu[2,1] <- NA
+    inits <- list(mu = matrix(rnorm(3*8),3))
+    expect_message(m <- nimbleModel(code, constants = list(start = start, end = end),
+                     data = data, inits = inits, calculate = FALSE), "Ignoring non-NA values in `inits`")
+
+    expected <- matrix(TRUE, 3, 8)
+    ## determ and RHSonly are not data, nor is anyting initialized with NA in 'data'.
+    expected[1,3] <- expected[2,1] <- expected[3,5] <- expected[1,1] <- expected[1,5] <- FALSE
+    expect_identical(m$isDataEnv$mu, expected)
+    expected <- data$mu
+    ## Only NA values in 'data' will be overwritten.
+    expected[1,5] <- inits$mu[1,5]
+    expected[2,1] <- inits$mu[2,1]
+    expect_identical(m$mu, expected)
+
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
