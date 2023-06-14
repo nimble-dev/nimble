@@ -1,4 +1,6 @@
+rm(list=ls())
 require(TMB)
+require(Matrix)
 compile("lmm.cpp")
 dyn.load(dynlib("lmm"))
 
@@ -23,7 +25,6 @@ obj <- MakeADFun(data=list(x=x, B=B, A=A),
                  parameters=list(u=u*0, logsdu=1, logsd0=1, beta=beta*0),
                  random="u",
                  DLL="lmm",
-                 ## inner.method = "BFGS", ## Skip using newton
                  silent=TRUE
                  )
 tmbtime <- system.time(tmbres <- nlminb(obj$par, obj$fn, obj$gr))
