@@ -476,13 +476,13 @@ checkMacroPars <- function(parameters, startCode, endCode){
   # Check for duplicate parameters from previous macros and warn
   if(length(final_pars) > 1){
   for (i in 2:length(final_pars)){
-    this_macro <- final_pars[[i]]
+    this_macro <- final_pars[[i]]$LHS
     for (j in 1:(i-1)){
-      dups <- this_macro %in% final_pars[[j]]
+      dups <- this_macro %in% final_pars[[j]]$LHS
       if(any(dups)){
 
-       msg <- paste0("  [Note] Macro '", names(final_pars[i]), "' created parameter(s): '",
-                paste(this_macro[dups], collapse="', '"), "'\n         previously created by macro '",
+       msg <- paste0("  [Note] Macro '", names(final_pars[i]), "' declared LHS parameter(s): '",
+                paste(this_macro[dups], collapse="', '"), "'\n         previously declared by macro '",
                 names(final_pars[j]),"'")
         messageIfVerbose(msg)
 
