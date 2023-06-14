@@ -399,12 +399,63 @@ getMacroPars <- function(code){
   unique(out)
 }
 
+processCodeLine <- function(code){
+  #stopifnot(is.call(code))
+  if(is.character(code)) return(list(LHS = NULL, RHS = NULL))
+  if(is.name(code)){
+    return(list(LHS = NULL, RHS = deparse(code)))
+  }
+  if(code[[1]] == "{"){
+    return(lapply(as.list(code)[2:length(code)], processCodeLine))
+  }
+  if(code[[1]] == "for"){
+    return(lapply(as.list(code)[2:length(code)], processCodeLine))
+  } else {
+    if(nimbleMacros:::isAssignment(code)){
+      RHS <- getMacroPars(nimbleMacros:::getRHS(code))
+      LHS <- getMacroPars(nimbleMacros:::getLHS(code))
+    } else {
+      RHS <- getMacroPars(code)
+      LHS <- NULL
+    }
+  }
+
+  list(LHS = LHS, RHS = RHS)
+}
+
+findAllListElementsByNameInternal <- function(inputList, name){
+  if(is.list(inputList) && name %in% names(inputList)){
+    return(inputList[[name]])
+  } else if(is.list(inputList)){
+    return(lapply(inputList, findAllListElementsByNameInternal, name = name))
+  }
+  return(NULL)
+}
+
+
+findAllListElementsByName <- function(inputList, name){
+  stopifnot(is.list(inputList))
+  out <- findAllListElementsByNameInternal(inputList, name)
+  unlist(out)
+}
+
+processCode <- function(code){
+  out <- processCodeLine(code)
+  LHS = as.character(findAllListElementsByName(out, "LHS"))
+  RHS = as.character(findAllListElementsByName(out, "RHS"))
+  list(LHS = unique(LHS), RHS = unique(RHS))
+}
+
 # Figure out which parameters a macro added by comparing with the original
 # line of code
 newMacroPars <- function(startCode, endCode){
-  startPar <- getMacroPars(startCode)
-  endPar <- getMacroPars(endCode)
-  endPar[! endPar %in% startPar]
+  startPar <- processCode(startCode)
+  endPar <- processCode(endCode)
+  LHS <- endPar$LHS[! endPar$LHS %in% unlist(startPar)]
+  if(length(LHS) == 0) LHS <- NULL
+  RHS <- endPar$RHS[! endPar$RHS %in% unlist(startPar)]
+  if(length(RHS) == 0) RHS <- NUL
+  list(LHS = LHS, RHS = RHS)
 }
 
 # Remove intermediate parameters and check for parameters generated
@@ -418,7 +469,8 @@ checkMacroPars <- function(parameters, startCode, endCode){
 
   # Remove intermediate parameters that don't end up final code
   final_pars <- lapply(parameters, function(x){
-    x[x %in% all_pars]
+    list(LHS = x$LHS[x$LHS %in% all_pars$LHS],
+         RHS = x$RHS[x$RHS %in% all_pars$RHS])
   })
   
   # Check for duplicate parameters from previous macros and warn
