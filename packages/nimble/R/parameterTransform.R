@@ -81,10 +81,10 @@ parameterTransform <- nimbleFunction(
         nodesExpanded <- model$expandNodeNames(nodes)
         allowDeterm <- if(!is.null(control$allowDeterm)) control$allowDeterm else FALSE
         if(!allowDeterm){
-          if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
+          if(any(model$isDeterm(nodesExpanded, includeRHSonly = TRUE)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded, includeRHSonly = TRUE)],   collapse = ', ')))
           if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         } else {
-          boolDeterm <- model$isDeterm(nodesExpanded)
+          boolDeterm <- model$isDeterm(nodesExpanded, includeRHSonly = TRUE)
           nodesExpandedNotDeterm <- nodesExpanded[!boolDeterm]
           if(any(model$isDiscrete(nodesExpandedNotDeterm))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpandedNotDeterm)], collapse = ', ')))
         }

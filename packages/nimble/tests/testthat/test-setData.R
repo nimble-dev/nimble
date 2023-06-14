@@ -126,8 +126,8 @@ test_that("weird character input produces error", {
     expect_error(model$setData(c('a','d'),'b'))
 })
 
-test_that("deterministic nodes produce error", {
-    expect_error(
+test_that("deterministic nodes produce warning", {
+    expect_message(
         model <- nimbleModel(
             nimbleCode({
                 for(i in 1:5) {
@@ -136,10 +136,10 @@ test_that("deterministic nodes produce error", {
                 z[6] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), data = list(z = rnorm(6), y = rnorm(1))),
-        "Deterministic nodes cannot be specified"
+        "Deterministic node values will not be flagged as 'data'"
     )
 
-    expect_error(
+    expect_message(
         model <- nimbleModel(
             nimbleCode({
                 for(i in 1:5) {
@@ -148,17 +148,17 @@ test_that("deterministic nodes produce error", {
                 z[6] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), constants = list(z = rnorm(6))),
-        "Deterministic nodes cannot be specified"
+        "Deterministic node values will not be flagged as 'data'"
     )
 
-    expect_error(
+    expect_message(
         model <- nimbleModel(
             nimbleCode({
                 z[1:2] <- mu[1:2]
                 z[3] ~ dnorm(0, 1)
                 y ~ dnorm(0, 1)
             }), data = list(z = rnorm(3), y = rnorm(1))),
-        "Deterministic nodes cannot be specified"
+        "Deterministic node values will not be flagged as 'data'"
     )
 
     expect_message(
@@ -184,12 +184,12 @@ test_that("deterministic nodes produce error", {
     )
 })
 
-test_that("RHSonly nodes not flagged as data", {
+test_that("RHSonly nodes can be flagged as data", {
     model <- nimbleModel(
         nimbleCode({
             y ~ dnorm(mu, 1)
         }), data = list(y = 1, mu = 2))
-    expect_false(model$isData('mu'))
+    expect_true(model$isData('mu'))
 
     model <- nimbleModel(
         nimbleCode({
@@ -246,6 +246,39 @@ test_that("mixed data/NAs in multivariate nodes treated as a data node", {
     expect_identical(m$isDataEnv$y, c(TRUE, FALSE, TRUE, FALSE))
 })
     
+test_that("mixed data and non-data in variable with 'missing' nodes", {
+    ## This is meant to mimic capture-recapture type situations,
+    ## and test bug in issue 1326 (and issue 1324).
+    set.seed(1)
+    code <- nimbleCode({
+        for(i in 1:3)
+            for(j in (start[i]+1):end[i])
+                mu[i,j] ~ dnorm(mu[i,j-1],1)
+        mu[1,1] <- 7  # add deterministic to check that too
+    })
+    start <- c(3,1,5)
+    end <- c(5,2,8)
+
+    data <- list(mu = matrix(rnorm(3*8),3))
+    data$mu[1,5] <- NA
+    data$mu[2,1] <- NA
+    inits <- list(mu = matrix(rnorm(3*8),3))
+    expect_message(m <- nimbleModel(code, constants = list(start = start, end = end),
+                     data = data, inits = inits, calculate = FALSE), "Ignoring non-NA values in `inits`")
+
+    expected <- matrix(TRUE, 3, 8)
+    ## determ is not data, nor is anyting initialized with NA in 'data'.
+    expected[2,1] <- expected[1,1] <- expected[1,5] <- FALSE
+    expect_identical(m$isDataEnv$mu, expected)
+    
+    expected <- data$mu
+    ## Only NA values in 'data' and determ will be overwritten.
+    expected[1,5] <- inits$mu[1,5]
+    expected[2,1] <- inits$mu[2,1]
+    expected[1,1] <- inits$mu[1,1]
+    expect_identical(m$mu, expected)
+
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

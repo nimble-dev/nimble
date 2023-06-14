@@ -341,7 +341,7 @@ test_that("test of distinguishing lumped data and constants:", {
         beta ~ dnorm(0, 1)
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, 5)))
-    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' not set as data in fourth test")
+    expect_equal(m$isData('x'), c(TRUE, TRUE), info = "'x' not set as data in fourth test")
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in fourth test")
     expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in fourth test")
 
@@ -358,7 +358,7 @@ test_that("test of preventing overwriting of data values by inits:", {
     xVal <- c(3, NA)
     xInit <- c(4, 4)
 
-    expect_message(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
+    expect_message(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in `inits` for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")
@@ -368,7 +368,7 @@ test_that("test of preventing overwriting of data values by inits:", {
         x[2] ~ dnorm(mu,1)
         mu ~ dnorm(0, 1)
     })
-    expect_message(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
+    expect_message(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in `inits` for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
@@ -421,7 +421,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x' appears incorrectly in nodes in second test")
 
     code <- nimbleCode({
@@ -432,7 +432,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
     expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
 
@@ -444,7 +444,7 @@ test_that("test of the handling of missing covariates:", {
     })
     m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
     expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
-    expect_equal(m$isData('x'), c(FALSE, FALSE), info = "'x' data flags are not set correctly in second test")
+    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
     expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
     expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
 
