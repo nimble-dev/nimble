@@ -1,6 +1,16 @@
+#                            CHANGES IN VERSION 1.0.1 (June 2023) 
+
 ## USER LEVEL CHANGES
 
-- Improved error trapping in MCMC sampler for categorical distributions (PR #1325).
+- Fix bug (introduced in v. 1.0.0) causing incorrect setting of 'data'
+flag for models with variables containing a mix of data nodes and nodes
+appearing only on the right-hand side of expressions, for cases where not
+all elements of the variable are defined (such as capture-recapture
+models). This also addresses an unanticipated change in behavior in 
+initializing right-hand side only nodes from the `data` argument (PR #1328).
+
+- Improved error trapping in MCMC sampler for categorical distributions 
+(PR #1325).
 
 
 #                            CHANGES IN VERSION 1.0.0 (May 2023) 
