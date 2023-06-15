@@ -270,6 +270,8 @@ test_that("mixed data and non-data in variable with 'missing' nodes", {
     ## determ is not data, nor is anyting initialized with NA in 'data'.
     expected[2,1] <- expected[1,1] <- expected[1,5] <- FALSE
     expect_identical(m$isDataEnv$mu, expected)
+    expect_identical(m$expandNodeNames('mu'), c('mu[1, 1]','mu[2, 1]', "mu[2, 2]", "mu[1, 3]", "mu[1, 4]", "mu[1, 5]", "mu[3, 5]", "mu[3, 6]", "mu[3, 7]", "mu[3, 8]"))
+    expect_identical(m$isData('mu'), c(rep(FALSE,2), rep(TRUE, 3), FALSE, rep(TRUE, 4)))
     
     expected <- data$mu
     ## Only NA values in 'data' and determ will be overwritten.
