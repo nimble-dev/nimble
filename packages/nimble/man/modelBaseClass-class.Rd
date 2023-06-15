@@ -311,7 +311,7 @@ nodes: A character vector of node or variable names.
 
 Details: The variable or node names specified is expanded into a vector of model node names. A logical vector is returned, indicating whether each model node has been flagged as containing 'data'. Multivariate nodes for which any elements are flagged as containing 'data' will be assigned a value of TRUE.}
 
-\item{\code{isDeterm(nodes, nodesAlreadyExpanded = FALSE)}}{Determines whether one or more nodes are deterministic
+\item{\code{isDeterm(nodes, includeRHSonly = FALSE, nodesAlreadyExpanded = FALSE)}}{Determines whether one or more nodes are deterministic
 
 Arguments:
 
@@ -396,13 +396,13 @@ Details: The newly created model object will be identical to the original model 
 
 \item{\code{resetData()}}{Resets the 'data' property of ALL model nodes to FALSE.  Subsequent to this call, the model will have no nodes flagged as 'data'.}
 
-\item{\code{setData(..., warnAboutMissingNames = TRUE)}}{Sets the 'data' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying 'data' nodes in a model object.  When a 'data' argument is provided to 'nimbleModel()', it uses this method to set the data nodes.
+\item{\code{setData(..., warnAboutMissingNames = TRUE)}}{Sets the 'data' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying 'data' nodes in a model object.  When a 'data' argument is provided to 'nimbleModel()', it uses this method to set the data nodes. This also allows one to set the 'data' flag for nodes appearing only on the right-hand side of model declarations, thereby preventing their values from being overwritten via 'inits'.
 
 Arguments:
 
 ...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData('x', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list('x', y = 1:10)) is equivalent.  setData(c('x','y')) or setData('x','y') will mark both x and y as data.
 
-Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as 'data'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as 'data' will result in an error.  Designating part of a multivariate node as 'data' and part as non-data (NA) is allowed, but 'isData()' will report such a node as being 'data', calculations with the node will generally return NA, and MCMC samplers will not be assigned to such nodes.}
+Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as 'data'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as 'data' will be ignored.  Designating part of a multivariate node as 'data' and part as non-data (NA) is allowed, but 'isData()' will report such a node as being 'data', calculations with the node will generally return NA, and MCMC samplers will not be assigned to such nodes.}
 
 \item{\code{setInits(inits)}}{Sets initial values (or more generally, any named list of value elements) into the model
 

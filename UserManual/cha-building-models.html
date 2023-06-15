@@ -159,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.0.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.0.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -555,7 +555,7 @@ provided in the <code>constants</code> argument to <code>nimbleModel</code>, in
 which case NIMBLE handles values for stochastic nodes as data and
 everything else as constants.</p>
 <p>Values for nodes that appear only on the right-hand side of BUGS
-declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via <code>setInits</code> or <code>setData</code>.</p>
+declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via <code>setInits</code> or <code>setData</code>. However if provided as data, calls to <code>setInits</code> will not overwrite those values (though direct assignment of values will overwrite those values).</p>
 </div>
 <div id="providing-or-changing-data-and-initial-values-for-an-existing-model" class="section level4 hasAnchor" number="6.1.1.2">
 <h4><span class="header-section-number">6.1.1.2</span> Providing (or changing) data and initial values for an existing model<a href="cha-building-models.html#providing-or-changing-data-and-initial-values-for-an-existing-model" class="anchor-section" aria-label="Anchor link to header"></a></h4>
@@ -575,7 +575,10 @@ the indication of which nodes should be treated as data can be reset
 by using the <code>resetData</code> method, e.g. <code>pump$resetData()</code>.</p>
 <p>Data nodes cannot be deterministic, and using <code>setData</code> on
 deterministic nodes (or passing values for deterministic nodes
-via the <code>data</code> argument to <code>nimbleModel</code>) will produce an error.</p>
+via the <code>data</code> argument to <code>nimbleModel</code>) will not flag those
+nodes as containing data. It will set the values of those nodes,
+but that will presumably be overwritten as soon as the nodes
+are deterministically calculated.</p>
 <p>To change data values without any modification of which nodes are
 flagged as containing data, simply use R’s usual assignment syntax
 to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,</p>

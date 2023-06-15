@@ -74,7 +74,7 @@ which case NIMBLE handles values for stochastic nodes as data and
 everything else as constants.
 
 Values for nodes that appear only on the right-hand side of BUGS
-declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via `setInits` or `setData`. However if provided as data, calls to `setInits` will not overwrite those values (thought direct assignment of values will overwrite those values). 
+declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via `setInits` or `setData`. However if provided as data, calls to `setInits` will not overwrite those values (though direct assignment of values will overwrite those values). 
 
 #### Providing (or changing) data and initial values for an existing model
 
