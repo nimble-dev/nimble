@@ -2862,6 +2862,39 @@ test_that('Conjugacy checking does not return conjugate for subsets (or superset
     expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
 })
 
+test_that('Categorical sampler issues a warning for invalid model likelihood values', {
+    code <- nimbleCode({
+        x ~ dcat(prob = a[1:3])
+        y[1:3] ~ ddirch(alpha = A[x,1:3])
+    })
+    constants <- list(a = c(1, 1, 0))
+    data <- list(y = c(0, 1/2, 1/2))
+    inits <- list(x = 2, A = array(1/3, c(3,3)))
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    expect_identical(Rmodel$calculate(), Inf)
+    conf <- configureMCMC(Rmodel)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_true(conf$getSamplers()[[1]]$name == 'categorical')
+    Rmcmc <- buildMCMC(conf)
+    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
+    expect_true(all(samples == 1))
+    ##
+    code <- nimbleCode({
+        x ~ dcat(prob = a[1:3])
+        y ~ dnorm(x, -1)
+    })
+    constants <- list(a = c(1, 1, 0))
+    data <- list(y = 0)
+    inits <- list(x = 2)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    expect_identical(Rmodel$calculate(), NaN)
+    conf <- configureMCMC(Rmodel)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_true(conf$getSamplers()[[1]]$name == 'categorical')
+    Rmcmc <- buildMCMC(conf)
+    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
+    expect_true(all(samples == 1))
+})
 
 sink(NULL)
 

@@ -2,7 +2,7 @@
 
 #' Automated transformations of model nodes to unconstrained scales
 #'
-#' Provide general transformations of constrained continuous-valued model nodes (parameters) to unconstrained scales.  It handles the cases of interval-bounded parameters (e.g. uniform or beta distributions), semi-interval-bounded parameters (e.g. exponential or gamma distributions), and the multivariate Wishart, inverse Wishart, Dirichlet, and LKJ distributions.  Utilities are provided to transform paramters to an unconstrained scale, back-transform from the unconstrained scale to the original scale of the constrained parameterization, and to calculate the natural logarithm of the determinant of the Jacobian matrix of the inverse transformation, calculated at any location in the transformed (unconstrained) space.
+#' Provide general transformations of constrained continuous-valued model nodes (parameters) to unconstrained scales.  It handles the cases of interval-bounded parameters (e.g. uniform or beta distributions), semi-interval-bounded parameters (e.g. exponential or gamma distributions), and the multivariate Wishart, inverse Wishart, Dirichlet, and LKJ distributions.  Utilities are provided to transform parameters to an unconstrained scale, back-transform from the unconstrained scale to the original scale of the constrained parameterization, and to calculate the natural logarithm of the determinant of the Jacobian matrix of the inverse transformation, calculated at any location in the transformed (unconstrained) space.
 #'
 #' @param model A nimble model object.  See details.
 #' 
@@ -81,10 +81,10 @@ parameterTransform <- nimbleFunction(
         nodesExpanded <- model$expandNodeNames(nodes)
         allowDeterm <- if(!is.null(control$allowDeterm)) control$allowDeterm else FALSE
         if(!allowDeterm){
-          if(any(model$isDeterm(nodesExpanded)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded)],   collapse = ', ')))
+          if(any(model$isDeterm(nodesExpanded, includeRHSonly = TRUE)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded, includeRHSonly = TRUE)],   collapse = ', ')))
           if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         } else {
-          boolDeterm <- model$isDeterm(nodesExpanded)
+          boolDeterm <- model$isDeterm(nodesExpanded, includeRHSonly = TRUE)
           nodesExpandedNotDeterm <- nodesExpanded[!boolDeterm]
           if(any(model$isDiscrete(nodesExpandedNotDeterm))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpandedNotDeterm)], collapse = ', ')))
         }

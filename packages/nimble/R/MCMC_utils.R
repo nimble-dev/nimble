@@ -371,9 +371,9 @@ mcmc_checkWAICmonitors_conditional <- function(model, monitors, dataNodes) {
     }
 }
 
-## Used through version 0.10.0 and likely to be used in some form once we re-introduce mWAIC
+## Used through version 0.10.0.
 mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
-    monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
+    monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors), includeRHSonly = TRUE)]
     if(length(monitoredDetermNodes) > 0) {
         monitors <- monitors[- which(monitors %in% model$getVarNames(nodes = monitoredDetermNodes))]
     }
