@@ -347,7 +347,7 @@ sampler_RW_block <- nimbleFunction(
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
-        scaleHistory <- c(0, 0)                                                 ## scaleHistory
+        scaleHistory <- c(0, 0)                                                  ## scaleHistory
         acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
         propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
         saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
