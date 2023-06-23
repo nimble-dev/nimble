@@ -462,6 +462,9 @@ newMacroPars <- function(startCode, endCode){
 # more than once
 checkMacroPars <- function(parameters, startCode, endCode){
 
+  # If no macros return empty list
+  if(length(parameters) == 0) return(parameters)
+  
   # Find new parameters all at once
   all_pars <- newMacroPars(startCode, endCode)
 
