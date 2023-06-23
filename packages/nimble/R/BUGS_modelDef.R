@@ -454,7 +454,7 @@ newMacroPars <- function(startCode, endCode){
   LHS <- endPar$LHS[! endPar$LHS %in% unlist(startPar)]
   if(length(LHS) == 0) LHS <- NULL
   RHS <- endPar$RHS[! endPar$RHS %in% unlist(startPar)]
-  if(length(RHS) == 0) RHS <- NUL
+  if(length(RHS) == 0) RHS <- NULL
   list(LHS = LHS, RHS = RHS)
 }
 
