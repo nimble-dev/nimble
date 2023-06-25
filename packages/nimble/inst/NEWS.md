@@ -1,4 +1,10 @@
-#                            CHANGES IN VERSION 1.0.1 (June 2023) 
+## USER LEVEL CHANGES
+
+- `RW_block` sampler has new control list option `maxDimCovHistory` to specify maximum
+  dimension for saving proposal covariance history.
+
+
+#                            CHANGES IN VERSION 1.0.1 (June 2023)
 
 ## USER LEVEL CHANGES
 
