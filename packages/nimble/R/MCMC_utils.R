@@ -449,14 +449,14 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
         calcNodes <- model$getDependencies(target, includePredictive = TRUE)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePredictive = TRUE)
         ##calcNodesPPomitted <- character()
+        copyNodes <- model$getDependencies(target, self = FALSE)
     } else {
         ## usual case:
         calcNodes <- model$getDependencies(target)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ##calcNodesPPomitted <- setdiff(model$getDependencies(target, includePredictive = TRUE), calcNodes)
+        copyNodes <- calcNodesNoSelf
     }
-    ## copyNodes:
-    copyNodes <- model$getDependencies(target, self = FALSE)
     isStochCopyNodes <- model$isStoch(copyNodes)
     copyNodesDeterm <- copyNodes[!isStochCopyNodes]
     copyNodesStoch <- copyNodes[isStochCopyNodes]
