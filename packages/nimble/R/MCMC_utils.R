@@ -429,7 +429,7 @@ mcmc_createModelObject <- function(model, inits, nchains, setSeed, code, constan
 ## create the lists of calcNodes and copyNodes for use in MCMC samplers
 mcmc_determineCalcAndCopyNodes <- function(model, target) {
     targetExpanded <- model$expandNodeNames(target)
-    modelPredictiveNodes <- model$getNodeNames(predictiveOnly = TRUE)
+    modelPredictiveNodes <- model$modelDef$maps$graphID_2_nodeName[model$predictiveNodeIDs]   ## identical to: model$getNodeNames(predictiveOnly = TRUE)
     targetExpandedPPbool <- targetExpanded %in% modelPredictiveNodes
     targetAllPP <- all(targetExpandedPPbool)
     targetAnyPP <- any(targetExpandedPPbool)
