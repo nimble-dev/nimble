@@ -40,13 +40,14 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
 )
 
 ## A single Laplace approximation for only one scalar random effect node
-buildOneLaplace1D <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
-  buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
+buildOneLaplace1D <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart, saddlepoint) {
+  buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart, saddlepoint)
 }
 
 buildOneAGHQuad1D <- nimbleFunction(
   contains = AGHQuad_BASE,
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
+  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, 
+                   optimControl, optimMethod, optimStart, saddlepoint) {
     ## Check the number of random effects is 1
     nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
     if(length(nre) != 1) stop("Number of random effects for buildOneAGHQuad1D or buildOneLaplace1D must be 1.")
@@ -398,10 +399,20 @@ buildOneAGHQuad1D <- nimbleFunction(
       ind <- ind + npar
       gr_logdetNegHess_wrt_re_v <- ans$value[ind]
       
-      logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
+      if(saddlepoint){
+        logLik_value <- -maxValue - 0.5 * logdetNegHess_value - 0.5 * 1 * log(2*pi)
+      }
+      else{
+        logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
+      }
+      ## logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
       logLik3_saved_value <<- logLik_value
-      
-      gr_logLik_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
+      if(saddlepoint){
+        gr_logLik_v <- -gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
+      }
+      else{
+        gr_logLik_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
+      }
       logLik3_saved_gr <<- gr_logLik_v
       return(ans$value)
       returnType(double(1))
@@ -437,8 +448,13 @@ buildOneAGHQuad1D <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
       maxValue <- max_inner_logLik_saved_value
       logdetNegHessian <- logdetNegHess(p, reTransform)
-      ## Laplace approximation
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+      ## Laplace/saddlepoint approximation
+      if(saddlepoint){
+        ans <- -maxValue - 0.5 * logdetNegHessian - 0.5 * 1 * log(2*pi)
+      }
+      else{
+        ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+      }
       if(ans > max_logLik) {
         max_logLik <<- ans
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
@@ -456,7 +472,13 @@ buildOneAGHQuad1D <- nimbleFunction(
       maxValue <- max_inner_logLik_saved_value
       logdetNegHessian <- logdetNegHess(p, reTransform)
       ## Laplace approximation
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+      ## ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+      if(saddlepoint){
+        ans <- -maxValue - 0.5 * logdetNegHessian - 0.5 * 1 * log(2*pi)
+      }
+      else{
+        ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+      }
       if(ans > max_logLik) {
         max_logLik <<- ans
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
@@ -477,7 +499,12 @@ buildOneAGHQuad1D <- nimbleFunction(
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)[1]
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)[,1]
       p1 <- gr_joint_logLik_wrt_p(p, reTransform)
-      ans <- p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      if(saddlepoint){
+        ans <- -p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      }
+      else{
+        ans <- p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      }
       return(ans)
       returnType(double(1))
     },
@@ -493,8 +520,14 @@ buildOneAGHQuad1D <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1]
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]
-      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
-        0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      if(saddlepoint){
+        ans <- -gr_joint_logLik_wrt_p_internal(p, reTransform) - 
+          0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      }
+      else{
+        ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
+          0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      }
       return(ans)
       returnType(double(1))
     }
@@ -517,13 +550,14 @@ buildOneAGHQuad1D <- nimbleFunction(
 
 
 ## A single Laplace approximation for models with more than one scalar random effect node
-buildOneLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
-  buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
+buildOneLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart, saddlepoint) {
+  buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart, saddlepoint)
 }
 
 buildOneAGHQuad <- nimbleFunction(
   contains = AGHQuad_BASE,
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
+  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, 
+                   optimControl, optimMethod, optimStart, saddlepoint) {
     ## Check and add necessary (upstream) deterministic nodes into calcNodes
     ## This ensures that deterministic nodes between paramNodes and calcNodes are used.
     paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE, self=FALSE)
@@ -934,8 +968,12 @@ buildOneAGHQuad <- nimbleFunction(
       gr_logdetNegHess_wrt_p_v <- ans$value[(ind):(ind + npar - 1)]
       ind <- ind + npar
       gr_logdetNegHess_wrt_re_v <- ans$value[(ind):(ind + nreTrans - 1)]
-      
-      logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
+      if(saddlepoint){
+        logLik_value <- -maxValue - 0.5 * logdetNegHess_value - 0.5 * nreTrans * log(2*pi)
+      }
+      else{
+        logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
+      }
       logLik3_saved_value <<- logLik_value
       
       # We need A^T inverse(negHess) B
@@ -953,7 +991,13 @@ buildOneAGHQuad <- nimbleFunction(
       # in transposed form since that's how we need them here.
       v <- forwardsolve(t(chol_negHess), gr_logdetNegHess_wrt_re_v)
       w <- forwardsolve(t(chol_negHess), t(hess_cross_terms))
-      gr_logLik_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + v %*% w )
+      if(saddlepoint){
+        gr_logLik_v <- -gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + v %*% w )
+        
+      }
+      else{
+        gr_logLik_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + v %*% w )
+      }
       # print( gr_logLik_v )
       logLik3_saved_gr <<- numeric(gr_logLik_v, length = npar)
       return(ans$value)
@@ -992,7 +1036,13 @@ buildOneAGHQuad <- nimbleFunction(
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
       logdetNegHessian <- logdetNegHess(p, reTransform)
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      ## Laplace / saddlepoint approximation
+      if(saddlepoint){
+        ans <- -maxValue - 0.5 * logdetNegHessian - 0.5 * nreTrans * log(2*pi)
+      }
+      else{
+        ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      }
       if(ans > max_logLik) {
         max_logLik <<- ans
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
@@ -1010,7 +1060,12 @@ buildOneAGHQuad <- nimbleFunction(
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
       logdetNegHessian <- logdetNegHess(p, reTransform)
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      if(saddlepoint){
+        ans <- -maxValue - 0.5 * logdetNegHessian - 0.5 * nreTrans * log(2*pi)
+      }
+      else{
+        ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      }
       if(ans > max_logLik) {
         max_logLik <<- ans
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
@@ -1030,8 +1085,14 @@ buildOneAGHQuad <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)
-      ans <- gr_joint_logLik_wrt_p(p, reTransform) - 
-        0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
+      if(saddlepoint){
+        ans <- -gr_joint_logLik_wrt_p(p, reTransform) - 
+          0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
+      }
+      else{
+        ans <- gr_joint_logLik_wrt_p(p, reTransform) - 
+          0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
+      }
       return(ans[1,])
       returnType(double(1))
     },
@@ -1047,8 +1108,14 @@ buildOneAGHQuad <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)
-      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) -
-        0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
+      if(saddlepoint){
+        ans <- -gr_joint_logLik_wrt_p_internal(p, reTransform) -
+          0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
+      }
+      else{
+        ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) -
+          0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre)) 
+      }
       return(ans[1,])
       returnType(double(1))
     }
@@ -1252,7 +1319,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   reProvided        <- !missing(randomEffectsNodes)
   calcProvided      <- !missing(calcNodes)
   calcOtherProvided <- !missing(calcNodesOther)
-
+  
   normalizeNodes <- function(nodes, sort = FALSE) {
     if(is.null(nodes) || isFALSE(nodes)) character(0)
     else model$expandNodeNames(nodes, sort = sort)
@@ -1261,13 +1328,13 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(reProvided)    randomEffectsNodes <- normalizeNodes(randomEffectsNodes)
   if(calcProvided)  calcNodes          <- normalizeNodes(calcNodes, sort = TRUE)
   if(calcOtherProvided) calcNodesOther <- normalizeNodes(calcNodesOther, sort = TRUE)
-
+  
   if(reProvided) {
     if(check)
       if(any(model$isDiscrete(randomEffectsNodes)))
         warning("Some randomEffectsNodes follow discrete distributions. That is likely to cause problems.")
   }
-
+  
   # We considered a feature to allow params to be nodes without priors. This is a placeholder in case
   # we ever pursue that again.
   # allowNonPriors <- FALSE
@@ -1310,7 +1377,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       if(calcOtherProvided) paramNodes <- setdiff(paramNodes, calcNodesOther)
     }
   }
-
+  
   # 2. Default random effects are latent nodes that are downstream stochastic dependencies of params.
   #    In step 3, default random effects are also limited to those that are upstream parents of calcNodes
   if((!reProvided) || check) {
@@ -1367,7 +1434,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       }
     }
   }
-
+  
   # If only calcNodes were provided, we have now created reNodesDefault from calcNodes,
   # and are now ready to create default paramNodes
   if(!paramsHandled) {
@@ -1376,7 +1443,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     paramNodes <- setdiff(paramNodes, reNodesDefault)
     if(calcOtherProvided) paramNodes <- setdiff(paramNodes, calcNodesOther)
   }
-
+  
   # 3. Optionally check random effects if they were provided (not default)
   if(reProvided && check) {
     # First check is for random effects that should have been included but weren't
@@ -1419,7 +1486,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(!reProvided) {
     randomEffectsNodes <- reNodesDefault
   }
-
+  
   # Set actual default calcNodes. This time it has self=TRUE (default)
   if((!calcProvided) || check) {
     calcNodesDefault <- model$getDependencies(randomEffectsNodes, includePredictive = FALSE)
@@ -1480,7 +1547,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     possibleNewParamNodes <- setdiff(possibleNewParamNodes, calcNodesDefault)
     paramNodes <- unique(c(paramNodes, possibleNewParamNodes))
   }
-
+  
   # 6. Default calcNodesOther: nodes needed for full model likelihood but
   #    that are not involved in the marginalization done by Laplace.
   #    Default is a bit complicated: All dependencies from paramNodes to
@@ -1573,7 +1640,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     }
     calcNodesOther <- model$expandNodeNames(c(paramDetermDeps, calcNodesOther), sort = TRUE)
   }
-
+  
   # 7. Do the splitting into sets (if given) or conditionally independent sets (if TRUE)
   givenNodes <- NULL
   reSets <- list()
@@ -1602,16 +1669,16 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
        calcNodesOther = calcNodesOther,
        givenNodes = givenNodes,
        randomEffectsSets = reSets
-       )
+  )
 }
 
 ## Main function for Laplace approximation
 #' @rdname laplace 
 #' @export
 buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
-                               control = list()) {
- buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
-   control)
+                         control = list()) {
+  buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
+               control)
 }
 
 ## Main function for Adaptive Gauss-Hermite Quadrature
@@ -1620,11 +1687,13 @@ buildAGHQuad <- nimbleFunction(
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                    control = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
-    if(is.null(control$check))   check <- TRUE else  check <- control$check
+    if(is.null(control$check)) check <- TRUE else check <- control$check
+    if(is.null(control$saddlepoint)) saddlepoint <- FALSE else saddlepoint <- control$saddlepoint
+    
     # Possible future feature
     #if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
     allowNonPriors <- FALSE
-
+    
     MargNodes <- NULL
     if(!missing(paramNodes)) {
       if(is.list(paramNodes)) {
@@ -1647,7 +1716,7 @@ buildAGHQuad <- nimbleFunction(
     calcNodesOther <- MargNodes$calcNodesOther
     num_calcNodesOther <- length(calcNodesOther)
     # MargNodes$randomEffectsSets will be extracted below if needed
-
+    
     if(length(calcNodesOther)) {
       otherLogLik_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = paramNodes, calcNodes = calcNodesOther)
       otherLogLik_updateNodes   <- otherLogLik_derivsInfo$updateNodes
@@ -1711,8 +1780,8 @@ buildAGHQuad <- nimbleFunction(
           innerOptStart <- all_reTransform$inverseTransform(rep(0, all_reTransform_length))
         }
         ## Build AGHQuad
-        if(nre > 1) AGHQuad_nfl[[1]] <- buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-        else AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+        if(nre > 1) AGHQuad_nfl[[1]] <- buildOneAGHQuad(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart, saddlepoint)
+        else AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart, saddlepoint)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- MargNodes$randomEffectsSets
@@ -1749,9 +1818,9 @@ buildAGHQuad <- nimbleFunction(
           }
           ## Build AGHQuad for each set
           if(nre_these > 1){
-            AGHQuad_nfl[[i]] <- buildOneAGHQuad(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
+            AGHQuad_nfl[[i]] <- buildOneAGHQuad(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart, saddlepoint)
           }
-          else AGHQuad_nfl[[i]] <- buildOneAGHQuad1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
+          else AGHQuad_nfl[[i]] <- buildOneAGHQuad1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart, saddlepoint)
         }
       }
       if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
@@ -1984,7 +2053,7 @@ buildAGHQuad <- nimbleFunction(
         print("  [Warning] For findMLE, pStart should be length ", npar, " but is length ", length(pStart), ".")
         ans <- optimResultNimbleList$new()
         return(ans)
-#        stop("Wrong length for pStart in findMLE.")
+        #        stop("Wrong length for pStart in findMLE.")
       }
       ## In case parameter nodes are not properly initialized
       if(any_na(pStart) | any_nan(pStart) | any(abs(pStart)==Inf)) pStartTransform <- rep(0, pTransform_length)
@@ -2048,8 +2117,8 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(2))
     },
     ## Summarise AGHQuad MLE results
-    summary = function(MLEoutput                 = optimResultNimbleList(),
-                       originalScale             = logical(0, default = TRUE),
+    summary = function(MLEoutput             = optimResultNimbleList(),
+                       originalScale         = logical(0, default = TRUE),
                        randomEffectsStdError = logical(0, default = FALSE),
                        jointCovariance       = logical(0, default = FALSE)){
       if(dim(MLEoutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace or AGHQuad MLE")
@@ -2252,7 +2321,7 @@ buildAGHQuad <- nimbleFunction(
                      reInverseTransform = list(),
                      otherLogLik = list(),
                      gr_otherLogLik_internal = list()
-                     )
+  )
 )
 
 #' Summarize results from Laplace approximation
@@ -2313,7 +2382,7 @@ summaryLaplace <- function(laplace, MLEoutput,
   names(paramEsts) <- paramNames
   stdErrParams <- summary$params$stdErrors
   paramsDF <- data.frame(estimate = paramEsts, se = stdErrParams, row.names = paramNames)
-
+  
   REnames <- summary$randomEffects$names
   REests <- summary$randomEffects$estimates
   if(length(REests) < length(REnames)) REnames <- REnames[1:(length(REnames)-1)]
@@ -2322,12 +2391,12 @@ summaryLaplace <- function(laplace, MLEoutput,
     REDF <- data.frame(estimate = REests, se = REstdErrs, row.names = REnames)
   else
     REDF <- data.frame(estimate = REests, row.names = REnames)
-
+  
   vcov <- summary$vcov
   if (dim(vcov)[1] == length(paramNames)) {
-      colnames(vcov) <- rownames(vcov) <- c(paramNames)
+    colnames(vcov) <- rownames(vcov) <- c(paramNames)
   } else {
-      colnames(vcov) <- rownames(vcov) <- c(paramNames, REnames)
+    colnames(vcov) <- rownames(vcov) <- c(paramNames, REnames)
   }
   list(params = paramsDF,
        randomEffects = REDF,
