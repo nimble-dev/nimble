@@ -527,6 +527,19 @@ test_that("processModelMacros converts factors to numeric", {
 
 })
 
+test_that("convertFactorConstantsToNumeric converts factors to numeric", {
+
+  # Make sure character matrices are handled
+  inp_constants <- list(y = rnorm(3), x = factor(c("a","b","c")),
+                        x2 = matrix(c("a","b","c","d"), 2, 2),
+                        x3 = c("a","b","c"))
+  out_constants <- nimble:::convertFactorConstantsToNumeric(inp_constants)
+  expect_identical(out_constants,
+                   list(y=inp_constants$y, x = c(1,2,3),
+                        x2=matrix(c(1,2,3,4), 2, 2),
+                        x3=c(1,2,3)))
+})
+
 test_that("processModelMacros makes index generator available", {
 
   testMacro <- list(process = function(code, modelInfo, .env){
