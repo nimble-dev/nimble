@@ -3,6 +3,8 @@
 #' First required argument, which may be of class \code{MCMCconf} (an MCMC configuration object), or inherit from class \code{modelBaseClass} (a NIMBLE model object).  Returns an uncompiled executable MCMC object.  See details.
 #'
 #' @param conf Either an MCMC configuration object of class \code{MCMCconf} or a NIMBLE model object. An MCMC configuration object would be returned from \code{configureMCMC} and contains information on the model, samplers, monitors, and thinning intervals to be used. Alternatively, \code{conf} may a NIMBLE model object, in which case default configuration from calling \code{configureMCMC(model, ...l)} will be used.
+#'
+#' @param print A logical argument, specifying whether to print details of the MCMC samplers and monitors.
 #' 
 #' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object (see \code{help(configureMCMC)}).
 #'
@@ -94,14 +96,18 @@
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
-    setup = function(conf, ...) {
+    setup = function(conf, print = getNimbleOption('verbose'), ...) {
         dotdotdotArgNames <- names(list(...))
         if(inherits(conf, 'MCMCconf') && ('enableWAIC' %in% dotdotdotArgNames || 'controlWAIC' %in% dotdotdotArgNames))
-            stop("buildMCMC: 'enableWAIC' and 'controlWAIC' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.") 
+            stop("buildMCMC: 'enableWAIC' and 'controlWAIC' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.")
         
-        if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
-        else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
-
+        if(inherits(conf, 'modelBaseClass')) {
+            conf <- configureMCMC(conf, print = FALSE, ...)
+            if(print)   conf$show(includeConfGetUnsampledNodes = FALSE)
+        } else {
+            if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
+        }
+        
         enableWAIC <- conf$enableWAIC
         model <- conf$model
         my_initializeModel <- initializeModel(model)
@@ -121,11 +127,6 @@ buildMCMC <- nimbleFunction(
             }
         }
 
-        if(getNimbleOption('MCMCwarnUnsampledStochasticNodes')) {
-            conf$setUnsampledNodes()
-            conf$warnUnsampledNodes()
-        }
-        
         ## build sampler functions.
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
 
