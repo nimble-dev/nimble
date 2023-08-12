@@ -96,7 +96,8 @@
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
-    setup = function(conf, print = getNimbleOption('verbose'), ...) {
+    setup = function(conf, print, ...) {
+        if(missing(print)) print <- getNimbleOption('verbose')  ## default value defined by getNimbleOption has to be here, inside the setup function code
         dotdotdotArgNames <- names(list(...))
         if(inherits(conf, 'MCMCconf') && ('enableWAIC' %in% dotdotdotArgNames || 'controlWAIC' %in% dotdotdotArgNames))
             stop("buildMCMC: 'enableWAIC' and 'controlWAIC' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.")
