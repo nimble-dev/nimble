@@ -107,6 +107,10 @@ buildMCMC <- nimbleFunction(
             if(print)   conf$show(includeConfGetUnsampledNodes = FALSE)
         } else {
             if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
+            if(getNimbleOption('MCMCwarnUnsampledStochasticNodes')) {
+                conf$setUnsampledNodes()
+                conf$warnUnsampledNodes()
+            }
         }
         
         enableWAIC <- conf$enableWAIC
