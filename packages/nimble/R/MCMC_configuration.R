@@ -883,7 +883,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                         theseNodesNotIndexed <- theseNodes[!isIndexedVector]
                         if(length(theseNodesNotIndexed)) {
                             if(length(theseNodesNotIndexed) == 1) cat(paste0(indent, theseNodesNotIndexed))
-                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
+                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('internal error in printSamplersByType method', call. = FALSE)
                             if(length(theseNodesNotIndexed) >  1) cat(paste0(indent, theseNodesNotIndexed[1], '  (', length(theseNodesNotIndexed), ')'))
                             cat('\n')
                         }
