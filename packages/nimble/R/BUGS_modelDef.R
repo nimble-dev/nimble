@@ -424,9 +424,10 @@ processCodeLine <- function(code){
   if(code[[1]] == "for"){
     return(lapply(as.list(code)[2:length(code)], processCodeLine))
   } else {
-    if(nimbleMacros:::isAssignment(code)){
-      RHS <- getMacroPars(nimbleMacros:::getRHS(code))
-      LHS <- getMacroPars(nimbleMacros:::getLHS(code))
+    #if(isAssignment())
+    if(as.character(code[[1]]) %in% c("~", "<-")){
+      RHS <- getMacroPars(code[[3]]) # getRHS()
+      LHS <- getMacroPars(code[[2]]) # getLHS()
     } else {
       RHS <- getMacroPars(code)
       LHS <- NULL
