@@ -584,13 +584,13 @@ test_that("generated parameters are stored in model definition",{
   
   expect_equal(
     mod$macroParameters,
-    list(testMacro__1 = list(LHS = NULL, RHS = "alpha"))
+    list(testMacro = list(list(LHS = NULL, RHS = "alpha")))
   )
 
   mod <- nimbleModel(code, constants=list())
   expect_equal(
     mod$getMacroParameters(),
-    list(testMacro__1 = "alpha")
+    list(testMacro = list("alpha"))
   )
 
 })
@@ -635,8 +635,11 @@ test_that("checkMacroPars removes intermediate parameters and renames parameter 
 
   out <- nimble:::checkMacroPars(pars, old, new)
 
-  expect_equal(names(out), c("testMacro__1", "testMacro__2"))
-  expect_equal(out$testMacro__1, list(LHS = NULL, RHS = c("alpha", "beta")))
+  expect_equal(names(out), c("testMacro"))
+  expect_equal(length(out$testMacro), 2)
+  expect_equal(out$testMacro, 
+               list(list(LHS = NULL, RHS = c("alpha", "beta")),
+                    list(LHS = NULL, RHS = c("gamma", "eps"))))
 
   old <- quote(x ~ testMacro())
   new <- quote(x ~ dnorm(alpha, beta))
@@ -645,7 +648,7 @@ test_that("checkMacroPars removes intermediate parameters and renames parameter 
 
   out <- nimble:::checkMacroPars(pars, old, new)
 
-  expect_equal(out, list(testMacro__1 = list(LHS = NULL, RHS = c("alpha", "beta"))))
+  expect_equal(out, list(testMacro = list(list(LHS = NULL, RHS = c("alpha", "beta")))))
 
   # when there are no macros
   old <- quote(x ~ dnorm(alpha, beta))
@@ -673,7 +676,7 @@ test_that("nimbleModel creates and stores list of macro-generated parameters", {
 
   mod <- nimbleModel(code, constants=list())
   expect_equal(mod$getMacroParameters(),
-               list(testMacro__1 = c("alpha", "beta")))
+               list(testMacro = list(c("alpha", "beta"))))
 
 })
 
@@ -714,27 +717,27 @@ test_that("getMacroParameters() can pull out different subsets of parameters", {
   
   expect_equal(
     mod$getMacroParameters(),
-    list(testMacro__1 = c("mu", "alpha", "beta", "sigma"))
+    list(testMacro = list(c("mu", "alpha", "beta", "sigma")))
   )
   expect_equal(
-    mod$getMacroParameters(RHS = FALSE),
-    list(testMacro__1 = c("mu", "alpha"))
+    mod$getMacroParameters(includeRHS = FALSE),
+    list(testMacro = list(c("mu", "alpha")))
   )
   expect_equal(
-    mod$getMacroParameters(LHS = FALSE),
-    list(testMacro__1 = c("alpha", "beta", "sigma"))
+    mod$getMacroParameters(includeLHS = FALSE),
+    list(testMacro = list(c("alpha", "beta", "sigma")))
   )
   expect_equal(
-    mod$getMacroParameters(indices = TRUE),
-    list(testMacro__1 = c("mu", "i_", "alpha", "beta", "sigma"))
+    mod$getMacroParameters(includeIndices = TRUE),
+    list(testMacro = list(c("mu", "i_", "alpha", "beta", "sigma")))
   )
   expect_equal(
-    mod$getMacroParameters(determ = FALSE),
-    list(testMacro__1 = c("alpha", "beta", "sigma"))
+    mod$getMacroParameters(includeDeterm = FALSE),
+    list(testMacro = list(c("alpha", "beta", "sigma")))
   )
   expect_equal(
-    mod$getMacroParameters(stoch = FALSE),
-    list(testMacro__1 = c("mu", "beta", "sigma"))
+    mod$getMacroParameters(includeStoch = FALSE),
+    list(testMacro = list(c("mu", "beta", "sigma")))
   )
 })
 

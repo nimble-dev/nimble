@@ -510,10 +510,15 @@ checkMacroPars <- function(parameters, startCode, endCode){
   }
   }
 
-  # Number macro names in list names to avoid duplicates
-  nms <- names(final_pars)
-  idx <- ave(nms == nms, nms, FUN = cumsum)
-  names(final_pars) <- paste0(nms, "__", idx)
+  # Organize multiple instances of macros into a list
+  unq_macros <- unique(names(final_pars))
+  fp <- lapply(unq_macros, function(x){
+    out <- final_pars[names(final_pars) == x]
+    names(out) <- NULL
+    out
+  })
+  names(fp) <- unq_macros
+  final_pars <- fp
 
   final_pars
 }
