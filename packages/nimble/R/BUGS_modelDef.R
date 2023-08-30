@@ -327,12 +327,20 @@ codeProcessModelMacros <- function(code,
 
             # Add automatic comments showing code added by macros
             if(getNimbleOption("enableMacroComments")){
-              macroComment <- paste("#", possibleMacroName)
+              if(getNimbleOption("codeInMacroComments")){
+                macroComment <- paste("#", deparse(code))
+              } else {
+                macroComment <- paste("#", possibleMacroName)
+              }
               macroEnd <- "# ----"
               if(length(recursionLabels > 0)){
                 spacer <- paste(rep("  ", length(recursionLabels)), collapse="")
                 hashes <- paste(rep("#", length(recursionLabels)+1), collapse="")
-                macroComment <- paste0(spacer, hashes, " ", possibleMacroName)
+                if(getNimbleOption("codeInMacroComments")){  
+                  macroComment <- paste0(spacer, hashes, " ", deparse(code))
+                } else {
+                  macroComment <- paste0(spacer, hashes, " ", possibleMacroName)
+                }
                 macroEnd <- paste0(spacer, hashes, " ----")
               }
               macroStartLine <- substitute(MACRO, list(MACRO = macroComment))

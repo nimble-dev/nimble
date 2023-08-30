@@ -834,7 +834,26 @@ test_that("comments are added to macro output if enableMacroComments = TRUE",{
                     })
                    )
 
+  nimbleOptions(codeInMacroComments = TRUE)
+
+  # More detailed comments with code
+  mod <- nimbleModel(code, constants=const)
+  expect_equal(mod$getCode(),
+                   quote({
+                     "# y[1:n] ~ testMacro()"
+                     for (i_ in 1:n){
+                      "  ## mu[i_] <- testMacroInner()"
+                      mu[i_] <- alpha + beta
+                      "  ## ----"
+                      y[i_] ~ dnorm(0, sigma)
+                     }
+                     alpha ~ dnorm(0, 1)
+                     "# ----"
+                    })
+                   )
+
   nimbleOptions(enableMacroComments = FALSE)
+  nimbleOptions(codeInMacroComments = FALSE)
 
 })
 
