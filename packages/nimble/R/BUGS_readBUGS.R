@@ -100,6 +100,7 @@ nimbleModel <- function(code,
       # update constants in case any new ones were created
       newConstants <- md$constantsList[!names(md$constantsList) %in% names(constants)]
       constants <- c(constants, newConstants)
+      inits <- addMacroInits(inits, md$macroInits)
     }
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
