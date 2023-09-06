@@ -507,6 +507,9 @@ test_that("macros can add constants", {
     list(a = 1, b = 2)
   )
 
+  mod <- nimbleModel(code, constants=inp_constants) 
+  expect_equal(mod$getConstants(), list(a=1, b=2))
+
 })
 
 test_that("processModelMacros converts factors to numeric", {
@@ -918,6 +921,7 @@ test_that("macros can generate inits and these are used by models",{
   expect_true(is.na(mod$alpha))
   expect_true(is.na(mod$beta))
   expect_equal(mod$modelDef$macroInits, NULL)
+  expect_equal(mod$getMacroInits(), NULL)
   
   # alpha and beta are initialized
   testMacroInits <- list(process = function(code, modelInfo, .env){
@@ -936,12 +940,14 @@ test_that("macros can generate inits and these are used by models",{
   expect_equal(mod$alpha, 1)
   expect_equal(mod$beta, 2)
   expect_equal(mod$modelDef$macroInits, list(alpha=1, beta=2))
+  expect_equal(mod$getMacroInits(), list(alpha=1, beta=2))
 
   # alpha init not overwritten by macro
   mod <- nimbleModel(code, constants=list(), inits=list(alpha=0))
   expect_equal(mod$alpha, 0)
   expect_equal(mod$beta, 2)
   expect_equal(mod$modelDef$macroInits, list(alpha=1, beta=2))
+  expect_equal(mod$getMacroInits(), list(alpha=1, beta=2))
 
 })
 
