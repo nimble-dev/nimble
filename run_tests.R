@@ -85,6 +85,7 @@ if (!is.na(testBatch)) {
         }
     }
 }
+cat('RUNNING BATCH', testBatch, '\n') 
 cat('PLANNING TO TEST', allTests, sep = '\n  ')
 cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
 if (optionDryRun) quit()
@@ -146,6 +147,13 @@ runTest <- function(test, pkg = 'nimble', logToFile = FALSE, runViaTestthat = TR
     return(FALSE)
 }
 
+if(testBatch == 3) { ## currently quickest to run so do SMC testing here
+    cat("RUNNING nimbleSMC tests.")
+    for (test in smcTests) {
+        runTest(test, 'nimbleSMC')
+    }
+}
+
 if (optionParallel) {
     if (!require(parallel)) stop('Missing parallel package, required for --parallel')
     cores <- detectCores()
@@ -161,10 +169,5 @@ if (optionParallel) {
 } else {
     for (test in allTests) {
         runTest(test)
-    }
-}
-if(testBatch == 3) { ## currently quickest to run so do SMC testing here
-    for (test in smcTests) {
-        runTest(test, 'nimbleSMC')
     }
 }
