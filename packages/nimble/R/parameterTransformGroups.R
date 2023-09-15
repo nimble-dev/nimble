@@ -334,7 +334,7 @@ parameterTransformI <- nimbleFunction(
 							nLengthI	<- sum(countPNodes[nodeIndex])					
 							modelValuesVector <- nimNumeric(nLengthI)
 							ind1 <- 1
-							ind2 <- nLengthI
+							ind2 <- sum(countTNodes[nodeIndex])
 						}
             for(iNode in nodeIndices) {
                 if(nodeIndex == 0) {
@@ -423,9 +423,13 @@ parameterTransformI <- nimbleFunction(
 							nodeIndices <- 1:nNodes
 						} else {
 							nodeIndices <- nodeIndex	## If dimension reduction happens we are going to need to think about this more...
+							indxVals <- 1:sum(countTNodes[nodeIndex])
 						}
             for(iNode in nodeIndices) {
-                theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
+                if(nodeIndex == 0) {
+									indxVals <- transformData[iNode,TIND1]:transformData[iNode,TIND2]
+								}
+                theseValues <- transformedValues[indxVals]
                 thisType <- transformType[iNode]
                 nimSwitch(thisType, 1:9,
                           lpAdd <- 0,               ## 1: scalar unconstrained
