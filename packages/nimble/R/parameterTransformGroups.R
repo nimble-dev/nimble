@@ -227,7 +227,7 @@ parameterTransformI <- nimbleFunction(
 				tmpj <- 1
 				for( i in 1:nNodes ) {
 					thetaIndices <- c(thetaIndices, tmpj:(tmpj+countTNodes[i]-1) )
-					tmpj <- countPNodes[i] + 1
+					tmpj <- tmpj + countPNodes[i]
 				}
 				thetaNames <- nodeNames[thetaIndices]
 
@@ -251,10 +251,14 @@ parameterTransformI <- nimbleFunction(
 							nodeIndices <- nodeIndex	## If dimension reduction happens we are going to need to think about this more...
 							tLengthI	<- sum(countTNodes[nodeIndex])						
 							transformed <- nimNumeric(tLengthI)
+							indxVals <- 1:tLengthI
 						}
             for(iNode in nodeIndices) {
-                theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
-                thisType <- transformType[iNode]
+                if(nodeIndex == 0) {
+									indxVals <- transformData[iNode,NIND1]:transformData[iNode,NIND2]
+								}
+								theseValues <- nodeValuesFromModel[indxVals]
+								thisType <- transformType[iNode]
                 nimSwitch(thisType, 1:9,
                           theseTransformed <- theseValues,         ## 1: scalar unconstrained
                           theseTransformed <- log(theseValues),    ## 2: scalar semi-interval (0, Inf)
@@ -314,7 +318,7 @@ parameterTransformI <- nimbleFunction(
                                   }
                               }
                           })
-                transformed[transformData[iNode,TIND1]:transformData[iNode,TIND2]] <- theseTransformed
+                transformed[indxVals] <- theseTransformed
             }
             returnType(double(1))
             return(transformed)
@@ -324,16 +328,20 @@ parameterTransformI <- nimbleFunction(
             iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L   ## integer types
 						if(nodeIndex == 0){
 							nodeIndices <- 1:nNodes
-							transformed <- nimNumeric(nLength)
+							modelValuesVector <- nimNumeric(nLength)
 						} else {
 							nodeIndices <- nodeIndex	## If dimension reduction happens we are going to need to think about this more...
 							nLengthI	<- sum(countPNodes[nodeIndex])					
-							transformed <- nimNumeric(nLengthI)
+							modelValuesVector <- nimNumeric(nLengthI)
+							ind1 <- 1
+							ind2 <- nLengthI
 						}
             for(iNode in nodeIndices) {
-                ind1 <- transformData[iNode,TIND1]
-                ind2 <- transformData[iNode,TIND2]
-                theseValues <- transformedValues[ind1:ind2]
+                if(nodeIndex == 0) {
+									ind1 <- transformData[iNode,TIND1]
+									ind2 <- transformData[iNode,TIND2]
+								}
+								theseValues <- transformedValues[ind1:ind2]
                 thisType <- transformType[iNode]
                 nimSwitch(thisType, 1:9,
                           theseInvTransformed <- theseValues,          ## 1: scalar unconstrained
@@ -397,8 +405,10 @@ parameterTransformI <- nimbleFunction(
                                   }
                               }
                           })
-                ind1 <- transformData[iNode,NIND1]
-                ind2 <- transformData[iNode,NIND2]
+								if(length(nodeIndices) > 1){
+									ind1 <- transformData[iNode,NIND1]
+									ind2 <- transformData[iNode,NIND2]
+								}
                 modelValuesVector[ind1:ind2] <- theseInvTransformed
             }
             returnType(double(1))
