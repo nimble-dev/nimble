@@ -324,11 +324,11 @@ parameterTransformI <- nimbleFunction(
             iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L   ## integer types
 						if(nodeIndex == 0){
 							nodeIndices <- 1:nNodes
-							transformed <- nimNumeric(tLength)
+							transformed <- nimNumeric(nLength)
 						} else {
 							nodeIndices <- nodeIndex	## If dimension reduction happens we are going to need to think about this more...
-							tLengthI	<- sum(countTNodes[nodeIndex])						
-							transformed <- nimNumeric(tLengthI)
+							nLengthI	<- sum(countPNodes[nodeIndex])					
+							transformed <- nimNumeric(nLengthI)
 						}
             for(iNode in nodeIndices) {
                 ind1 <- transformData[iNode,TIND1]
