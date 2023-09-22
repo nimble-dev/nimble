@@ -141,8 +141,7 @@ runMCMC <- function(mcmc,
             model$setInits(theseInits)
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
-        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar,
-                 resetWAIC = ifelse(i == 1, TRUE, FALSE)) #, samplerExecutionOrder = samplerExecutionOrderToUse)
+        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, resetWAIC = ifelse(i == 1, TRUE, FALSE), chain = i) #, samplerExecutionOrder = samplerExecutionOrderToUse)
         tmp <- as.matrix(mcmc$mvSamples)
         if(!is.null(tmp))
             samplesList[[i]] <- tmp 
@@ -224,9 +223,9 @@ runMCMC <- function(mcmc,
 #' 
 #' @param constants Named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
 #' 
-#' @param data Named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
+#' @param data Named list of values for the data nodes.  Values that are NA will not be flagged as data.
 #'
-#' @param inits Argument to specify initial values for the model object, and for each MCMC chain.  See details.
+#' @param inits Argument to specify initial values for each MCMC chain.  See details.
 #'
 #' @param dimensions Named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #'
@@ -330,7 +329,7 @@ nimbleMCMC <- function(code,
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
-    Rmodel <- mcmc_createRmodelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check)
+    Rmodel <- mcmc_createModelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check)
     conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC, print = FALSE)
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call

@@ -1,0 +1,37 @@
+#include <nimble/nimDerivs_atomic_solve_base.h>
+#include <nimble/nimDerivs_atomic_cache.h>
+
+atomic_solve_base_class::atomic_solve_base_class() :
+  A_is_constant_(false), B_is_constant_(false),
+  A_is_variable_(true), B_is_variable_(true),
+  Amap(0,0,0, EigStrDyn(0,0)),
+  Bmap(0,0,0, EigStrDyn(0,0)),
+  dA_map(0,0,0, EigStrDyn(0,0)),
+  dB_map(0,0,0, EigStrDyn(0,0)),
+  Ymap(0,0,0, EigStrDyn(0,0)),
+  dY_map(0,0,0, EigStrDyn(0,0)),
+  YmapC(0,0,0, EigStrDyn(0,0)),
+  Yadjoint_map(0,0,0, EigStrDyn(0,0)),
+  Ydot_adjoint_map(0,0,0, EigStrDyn(0,0)),
+  Ydot_map(0,0,0, EigStrDyn(0,0)),
+  Adot_map(0,0,0, EigStrDyn(0,0)),
+  Aadjoint_map(0,0,0, EigStrDyn(0,0)),
+  Badjoint_map(0,0,0, EigStrDyn(0,0)),
+  Adot_adjoint_map(0,0,0, EigStrDyn(0,0)),
+  Bdot_adjoint_map(0,0,0, EigStrDyn(0,0)),
+  mAmap(0,0,0, EigStrDyn(0,0)),
+  mBmap(0,0,0, EigStrDyn(0,0)),
+  mdA_map(0,0,0, EigStrDyn(0,0)),
+  mdB_map(0,0,0, EigStrDyn(0,0)),
+  mYmap(0,0,0, EigStrDyn(0,0)),
+  mdY_map(0,0,0, EigStrDyn(0,0)),
+  mYmapC(0,0,0, EigStrDyn(0,0)),
+  mYadjoint_map(0,0,0, EigStrDyn(0,0)),
+  mYdot_adjoint_map(0,0,0, EigStrDyn(0,0)),
+  mYdot_map(0,0,0, EigStrDyn(0,0)),
+  mAdot_map(0,0,0, EigStrDyn(0,0)),
+  mAadjoint_map(0,0,0, EigStrDyn(0,0)),
+  mBadjoint_map(0,0,0, EigStrDyn(0,0)),
+  mAdot_adjoint_map(0,0,0, EigStrDyn(0,0)),
+  mBdot_adjoint_map(0,0,0, EigStrDyn(0,0))
+{};

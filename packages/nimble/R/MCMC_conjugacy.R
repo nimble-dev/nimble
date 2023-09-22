@@ -223,11 +223,21 @@ conjugacyRelationshipsClass <- setRefClass(
                 #    if(not conj) next
 
                 # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stickbreaking
-                numPaths <- sapply(nodeIDsFromOneDecl, model$getDependencyPathCountOneNode)
                 deps <- lapply(nodeIDsFromOneDecl, function(x) model$getDependencies(x, stochOnly = TRUE, self = FALSE))
                 numDeps <- sapply(deps, length)
+                sumNumDeps <- sum(numDeps)
+                maxNumPaths <- 0
+                ## We only need check until we get to as many paths as `sumNumDeps`.
+                ## This also avoids integer overflow that can occur with recursive indexing.
+                for(nodeID in nodeIDsFromOneDecl) {
+                    numPaths <- model$getDependencyPathCountOneNode(nodeID, max = sumNumDeps + 1)
+                    if(numPaths > maxNumPaths)
+                        maxNumPaths <- numPaths
+                    if(maxNumPaths > sumNumDeps)
+                        break
+                }
 
-                if(max(numPaths) > sum(numDeps)) {
+                if(maxNumPaths > sumNumDeps) {
                     # max(numPaths) is reasonable guess at number of unique (by node) paths (though it overestimates number of unique (by declaration ID) paths; if we have to evaluate conjugacy for more paths than we would by simply looking at all pairs of target-dependent nodes, then just use node pairs
                     # note that it's not clear what criterion to use here since computational time is combination of time for finding all paths and then for evaluating conjugacy for unique (by declaration ID) paths, but the hope is to make a crude cut here that avoids path calculations when there would be a lot of them
                     ansList[[length(ansList)+1]] <- lapply(seq_along(nodeIDsFromOneDecl),
@@ -466,7 +476,7 @@ conjugacyClass <- setRefClass(
             dependentObj <- dependents[[depNodeDist]]
             if(is.null(restrictLink)) {
                 if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
-            } else currentLink = restrictLink
+            } else currentLink <- restrictLink
             if(currentLink != 'stickbreaking') {
                 depNodeParamName <- dependentObj$param
                 linearityCheckExprRaw <- model$getParamExpr(depNode, depNodeParamName)   # extracts the expression for 'param' from 'depNode'
@@ -1179,12 +1189,30 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         }
         exprText <- safeDeparse(expr, warn = TRUE)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
+        ## skipExpansionsNode was added specifically for CAR model target nodes:
         if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
-        expandedNodeNames <- if(exprText %in% expandedNodeNamesRaw) exprText else expandedNodeNamesRaw
+        if(exprText %in% expandedNodeNamesRaw) {
+            expandedNodeNames <- exprText
+        } else {
+            ## if exprText is itself *not* a formal node name, but rather a subset of a larger formal node,
+            ## then we don't want it to be expanded to include the subsubming full node
+            if(length(setdiff(model$expandNodeNames(expandedNodeNamesRaw, returnScalarComponents = TRUE), model$expandNodeNames(exprText, returnScalarComponents = TRUE)))) {
+                expandedNodeNames <- exprText
+            } else {
+                expandedNodeNames <- expandedNodeNamesRaw
+            }
+        }
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
+            ## this next block covers a **real corner case** (from a legacy BUGS model: biops) where dimensions are inferred
+            ## (since not provided), thus causing a valid stochastic node to rather have dimensions larger than it acually is
+            ## (being defined as part of a ragged declaration of multivariate stochastic nodes),
+            ## thus the "type" of this expanded node includes both 'stoch' and also 'RHSonly', leading to a "node"
+            ## with two types... which triggers the check below.  So, if a "node" we're processing has multiple types, then
+            ## we remove the extraneous 'RHSonly' types here:
+            if((length(type) > 1) && ('RHSonly'  %in% type) && !all(type == 'RHSonly'))   type <- setdiff(type, 'RHSonly')
             if(length(type) > 1) {
                 ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
                 if(exprText %in% expandedNodeNamesRaw) type <- type[which(exprText == expandedNodeNamesRaw)]
@@ -1192,6 +1220,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
+                if(!(exprText %in% model$getNodeNames(determOnly = TRUE))) return(expr)  ## exprText is a single element of a multivariate deterministic node
                 newExpr <- model$getValueExpr(exprText)
                 return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansionsNode))
             }
@@ -1199,8 +1228,10 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             stop('something went wrong with Daniel\'s understanding of newNimbleModel #2')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
-        for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
+        if(is.call(newExpr) && newExpr[[1]] == 'structureExpr') {  ## recurse, if there's a newly created structureExpr()
+            for(i in seq_along(newExpr)[-1])
+                newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode, prevExpr = expr)
+        }
         return(newExpr)
     }
     if(is.call(expr)) {
@@ -1219,11 +1250,21 @@ cc_structureExprName <- quote(structureExpr)
 
 ## creates an expression of the form [cc_structureExprName](element11, element12, etc...) to represent vectors / arrays defined in terms of other stoch/determ nodes,
 cc_createStructureExpr <- function(model, exprText) {
-  expandedNodeNamesVector <- model$expandNodeNames(exprText)
-  expandedNodeExprList <- lapply(expandedNodeNamesVector, function(x) parse(text=x)[[1]])
-  structureExpr <- c(cc_structureExprName, expandedNodeExprList)
-  structureExprCall <- as.call(structureExpr)
-  return(structureExprCall)
+    expandedNodeNamesVector <- model$expandNodeNames(exprText)
+    ## remove expanded node names which are not fully represented in the original scalar components of exprText:
+    exprTextScalarComponents <- model$expandNodeNames(exprText, returnScalarComponents=TRUE)
+    expandedNodeNamesToKeepBool <- sapply(expandedNodeNamesVector, function(n) all(model$expandNodeNames(n, returnScalarComponents=TRUE) %in% exprTextScalarComponents))
+    expandedNodeNamesVector <- expandedNodeNamesVector[expandedNodeNamesToKeepBool]
+    ## now, add in any scalar components of original exprText which are not appearing in the expanded node names:
+    scalarComponentsToAdd <- setdiff(exprTextScalarComponents, model$expandNodeNames(expandedNodeNamesVector, returnScalarComponents=TRUE))
+    nodesForStructureExpr <- c(expandedNodeNamesVector, scalarComponentsToAdd)
+    ## if exprText is a non-node scalar component, then just return that parse(exprText); (rather than structureExpr(exprText))
+    if((length(nodesForStructureExpr) == 1) && identical(nodesForStructureExpr, scalarComponentsToAdd)) return(parse(text=exprText)[[1]])
+    ## otherwise, create and return a structureExpr
+    structureExprExprList <- lapply(nodesForStructureExpr, function(x) parse(text=x)[[1]])
+    structureExpr <- c(cc_structureExprName, structureExprExprList)
+    structureExprCall <- as.call(structureExpr)
+    return(structureExprCall)
 }
 
 
@@ -1255,7 +1296,7 @@ cc_checkScalar <- function(expr) {
     ## We don't know the output dims of all functions,
     ## as there can be user-defined functions that produce non-scalar output from scalar inputs,
     ## so only say it could be scalar (based on input args) in specific known cases we enumerate.
-    if(safeDeparse(expr[[1]], warn = TRUE) %in% c('(','[','*','+','-','/','exp','log','^','pow','sqrt')) {
+    if(safeDeparse(expr[[1]], warn = TRUE) %in% c('(','[','*','+','-','/','exp','log','^','pow','pow_int','sqrt')) {
         return(all(sapply(expr[2:length(expr)], cc_checkScalar)))
     } else return(FALSE)
 }
@@ -1359,7 +1400,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     ## targetNode doesn't appear in expr
     if(!cc_nodeInExpr(targetNode, expr)) {
         if(is.call(expr) && expr[[1]] == '(') return(cc_checkLinearity(expr[[2]], targetNode))
-        # add +1i to tags 0s and 1s as not being from exact match to target
+        ## add +1i to tags 0s and 1s as not being from exact match to target
         return(list(offset = cc_replace01(expr), scale = 0))  
     }
 
@@ -1393,6 +1434,13 @@ cc_checkLinearity <- function(expr, targetNode) {
             cc_nodeInExpr(targetNode, x)))
         checkLinearityStrucExpr <- cc_checkLinearity(expr[[wh+1]], targetNode)
         if(is.null(checkLinearityStrucExpr)) return(NULL)
+        if(is.indexed(targetNode) && grepl(':', targetNode)) {
+            ## if this is a structureExpression, and also
+            ## if targetNode is multivariate (is indexed and contains ":"),
+            ## and is also part of a larger structureExpr,
+            ## then we do not handle conjugacy for those cases
+            return(NULL)
+        }
         return(list(offset = cc_combineExprsAddition(expr, checkLinearityStrucExpr$offset),  # was expr?,
                     scale = checkLinearityStrucExpr$scale))
     }

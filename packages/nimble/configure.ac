@@ -123,13 +123,21 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
+dnl Next set of lines from https://cran.r-project.org/doc/manuals/r-release/R-exts.html in light of new CRAN policy to not hard code CXX11
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+if test -z "$CXX"; then
+  AC_MSG_ERROR([No C++ compiler is available])
+fi
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
+CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
 dnl Next 5 lines are from from https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Using-C_002b_002b11-code, but with CXX11 modified to CXX1X per output of R CMD config
 dnl 2018-07-25: now modified to CXX11 as that seems to be standard on more recent R versions
-CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
-CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
-CXX="${CXX11} ${CXX11STD}"
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+dnl CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
+dnl CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
+dnl CXX="${CXX11} ${CXX11STD}"
+dnl CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+
 AC_LANG(C++)
 dnl 2018-07-25: moved next line from early in this file because it seems to trigger various configure checks based on g++ even when R is configured to use clang; see issue 766
 dnl however note that having it here seems extraneous as it produces same configure file without it

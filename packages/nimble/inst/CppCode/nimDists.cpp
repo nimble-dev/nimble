@@ -24,7 +24,6 @@
 #include "nimble/nimDists.h"
 #include "nimble/RcppUtils.h"
 
-
 bool R_IsNA(NimArr<1, double> &P) {
   int s = P.size();
   for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
@@ -37,24 +36,24 @@ bool R_isnancpp(NimArr<1, double> &P) {
   return(false);
 }
 
-template<int nDim, class T>
-NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
-  if(orig.isMap()) {
-    //    printf("It is a map\n");
-    if(!isMapEntire<nDim, T>(orig)) {
-      // NOTE that a map that has offset != 0 always returns false.
-      // This could be improved.
-      // E.g. mu[1:3, i] could always be handled without copying
-      // currently isMapEntire returns FALSE if i > 0 because then offset != 0
-      // We would need more care with checking when to copy back at end of functions
-      // below.
-      //      printf("It is not an entire map\n");
-      possibleCopy = orig;
-      return(possibleCopy);
-    }
-  }
-  return(orig);
-}
+// template<int nDim, class T>
+// NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
+//   if(orig.isMap()) {
+//     //    printf("It is a map\n");
+//     if(!isMapEntire<nDim, T>(orig)) {
+//       // NOTE that a map that has offset != 0 always returns false.
+//       // This could be improved.
+//       // E.g. mu[1:3, i] could always be handled without copying
+//       // currently isMapEntire returns FALSE if i > 0 because then offset != 0
+//       // We would need more care with checking when to copy back at end of functions
+//       // below.
+//       //      printf("It is not an entire map\n");
+//       possibleCopy = orig;
+//       return(possibleCopy);
+//     }
+//   }
+//   return(orig);
+// }
 
 double nimArr_dmulti(NimArr<1, double> &x, double size, NimArr<1, double> &prob, int give_log) {
   int K = prob.size();
@@ -245,7 +244,6 @@ void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, doubl
   if(ansptr != ans.getPtr()) {ans = ansCopy;} 
   //if(ans.isMap()) {ans = ansCopy;}
 }
-
 
 
 double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log, int overwrite_inputs) { 

@@ -273,7 +273,7 @@ serve as an example for the use of our PMCMC sampler.  Here we use the
 identity matrix as our proposal covariance matrix.
 
 ```{r, pmcmc_Chunk, results = "hide"}
-timeConf <- configureMCMC(rTimeModel)   # default MCMC configuration
+timeConf <- configureMCMC(rTimeModel, nodes = NULL) # empty MCMC configuration
 
 # Add random walk PMCMC sampler with particle number optimization.
 timeConf$addSampler(target = c("a", "b", "c", "mu_0"), type = "RW_PF_block",

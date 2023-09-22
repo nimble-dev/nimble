@@ -82,7 +82,7 @@ void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
 	    );
     unprotectCount += 3;
   } else {
-    printf("in non-list\n");
+    // printf("in non-list\n");
     // full interface
     // Cnf$.basePtr
     PROTECT(SsinglePtr =  Rf_findVarInFrame(PROTECT(GET_SLOT(
@@ -160,7 +160,7 @@ NimArr<1, double> vectorDouble_2_NimArr(vector<double> input) {
 SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1){
     NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
     nimType vecType = (*typePtr).getNimType();
-    if(vecType == DOUBLE){
+    if(vecType == nimType::DOUBLE){
     	VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(Sextptr));
     	int nrowCpp = matPtr->size();
 	    int new_size = INTEGER(nRows)[0];
@@ -181,7 +181,7 @@ SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1){
     	return(returnStatus(true) );
     	}
     }
-    else if(vecType == INT){
+    else if(vecType == nimType::INT){
     	VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(R_ExternalPtrAddr(Sextptr));
     	int nrowCpp = matPtr->size();
     	  int new_size = INTEGER(nRows)[0];
@@ -221,7 +221,7 @@ SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
     }
     NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
     nimType vecType = (*typePtr).getNimType();
-    if(vecType == DOUBLE){
+    if(vecType == nimType::DOUBLE){
     	VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(Sextptr));
     	int nrowCpp = matPtr->size();
 	    int new_size = INTEGER(numAdded)[0] + nrowCpp;
@@ -239,7 +239,7 @@ SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
     return(returnStatus(true) );
     }
     
-    else if(vecType == INT){
+    else if(vecType == nimType::INT){
     	VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(R_ExternalPtrAddr(Sextptr));
     	int nrowCpp = matPtr->size();
     	  int new_size = INTEGER(numAdded)[0] + nrowCpp;
@@ -270,17 +270,17 @@ SEXP getNRow(SEXP Sextptr){
     int nRow = 0;
     NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
     nimType vecType = (*typePtr).getNimType();
-    if(vecType == DOUBLE){
+    if(vecType == nimType::DOUBLE){
     	VecNimArrBase<double>* matPtr = static_cast<VecNimArrBase<double>* > (typePtr);
 	    nRow = matPtr->size();
 	}
-	else if(vecType == INT)	{
+	else if(vecType == nimType::INT)	{
     	VecNimArrBase<int>* matPtr = static_cast<VecNimArrBase<int>* > (typePtr);
 	    nRow = matPtr->size();
 	}
 	else{
 		PRINTF("Data type of VecNimArr not currently supported\n");
-		_nimble_global_output<< "vecType = " << vecType << "\n"; nimble_print_to_R(_nimble_global_output);
+		//_nimble_global_output<< "vecType = " << vecType << "\n"; nimble_print_to_R(_nimble_global_output);
 //		cout << "vecType DOUBLE = " << DOUBLE << "\n";
 		}
 	SEXP rNRow;
@@ -312,7 +312,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
   NimVecType *typePtrTo = static_cast< NimVecType* >(R_ExternalPtrAddr(SextptrTo));
   nimType vecTypeTo = (*typePtrTo).getNimType();
 
-  if((vecTypeFrom == DOUBLE) && (vecTypeTo == DOUBLE)){
+  if((vecTypeFrom == nimType::DOUBLE) && (vecTypeTo == nimType::DOUBLE)){
 	  VecNimArrBase<double> *matPtrFrom = static_cast< VecNimArrBase<double>* >(typePtrFrom);
 	  VecNimArrBase<double> *matPtrTo = static_cast< VecNimArrBase<double>* >(typePtrTo );
 	  int k = LENGTH(rowsFrom);
@@ -360,7 +360,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
   	return(returnStatus(true) );
   }
 
-  if((vecTypeFrom == INT) && (vecTypeTo == INT)){
+  if((vecTypeFrom == nimType::INT) && (vecTypeTo == nimType::INT)){
 	  VecNimArrBase<int> *matPtrFrom = static_cast< VecNimArrBase<int>* >(typePtrFrom);
 	  VecNimArrBase<int> *matPtrTo = static_cast< VecNimArrBase<int>* >(typePtrTo );
 	  int k = LENGTH(rowsFrom);
@@ -439,7 +439,7 @@ SEXP getMVElement(SEXP Sextptr, SEXP Sindex){
 
 // This is not called directly from R.  It is called from getMVElement
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{  	
-    if(vecType == DOUBLE){
+    if(vecType == nimType::DOUBLE){
 		VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(typePtr);
 		NimArrBase<double> *thisRow;
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
@@ -460,7 +460,7 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
   		}
   	 	return(Sans);
   	}
-    else if(vecType == INT){
+    else if(vecType == nimType::INT){
 		VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(typePtr);
 //		int nrowCpp = matPtr->size();
 		NimArrBase<int> *thisRow;
@@ -511,7 +511,7 @@ SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
 
 
  void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue) {
-    if(vecType == DOUBLE){
+    if(vecType == nimType::DOUBLE){
 		VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(typePtr);
   		NimArrBase<double> *thisRow;
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting from R index to C index
@@ -527,7 +527,7 @@ SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
 	return;
 	}
 
-	else if(vecType == INT){
+	else if(vecType == nimType::INT){
 		VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(typePtr);
   		NimArrBase<int> *thisRow;
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting from R index to C index
@@ -746,15 +746,15 @@ SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 	NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
 	if(!nimTypePtr)
 		return(R_NilValue);
-	if(	(*nimTypePtr).getNimType() == INT){
+	if(	(*nimTypePtr).getNimType() == nimType::INT){
 		NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
 		return(NimArrInt_2_SEXP( (*nimBase) ) ) ;
 	}
-	if(	(*nimTypePtr).getNimType() == DOUBLE){
+	if(	(*nimTypePtr).getNimType() == nimType::DOUBLE){
 		NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
 		return(NimArrDouble_2_SEXP( (*nimBase) ) );
 	}
-	if(	(*nimTypePtr).getNimType() == BOOL){
+	if(	(*nimTypePtr).getNimType() == nimType::BOOL){
 	  NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
 	  return(NimArrBool_2_SEXP( (*nimBase) ) );
 	}
@@ -772,7 +772,7 @@ void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
     if(!nimTypePtr)
       return;
     
-    if((*nimTypePtr).getNimType() == INT){
+    if((*nimTypePtr).getNimType() == nimType::INT){
       NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
       int nimNumDims = (*nimBase).numDims();
       if(nimNumDims != sexpNumDims) {
@@ -786,7 +786,7 @@ void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
 	(*nimBase).setSize(sexpDims);
       SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
     }
-    if((*nimTypePtr).getNimType() == DOUBLE){
+    if((*nimTypePtr).getNimType() == nimType::DOUBLE){
       
       NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
       int nimNumDims = (*nimBase).numDims();
@@ -802,7 +802,7 @@ void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
 	(*nimBase).setSize(sexpDims);
       SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
     }
-    if((*nimTypePtr).getNimType() == BOOL){
+    if((*nimTypePtr).getNimType() == nimType::BOOL){
       NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
       int nimNumDims = (*nimBase).numDims();
       if(nimNumDims != sexpNumDims){
@@ -939,12 +939,12 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 	}
 
 	nimType varType = vecTypePtr->getNimType();
-	if(varType == DOUBLE){
+	if(varType == nimType::DOUBLE){
 		VecNimArrBase<double>* vecPtr = static_cast<VecNimArrBase<double>*>(vecTypePtr);
 		for(int i = cRowStart; i <= cRowEnd; i++)
 			row2NimArr(matrix, static_cast<NimArrBase<double>*>(vecPtr->getRowTypePtr(i) ), cRowStart + i , len, nRows);
 	}
-	if(varType == INT){
+	if(varType == nimType::INT){
 		VecNimArrBase<int>* vecPtr = static_cast<VecNimArrBase<int>*>(vecTypePtr);
 		for(int i = cRowStart; i <= cRowEnd; i++)
 			row2NimArr(matrix, static_cast<NimArrBase<int>*>(vecPtr->getRowTypePtr(i) ), cRowStart + i , len, nRows);

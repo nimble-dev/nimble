@@ -41,7 +41,6 @@ sink_with_messages(outputFile)
 
 
 ## tests of classic BUGS examples
-
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
@@ -1663,7 +1662,6 @@ test_that('RW_dirichlet sampler more complicated', {
                 info = 'non-conjugate agreement between RW_dirichlet and component gamma sampling: sd')
 })
 
-
 ## testing dmnorm-dnorm conjugacies we don't detect
 
 test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
@@ -1937,6 +1935,7 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
     Cmcmc$run(10)
 })
 
+
 test_that('slice sampler bails out of loop', {
     code <- nimbleCode({
         y ~ dnorm(0, sd = sigma)
@@ -1994,6 +1993,7 @@ test_that('cc_checkScalar operates correctly', {
     expect_false(nimble:::cc_checkScalar(quote(foo(lambda))))
 
 })
+
 
 test_that('cc_stripExpr operates correctly', {
     expr <- 'coeff * (log(value) - offset) * taulog'
@@ -2782,7 +2782,6 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
 
 })
 
-
 test_that('Check MCMC sampler dependencies with and without predictive nodes included', {
     code <- nimbleCode({
         for(i in 1:N)
@@ -2824,6 +2823,78 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
     expect_identical(sapply(conf$getSamplers(), `[[`, 'name'), rep('AF_slice', 15))
 })
 
+test_that('Conjugacy checking does not return conjugate for subsets (or supersets) of multivariate nodes', {
+    ## the changes unerlying this test have to do with the handling of structureExprs
+    code <- nimbleCode({
+        mu[1:2] ~ dmnorm(mu0[1:2], Q[1:2,1:2])
+        y[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,3), Q=diag(3)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:2]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+    ##
+    code <- nimbleCode({
+        mu[1:4] ~ dmnorm(mu0[1:4], Q[1:4,1:4])
+        y[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,4), Q=diag(4)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:4]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+    ##
+    code <- nimbleCode({
+        mu[1:3] ~ dmnorm(mu0[1:3], Q[1:3,1:3])
+        y[1:3] ~ dmnorm(mu[2:4], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,4), Q=diag(3)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:3]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+    ##
+    code <- nimbleCode({
+        mu[1:5] ~ dmnorm(mu0[1:5], Q[1:5,1:5])
+        y[1:3] ~ dmnorm(mu[2:4], Q[1:3,1:3])
+    })
+    Rmodel <- nimbleModel(code, data=list(y=rep(0,3)), inits=list(mu=rep(0,5), Q=diag(5)))
+    conf <- configureMCMC(Rmodel)
+    expect_identical(conf$samplerConfs[[1]]$target, 'mu[1:5]')
+    expect_identical(conf$samplerConfs[[1]]$name, 'RW_block')
+})
+
+test_that('Categorical sampler issues a warning for invalid model likelihood values', {
+    code <- nimbleCode({
+        x ~ dcat(prob = a[1:3])
+        y[1:3] ~ ddirch(alpha = A[x,1:3])
+    })
+    constants <- list(a = c(1, 1, 0))
+    data <- list(y = c(0, 1/2, 1/2))
+    inits <- list(x = 2, A = array(1/3, c(3,3)))
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    expect_identical(Rmodel$calculate(), Inf)
+    conf <- configureMCMC(Rmodel)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_true(conf$getSamplers()[[1]]$name == 'categorical')
+    Rmcmc <- buildMCMC(conf)
+    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
+    expect_true(all(samples == 1))
+    ##
+    code <- nimbleCode({
+        x ~ dcat(prob = a[1:3])
+        y ~ dnorm(x, -1)
+    })
+    constants <- list(a = c(1, 1, 0))
+    data <- list(y = 0)
+    inits <- list(x = 2)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    expect_identical(Rmodel$calculate(), NaN)
+    conf <- configureMCMC(Rmodel)
+    expect_true(length(conf$getSamplers()) == 1)
+    expect_true(conf$getSamplers()[[1]]$name == 'categorical')
+    Rmcmc <- buildMCMC(conf)
+    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
+    expect_true(all(samples == 1))
+})
 
 sink(NULL)
 

@@ -45,11 +45,13 @@ sink_with_messages <- function(file, ...) {
 }
 
 ## This is useful for working around scoping issues with nimbleFunctions using other nimbleFunctions.
-temporarilyAssignInGlobalEnv <- function(value) {
+temporarilyAssignInGlobalEnv <- function(value, replace = FALSE) {
     name <- deparse(substitute(value))
     assign(name, value, envir = .GlobalEnv)
-    rmCommand <- substitute(remove(name, envir = .GlobalEnv))
-    do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
+    if(!replace) {
+        rmCommand <- substitute(remove(name, envir = .GlobalEnv))
+        do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
+    }
 }
 
 withTempProject <- function(code) {
@@ -370,6 +372,13 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
     } else {
         expr
     }
+}
+
+wrap_if_true <- function(test, wrapper, expr, wrap_in_try = FALSE) {
+  wrap <- if (isTRUE(wrap_in_try))
+            function(x) try(x, silent = TRUE)
+          else identity
+  if (isTRUE(test)) wrap(wrapper(expr)) else wrap(expr)
 }
 
 ## This is a parametrized test, where `param` is a list with names:
@@ -1276,6 +1285,8 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
 
+
+
 expandNames <- function(var, ...) {
     tmp <- as.matrix(expand.grid(...))
     indChars <- apply(tmp, 1, paste0, collapse=', ')
@@ -1339,7 +1350,6 @@ test_dynamic_indexing_model_internal <- function(param) {
 }
 
 
- 
 ## utilities for saving test output to a reference file
 ## and making the test a comparison of the file
 clearOldOutput <- function(filename) {
@@ -1394,4 +1404,288 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
               expect_true(length(diffOutput) == 0)
               )
     invisible(NULL)
+}
+
+## Create a nimbleFunction parametrization to be passed to gen_runFunCore().
+##
+## op:        An operator string.
+## argTypes:  A character vector of argTypes (e.g. "double(0)").
+##            If this is a named vector, then the names will be
+##            interpreted as the formals to the constructed op call.
+## more_args: A named list, e.g. list(log = 1), that will be added
+##            as a formal to the output expr but not part of args.
+##
+## output_code: quoted code such as quote(Y^2) to be used with Y
+##              substituted as the operation result.  E.g., if the
+##              operation is `arg1 + arg2`, this would replace it with
+##             (arg1 + arg2)^2.
+##
+## inner_codes: list of quoted code such as quote(X^2) to be used with
+##              X substituted as the corresponding argument. The list
+##              must be as long as the number of arugments, with NULL
+##              entries indicating no substitution.  E.g. with
+##              list(NULL, quote(X^2)), `arg1 + arg2` would be changed
+##              to `art1 + arg2^2`.
+make_op_param <- function(op, argTypes, more_args = NULL,
+                          outer_code = NULL, inner_codes = NULL) {
+  arg_names <- names(argTypes)
+
+  if (is.null(arg_names)) {
+    arg_names <- paste0('arg', 1:length(argTypes))
+    op_args <- lapply(arg_names, as.name)
+  } else {
+    op_args <- sapply(arg_names, as.name, simplify = FALSE)
+  }
+
+  args_string <- paste0(arg_names, ' = ', argTypes, collapse = ' ')
+  name <- paste(op, args_string)
+
+  # Add inner funs around arguments
+  if(!is.null(inner_codes)) {
+    for(i in seq_along(op_args)) {
+      if(!is.null(inner_codes[[i]])) {
+        op_args[[i]] <- eval(substitute(
+          substitute(INNER_CODE,
+                     list(X = op_args[[i]])),
+          list(INNER_CODE = inner_codes[[i]]))
+        )
+      }
+    }
+  }
+  
+  this_call <- as.call(c(
+      substitute(FOO, list(FOO = as.name(op))),
+      op_args, more_args
+  ))
+
+  if(is.null(outer_code)) {
+      expr <- substitute(
+          out <- THIS_CALL,
+          list(THIS_CALL = this_call)
+      )
+  } else {
+    expr <- eval(substitute(
+      substitute(
+        out <- OUTER_CODE,
+        list(Y = this_call)),
+      list(OUTER_CODE = outer_code))
+      )
+  }
+
+  argTypesList <- as.list(argTypes)
+  names(argTypesList) <- arg_names
+  argTypesList <- lapply(argTypesList, function(arg) {
+    parse(text = arg)[[1]]
+  })
+
+  list(
+    name = name,
+    expr = expr,
+    args = argTypesList,
+    outputType = parse(text = return_type_string(op, argTypes))[[1]]
+  )
+}
+
+## Takes an operator and its input types as a character vector and
+## creates a string representing the returnType for the operation.
+##
+## op:       An operator string
+## argTypes: A character vector of argTypes (e.g. "double(0)".
+##
+return_type_string <- function(op, argTypes) {
+
+  ## multivariate distributions ops.  These do not support recycling rule behavior, so the return type is always double(0)
+  mvdist_ops <- names(nimble:::sizeCalls)[nimble:::sizeCalls == 'sizeScalarRecurseAllowMaps'] 
+  if(op %in% mvdist_ops)
+    return("double(0)")
+  
+  ## see ops handled by eigenize_recyclingRuleFunction in genCpp_eigenization.R
+  recycling_rule_ops <- c(
+    nimble:::scalar_distribution_dFuns,
+    nimble:::scalar_distribution_pFuns,
+    nimble:::scalar_distribution_qFuns,
+    nimble:::scalar_distribution_rFuns,
+    paste0(c('d', 'q', 'p', 'r'), 't'),
+    paste0(c('d', 'q', 'p', 'r'), 'exp'),
+    'bessel_k'
+  )
+
+  returnTypeCode <- nimble:::returnTypeHandling[[op]]
+
+  if (is.null(returnTypeCode))
+    if (!op %in% recycling_rule_ops)
+      return(argTypes[1])
+    else returnTypeCode <- 1
+
+  scalarTypeString <- switch(
+    returnTypeCode,
+    'double', ## 1
+    'integer', ## 2
+    'logical'  ## 3
+  )
+
+  args <- lapply(
+    argTypes, function(argType)
+      nimble:::argType2symbol(parse(text = argType)[[1]])
+  )
+
+  if (is.null(scalarTypeString)) ## returnTypeCode is 4 or 5
+    scalarTypeString <-
+      if (length(argTypes) == 1)
+        if (returnTypeCode == 5 && args[[1]]$type == 'logical') 'integer'
+        else args[[1]]$type
+      else if (length(argTypes) == 2) {
+        aot <- nimble:::arithmeticOutputType(args[[1]]$type, args[[2]]$type)
+        if (returnTypeCode == 5 && aot == 'logical') 'integer'
+        else aot
+      }
+
+  reductionOperators <- c(
+    nimble:::reductionUnaryOperators,
+    nimble:::matrixSquareReductionOperators,
+    nimble:::reductionBinaryOperatorsEither,
+    'dmulti'
+  )
+
+  nDim <- if (op %in% reductionOperators) 0
+          else max(sapply(args, `[[`, 'nDim'))
+
+  if (nDim > 2)
+    stop(
+      'Testing does not currently support args with nDim > 2',
+      call. = FALSE
+    )
+
+  sizes <- if (nDim == 0) 1
+           else if (length(argTypes) == 1) args[[1]]$size
+           else if (op %in% nimble:::matrixMultOperators)  {
+             if (!length(argTypes) == 2)
+               stop(
+                 paste0(
+                   'matrixMultOperators should only have 2 args but got ',
+                   length(argTypes)
+                 ), call. = FALSE
+               )
+             c(args[[1]]$size[1], args[[2]]$size[2])
+           } else if (nDim == 2) {
+             ## one arg is a matrix but this is not matrix multiplication
+             ## so assume that the first arg with nDim > 1
+             has_right_nDim <- sapply(args, function(arg) arg$nDim == nDim)
+             args[has_right_nDim][[1]]$size
+           } else {
+             ## nDim is 1 so either recycling rule or simple vector operator
+             max((sapply(args, `[[`, 'size')))
+           }
+
+    size_string <- if(all(is.na(sizes)))
+                       ''
+                   else if (nDim > 0)
+                       paste0(', c(', paste(sizes, collapse = ', '), ')')
+                   else ''
+
+  return(paste0(scalarTypeString, '(', nDim, size_string, ')'))
+}
+
+## Takes an argSymbol and if argSymbol$size is NA adds default sizes.
+add_missing_size <- function(argSymbol, vector_size = 3, matrix_size = c(3, 4)) {
+  if (any(is.na(argSymbol$size))) {
+    if (argSymbol$nDim == 1)
+      argSymbol$size <- vector_size
+    else if (argSymbol$nDim == 2)
+      argSymbol$size <- matrix_size
+  }
+  invisible(argSymbol)
+}
+
+arg_type_2_input <- function(argType, input_gen_fun = NULL, size = NULL, return_function = FALSE) {
+  argSymbol <- add_missing_size(
+    nimble:::argType2symbol(argType)
+  )
+  type <- argSymbol$type
+  nDim <- argSymbol$nDim
+  if(is.null(size))
+    size <- argSymbol$size
+  
+  if (is.null(input_gen_fun))
+    input_gen_fun <- switch(
+      type,
+      "double"  = function(arg_size) rnorm(prod(arg_size)),
+      "integer" = function(arg_size) rgeom(prod(arg_size), 0.5),
+      "logical" = function(arg_size)
+        sample(c(TRUE, FALSE), prod(arg_size), replace = TRUE)
+    )
+  if(is.character(input_gen_fun)) {
+    new_fun <- function(size) {}
+    body(new_fun) <- parse(text = input_gen_fun, keep.source = FALSE)[[1]]
+    input_gen_fun <- new_fun
+  }
+  ans <- function() {
+    arg <- switch(
+      nDim + 1,
+      input_gen_fun(1), ## nDim is 0
+      input_gen_fun(prod(size)), ## nDim is 1
+      matrix(input_gen_fun(prod(size)), nrow = size[1], ncol = size[2]), ## nDim is 2
+      array(input_gen_fun(prod(size)), dim = size) ## nDim is 3
+    )
+    if(is.null(arg))
+      stop('Something went wrong while making test input.', call.=FALSE)
+    arg
+  }
+  if(return_function)
+    return(ans)
+  ans()
+}
+
+modify_on_match <- function(x, pattern, key, value, env = parent.frame(), ...) {
+  ## Modify any elements of a named list that match pattern.
+  ##
+  ## @param x A named list of lists.
+  ## @param pattern A regex pattern to compare with `names(x)`.
+  ## @param key The key to modify in any lists whose names match `pattern`.
+  ## @param value The new value for `key`.
+  ## @param env The environment in which to modify `x`.
+  ## @param ... Additional arguments for `grepl`.
+  for (name in names(x)) {
+    if (grepl(pattern, name, ...)) {
+      eval(substitute(x[[name]][[key]] <- value), env)
+    }
+  }
+}
+
+nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_threshold = 0, xlab = NULL, ylab = NULL, verbose = FALSE, info = "") {
+  if(is.null(xlab))
+      xlab <- deparse1(substitute(x))
+  if(is.null(ylab))
+      ylab <- deparse1(substitute(y))
+  
+  denom <- abs(y)
+  ## Use absolute tolerance for sufficiently small values.
+  ## This is necessary for y values exactly zero.
+  ## In some cases (such as derivatives very near zero and affected by floating point errors)
+  ## we also need to use absolute tolerance.
+  denom[denom <= abs_threshold] <- 1
+  rel_diff <- abs((x-y)/denom)
+  result <- rel_diff < tolerance
+  all_result <- all(result)
+  if(verbose) {
+    if(!all_result) {
+      ord <- order(rel_diff, decreasing = TRUE)
+      wh <- 1:min(length(rel_diff), 5)
+      report <- cbind(x[ord[wh]], y[ord[wh]], rel_diff[ord[wh]])
+      report <- report[report[,3] >= tolerance, ]
+      cat("\n******************\n")
+      cat("Detected some values out of ", ifelse(abs_threshold == 0, "relative", ""), " tolerance ", info, ": ", xlab, " ", ylab, ".\n")
+      print(report)
+      cat("******************\n")
+    } 
+  }
+  all_result
+}
+
+nim_expect_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_threshold = 0, xlab = NULL, ylab = NULL) {
+    if(is.null(xlab))
+        xlab <- deparse1(substitute(x))
+    if(is.null(ylab))
+       ylab <- deparse1(substitute(y))
+    expect_true(nim_all_equal(x, y, xlab = xlab, ylab = ylab, tolerance = tolerance, abs_threshold = abs_threshold, verbose = TRUE))
 }

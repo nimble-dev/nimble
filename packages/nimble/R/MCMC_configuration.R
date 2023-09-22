@@ -4,12 +4,15 @@ samplerConf <- setRefClass(
     fields = list(
         name            = 'ANY',
         samplerFunction = 'ANY',
+        baseClassName   = 'ANY',
         target          = 'ANY',
         control         = 'ANY',
         targetAsScalar  = 'ANY'
     ),
     methods = list(
         initialize = function(name, samplerFunction, target, control, model) {
+            baseClassName <<- environment(environment(samplerFunction)$contains)$className
+            if(is.null(baseClassName) || (baseClassName != 'sampler_BASE')) warning('MCMC sampler nimbleFunctions should inherit from (using "contains" argument) base class sampler_BASE.')
             setName(name)
             setSamplerFunction(samplerFunction)
             setTarget(target, model)

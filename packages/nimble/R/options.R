@@ -7,7 +7,12 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
-        groupDetermWithGivenInCondIndSets = TRUE, # used in getConditionallyIndependentSets
+        useCppADoptimize = TRUE,
+        useADcholAtomic = TRUE, # If TRUE, use nimble's CppAD atomic for cholesky decomposition
+        useADsolveAtomic = TRUE, # If TRUE, use nimble's CppAD atomic for matrix inverse
+        useADmatMultAtomic = TRUE, # If TRUE, use nimble's CppAD atomic class for %*%
+        useADmatInverseAtomic = TRUE, # If TRUE, use nimble's CppAD atomic class for inverse
+      #  groupDetermWithGivenInCondIndSets = TRUE, # used in getConditionallyIndependentSets
         use_C_getParents = FALSE,
         useSafeDeparse = TRUE,
         useNewConfigureMCMC = TRUE,
@@ -25,7 +30,10 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         enableSpecialHandling = FALSE,
         pauseAfterWritingFiles = FALSE,
         CppAD_directory = NA,
-        experimentalEnableDerivs = FALSE,
+        enableDerivs = TRUE,
+        buildModelDerivs = FALSE,
+        doADerrorTraps = TRUE,
+        useADreconfigure = TRUE,
         determinePredictiveNodesInModel = TRUE,
         getDependenciesIncludesPredictiveNodes = TRUE,    ## may be toggled off during MCMC sampler building
         convertSingleVectorsToScalarsInSetupArgs = TRUE,
@@ -66,8 +74,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCusePosteriorPredictiveSampler = TRUE,
         MCMCwarnUnsampledStochasticNodes = TRUE,
         MCMCRJcheckHyperparam = TRUE,
-        MCMCenableWAIC = FALSE
-        
+        MCMCenableWAIC = FALSE,
+        useClearCompiledInADTesting = TRUE
     )
 )
 

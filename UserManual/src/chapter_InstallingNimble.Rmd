@@ -51,7 +51,7 @@ available as a smaller installation, should be sufficient. This is freely availa
 
 
 
-In the somewhat unlikely event you want to install from the source package rather than the CRAN binary package, the easiest approach is to use the source package provided at [R-nimble.org](https://R-nimble.org). If you do want to install from the source package provided by CRAN, you'll need to install the GNU Fortran compiler  package following [these instructions from CRAN](https://mac.r-project.org/tools).
+In the somewhat unlikely event you want to install from the source package rather than the CRAN binary package, the easiest approach is to use the source package provided at [R-nimble.org](https://R-nimble.org). If you do want to install from the source package provided by CRAN, you'll need to install the GNU Fortran compiler package following [these instructions from CRAN](https://mac.r-project.org/tools).
 
 ### Linux
 On Linux, you can install the GNU compiler suite (*gcc*/*g++*). 

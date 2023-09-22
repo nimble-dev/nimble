@@ -402,6 +402,8 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
     }
     delete [] iden;
   }
+  if(!overwrite_inputs) 
+    delete [] xChol;
   dens += -0.5 * tmp_dens;
   return give_log ? dens : exp(dens);
 }

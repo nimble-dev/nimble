@@ -513,54 +513,47 @@ SEXP OptimControlNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
 void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   SEXP S__dot_xData;
   SEXP S_value;
-  SEXP S_gradient;
+  SEXP S_jacobian;
   SEXP S_hessian;
-  SEXP S_thirdDerivs;
   RObjectPointer = S_nimList_;
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
   PROTECT(S_value =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("value")));
-  PROTECT(S_gradient =
+  PROTECT(S_jacobian =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
-                                Rf_install("gradient")));
+                                Rf_install("jacobian")));
   PROTECT(S_hessian =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("hessian")));
-  PROTECT(S_thirdDerivs =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
-                                Rf_install("thirdDerivs")));
   SEXP_2_NimArr<1>(S_value, value);
-  SEXP_2_NimArr<2>(S_gradient, gradient);
+  SEXP_2_NimArr<2>(S_jacobian, jacobian);
   SEXP_2_NimArr<3>(S_hessian, hessian);
-  SEXP_2_NimArr<4>(S_thirdDerivs, thirdDerivs);
-  UNPROTECT(9);
+  UNPROTECT(7);
 }
 SEXP NIMBLE_ADCLASS::copyToSEXP() {
+  PROTECT(RObjectPointer);
   SEXP S__dot_xData;
   SEXP S_value;
-  SEXP S_gradient;
+  SEXP S_jacobian;
   SEXP S_hessian;
-  SEXP S_thirdDerivs;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_value = NimArr_2_SEXP<1>(value));
-    PROTECT(S_gradient = NimArr_2_SEXP<2>(gradient));
+    PROTECT(S_jacobian = NimArr_2_SEXP<2>(jacobian));
     PROTECT(S_hessian = NimArr_2_SEXP<3>(hessian));
-    PROTECT(S_thirdDerivs = NimArr_2_SEXP<4>(thirdDerivs));
-    Rf_defineVar(Rf_install("value"), S_value,
+    Rf_defineVar(PROTECT(Rf_install("value")), S_value,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("gradient"), S_gradient,
+    Rf_defineVar(PROTECT(Rf_install("jacobian")), S_jacobian,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("hessian"), S_hessian,
-                 PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("thirdDerivs"), S_thirdDerivs,
+    Rf_defineVar(PROTECT(Rf_install("hessian")), S_hessian,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(9);
+    UNPROTECT(11);
   }
+  UNPROTECT(1);
   return (RObjectPointer);
 }
 void NIMBLE_ADCLASS::createNewSEXP() {
@@ -573,21 +566,21 @@ void NIMBLE_ADCLASS::createNewSEXP() {
   UNPROTECT(2);
 }
 void NIMBLE_ADCLASS::resetFlags() { RCopiedFlag = false; }
+
 void NIMBLE_ADCLASS::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("value");
-  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("gradient");
+  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("jacobian");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("hessian");
-  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("thirdDerivs");
-  UNPROTECT(6);
+  UNPROTECT(5);
 }
+
 NIMBLE_ADCLASS::NIMBLE_ADCLASS() {
   RCopiedFlag = false;
   RObjectPointer = NULL;
   namedObjects["value"] = &value;
-  namedObjects["gradient"] = &gradient;
+  namedObjects["jacobian"] = &jacobian;
   namedObjects["hessian"] = &hessian;
-  namedObjects["thirdDerivs"] = &thirdDerivs;
   namedObjects["RObjectPointer"] = &RObjectPointer;
   namedObjects["RCopiedFlag"] = &RCopiedFlag;
 }
@@ -961,4 +954,253 @@ SEXP waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   SET_VECTOR_ELT(Sans, 1, SptrToPtr);
   UNPROTECT(3);
   return (Sans);
+}
+
+// Hand-coded based on above patterns
+void AGHQuad_params::copyFromSEXP(SEXP S_nimList_) {
+  SEXP S__dot_xData;
+  SEXP S_names;
+  SEXP S_estimates;
+  SEXP S_stdErrors;
+  RObjectPointer = S_nimList_;
+  PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  PROTECT(S_names =
+          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                            Rf_install("names")));
+  PROTECT(S_estimates =
+          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                            Rf_install("estimates")));
+  PROTECT(S_stdErrors =
+          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                            Rf_install("stdErrors")));
+  STRSEXP_2_vectorString(S_names, names);
+  SEXP_2_NimArr<1>(S_estimates, estimates);
+  SEXP_2_NimArr<1>(S_stdErrors, stdErrors);
+  UNPROTECT(7);
+}
+
+SEXP AGHQuad_params::copyToSEXP() {
+  SEXP S__dot_xData;
+  SEXP S_names;
+  SEXP S_estimates;
+  SEXP S_stdErrors;
+  if (!RCopiedFlag) {
+    PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
+    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    PROTECT(S_names = vectorString_2_STRSEXP(names));
+    PROTECT(S_estimates = NimArr_2_SEXP<1>(estimates));
+    PROTECT(S_stdErrors = NimArr_2_SEXP<1>(stdErrors));
+    Rf_defineVar(Rf_install("names"), S_names,
+                 PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    Rf_defineVar(Rf_install("estimates"), S_estimates,
+                 PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    Rf_defineVar(Rf_install("stdErrors"), S_stdErrors,
+                 PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    RCopiedFlag = true;
+    UNPROTECT(7);
+  }
+  return (RObjectPointer);
+}
+void AGHQuad_params::createNewSEXP() {
+  SEXP S_newNimList;
+  SEXP S_listName;
+  PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_listName, 0, Rf_mkChar("AGHQuad_params"));
+  PROTECT(S_newNimList = makeNewNimbleList(S_listName));
+  RObjectPointer = S_newNimList;
+  UNPROTECT(2);
+}
+void AGHQuad_params::resetFlags() { RCopiedFlag = false; }
+void AGHQuad_params::copyFromRobject(SEXP Robject) {
+  SETUP_S_xData;
+  // There is no macro for a string vector, so do it by hand here
+  std::string svarName("names");
+  STRSEXP_2_vectorString(PROTECT(Rf_findVarInFrame(S_xData,
+                                                   Rf_install("names"))),
+                         *static_cast< std::vector<string>* >(getObjectPtr(svarName)));
+  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("estimates");
+  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("stdErrors");
+  UNPROTECT(3);
+}
+AGHQuad_params::AGHQuad_params() {
+  RCopiedFlag = false;
+  RObjectPointer = NULL;
+  namedObjects["names"] = &names;
+  namedObjects["estimates"] = &estimates;
+  namedObjects["stdErrors"] = &stdErrors;
+  namedObjects["RObjectPointer"] = &RObjectPointer;
+  namedObjects["RCopiedFlag"] = &RCopiedFlag;
+}
+
+SEXP new_AGHQuad_params() {
+  nimSmartPtr<AGHQuad_params> *ptrToSmartPtr;
+  AGHQuad_params *newObj;
+  SEXP SptrToSmartPtr;
+  SEXP Sans;
+  newObj = new AGHQuad_params;
+  ptrToSmartPtr = new nimSmartPtr<AGHQuad_params>;
+  ptrToSmartPtr->setPtrFromT(newObj);
+  PROTECT(SptrToSmartPtr =
+              R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
+  PROTECT(
+      Sans = AGHQuad_params_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  UNPROTECT(2);
+  return (Sans);
+}
+
+SEXP AGHQuad_params_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
+  return (R_MakeExternalPtr(
+      dynamic_cast<NamedObjects *>(reinterpret_cast<AGHQuad_params *>(
+          *static_cast<void **>(R_ExternalPtrAddr(input)))),
+      R_NilValue, R_NilValue));
+}
+
+SEXP AGHQuad_params_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
+  nimSmartPtrBase *ptrToSmartPtrBase;
+  nimSmartPtr<AGHQuad_params> *ptrToSmartPtr;
+  void *ptrToPtr;
+  SEXP SptrToSmartPtrBase;
+  SEXP SptrToPtr;
+  SEXP Sans;
+  ptrToSmartPtr =
+      static_cast<nimSmartPtr<AGHQuad_params> *>(R_ExternalPtrAddr(input));
+  ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase *>(ptrToSmartPtr);
+  ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
+  PROTECT(SptrToSmartPtrBase =
+              R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
+  PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
+  PROTECT(Sans = Rf_allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
+  SET_VECTOR_ELT(Sans, 1, SptrToPtr);
+  UNPROTECT(3);
+  return (Sans);
+}
+
+// Also hand-coded
+void AGHQuad_summary::copyFromSEXP(SEXP S_nimList_) {
+  SEXP S__dot_xData;
+  SEXP S_params;
+  SEXP S_randomEffects;
+  SEXP S_vcov;
+  SEXP S_scale;
+  RObjectPointer = S_nimList_;
+  PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  PROTECT(S_params =
+          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                            Rf_install("params")));
+  PROTECT(S_randomEffects =
+          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                            Rf_install("randomEffects")));
+  PROTECT(S_vcov =
+          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                            Rf_install("vcov")));
+  PROTECT(S_scale =
+          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+                            Rf_install("scale")));
+  params = new AGHQuad_params;
+  params->copyFromSEXP(S_params);
+  randomEffects = new AGHQuad_params;
+  randomEffects->copyFromSEXP(S_randomEffects);
+  SEXP_2_NimArr<2>(S_vcov, vcov);
+  scale = STRSEXP_2_string(S_scale);
+  UNPROTECT(9);
+}
+
+SEXP  AGHQuad_summary::copyToSEXP (  )  {
+  SEXP S__dot_xData;
+  SEXP S_params;
+  SEXP S_randomEffects;
+  SEXP S_vcov;
+  SEXP S_scale;
+  if (!RCopiedFlag){
+    PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
+    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    if (!(*params).RObjectPointer) params->createNewSEXP();
+    PROTECT(S_params = params->copyToSEXP());
+    if (!(*randomEffects).RObjectPointer) randomEffects->createNewSEXP();
+    PROTECT(S_randomEffects = randomEffects->copyToSEXP());
+    PROTECT(S_vcov = NimArr_2_SEXP<2>(vcov));
+    PROTECT(S_scale = string_2_STRSEXP(scale));
+    Rf_defineVar(Rf_install("params"), S_params, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    Rf_defineVar(Rf_install("randomEffects"), S_randomEffects, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    Rf_defineVar(Rf_install("vcov"), S_vcov, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    Rf_defineVar(Rf_install("scale"), S_scale, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    RCopiedFlag = true;
+    UNPROTECT(9);
+  }
+  return(RObjectPointer);
+}
+
+void  AGHQuad_summary::createNewSEXP (  )  {
+  SEXP S_newNimList;
+  SEXP S_listName;
+  PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_listName, 0, Rf_mkChar("AGHQuad_summary"));
+  PROTECT(S_newNimList = makeNewNimbleList(S_listName));
+  RObjectPointer = S_newNimList;
+  UNPROTECT(2);
+}
+void  AGHQuad_summary::resetFlags (  )  {
+  RCopiedFlag = false;
+  params->resetFlags();
+  randomEffects->resetFlags();
+}
+void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
+  SETUP_S_xData;
+  // Hand-coding: does this need more lines for params, randomEffects, and scale,
+  // or are those handled by direct copying calls from R (for cases not included in the
+  // copyFromRobject scheme)?
+  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("vcov");
+  UNPROTECT(3);
+}
+AGHQuad_summary::AGHQuad_summary (  )  {
+  RCopiedFlag = false;
+  RObjectPointer = NULL;
+  params = new AGHQuad_params;
+  randomEffects = new AGHQuad_params;
+  namedObjects["params"]=&params;
+  namedObjects["randomEffects"]=&randomEffects;
+  namedObjects["vcov"]=&vcov;
+  namedObjects["scale"]=&scale;
+  namedObjects["RObjectPointer"]=&RObjectPointer;
+  namedObjects["RCopiedFlag"]=&RCopiedFlag;
+}
+
+SEXP  new_AGHQuad_summary (  )  {
+  nimSmartPtr<AGHQuad_summary> * ptrToSmartPtr;
+  AGHQuad_summary * newObj;
+  SEXP SptrToSmartPtr;
+  SEXP Sans;
+  newObj = new  AGHQuad_summary ;
+  ptrToSmartPtr = new nimSmartPtr<AGHQuad_summary>;
+  ptrToSmartPtr->setPtrFromT(newObj);
+  PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
+  PROTECT(Sans = AGHQuad_summary_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  UNPROTECT(2);
+  return(Sans);
+}
+
+SEXP  AGHQuad_summary_castPtrPtrToNamedObjectsPtrSEXP ( SEXP input )  {
+  return( R_MakeExternalPtr(dynamic_cast<NamedObjects*>(reinterpret_cast<AGHQuad_summary*>(*static_cast<void**>(R_ExternalPtrAddr(input)))), R_NilValue, R_NilValue));
+}
+
+SEXP  AGHQuad_summary_castDerivedPtrPtrToPairOfPtrsSEXP ( SEXP input )  {
+  nimSmartPtrBase * ptrToSmartPtrBase;
+  nimSmartPtr<AGHQuad_summary> * ptrToSmartPtr;
+  void * ptrToPtr;
+  SEXP SptrToSmartPtrBase;
+  SEXP SptrToPtr;
+  SEXP Sans;
+  ptrToSmartPtr = static_cast<nimSmartPtr<AGHQuad_summary>* >(R_ExternalPtrAddr(input));
+  ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase*>(ptrToSmartPtr);
+  ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
+  PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
+  PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
+  PROTECT(Sans = Rf_allocVector(VECSXP,2));
+  SET_VECTOR_ELT(Sans,0,SptrToSmartPtrBase);
+  SET_VECTOR_ELT(Sans,1,SptrToPtr);
+  UNPROTECT(3);
+  return(Sans);
 }

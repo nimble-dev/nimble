@@ -1,17 +1,17 @@
 #' Placeholder for compareMCMCs
 #'
-#' This function has been moved to a separate package
+#' This function has been moved to the `compareMCMCs` package.
 #'
 #' @param ... arguments
 #'
 #' @export
 #'
 compareMCMCs <- function(...)
-    cat("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.\n")
+    cat("This function now resides in the `compareMCMCs` package, available on CRAN. See also https://github.com/nimble-dev/compareMCMCs.\n")
 
 #' Placeholder for MCMCsuite
 #'
-#' This function has been moved to a separate package
+#' This function has been moved to a separate package.
 #'
 #' @param ... arguments
 #'
@@ -23,7 +23,7 @@ MCMCsuite <- function(...)
 
 #' Placeholder for buildAuxiliaryFilter
 #'
-#' This function has been moved to the `nimbleSMC` package
+#' This function has been moved to the `nimbleSMC` package.
 #'
 #' @param ... arguments
 #'
@@ -34,7 +34,7 @@ buildAuxiliaryFilter <- function(...)
 
 #' Placeholder for buildBootstrapFilter
 #'
-#' This function has been moved to the `nimbleSMC` package
+#' This function has been moved to the `nimbleSMC` package.
 #'
 #' @param ... arguments
 #'
@@ -45,7 +45,7 @@ buildBootstrapFilter <- function(...)
 
 #' Placeholder for buildEnsembleKF
 #'
-#' This function has been moved to the `nimbleSMC` package
+#' This function has been moved to the `nimbleSMC` package.
 #'
 #' @param ... arguments
 #'
@@ -56,7 +56,7 @@ buildEnsembleKF <- function(...)
 
 #' Placeholder for buildIteratedFilter2
 #'
-#' This function has been moved to the `nimbleSMC` package
+#' This function has been moved to the `nimbleSMC` package.
 #'
 #' @param ... arguments
 #'
@@ -67,7 +67,7 @@ buildIteratedFilter2 <- function(...)
 
 #' Placeholder for buildLiuWestFilter
 #'
-#' This function has been moved to the `nimbleSMC` package
+#' This function has been moved to the `nimbleSMC` package.
 #'
 #' @param ... arguments
 #'
