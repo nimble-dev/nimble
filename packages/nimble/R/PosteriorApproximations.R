@@ -1110,7 +1110,7 @@ buildOneAGHQuad_inner <- nimbleFunction(
 
 
 ## Inner quadrature for posterior inference.
-buildInnerQuadrature <- nimbleFunction(
+buildApproxPosterior <- nimbleFunction(
   name = 'AGHQuad',
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                    control = list(), approxMethods = list(hyperGrid = 'ccd', nQuadAGHQ = 5)) {
@@ -1288,19 +1288,30 @@ buildInnerQuadrature <- nimbleFunction(
     ## setupOutputs(reNodesAsScalars, paramNodesAsScalars)
     
     ## Automated transformation for parameters
-    paramsTransform <- parameterTransform(model, paramNodes, control = list(allowDeterm = allowNonPriors))
+    paramsTransform <- parameterTransformI(model, paramNodes, control = list(allowDeterm = allowNonPriors))
     pTransform_length <- paramsTransform$getTransformedLength()
     if(pTransform_length > 1) pTransform_indices <- 1:pTransform_length
     else pTransform_indices <- c(1, -1)
    
 		## Build up the hyperparameter grid:
+		## Cache values from grid quadrature:
+		## Probably need to say if(pTransform_length > 0).
+		I_CCD <- 1
+		I_AGHQ <- 2
+    theta_grid_nfl <- nimbleFunctionList(GRID_BASE)	
 		if(approxMethods$hyperGrid == 'ccd'){
+			gridMethod <- I_CCD
 			gridPts <- CCDGrid(dm = pTransform_length)
+			theta_grid_nfl[[I_AGHQ]] <- storeGridValues(z = rep(0, pTransform_length), wgt = 1, nre = nre)
 		}else{
+			gridMethod <- I_AGHQ
 			gridPts <- Rget_AGHQ_nodes(dm = pTransform_length, n = approxMethods$nQuadAGHQ)
+			theta_grid_nfl[[I_CCD]] <- storeGridValues(z = rep(0, pTransform_length), wgt = 1, nre = nre)
 		}
 		zGrid <- gridPts$z_nodes
 		zWeights <- gridPts$weights
+		nGrid <- nrow(zGrid)
+		theta_grid_nfl[[gridMethod]] <- storeGridValues(z = zGrid, wgt = zWeights, nre = nre)
 
     ## Cache values from optim step.
 		pTransformPostMode <- rep(0, pTransform_length)
@@ -1309,8 +1320,19 @@ buildInnerQuadrature <- nimbleFunction(
     ## Cache values for marginal distributions
 		pTransformFix <- 0
 		indexFix <- 0
-	
-    ## Indicator for removing the redundant index -1 in pTransform_indices
+		if(pTransform_length == 1) modeIndex <- which(zGrid == 0)
+		if(pTransform_length > 1) modeIndex <- which(rowSums(abs(zGrid)) == 0)
+		
+		## Need to have eigen decomp saved.
+		hessEigenVecs <- matrix(0, nrow=pTransform_length, ncol=pTransform_length)
+		hessEigenVals <- numeric(pTransform_length)
+		ATransform <- matrix(0, nrow=pTransform_length, ncol=pTransform_length)
+		AInverse <- matrix(0, nrow=pTransform_length, ncol=pTransform_length)
+				
+		## We will want to cache the standard deviation skew terms.
+		skewedStdDev <- matrix(0, nrow = pTransform_length, ncol = 2)
+				
+		## Indicator for removing the redundant index -1 in pTransform_indices
     one_time_fixes_done <- FALSE
     ## Default calculation method for AGHQuad
     methodID <- 2
@@ -1506,7 +1528,61 @@ buildInnerQuadrature <- nimbleFunction(
 			ansj <- ans[pTransform_indices != indexFix]
 			return(ansj)
 			returnType(double(1))
-		},	
+		},
+		spectralTransformation = function(negHess = double(2)){
+			## Save Eigen Vectors and Values.
+			eigenDecomp <- nimEigen(negHess)
+			hessEigenVecs <<- eigenDecomp$vectors
+			hessEigenVals <<- eigenDecomp$values		
+			ATransform <<- hessEigenVecs %*% diag(1/sqrt(hessEigenVals))
+			AInverse <<- diag(sqrt(hessEigenVals)) %*% t(hessEigenVecs)
+		},
+		## Transform z to theta.
+		z_to_theta = function(z = double(1)) {
+			theta <- pTransformPostMode + (ATransform %*% z)
+			returnType(double(1))
+			return(theta[,1])
+		},		
+		## Functions to approximate posterior distribution of theta.
+		theta_to_z = function(theta = double(1)) {
+			z <- AInverse %*% (theta - pTransformPostMode)
+			returnType(double(1))
+			return(z[,1])
+		},				
+		## Functions to approximate posterior distribution of theta.
+		calcSkewedSD = function() {
+			for( i in 1:pTransform_length){
+				z <- numeric(value = 0, length = pTransform_length)
+				z[i] <- -sqrt(2)
+				theta <- z_to_theta(z)
+				logDens2Neg <- calcPostLogProb_pTransformed(theta)
+				skewedStdDev[i, 1] <<- sqrt(2 / (2.0 * (logPostProbMode-logDens2Neg))) 	## numerator (-sqrt(2)) ^2
+				z[i] <- sqrt(2)
+				theta <- z_to_theta(z)
+				logDens2Pos <- calcPostLogProb_pTransformed(theta)
+				skewedStdDev[i, 2] <<- sqrt(2 / (2.0 * (logPostProbMode-logDens2Pos))) 	## numerator (-sqrt(2)) ^2
+			}
+			## Skew CCD grid only. Haven't investigated the impacts of this to AGHQ
+			if(gridMethod == I_CCD) theta_grid_nfl[[gridMethod]]$skewGridPoints(skewedStdDev)
+		},
+		## This is a loop for calculating theta on the grid points.
+		## It stores all values we need for simulation inference on the fixed and random-effects.
+		## Once this is called, we can then simulate.
+		calcGridTheta = function(){
+			for( i in 1:nGrid ){
+				if(theta_grid_nfl[[gridMethod]]$calcCheck(i) == 0 ){
+					z <- theta_grid_nfl[[gridMethod]]$getNodes(i)
+					theta <- z_to_theta(z)
+					# theta <- theta_grid_nfl[[gridMethod]]$getTheta(i)
+					logDensi <- calcPostLogProb_pTransformed(theta)
+					tmpChol <- get_inner_cholesky()								# Get the updated vals from Laplace.
+					tmpMode <- get_inner_mode()
+					theta_grid_nfl[[gridMethod]]$saveValues(i=modeIndex, theta = theta, 
+											logDensity = logDensi,
+											innerCholesky = tmpChol, innerMode = tmpMode)
+				}
+			}
+		},
 		##***************************************
 		## Outer Optim (MAP) for INLA:
 		##**************************************
@@ -1530,6 +1606,17 @@ buildInnerQuadrature <- nimbleFunction(
 			pTransformPostMode <<- optRes$par
 			logPostProbMode <<- optRes$value
 			hesspTransformPostMode <<- optRes$hessian
+
+			## Store these points in the quadrature object for use later.
+			## This does the mode only.
+			tmpChol <- get_inner_cholesky()
+			tmpMode <- get_inner_mode()
+			theta_grid_nfl[[gridMethod]]$saveValues(i=modeIndex, theta = pTransformPostMode, 
+									logDensity = logPostProbMode,
+									innerCholesky = tmpChol, innerMode = tmpMode)
+
+			## Save all the spectral transformation information.
+			spectralTransformation(-hesspTransformPostMode)
 
 			return(optRes)
 			returnType(optimResultNimbleList())
@@ -1660,7 +1747,7 @@ buildInnerQuadrature <- nimbleFunction(
         print("  [Warning] For findMLE, pStart should be length ", npar, " but is length ", length(pStart), ".")
         ans <- optimResultNimbleList$new()
         return(ans)
-#        stop("Wrong length for pStart in findMLE.")
+			# stop("Wrong length for pStart in findMLE.")
       }
       ## In case parameter nodes are not properly initialized
       if(any_na(pStart) | any_nan(pStart) | any(abs(pStart)==Inf)) pStartTransform <- rep(0, pTransform_length)
@@ -1689,6 +1776,31 @@ buildInnerQuadrature <- nimbleFunction(
         else tmp <- AGHQuad_nfl[[i]]$update_max_inner_logLik(p)
         numre <- dim(tmp)[1]
         raneff[(tot+1):(tot+numre)] <- tmp
+        tot <- tot + numre
+      }
+      return(raneff)
+      returnType(double(1))
+    },
+    ## Grab the inner Cholesky from the cached last values.
+    get_inner_cholesky = function(){
+      if(nre == 0) stop("No random effects in the model")
+      cholesky <- matrix(value = 0, nrow = nre, ncol = nre)
+      tot <- 0
+      for(i in seq_along(AGHQuad_nfl)){
+        numre <- lenInternalRENodeSets[i]
+        cholesky[(tot+1):(tot+numre), (tot+1):(tot+numre)] <- AGHQuad_nfl[[i]]$get_inner_negHessian_chol()
+        tot <- tot + numre
+      }
+      return(cholesky)
+      returnType(double(2))
+    },
+    get_inner_mode = function(){
+      if(nre == 0) stop("No random effects in the model")
+      raneff <- numeric(nre)
+      tot <- 0
+      for(i in seq_along(AGHQuad_nfl)){
+        numre <- lenInternalRENodeSets[i]
+        raneff[(tot+1):(tot+numre)] <- AGHQuad_nfl[[i]]$get_inner_mode()
         tot <- tot + numre
       }
       return(raneff)
