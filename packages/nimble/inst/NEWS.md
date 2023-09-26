@@ -1,3 +1,9 @@
+## BUG FIXES
+
+- Fix bug in RW_multinomial MCMC sampler which produced incorrect
+posterior results (PR# ?).
+
+
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
 
 ## USER LEVEL CHANGES
