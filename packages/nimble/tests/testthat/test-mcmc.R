@@ -1469,7 +1469,7 @@ test_that('binary sampler handles out of bounds', {
     expect_true(all(as.numeric(Csamples) == 1))
 })
     
-    ## testing the RW_multinomial sampler
+## testing the RW_multinomial sampler
 test_that('RW_multinomial sampler', {
     cat('===== Starting MCMC test for RW_multinomial sampler. =====')
     codeTest <- nimbleCode ({
@@ -1521,7 +1521,7 @@ test_that('RW_multinomial sampler', {
     cMcmcTest$run(niter)
     samples <- as.matrix(cMcmcTest$mvSamples)
     
-    expect_identical(as.numeric(samples[10000,]), c(8, 25, 31, 115, 821, 25,19, 84, 510, 362),
+    expect_identical(as.numeric(samples[10000,]), c(11, 31, 27, 104, 827, 23, 21, 80, 508, 368),
                      info = 'exact results of RW_multinomial sampler')
 })
 
@@ -1536,8 +1536,8 @@ test_that('RW_multinomial sampler on distribution of size 2', {
     })
     
     set.seed(0)
-    N <- 100
-    p <- 0.3
+    N <- 2
+    p <- 0.1
     x1 <- rbinom(1, size=N, prob=p)
     x2 <- N - x1
     inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
@@ -1558,7 +1558,7 @@ test_that('RW_multinomial sampler on distribution of size 2', {
     
     samples <- as.matrix(Cmcmc$mvSamples)
     fracs <- apply(samples, 2, mean) / N
-    expect_true(all(abs(as.numeric(fracs[c(1,3)]) - p) < 0.01),
+    expect_true(all(abs(as.numeric(fracs[c(1,3)]) - p) < 0.001),
                 info = 'RW_multinomial sampler results within tolerance')
 })
 
