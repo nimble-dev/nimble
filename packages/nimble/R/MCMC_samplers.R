@@ -1171,11 +1171,12 @@ sampler_RW_multinomial <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetAllNodes <- unique(model$expandNodeNames(target))
-        calcNodes      <- model$getDependencies(target) 
+        calcNodes      <- model$getDependencies(target)
         lTarget        <- length(targetAsScalar)
         Ntotal         <- sum(values(model,target))
         NOverL         <- Ntotal / lTarget
         ## numeric value generation
+        propVector        <- rep(0, lTarget)
         Zeros             <- matrix(0, lTarget, lTarget)
         Ones              <- matrix(1, lTarget, lTarget)
         timesRan          <- Zeros
@@ -1186,10 +1187,8 @@ sampler_RW_multinomial <- nimbleFunction(
         ENSwapMatrix      <- Ones
         ENSwapDeltaMatrix <- Ones
         RescaleThreshold  <- 0.2 * Ones
-        lpProp  <- 0
-        lpRev   <- 0
-        Pi      <- pi 
-        PiOver2 <- Pi / 2 ## Irrational number prevents recycling becoming degenerate
+        Pi      <- pi
+        PiOver2 <- Pi / 2   ## irrational number prevents recycling becoming degenerate
         u       <- runif(1, 0, Pi)
         ## nested function and function list definitions
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
@@ -1200,71 +1199,63 @@ sampler_RW_multinomial <- nimbleFunction(
         if(adaptive & adaptInterval < 100)              stop('adaptInterval < 100 is not recommended for RW_multinomial sampler')
     },
     run = function() {
-        for(iFROM in 1:lTarget) {            
+        for(iFROM in 1:lTarget) {
             for(iTO in 1:(lTarget-1)) {
-                if(u > PiOver2) {                
+                if(u > PiOver2) {
                     iFrom <- iFROM
                     iTo   <- iTO
-                    if (iFrom == iTo)
+                    if(iFrom == iTo)
                         iTo <- lTarget
-                    u <<- 2 * (u - PiOver2)   # recycle u
+                    u <<- 2 * (u - PiOver2)   ## recycle u
                 } else {
                     iFrom <- iTO
                     iTo   <- iFROM
-                    if (iFrom == iTo)
+                    if(iFrom == iTo)
                         iFrom <- lTarget
-                    u <<- 2 * (PiOver2 - u)   # recycle u
+                    u <<- 2 * (PiOver2 - u)   ## recycle u
                 }
-                propValueVector <- generateProposalVector(iFrom, iTo)
-                lpMHR <- my_setAndCalculateDiff$run(propValueVector) + lpRev - lpProp 
+                ## generate proposal vector
+                propVector <<- values(model,target)
+                pSwap       <- min(1, max(1, ENSwapMatrix[iFrom,iTo]) / propVector[iFrom])
+                nSwap       <- rbinom(n=1,   size=propVector[iFrom], prob=pSwap)
+                lpProp      <- dbinom(nSwap, size=propVector[iFrom], prob=pSwap, log=TRUE)
+                propVector[iFrom] <<- propVector[iFrom] - nSwap
+                propVector[iTo]   <<- propVector[iTo]   + nSwap
+                pRevSwap    <- min(1, max(1, ENSwapMatrix[iTo,iFrom]) / propVector[iTo])
+                lpRev       <- dbinom(nSwap, size=propVector[iTo], prob=pRevSwap, log=TRUE)
+                ## decide and jump
+                lpMHR <- my_setAndCalculateDiff$run(propVector) + lpRev - lpProp
                 jump  <- my_decideAndJump$run(lpMHR, 0, 0, 0)
+                ## adaptation
                 if(adaptive)   adaptiveProcedure(jump=jump, iFrom=iFrom, iTo=iTo)
             }
         }
     },
     methods = list(
-        generateProposalVector = function(iFrom = integer(), iTo = integer()) { 
-            propVector <- values(model,target) 
-            pSwap      <- min(1, max(1, ENSwapMatrix[iFrom,iTo]) / propVector[iFrom]) 
-            nSwap      <- rbinom(n=1,   size=propVector[iFrom], prob=pSwap) 
-            lpProp    <<- dbinom(nSwap, size=propVector[iFrom], prob=pSwap, log=TRUE) 
-            propVector[iFrom] <- propVector[iFrom] - nSwap 
-            propVector[iTo]   <- propVector[iTo]   + nSwap 
-            pRevSwap   <- min(1, max(1, ENSwapMatrix[iTo,iFrom]) / (propVector[iTo] + nSwap)) 
-            lpRev     <<- dbinom(nSwap, size=propVector[iTo], prob=pRevSwap, log=TRUE) 
-            returnType(double(1)) 
-            return(propVector) 
-        },
         adaptiveProcedure = function(jump=logical(), iFrom=integer(), iTo=integer()) {
-            NVector <- values(model,target) 
             timesRan[iFrom, iTo] <<- timesRan[iFrom, iTo] + 1
             if(jump)
                 timesAccepted[iFrom, iTo] <<- timesAccepted[iFrom, iTo] + 1
-            if (timesRan[iFrom, iTo] %% adaptInterval == 0) {
+            if(timesRan[iFrom, iTo] %% adaptInterval == 0) {
                 totalAdapted[iFrom, iTo] <<- totalAdapted[iFrom, iTo] + 1
                 accRate                   <- timesAccepted[iFrom, iTo] / timesRan[iFrom, iTo]
                 AcceptRates[iFrom, iTo]  <<- accRate
-                if (accRate > 0.5) {
-                    ENSwapMatrix[iFrom, iTo] <<-
-                        min(Ntotal,
-                            ENSwapMatrix[iFrom,iTo] + ENSwapDeltaMatrix[iFrom, iTo] / totalAdapted[iFrom,iTo])
+                if(accRate > 0.5) {
+                    ENSwapMatrix[iFrom, iTo] <<- min(Ntotal, ENSwapMatrix[iFrom,iTo] + ENSwapDeltaMatrix[iFrom, iTo] / totalAdapted[iFrom,iTo])
                 } else {
-                    ENSwapMatrix[iFrom, iTo] <<-
-                        max(1,
-                            ENSwapMatrix[iFrom,iTo] - ENSwapDeltaMatrix[iFrom,iTo] / totalAdapted[iFrom,iTo])
-                } 
-                if(accRate<RescaleThreshold[iFrom,iTo] | accRate>(1-RescaleThreshold[iFrom,iTo])) {
-                    ## rescale iff ENSwapMatrix[iFrom, iTo] is not set to an upper or lower bound 
-                    if (ENSwapMatrix[iFrom, iTo] > 1 & ENSwapMatrix[iFrom, iTo] < Ntotal) {
-                        ScaleShifts[iFrom, iTo]       <<- ScaleShifts[iFrom, iTo] + 1 
+                    ENSwapMatrix[iFrom, iTo] <<- max(1, ENSwapMatrix[iFrom,iTo] - ENSwapDeltaMatrix[iFrom,iTo] / totalAdapted[iFrom,iTo])
+                }
+                if(accRate<RescaleThreshold[iFrom,iTo] | (accRate > (1-RescaleThreshold[iFrom,iTo]))) {
+                    ## rescale iff ENSwapMatrix[iFrom, iTo] is not set to an upper or lower bound
+                    if(ENSwapMatrix[iFrom, iTo] > 1 & ENSwapMatrix[iFrom, iTo] < Ntotal) {
+                        ScaleShifts[iFrom, iTo]       <<- ScaleShifts[iFrom, iTo] + 1
                         ENSwapDeltaMatrix[iFrom, iTo] <<- min(NOverL, ENSwapDeltaMatrix[iFrom, iTo] * totalAdapted[iFrom,iTo] / 10)
-                        ENSwapDeltaMatrix[iTo, iFrom] <<- ENSwapDeltaMatrix[iFrom, iTo] 
+                        ENSwapDeltaMatrix[iTo, iFrom] <<- ENSwapDeltaMatrix[iFrom, iTo]
                         RescaleThreshold[iFrom,iTo]   <<- 0.2 * 0.95^ScaleShifts[iFrom, iTo]
                     }
                 }
-                ## lower Bound 
-                if(ENSwapMatrix[iFrom, iTo] < 1)
-                    ENSwapMatrix[iFrom, iTo] <<- 1                
+                ## lower Bound
+                if(ENSwapMatrix[iFrom, iTo] < 1)   ENSwapMatrix[iFrom, iTo] <<- 1
                 ## symmetry in ENSwapMatrix helps maintain good acceptance rates
                 ENSwapMatrix[iTo,iFrom]   <<- ENSwapMatrix[iFrom,iTo]
                 timesRan[iFrom, iTo]      <<- 0
