@@ -16,7 +16,7 @@ GRID_BASE <- nimbleFunctionVirtual(
 		getNodes = function(i=integer()){returnType(double(1))},
 		updateNodes = function(i=integer(), zNodes = double(1)){},
 		getLogDensity = function(i=integer()){returnType(double())},
-		resetGrid = function(zNew = double(2), wgtNew = double(1)){},
+		resetGrid = function(nQUpdate = integer()){},
 		skewGridPoints = function(skewSD = double(2)){}
 	)
 )
@@ -93,16 +93,16 @@ buildQuadGrid <- nimbleFunction(
 	},
 	run=function(){},
 	methods = list(
-    one_time_fixes = function() {
-      ## Run this once after compiling; remove extraneous -1 if necessary
-      if(one_time_fixes_done) return()
-      if(nQ == 1) {
+		one_time_fixes = function() {
+			## Run this once after compiling; remove extraneous -1 if necessary
+			if(one_time_fixes_done) return()
+			if(nQ == 1) {
 				calculated <<- numeric(length = 1, value = calculated[1])
 				logDensTheta <<- numeric(length = 1, value = logDensTheta[1])
 				wgt <<- numeric(length = 1, value = wgt[1])
 			}
 			one_time_fixes_done <<- TRUE
-    },	
+		},	
 		## Taken from Simon Wood's mgcv package.
 		## https://github.com/cran/mgcv/blob/master/R/inla.r
 		## However, we do scaled design following INLA such that z*zT = 1
@@ -153,7 +153,7 @@ buildQuadGrid <- nimbleFunction(
 			one_time_fixes()
 			if( nQ_aghq == 1 ){
 				z <<- matrix(0, nrow = 1, ncol = d)
-				wgt <<- sqrt(2*pi)
+				wgt <<- numeric(value = sqrt(2*pi), length = nQ)
 				modeIndex <<- 1
 			}else{
 				i <- 1:(nQ_aghq-1)
@@ -162,7 +162,7 @@ buildQuadGrid <- nimbleFunction(
 				y <- matrix(0, nrow = nQ_aghq, ncol = nQ_aghq)
 				y[1:(nQ_aghq-1), 1:(nQ_aghq-1) + 1] <- diag(dv)
 				y[1:(nQ_aghq-1) + 1, 1:(nQ_aghq-1)] <- diag(dv)
-				E <- nimEigen(y, symmetric = TRUE)
+				E <- eigen(y, symmetric = TRUE)
 				L <- E$values	# Always biggest to smallest.
 				V <- E$vectors
 				inds <- reverse[(120-nQ_aghq+1):120]	## Hard coded to maximum d.
@@ -170,18 +170,26 @@ buildQuadGrid <- nimbleFunction(
 				## Make mode hard zero. We know nQ is odd and > 1.
 				x[ceiling(nQ_aghq / 2 ) ] <- 0
 				V <- t(V[, inds])
-				w <- sqrt(2*pi) * V[, 1]^2 * exp(x^2)
+				w <- V[, 1]^2  * exp(x^2) * sqrt(2*pi) 
 				x <- sqrt(2) * x
 
 				## Build the multivariate quadrature rule.
-				k <- 1
 				wgt <<- rep(1, nQ)
-				for (i in 1:d) {
-					z[ ,i] <<- rep(x, each = nQ_aghq^(i-1), times = (nQ_aghq^d/nQ_aghq^i))
-					wgt <<- wgt * rep(w, each = nQ_aghq^(i-1), times = (nQ_aghq^d/nQ_aghq^i))
-				}
-				## Figure out the mode here: Probably still the middle but better check!
-				modeIndex <<- ceiling(nQ_aghq / 2 )
+				## *** Not sure what this won't compile yet...
+				# swp <- 3^(0:(nQ_aghq-1))
+				# indx <- rep(1, d)
+				# for( i in 1:nQ )
+				# {
+						# for(j in 1:d ) {
+							# k <- i %% swp[j] 
+							# if(k == 0) indx[j] <- indx[j] + 1
+							# if(indx[j] > d) indx[j] <- 1
+							# z[i, j] <<- x[indx[j]]
+							# wgt[i] <<- wgt[i]*w[indx[j]]
+						# }
+						
+						# if(sum(abs(z[i,])) == 0) modeIndex <<- i
+				# }
 			}
 		},
 		buildGrid = function(){
@@ -229,7 +237,7 @@ buildQuadGrid <- nimbleFunction(
 		skewGridPoints = function(skewSD = double(2)){
 			for( i in 1:nQ )
 			{
-				for( j in 1:nTheta ){
+				for( j in 1:d ){
 					sdAdj <- skewSD[j, 2]	# Positive Skew
 					if(z[i,j] <= 0) sdAdj <- skewSD[j, 1]	# Negative Skew
 					z[i, j] <<- z[i, j] * sdAdj
@@ -261,6 +269,8 @@ buildQuadGrid <- nimbleFunction(
 ## Testing to make sure these match my existing code.
 # innerOpt_nfl <- nimbleFunctionList(GRID_BASE)
 # innerOpt_nfl[[1]] <- buildQuadGrid(d = 2, nQ = 3, method = 1, nre = 5)
+# tmp <- buildQuadGrid(d = 2, nQ = 3, method = 1, nre = 5)
+# compileNimble(tmp)
 # innerOpt_nfl[[1]]$buildGrid()
 # plot(innerOpt_nfl[[1]]$getNodes())
 # innerOpt_nfl[[2]] <- buildQuadGrid(d = 2, nQ = 3, method = 2, nre = 5)
