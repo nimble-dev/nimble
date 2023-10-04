@@ -1,7 +1,8 @@
 ## BUG FIXES
 
-- Fix bug in RW_multinomial MCMC sampler which produced incorrect
-posterior results (PR# ?).
+- Removed the RW_multinomial MCMC sampler, which was found to generate incorrect
+  posterior results.  A corrected version of this sampler may be
+  re-introduced into the package, depending on user interest.
 
 
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
