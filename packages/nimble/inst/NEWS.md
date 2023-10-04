@@ -1,3 +1,9 @@
+## USER LEVEL CHANGES
+
+- Addition of the `prior_samples` MCMC sampler, which uses an existing set of
+  numerical samples to define the prior distribution of model node(s).n
+
+
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
 
 ## USER LEVEL CHANGES
