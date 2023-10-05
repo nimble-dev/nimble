@@ -32,7 +32,7 @@ sampler_prior_samples <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
         samples     <- extractControlElement(control, 'samples',     error = 'prior_samples sampler missing required control argument: samples')
-        randomDraws <- extractControlElement(control, 'randomDraws', FALSE)
+        randomDraws <- extractControlElement(control, 'randomDraws', FALSE)   ## default is taking sequential draws
         ## node list generation
         targetExpanded <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(targetExpanded, returnScalarComponents = TRUE)
@@ -2491,16 +2491,22 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section prior_samples sampler:
 #'
-#' The prior_samples sampler uses a set of existing MCMC samples to define the prior distribution of one or more model nodes.  One every MCMC iteration, the prior_samples sampler takes a value (or a row of values) from the sample values provided, and store this value (or these values) into the target model nodes.
+#' The prior_samples sampler uses a provided set of numeric values (\code{samples}) to define the prior distribution of one or more model nodes.  One every MCMC iteration, the prior_samples sampler takes value(s) from the numeric values provided, and stores these value(s) into the target model node(s).  This allows one define the prior distribution of model parameters empirically, using a set of numeric \code{samples}, presumably obtained previously using MCMC.  The \code{target} node may be either a single scalar node (scalar case), or a collection of model nodes.
 #'
-#' Logically, prior_samples samplers might want to operate first, in advance of other samplers, on every MCMC iteration.  By default, at the time of MCMC building, all prior_samples samplers are re-ordered to appear first in the list of samplers.  This behaviour can be subverted, however, by setting nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE).
+#' The prior_samples sampler provides two options for selection of the value to use on each MCMC iteration.  The default behaviour is to take sequential values from the \code{samples} vector (scalar case), or in the case of multiple dimensions, sequential rows of the \code{samples} matrix are used.  The alternative behaviour, by setting the control argument \code{randomDraws = TRUE}, will instead use random draws from the \code{samples} vector (scalar case), or randomly selected rows of the \code{samples} matrix in the multidimensional case.
 #'
-#' The prior_samples sampler is the only MCMC sampler which can be assigned to non-stochastic model nodes (nodes which are not assigned a prior distribution in the model). In fact, it is recommended that nodes being assigned a prior_samples are not provided with a prior distribution in the model, and rather, that these nodes only appear on the right-hand-side of model declaration lines.  In such case that a prior_samples sampler is assigned to a nodes with a prior distribution, the prior distribution will be overridden by the sample values provided to the sampler; however, the node will still be a stochastic node for other purposes, and will contribute to the model joint-density (using the sample values provided relative to the prior distribution), will have an MCMC sampler assigned to it by default, and also introduces potential for confusion.  In this case, a message is issued at the time of MCMC building.
+#' If the default of sequential selection of values is used, and the number of MCMC iterations exceeds the length of the \code{samples} vector (scalar case) or the number of rows of the \code{samples} matrix, then \code{samples} will be recycled as necessary for the number of MCMC iterations.  A message to this effect is also printed at the beginning of the MCMC chain.
 #'
-#' The posterior_predictive sampler functions by simulating new values for all downstream (dependent) nodes using their conditional distributions, as well as updating the associated model probabilities.  A posterior_predictive sampler will automatically be assigned to all trailing non-data stochastic nodes in a model, or when possible, to any node at a point in the model after which all downstream (dependent) stochastic nodes are non-data.
+#' Logically, prior_samples samplers might want to operate first, in advance of other samplers, on every MCMC iteration.  By default, at the time of MCMC building, all prior_samples samplers are re-ordered to appear first in the list of MCMC samplers.  This behaviour can be subverted, however, by setting nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE).
 #'
-#' The posterior_predictive sampler accepts no control list arguments.
-#' 
+#' The prior_samples sampler can be assigned to non-stochastic model nodes (nodes which are not assigned a prior distribution in the model). In fact, it is recommended that nodes being assigned a prior_samples are not provided with a prior distribution in the model, and rather, that these nodes only appear on the right-hand-side of model declaration lines.  In such case that a prior_samples sampler is assigned to a nodes with a prior distribution, the prior distribution will be overridden by the sample values provided to the sampler; however, the node will still be a stochastic node for other purposes, and will contribute to the model joint-density (using the sample values provided relative to the prior distribution), will have an MCMC sampler assigned to it by default, and also may introduce potential for confusion.  In this case, a message is issued at the time of MCMC building.
+#'
+#' The prior_samples sampler accepts the following control list elements:
+#' \itemize{
+#' \item \code{samples}. A numeric vector or matrix.  When the \code{target} node is a single scalar-valued node, \code{samples} should be a numeric vector.  When the \code{target} node specifies d > 2 model dimensions, \code{samples} should be a matrix containing d columns.  The \code{samples} control argument is required.
+#' \item \code{randomDraws}. A logical argument, specifying whether to use use a random draw from \code{samples} on each iteration.  If \code{samples} is a matrix, then a randomly-selected row of the \code{samples} matrix is used.  When \code{FALSE}, sequential values (or sequential matrix rows) are used (default = \code{FALSE}).
+#' }
+#'
 #' @section posterior_predictive sampler:
 #'
 #' The posterior_predictive sampler operates only on posterior predictive stochastic nodes. A posterior predictive node is a node that is not itself data and has no data nodes in its entire downstream (descendant) dependency network. Note that such nodes play no role in inference for model parameters but have often been included in BUGS models to make predictions, including for posterior predictive checks. As of version 0.13.0, NIMBLE samples model parameters without conditioning on the posterior predictive nodes and samples conditionally from the posterior predictive nodes as the last step of each MCMC iteration.
