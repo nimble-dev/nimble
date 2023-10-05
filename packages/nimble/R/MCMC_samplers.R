@@ -31,7 +31,7 @@ sampler_prior_samples <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        samples     <- extractControlElement(control, 'samples',     error = 'prior_samples sampler missing required control argument: samples')
+        samples     <- extractControlElement(control, 'samples',     error = '  [Error] prior_samples sampler missing required control argument: samples')
         randomDraws <- extractControlElement(control, 'randomDraws', FALSE)   ## default is taking sequential draws
         ## node list generation
         targetExpanded <- model$expandNodeNames(target)
@@ -47,7 +47,7 @@ sampler_prior_samples <- nimbleFunction(
         if(length(dim(samples)) != 2)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument must be a 2-dimensional array, but value provided was a ', length(dim(samples)), '-dimensional array'), call. = FALSE)
         if(!(storage.mode(samples) %in% c('integer', 'double')))   stop('  [Error] prior_samples sampler \'samples\' control argument must be numeric or integer type', call. = FALSE)
         if(dim(samples)[2] != k)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument had ', dim(samples)[2], ' columns, but target nodes have ', k, ' scalar elements.  These numbers must be equal.'), call. = FALSE)
-        if(any(model$getNodeType(target) == 'stoch'))   print('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.', call. = FALSE)
+        if(any(model$getNodeType(target) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
     },
     run = function() {
         if(randomDraws) {
@@ -65,7 +65,7 @@ sampler_prior_samples <- nimbleFunction(
     methods = list(
         before_chain = function(MCMCniter = double(), MCMCnburnin = double(), MCMCchain = double()) {
             ## issue a note if sequential draws from prior samples will have to be recycled
-            if((!randomDraws) & (MCMCniter > nSamples))   print('  [Note] prior_samples sampler will recycle sequential draws from prior samples, since ', nSamples, ' samples were provided, and ', MCMCniter, ' MCMC iterations will be run.')
+            if((!randomDraws) & (MCMCniter > nSamples))   cat('  [Note] prior_samples sampler will recycle sequential draws from prior samples, since ', nSamples, ' samples were provided, and ', MCMCniter, ' MCMC iterations will be run.\n')
         },
         reset = function() {
             ind <<- 0
@@ -2535,7 +2535,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
