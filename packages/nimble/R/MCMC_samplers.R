@@ -26,6 +26,8 @@ sampler_BASE <- nimbleFunctionVirtual(
 ### prior_samples sampler for using exisiting samples as prior #####
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_prior_samples <- nimbleFunction(
     name = 'sampler_prior_samples',
     contains = sampler_BASE,
