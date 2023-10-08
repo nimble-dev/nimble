@@ -307,6 +307,9 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         rrcf <- get(simulateName, pos = userEnv)
         dtype <- environment(drcf)$nfMethodRCobject$argInfo[['x']]
         rtype <- environment(rrcf)$nfMethodRCobject$returnType
+        ## remove possible 'default' specification from dtype
+        ## must occur before type() vs type(0) check (immediately below)
+        dtype$default <- NULL
         ## Deal with type() vs type(0) ambiguity.
         if(length(dtype) == 1)
             dtype <- substitute(x(0), list(x = dtype[[1]]))
