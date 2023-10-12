@@ -17,7 +17,10 @@ GRID_BASE <- nimbleFunctionVirtual(
 		updateNodes = function(i=integer(), zNodes = double(1)){},
 		getLogDensity = function(i=integer()){returnType(double())},
 		resetGrid = function(nQUpdate = integer()){},
-		skewGridPoints = function(skewSD = double(2)){}
+		skewGridPoints = function(skewSD = double(2)){},
+		getThetaModeIndex = function(){returnType(integer())},
+		getGridSize = function(){returnType(integer())},
+		buildAGHQOne = function(nQ1 = integer()){returnType(double(2))}
 	)
 )
 
@@ -54,24 +57,26 @@ buildQuadGrid <- nimbleFunction(
 			23200, 24167, 25700, 26360, 26591, 26776, 28443, 28905,
 			29577, 32705)
 			
+		## Number of grid points for different dimensions of theta.
 		nCCD <- index; p <- 1
 		for (i in 1:length(index)) {
 			if (index[i]>=p) p <- p * 2
 			nCCD[i] <- p
 		}
 		nC <- nCCD[d]
-		nQ_aghq <- nQ
 
-		## Need to do a reverse of Eigen Vectors:
+		## Need to do a reverse for Eigen Vectors:
 		reverse <- 120:1
 
+		## nQ will be total number of quadrature points.
+		nQ_aghq <- nQ
 		if( method == 1 ) nQ <- nC + 2*d + 1
 		if( method == 2 ) {
-			nQ <- nQ^d	## May be dimension reduced if we prune.
+			nQ <- nQ_aghq^d	## May be dimension reduced if we prune.
 		}
 		z <- matrix(0, nrow = nQ, ncol = d)
 
-		## Add some zeros if vectors will be too short.
+		## One time fixes if we run into some scalar issues for compilation.
 		## This is exclusively if the user requests Laplace (nQ = 1 AGHQ).
 		gridFix <- 0
 		if(nQ == 1)	{
@@ -149,52 +154,78 @@ buildQuadGrid <- nimbleFunction(
 			returnType(double(1))
 			return(x)
 		},
-		buildAGHQ = function(){
-			one_time_fixes()
-			if( nQ_aghq == 1 ){
-				z <<- matrix(0, nrow = 1, ncol = d)
-				wgt <<- numeric(value = sqrt(2*pi), length = nQ)
-				modeIndex <<- 1
+		buildAGHQOne = function(nQ1 = integer()){
+			res <- matrix(0, nrow = nQ1, ncol = 2)
+			if( nQ1 == 1 ){
+				## Laplace Approximation:
+				res[,1] <- 0
+				res[,2] <- sqrt(2*pi)
 			}else{
-				i <- 1:(nQ_aghq-1)
+				i <- 1:(nQ1-1)
 				dv <- sqrt(i/2)
 				## Recreate pracma::Diag for this problem.
-				y <- matrix(0, nrow = nQ_aghq, ncol = nQ_aghq)
-				y[1:(nQ_aghq-1), 1:(nQ_aghq-1) + 1] <- diag(dv)
-				y[1:(nQ_aghq-1) + 1, 1:(nQ_aghq-1)] <- diag(dv)
+				y <- matrix(0, nrow = nQ1, ncol = nQ1)
+				y[1:(nQ1-1), 1:(nQ1-1) + 1] <- diag(dv)
+				y[1:(nQ1-1) + 1, 1:(nQ1-1)] <- diag(dv)
 				E <- eigen(y, symmetric = TRUE)
 				L <- E$values	# Always biggest to smallest.
 				V <- E$vectors
-				inds <- reverse[(120-nQ_aghq+1):120]	## Hard coded to maximum d.
+				inds <- reverse[(120-nQ1+1):120]	## Hard coded to maximum d.
 				x <- L[inds]
 				## Make mode hard zero. We know nQ is odd and > 1.
-				x[ceiling(nQ_aghq / 2 ) ] <- 0
+				x[ceiling(nQ1 / 2 ) ] <- 0
 				V <- t(V[, inds])
-				w <- V[, 1]^2  * exp(x^2) * sqrt(2*pi) 
+				## Update nodes and weights in terms of z = x/sqrt(2) 
+				## and include Gaussian kernel in weight to integrate an arbitrary function.
+				w <- V[, 1]^2  * sqrt(2*pi) * exp(x^2)
 				x <- sqrt(2) * x
-
-				## Build the multivariate quadrature rule.
-				wgt <<- rep(1, nQ)
-				## *** Not sure what this won't compile yet...
-				# swp <- 3^(0:(nQ_aghq-1))
-				# indx <- rep(1, d)
-				# for( i in 1:nQ )
-				# {
-						# for(j in 1:d ) {
-							# k <- i %% swp[j] 
-							# if(k == 0) indx[j] <- indx[j] + 1
-							# if(indx[j] > d) indx[j] <- 1
-							# z[i, j] <<- x[indx[j]]
-							# wgt[i] <<- wgt[i]*w[indx[j]]
-						# }
-						
-						# if(sum(abs(z[i,])) == 0) modeIndex <<- i
-				# }
+				res[,1] <- x
+				res[,2] <- w
 			}
+			returnType(double(2))
+			return(res)
 		},
+		buildAGHQ = function(){
+			one_time_fixes()
+			if( nQ_aghq == 1 ){
+				## Laplace Approximation:
+				z <<- matrix(0, nrow = 1, ncol = d)
+				wgt <<- numeric(value = sqrt(2*pi), length = nQ)
+				modeIndex <<- 1
+				}else{
+					nodes <- buildAGHQOne(nQ_aghq)
+					## If d = 1, then we are done.
+					if(d == 1) {
+						z[,1] <<- nodes[,1]
+						wgt <<- nodes[,2]
+					}else {
+						## Build the multivariate quadrature rule.
+						wgt <<- rep(1, nQ)
+						
+						## A counter for when to swap.
+						swp <- numeric(value = 0, length = d)
+						for( ii in 1:d ) swp[ii] <- nQ_aghq^(ii-1)
+
+						## Repeat x for each dimension swp times.
+						for(j in 1:d ) {
+							indx <- 1
+							for( ii in 1:nQ )
+							{
+								z[ii, j] <<- nodes[indx,1]
+								wgt[ii] <<- wgt[ii]*nodes[indx,2]
+								k <- ii %% swp[j] 
+								if(k == 0) indx <- indx + 1
+								if(indx > nQ_aghq) indx <- 1
+							}
+							if(sum(abs(z[ii,])) == 0) modeIndex <<- ii
+						}
+					}
+				}
+		},
+		## Doesn't default to building the grid.
 		buildGrid = function(){
-			if(method == 2) buildAGHQ()
 			if(method == 1) buildCCD()
+			if(method == 2) buildAGHQ()
 		},
 		## Reset the sizes of the storage to change the grid if the user wants more/less AGHQ.
 		resetGrid = function(nQUpdate = integer()){
@@ -205,6 +236,8 @@ buildQuadGrid <- nimbleFunction(
 			nQ <<- nQUpdate^d
 			
 			## Update weights and nodes.
+			setSize(wgt, nQ)
+			setSize(z, c(nQ, d))			
 			buildAGHQ()
 			
 			## This will resize the storage to be saved later.
@@ -215,6 +248,7 @@ buildQuadGrid <- nimbleFunction(
 			setSize(logDensTheta, nQ)
 			
 			## Keep mode information, otherwise reset.
+			## I assume this all automatically lines up.
 			for( i in 1:nQ ){
 				if( abs(sum(z[i,])) == 0 ) modeIndex <<- i
 				if( i != modeIndex ) calculated[i] <<- 0
@@ -252,12 +286,18 @@ buildQuadGrid <- nimbleFunction(
 		updateWeights = function(i=integer(), weight = double()){wgt[i] <<- weight},
 		getNodes = function(i=integer()){returnType(double(1)); return(z[i,])},
 		updateNodes = function(i=integer(), zNodes = double(1)){z[i,] <<- zNodes},
-		getLogDensity = function(i=integer()){returnType(double()); return(logDensTheta[i])}
+		getLogDensity = function(i=integer()){returnType(double()); return(logDensTheta[i])},
+		getThetaModeIndex = function(){returnType(integer()); return(modeIndex)},
+		getGridSize = function(){returnType(integer()); return(nQ)}
 	)
 )
 
+## Paul's notes for testing:
+## 1) Make sure quadrature in 1+2 d integrates common functions correctly.
+## 2) Compare weights and nodes to pracma and to mvQuad.
+
 ## USE FOR TESTING
-# gridPts <- CCDGrid(dm = 2)
+# gridPts <- nimCCD(dm = 2)
 # zGrid <- as.matrix(gridPts$z_nodes)
 # zWeights <- gridPts$weights
 # test <- storeGridValues(z=0,1, nre = 5)
@@ -269,8 +309,19 @@ buildQuadGrid <- nimbleFunction(
 ## Testing to make sure these match my existing code.
 # innerOpt_nfl <- nimbleFunctionList(GRID_BASE)
 # innerOpt_nfl[[1]] <- buildQuadGrid(d = 2, nQ = 3, method = 1, nre = 5)
-# tmp <- buildQuadGrid(d = 2, nQ = 3, method = 1, nre = 5)
-# compileNimble(tmp)
+# tmp <- buildQuadGrid(d = 3, nQ = 5, method = 2, nre = 5)
+# tmp$buildGrid()
+# tmp$getNodes()
+# tmp$getWeights()
+# tmp$resetGrid(nQUpdate = 5)
+# tmp$buildAGHQOne(51)
+p
+# np <- pracma::gaussHermite(5)
+# mvq <- mvQuad::createNIGrid(dim=3, type = "GHe", level = 5)
+# z=mvQuad::getNodes(mvq)
+# w=mvQuad::getWeights(mvq)
+
+# tmpc <- compileNimble(tmp)
 # innerOpt_nfl[[1]]$buildGrid()
 # plot(innerOpt_nfl[[1]]$getNodes())
 # innerOpt_nfl[[2]] <- buildQuadGrid(d = 2, nQ = 3, method = 2, nre = 5)
