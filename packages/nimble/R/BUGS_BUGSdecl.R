@@ -282,7 +282,7 @@ BUGSdeclClass$methods(
         valueExpr <<- code[[3]]
 
         if(type == 'stoch')
-            distributionName <<- as.character(valueExpr[[1]])
+            distributionName <<- safeDeparse(valueExpr[[1]])
         else
             distributionName <<- NA
 
@@ -417,7 +417,7 @@ BUGSdeclClass$methods(
         ## targetExprReplaced shouldn't have any link functions at this point.
         valueExprReplaced <<- codeReplaced[[3]]
         if(type == 'stoch')
-            distributionName <<- as.character(valueExprReplaced[[1]])
+            distributionName <<- safeDeparse(valueExprReplaced[[1]])
         else
             distributionName <<- NA
     
@@ -591,7 +591,7 @@ BUGSdeclClass$methods(
                 boundNames <- c('lower_', 'upper_')
                 boundExprs <<- as.list(RHSreplaced[boundNames])
                 if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
-                    distName <- as.character(RHSreplaced[[1]])
+                    distName <- safeDeparse(RHSreplaced[[1]])
                     distRange <- getDistributionInfo(distName)$range
                     if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
@@ -1066,12 +1066,14 @@ genReplacementsAndCodeRecurse <- function(code,
         }
         ## Do not replace if it is from a special set of functions
         ## or is a nimbleFunction (specifically, an RCfunction)
+        ## or if we are allowing full nimbleFunctions and it is one, which would appear as nf$method(params)
         if(
         {
             funName <- safeDeparse(code[[1]], warn = TRUE)
             (
                 (funName %in% functionsThatShouldNeverBeReplacedInBUGScode) ||
-                (exists(funName, envir) && is.rcf(get(funName, envir)))
+                (exists(funName, envir) && is.rcf(get(funName, envir))) ||
+                (isTRUE(getNimbleOption('allowNFinModel')) && grepl('\\$', funName))
             )
         }
         )

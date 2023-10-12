@@ -529,7 +529,8 @@ checkADsupportForDistribution <- function(code, userEnv) {
 
 # check if distribution is defined and if not, attempt to register it
 checkUserDefinedDistribution <- function(code, userEnv) {
-    dist <- as.character(code[[3]][[1]])
+    dist_code <- code[[3]][[1]]
+    dist <- safeDeparse(code[[3]][[1]])
     if(dist %in% c("T", "I")) 
         dist <- as.character(code[[3]][[2]][[1]])
     if(!dist %in% distributions$namesVector)
@@ -545,17 +546,27 @@ replaceDistributionAliases <- function(code) {
         stop("Invalid model declaration: ", safeDeparse(code), ".")
     if(!is.call(code[[3]]))
         stop("Invalid model declaration: ", safeDeparse(code), " must call a density function.")
-    dist <- as.character(code[[3]][[1]])
-    trunc <- FALSE
-    if(dist %in% c("T", "I")) {
+
+    dist_code <- code[[3]][[1]]
+    if(isTRUE(getNimbleOption('allowNFinModel'))) {
+      NFinModel <- length(dist_code) > 1 # deparsed dist not needed
+    } else {
+      NFinModel <- FALSE
+    }
+
+    if(!NFinModel) { # original behavior
+      dist <- as.character(dist_code)
+      trunc <- FALSE
+      if(dist %in% c("T", "I")) {
         dist <- as.character(code[[3]][[2]][[1]])
         trunc <- TRUE
-    }
-    if(dist %in% names(distributionAliases)) {
+      }
+      if(dist %in% names(distributionAliases)) {
         dist <- as.name(distributionAliases[dist])
         if(trunc) code[[3]][[2]][[1]] <- dist else code[[3]][[1]] <- dist
+      }
     }
-    return(code)
+    code
 }
 
 checkForDeterministicDorR <- function(code) {
@@ -744,7 +755,7 @@ modelDefClass$methods(expandDistributions = function() {
         if(BUGSdecl$type != 'stoch') next
         
         newCode <- BUGSdecl$code
-        newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$valueExpr)
+        newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$distributionName, BUGSdecl$valueExpr)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
         BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
@@ -840,12 +851,12 @@ modelDefClass$methods(reparameterizeDists = function() {
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         code <- BUGSdecl$code   ## grab the original code
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
-        distName <- as.character(valueExpr[[1]])
+        distName <- BUGSdecl$distributionName #as.character(valueExpr[[1]])
         if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
         distRule <- getDistributionInfo(distName)
         numArgs <- length(distRule$reqdArgs)
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
-        newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
+        newValueExpr[[1]] <- BUGSdecl$valueExpr[[1]] #as.name(distName)     ## add in the distribution name
         if(numArgs==0) { ## for dflat, or a user-defined distribution might have 0 arguments
           nonReqdArgExprs <- NULL
           boundExprs <- BUGSdecl$boundExprs
@@ -929,7 +940,7 @@ modelDefClass$methods(addRemainingDotParams = function() {
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         newValueExpr <- valueExpr
-        defaultParamExprs <- getDistributionInfo(as.character(newValueExpr[[1]]))$altParams
+        defaultParamExprs <- getDistributionInfo(BUGSdecl$distributionName)$altParams
         if(length(defaultParamExprs) == 0)   next   ## skip if there are no altParams defined in distributions
         
         defaultParamNames <- names(defaultParamExprs)
@@ -1018,7 +1029,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
         }
         ## call that is not '['
         if(cLength > 1) {
-            if(as.character(code[[1]]) %in% c('<-', '~')) {
+            if(safeDeparse(code[[1]]) %in% c('<-', '~')) {
                 replacements <- c(list(replaceConstantsRecurse(code[[2]], constEnv, constNames, FALSE)),
                                   lapply(code[-c(1,2)], function(x) replaceConstantsRecurse(x, constEnv, constNames) ) )
                 replacements[[1]]$replaceable <- FALSE

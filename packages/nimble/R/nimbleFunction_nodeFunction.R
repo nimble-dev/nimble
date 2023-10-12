@@ -33,8 +33,19 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
 ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
-    BUGSdistName <- as.character(RHS[[1]])
+  subdone <- FALSE
+  if(isTRUE(getNimbleOption('allowNFinModel'))) {
+    if(length(RHS) > 1) {
+      BUGSdistName <- safeDeparse(RHS[[1]])
+      RHS[[1]] <- parse(text = getDistributionInfo(BUGSdistName)$simulateName,
+                        keep.source=FALSE)[[1]]
+      subdone <- TRUE
+    }
+  }
+  if(!subdone) {
+    BUGSdistName <- safeDeparse(RHS[[1]])
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
+  }
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'    
     if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
@@ -71,7 +82,7 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
-    dist <- substring(as.character(RHS[[1]]), 2, 1000)
+    dist <- substring(safeDeparse(RHS[[1]]), 2, 1000)
     
     lowerTailName <- 'lower.tail' 
     logpName <- 'log.p' 
@@ -133,8 +144,17 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
 ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
                                      ##ADFunc = FALSE,
                                      dynamicIndexLimitsExpr, RHSnonReplaced) {
+  deparseAndParse <- TRUE
+  if(isTRUE(getNimbleOption('allowNFinModel'))) {
+    if(length(RHS) > 1) {
+      deparseAndParse <- FALSE # a nf method like a$ddist
+      BUGSdistName <- safeDeparse(RHS[[1]])
+    }
+  }
+  if(deparseAndParse) {
     BUGSdistName <- as.character(RHS[[1]])
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
+  }
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
     if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
@@ -186,7 +206,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
-    dist <- substring(as.character(RHS[[1]]), 2, 1000)
+    dist <- substring(safeDeparse(RHS[[1]]), 2, 1000)
     lowerTailName <- 'lower.tail' 
     logpName <- 'log.p' 
     logName <- 'log' 

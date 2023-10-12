@@ -73,6 +73,14 @@ setMethod('[',   'distributionsClass',
           }
 )
 
+nested_change_dist_prefix <- function(from = 'd', to = 'r', name) {
+  dsfrom <- paste0('\\$', from)
+  if(grepl(dsfrom, name)) {
+    sub(dsfrom, paste0('\\$', to), name)
+  } else {
+    sub(paste0('^',from), to, name)
+  }
+}
 
 distClass <- setRefClass(
     Class = 'distClass',
@@ -109,7 +117,7 @@ distClass <- setRefClass(
             RdistExprList <<- lapply(RdistTextVector, function(t) parse(text=t)[[1]])
             init_altsExprsReqdArgs()
             numAlts <<- length(alts)
-            simulateName <<- sub('^d', 'r', densityName)
+            simulateName <<- nested_change_dist_prefix('d', 'r', densityName)
             init_altParams(distInputList)
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
@@ -126,12 +134,12 @@ distClass <- setRefClass(
                 params <- as.list(BUGSdistExpr[-1])   # removes the distribution name
                 paramsText <- lapply(params, deparse)
                 reqdArgs <<- sapply(paramsText, function(pt) init_getReqdArgs(pt))
-                densityName <<- as.character(BUGSdistExpr[[1]])
+                densityName <<- safeDeparse(BUGSdistExpr[[1]])
             } else {
                 params <- lapply(RdistExprList, `[`, -1)        # removes the distribution names
                 paramsText <- lapply(params, function(x) lapply(x, deparse))
                 reqdArgsList <- lapply(paramsText, function(pt) init_getReqdArgs(pt))
-                densityNamesList <- lapply(RdistExprList, function(expr) as.character(expr[[1]]))
+                densityNamesList <- lapply(RdistExprList, function(expr) safeDeparse(expr[[1]]))
                 if(length(unique(lapply(reqdArgsList, sort))) > 1)
                     stop('R/NIMBLE parameter names and order not consistent across alternative parameterizations')
                 if(length(unique(densityNamesList)) > 1)
@@ -371,7 +379,7 @@ getMaxDim <- function(typeList)
 getValueDim <- function(distObject) 
     distObject$types$value$nDim
 
-prepareDistributionInput <- function(densityName, userEnv) {
+prepareDistributionInput <- function(densityName, userEnv, rName) {
     out <- list()
     dist <- get(densityName, pos = userEnv)
     args <- formals(dist)
@@ -391,7 +399,11 @@ prepareDistributionInput <- function(densityName, userEnv) {
         out$types <- c(out$types, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
 
     # check consistent types
-    simulateName <- sub('^d', 'r', densityName)
+    if(missing(rName))
+      simulateName <- sub('^d', 'r', densityName)
+    else
+      simulateName <- rName
+
     typeInfo <- get('nfMethodRCobject', environment(eval(as.name(simulateName), envir = userEnv)))$argInfo
     typeInfo <- typeInfo[names(typeInfo) != "n"]
     rtypes <- character(0)
@@ -541,7 +553,8 @@ prepareDistributionInput <- function(densityName, userEnv) {
 #'         types = c('value = double(1)', 'alpha = double(1)')
 #'         )
 #'     ))
-registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = nimbleOptions('verbose')) {
+registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = nimbleOptions('verbose'),
+                                  check = TRUE) {
     if(missing(distributionsInput)) {
         stop("No distribution information supplied.")
     } else {
@@ -559,10 +572,11 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
             duplTogether <- paste0(dupl, collapse = ', ')
             messageIfVerbose("  [Warning] Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions: ", duplTogether, ". Please rename to avoid the conflict.")
         }
-
-        if(is.list(distributionsInput)) 
-           sapply(distributionsInput, checkDistributionInput)
-        sapply(distributionsInput, checkDistributionFunctions, userEnv = userEnv)
+        if(check) {
+          if(is.list(distributionsInput))
+            sapply(distributionsInput, checkDistributionInput)
+          sapply(distributionsInput, checkDistributionFunctions, userEnv = userEnv)
+        }
         if(is.character(distributionsInput)) {
           distributionsInput <- lapply(distributionsInput, prepareDistributionInput, userEnv = userEnv)
           names(distributionsInput) <- nms
@@ -736,13 +750,20 @@ if(kind %in% c('pqAvail', 'discrete')) {
     stop(paste0("getAllDistributionInfo: ", kind, " is not available from the distributions information."))
 }
 
-evalInDistsMatchCallEnv <- function(expr) {
-    dist <- as.character(expr[[1]])
+evalInDistsMatchCallEnv <- function(dist, expr) {
     if(dist %in% distributions$namesVector)
         return(eval(expr, distributions$matchCallEnv))
     if(exists('distributions', nimbleUserNamespace, inherits = FALSE) &&
-       dist %in% nimbleUserNamespace$distributions$namesVector)
+       dist %in% nimbleUserNamespace$distributions$namesVector) {
+      # The next two returns should be equivalent if expr is simply foo(param)
+      # The first one is included to minimize changes from previous behavior
+      # at the time of this change.
+      # The second one is to support a$foo(param)
+      if(!grepl('\\$', dist))
         return(eval(expr, nimbleUserNamespace$distributions$matchCallEnv))
+      return(match.call(get(dist, envir = nimbleUserNamespace$distributions$matchCallEnv),
+                        expr))
+    }
     stop(paste0("evalInDistsMatchCallEnv: ", dist, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
