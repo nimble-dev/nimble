@@ -1669,9 +1669,11 @@ buildApproxPosterior <- nimbleFunction(
 
 			## 7) Marginals for theta: 
 			## Options are integration free or AGHQ Stringer Method.
+			## Need to do marginals aghq for stringer and the integration free method.
 
 			## 8) Marginals for Fixed and Random-Effects: 
-			## Only simulation based
+			## Only simulation based.
+			## Need to simulate based on the quadrature grid.
 
 		},
 		##***************************************
