@@ -1441,7 +1441,8 @@ buildApproxPosterior <- nimbleFunction(
 			thetaModeIndex <<- theta_grid_nfl[[gridMethod]]$getThetaModeIndex()
 			wgtA <<- 0
 		},
-		changeHyperGrid = function(method = character(0), nQUpdate = integer(0, default = 3)){
+		changeHyperGrid = function(method = character(0, default = "aghq"), 
+				nQUpdate = integer(0, default = 3)){
 			if(method == "ccd"){
 				gridMethod <<- I_CCD
 				if(gridBuilt[gridMethod] == 0) {
@@ -1594,7 +1595,7 @@ buildApproxPosterior <- nimbleFunction(
 				skewedStdDev[i, 2] <<- sqrt(2 / (2.0 * (logPostProbMode-logDens2Pos))) 	## numerator (-sqrt(2)) ^2
 			}
 		},
-		calcMarginalLogLik <- function(){
+		calcMarginalLogLikApprox = function(){
 			marg <- logPostProbMode + 0.5*pTransform_length*log(2*pi) + 
 				0.5 * sum( log(1/hessEigenVals) ) + sum(log((skewedStdDev[,1] + skewedStdDev[,2]))/2)
 			returnType(double())
@@ -1602,7 +1603,7 @@ buildApproxPosterior <- nimbleFunction(
 			## Line 2748 in r-inla/blob/devel/gmrflib/approx-inference.c
 			## Commit # ef4eb20
 			# + sum( log((SD[,1] * SD[,2])) )	## Version from INLA but doesn't make sense to me.
-		}
+		},
 		## This is a loop for calculating theta on the grid points.
 		## It stores all values we need for simulation inference on the fixed and random-effects.
 		## Once this is called, we can then simulate.
@@ -1623,7 +1624,7 @@ buildApproxPosterior <- nimbleFunction(
 			}
 		},
 		## Quadrature based marginal log-likelihood
-		calcMarginalLogLik = function(){
+		calcMarginalLogLikQuad = function(){
 			marg <- 0
 			for(i in 1:nGrid){
 				lik <- exp(theta_grid_nfl[[gridMethod]]$getLogDensity(i) - logPostProbMode)
@@ -1637,16 +1638,19 @@ buildApproxPosterior <- nimbleFunction(
 			##-------------------------------------
 			## 1) Build the hyperparamter grid.
 			if( gridBuilt[gridMethod] == 0 ) buildHyperGrid()
+			nGrid <<- theta_grid_nfl[[gridMethod]]$getGridSize()
 
 			## 2) Find posterior mode: 
 			## Values are saved to theta_grid_nfl and locally cached.
-			findPostMode()
+			# findPostMode()	## Won't compile...
 			
 			## 3) Update weights for the transformation. ***Is this really how I want to do this?
 			## Only do this once if multiple calls given this is all cached.
 			if(wgtA == 0){
-				gridWeights <- theta_grid_nfl[[gridMethod]]$getWeights()*prod(1/sqrt(hessEigenVals))
-				theta_grid_nfl[[gridMethod]]$updateWeights(gridWeights)
+				for( i in 1:nGrid ){
+					wgti <- theta_grid_nfl[[gridMethod]]$getWeights(i)*prod(1/sqrt(hessEigenVals))
+					theta_grid_nfl[[gridMethod]]$updateWeights(i, wgti)
+				}
 				wgtA <<- 1
 			}
 
@@ -1660,8 +1664,8 @@ buildApproxPosterior <- nimbleFunction(
 			
 			## 6) Calculate Marginal log-Likelihood
 			## Based on asymetric Gaussian assumption of the marginal of theta.
-			marginalAG <- calcMarginalLogLik()
-			marginalQuad <- calcMarginalLogLik()	## This one probably make sense only for AGHQ
+			marginalAG <- calcMarginalLogLikApprox()
+			marginalQuad <- calcMarginalLogLikQuad()	## This one probably make sense only for AGHQ
 
 			## 7) Marginals for theta: 
 			## Options are integration free or AGHQ Stringer Method.

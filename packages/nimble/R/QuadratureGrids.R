@@ -315,7 +315,7 @@ buildQuadGrid <- nimbleFunction(
 # tmp$getWeights()
 # tmp$resetGrid(nQUpdate = 5)
 # tmp$buildAGHQOne(51)
-p
+
 # np <- pracma::gaussHermite(5)
 # mvq <- mvQuad::createNIGrid(dim=3, type = "GHe", level = 5)
 # z=mvQuad::getNodes(mvq)
