@@ -128,9 +128,9 @@ buildQuadGrid <- nimbleFunction(
 			design[(nC + d + 2):(nC + 2*d + 1), 1:d] <- diag(d)*-1
 
 			## Weights as defined by Rue 2009. 
-			## Note that the radius is scaled so we don't need exp(-0.5*d*f0^2)
-			f0 <- 1.1 # sqrt(d) + 0.1
-			wgts <- 1 / ((nQ - 1) * (f0^2 - 1) * (1 + exp(-0.5*f0^2) ))
+			## Note that the paper weights are incorrect: https://groups.google.com/g/r-inla-discussion-group/c/sy2xYin7YJA
+			f0 <- 1.1
+			wgts <- wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
 			wgt0 <- 1 - (nQ-1)*wgts
 			
 			z <<- design
