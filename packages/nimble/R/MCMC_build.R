@@ -210,6 +210,7 @@ buildMCMC <- nimbleFunction(
         thin                  = double(default = -1),
         thin2                 = double(default = -1),
         resetWAIC             = logical(default = TRUE),
+        only15224             = logical(default = FALSE),
         chain                 = integer(default =  1)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
@@ -267,10 +268,21 @@ buildMCMC <- nimbleFunction(
                     samplerTimes[ind] <<- samplerTimes[ind] + run.time(samplerFunctions[[ind]]$run())
                 }
             } else {
-                for(i in seq_along(samplerExecutionOrderToUse)) {
-                    ind <- samplerExecutionOrderToUse[i]
-                    samplerFunctions[[ind]]$run()
+                ##
+                ##
+                if(!only15224) {
+                    for(i in seq_along(samplerExecutionOrderToUse)) {
+                        ind <- samplerExecutionOrderToUse[i]
+                        samplerFunctions[[ind]]$run()
+                    }
                 }
+                if(only15224) {
+                    for(i in 1:15224) {
+                        samplerFunctions[[i]]$run()
+                    }
+                }
+                ##
+                ##
             }
             ## adding "accumulators" to MCMC?
             ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
