@@ -1,5 +1,7 @@
 
 ## 
+## Create Gaussian getParam Speed up.
+##
 buildOneAGHQuad_inner <- nimbleFunction(
   contains = APPROX_BASE,
   setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {

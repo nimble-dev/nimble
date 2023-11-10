@@ -1113,9 +1113,12 @@ buildOneAGHQuad_inner <- nimbleFunction(
 buildApproxPosterior <- nimbleFunction(
   name = 'AGHQuad',
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
-                   control = list(), approxMethods = list(hyperGrid = 'ccd', nQuadAGHQ = 5)) {
+                   control = list(), approxMethods = list()) {
     if(is.null(control$split)) split <- TRUE else split <- control$split
     if(is.null(control$check))   check <- TRUE else  check <- control$check
+    if(is.null(approxMethods$hyperGrid)) approxMethods$hyperGrid <- "ccd"
+    if(is.null(approxMethods$nQuadAGHQ)) approxMethods$nQuadAGHQ <- 3
+
     # Possible future feature
     #if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
     allowNonPriors <- FALSE
@@ -1313,6 +1316,10 @@ buildApproxPosterior <- nimbleFunction(
 		nGrid <- theta_grid_nfl[[gridMethod]]$getGridSize()
 		wgtA <- 0
 
+		## Build marginal AGHQ grid to integrate over pT-1 theta values.
+		theta_grid_marg <- buildQuadGrid(d = (pTransform_length-1), nQ = approxMethods$nQuadAGHQ, method = I_AGHQ, nre = nre)
+		gridBuiltMarg <- 0
+		
 		# zGrid <- gridPts$z_nodes
 		# zWeights <- gridPts$weights
 		# nGrid <- nrow(zGrid)
@@ -1336,9 +1343,10 @@ buildApproxPosterior <- nimbleFunction(
 		
 		## We will want to cache the standard deviation skew terms.
 		skewedStdDev <- matrix(0, nrow = pTransform_length, ncol = 2)
+    ## Points for Asymmetric Gaussian Interpolation (integration free...?)
 		extraPoints <- c(-15.0, -10.0, -7.0, 7.0, 10.0, 15.0, -5.0, -3.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 3.0, 5.0)
 		aghqPoints <- pracma::gaussHermite(51)$x*sqrt(2)
-		zMargGrid <- sort(unique(c(extra.points, aghq.points)))
+		zMargGrid <- sort(unique(c(extraPoints, aghqPoints)))
 
 		## Indicator for removing the redundant index -1 in pTransform_indices
     one_time_fixes_done <- FALSE
@@ -1656,20 +1664,49 @@ buildApproxPosterior <- nimbleFunction(
 			returnType(double(2))
 			return(ans)
 		},
-		findMarginalHyperAGHQ = function(pIndex = integer(), size = integer())
+		findMarginalHyperAGHQ = function(pIndex = integer(), nQp = integer(0, default = 3), nQinner = integer(0, default = 3))
 		{
-		## Some efficiencies here if nQuad is the same as the previously built grid.
-		## if(nAGHQ == theta_grid_nfl[[I_AGHQ]$getGridSize())
-		## Need to build a d - 1 AGHQ grid object in setup.
-		## findPostModeFixedj()
-		## Then calculate the log density
+      if( gridBuiltMarg == 0 ){
+        theta_grid_marg$buildGrid()
+        gridBuiltMarg <<- 1
+      }
+      if(nQinner != theta_grid_marg$getGridSize()){
+        theta_grid_marg$resetGrid(nQinner)
+      }
+      zwtheta <- theta_grid_marg$buildAGHQOne(nQp)	## nodes, weights
+      std_dev <- sqrt(covTheta[pIndex, pIndex])
+
+      res <- matrix(0, nrow = nQp, ncol = 3)
+      resj <- 0
+      for( j in 1:nQp ){
+        res[j,1] <- zwtheta[j,1]*std_dev + pTransformPostMode[pIndex]
+        ## *** Compilation Error here... Ah I need to add defaults!
+        # thetaFit_0j <- findPostModeFixedj(pStartTransform = rep(0, pTransform_length-1), 
+         # j=j, pTransformFixed=res[j,1],  method = "BFGS", hessian = TRUE)
+        # thetaMode_0j <- thetaFit_0j$par
+        # eigenD <- nimEigen(-thetaFit_0j$hessian)
+        # At <- eigenD$vectors %*% diag(1/sqrt(eigenD$values))
+        # logDetNegHess <- sum(log(eigenD$values))	## Adjust weights for AGHQ.
+        # Do AGHQ marginalization for each thetaj across all other theta values.
+        # for( i in 1:nQinner ){
+          # theta_0j <- thetaMode_0j + (At %*% theta_grid_marg$getNodes(i))
+          # postProbi <- calcPostLogProb_pTransformedj(theta_0j)	## cached thetaj in optim step.
+          # resj <- resj + exp(postProbi - logPostProbMode)*theta_grid_marg$getWeights(i)
+        # }
+        # res[j,2] <- log(resj) + logPostProbMode - 0.5*logDetNegHess
+      }
+      ## Because thetaj values are AGHQ, we can normalize to get the proper posterior prob.
+      # margj <- sum(exp(res[,2] - logPostProbMode)*zwtheta[,2]) + logPostProbMode + 0.5*log(std_dev)
+      # res[,3] <- res[,2] - margj
+      returnType(double(2))
+      return(res)		
 		},
 		findMarginalHyperIntFree = function(pIndex = integer())
 		{
 			std_dev <- sqrt(covTheta[pIndex, pIndex])
 			thetai <- rep(0, pTransform_length)
 			logDens <- rep(0, 69)
-			for( i in 1:69 ){	# Know fixed # of points
+			for( i in 1:69 ){	# Known fixed # of points
 				thetai[pIndex] <- pTransformPostMode[pIndex] + zMargGrid[i] * std_dev
 				## Find the conditional mean:
 				for( j in 1:pTransform_length ){
@@ -1704,7 +1741,7 @@ buildApproxPosterior <- nimbleFunction(
 			findPostMode(pStartTransform = rep(0, pTransform_length), method = "BFGS", hessian = TRUE)
 
 			## 3) Calculate skew and if gridMethod == CCD, skew grid.
-			calcSkewedSD()
+			calcSkewedSD()	## Cache "skewedStdDev"
 			if(gridMethod == I_CCD) theta_grid_nfl[[I_CCD]]$skewGridPoints(skewedStdDev)
 
 			## 4) Calculate the density on the grid points. Saves to theta_grid_nfl
@@ -1712,7 +1749,7 @@ buildApproxPosterior <- nimbleFunction(
 			calcHyperGrid()
 			
 			## 5) Calculate Marginal log-Likelihood
-			## Based on asymetric Gaussian assumption of the marginal of theta.
+			## Based on asymmetric Gaussian assumption of the marginal of theta.
 			marginalAG <- calcMarginalLogLikApprox()
 			marginalQuad <- calcMarginalLogLikQuad()	## This one probably make sense only for AGHQ
 
@@ -1770,8 +1807,8 @@ buildApproxPosterior <- nimbleFunction(
 		findPostModeFixedj = function(pStartTransform  = double(1, default = Inf),
 						 j = integer(0, default = 1), 
 						 pTransformFixed = double(0, default = 0),
-											 method  = character(0, default = "BFGS"),
-											 hessian = logical(0, default = TRUE)) {
+						 method  = character(0, default = "BFGS"),
+						 hessian = logical(0, default = TRUE)) {
 			indexFix <<- j
 			pTransformFix <<- pTransformFixed
 		
