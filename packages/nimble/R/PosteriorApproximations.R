@@ -38,7 +38,8 @@ APPROX_BASE <- nimbleFunctionVirtual(
     },
 		get_inner_mode = function(){ returnType(double(1))},
 		get_inner_negHessian = function(){returnType(double(2))},
-		get_inner_negHessian_chol = function(){returnType(double(2))}
+		get_inner_negHessian_chol = function(){returnType(double(2))},
+    check_convergence = function(){returnType(double())}
   )
 )
 
@@ -123,6 +124,8 @@ buildOneAGHQuad1D_inner <- nimbleFunction(
 		## Cache values for posterior approximations via simulation.
 		## Mode is called max_inner_logLik_saved_par
 		saved_inner_negHess <- matrix(0, nrow = 1, ncol = 1)
+
+    converged <- 0
   },
   run = function(){},
   methods = list(
@@ -203,10 +206,15 @@ buildOneAGHQuad1D_inner <- nimbleFunction(
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod, control = optimControl)
       if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
-      }
+      }     
+      converged <<- optRes$convergence
       return(optRes)
       returnType(optimResultNimbleList())
     },
+    check_convergence = function(){
+      returnType(double())
+      return(converged)
+    },    
     ## Inner optimization using single-taped gradient
     max_inner_logLik_internal = function(p = double(1)) {
       values(model, paramNodes) <<- p
@@ -224,6 +232,7 @@ buildOneAGHQuad1D_inner <- nimbleFunction(
       if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
       }
+      converged <<- optRes$convergence
       return(optRes)
       returnType(optimResultNimbleList())
     },
@@ -623,6 +632,8 @@ buildOneAGHQuad_inner <- nimbleFunction(
 		## Cache values for access in INLA like methods.
 		saved_inner_negHess <- matrix(0, nrow = nre, ncol = nre)
 		saved_inner_negHess_chol <- matrix(0, nrow = nre, ncol = nre)
+    
+    converged <- 0
   },
   run = function(){},
   methods = list(
@@ -745,8 +756,13 @@ buildOneAGHQuad_inner <- nimbleFunction(
       if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
       }
+      converged <<- optRes$convergence
       return(optRes)
       returnType(optimResultNimbleList())
+    },
+    check_convergence = function(){
+      returnType(double())
+      return(converged)
     },
     max_inner_logLik_internal = function(p = double(1)) {
       set_params(p)
@@ -763,6 +779,7 @@ buildOneAGHQuad_inner <- nimbleFunction(
       if(optRes$convergence != 0){
         print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
       }
+      converged <<- optRes$convergence      
       return(optRes)
       returnType(optimResultNimbleList())
     },
@@ -1477,6 +1494,14 @@ buildApproxPosterior <- nimbleFunction(
 		},
 		## Added functions for INLA to get posterior density
 		##***************************************			
+    checkInnerConvergence = function(){
+      converged <- 0
+      for(i in seq_along(AGHQuad_nfl)){
+        if(AGHQuad_nfl[[i]]$check_convergence() != 0) converged <- 1
+      }
+      returnType(double())
+      return(converged)
+    },
 		calcPrior_p = function(p = double(1)){
 			values(model, paramNodes) <<- p
 			ans <- model$calculate(paramNodes)	## Add updates to deterministic nodes!
@@ -1677,37 +1702,49 @@ buildApproxPosterior <- nimbleFunction(
       std_dev <- sqrt(covTheta[pIndex, pIndex])
 
       res <- matrix(0, nrow = nQp, ncol = 3)
-      resj <- 0
       for( j in 1:nQp ){
         res[j,1] <- zwtheta[j,1]*std_dev + pTransformPostMode[pIndex]
-        ## *** Compilation Error here... Ah I need to add defaults!
-        # thetaFit_0j <- findPostModeFixedj(pStartTransform = rep(0, pTransform_length-1), 
-         # j=j, pTransformFixed=res[j,1],  method = "BFGS", hessian = TRUE)
-        # thetaMode_0j <- thetaFit_0j$par
-        # eigenD <- nimEigen(-thetaFit_0j$hessian)
-        # At <- eigenD$vectors %*% diag(1/sqrt(eigenD$values))
-        # logDetNegHess <- sum(log(eigenD$values))	## Adjust weights for AGHQ.
-        # Do AGHQ marginalization for each thetaj across all other theta values.
-        # for( i in 1:nQinner ){
-          # theta_0j <- thetaMode_0j + (At %*% theta_grid_marg$getNodes(i))
-          # postProbi <- calcPostLogProb_pTransformedj(theta_0j)	## cached thetaj in optim step.
-          # resj <- resj + exp(postProbi - logPostProbMode)*theta_grid_marg$getWeights(i)
-        # }
-        # res[j,2] <- log(resj) + logPostProbMode - 0.5*logDetNegHess
+        ## If this is the mode, then we can get everything we need from our already known mode...
+        thetaFit_0j <- findPostModeFixedj(pStartTransform = rep(0, pTransform_length-1), 
+         j=pIndex, pTransformFixed=res[j,1], method = "BFGS", hessian = TRUE)
+        thetaMode_0j <- thetaFit_0j$par
+        eigenD <- nimEigen(-thetaFit_0j$hessian)
+        At <- eigenD$vectors %*% diag(1/sqrt(eigenD$values))
+        logDetNegHess <- sum(log(eigenD$values))	## Adjust weights for AGHQ.
+        ## Do AGHQ marginalization for each thetaj across all other theta values.
+        margProbj <- 0
+        modeIndex <- theta_grid_marg$getThetaModeIndex()
+        for( i in 1:nQinner ){
+          if(modeIndex == i){
+             margProbj <- margProbj + theta_grid_marg$getWeights(i) ## exp(0)*wgt
+          }else{  
+            theta_0j <- thetaMode_0j + (At %*% theta_grid_marg$getNodes(i))[,1]
+            postProbi <- calcPostLogProb_pTransformedj(theta_0j)	## cached thetaj in optim step.
+            ## If inner didn't converge we should just assume it was really unlikely...
+            ## This needs more thought and can be solved by pruning.
+            if(checkInnerConvergence() == 0){
+              margProbj <- margProbj + 
+                exp(postProbi - thetaFit_0j$value)*theta_grid_marg$getWeights(i)
+            }            
+          }
+        }
+        res[j,2] <- log(margProbj) + thetaFit_0j$value - 0.5*logDetNegHess
       }
       ## Because thetaj values are AGHQ, we can normalize to get the proper posterior prob.
-      # margj <- sum(exp(res[,2] - logPostProbMode)*zwtheta[,2]) + logPostProbMode + 0.5*log(std_dev)
-      # res[,3] <- res[,2] - margj
+      margj <- sum(exp(res[,2] - logPostProbMode)*zwtheta[,2])
+      lognormconst <- log(margj) + logPostProbMode + log(std_dev)
+      res[,3] <- res[,2] - lognormconst
       returnType(double(2))
-      return(res)		
+      return(res)
 		},
 		findMarginalHyperIntFree = function(pIndex = integer())
 		{
 			std_dev <- sqrt(covTheta[pIndex, pIndex])
 			thetai <- rep(0, pTransform_length)
-			logDens <- rep(0, 69)
+      res <- matrix(0, nrow = 69, ncol = 2)
 			for( i in 1:69 ){	# Known fixed # of points
 				thetai[pIndex] <- pTransformPostMode[pIndex] + zMargGrid[i] * std_dev
+        res[i, 1] <- thetai[pIndex]
 				## Find the conditional mean:
 				for( j in 1:pTransform_length ){
 					if(j != pIndex){
@@ -1717,16 +1754,22 @@ buildApproxPosterior <- nimbleFunction(
 				}
 				## Calculate asymmetric Gaussian:
 				zi <- theta_to_z(thetai)
+        logDens <- 0
 				for( j in 1:pTransform_length ){
 					side <- 2
 					if(zi[j] <= 0) side <- 1
-					logDens[i] <- logDens[i] - 0.5*zi[j]^2/skewedStdDev[j, side]
+					logDens <- logDens - 0.5*zi[j]^2/skewedStdDev[j, side]
 				}
+        res[i, 2] <- logDens
 			}
 			## Note to self: Explore normalization... Should we use the spline? Can we know it analytically?
-			returnType(double(1))
-			return(logDens)			
-		},		
+			returnType(double(2))
+			return(res)			
+		},
+    ## Simulate across the parameter grid.
+    # simulateInnerVariables = function(){
+      # returnType(double(2))
+    # },
 		findApproxPosterior = function(){
 		
 			## Basic approx posterior STEPS:
