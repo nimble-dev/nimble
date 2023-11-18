@@ -1548,7 +1548,7 @@ buildApproxPosterior <- nimbleFunction(
 				if( i == indexFix ) vals[i] <- pTransformFix
 				if( i > indexFix ) vals[i] <- pTransform[i-1]
 			}
-			ans <- calcPostLogProb_pTransformed(vals)	
+			ans <- calcPostLogProb_pTransformed(vals)
 			returnType(double())
 			return(ans)
 		},
@@ -1604,7 +1604,7 @@ buildApproxPosterior <- nimbleFunction(
 			## Save Eigen Vectors and Values.
 			eigenDecomp <- nimEigen(negHess)
 			hessEigenVecs <<- eigenDecomp$vectors
-			hessEigenVals <<- eigenDecomp$values		
+			hessEigenVals <<- eigenDecomp$values
 			ATransform <<- hessEigenVecs %*% diag(1/sqrt(hessEigenVals))
 			AInverse <<- diag(sqrt(hessEigenVals)) %*% t(hessEigenVecs)
 			covTheta <<- ATransform %*% ATransform	## Efficient to do this here.
@@ -1637,13 +1637,13 @@ buildApproxPosterior <- nimbleFunction(
 		},
 		calcMarginalLogLikApprox = function(){
 			logDetNegHess <- sum(log(hessEigenVals)) ## 1/det|H|^0.5.		
-			marg <- logPostProbMode + 0.5*pTransform_length*log(2*pi) - 
-				0.5 * logDetNegHess + sum(log((skewedStdDev[,1] + skewedStdDev[,2]))/2)
-			returnType(double())
+      ## Line 2748 in r-inla/blob/devel/gmrflib/approx-inference.c
+      ## Commit # ef4eb20
+      marg <- logPostProbMode + 0.5*pTransform_length*log(2*pi) - 
+        0.5*(logDetNegHess + sum(log(skewedStdDev[,1] * skewedStdDev[,2])))
+      
+      returnType(double())
 			return(marg)
-			## Line 2748 in r-inla/blob/devel/gmrflib/approx-inference.c
-			## Commit # ef4eb20
-			# + sum( log((SD[,1] * SD[,2])) )	## Version from INLA but doesn't make sense to me.
 		},
 		## This is a loop for calculating theta on the grid points.
 		## It stores all values we need for simulation inference on the fixed and random-effects.
@@ -1689,6 +1689,7 @@ buildApproxPosterior <- nimbleFunction(
 			returnType(double(2))
 			return(ans)
 		},
+    ## Marginals AGHQ from Stringer et al.
 		findMarginalHyperAGHQ = function(pIndex = integer(), nQp = integer(0, default = 3), nQinner = integer(0, default = 3))
 		{
       if( gridBuiltMarg == 0 ){
@@ -1698,19 +1699,40 @@ buildApproxPosterior <- nimbleFunction(
       if(nQinner != theta_grid_marg$getGridSize()){
         theta_grid_marg$resetGrid(nQinner)
       }
-      zwtheta <- theta_grid_marg$buildAGHQOne(nQp)	## nodes, weights
+      ## 1D quadrature to evaluate the theta on.
+      zwtheta <- theta_grid_marg$buildAGHQOne(nQp)	## nodes + weights
       std_dev <- sqrt(covTheta[pIndex, pIndex])
 
+      ## Get indices excluding pIndex.
+      inds <- 1:(pTransform_length-1)
+      for(i in 1:(pTransform_length-1)) { if(i >= pIndex) {inds[i] <- inds[i] + 1} }
+
+      ## Initial values really matter.
+      initPTransform  <- pTransformPostMode[inds]
+      
       res <- matrix(0, nrow = nQp, ncol = 3)
+      ## For each value of theta, we need to do AGHQ which means 
+      ## finding the mode of the other parameters.
       for( j in 1:nQp ){
         res[j,1] <- zwtheta[j,1]*std_dev + pTransformPostMode[pIndex]
-        ## If this is the mode, then we can get everything we need from our already known mode...
-        thetaFit_0j <- findPostModeFixedj(pStartTransform = rep(0, pTransform_length-1), 
-         j=pIndex, pTransformFixed=res[j,1], method = "BFGS", hessian = TRUE)
-        thetaMode_0j <- thetaFit_0j$par
-        eigenD <- nimEigen(-thetaFit_0j$hessian)
+
+        ## If this is the mode then we know some information:
+        if(zwtheta[j,1] == 0){
+          negHess_0j <- negHesspTransformPostMode[inds,inds]
+          thetaMode_0j <- pTransformPostMode[inds]
+          maxLogProb_0j <- logPostProbMode
+          pTransformFix <<- res[j,1]  ## Need to make sure this is cached.
+        }else{
+          thetaFit_0j <- findPostModeFixedj(pStartTransform = initPTransform, 
+              j=pIndex, pTransformFixed=res[j,1], method = "BFGS", hessian = TRUE)
+          thetaMode_0j <- thetaFit_0j$par
+          negHess_0j <- -thetaFit_0j$hessian
+          maxLogProb_0j <- thetaFit_0j$value
+        }
+        eigenD <- nimEigen(negHess_0j)
         At <- eigenD$vectors %*% diag(1/sqrt(eigenD$values))
         logDetNegHess <- sum(log(eigenD$values))	## Adjust weights for AGHQ.
+
         ## Do AGHQ marginalization for each thetaj across all other theta values.
         margProbj <- 0
         modeIndex <- theta_grid_marg$getThetaModeIndex()
@@ -1724,11 +1746,11 @@ buildApproxPosterior <- nimbleFunction(
             ## This needs more thought and can be solved by pruning.
             if(checkInnerConvergence() == 0){
               margProbj <- margProbj + 
-                exp(postProbi - thetaFit_0j$value)*theta_grid_marg$getWeights(i)
-            }            
+                exp(postProbi - maxLogProb_0j)*theta_grid_marg$getWeights(i)
+            }
           }
         }
-        res[j,2] <- log(margProbj) + thetaFit_0j$value - 0.5*logDetNegHess
+        res[j,2] <- log(margProbj) + maxLogProb_0j - 0.5*logDetNegHess
       }
       ## Because thetaj values are AGHQ, we can normalize to get the proper posterior prob.
       margj <- sum(exp(res[,2] - logPostProbMode)*zwtheta[,2])
@@ -1767,8 +1789,28 @@ buildApproxPosterior <- nimbleFunction(
 			return(res)			
 		},
     ## Simulate across the parameter grid.
-    # simulateInnerVariables = function(){
+    # simulateInnerVariables = function(nsim = integer()){
+      # ans <- matrix(0, nrow = nsim, ncol = nre)
+			# nGrid <<- theta_grid_nfl[[gridMethod]]$getGridSize()
+      # wgts <- rep(0, nGrid)
+			# for(i in 1:nGrid){
+				# wgts[i] <- exp(theta_grid_nfl[[gridMethod]]$getLogDensity(i))*theta_grid_nfl[[gridMethod]]$getWeights(i)
+			# }
+      # wgts <- wgts/sum(wgts)
+      # grps <- rmulti(1, size = nsim, prob = wgts)
+      # j1 <- 1
+      # j2 <- 2
+      # for( i in seq_along(grps) ){
+        # if(grps[i] > 0){
+          # mu <- theta_grid_nfl[[gridMethod]]$getMode(i)
+          # U <- theta_grid_nfl[[gridMethod]]$getCholesky(i)
+          # j2 <- j1 + grps[i] - 1
+          # for( k in j1:j2 ) ans[k,] <- rnorm_chol(n=1, mean = mu, cholesky = U, prec_param = TRUE)
+          # j1 <- j2 + 1
+        # }
+      # }
       # returnType(double(2))
+      # return(ans)
     # },
 		findApproxPosterior = function(){
 		

@@ -192,35 +192,35 @@ buildQuadGrid <- nimbleFunction(
 				z <<- matrix(0, nrow = 1, ncol = d)
 				wgt <<- numeric(value = sqrt(2*pi), length = nQ)
 				modeIndex <<- 1
-				}else{
-					nodes <- buildAGHQOne(nQ_aghq)
-					## If d = 1, then we are done.
-					if(d == 1) {
-						z[,1] <<- nodes[,1]
-						wgt <<- nodes[,2]
-					}else {
-						## Build the multivariate quadrature rule.
-						wgt <<- rep(1, nQ)
-						
-						## A counter for when to swap.
-						swp <- numeric(value = 0, length = d)
-						for( ii in 1:d ) swp[ii] <- nQ_aghq^(ii-1)
+			}else{
+        nodes <- buildAGHQOne(nQ_aghq)
+        ## If d = 1, then we are done.
+        if(d == 1){
+          z[,1] <<- nodes[,1]
+          wgt <<- nodes[,2]
+          modeIndex <<- which(z[,1] == 0)[1]
+        }else{
+          ## Build the multivariate quadrature rule.
+          wgt <<- rep(1, nQ)
+          
+          ## A counter for when to swap.
+          swp <- numeric(value = 0, length = d)
+          for( ii in 1:d ) swp[ii] <- nQ_aghq^(ii-1)
 
-						## Repeat x for each dimension swp times.
-						for(j in 1:d ) {
-							indx <- 1
-							for( ii in 1:nQ )
-							{
-								z[ii, j] <<- nodes[indx,1]
-								wgt[ii] <<- wgt[ii]*nodes[indx,2]
-								k <- ii %% swp[j] 
-								if(k == 0) indx <- indx + 1
-								if(indx > nQ_aghq) indx <- 1
-							}
-							if(sum(abs(z[ii,])) == 0) modeIndex <<- ii
-						}
-					}
-				}
+          ## Repeat x for each dimension swp times.
+          for(j in 1:d ) {
+            indx <- 1
+            for( ii in 1:nQ ) {
+              z[ii, j] <<- nodes[indx,1]
+              wgt[ii] <<- wgt[ii]*nodes[indx,2]
+              k <- ii %% swp[j] 
+              if(k == 0) indx <- indx + 1
+              if(indx > nQ_aghq) indx <- 1
+            }
+            if(sum(abs(z[ii,])) == 0) modeIndex <<- ii
+          }
+        }
+      }
 		},
 		## Doesn't default to building the grid.
 		buildGrid = function(){
