@@ -117,7 +117,6 @@ buildMCMC <- nimbleFunction(
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
-
         
         if(getNimbleOption('MCMCorderPriorSamplesSamplersFirst') && length(conf$samplerConfs)) {
             ## put all prior_samples samplers at the beginning
