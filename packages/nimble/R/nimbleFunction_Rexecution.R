@@ -1271,14 +1271,14 @@ optimDefaultControl <- function() {
 #' message "OK" or a character string giving the error message.
 #' call the matched call.
 #' @export
-nimIntegrate <- function(f, lower, upper, ..., subdivisions = 100L,
+nimIntegrate <- function(f, pars, lower, upper, ..., subdivisions = 100L,
           rel.tol = 0.0001, abs.tol = 0.0001,
           stop.on.error = TRUE) {
     ## Note that we can't keep R's use of `.Machine$double.eps^0.25` as
     ## we can't compile that syntax.
-  integrate( f, lower, upper, ..., subdivisions = 100L,
+  integrate( f, lower, upper, pars, subdivisions = 100L,
           rel.tol = 0.0001, abs.tol = 0.0001,
-          stop.on.error = TRUE )
+          stop.on.error = TRUE )$value
 }
 
 #' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.

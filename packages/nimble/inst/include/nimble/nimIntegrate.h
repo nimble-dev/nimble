@@ -28,9 +28,10 @@
 
 class NimIntegrateProblem {
 public:
-  NimIntegrateProblem(double lower, double upper, int subdivisions,
+  NimIntegrateProblem(NimArr<1, double>& param, double lower, double upper, int subdivisions,
                       double rel_tol, double abs_tol, bool stop_on_error) :
-        lower_(lower),
+    param_(param),
+    lower_(lower),
         upper_(upper),
         subdivisions_(subdivisions),
         rel_tol_(rel_tol),
@@ -50,18 +51,19 @@ public:
     double rel_tol_;
     double abs_tol_;
     bool stop_on_error_;
-    NimArr<1, double> par_;
+    NimArr<1, double>& param_;
+    NimArr<1, double> x_;
     NimArr<1, double> return_vals_;
 };
 
 template<class Fn>
 class NimIntegrateProblem_Fun : public NimIntegrateProblem {
   public:
-  NimIntegrateProblem_Fun(Fn fn, double lower, double upper, int subdivisions, double rel_tol, double abs_tol, bool stop_on_error)
-    : NimIntegrateProblem(lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error), fn_(fn) {}
+  NimIntegrateProblem_Fun(Fn fn, NimArr<1, double>& param, double lower, double upper, int subdivisions, double rel_tol, double abs_tol, bool stop_on_error)
+    : NimIntegrateProblem(param, lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error), fn_(fn) {}
 
   protected:
-  virtual NimArr<1, double> function() {return fn_(par_);}
+  virtual NimArr<1, double> function() {return fn_(x_, param_);}
 
   private:
   Fn fn_;
@@ -70,6 +72,7 @@ class NimIntegrateProblem_Fun : public NimIntegrateProblem {
 template <class Fn>
 inline double nimIntegrate(
     Fn fn,
+    NimArr<1, double>& param,
     double lower,
     double upper,
     int subdivisions,
@@ -77,7 +80,7 @@ inline double nimIntegrate(
     double abs_tol,
   bool stop_on_error) {
 
-  return NimIntegrateProblem_Fun<Fn>(fn, lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error).integrate();
+  return NimIntegrateProblem_Fun<Fn>(fn, param, lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error).integrate();
 }
 
 #endif // NIMINTEGRATE_H_

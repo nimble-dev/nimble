@@ -317,7 +317,7 @@ RCfunProcessing <- setRefClass(
                 writeLines('***** READY FOR setSizes *****')
                 browser()
             }
-            
+
             compileInfo$typeEnv[['neededRCfuns']] <<- list()
             compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
             compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
