@@ -1272,10 +1272,12 @@ optimDefaultControl <- function() {
 #' call the matched call.
 #' @export
 nimIntegrate <- function(f, lower, upper, ..., subdivisions = 100L,
-          rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol,
+          rel.tol = 0.0001, abs.tol = 0.0001,
           stop.on.error = TRUE) {
+    ## Note that we can't keep R's use of `.Machine$double.eps^0.25` as
+    ## we can't compile that syntax.
   integrate( f, lower, upper, ..., subdivisions = 100L,
-          rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol,
+          rel.tol = 0.0001, abs.tol = 0.0001,
           stop.on.error = TRUE )
 }
 

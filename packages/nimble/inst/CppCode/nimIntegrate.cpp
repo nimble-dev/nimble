@@ -1,5 +1,32 @@
-#include <nimble/nimIntegrate.h>
-#include <R_ext/Applic.h>
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <math.h>
+#include <float.h>
+#include <Rmath.h> /* for fmax2, fmin2, imin2 */
+
+//#include <R_ext/Applic.h>
 #include <nimble/nimIntegrate.h>
 #include <string.h>
 #include <algorithm>
@@ -8,6 +35,22 @@
 
 // typedef taken from "Writing R Extensions"
 typedef void integr_fn(double *x, int n, void *ex);
+
+/* from integrate.c
+
+    Rdqags(Rintfn, (void*)&is,
+	   &lower, &upper, &epsabs, &epsrel, &result,
+	   &abserr, &neval, &ier, &limit, &lenw, &last, iwork, work);
+
+void Rdqags(integr_fn f, void *ex, double *a, double *b,
+	    double *epsabs, double *epsrel,
+	    double *result, double *abserr, int *neval, int *ier,
+	    int *limit, int *lenw, int *last, int *iwork, double *work)
+*/
+
+//  Rdqagi(Rintfn, (void*)&is, &bound,&inf,&epsabs,&epsrel,&result,
+//	   &abserr,&neval,&ier,&limit,&lenw,&last,iwork,work);
+
 
 // some_actual_integrator is a toy to be replaced by
 // a call to Rdqags or Rdqagi
@@ -37,8 +80,29 @@ void NimIntegrateProblem::fn(double *x, int n, void *ex) {
 
 double NimIntegrateProblem::integrate() {
   void* ex = this;
+  //proof of concept
+  /*
   double result = some_actual_integrator(NimIntegrateProblem::fn,
                                          ex,
                                          lower_, upper_);
+  */
+  
+  double result = 0.0;
+  double abserr;
+  int neval;
+  int ier;
+  int lenw = 4*subdivisions_;
+  int last;
+  int* iwork = new int[subdivisions_];
+  double* work = new double[lenw];
+  Rdqags(NimIntegrateProblem::fn, ex, &lower_, &upper_,
+         &abs_tol_, &rel_tol_, &result,  &abserr, &neval, &ier,
+         &subdivisions_, &lenw, &last, iwork, work); 
+  delete [] iwork;
+  delete [] work;
   return result;
 }
+
+
+
+

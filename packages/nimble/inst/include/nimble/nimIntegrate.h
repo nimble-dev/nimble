@@ -23,12 +23,19 @@
 #define NIMINTEGRATE_H_
 
 #include "nimOptim.h" // has NimBound stuff and other headers needed
+// CJP note: shouldn't we just #include the specific files we need,
+// namely NimArr.h and perhaps nothing else?
 
 class NimIntegrateProblem {
 public:
-    NimIntegrateProblem(double lower, double upper) :
+  NimIntegrateProblem(double lower, double upper, int subdivisions,
+                      double rel_tol, double abs_tol, bool stop_on_error) :
         lower_(lower),
-        upper_(upper) {};
+        upper_(upper),
+        subdivisions_(subdivisions),
+        rel_tol_(rel_tol),
+        abs_tol_(abs_tol),
+        stop_on_error_(stop_on_error) {};
 
     double integrate();
  private:
@@ -39,6 +46,10 @@ public:
 
     double lower_;
     double upper_;
+    int subdivisions_;
+    double rel_tol_;
+    double abs_tol_;
+    bool stop_on_error_;
     NimArr<1, double> par_;
     NimArr<1, double> return_vals_;
 };
@@ -46,8 +57,8 @@ public:
 template<class Fn>
 class NimIntegrateProblem_Fun : public NimIntegrateProblem {
   public:
-  NimIntegrateProblem_Fun(Fn fn, double lower, double upper)
-    : NimIntegrateProblem(lower, upper), fn_(fn) {}
+  NimIntegrateProblem_Fun(Fn fn, double lower, double upper, int subdivisions, double rel_tol, double abs_tol, bool stop_on_error)
+    : NimIntegrateProblem(lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error), fn_(fn) {}
 
   protected:
   virtual NimArr<1, double> function() {return fn_(par_);}
@@ -60,8 +71,13 @@ template <class Fn>
 inline double nimIntegrate(
     Fn fn,
     double lower,
-    double upper) {
-    return NimIntegrateProblem_Fun<Fn>(fn, lower, upper).integrate();
+    double upper,
+    int subdivisions,
+    double rel_tol,
+    double abs_tol,
+  bool stop_on_error) {
+
+  return NimIntegrateProblem_Fun<Fn>(fn, lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error).integrate();
 }
 
 #endif // NIMINTEGRATE_H_
