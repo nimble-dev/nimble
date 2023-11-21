@@ -4,13 +4,65 @@
 ## simulate(model_nodes)
 ## model_nodes$getNodeFunctions() returns a list of the nfRefClassObjets underlying the nodeFunctions
 
+nodeFunctionVector_WithDerivsOutputNodes <- function(model,
+                                                 calcNodes,
+                                                 excludeData,
+                                                 sortUnique) {
+  nimDerivsInfo <- nimDerivsInfoClass(calcNodes = calcNodes,
+                                      thisModel = model,
+                                      case = "outputOnly")
+  
+  ## Make one dummy node that can be used for set_CppAD_tape_info_for_model
+  ## It will never be called from this object
+  NFV <- nodeFunctionVector(model = model,
+                            nodeNames = calcNodes,
+                            excludeData = excludeData,
+                            sortUnique = sortUnique)
+  class(NFV) <- "nodeFunctionVector_nimDerivs"
+  NFV$nimDerivsInfo <- nimDerivsInfo
+  NFV
+}
+
+nodeFunctionVector_DerivsModelUpdateNodes <- function(model,
+                                                      updateNodes = NULL,
+                                                      constantNodes = NULL) {
+  nimDerivsInfo <- nimDerivsInfoClass(updateNodes = updateNodes,
+                                      constantNodes = constantNodes,
+                                      thisModel = model,
+                                      case = "updateOnly")
+  ## Make one dummy node that can be used for set_CppAD_tape_info_for_model
+  ## It will never be called from this object
+  ## Using the first of updateNodes or constantNodes did not work because
+  ## it could be a RHSonly node, which nodes not have a nodeFunction,
+  ## which manifests as a crash if not caught.  Instead now we use the first
+  ## node in the model (by default, includeRHSnodes = FALSE).
+  ## dummyNodeNames <- c(updateNodes, constantNodes)[1]
+  dummyNodeNames <- model$getNodeNames()[1]
+  if(isTRUE(is.na(dummyNodeNames))) dummyNodeNames <- character()
+  if(isTRUE(is.null(dummyNodeNames))) dummyNodeNames <- character()
+  NFV <- nodeFunctionVector(model = model,
+                            nodeNames = dummyNodeNames,
+                            excludeData = FALSE,
+                            sortUnique = FALSE)
+  class(NFV) <- "nodeFunctionVector_nimDerivs"
+  NFV$nimDerivsInfo <- nimDerivsInfo
+  NFV
+}
+
 nodeFunctionVector <-
     function(model,
              nodeNames,
+             wrtNodes = NULL,
              excludeData = FALSE,
              sortUnique = TRUE,
              errorContext = "")
 {
+    if(!is.null(wrtNodes)){
+        nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = wrtNodes, calcNodes = nodeNames, thisModel = model)
+    }
+    else{
+        nimDerivsInfo <- NULL
+    }
     if(length(nodeNames) == 0) {
         gids <- numeric(0)
         indexingInfo <- list(declIDs = integer(), rowIndices = integer())
@@ -44,9 +96,13 @@ nodeFunctionVector <-
     }
     ## Any modification to this list ordering needs to be updated in
     ## populateNodeFxnVectorNew_copyFromRobject in accessorClasses.cpp
+    classLabel <- if(is.null(nimDerivsInfo))
+                      "nodeFunctionVector"
+                  else
+                      "nodeFunctionVector_nimDerivs"
     structure(list(gids = gids,
                    indexingInfo = indexingInfo,
-                   model = model),
-              class = "nodeFunctionVector")
+                   model = model,
+                   nimDerivsInfo = nimDerivsInfo),
+              class = classLabel)
 }
-

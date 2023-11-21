@@ -42,8 +42,12 @@ typedef std::map<SEXP, DllAndFinalizer>::iterator RnimblePtrsIterator;
 void finalizeOneObject(RnimblePtrsIterator RNPiter) {
     R_CFinalizer_t cfun;
     cfun = RNPiter->second.Finalizer;
-    if(cfun)
+    if(cfun) {
+      //      std::cout<<"finalizing "<<RNPiter->first<<std::endl;
+      //      std::cout<<"local value of vec_ptr is "<<CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage()<<std::endl;
       cfun(RNPiter->first);
+      //      std::cout<<"done finalizing "<<RNPiter->first<<std::endl;
+    }
     R_ClearExternalPtr(RNPiter->first);
     RnimblePtrs.erase(RNPiter);
 }

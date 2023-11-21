@@ -40,7 +40,6 @@
 \alias{keywordInfoClass-Class}
 \alias{MakeCustomModelClass-Class}
 \alias{makeCustomModelValuesClass-Class}
-\alias{makeStaticInitClass-Class}
 \alias{mapsClass-Class}
 \alias{modelDefInfoClass-Class}
 \alias{mvInfoClass-Class}
@@ -48,6 +47,7 @@
 \alias{nimbleGraphClass-Class}
 \alias{nimbleListDefClass-Class}
 \alias{nimbleProjectClass-Class}
+\alias{nimDerivsInfoClass-Class}
 \alias{nlCompilationInfoClass-Class}
 \alias{posteriorClass-Class}
 \alias{promptClass-Class}
@@ -88,6 +88,8 @@
 \alias{is.model}
 \alias{nf_preProcessMemberDataObject}
 \alias{samplesSummary}
+\alias{AGHQuad_params}
+\alias{AGHQuad_summary}
 \alias{messageIfVerbose}
 \alias{calc_dmnormConjugacyContributions}
 \alias{calc_dmnormAltParams}
@@ -104,6 +106,7 @@
 \alias{cc_getNodesInExpr}
 \alias{calcAdaptationFactor}
 \alias{is.nfGenerator}
+\alias{mcmc_createModelObject}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
 \description{

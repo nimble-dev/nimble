@@ -1,6 +1,35 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+#' NIMBLE language function to break tracking of derivatives
+#'
+#' This function is used in a method of a nimbleFunction that has derivatives enabled.  It returns its value but breaks tracking of derivatives.
+#'
+#' @param x scalar value
+#'
+#' @details
+#' This funcion only works with scalars.
+#'
+#' @export
+ADbreak <- function(x) x
+
+#' Power function for integer-valued exponent
+#'
+#' pow function with exponent required to be integer
+#'
+#' @param a Base
+#' @param b Exponent
+#'
+#' @return a^b
+#'
+#' @details This is required in nimble models and nimbleFunctions if derivatives will be tracked
+#' but tracked only with respect to a, such that b might be any (positive, 0, or negative) integer.
+#' This contrasts with pow(a, b) (equivalent to a^b), which requires b > 0 if derivatives will be
+#' tracked, even if they will only be requested with respect to a.
+#' 
+#' @export
+pow_int <- function(a, b) a^round(b) # b should be integer.  rounding it makes finite-element derivatives 0, as needed.
+
 #' NIMBLE language functions for R-like vector construction
 #'
 #' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{diag}, \code{length}, \code{seq_along}, \code{is.na}, \code{is.nan}, \code{any}, and \code{all} can be used in nimbleFunctions and compiled using \code{compileNimble}.
@@ -423,7 +452,6 @@ rCalcDiffNodes <- function(model, nfv){
     return(l_Prob)
 }
 
-
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
 #'
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
@@ -457,8 +485,6 @@ rCalcDiffNodes <- function(model, nfv){
 #'
 #' simulate returns NULL.
 #' 
-NULL
-
 #' @rdname nodeFunctions
 #' @export
 calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)	
@@ -1236,6 +1262,10 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     if(identical(gr, "NULL")) gr <- NULL
     defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
+    ## Only enter non-default values into Rcontrol.
+    ## R's optim will fill in the rest.
+    ## This should match compiled handling of control list
+    ## parameters in NimOptimProblem::solve in nimOptim.cpp.
     for (name in defaultControl$nimbleListDef$types$vars) {
         if (!identical(control[[name]], defaultControl[[name]])) {
             Rcontrol[[name]] <- control[[name]]
@@ -1270,9 +1300,25 @@ optimDefaultControl <- function() {
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
 #' @export
 nimOptimDefaultControl <- function() {
-    control <- optimControlNimbleList$new()
-    control$maxit <- NULL  ## The default value depends on method.
-    return(control)
+  control <- optimControlNimbleList$new()
+  control$trace <- 0
+  control$fnscale <- 1
+  control$parscale <- NA # Must be filled in to length of par
+  control$ndeps <- NA    # Ditto
+  control$maxit <- NA  ## The default value depends on method.
+  control$abstol = -Inf
+  control$reltol <- sqrt(.Machine$double.eps)
+  control$alpha <- 1.0
+  control$beta <- 0.5
+  control$gamma <- 2.0
+  control$REPORT <- NA # Method dependent and not used in compiled version
+  control$type <- 1
+  control$lmm <- 5
+  control$factr <- 1e7
+  control$pgtol <- 0
+  control$tmax <- 10
+  control$temp <- 10
+  return(control)
 }
 
 #' Integration of One-Dimensional Functions

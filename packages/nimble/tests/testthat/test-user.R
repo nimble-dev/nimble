@@ -459,7 +459,7 @@ test_that("Test that missing/mismatched returnType in 'r' function is trapped", 
     
     code <- nimbleCode({ x[1,1:2] ~ dDist()})
     
-    expect_error(Rmodel <- nimbleModel(code), "missing returnType")
+    expect_error(Rmodel <- nimbleModel(code), "missing `returnType`")
     
     dDist <- nimbleFunction(
         run = function(x = double(1), log = integer(0, default = 0)) {
@@ -494,7 +494,7 @@ test_that("Test that missing/mismatched returnType in 'r' function is trapped", 
     
     code <- nimbleCode({ x[1,1:2] ~ dDist()})
     
-    expect_error(Rmodel <- nimbleModel(code), "missing returnType")
+    expect_error(Rmodel <- nimbleModel(code), "missing `returnType`")
 
     ## double() vs. double(0) should be fine
     dDist <- nimbleFunction(

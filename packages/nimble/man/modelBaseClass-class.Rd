@@ -87,37 +87,12 @@ unique: should names be the unique names or should original ordering of nodes (a
   nodes,
   givenNodes,
   omit = integer(),
-  inputType = c("latent", "param", "data"),
-  stochOnly = TRUE,
+  explore = c("both", "down", "up"),
+  unknownAsGiven = TRUE,
   returnType = "names",
-  returnScalarComponents = FALSE
-)}}{Get a list of conditionally independent sets of nodes in a nimble model.
-
-Conditionally independent sets of nodes are typically groups of latent states whose joint conditional probability (density) will not change even if any other non-fixed node is changed.  Default fixed nodes are data nodes and parameter nodes (with no parent nodes), but this can be controlled.
-
-model: A nimble model object (uncompiled or compiled).
-
-nodes: A vector of node names or their graph IDs that are the starting nodes from which conditionally independent sets of nodes should be found.  If omitted, the default will be all latent nodes, defined as stochastic nodes that are not data and have at least one stochastic parent node (possible with deterministic nodes in between).  Note that this will omit latent states that have no hyperparameters.  An example is the first latent state in some state-space (time-series) models, which is sometimes declared with known prior.  See type because it relates to the interpretation of nodes.
-
-givenNodes: A vector of node names or their graph IDs that should be considered as fixed and hence can be conditioned on.  If omitted, the default will be all data nodes and all parameter nodes, the latter defined as nodes with no stochastic parent nodes (skipping over deterministic parent nodes).
-
-omit: A vector of node names or their graph IDs that should be omitted and should block further graph exploration. 
-
-intputType: Type of input nodes provided in nodes argument.  For 'latent', the input nodes are interpreted as latent states, from which both downstream and upstream exploration should be done to find nodes in the same set (nodes that are not conditionally independent from each other).  For 'param', the input nodes are interpreted as parameters, so graph exploration begins from the  top (input) and proceeds downstream.  For 'data', the input nodes are interpreted and data nodes, so graph exploration begins from the bottom (input) and proceeds upstream.
-
-stochOnly: Logical for whether only stochastic nodes should be returned (default = TRUE).  If FALSE, both deterministic and stochastic nodes are returned.
-
-returnType: Either 'names' for returned nodes to be node names or 'ids' for returned nodes to be graph IDs.
-
-returnScalarComponents: If FALSE (default), multivariate nodes are returned as full names (e.g. 'x[1:3]').  If TRUE, they are returned as scalar elements (e.g. 'x[1]',  'x[2]',  'x[3]').
-
-Details: This function returns sets of conditionally independent nodes.  Multiple input nodes might be in the same set or different sets, and other nodes (not in codes) will be included.
-
-By default, deterministic dependencies of givenNodes are also counted as given nodes.  This is relevant only for parent nodes. This allows the givenNodes to include only stochastic nodes.  Say we have A -> B -> C -> D.  A and D are givenNodes.  C is a latent node.  B is a deterministic node.  By default, B is considered given.  Otherwise, other dependent networks of nodes that depend on B would be grouped in the same output set as C, but this is usually not what is wanted.  Any use of the resulting output must ensure that B is calculated when necessary, as usual with nimble's model-generic programming.  To turn off this feature, set nimbleOptions(groupDetermWithGivenInCondIndSets = FALSE).
-
-There is a non-exported function `nimble:::testConditionallyIndependentSets(model, sets, initialize = TRUE)` that tests whether the conditional independence of sets is valid.  It should be the case that `nimble:::testConditionallyIndependentSets(model, getConditionallyIndependentSets(model), initialize = TRUE)` returns `TRUE`.
-
-Return value: List of nodes that are in conditionally independent sets.  Within each set, nodes are returned in topologically sorted order.  The sets themselves are returned in topologically sorted order of their first nodes.}
+  returnScalarComponents = FALSE,
+  endAsGiven = FALSE
+)}}{see "help(getConditionallyIndependentSets)", which this calls with the model as the first argument.}
 
 \item{\code{getDependencies(
   nodes,
@@ -151,9 +126,9 @@ includeData: Logical argument specifying whether to include 'data' nodes (set vi
 
 dataOnly: Logical argument specifying whether to return only 'data' nodes.  Default is FALSE.
 
-includePredictive: Logical argument specifying whether to include predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data). Used primarily to exclude predictive node calculations when setting up MCMC samplers on model parameters. Default value is controlled by the NIMBLE system option `getDependenciesIncludesPredictiveNodes`, which itself has a default value of `TRUE`.
+includePredictive: Logical argument specifying whether to include predictive nodes. Predictive nodes are stochastic nodes that are not data and have no downstream stochastic dependents that are data. In Bayesian settings, these are "posterior predictive" nodes. Used primarily to exclude predictive node calculations when setting up MCMC samplers on model parameters. Default value is controlled by `nimbleOptions("getDependenciesIncludesPredictiveNodes")`, which has a default value of `TRUE`.
 
-predictiveOnly: Logical argument specifying whether to return only predictive nodes (stochastic nodes, which themselves are not data and have no downstream stochastic dependents which are data).  Default is FALSE.
+predictiveOnly: Logical argument specifying whether to return only predictive nodes (see "includePredictive"). Default is FALSE.
 
 includeRHSonly: Logical argument specifying whether to include right-hand-side-only nodes (model nodes which never appear on the left-hand-side of ~ or <- in the model code).  These nodes are neither stochastic nor deterministic, but instead function as variable inputs to the model.  Default is FALSE.
 
@@ -314,7 +289,11 @@ logProb: Logical argument specifying whether or not to include the logProb varia
 
 nodes: An optional character vector supplying a subset of nodes for which to extract the variable names and return the unique set of variable names}
 
-\item{\code{initializeInfo()}}{Provides more detailed information on which model nodes are not initialized.}
+\item{\code{initializeInfo(stochasticLogProbs = FALSE)}}{Provides more detailed information on which model nodes are not initialized.
+
+Arguments:
+
+stochasticLogProbs: Boolean argument. If TRUE, the log-density value associated with each stochastic model variable is calculated and printed.}
 
 \item{\code{isBinary(nodes)}}{Determines whether one or more nodes represent binary random variables
 
@@ -332,11 +311,12 @@ nodes: A character vector of node or variable names.
 
 Details: The variable or node names specified is expanded into a vector of model node names. A logical vector is returned, indicating whether each model node has been flagged as containing 'data'. Multivariate nodes for which any elements are flagged as containing 'data' will be assigned a value of TRUE.}
 
-\item{\code{isDeterm(nodes)}}{Determines whether one or more nodes are deterministic
+\item{\code{isDeterm(nodes, includeRHSonly = FALSE, nodesAlreadyExpanded = FALSE)}}{Determines whether one or more nodes are deterministic
 
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
@@ -364,11 +344,12 @@ nodes: A character vector specifying one or more node or variable names.
 
 Details: The return value is a logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
-\item{\code{isStoch(nodes)}}{Determines whether one or more nodes are stochastic
+\item{\code{isStoch(nodes, nodesAlreadyExpanded = FALSE)}}{Determines whether one or more nodes are stochastic
 
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
@@ -415,13 +396,13 @@ Details: The newly created model object will be identical to the original model 
 
 \item{\code{resetData()}}{Resets the 'data' property of ALL model nodes to FALSE.  Subsequent to this call, the model will have no nodes flagged as 'data'.}
 
-\item{\code{setData(..., warnAboutMissingNames = TRUE)}}{Sets the 'data' flag for specified nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying 'data' nodes in a model object.  When a 'data' argument is provided to 'nimbleModel()', it uses this method to set the data nodes.
+\item{\code{setData(..., warnAboutMissingNames = TRUE)}}{Sets the 'data' flag for specified stochastic nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying 'data' nodes in a model object.  When a 'data' argument is provided to 'nimbleModel()', it uses this method to set the data nodes. This also allows one to set the 'data' flag for nodes appearing only on the right-hand side of model declarations, thereby preventing their values from being overwritten via 'inits'.
 
 Arguments:
 
 ...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData('x', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list('x', y = 1:10)) is equivalent.  setData(c('x','y')) or setData('x','y') will mark both x and y as data.
 
-Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as 'data'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as 'data' will result in an error.  Designating part of a multivariate node as 'data' and part as non-data (NA) is allowed, but 'isData()' will report such a node as being 'data', calculations with the node will generally return NA, and MCMC samplers will not be assigned to such nodes.}
+Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as 'data'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as 'data' will be ignored.  Designating part of a multivariate node as 'data' and part as non-data (NA) is allowed, but 'isData()' will report such a node as being 'data', calculations with the node will generally return NA, and MCMC samplers will not be assigned to such nodes.}
 
 \item{\code{setInits(inits)}}{Sets initial values (or more generally, any named list of value elements) into the model
 

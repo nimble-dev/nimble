@@ -51,8 +51,8 @@ buildMCEM(
 \value{
 an R list with two elements:
 \itemize{
-\item{\code{run}} {A function that when called runs the MCEM algorithm. This function takes the arguments listed in \code{run} Arguments below.}
-\item{\code{estimateCov}} {An EXPERIMENTAL function that when called estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
+\item{\code{run}} {A function that runs the MCEM algorithm. This function takes the arguments listed in \code{run} Arguments below.}
+\item{\code{estimateCov}} {An function that estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
 This function takes the arguments listed in \code{estimateCov} Arguments below.}
 }
 }

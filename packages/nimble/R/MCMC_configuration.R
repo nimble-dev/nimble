@@ -4,12 +4,15 @@ samplerConf <- setRefClass(
     fields = list(
         name            = 'ANY',
         samplerFunction = 'ANY',
+        baseClassName   = 'ANY',
         target          = 'ANY',
         control         = 'ANY',
         targetAsScalar  = 'ANY'
     ),
     methods = list(
         initialize = function(name, samplerFunction, target, control, model) {
+            baseClassName <<- environment(environment(samplerFunction)$contains)$className
+            if(is.null(baseClassName) || (baseClassName != 'sampler_BASE')) warning('MCMC sampler nimbleFunctions should inherit from (using "contains" argument) base class sampler_BASE.')
             setName(name)
             setSamplerFunction(samplerFunction)
             setTarget(target, model)
@@ -880,7 +883,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                         theseNodesNotIndexed <- theseNodes[!isIndexedVector]
                         if(length(theseNodesNotIndexed)) {
                             if(length(theseNodesNotIndexed) == 1) cat(paste0(indent, theseNodesNotIndexed))
-                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
+                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('internal error in printSamplersByType method', call. = FALSE)
                             if(length(theseNodesNotIndexed) >  1) cat(paste0(indent, theseNodesNotIndexed[1], '  (', length(theseNodesNotIndexed), ')'))
                             cat('\n')
                         }
@@ -1210,15 +1213,18 @@ Details: See the initialize() function
             return(unsampledNodes)
         },
         
-        warnUnsampledNodes = function() {
+        warnUnsampledNodes = function(includeConfGetUnsampledNodes = TRUE) {
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
                 sTag <- if(numUnsampled > 1) 's' else ''
-                messageIfVerbose('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag, '.')
+                msg <- paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag)
+                if(includeConfGetUnsampledNodes)   msg <- paste0(msg, ', use conf$getUnsampledNodes() for node name', sTag)
+                msg <- paste0(msg, '.')
+                messageIfVerbose(msg)
             }
         },
 
-        printComments = function() {
+        printComments = function(...) {
             setUnsampledNodes()
             anyComments <-
                 length(postPredSamplerDownstreamNodes) ||
@@ -1226,16 +1232,16 @@ Details: See the initialize() function
             if(anyComments) {
                 cat('===== Comments =====\n')
                 if(length(postPredSamplerDownstreamNodes))   message('  [Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler.')
-                if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
+                if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes(...)
             }
         },
 
-        show = function() {
+        show = function(...) {
             cat('===== Monitors =====\n')
             printMonitors()
             cat('===== Samplers =====\n')
             if(length(samplerConfs)) printSamplers(byType = TRUE) else cat('(no samplers assigned)\n')
-            printComments()
+            printComments(...)
         }
     )
 )

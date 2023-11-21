@@ -23,33 +23,8 @@ cppModelValuesClass <- setRefClass('cppModelValuesClass',
                                            }
                                            stop('Invalid format for vars in cppModelValuesClass.  Must be a list or a symbolTable')
                                        },
-                                       buildVars = function() {
-                                           if(is.list(vars)) {
-                                               for(v in names(Rnames2CppNames)) {
-                                                   cName <- Rnames2CppNames[[v]]
-                                                   nDim <- max(length(vars[[v]]), 1)
-                                                   addObject(cName,
-                                                             cppVecNimArr(name = cName,
-                                                                          nDim = nDim,
-                                                                          type = 'double'))
-                                               }
-                                               return(invisible(NULL))
-                                           }
-                                           if(inherits(vars, 'symbolTable')) {
-                                               ## Actually in this case we should be able to use symbolTable2cppVars
-                                               for(v in names(Rnames2CppNames)) {
-                                                   cName <- Rnames2CppNames[[v]]
-                                                   thisSym <- vars$getSymbolObject(v)
-                                                   nDim <- max(thisSym$nDim, 1)
-                                                   type <- thisSym$type
-                                                   if(type == 'integer') type <- 'int'
-                                                   addObject(cName,
-                                                             cppVecNimArr(name = cName,
-                                                                          nDim = nDim,
-                                                                          type = type))
-                                               }
-                                               return(invisible(NULL))
-                                           }
+                                       buildVars = function(forAD = FALSE) {
+                                           cppDef_MV_buildVars_impl(.self, forAD)
                                        },
                                        buildConstructorFunctionDef = function() {
                                            lastLine <- cppLiteral(c("resize(1);",
@@ -91,12 +66,56 @@ cppModelValuesClass <- setRefClass('cppModelValuesClass',
                                                                                        virtual = TRUE,
                                                                                        code = cppCodeBlock(code = putCodeLinesInBrackets(list(resizeCodeBlock, setSizeCodeBlock, cppLiteral("numRows = nrow;"))), objectDefs = list(cppInt('i')), skipBrackets = TRUE))
                                        },
-                                       buildAll = function() {
+                                       buildAll = function(forAD = FALSE) {
                                            makeCppNames()
-                                           buildVars()
+                                           buildVars(forAD = forAD)
                                            buildConstructorFunctionDef()
                                            buildResizeFunctionDef()
                                            buildSEXPgenerator(finalizer = 'namedObjects_Finalizer')
                                        }
                                        )
                                    )
+
+cppDef_MV_buildVars_impl <- function(.self, forAD) {
+    vars <- .self$vars
+    Rnames2CppNames <- .self$Rnames2CppNames
+    if(is.list(vars)) {
+        for(v in names(Rnames2CppNames)) {
+            cName <- Rnames2CppNames[[v]]
+            nDim <- max(length(vars[[v]]), 1)
+            if(!forAD)
+                .self$addObject(cName,
+                                cppVecNimArr(name = cName,
+                                             nDim = nDim,
+                                             type = 'double'))
+            else
+                .self$addObject(cName,
+                                cppVecNimArr(name = cName,
+                                             nDim = nDim,
+                                             type = 'CppAD::AD<double> '))
+        }
+        return(invisible(NULL))
+    }
+    if(inherits(vars, 'symbolTable')) {
+        ## Actually in this case we should be able to use symbolTable2cppVars
+        for(v in names(Rnames2CppNames)) {
+            cName <- Rnames2CppNames[[v]]
+            thisSym <- vars$getSymbolObject(v)
+            nDim <- max(thisSym$nDim, 1)
+            type <- thisSym$type
+            if(type == 'integer') type <- 'int'
+            if(!forAD) {
+                .self$addObject(cName,
+                                cppVecNimArr(name = cName,
+                                             nDim = nDim,
+                                             type = type))
+            } else {
+                .self$addObject(cName,
+                                cppVecNimArr(name = cName,
+                                             nDim = nDim,
+                                             type = paste0("CppAD::AD<",type,"> ")))
+            }
+        }
+        return(invisible(NULL))
+    }
+}

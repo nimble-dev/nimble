@@ -55,6 +55,7 @@ R_CallMethodDef CallEntries[] = {
   FUN(varAndIndices2mapParts, 3),
   FUN(var2mapParts, 3),
   FUN(populateNodeFxnVectorNew_byDeclID, 4),
+  FUN(populateNodeFxnVectorNew_byDeclID_forDerivs, 5),
   FUN(populateIndexedNodeInfoTable, 2),
   FUN(populateValueMapAccessorsFromNodeNames, 4),
   FUN(populateValueMapAccessors, 3),
@@ -149,9 +150,16 @@ R_CallMethodDef CallEntries[] = {
   FUN(waicDetailsNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
   FUN(waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
 
+  FUN(new_AGHQuad_params, 0),
+  FUN(AGHQuad_params_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(AGHQuad_params_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_AGHQuad_summary, 0),
+  FUN(AGHQuad_summary_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(AGHQuad_summary_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
   {NULL, NULL, 0}
 };
-
 
 /* Reference prototype: */
 /* R_CMethodDef CEntries[] = { */

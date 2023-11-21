@@ -10,5 +10,5 @@ buildEnsembleKF(...)
 \item{...}{arguments}
 }
 \description{
-This function has been moved to the `nimbleSMC` package
+This function has been moved to the `nimbleSMC` package.
 }

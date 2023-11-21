@@ -41,6 +41,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    .basePtr = 'ANY', ## pointer to derived model C++ class (backwards terminology due to history, unfortunately)
                                    .namedObjectsPtr = 'ANY', ## pointer to base NamedObjects C++ base blass
                                    .ModelBasePtr = 'ANY',
+                                   .ADptrs = 'ANY',
                                    dll = 'ANY',
                                    Rmodel = 'ANY',
                                    cppNames = 'ANY',
@@ -156,7 +157,8 @@ makeModelBindingFields <- function(symTab) {
   return(fieldList)
 }
 
-buildModelInterface <- function(refName, compiledModel, basePtrCall, project = NULL, dll = NULL, where = globalenv()){
+buildModelInterface <- function(refName, compiledModel, basePtrCall,
+                                buildDerivs, project = NULL, dll = NULL, where = globalenv()){
     defaults <- list()
     if(inherits(compiledModel, 'symbolTable')) {
         symTab <- compiledModel
@@ -197,6 +199,8 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                           .namedObjectsPtr, ##.basePtr,
                                                           dll[['handle']], model$name))
 
+                                                DERIVSCODE
+                                                
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.ModelBasePtr, dll = dll) ## this is a Values*
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr,
                                                                                                                 buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll),
@@ -226,7 +230,20 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                     writeLines(paste0("Derived CmodelBaseClass created by buildModelInterface for model ", modelDef$name))
                                                 }),
                                             where = where
-  ), list(FIELDS = makeModelBindingFields(symTab), where = where ) ) )
+                                            ), list(FIELDS = makeModelBindingFields(symTab),
+                                                    DERIVSCODE = if(buildDerivs)
+                                                      quote({
+                                                        basePtrCallAD <- paste0(basePtrCall, "_AD")
+                                                        newPtrPairAD <- eval(parse(text = ".Call(basePtrCallAD)"))
+                                                        .ADptrs <<- list(
+                                                          .basePtr = newPtrPairAD[[1]],
+                                                          .ModelBasePtr = newPtrPairAD[[ defaults$extPtrTypeIndex['ModelBase'] ]],
+                                                          .namedObjectsPtr = newPtrPairAD[[ defaults$extPtrTypeIndex['NamedObjects'] ]]
+                                                        )
+                                                        model$ADproxyModel$CobjectInterface <- list(.basePtr = .ADptrs$.basePtr)
+                                                      })
+                                                    else NULL,
+                                                    where = where ) ) )
 
     ans <- function(model, where = globalenv(), dll = NULL, ...) {
         newClass$new(model, defaults, basePtrCall, classEnvironment = where, dll = dll, ...) ## this means defaults will be in the closure of this function and hence found

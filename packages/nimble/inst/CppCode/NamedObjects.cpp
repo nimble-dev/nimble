@@ -41,17 +41,19 @@ SEXP copyFromRobject(SEXP Sextptr, SEXP Robject) {
   return(R_NilValue);
 }
 
-void* NamedObjects::getObjectPtr( string &name ) {
+void* NamedObjects::getObjectPtr( string &name, bool warn_not_found ) {
   //cout<<name<<"\n";
   map<string, void *>::iterator iMO;
   iMO= namedObjects.find(name);		
   if(iMO == namedObjects.end()) {
-    //std::cout<<"Error, could not find "<<name<<"\n";
-    PRINTF("Error, could not find name\n");
-    //    cout << "Name = " << name << "\n";
-    _nimble_global_output << "Name = " << name << "\n"; nimble_print_to_R( _nimble_global_output);
-    iMO = namedObjects.begin();
-    _nimble_global_output << "Available Name 1 = " << iMO->first << "\n"; nimble_print_to_R( _nimble_global_output);
+    if(warn_not_found) {
+      //std::cout<<"Error, could not find "<<name<<"\n";
+      PRINTF("Error, could not find name\n");
+      //    cout << "Name = " << name << "\n";
+      _nimble_global_output << "Name = " << name << "\n"; nimble_print_to_R( _nimble_global_output);
+      iMO = namedObjects.begin();
+      _nimble_global_output << "Available Name 1 = " << iMO->first << "\n"; nimble_print_to_R( _nimble_global_output);
+    }
     return(0);
   }
 #ifdef _DEBUG_NAMEDOBJECTS
@@ -173,7 +175,7 @@ SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
 }
 
 void namedObjects_Finalizer(SEXP Snp){
-  // std::cout<< "In namedObjects_Finalizer\n";
+  //  std::cout<< "In namedObjects_Finalizer\n";
   NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);

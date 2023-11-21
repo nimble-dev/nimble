@@ -8,7 +8,10 @@ requirements <- c(
     'mvtnorm',  ## needed for test-distributions.R
     'abind',    ## needed for test-compareMCMCs.R
     'ggplot2',  ## needed for test-compareMCMCs.R
-    'covr'      ## needed for code coverage reports
+    'covr',     ## needed for code coverage reports
+    'pracma',   ## for AD
+    'numDeriv',  ## for AD
+    'lme4'     ## for test-ADlaplace.R
     )     
 
 for (package in requirements) {

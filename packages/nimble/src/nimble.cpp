@@ -69,9 +69,9 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_anyStochParents, 1),
  FUN(C_getDependencies, 4),
  FUN(C_getParents, 5),
- FUN(C_getConditionallyIndependentSets, 6),
+ FUN(C_getConditionallyIndependentSets, 7),
  FUN(C_getDependencyPaths, 2), 
- FUN(C_getDependencyPathCountOneNode, 2), 
+ FUN(C_getDependencyPathCountOneNode, 3), 
  {NULL, NULL, 0}
 };
 

@@ -12,6 +12,7 @@ BUGSmodel <- function(code,
                       debug = FALSE,
                       check = getNimbleOption('checkModel'),
                       calculate = TRUE,
+                      buildDerivs = getNimbleOption('buildModelDerivs'),
                       userEnv = parent.frame()) {
     nimbleModel(code = code,
                 constants = constants,
@@ -23,6 +24,7 @@ BUGSmodel <- function(code,
                 check = check,
                 calculate = calculate,
                 name = name,
+                buildDerivs = buildDerivs,
                 userEnv = userEnv)
 }
 
@@ -43,6 +45,7 @@ BUGSmodel <- function(code,
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'.  See \code{\link{nimbleOptions}} for details.
 #' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
+#' @param buildDerivs logical indicating whether to build derivative capabilities for the model.
 #' @param userEnv environment in which if-then-else statements in BUGS code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only
 #' @author NIMBLE development team
 #' @export
@@ -76,6 +79,7 @@ nimbleModel <- function(code,
                         check = getNimbleOption('checkModel'),
                         calculate = TRUE,
                         name = NULL,
+                        buildDerivs = getNimbleOption('buildModelDerivs'),
                         userEnv = parent.frame()) {
     returnModel <- !returnDef
     if(is.null(name)) name <- paste0(gsub(" ", "_", substr(deparse(substitute(code))[1], 1, 10)),
@@ -92,9 +96,13 @@ nimbleModel <- function(code,
         is.numeric(x) || is.logical(x) ||
             (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
         stop("BUGSmodel: elements of 'data' must be numeric")
-    md <- modelDefClass$new(name = name)
+    if(isTRUE(buildDerivs))
+        if(!isTRUE(nimbleOptions("enableDerivs")))
+            stop("BUGSmodel: 'buildDerivs' cannot be set to TRUE if nimbleOptions[['enableDerivs']] is not TRUE.")
+    md <- modelDefClass$new(name = name, buildDerivs = buildDerivs)
     messageIfVerbose("Defining model")
-    md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
+    md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits,
+                  data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS

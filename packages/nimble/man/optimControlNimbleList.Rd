@@ -3,7 +3,7 @@
 \docType{data}
 \name{optimControlNimbleList}
 \alias{optimControlNimbleList}
-\title{EXPERIMENTAL Data type for the \code{control} parameter of \code{\link{nimOptim}}}
+\title{Data type for the \code{control} parameter of \code{\link{nimOptim}}}
 \format{
 An object of class \code{list} of length 1.
 }

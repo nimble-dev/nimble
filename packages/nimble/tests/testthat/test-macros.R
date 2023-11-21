@@ -409,3 +409,5 @@ test_that('duplicate nested indices from macro expansion error-trapped correctly
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
+
+nimbleOptions(enableModelMacros = FALSE)

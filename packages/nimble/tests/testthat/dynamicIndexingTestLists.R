@@ -70,9 +70,7 @@ testsDynIndex <- list(
             for(i in 1:4) {
                 y[i] ~ dnorm(mu[k[i]], sd = 1)
             }
-            for(j in 1:5) {
                 mu[1:5] ~ dmnorm(z[1:5], pr[1:5,1:5])
-            }
         }), 
         dims = list(mu = 5), inits = list(mu = rnorm(5), k = rep(1,4),
                                           z = rep(0,5), pr = diag(5)), 

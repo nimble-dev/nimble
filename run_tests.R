@@ -39,15 +39,17 @@ if (length(grep('^-', argv, invert = TRUE))) {
     allTests <- list.files('packages/nimble/tests/testthat')
     allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
-    # Avoid running these omitlisted tests, since they take too long.
+    # Avoid running these omitlisted tests, since they take too long
+    # or involve experimental features.
     omitlist <- c(
         'test-benchmark-building-steps.R')
-    # Avoid running these tests since they test experimental features.
     omitlist <- c(
         omitlist,
         'test-ADfunctions.R',
-        'test-ADmodels.R')
-        ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
+        'test-ADmodels.R',
+        'test-ADmodels-bigmv.R'
+        ) 
+         ## 'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
     cat('SKIPPING', omitlist, sep = '\n  ')
     allTests <- setdiff(allTests, omitlist)
     smcTests <- 'test-filtering.R'
@@ -83,6 +85,7 @@ if (!is.na(testBatch)) {
         }
     }
 }
+cat('RUNNING BATCH', testBatch, '\n') 
 cat('PLANNING TO TEST', allTests, sep = '\n  ')
 cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
 if (optionDryRun) quit()
@@ -144,6 +147,7 @@ runTest <- function(test, pkg = 'nimble', logToFile = FALSE, runViaTestthat = TR
     return(FALSE)
 }
 
+
 if (optionParallel) {
     if (!require(parallel)) stop('Missing parallel package, required for --parallel')
     cores <- detectCores()
@@ -161,7 +165,9 @@ if (optionParallel) {
         runTest(test)
     }
 }
+
 if(testBatch == 3) { ## currently quickest to run so do SMC testing here
+    cat("RUNNING nimbleSMC tests.")
     for (test in smcTests) {
         runTest(test, 'nimbleSMC')
     }

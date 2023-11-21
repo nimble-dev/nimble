@@ -233,7 +233,7 @@ distributionsInputList <- list(
                                 'dwish_chol(cholesky = chol(S), df, scale_param = 1)',
                                 'dwish_chol(cholesky, df, scale_param)'),
                    altParams= c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
-                                 'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
+                                'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
                    alias    = 'dwishart',
                    types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)')),
 
@@ -241,7 +241,7 @@ distributionsInputList <- list(
                       Rdist    = c('dinvwish_chol(cholesky = chol(S), df, scale_param = 1)',
                                    'dinvwish_chol(cholesky = chol(R), df, scale_param = 0)'),
                       altParams= c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
-                                    'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
+                                   'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
                       alias    = 'dinvwishart',
                       types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
 )
