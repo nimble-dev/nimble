@@ -71,24 +71,40 @@ double NimIntegrateProblem::integrate() {
                                          ex,
                                          lower_, upper_);
   */
-  
-  double result = 0.0;
-  double abserr;
-  int neval;
-  int ier;
-  int lenw = 4*subdivisions_;
-  int last;
-  int* iwork = new int[subdivisions_];
-  double* work = new double[lenw];
-  // Note that `abs_tol` is before `rel_tol` in `Rqdag{s,i}` signature.
-  Rdqags(NimIntegrateProblem::fn, ex, &lower_, &upper_,
-         &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ier,
-         &subdivisions_, &lenw, &last, iwork, work); 
-  delete [] iwork;
-  delete [] work;
+
+  result = 0.0;
+
+  // Not sure if the allocation should be here or in constructor.
+  //int* iwork = new int[subdivisions_];
+  //double* work = new double[lenw];
+
+  if (std::isfinite(lower_) && std::isfinite(upper_)) {
+    // Note that `abs_tol` is before `rel_tol` in `Rqdag{s,i}` signature.
+    Rdqags(NimIntegrateProblem::fn, ex, &lower_, &upper_,
+           &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ier,
+           &subdivisions_, &lenw, &last, iwork, work); 
+  } else {
+    if (std::isfinite(lower_)) {
+      inf = 1;
+    } else if (std::isfinite(upper_)) {
+      inf = -1;
+      lower_ = upper_;   // `bound` in R's `integrate`.
+    } else {
+      inf = 2;
+      lower_ = 0.0;
+    }
+    Rdqagi(NimIntegrateProblem::fn, ex, &lower_, &inf,
+           &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ier,
+           &subdivisions_, &lenw, &last, iwork, work); 
+  }
+ 
+  //delete [] iwork;
+  //delete [] work;
   return result;
 }
 
 
-
-
+NimIntegrateProblem::~NimIntegrateProblem() {
+  delete [] work;
+  delete [] iwork;
+}

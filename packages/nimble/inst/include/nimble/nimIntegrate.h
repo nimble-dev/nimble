@@ -37,24 +37,43 @@ public:
     subdivisions_(subdivisions),   // `limit` is the arg name in Rqdag{s,i}
     rel_tol_(rel_tol),
     abs_tol_(abs_tol),
-    stop_on_error_(stop_on_error) {};
+    stop_on_error_(stop_on_error) {
 
-    double integrate();
+    // Actually probably no point in doing this here rather than in `.integrate()`
+    // since object is instantiated each time `nimIntegrate()` is called.
+    lenw = 4*subdivisions_;
+    iwork = new int[subdivisions_];
+    work = new double[lenw];
+  };
+
+  double integrate();
+  ~NimIntegrateProblem();
  private:
-    static void fn(double *x, int n, void *ex);
-
+  static void fn(double *x, int n, void *ex);
+  
  protected:
-    virtual NimArr<1, double> function()=0;
+  virtual NimArr<1, double> function()=0;
+  
+  double lower_;
+  double upper_;
+  NimArr<1, double>& param_;
+  int subdivisions_;
+  double rel_tol_;
+  double abs_tol_;
+  bool stop_on_error_;
+  NimArr<1, double> x_;
+  NimArr<1, double> return_vals_;
 
-    double lower_;
-    double upper_;
-    NimArr<1, double>& param_;
-    int subdivisions_;
-    double rel_tol_;
-    double abs_tol_;
-    bool stop_on_error_;
-    NimArr<1, double> x_;
-    NimArr<1, double> return_vals_;
+  int inf;
+  
+  double result;
+  double abserr;
+  int neval;
+  int ier;
+  int lenw;
+  int last;
+  int* iwork;
+  double* work;
 };
 
 template<class Fn>

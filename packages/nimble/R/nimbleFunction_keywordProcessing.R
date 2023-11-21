@@ -753,6 +753,16 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
+nimIntegrate_keywordInfo <- keywordInfoClass(
+    keyword = 'nimIntegrate',
+    processor = function(code, nfProc) {
+        code$rel.tol <- eval(code$rel.tol)  # To handle cases where a function of `.Machine$double.eps`.
+        if(code$abs.tol == quote(rel.tol)) {
+            code$abs.tol <- code$rel.tol
+        } else code$abs.tol <- eval(code$abs.tol)
+        return(code)
+    }
+)
 
 
 #	KeywordList
@@ -798,6 +808,8 @@ keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
+
+keywordList[['nimIntegrate']] <- nimIntegrate_keywordInfo
 
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
