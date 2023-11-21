@@ -1189,7 +1189,9 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-#' Nimble wrapper around R's builtin \code{\link{optim}}.
+#' General-purpose Optimization
+#'
+#' NIMBLE wrapper around R's builtin \code{\link{optim}}.
 #'
 #' @param par Initial values for the parameters to be optimized over.
 #' @param fn  A function to be minimized (or maximized), with first argument the
@@ -1262,26 +1264,7 @@ optimDefaultControl <- function() {
     return(list())
 }
 
-#' Copies R's 1D integrate function.
-#'
-#' @return a \code{list} with class integrate: with components 
-#' value the final estimate of the integral.
-#' abs.error estimate of the modulus of the absolute error. 
-#' subdivisions the number of subintervals produced in the subdivision process.
-#' message "OK" or a character string giving the error message.
-#' call the matched call.
-#' @export
-nimIntegrate <- function(f, pars, lower, upper, ..., subdivisions = 100L,
-          rel.tol = 0.0001, abs.tol = 0.0001,
-          stop.on.error = TRUE) {
-    ## Note that we can't keep R's use of `.Machine$double.eps^0.25` as
-    ## we can't compile that syntax.
-  integrate( f, lower, upper, pars, subdivisions = 100L,
-          rel.tol = 0.0001, abs.tol = 0.0001,
-          stop.on.error = TRUE )$value
-}
-
-#' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+#' Creates a default \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
@@ -1291,3 +1274,52 @@ nimOptimDefaultControl <- function() {
     control$maxit <- NULL  ## The default value depends on method.
     return(control)
 }
+
+#' Integration of One-Dimensional Functions
+#'
+#' NIMBLE wrapper around R's builtin \code{\link{integrate}}. Adaptive quadrature
+#' of functions of one variable over a finite or infinite interval.
+#'
+#' @param f nimbleFunction of one input for which the integral is desired. See below
+#'          for details on requirements for how \code{f} must be defined.
+#' @param lower an optional scalar lower bound for the input of the function.
+#' @param upper an optional scalar upper bound for the input of the function.
+#' @param param a required vector of additional parameters to the function
+#'               that are fixed with respect to the integration. If \code{f}
+#'               takes no additional arguments (beyond the variable of
+#'               integration), this must be provided but need not be used in
+#'               \code{f}. 
+#' @param subdivisions the maximum number of subintervals.
+#' @param rel.tol relative accuracy requested.
+#' @param abs.tol: absolute accuracy requested.
+#' @param stop.on.error logical. Not used at the moment.
+#'
+#' @return The estimate of the integral. In the future, this may be a list
+#'         containing additional information such as the uncertainty of the
+#'         estimate.
+#'
+#' @details
+#' The function \code{f} should take two arguments, the first of type
+#' \code{double(1)}, i.e., vector. \code{f} should be vectorized
+#' in that it should also return a \code{double(1)} object, containing
+#' the result of applying the function to each element of the first
+#' argument. (The result can be calculated using vectorizezd code or
+#' using a loop.) The second argument is required to also be of type
+#' \code{double(1)}, containing any additional parameters to the function
+#' that are not being integrated over. This argument can be unused in
+#' the function if the function does not need additional parameters.
+#' 
+#' 
+#' @seealso \code{\link{integrate}}
+#' @export
+#' @examples
+#' UNDER CONSTRUCTION
+nimIntegrate <- function(f, lower, upper, param, subdivisions = 100L,
+          rel.tol = 0.0001, abs.tol = 0.0001, stop.on.error = TRUE) {
+    ## Note that we can't keep R's use of `.Machine$double.eps^0.25` as
+    ## we can't compile that syntax.
+    integrate( f, lower, upper, param, subdivisions = subdivisions,
+              rel.tol = rel.tol, abs.tol = abs.tol,
+              stop.on.error = stop.on.error)$value
+}
+

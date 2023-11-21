@@ -36,21 +36,6 @@
 // typedef taken from "Writing R Extensions"
 typedef void integr_fn(double *x, int n, void *ex);
 
-/* from integrate.c
-
-    Rdqags(Rintfn, (void*)&is,
-	   &lower, &upper, &epsabs, &epsrel, &result,
-	   &abserr, &neval, &ier, &limit, &lenw, &last, iwork, work);
-
-void Rdqags(integr_fn f, void *ex, double *a, double *b,
-	    double *epsabs, double *epsrel,
-	    double *result, double *abserr, int *neval, int *ier,
-	    int *limit, int *lenw, int *last, int *iwork, double *work)
-*/
-
-//  Rdqagi(Rintfn, (void*)&is, &bound,&inf,&epsabs,&epsrel,&result,
-//	   &abserr,&neval,&ier,&limit,&lenw,&last,iwork,work);
-
 
 // some_actual_integrator is a toy to be replaced by
 // a call to Rdqags or Rdqagi
@@ -69,8 +54,8 @@ double some_actual_integrator(integr_fn my_fn, // my_fn will be NimIntegrateProb
 
 void NimIntegrateProblem::fn(double *x, int n, void *ex) {
   NimIntegrateProblem* problem = static_cast<NimIntegrateProblem*>(ex);
-  problem->par_.setSize(n, false, false);
-  std::copy(x, x + n, problem->par_.getPtr());
+  problem->x_.setSize(n, false, false);
+  std::copy(x, x + n, problem->x_.getPtr());
   problem->return_vals_.setSize(n, false, false);
   problem->return_vals_ = problem->function(); // problem->function calls the actual fn provided by user
   std::copy(problem->return_vals_.getPtr(),
@@ -95,8 +80,9 @@ double NimIntegrateProblem::integrate() {
   int last;
   int* iwork = new int[subdivisions_];
   double* work = new double[lenw];
+  // Note that `abs_tol` is before `rel_tol` in `Rqdag{s,i}` signature.
   Rdqags(NimIntegrateProblem::fn, ex, &lower_, &upper_,
-         &abs_tol_, &rel_tol_, &result,  &abserr, &neval, &ier,
+         &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ier,
          &subdivisions_, &lenw, &last, iwork, work); 
   delete [] iwork;
   delete [] work;

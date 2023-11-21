@@ -28,15 +28,16 @@
 
 class NimIntegrateProblem {
 public:
-  NimIntegrateProblem(NimArr<1, double>& param, double lower, double upper, int subdivisions,
+  NimIntegrateProblem(double lower, double upper, NimArr<1, double>& param, int subdivisions,
                       double rel_tol, double abs_tol, bool stop_on_error) :
-    param_(param),
+
     lower_(lower),
-        upper_(upper),
-        subdivisions_(subdivisions),
-        rel_tol_(rel_tol),
-        abs_tol_(abs_tol),
-        stop_on_error_(stop_on_error) {};
+    upper_(upper),
+    param_(param),
+    subdivisions_(subdivisions),   // `limit` is the arg name in Rqdag{s,i}
+    rel_tol_(rel_tol),
+    abs_tol_(abs_tol),
+    stop_on_error_(stop_on_error) {};
 
     double integrate();
  private:
@@ -47,11 +48,11 @@ public:
 
     double lower_;
     double upper_;
+    NimArr<1, double>& param_;
     int subdivisions_;
     double rel_tol_;
     double abs_tol_;
     bool stop_on_error_;
-    NimArr<1, double>& param_;
     NimArr<1, double> x_;
     NimArr<1, double> return_vals_;
 };
@@ -59,8 +60,9 @@ public:
 template<class Fn>
 class NimIntegrateProblem_Fun : public NimIntegrateProblem {
   public:
-  NimIntegrateProblem_Fun(Fn fn, NimArr<1, double>& param, double lower, double upper, int subdivisions, double rel_tol, double abs_tol, bool stop_on_error)
-    : NimIntegrateProblem(param, lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error), fn_(fn) {}
+  NimIntegrateProblem_Fun(Fn fn, double lower, double upper, NimArr<1, double>& param, int subdivisions,
+                          double rel_tol, double abs_tol, bool stop_on_error)
+    : NimIntegrateProblem(lower, upper, param, subdivisions, rel_tol, abs_tol, stop_on_error), fn_(fn) {}
 
   protected:
   virtual NimArr<1, double> function() {return fn_(x_, param_);}
@@ -72,15 +74,16 @@ class NimIntegrateProblem_Fun : public NimIntegrateProblem {
 template <class Fn>
 inline double nimIntegrate(
     Fn fn,
-    NimArr<1, double>& param,
     double lower,
     double upper,
+    NimArr<1, double>& param,
     int subdivisions,
     double rel_tol,
     double abs_tol,
-  bool stop_on_error) {
+    bool stop_on_error) {
 
-  return NimIntegrateProblem_Fun<Fn>(fn, param, lower, upper, subdivisions, rel_tol, abs_tol, stop_on_error).integrate();
+  return NimIntegrateProblem_Fun<Fn>(fn, lower, upper, param, subdivisions,
+                                     rel_tol, abs_tol, stop_on_error).integrate();
 }
 
 #endif // NIMINTEGRATE_H_
