@@ -2,25 +2,55 @@
 GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-		buildAGHQ = function(){},
-		buildCCD = function(){},
 		buildGrid = function(){},
-		saveValues = function(i = integer(0),theta = double(1), logDensity = double(), 
-														innerCholesky = double(2), innerMode = double(1)){},
-		calcCheck = function(i=integer()){returnType(integer())},
-		getCholesky = function(i=integer()){returnType(double(2))},
-		getMode = function(i=integer()){returnType(double(1))},
-		getTheta = function(i=integer()){returnType(double(1))},
-		getWeights = function(i=integer()){returnType(double())},
-		updateWeights = function(i=integer(), weights = double()){},
-		getNodes = function(i=integer()){returnType(double(1))},
-		updateNodes = function(i=integer(), zNodes = double(1)){},
-		getLogDensity = function(i=integer()){returnType(double())},
-		resetGrid = function(nQUpdate = integer()){},
-		skewGridPoints = function(skewSD = double(2)){},
-		getThetaModeIndex = function(){returnType(integer())},
-		getGridSize = function(){returnType(integer())},
-		buildAGHQOne = function(nQ1 = integer()){returnType(double(2))}
+    quadSum = function(){
+      returnType(double())
+    },
+		saveLogDens = function(i = integer(0), logDensity = double()){
+    },
+    saveInnerMode = function(i=integer(), innerMode = double(1)){
+    },
+    saveInnerCholesky = function(i=integer(), innerCholesky = double(2)){
+    },
+    saveHessInfo = function(pTransformMax = double(1), logDetNegHess = double(), 
+                              ATrans = double(2), AInv = double(2)){},
+    transformGrid = function(skewSD = double(2)){},
+		calcCheck = function(i=integer()){
+      returnType(integer())
+    },
+		getInnerCholesky = function(i=integer()){
+      returnType(double(2))
+    },
+		getInnerModes = function(i=integer()){
+      returnType(double(1))
+    },
+		getTheta = function(i=integer()){
+      returnType(double(1))
+    },
+		getWeights = function(i=integer()){
+      returnType(double())
+    },
+		updateWeights = function(i=integer(), weights = double()){
+    },
+		getNodes = function(i=integer()){
+      returnType(double(1))
+    },
+    updateNodes = function(i=integer(), zNodes = double(1)){
+    },
+		getLogDensity = function(i=integer()){
+      returnType(double())
+    },
+		resetGrid = function(nQUpdate = integer(), keepInner = integer()){
+    },
+		getThetaModeIndex = function(){
+      returnType(integer())
+    },
+		getGridSize = function(){
+      returnType(integer())
+    },
+		buildAGHQOne = function(nQ1 = integer()){
+      returnType(double(2))
+    }
 	)
 )
 
@@ -72,9 +102,9 @@ buildQuadGrid <- nimbleFunction(
 		nQ_aghq <- nQ
 		if( method == 1 ) nQ <- nC + 2*d + 1
 		if( method == 2 ) {
-			nQ <- nQ_aghq^d	## May be dimension reduced if we prune.
+			nQ <- nQ_aghq^d	## Maybe dimension reduced if we prune.
 		}
-		z <- matrix(0, nrow = nQ, ncol = d)
+		zVals <- matrix(0, nrow = nQ, ncol = d)
 
 		## One time fixes if we run into some scalar issues for compilation.
 		## This is exclusively if the user requests Laplace (nQ = 1 AGHQ).
@@ -84,17 +114,26 @@ buildQuadGrid <- nimbleFunction(
 		}
 
 		thetaVals <- matrix(0, nrow = nQ, ncol = d)
-		reMode <- matrix(0, nrow = nQ, ncol = nre)
-		cholVals <- array(0, c(nQ, nre, nre))
+    ## For efficiency, don't actually create these until we need them.
+		reMode <- matrix(0, nrow = nQ, ncol = 1) ## matrix(0, nrow = nQ, ncol = nre)
+		cholVals <- array(0, c(nQ, 1, 1)) ## array(0, c(nQ, nre, nre))
 		
 		## One time fixes for scalar / vector changes.
 		one_time_fixes_done <- FALSE
 		wgt <- numeric(d + gridFix)
 		calculated <- numeric(nQ + gridFix)
 		logDensTheta <- numeric(nQ + gridFix)
-		
+ 		logdetNegHessian <- 0
+   
 		## CCD mode index will be 1, but AGHQ it will be in the middle. Won't allow even nQ.
 		modeIndex <- 1
+
+    if(d > 1) thetaMode <- numeric(d)
+    else thetaMode <- c(0, -1)
+    
+    ## Transformation Methods:
+    ATransform <- matrix(0, d, d)
+    AInverse <- matrix(0, d, d)
 	},
 	run=function(){},
 	methods = list(
@@ -105,6 +144,7 @@ buildQuadGrid <- nimbleFunction(
 				calculated <<- numeric(length = 1, value = calculated[1])
 				logDensTheta <<- numeric(length = 1, value = logDensTheta[1])
 				wgt <<- numeric(length = 1, value = wgt[1])
+        thetaMode <<- numeric(length = 1, value = thetaMode[1])
 			}
 			one_time_fixes_done <<- TRUE
 		},	
@@ -130,10 +170,10 @@ buildQuadGrid <- nimbleFunction(
 			## Weights as defined by Rue 2009. 
 			## Note that the paper weights are incorrect: https://groups.google.com/g/r-inla-discussion-group/c/sy2xYin7YJA
 			f0 <- 1.1
-			wgts <- wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
+			wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
 			wgt0 <- 1 - (nQ-1)*wgts
 			
-			z <<- design
+			zVals <<- design
 			wgt <<- c(wgt0, rep(wgts, nQ-1))
 		},
 		## fast Walsh transform taken from Wood MGCV inla.
@@ -189,16 +229,16 @@ buildQuadGrid <- nimbleFunction(
 			one_time_fixes()
 			if( nQ_aghq == 1 ){
 				## Laplace Approximation:
-				z <<- matrix(0, nrow = 1, ncol = d)
+				zVals <<- matrix(0, nrow = 1, ncol = d)
 				wgt <<- numeric(value = sqrt(2*pi), length = nQ)
 				modeIndex <<- 1
 			}else{
         nodes <- buildAGHQOne(nQ_aghq)
         ## If d = 1, then we are done.
         if(d == 1){
-          z[,1] <<- nodes[,1]
+          zVals[,1] <<- nodes[,1]
           wgt <<- nodes[,2]
-          modeIndex <<- which(z[,1] == 0)[1]
+          modeIndex <<- which(zVals[,1] == 0)[1]
         }else{
           ## Build the multivariate quadrature rule.
           wgt <<- rep(1, nQ)
@@ -211,13 +251,13 @@ buildQuadGrid <- nimbleFunction(
           for(j in 1:d ) {
             indx <- 1
             for( ii in 1:nQ ) {
-              z[ii, j] <<- nodes[indx,1]
+              zVals[ii, j] <<- nodes[indx,1]
               wgt[ii] <<- wgt[ii]*nodes[indx,2]
               k <- ii %% swp[j] 
               if(k == 0) indx <- indx + 1
               if(indx > nQ_aghq) indx <- 1
             }
-            if(sum(abs(z[ii,])) == 0) modeIndex <<- ii
+            if(sum(abs(zVals[ii,])) == 0) modeIndex <<- ii
           }
         }
       }
@@ -227,43 +267,74 @@ buildQuadGrid <- nimbleFunction(
 			if(method == 1) buildCCD()
 			if(method == 2) buildAGHQ()
 		},
+    quadSum = function(){
+      margProb <- 0
+      maxVal <- logDensTheta[modeIndex]
+      for( k in 1:nQ ){
+        if(k == modeIndex) margProb <- margProb + wgt[k]
+        else margProb <- margProb + exp(logDensTheta[k] - maxVal)*wgt[k]
+      }
+      ans <- log(margProb) + maxVal - 0.5 * logdetNegHessian
+      returnType(double())
+      return(ans)
+    },
 		## Reset the sizes of the storage to change the grid if the user wants more/less AGHQ.
-		resetGrid = function(nQUpdate = integer()){
+		resetGrid = function(nQUpdate = integer(), keepInner = integer()){
 			one_time_fixes()
-			## If calling this, then method must be AGHQ currently. Can't 'update ccd'.
+			## If calling this, then method must be AGHQ currently. Can't update ccd.
 			method <<- 2
 			nQ_aghq <<- nQUpdate
 			nQ <<- nQUpdate^d
 			
 			## Update weights and nodes.
 			setSize(wgt, nQ)
-			setSize(z, c(nQ, d))			
+			setSize(zVals, c(nQ, d))			
 			buildAGHQ()
 			
 			## This will resize the storage to be saved later.
 			setSize(thetaVals, c(nQ, d))
-			setSize(reMode, c(nQ, nre))
 			setSize(calculated, nQ)
-			setSize(cholVals, c(nQ, nre, nre))
-			setSize(logDensTheta, nQ)
-			
+			setSize(reMode, c(nQ, nre))
+      
+      ## If we want to keep the inner information but it isn't automatically initiated.
+      if(keepInner){
+        setSize(cholVals, c(nQ, nre, nre))
+        setSize(logDensTheta, nQ)
+      }
 			## Keep mode information, otherwise reset.
 			## I assume this all automatically lines up.
 			for( i in 1:nQ ){
-				if( abs(sum(z[i,])) == 0 ) modeIndex <<- i
+				if( abs(sum(zVals[i,])) == 0 ) modeIndex <<- i
 				if( i != modeIndex ) calculated[i] <<- 0
 			}
 		},
-		saveValues = function(i = integer(0, default = 1), theta = double(1), logDensity = double(),
-									innerCholesky = double(2), innerMode = double(1)){
+		saveLogDens = function(i = integer(0, default = 1), logDensity = double()){
 			one_time_fixes()
 			if(i == 0) i <- modeIndex	## Can quickly update mode with input of zero.
 			logDensTheta[i] <<- logDensity
-			cholVals[i,,] <<- innerCholesky
-			thetaVals[i,] <<- theta
-			reMode[i,] <<- innerMode
 			calculated[i] <<- 1
 		},
+    saveInnerMode = function(i = integer(0, default = 1), innerMode = double(1) ){
+      if(dim(innerMode)[1] != dim(reMode)[2]) setSize(reMode, c(nQ, nre)) ## Size them here for efficiency
+			reMode[i,] <<- innerMode
+    },
+    saveInnerCholesky = function(i = integer(0, default = 1), innerCholesky = double(2) ){
+      if(dim(innerCholesky)[1] != dim(cholVals)[2]) setSize(cholVals, c(nQ, nre, nre)) ## Size them here for efficiency
+			cholVals[i,,] <<- innerCholesky      
+    },
+    saveHessInfo = function(pTransformMax = double(1), logDetNegHess = double(), ATrans = double(2), AInv = double(2)){
+      thetaMode <<- pTransformMax
+			ATransform <<- ATrans
+			AInverse <<- AInv
+      logdetNegHessian <<- logDetNegHess
+    },
+    transformGrid = function(skewSD = double(2)){
+      if(method == 1) skewGridPoints(skewSD)
+      ## Transform z to theta:
+      for( i in 1:nQ ){
+        thetaVals[i,] <<- z_to_theta(zVals[i,])
+      }
+    },
 		## Skew the CCD grid according to the +/- skewed std normal on each side of mode.
 		## Matches with INLA code base. f = 1 as far as I can tell.
 		## z_local[i] = f * design->experiment[k][i]
@@ -273,22 +344,70 @@ buildQuadGrid <- nimbleFunction(
 			{
 				for( j in 1:d ){
 					sdAdj <- skewSD[j, 2]	# Positive Skew
-					if(z[i,j] <= 0) sdAdj <- skewSD[j, 1]	# Negative Skew
-					z[i, j] <<- z[i, j] * sdAdj
+					if(zVals[i,j] <= 0) sdAdj <- skewSD[j, 1]	# Negative Skew
+					zVals[i, j] <<- zVals[i, j] * sdAdj
 				}
 			}
 		},
-		calcCheck = function(i=integer()){returnType(integer()); return(calculated[i])},
-		getCholesky = function(i=integer()){returnType(double(2)); return(cholVals[i,,])},
-		getMode = function(i=integer()){returnType(double(1)); return(reMode[i,])},
-		getTheta = function(i=integer()){returnType(double(1)); return(thetaVals[i,])},
-		getWeights = function(i=integer()){returnType(double()); return(wgt[i])},
-		updateWeights = function(i=integer(), weight = double()){wgt[i] <<- weight},
-		getNodes = function(i=integer()){returnType(double(1)); return(z[i,])},
-		updateNodes = function(i=integer(), zNodes = double(1)){z[i,] <<- zNodes},
-		getLogDensity = function(i=integer()){returnType(double()); return(logDensTheta[i])},
-		getThetaModeIndex = function(){returnType(integer()); return(modeIndex)},
-		getGridSize = function(){returnType(integer()); return(nQ)}
+		## Transform z to theta.
+		z_to_theta = function(z = double(1)) {
+			theta <- thetaMode + (ATransform %*% z)
+			returnType(double(1))
+			return(theta[,1])
+		},		
+		## Functions to approximate posterior distribution of theta.
+		theta_to_z = function(theta = double(1)) {
+			z <- AInverse %*% (theta - thetaMode)
+			returnType(double(1))
+			return(z[,1])
+		},
+		calcCheck = function(i=integer()){
+      returnType(integer())
+      if(i == 0) i <- modeIndex
+      return(calculated[i])
+    },
+		getInnerCholesky = function(i=integer()){
+      returnType(double(2)) 
+      return(cholVals[i,,])
+    },
+		getInnerModes = function(i=integer()){
+      returnType(double(1)) 
+      return(reMode[i,])
+    },
+		getTheta = function(i=integer()){
+      returnType(double(1))
+      if(i == 0) i <- modeIndex
+      return(thetaVals[i,])
+    },
+		getWeights = function(i=integer()){
+      returnType(double())
+      if(i == 0) i <- modeIndex    
+      return(wgt[i])
+    },
+		updateWeights = function(i=integer(), weight = double()){
+      if(i == 0) i <- modeIndex
+      wgt[i] <<- weight
+    },
+		getNodes = function(i=integer()){
+      returnType(double(1)); 
+      return(zVals[i,])
+    },
+		updateNodes = function(i=integer(), zNodes = double(1)){
+      zVals[i,] <<- zNodes
+    },
+		getLogDensity = function(i=integer()){
+      returnType(double())
+      if(i == 0) i <- modeIndex
+      return(logDensTheta[i])
+    },
+		getThetaModeIndex = function(){
+      returnType(integer())
+      return(modeIndex)
+    },
+		getGridSize = function(){
+      returnType(integer())
+      return(nQ)
+    }
 	)
 )
 
@@ -313,7 +432,7 @@ buildQuadGrid <- nimbleFunction(
 # tmp$buildGrid()
 # tmp$getNodes()
 # tmp$getWeights()
-# tmp$resetGrid(nQUpdate = 5)
+# tmp$resetGrid(nQUpdate = 5, 1)
 # tmp$buildAGHQOne(51)
 
 # np <- pracma::gaussHermite(5)
