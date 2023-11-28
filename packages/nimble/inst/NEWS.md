@@ -182,6 +182,7 @@ statements (PR #1254).
 
 - Remove use of C++11 standard, per CRAN requirements. As part of this, replace use of `std::ptr_fun` (PR #1292).
 
+
 #                            CHANGES IN VERSION 0.13.1 (December 2022) 
 
 ## BUG FIXES
