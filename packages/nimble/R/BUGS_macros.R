@@ -178,7 +178,9 @@ model_macro_builder <- function(fun,
 }
 
 ## This function recurses through a block of code and expands any submodels
-codeProcessModelMacros <- function(code,
+## Called "internal" because there's a similarly-named wrapper function below that
+## calls this function but also does other things not in the recursion
+processMacrosInternal <- function(code,
                                    modelInfo,
                                    env = parent.frame(),
                                    recursionLabels = character()) {
@@ -199,7 +201,7 @@ codeProcessModelMacros <- function(code,
         if(codeLength > 1)
             ## Recurse on each line
             for(i in 2:codeLength){
-              macroOutput <- codeProcessModelMacros(code = code[[i]],
+              macroOutput <- processMacrosInternal(code = code[[i]],
                                                     modelInfo = modelInfo,
                                                     env = env,
                                                     recursionLabels
@@ -211,7 +213,7 @@ codeProcessModelMacros <- function(code,
     }
     ## If this is a for loop, recurse on the body of the loop
     if(code[[1]] == 'for') {
-      macroOutput <- codeProcessModelMacros(code[[4]],
+      macroOutput <- processMacrosInternal(code[[4]],
                                             modelInfo = modelInfo,
                                             env = env,
                                             recursionLabels
@@ -269,11 +271,15 @@ codeProcessModelMacros <- function(code,
                             "'code' that is a call."),
                      call. = FALSE)
             
-            # Check for newly created parameters
+            # Check for newly created parameters from macros and put them in a list element
             newPars <- list(newMacroPars(code, expandedInfo$code))
+            # Name the list element after the source macro
             names(newPars) <- possibleMacroName
 
             # Add automatic comments showing code added by macros
+            # Includes one line indicating the start of the code generated (macroComment)
+            # by a particular macro, and one line showing the end (macroEnd)
+            # Comments are simply character strings
             if(getNimbleOption("enableMacroComments")){
               if(getNimbleOption("codeInMacroComments")){
                 macroComment <- paste("#", deparse(code))
@@ -284,6 +290,8 @@ codeProcessModelMacros <- function(code,
               if(length(recursionLabels > 0)){
                 spacer <- paste(rep("  ", length(recursionLabels)), collapse="")
                 hashes <- paste(rep("#", length(recursionLabels)+1), collapse="")
+                # If this option is also set, then print the entire original
+                # line of code with the macro in the comments instead of just the macro name
                 if(getNimbleOption("codeInMacroComments")){  
                   macroComment <- paste0(spacer, hashes, " ", deparse(code))
                 } else {
@@ -291,18 +299,20 @@ codeProcessModelMacros <- function(code,
                 }
                 macroEnd <- paste0(spacer, hashes, " ----")
               }
+              # Add the starting and ending comments to the code
               macroStartLine <- substitute(MACRO, list(MACRO = macroComment))
               macroEndLine <- substitute(END, list(END = macroEnd))
               expandedInfo$code <- as.call(c(list(quote(`{`)), list(macroStartLine, expandedInfo$code, macroEndLine)))
             }
-
+            
+            # Add the new macro parameters to modelInfo
             curPars <- modelInfo$parameters
             expandedInfo$modelInfo$parameters <- c(curPars, newPars)
 
             ## Return object is a list so we can ossibly extract other
             ## content in the future.  We recurse on the returned code
             ## to expand macros that it might contain.
-            macroOutput <- codeProcessModelMacros(expandedInfo$code,
+            macroOutput <- processMacrosInternal(expandedInfo$code,
                                            modelInfo = expandedInfo$modelInfo,
                                            env = env,
                                            recursionLabels = c(recursionLabels, possibleMacroName)
@@ -313,26 +323,37 @@ codeProcessModelMacros <- function(code,
     list(code=code, modelInfo=modelInfo)
 }
 
-# Index generator for all macros
+# Create index generator for all macros to use
+# Used in e.g. a for loop macro that needs to create an index parameter
 macroIndexCreator <- labelFunctionCreator("i")
 
-processModelMacros <- function(code, modelInfo, env){
-  # No generated parameters before any macros run, so parameters = empty list
+# Top-level function that does all the macro processing
+# Code: input code from user
+# modelInfo: List containing key model info like constants, dimensions
+# env: environment to operate in
+codeProcessModelMacros <- function(code, modelInfo, env){
+  # Reset the index generator and insert it into modelInfo
   macroIndexCreator(reset = TRUE)
   modelInfo$indexCreator <- macroIndexCreator
+  # No macro generated parameters before any macros run, so parameters = empty list
   modelInfo$parameters <- list()
-  macroOutput <- codeProcessModelMacros(code=code, modelInfo=modelInfo, env=env)
-  # Clean up extra brackets
+  # Recursively step through the code expanding macros
+  # and adding information to modelInfo such as updated constants and
+  # parameter names
+  macroOutput <- processMacrosInternal(code=code, modelInfo=modelInfo, env=env)
+  # Clean up extra brackets in output code
   macroOutput$code <- removeExtraBrackets(macroOutput$code)
-  # Convert factors to numeric
+  # Convert factors in constants to numeric
   macroOutput$modelInfo$constants <- convertFactorConstantsToNumeric(macroOutput$modelInfo$constants)  
-  # Remove intermediate parameters from list and check for duplicates
+  # Remove intermediate parameters from list of generated parameters
+  # and check for duplicates
   macroOutput$modelInfo$parameters <- checkMacroPars(macroOutput$modelInfo$parameters,
                                                      code, macroOutput$code)
-
   list(code = macroOutput$code, modelInfo = macroOutput$modelInfo)
 }
 
+# Function that converts any factors or character vectors/matrices/arrays
+# in the constants into numeric so they can be used by nimble
 convertFactorConstantsToNumeric <- function(constants){
   lapply(constants, function(x){
     if(is.factor(x)){
@@ -350,42 +371,59 @@ convertFactorConstantsToNumeric <- function(constants){
   })
 }
 
-# Get parameters in a line of code generated by a macro
-getMacroParsInternal <- function(code){
-  if(is.call(code)){
-    code <- as.list(code)[2:length(code)]
-    return(lapply(code, getMacroParsInternal))
-  } else {
-    return(sapply(code, function(x) if(is.numeric(x) || x == "") return(NULL) else return(deparse(x))))
-  }
+# Functions for finding parameters generated by macros-------------------------
+
+# Figure out which new parameters a macro added
+# This is done by finding the parameters in the starting (pre-macro) code line
+# and the ending (post-expanded-macro) code, 
+# then comparing the two
+newMacroPars <- function(startCode, endCode){
+  startPar <- getParametersFromCode(startCode) # starting parameters
+  endPar <- getParametersFromCode(endCode)     # ending parameters
+  # Find the differences, keeping the LHS and RHS of assignments separated
+  LHS <- endPar$LHS[! endPar$LHS %in% unlist(startPar)]
+  if(length(LHS) == 0) LHS <- NULL
+  RHS <- endPar$RHS[! endPar$RHS %in% unlist(startPar)]
+  if(length(RHS) == 0) RHS <- NULL
+  list(LHS = LHS, RHS = RHS)
 }
 
-getMacroPars <- function(code){
-  out <- getMacroParsInternal(code)
-  out <- unlist(out)
-  out <- out[out != ""]
-  out <- out[!is.numeric(out)]
-  unique(out)
+# Get all parameters from a code chunk
+# Uses recursive function below internally
+# Separates parameters by LHS and RHS of assingments
+getParametersFromCode <- function(code){
+  out <- getParametersFromCodeInternal(code)
+  LHS = as.character(findAllListElementsByName(out, "LHS"))
+  RHS = as.character(findAllListElementsByName(out, "RHS"))
+  list(LHS = unique(LHS), RHS = unique(RHS))
 }
 
-processCodeLine <- function(code){
-  #stopifnot(is.call(code))
+# Recursive function to work through a code chunk and get all parameters
+# Used above
+getParametersFromCodeInternal <- function(code){
+  # If this code is a comment, return NULL
   if(is.character(code)) return(list(LHS = NULL, RHS = NULL))
+  # If the code is just class(name) all by itself (no assignment), return it
+  # Calling these "RHS" even though there is no sides
   if(is.name(code)){
     return(list(LHS = NULL, RHS = deparse(code)))
   }
+  # If we have several lines of code, iterate through them recursively
   if(code[[1]] == "{"){
-    return(lapply(as.list(code)[2:length(code)], processCodeLine))
+    return(lapply(as.list(code)[2:length(code)], getParametersFromCodeInternal))
   }
+  # If a for loop, iterate through the lines recursively
   if(code[[1]] == "for"){
-    return(lapply(as.list(code)[2:length(code)], processCodeLine))
+    return(lapply(as.list(code)[2:length(code)], getParametersFromCodeInternal))
   } else {
-    #if(isAssignment())
+    # Otherwise  we should have a single line of code which is an assignment
     if(as.character(code[[1]]) %in% c("~", "<-")){
-      RHS <- getMacroPars(code[[3]]) # getRHS()
-      LHS <- getMacroPars(code[[2]]) # getLHS()
+      # Separate the assignment into LHS and RHS side "pieces" and get the
+      # parameters from each
+      RHS <- getMacroParsFromCodePiece(code[[3]])
+      LHS <- getMacroParsFromCodePiece(code[[2]])
     } else {
-      RHS <- getMacroPars(code)
+      RHS <- getMacroParsFromCodePiece(code)
       LHS <- NULL
     }
   }
@@ -393,6 +431,32 @@ processCodeLine <- function(code){
   list(LHS = LHS, RHS = RHS)
 }
 
+# Wrapper function for getting generated parameters that runs the
+# recursive function below and does some cleanup on the final output
+getMacroParsFromCodePiece <- function(code){
+  out <- getMacroParsFromCodePieceInternal(code)
+  out <- unlist(out)
+  out <- out[out != ""]
+  out <- out[!is.numeric(out)]
+  unique(out)
+}
+
+# Get all parameter names in a piece of code generated by a macro
+# The assumption is that the piece of code is one side of an assignment
+# i.e. just the LHS from LHS ~ RHS
+# Called recursively
+getMacroParsFromCodePieceInternal <- function(code){
+  if(is.call(code)){
+    code <- as.list(code)[2:length(code)]
+    return(lapply(code, getMacroParsFromCodePieceInternal))
+  } else {
+    # return NULL for numbers and blanks, otherwise return parameter name
+    return(sapply(code, function(x) if(is.numeric(x) || x == "") return(NULL) else return(deparse(x))))
+  }
+}
+
+# Recursively earch through a (possibly nested) list and find all elements
+# with a particular name
 findAllListElementsByNameInternal <- function(inputList, name){
   if(is.list(inputList) && name %in% names(inputList)){
     return(inputList[[name]])
@@ -402,51 +466,43 @@ findAllListElementsByNameInternal <- function(inputList, name){
   return(NULL)
 }
 
-
+# Calls recursive function above and does some cleanup on the output
 findAllListElementsByName <- function(inputList, name){
   stopifnot(is.list(inputList))
   out <- findAllListElementsByNameInternal(inputList, name)
   unlist(out)
 }
 
-processCode <- function(code){
-  out <- processCodeLine(code)
-  LHS = as.character(findAllListElementsByName(out, "LHS"))
-  RHS = as.character(findAllListElementsByName(out, "RHS"))
-  list(LHS = unique(LHS), RHS = unique(RHS))
-}
-
-# Figure out which parameters a macro added by comparing with the original
-# line of code
-newMacroPars <- function(startCode, endCode){
-  startPar <- processCode(startCode)
-  endPar <- processCode(endCode)
-  LHS <- endPar$LHS[! endPar$LHS %in% unlist(startPar)]
-  if(length(LHS) == 0) LHS <- NULL
-  RHS <- endPar$RHS[! endPar$RHS %in% unlist(startPar)]
-  if(length(RHS) == 0) RHS <- NULL
-  list(LHS = LHS, RHS = RHS)
-}
-
-# Remove intermediate parameters and check for parameters generated
-# more than once
+# Function to do some final cleanup on the list of generated macro parameters
+# Remove "intermediate" parameters 
+# also check for parameters generated more than once on the LHS
+# and a give a message
+# Sometimes this could be a mistake, or it could be correct if e.g.
+# you have two macros that generate the following two lines of code
+# alpha[1:2] <- x
+# alpha[3] <- y
 checkMacroPars <- function(parameters, startCode, endCode){
 
   # If no macros return empty list
   if(length(parameters) == 0) return(parameters)
   
-  # Find new parameters all at once
+  # Find new parameters all at once: startCode is the entire original code
+  # provided by the user, and endCode is the final code after all macros expanded
   all_pars <- newMacroPars(startCode, endCode)
 
   if(length(all_pars) == 0) return(NULL)
 
+  # Parameters that exist in the input parameter list (generated by going through
+  # each macro separately) but not in the list generated by comparing just the
+  # start and final, complete end code are "intermediate" parameters that the
+  # user shouldn't actually care about.
   # Remove intermediate parameters that don't end up final code
   final_pars <- lapply(parameters, function(x){
     list(LHS = x$LHS[x$LHS %in% all_pars$LHS],
          RHS = x$RHS[x$RHS %in% all_pars$RHS])
   })
   
-  # Check for duplicate parameters from previous macros and warn
+  # Check for duplicate parameters on the LHS from previous macros and warn
   if(length(final_pars) > 1){
   for (i in 2:length(final_pars)){
     this_macro <- final_pars[[i]]$LHS
@@ -459,9 +515,6 @@ checkMacroPars <- function(parameters, startCode, endCode){
                 names(final_pars[j]),"'")
         messageIfVerbose(msg)
 
-        #warning(paste0("Macro '", names(final_pars[i]), "' generated parameter name(s) '",
-        #        paste(this_macro[dups], collapse="', '"), "' previously generated by macro '",
-        #        names(final_pars[j]),"'"), call.=FALSE)
       }
     }
   }
@@ -479,7 +532,6 @@ checkMacroPars <- function(parameters, startCode, endCode){
 
   final_pars
 }
-
 
 #' EXPERIMENTAL: Get list of parameter names generated by model macros
 #'
@@ -574,7 +626,7 @@ getMacroParameters <- function(model, includeLHS = TRUE, includeRHS = TRUE, incl
     })
   }
 
-  # Type
+  # Type (deterministic/stochastic)
   varnames <- sapply(unlist(lapply(dc, function(x) x$targetVarExpr)), deparse)
     type <- unlist(lapply(dc, function(x) x$type))
     names(type) <- varnames
@@ -616,7 +668,11 @@ getMacroParameters <- function(model, includeLHS = TRUE, includeRHS = TRUE, incl
   })
 }
 
-# Add macro-generated inits to inits only if they don't already exist
+# End functions dealing with getting parameters generated by macros------------
+
+# Macros can auto-generate appropriate inits
+# We want to add these to the existing inits, but also not overwrite
+# any inits that already exist
 addMacroInits <- function(origInits, macroInits){
   
   outInits <- origInits
@@ -640,11 +696,16 @@ addMacroInits <- function(origInits, macroInits){
   outInits
 }
 
-# Remove extra brackets in BUGS code (typically resulting from macros)
+# Remove extra curly brackets in BUGS code
+# Typically macros generate a bunch of extra layers of {} that we don't want
+
+# Call recursive function below and turn the result back into code
 removeExtraBrackets <- function(code){
   as.call(removeExtraBracketsInternal(code))
 }
 
+# Turn code into list, remove extra brackets, and return the result
+# Operates recursively
 removeExtraBracketsInternal <- function(code){
   unlist(lapply(code, function(x){
     if(length(x) == 1) return(x)                       

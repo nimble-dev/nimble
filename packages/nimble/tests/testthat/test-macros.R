@@ -29,7 +29,7 @@ test_that('Macro expansion 1',
     temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
-        nimble:::codeProcessModelMacros(
+        nimble:::processMacrosInternal(
             quote(x[1] ~ testMacro(y[1])),
         modelInfo = list())$code,
         quote(x[1] ~ dnorm(y[1], 1))
@@ -96,7 +96,7 @@ test_that('Macro expansion 2',
     temporarilyAssignInGlobalEnv(testMacro)
 
     expect_identical(
-        nimble:::codeProcessModelMacros(
+        nimble:::processMacrosInternal(
             quote(x[1] ~ testMacro(y[1])),
         modelInfo = list())$code,
         quote(x[1] ~ dnorm(step(y[1]), 1))
@@ -140,7 +140,7 @@ test_that('Macro expansion 3',
     temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
-        nimble:::codeProcessModelMacros(
+        nimble:::processMacrosInternal(
             quote(x[1] ~ testMacro(newVar = z, newIndex = 5)),
             modelInfo = list()
         )$code,
@@ -176,7 +176,7 @@ test_that('Macro expansion 4',
     temporarilyAssignInGlobalEnv(testMacro)
 
     expect_identical(
-        nimble:::codeProcessModelMacros(
+        nimble:::processMacrosInternal(
             quote(x[1] ~ testMacro(y[1], 1)),
             modelInfo = list()
         )$code,
@@ -212,7 +212,7 @@ test_that('Macro expansion 5',
     temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
-        nimble:::codeProcessModelMacros(
+        nimble:::processMacrosInternal(
             quote(testMacro(x[1], y[2], z[i, j])),
             modelInfo = list()
         )$code,
@@ -259,7 +259,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
     temporarilyAssignInGlobalEnv(testMacroOuter)
     
     expect_identical(
-        nimble:::codeProcessModelMacros(
+        nimble:::processMacrosInternal(
             quote(x[1] ~ testMacroOuter(y[1])),
             modelInfo = list()
         )$code,
@@ -315,7 +315,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
     #cat("\nTwo 'unused argument' error messages known to occur here:\n") 
     #cat("\nNot sure why these are supposed to fail:\n")
 
-    expect_error(nimble:::codeProcessModelMacros(
+    expect_error(nimble:::processMacrosInternal(
                               quote(x[1] ~ testMacroOuter(y[1], 1)), modelInfo = list()),
                  "Model macro testMacroInner\\(expanded from testMacroOuter\\) failed.")
 
@@ -333,7 +333,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
     ## but in this case is safe because we follow it with an
     ## expectation that an error did occur.
     
-    ## ans <- try(nimble:::codeProcessModelMacros(
+    ## ans <- try(nimble:::processMacrosInternal(
     ##     quote(x[1] ~ testMacroOuter(y[1], 1)
     ##           ## second arg triggers
     ##           ## failure for testing
@@ -452,7 +452,7 @@ test_that('constants and env are accessed correctly, even in recursion',
         )
   temporarilyAssignInGlobalEnv(testMacroOuter)
 
-    macroOut <- nimble:::codeProcessModelMacros(
+    macroOut <- nimble:::processMacrosInternal(
                    quote(x[1] ~ testMacroOuter(y[1])),
                    env = testEnv,
                    modelInfo = list(constants=list(constant_of_interest = 10))
@@ -497,7 +497,7 @@ test_that("macros can add constants", {
   })
   
   modelInfo <- list(constants = inp_constants)
-  out <- nimble:::processModelMacros(code, modelInfo = modelInfo)
+  out <- nimble:::codeProcessModelMacros(code, modelInfo = modelInfo)
   expect_equal(out$code,
     quote({
            x ~ dnorm(0, sd = 1)
@@ -512,7 +512,7 @@ test_that("macros can add constants", {
 
 })
 
-test_that("processModelMacros converts factors to numeric", {
+test_that("codeProcessModelMacros converts factors to numeric", {
   inp_constants <- list(y = rnorm(3), x = factor(c("a","b","c")))
 
   code <- nimbleCode({
@@ -521,7 +521,7 @@ test_that("processModelMacros converts factors to numeric", {
     }
   })
   
-  mod <- nimble:::processModelMacros(code, modelInfo=list(constants=inp_constants))
+  mod <- nimble:::codeProcessModelMacros(code, modelInfo=list(constants=inp_constants))
 
   expect_equal(
     mod$modelInfo$constants$x,
@@ -543,7 +543,7 @@ test_that("convertFactorConstantsToNumeric converts factors to numeric", {
                         x3=c(1,2,3)))
 })
 
-test_that("processModelMacros makes index generator available", {
+test_that("codeProcessModelMacros makes index generator available", {
 
   testMacro <- list(process = function(code, modelInfo, .env){
       code[[3]] <- str2lang(modelInfo$indexCreator())
@@ -558,7 +558,7 @@ test_that("processModelMacros makes index generator available", {
     x ~ testMacro()
   })
 
-  out <- nimble:::processModelMacros(code, modelInfo=list())
+  out <- nimble:::codeProcessModelMacros(code, modelInfo=list())
   
   expect_equal(out$code,
                quote({
@@ -598,21 +598,21 @@ test_that("generated parameters are stored in model definition",{
 
 })
 
-test_that("getMacroPars finds parameters in a chunk of code", {
+test_that("getMacroParsFromCodePiece finds parameters in a chunk of code", {
 
   inp <- quote(1 + 1)
-  expect_equal(nimble:::getMacroPars(inp), NULL)
+  expect_equal(nimble:::getMacroParsFromCodePiece(inp), NULL)
 
   inp <- quote(x ~ dnorm(alpha, beta))
-  expect_equal(nimble:::getMacroPars(inp), c("x", "alpha", "beta"))
+  expect_equal(nimble:::getMacroParsFromCodePiece(inp), c("x", "alpha", "beta"))
 
   inp <- quote(x[alpha] <- 1)
-  expect_equal(nimble:::getMacroPars(inp), c("x", "alpha"))
+  expect_equal(nimble:::getMacroParsFromCodePiece(inp), c("x", "alpha"))
 
   inp <- quote({x ~ dnorm(alpha, beta)
                 y[gamma] <- 1
               })
-  expect_equal(nimble:::getMacroPars(inp), c("x", "alpha", "beta", "y", "gamma"))
+  expect_equal(nimble:::getMacroParsFromCodePiece(inp), c("x", "alpha", "beta", "y", "gamma"))
 
 })
 
@@ -744,7 +744,7 @@ test_that("getMacroParameters() can pull out different subsets of parameters", {
   )
 })
 
-test_that("removeExtraBrackets cleans up output from codeProcessModelMacros",{
+test_that("removeExtraBrackets cleans up output from processMacrosInternal",{
 
   code <- nimbleCode({
   {
