@@ -1,3 +1,10 @@
+
+
+## DEVELOPER LEVEL CHANGES
+
+- Make change to `nimble-package` documentation to use `"_PACKAGE"`
+instead of `@docType` per CRAN request (issue #1359).
+
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
 
 ## USER LEVEL CHANGES
