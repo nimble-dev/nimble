@@ -75,12 +75,13 @@ modelDefClass <- setRefClass('modelDefClass',
                                  setupModel = function(code, constants, dimensions, inits, data, debug) {},
                                  
                                  ## the following are all run, in this order, by setupModel():
+                                 assignMacroInits               = function() {},
+                                 assignMacroParameters          = function() {},
                                  setModelValuesClassName        = function() {},
                                  checkUnusedConstants           = function() {},
                                  assignBUGScode                 = function() {},
                                  assignConstants                = function() {},
                                  assignDimensions               = function() {},
-                                 assignMacroParameters          = function() {},
                                  initializeContexts             = function() {},
                                  processBUGScode                = function() {},
                                  splitConstantsAndData          = function() {},
@@ -447,6 +448,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber, userEnv = userEnv)
         }
         checkLine <- safeDeparse(code[[i]][[1]], warn = TRUE)
+        # Added as.character() here to allow "comments" in the form of lines containing only a character string to pass through
         if(! (is.character(checkLine) | checkLine %in% c('~', '<-', 'for', '{'))) 
             stop("Error: ", safeDeparse(code[[i]][[1]]), " not allowed in BUGS code in ", safeDeparse(code[[i]]))
     }

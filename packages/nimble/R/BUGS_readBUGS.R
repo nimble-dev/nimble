@@ -105,9 +105,11 @@ nimbleModel <- function(code,
                   data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
     if(nimbleOptions("enableModelMacros")){
-      # update constants in case any new ones were created
+      # Do this stuff if macros are enabled:
+      # Update constants in case any new ones were created by macros
       newConstants <- md$constantsList[!names(md$constantsList) %in% names(constants)]
       constants <- c(constants, newConstants)
+      # Update inits in case new ones were created by macros
       inits <- addMacroInits(inits, md$macroInits)
     }
     # move any data lumped in 'constants' into 'data' for
