@@ -1216,7 +1216,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             if(length(type) > 1) {
                 ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
                 if(exprText %in% expandedNodeNamesRaw) type <- type[which(exprText == expandedNodeNamesRaw)]
-                else stop('something went wrong with Daniel\'s understanding of newNimbleModel #1')
+                else stop('internal error #1 in cc_expandDetermNodesInExpr method', call. = FALSE)
             }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
@@ -1225,7 +1225,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansionsNode))
             }
             if(type == 'RHSonly') return(expr)
-            stop('something went wrong with Daniel\'s understanding of newNimbleModel #2')
+            stop('internal error #2 in cc_expandDetermNodesInExpr method', call. = FALSE)
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         if(is.call(newExpr) && newExpr[[1]] == 'structureExpr') {  ## recurse, if there's a newly created structureExpr()
