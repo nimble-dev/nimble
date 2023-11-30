@@ -1196,14 +1196,14 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             expandedNodeNames <- exprText
         } else {
             ## if exprText is itself *not* a formal node name, but rather a subset of a larger formal node,
-            ## then we don't want it to be expanded to include the subsubming full node
+            ## then we don't want it to be expanded to include the subsuming full node:
             if(length(setdiff(model$expandNodeNames(expandedNodeNamesRaw, returnScalarComponents = TRUE), model$expandNodeNames(exprText, returnScalarComponents = TRUE)))) {
                 expandedNodeNames <- exprText
             } else {
                 expandedNodeNames <- expandedNodeNamesRaw
             }
         }
-        if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
+        if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText) && (exprText %in% model$getNodeNames())) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
             ## this next block covers a **real corner case** (from a legacy BUGS model: biops) where dimensions are inferred
