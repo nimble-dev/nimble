@@ -2,7 +2,8 @@
 GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-		buildGrid = function(){},
+		buildGrid = function(){
+    },
     quadSum = function(){
       returnType(double())
     },
@@ -12,9 +13,12 @@ GRID_BASE <- nimbleFunctionVirtual(
     },
     saveInnerCholesky = function(i=integer(), innerCholesky = double(2)){
     },
-    saveHessInfo = function(pTransformMax = double(1), logDetNegHess = double(), 
-                              ATrans = double(2), AInv = double(2)){},
-    transformGrid = function(skewSD = double(2)){},
+    saveOptimInfo = function(pTransformMax = double(1), negHessian = double(2)){
+    },
+    changeTransformation = function(transformMethod = character()){
+    },
+    transformGrid = function(skewSD = double(2)){
+    },
 		calcCheck = function(i=integer()){
       returnType(integer())
     },
@@ -50,6 +54,18 @@ GRID_BASE <- nimbleFunctionVirtual(
     },
 		buildAGHQOne = function(nQ1 = integer()){
       returnType(double(2))
+    },
+    z_to_theta = function(z = double(1)){
+      returnType(double(1))
+    },
+    theta_to_z = function(theta = double(1)){
+      returnType(double(1))
+    },
+    getCovTheta = function(){
+      returnType(double(2))
+    },
+    getLogDetNegHess = function(){
+      returnType(double())
     }
 	)
 )
@@ -62,14 +78,16 @@ GRID_BASE <- nimbleFunctionVirtual(
 # nre - Number of fixed and random effects.
 buildQuadGrid <- nimbleFunction(
 	contains = GRID_BASE,
-	setup = function(d, nQ, method, nre){
+	setup = function(d, nQ, method, nre, transformation){
 		# if(!method %in% c("CCD", "AGHQ", "Custom")) print("Only CCD, AGHQ, and Custom Grids are supported")
-		if (d > 120 | d<1) print("Dimension of Theta must be in [1,120]")		
+		if ((d > 120 | d < 1) & method == 1) print("Dimension of Theta must be in [1,120]")		
 
+    if(missing(transformation)) transformation <- "spectral" ## either spectral or cholesky available.
+    
 		## Don't let them use an even quadrature grid. Inefficient.
 		if(method == 2 & nQ %% 2 == 0) {
-			print("Even Quadrature grids are not recommended: Changing to + 1")
-			nQ <- nQ + 1	
+			print("Even Quadrature grids are not recommended: Adding one more")
+			nQ <- nQ + 1
 		}
 		## Walsh Index Assignments for Resolution V Fractional Factorials
 		index <- c(1, 2, 4, 8, 15, 16, 32, 51, 64, 85, 106, 128,
@@ -125,15 +143,18 @@ buildQuadGrid <- nimbleFunction(
 		logDensTheta <- numeric(nQ + gridFix)
  		logdetNegHessian <- 0
    
-		## CCD mode index will be 1, but AGHQ it will be in the middle. Won't allow even nQ.
+		## CCD mode index will be 1, but AGHQ it will be in the middle. Won't allow even # of nQ.
 		modeIndex <- 1
 
     if(d > 1) thetaMode <- numeric(d)
     else thetaMode <- c(0, -1)
     
     ## Transformation Methods:
+    thetaNegHess <- matrix(0, d, d)
     ATransform <- matrix(0, d, d)
     AInverse <- matrix(0, d, d)
+    covTheta <- matrix(0, d, d)
+    covThetaCalc <- 0 
 	},
 	run=function(){},
 	methods = list(
@@ -144,8 +165,10 @@ buildQuadGrid <- nimbleFunction(
 				calculated <<- numeric(length = 1, value = calculated[1])
 				logDensTheta <<- numeric(length = 1, value = logDensTheta[1])
 				wgt <<- numeric(length = 1, value = wgt[1])
-        thetaMode <<- numeric(length = 1, value = thetaMode[1])
 			}
+      if( d == 1){
+        thetaMode <<- numeric(length = 1, value = thetaMode[1])
+      }
 			one_time_fixes_done <<- TRUE
 		},	
 		## Taken from Simon Wood's mgcv package.
@@ -264,6 +287,7 @@ buildQuadGrid <- nimbleFunction(
 		},
 		## Doesn't default to building the grid.
 		buildGrid = function(){
+			one_time_fixes()
 			if(method == 1) buildCCD()
 			if(method == 2) buildAGHQ()
 		},
@@ -293,6 +317,7 @@ buildQuadGrid <- nimbleFunction(
 			
 			## This will resize the storage to be saved later.
 			setSize(thetaVals, c(nQ, d))
+			setSize(logDensTheta, nQ)
 			setSize(calculated, nQ)
 			setSize(reMode, c(nQ, nre))
       
@@ -302,14 +327,13 @@ buildQuadGrid <- nimbleFunction(
         setSize(logDensTheta, nQ)
       }
 			## Keep mode information, otherwise reset.
-			## I assume this all automatically lines up.
+			## I assume this all automatically lines up...
 			for( i in 1:nQ ){
 				if( abs(sum(zVals[i,])) == 0 ) modeIndex <<- i
 				if( i != modeIndex ) calculated[i] <<- 0
 			}
 		},
 		saveLogDens = function(i = integer(0, default = 1), logDensity = double()){
-			one_time_fixes()
 			if(i == 0) i <- modeIndex	## Can quickly update mode with input of zero.
 			logDensTheta[i] <<- logDensity
 			calculated[i] <<- 1
@@ -322,14 +346,46 @@ buildQuadGrid <- nimbleFunction(
       if(dim(innerCholesky)[1] != dim(cholVals)[2]) setSize(cholVals, c(nQ, nre, nre)) ## Size them here for efficiency
 			cholVals[i,,] <<- innerCholesky      
     },
-    saveHessInfo = function(pTransformMax = double(1), logDetNegHess = double(), ATrans = double(2), AInv = double(2)){
+    saveOptimInfo = function(pTransformMax = double(1), negHessian = double(2)){
       thetaMode <<- pTransformMax
-			ATransform <<- ATrans
-			AInverse <<- AInv
-      logdetNegHessian <<- logDetNegHess
+      thetaNegHess <<- negHessian
+      changeTransformation(transformation)
+    },
+    getCovTheta = function(){
+      if(covThetaCalc == 0) {
+        covTheta <<- ATransform %*% t(ATransform)
+        covThetaCalc <<- 1
+      }
+      returnType(double(2))
+      return(covTheta)
+    },
+    getLogDetNegHess = function(){
+      returnType(double())
+      return(logdetNegHessian)
+    },
+    changeTransformation = function(transformMethod = character()){
+      transformation <<- transformMethod
+      ## Build the transformation methods based on this information.
+      if(transformation == "spectral"){
+        eigenDecomp <- nimEigen(thetaNegHess)
+        for( i in 1:d ){
+            ATransform[,i] <<- eigenDecomp$vectors[,i]/sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
+            AInverse[,i] <<- eigenDecomp$vectors[i,]*sqrt(eigenDecomp$values[i]) # diag(sqrt(eigenDecomp$values)) %*% t(eigenDecomp$vectors)
+        }
+        logdetNegHessian <<- sum(log(eigenDecomp$values))
+      }else{
+        ## Have Chris check this isn't an awful thing to do.
+        ## Point Chris here later.
+        cholNegHess <- chol(thetaNegHess)
+        invChol <- inverse(cholNegHess)
+        Cov <- (invChol %*% t(invChol)) 
+        ATransform <<- t(chol(Cov))
+        AInverse <<- inverse(ATransform)  ## Surely I don't have to inverse again do I? 1/invChol
+        logdetNegHessian <<- 2*sum(log(diag(ATransform)))
+      }
     },
     transformGrid = function(skewSD = double(2)){
-      if(method == 1) skewGridPoints(skewSD)
+      if(method == 1) skewGridPoints(skewSD)     ## ***Make sure you can't skew twice (unless a reset...)
       ## Transform z to theta:
       for( i in 1:nQ ){
         thetaVals[i,] <<- z_to_theta(zVals[i,])
