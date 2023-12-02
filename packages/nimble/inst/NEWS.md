@@ -1,11 +1,15 @@
 ## USER LEVEL CHANGES
 
+- Add `prior_samples` MCMC sampler, which uses an existing set of
+  numerical samples to define the prior distribution of model node(s).
+
 - Change argument of `besselK` in manual table to be `x` not `k`.
 
 ## DEVELOPER LEVEL CHANGES
 
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`
 instead of `@docType` per CRAN request (issue #1359).
+
 
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
 

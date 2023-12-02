@@ -647,7 +647,14 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!is.character(thisSamplerName)) stop('sampler name should be a character string')
             if(!is.function(samplerFunction)) stop('sampler type does not specify a function')
 
-            if(!(all(model$isStoch(target)))) { warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', '))); return(invisible(samplerConfs)) }   ## ensure all target node(s) are stochastic
+            ## ensure all target node(s) are stochastic
+            if(!(all(model$isStoch(target)))) {
+                ## however, allow assignment of prior_samples sampler to RHS-only nodes
+                if(!(thisSamplerName == 'prior_samples' && all(model$getNodeType(target) == 'RHSonly'))) {
+                    warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', ')))
+                    return(invisible(samplerConfs))
+                }
+            }
 
             ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only  ## usage long since deprecated (Dec 2020)
             ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library

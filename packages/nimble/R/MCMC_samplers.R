@@ -23,6 +23,61 @@ sampler_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
+### prior_samples sampler for using exisiting samples as prior #####
+####################################################################
+
+#' @rdname samplers
+#' @export
+sampler_prior_samples <- nimbleFunction(
+    name = 'sampler_prior_samples',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        samples     <- extractControlElement(control, 'samples',     error = '  [Error] prior_samples sampler missing required control argument: samples')
+        randomDraws <- extractControlElement(control, 'randomDraws', FALSE)   ## default is taking sequential draws
+        ## node list generation
+        targetExpanded <- model$expandNodeNames(target)
+        targetAsScalar <- model$expandNodeNames(targetExpanded, returnScalarComponents = TRUE)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, targetExpanded)
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
+        ## numeric value generation
+        k <- length(targetAsScalar)
+        if(is.null(dim(samples)))   samples <- matrix(samples, ncol = 1)    ## make vectors into 1-column array
+        nSamples <- dim(samples)[1]
+        ind <- 0
+        ## checks
+        if(length(dim(samples)) != 2)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument must be a 2-dimensional array, but value provided was a ', length(dim(samples)), '-dimensional array'), call. = FALSE)
+        if(!(storage.mode(samples) %in% c('integer', 'double')))   stop('  [Error] prior_samples sampler \'samples\' control argument must be numeric or integer type', call. = FALSE)
+        if(dim(samples)[2] != k)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument had ', dim(samples)[2], ' columns, but target nodes have ', k, ' scalar elements.  These numbers must be equal.'), call. = FALSE)
+        if(any(model$getNodeType(target) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
+    },
+    run = function() {
+        if(randomDraws) {
+            ind <<- ceiling(runif(1, 0, nSamples))   ## random draws
+        } else {
+            ind <<- ind + 1                          ## sequential draws (the default)
+            if(ind > nSamples)   ind <<- 1           ## recycle sequential draws, if necessary
+        }
+        values(model, targetExpanded) <<- samples[ind, 1:k]
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = FALSE)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+    },
+    methods = list(
+        before_chain = function(MCMCniter = double(), MCMCnburnin = double(), MCMCchain = double()) {
+            ## issue a note if sequential draws from prior samples will have to be recycled
+            if((!randomDraws) & (MCMCniter > nSamples))   cat('  [Note] prior_samples sampler will recycle sequential draws from prior samples, since ', nSamples, ' samples were provided, and ', MCMCniter, ' MCMC iterations will be run.\n')
+        },
+        reset = function() {
+            ind <<- 0
+        }
+    )
+)
+
+
+
+####################################################################
 ### posterior_predictive sampler for trailing non-data networks ####
 ####################################################################
 
@@ -2435,7 +2490,25 @@ sampler_CAR_proper <- nimbleFunction(
 #' @section CRP_concentration sampler:
 #' 
 #' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using the Chinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and can only be used when the prior for the concentration parameter is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
-#' 
+#'
+#' @section prior_samples sampler:
+#'
+#' The prior_samples sampler uses a provided set of numeric values (\code{samples}) to define the prior distribution of one or more model nodes.  One every MCMC iteration, the prior_samples sampler takes value(s) from the numeric values provided, and stores these value(s) into the target model node(s).  This allows one to define the prior distribution of model parameters empirically, using a set of numeric \code{samples}, presumably obtained previously using MCMC.  The \code{target} node may be either a single scalar node (scalar case), or a collection of model nodes.
+#'
+#' The prior_samples sampler provides two options for selection of the value to use on each MCMC iteration.  The default behaviour is to take sequential values from the \code{samples} vector (scalar case), or in the case of multiple dimensions, sequential rows of the \code{samples} matrix are used.  The alternative behaviour, by setting the control argument \code{randomDraws = TRUE}, will instead use random draws from the \code{samples} vector (scalar case), or randomly selected rows of the \code{samples} matrix in the multidimensional case.
+#'
+#' If the default of sequential selection of values is used, and the number of MCMC iterations exceeds the length of the \code{samples} vector (scalar case) or the number of rows of the \code{samples} matrix, then \code{samples} will be recycled as necessary for the number of MCMC iterations.  A message to this effect is also printed at the beginning of the MCMC chain.
+#'
+#' Logically, prior_samples samplers might want to operate first, in advance of other samplers, on every MCMC iteration.  By default, at the time of MCMC building, all prior_samples samplers are re-ordered to appear first in the list of MCMC samplers.  This behaviour can be subverted, however, by setting nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE).
+#'
+#' The prior_samples sampler can be assigned to non-stochastic model nodes (nodes which are not assigned a prior distribution in the model). In fact, it is recommended that nodes being assigned a prior_samples are not provided with a prior distribution in the model, and rather, that these nodes only appear on the right-hand-side of model declaration lines.  In such case that a prior_samples sampler is assigned to a nodes with a prior distribution, the prior distribution will be overridden by the sample values provided to the sampler; however, the node will still be a stochastic node for other purposes, and will contribute to the model joint-density (using the sample values provided relative to the prior distribution), will have an MCMC sampler assigned to it by default, and also may introduce potential for confusion.  In this case, a message is issued at the time of MCMC building.
+#'
+#' The prior_samples sampler accepts the following control list elements:
+#' \itemize{
+#' \item \code{samples}. A numeric vector or matrix.  When the \code{target} node is a single scalar-valued node, \code{samples} should be a numeric vector.  When the \code{target} node specifies d > 2 model dimensions, \code{samples} should be a matrix containing d columns.  The \code{samples} control argument is required.
+#' \item \code{randomDraws}. A logical argument, specifying whether to use a random draw from \code{samples} on each iteration.  If \code{samples} is a matrix, then a randomly-selected row of the \code{samples} matrix is used.  When \code{FALSE}, sequential values (or sequential matrix rows) are used (default = \code{FALSE}).
+#' }
+#'
 #' @section posterior_predictive sampler:
 #'
 #' The posterior_predictive sampler operates only on posterior predictive stochastic nodes. A posterior predictive node is a node that is not itself data and has no data nodes in its entire downstream (descendant) dependency network. Note that such nodes play no role in inference for model parameters but have often been included in BUGS models to make predictions, including for posterior predictive checks. As of version 0.13.0, NIMBLE samples model parameters without conditioning on the posterior predictive nodes and samples conditionally from the posterior predictive nodes as the last step of each MCMC iteration.
@@ -2464,7 +2537,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():

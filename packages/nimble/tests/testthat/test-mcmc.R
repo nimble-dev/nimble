@@ -2896,6 +2896,65 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(all(samples == 1))
 })
 
+test_that('prior_samples sampler operates correctly', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dnorm(0, 1)
+        for(i in 1:4) {
+            y[i] <- c[i]^2
+        }
+    })
+    Rmodel <- nimbleModel(code, inits = list(a=0, b=0, c=rep(0,4)))
+    ##
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler('a', 'prior_samples')
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler('a', 'prior_samples', samples = array(1, c(10,2)))
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler(c('a','b'), 'prior_samples', samples = 1:10)
+    expect_error(Rmcmc <- buildMCMC(conf))
+    ##
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler('a', 'prior_samples', samples = 1:10)
+    conf$addSampler('b', 'prior_samples', samples = 1:10)
+    Rmcmc <- buildMCMC(conf)
+    expect_true(all(sapply(Rmcmc$samplerFunctions$contentsList, class)[1:2] == 'sampler_prior_samples'))
+    ##
+    nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE)
+    nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)
+    conf <- configureMCMC(Rmodel)
+    conf$addSampler('a', 'prior_samples', samples = 1:10)
+    conf$addSampler('b', 'prior_samples', samples = 1:10)
+    Rmcmc <- buildMCMC(conf)
+    expect_true(all(sapply(Rmcmc$samplerFunctions$contentsList, class)[3:4] == 'sampler_prior_samples'))
+    nimbleOptions(MCMCorderPriorSamplesSamplersFirst = TRUE)
+    nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = TRUE)
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL, monitors = c('a', 'c', 'y'))
+    conf$addSampler('a', 'prior_samples', samples = 1:10)
+    conf$addSampler('c', 'prior_samples', samples = array(1:12, c(3,4)))
+    expect_no_error(Rmcmc <- buildMCMC(conf))
+    samples <- runMCMC(Rmcmc, 11)
+    expect_true(all(samples[,'a'] == c(1:10, 1)))
+    expect_true(all(samples[,'c[2]'] == c(rep(4:6, 3), 4, 5)))
+    expect_true(all(samples[,'y[2]'] == c(rep(4:6, 3), 4, 5)^2))
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL, monitors = c('a', 'c', 'y'))
+    conf$addSampler('a', 'prior_samples', samples = 1:10, randomDraws = TRUE)
+    conf$addSampler('c', 'prior_samples', samples = array(1:12, c(3,4)), randomDraws = TRUE)
+    expect_no_error(Rmcmc <- buildMCMC(conf))
+    set.seed(0)
+    samples <- runMCMC(Rmcmc, 100)
+    expect_true(all(samples[,'a'] %in% 1:10))
+    expect_true(all(range(samples[,'a']) == c(1,10)))
+    expect_true(all(samples[,'c[3]'] %in% 7:9))
+    expect_true(all(samples[,'y[3]'] %in% c(49,64,81)))
+})
+
 sink(NULL)
 
 if(!generatingGoldFile) {

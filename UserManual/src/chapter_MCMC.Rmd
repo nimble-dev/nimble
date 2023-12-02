@@ -451,6 +451,14 @@ samples <- as.matrix(Cmcmc$mvSamples)
 The `samples` matrix will contain both MCMC samples and model log-probabilities.
 
 
+#### Using numeric samples to define a prior distribution
+
+A set of numeric samples, perhaps generated from another MCMC algorithm, can be used to define the prior distribution of model nodes.  This is accomplished using the `prior_samples` MCMC sampler.  When assigning the `prior_samples` sampler to a `target` node, you must also provide a vector of numeric values (when `target` is a scalar node), or a matrix of values in the multidimenional case.  A new value (or rows of values) is selected either sequentially (or randomly) from this numeric vector/matrix, and assigned into the `target` node on each MCMC iteration.  See `help(prior_samples)` for more details:
+```{r, eval=FALSE}
+mcmcConf <- configureMCMC(Rmodel)
+mcmcConf$addSampler(target = 'theta', type = 'prior_samples', samples = rnorm(100))
+```
+
 
 ## Building and compiling the MCMC {#sec:build-compile-mcmc}
 
