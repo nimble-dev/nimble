@@ -2881,18 +2881,19 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     ##
     code <- nimbleCode({
         x ~ dcat(prob = a[1:3])
-        y ~ dnorm(x, -1)
+        y ~ dnorm(x, y_prec)
     })
     constants <- list(a = c(1, 1, 0))
     data <- list(y = 0)
-    inits <- list(x = 2)
+    inits <- list(x = 2, y_prec = 1)
     Rmodel <- nimbleModel(code, constants, data, inits)
-    expect_identical(Rmodel$calculate(), NaN)
+    Rmodel$y_prec <- -1
+    expect_identical(suppressWarnings(Rmodel$calculate()), NaN)
     conf <- configureMCMC(Rmodel)
     expect_true(length(conf$getSamplers()) == 1)
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
-    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
+    expect_output(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'encountered an invalid model density, and sampling results are likely invalid')
     expect_true(all(samples == 1))
 })
 
