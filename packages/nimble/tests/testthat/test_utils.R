@@ -1393,7 +1393,7 @@ compareFilesByLine <- function(trialResults, correctResults, main = "") {
     linesToTest <- min(length(trialResults), length(correctResults))
     mapply(function(lineno, trialLine, correctLine) {
         expect_identical(trialLine, correctLine)
-    }, 1:linesToTest, trialResults, correctResults)
+    }, 1:linesToTest, trialResults[1:linesToTest], correctResults[1:linesToTest])
     invisible(NULL)
 }
 
