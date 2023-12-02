@@ -1,4 +1,6 @@
+## USER LEVEL CHANGES
 
+- Change argument of `besselK` in manual table to be `x` not `k`.
 
 ## DEVELOPER LEVEL CHANGES
 

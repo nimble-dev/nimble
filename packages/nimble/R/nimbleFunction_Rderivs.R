@@ -22,7 +22,7 @@ nimDerivs_dummy <- nimbleFunction(
 #' (if taking derivatives of \code{model$calculate(nodes)}) to take derivatives 
 #' with respect to.  If left empty, derivatives will be taken with respect to 
 #' all arguments to \code{nimFxn}.
-#' @param order an integer vector with values within the set {0, 1, 2}, 
+#' @param order an integer vector with values within the set \eqn{{0, 1, 2}}, 
 #' corresponding to whether the function value, Jacobian, and Hessian should be
 #'  returned respectively.  Defaults to \code{c(0, 1, 2)}.
 #' @param model (optional) for derivatives of a nimbleFunction that involves model.
