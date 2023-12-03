@@ -1397,6 +1397,30 @@ compareFilesByLine <- function(trialResults, correctResults, main = "") {
     invisible(NULL)
 }
 
+#### process test-mcmc.R output
+##trialResults <- readLines(tempFileName)
+##trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
+##newResults <- trialResults
+##i <- 1
+##while(i <= length(newResults)) {
+##    if(grepl('Test passed', newResults[i])) {
+##        if(i < length(newResults)) {
+##            newResults[i] <- paste0(gsub('Test passed.*', '', newResults[i]), newResults[i+1])
+##            newResults <- newResults[-(i+1)]
+##        } else {
+##            ## i == length(newResults)
+##            if(grepl('^Test passed', newResults[i])) {
+##                newResults <- newResults[-i]
+##            } else {
+##                newResults[i] <- gsub('Test passed.*', '', newResults[i])
+##            }
+##        }
+##    } else {
+##        i <- i + 1
+##    }
+##}
+##writeLines(newResults, FILENAME)
+
 compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
     if(main == "") main <- paste0(trialFile, ' and ', correctFile, ' do not match\n')
     diffOutput <- system2('diff', c(trialFile, correctFile), stdout = TRUE)
