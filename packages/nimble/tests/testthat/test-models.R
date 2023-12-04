@@ -1010,5 +1010,16 @@ test_that("Example of splitVertices bug from Issue 1268 works.", {
   expect_no_error(Rmodel <- nimbleModel(code, constants = list(index=c(1,1))))
 })
 
+test_that("Warning printed when indexing info in user environment.", {
+    code <- nimbleCode({
+        for(i in 1:N)
+            y[i] ~ dnorm(0,1)
+    })
+    N <- 3
+    expect_message(m <- nimbleModel(code, constants = list(foo=3)),
+                   "Information has been found in the user's environment")
+})
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
