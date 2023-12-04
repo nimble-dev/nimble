@@ -279,6 +279,17 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         } else stop(paste0("checkDistributionFunctions: density function for ", densityName,
                     " is not available.  It must be a nimbleFunction (with no setup code)."))
     }
+
+    dargs <- args <- formals(get(densityName, pos = userEnv))
+    nArgs <- length(args)
+    if(nArgs < 2) stop(paste0("checkDistributionFunctions: expecting at least two arguments ('x', 'log') as arguments for the density function for ", densityName, "."))
+    if(names(args)[1] != "x") stop(paste0("checkDistributionFunctions: expecting 'x' as the first argument for the density function for ", densityName, "."))
+    if(names(args)[nArgs] != "log") stop(paste0("checkDistributionFunctions: expecting 'log' as the last argument for the density function for ", densityName, "."))
+    dargs <- dargs[-c(1,nArgs)]
+    dtype <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo[['x']]
+    if("default" %in% names(dtype))
+        stop("checkDistributionFunctions: `x` argument is not allowed to have a default value.")
+    
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
         messageIfVerbose("  [Warning] Random generation function for ", densityName,
                     " is not available. NIMBLE is generating a placeholder function, ", simulateName, ", that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.")
@@ -319,12 +330,6 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         }
     }
 
-    dargs <- args <- formals(get(densityName, pos = userEnv))
-    nArgs <- length(args)
-    if(nArgs < 2) stop(paste0("checkDistributionFunctions: expecting at least two arguments ('x', 'log') as arguments for the density function for ", densityName, "."))
-    if(names(args)[1] != "x") stop(paste0("checkDistributionFunctions: expecting 'x' as the first argument for the density function for ", densityName, "."))
-    if(names(args)[nArgs] != "log") stop(paste0("checkDistributionFunctions: expecting 'log' as the last argument for the density function for ", densityName, "."))
-    dargs <- dargs[-c(1,nArgs)]
     
     rargs <- args <- formals(get(simulateName, pos = userEnv))
     nArgs <- length(args)
