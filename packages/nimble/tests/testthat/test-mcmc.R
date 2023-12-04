@@ -2963,19 +2963,6 @@ if(!generatingGoldFile) {
         trialResults <- readLines(tempFileName)
         trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
         correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
-        ##
-        cat('=============================\n')
-        a <- trialResults
-        print(paste0('length trialResults: ', length(a)))
-        cat('=============================\n')
-        tmp <- paste0(1:length(a), ': ~', a, '~\n'); cat(tmp)
-        cat('=============================\n')
-        a <- correctResults
-        print(paste0('length correctResults: ', length(a)))
-        cat('=============================\n')
-        tmp <- paste0(1:length(a), ': ~', a, '~\n'); cat(tmp)
-        cat('=============================\n')
-        ##
         compareFilesByLine(trialResults, correctResults)
     })
 }
