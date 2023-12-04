@@ -327,7 +327,7 @@ modelDefClass$methods(assignBUGScode = function(code) {
 })
 modelDefClass$methods(assignConstants = function(constants) {
     ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
-    constantsEnv <<- new.env()
+    constantsEnv <<- new.env(parent = baseenv())  # baseenv() prevents lookup in user env (see issue 468)
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
