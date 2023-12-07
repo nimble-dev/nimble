@@ -193,28 +193,32 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                       code$sizeExprs <- thisSymbolObject
                     }
                 } else {
-                    code$type <- 'unknown'
-                    if(!typeEnv$.AllowUnknowns)
-                        if(identical(code$name, 'pi')) { ## unique because it may be encountered anew on on RHS and be valid
-                            assign('pi',
-                                   exprTypeInfoClass$new(nDim = 0,
-                                                         type = 'double',
-                                                         sizeExprs = list()),
-                                   envir = typeEnv)
-                            symTab$addSymbol(
-                                symbolBasic(name = 'pi',
-                                            type = 'double',
-                                            nDim = 0))
-                            code$nDim <- 0
-                            code$type <- 'double'
-                            code$sizeExprs <- list()
-                            code$toEigenize <- 'maybe'
-                        } else {
-                            warning(paste0("variable '",
-                                           code$name,
-                                           "' has not been created yet."),
-                                    call.=FALSE) 
-                        }
+                    if(isTRUE(code$type == 'function')) {  # function pass to nimOptim/nimIntegrate
+                        code$type <- 'unknown'
+                    } else {
+                        code$type <- 'unknown'
+                        if(!typeEnv$.AllowUnknowns)
+                            if(identical(code$name, 'pi')) { ## unique because it may be encountered anew on on RHS and be valid
+                                assign('pi',
+                                       exprTypeInfoClass$new(nDim = 0,
+                                                             type = 'double',
+                                                             sizeExprs = list()),
+                                       envir = typeEnv)
+                                symTab$addSymbol(
+                                           symbolBasic(name = 'pi',
+                                                       type = 'double',
+                                                       nDim = 0))
+                                code$nDim <- 0
+                                code$type <- 'double'
+                                code$sizeExprs <- list()
+                                code$toEigenize <- 'maybe'
+                            } else {
+                                warning(paste0("variable '",
+                                               code$name,
+                                               "' has not been created yet."),
+                                        call.=FALSE) 
+                            }
+                    }
                 }
             } else {
                 ## otherwise fill in type fields from typeEnv object
@@ -1412,6 +1416,7 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
 
 sizeOptim <- function(code, symTab, typeEnv) {
     typeEnv$.allowFunctionAsArgument <- TRUE
+    code$args[[2]]$type <- 'function'  # flag so not looked for in symTab (issue 1356)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     typeEnv$.allowFunctionAsArgument <- FALSE
     code$type <- 'nimbleList'
@@ -3142,7 +3147,9 @@ sizeReturn <- function(code, symTab, typeEnv) {
     }
     if(identical(typeEnv$return$type, 'void'))
         stop(exprClassProcessingErrorMsg(code, 'returnType was declared void() (default) (or something invalid), which is not consistent with the object you are trying to return.'), call. = FALSE)
+    typeEnv$.AllowUnknowns <- FALSE  # Issue 1356.
     asserts <- recurseSetSizes(code, symTab, typeEnv)
+    typeEnv$.AllowUnknowns <- TRUE
     if(inherits(code$args[[1]], 'exprClass')) {
         if(typeEnv$return$type == 'nimbleList' || code$args[[1]]$type == 'nimbleList') {
             if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
