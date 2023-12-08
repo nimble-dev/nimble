@@ -36,9 +36,11 @@ APPROX_BASE <- nimbleFunctionVirtual(
     hess_joint_logLik_wrt_p_wrt_re_internal = function(p = double(1), reTransform = double(1)){
       returnType(double(2))
     },
-		get_inner_mode = function(){ returnType(double(1))},
-		get_inner_negHessian = function(){returnType(double(2))},
-		get_inner_negHessian_chol = function(){returnType(double(2))},
+    reset_outer_logLik = function(){},
+    save_outer_logLik = function(logLikVal = double()){},
+		get_inner_mode = function(atOuterMode = integer(0, default = 0)){ returnType(double(1))},
+		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
+		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
     check_convergence = function(){returnType(double())}
   )
 )
@@ -124,7 +126,12 @@ buildOneAGHQuad1D_inner <- nimbleFunction(
 		## Cache values for posterior approximations via simulation.
 		## Mode is called max_inner_logLik_saved_par
 		saved_inner_negHess <- matrix(0, nrow = 1, ncol = 1)
-
+		
+    ## Values to save when max inner log lik reached.
+    max_outer_logLik <- -Inf
+    outer_mode_inner_negHess <- matrix(0, nrow = 1, ncol = 1)
+    outer_mode_max_inner_logLik_saved_par <- as.numeric(c(1, -1))
+    
     converged <- 0
   },
   run = function(){},
@@ -156,6 +163,7 @@ buildOneAGHQuad1D_inner <- nimbleFunction(
       re_indices <<- fix_one_vec(re_indices)
       re_indices_inner <<- fix_one_vec(re_indices_inner)
       max_inner_logLik_saved_par <<- fix_one_vec(max_inner_logLik_saved_par)
+      outer_mode_max_inner_logLik_saved_par <<-  fix_one_vec(outer_mode_max_inner_logLik_saved_par)
       max_logLik_saved_re_value <<- fix_one_vec(max_logLik_saved_re_value)
       if(startID == 3) optStart <<- fix_one_vec(optStart)
       if(npar == 1) {
@@ -523,9 +531,34 @@ buildOneAGHQuad1D_inner <- nimbleFunction(
       return(ans)
       returnType(double(1))
     },
-		get_inner_mode = function(){ returnType(double(1)); return(max_inner_logLik_saved_par)},
-		get_inner_negHessian = function(){ returnType(double(2)); return(saved_inner_negHess)},
-		get_inner_negHessian_chol = function(){ returnType(double(2)); return(sqrt(saved_inner_negHess))}
+		get_inner_mode = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(1))
+      if(atOuterMode) return(outer_mode_max_inner_logLik_saved_par)
+      return(max_inner_logLik_saved_par)
+    },
+		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){ 
+      returnType(double(2))
+      if(atOuterMode) return(outer_mode_inner_negHess)
+      return(saved_inner_negHess)
+    },
+		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(2))
+      if(atOuterMode) return(sqrt(outer_mode_inner_negHess))
+      return(sqrt(saved_inner_negHess))
+    },
+    ## Update the maximum mode and neg hess based on the log likelihood passed via optim.
+    ##  For efficient saving of values for calculating MLE values of random-effects and INLA simulation of them.
+    save_outer_logLik = function(logLikVal = double()){
+      if(logLikVal > max_outer_logLik) {
+        max_outer_logLik <<- logLikVal
+        outer_mode_inner_negHess <<- saved_inner_negHess
+        outer_mode_max_inner_logLik_saved_par <<- max_inner_logLik_saved_par 
+      }
+    },
+    ## Need to reset every time I call optim so I can recache.
+    reset_outer_logLik = function(){
+      max_outer_logLik <<- -Inf
+    }
   ),
   buildDerivs = list(inner_logLik                            = list(),
                      joint_logLik                            = list(),
@@ -632,6 +665,11 @@ buildOneAGHQuad_inner <- nimbleFunction(
 		## Cache values for access in INLA like methods.
 		saved_inner_negHess <- matrix(0, nrow = nre, ncol = nre)
 		saved_inner_negHess_chol <- matrix(0, nrow = nre, ncol = nre)
+
+    max_outer_logLik <- -Inf
+    outer_mode_inner_negHess <- matrix(0, nrow = nre, ncol = nre)
+    outer_mode_inner_negHess_chol <- matrix(0, nrow = nre, ncol = nre)
+    outer_mode_max_inner_logLik_saved_par <- if(nreTrans > 1) numeric(nreTrans) else as.numeric(c(1, -1))
     
     converged <- 0
   },
@@ -677,6 +715,7 @@ buildOneAGHQuad_inner <- nimbleFunction(
         reTrans_indices_inner <<- fix_one_vec(reTrans_indices_inner)
         max_inner_logLik_saved_par <<- fix_one_vec(max_inner_logLik_saved_par)
         max_logLik_saved_re_value <<- fix_one_vec(max_logLik_saved_re_value)
+        outer_mode_max_inner_logLik_saved_par <<- fix_one_vec(outer_mode_max_inner_logLik_saved_par)
       }
       if(npar == 1) {
         p_indices <<- fix_one_vec(p_indices)
@@ -1104,9 +1143,35 @@ buildOneAGHQuad_inner <- nimbleFunction(
       return(ans[1,])
       returnType(double(1))
     },
-		get_inner_mode = function(){ returnType(double(1)); return(max_inner_logLik_saved_par)},
-		get_inner_negHessian = function(){ returnType(double(2)); return(saved_inner_negHess)},
-		get_inner_negHessian_chol = function(){ returnType(double(2)); return(saved_inner_negHess_chol)}
+    get_inner_mode = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(1))
+      if(atOuterMode) return(outer_mode_max_inner_logLik_saved_par)
+      return(max_inner_logLik_saved_par)
+    },
+		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){ 
+      returnType(double(2))
+      if(atOuterMode) return(outer_mode_inner_negHess)
+      return(saved_inner_negHess)
+    },
+		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(2))
+      if(atOuterMode) return(outer_mode_inner_negHess_chol)
+      return(saved_inner_negHess_chol)
+    },
+    ## Update the maximum mode and neg hess based on the log likelihood passed via optim.
+    ##  For efficient saving of values for calculating MLE values of random-effects and INLA simulation of them.
+    save_outer_logLik = function(logLikVal = double()){
+      if(logLikVal > max_outer_logLik) {
+        max_outer_logLik <<- logLikVal
+        outer_mode_inner_negHess <<- saved_inner_negHess
+        outer_mode_max_inner_logLik_saved_par <<- max_inner_logLik_saved_par
+        outer_mode_inner_negHess_chol <<- saved_inner_negHess_chol
+      }
+    },
+    ## Need to reset every time I call optim so I can recache.
+    reset_outer_logLik = function(){
+      max_outer_logLik <<- -Inf
+    }    
   ),
   buildDerivs = list(inner_logLik                            = list(),
                      joint_logLik                            = list(),
@@ -1519,7 +1584,7 @@ buildApproxPosterior <- nimbleFunction(
 		calcPostLogProb = function(p = double(1), trans = logical(0, default = FALSE)) {
 			if(trans){
 				pstar <- paramsTransform$inverseTransform(p)
-			}else{ 
+			}else{
 				pstar <- p
 			}
 			ans <- calcLogLik(pstar) + calcPrior_p(pstar)
@@ -1528,6 +1593,7 @@ buildApproxPosterior <- nimbleFunction(
 		},
 		calcPostLogProb_pTransformed = function(pTransform = double(1)) {
 			ans <- calcPostLogProb(pTransform, trans = TRUE) + logDetJacobian(pTransform)
+      cache_outer_logLik(ans) ## Save outer in the inner to cache values at outer mode.
 			returnType(double())
 			return(ans)
 		},
@@ -1549,6 +1615,7 @@ buildApproxPosterior <- nimbleFunction(
       vals[inds] <- pTransform
       
 			ans <- calcPostLogProb_pTransformed(vals)
+      cache_outer_logLik(ans)
 			returnType(double())
 			return(ans)
 		},
@@ -1666,8 +1733,8 @@ buildApproxPosterior <- nimbleFunction(
 					theta_grid_nfl[[gridMethod]]$saveLogDens(i=i, logDensity = logDensi)
           
           ## Save values for inference on fixed- random-effects
-          theta_grid_nfl[[gridMethod]]$saveInnerCholesky(i, get_inner_cholesky())
-          theta_grid_nfl[[gridMethod]]$saveInnerMode(i, get_inner_mode())
+          theta_grid_nfl[[gridMethod]]$saveInnerCholesky(i, get_inner_cholesky(atOuterMode = 0))
+          theta_grid_nfl[[gridMethod]]$saveInnerMode(i, get_inner_mode(atOuterMode = 0))
 				}
 			}
 		},
@@ -1856,6 +1923,8 @@ buildApproxPosterior <- nimbleFunction(
 				pStart <- values(model, paramNodes)
 				pStartTransform <- paramsTransform$transform(pStart)
 			}
+      ## Make sure we start fresh with what the inner saved outer mode val is so that what is cached is exactly matched to optim run.
+      reset_outer_inner_logLik()
 			## In case bad start values are provided 
 			if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
 			optRes <- optim(pStartTransform, calcPostLogProb_pTransformed, gr_postLogProb_pTransformed, method = method, 
@@ -1887,10 +1956,9 @@ buildApproxPosterior <- nimbleFunction(
       covTheta <<- theta_grid_nfl[[gridMethod]]$getCovTheta()
       logDetNegHesspTransform <<- theta_grid_nfl[[gridMethod]]$getLogDetNegHess()
 
-      ## This will only be the mode if the likelihood was last calculated at the mode.
-      ## Which isn't necessarily true using optim so need to fix it.
-      theta_grid_nfl[[gridMethod]]$saveInnerMode(i=0, innerMode = get_inner_mode())
-      theta_grid_nfl[[gridMethod]]$saveInnerCholesky(i=0, innerCholesky = get_inner_cholesky())  
+      ## New Caching system to save this as the actual mode if requested atOuterMode = 1
+      theta_grid_nfl[[gridMethod]]$saveInnerMode(i=0, innerMode = get_inner_mode(atOuterMode = 1))
+      theta_grid_nfl[[gridMethod]]$saveInnerCholesky(i=0, innerCholesky = get_inner_cholesky(atOuterMode = 1))  
     },
 		findPostModeFixedj = function(pStartTransform  = double(1, default = Inf),
 						 j = integer(0, default = 1), 
@@ -1900,7 +1968,7 @@ buildApproxPosterior <- nimbleFunction(
              buildGrid = integer(0, default = 0)) {
 			indexFix <<- j
 			pTransformFix <<- pTransformFixed
-		
+
 			if(any(abs(pStartTransform) == Inf)){
 				pStartTransform <- pTransformPostMode[pTransform_indices != j]
 			}
@@ -2061,25 +2129,39 @@ buildApproxPosterior <- nimbleFunction(
       returnType(double(1))
     },
     ## Grab the inner Cholesky from the cached last values.
-    get_inner_cholesky = function(){
+    cache_outer_logLik = function(logLikVal = double()){
+      for(i in seq_along(AGHQuad_nfl)){
+        numre <- lenInternalRENodeSets[i]
+        AGHQuad_nfl[[i]]$save_outer_logLik(logLikVal)
+      }
+    },    
+    reset_outer_inner_logLik = function(){
+      for(i in seq_along(AGHQuad_nfl)){
+        numre <- lenInternalRENodeSets[i]
+        AGHQuad_nfl[[i]]$reset_outer_logLik()
+      }
+    },    
+    ## Grab the inner Cholesky from the cached last values.
+    get_inner_cholesky = function(atOuterMode = integer(0, default = 0)){
       if(nre == 0) stop("No random effects in the model")
       cholesky <- matrix(value = 0, nrow = nre, ncol = nre)
       tot <- 0
       for(i in seq_along(AGHQuad_nfl)){
         numre <- lenInternalRENodeSets[i]
-        cholesky[(tot+1):(tot+numre), (tot+1):(tot+numre)] <- AGHQuad_nfl[[i]]$get_inner_negHessian_chol()
+        cholesky[(tot+1):(tot+numre), (tot+1):(tot+numre)] <- AGHQuad_nfl[[i]]$get_inner_negHessian_chol(atOuterMode)
         tot <- tot + numre
       }
       return(cholesky)
       returnType(double(2))
     },
-    get_inner_mode = function(){
+    ## Grab the inner mode from the cached last values.
+    get_inner_mode = function(atOuterMode = integer(0, default = 0)){
       if(nre == 0) stop("No random effects in the model")
       raneff <- numeric(nre)
       tot <- 0
       for(i in seq_along(AGHQuad_nfl)){
         numre <- lenInternalRENodeSets[i]
-        raneff[(tot+1):(tot+numre)] <- AGHQuad_nfl[[i]]$get_inner_mode()
+        raneff[(tot+1):(tot+numre)] <- AGHQuad_nfl[[i]]$get_inner_mode(atOuterMode)
         tot <- tot + numre
       }
       return(raneff)

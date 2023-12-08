@@ -375,11 +375,13 @@ buildQuadGrid <- nimbleFunction(
         logdetNegHessian <<- sum(log(eigenDecomp$values))
       }else{
         ## Have Chris check this isn't an awful thing to do.
-        ## Point Chris here later.
+        ## Point Chris here later. Looked at what Stringer did for aghq package. He just does a solve(negHess) and then chol(cov).
+        ## Probably splitting hairs here as this will be max 20x20 and even then this is small compared to other computation.
         cholNegHess <- chol(thetaNegHess)
         invChol <- inverse(cholNegHess)
-        Cov <- (invChol %*% t(invChol)) 
-        ATransform <<- t(chol(Cov))
+        covTheta <<- (invChol %*% t(invChol))   ## Cache for later.
+        covThetaCalc <<- 1
+        ATransform <<- t(chol(covTheta))
         AInverse <<- inverse(ATransform)  ## Surely I don't have to inverse again do I? 1/invChol
         logdetNegHessian <<- 2*sum(log(diag(ATransform)))
       }
