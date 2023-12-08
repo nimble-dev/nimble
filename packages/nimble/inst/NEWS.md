@@ -7,6 +7,9 @@
 
 ## DEVELOPER LEVEL CHANGES
 
+- Fix error with name mangling affecting packages that use nimble
+  and have dot(s) in the package name (issue #1332)
+  
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`
 instead of `@docType` per CRAN request (issue #1359).
 
