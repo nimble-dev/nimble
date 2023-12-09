@@ -1542,7 +1542,8 @@ buildApproxPosterior <- nimbleFunction(
 				}	
       } else {
 				gridMethod <<- I_AGHQ
-				if(gridBuilt[gridMethod] == 1 & nQUpdate == nQuadAGHQ){
+        if(gridBuilt[gridMethod] == 0) theta_grid_nfl[[gridMethod]]$buildGrid()
+				if(nQUpdate == nQuadAGHQ){
 					## Do nothing.
 				}else{
 					theta_grid_nfl[[gridMethod]]$resetGrid(nQUpdate = nQUpdate, keepInner = 1)	## Only use resetGrid for aghq.
@@ -1550,8 +1551,7 @@ buildApproxPosterior <- nimbleFunction(
 				}
 			}
       ## If you have already calculated the posterior mode add it to the new grid!
-      if(gridBuilt[gridMethod] == 0 & theta_grid_nfl[[oldGrid]]$calcCheck(0) == 1){
-        gridBuilt[gridMethod] <<- 1
+      if(theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0 & theta_grid_nfl[[oldGrid]]$calcCheck(0) == 1){
         addModeGridInfo()
       }
       gridBuilt[gridMethod] <<- 1
@@ -1801,12 +1801,14 @@ buildApproxPosterior <- nimbleFunction(
       ## finding the mode of the other parameters.
       for( j in 1:nQp ){
         res[j,1] <- zwtheta[j,1]*stdDev + pTransformPostMode[pIndex]
+        indexFix <<- pIndex               ## Need these values fixed for calcPostLogProb_pTransformedj.
+        pTransformFix <<- res[j,1]       
 
         ## If this is the mode then we know some information:
         if(zwtheta[j,1] == 0){
           theta_grid_marg$saveOptimInfo(pTransformMax = initPTransform, negHessian = subsetNegHess)
           theta_grid_marg$saveLogDens(i=0, logPostProbMode)
-         }else{
+        }else{
           findPostModeFixedj(pStartTransform = initPTransform, 
               j=pIndex, pTransformFixed=res[j,1], method = "BFGS", 
               hessian = TRUE, buildGrid = 1)
@@ -1875,8 +1877,7 @@ buildApproxPosterior <- nimbleFunction(
       returnType(double(2))
       return(ans)
     },
-		findApproxPosterior = function(){
-		
+		findApproxPosterior = function(){		
 			## Basic approx posterior STEPS:
 			##-------------------------------------
 			## 1) Build the hyperparameter grid.
