@@ -12,7 +12,7 @@ The following are required to run NIMBLE.
 
 
   1. [R](https://www.cran.r-project.org), of course.
-  1. The [igraph](https://www.cran.r-project.org/web/packages/igraph/index.html),  [coda](https://www.cran.r-project.org/web/packages/coda/index.html) and [R6](https://www.cran.r-project.org/web/packages/R6/index.html) R packages.
+  1. The [igraph](https://www.cran.r-project.org/web/packages/igraph/index.html),  [coda](https://www.cran.r-project.org/web/packages/coda/index.html), [R6](https://www.cran.r-project.org/web/packages/R6/index.html), [pracma](https://www.cran.r-project.org/web/packages/pracma/index.html), and [numDeriv](https://www.cran.r-project.org/web/packages/numDeriv/index.html) R packages.
   1. A working C++ compiler that NIMBLE can use from R on your system.  There are
   standard open-source C++ compilers that the R community has already
   made easy to install.  See Section \@ref(sec:compiler) for
