@@ -105,7 +105,7 @@ is.nlGenerator <- function(x, inputIsName = FALSE, where = -1) {
 #'  ## this nimbleList definition is identical to the one created above
 #'  exampleNimListDef <- nimbleList(nimbleListTypes)
 nimbleList <- function(...,
-                       name = NA,
+                       name = as.character(NA),
                        predefined = FALSE,
                        where =  getNimbleFunctionEnvironment()) {
     ## This has a role like nimbleFunction but a much simpler implementation
@@ -119,12 +119,27 @@ nimbleList <- function(...,
     GENERATE_STATIC_CODE <- FALSE  ## Enable this before using generateStaticCode.R.
     if(GENERATE_STATIC_CODE) predefined <- FALSE
     
-  ## 3 possibilities: arguments as expressions, arguments as list created within call,
-  ## arguments as list created outside of call
-  
+    ## 3 possibilities: arguments as expressions, arguments as list created within call,
+    ## arguments as list created outside of call
+    
     Call <-  match.call(expand.dots = TRUE)
-    if(any(names(Call) == 'name')){
-      Call <- Call[-which(names(Call) == 'name')]
+    nms <- names(Call)
+    if(any(nms == 'name')) {
+        if(!is.character(Call[[which(nms == "name")]]))
+            stop("Elements of a nimbleList cannot be named `name`.")
+        Call <- Call[-which(names(Call) == 'name')]
+    }
+    nms <- names(Call)
+    if(any(nms == 'predefined')) {
+        if(!is.logical(Call[[which(nms == "predefined")]]))
+            stop("Elements of a nimbleList cannot be named `predefined`.")
+        Call <- Call[-which(nms == 'predefined')]
+    }
+    nms <- names(Call)
+    if(any(nms == 'where')) {
+        if(!is.environment(Call[[which(nms == "where")]]))
+            stop("Elements of a nimbleList cannot be named `where`.")
+        Call <- Call[-which(nms == 'where')]
     }
     if(length(Call) < 2)
       stop("No arguments specified for nimbleList")
@@ -153,23 +168,27 @@ nimbleList <- function(...,
     types <- list(vars = sapply(argList, function(x){return(x$name)}),
                   types =  sapply(argList, function(x){return(x$type)}),
                   dims =  sapply(argList, function(x){return(x$dim)}))
+
+    if(any(c('name','predefined','where') %in% types$vars))
+        stop("Elements of a nimbleList cannot be named `name`, `predefined` or `where`.")
+    
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name, predefined = predefined) 
     basicTypes <- c("double", "integer", "character", "logical")
-  nestedListGens <- list()
-  for(i in seq_along(types$types)){
-    if(!(types$types[i] %in% basicTypes)){
-      for(searchEnvironment in c(parent.frame(), globalenv())){
-        ## It could become necessary to add "asNamespace("nimble")" to the searchEnvironment list
-        found_nlGen <- try(get(types$types[i], envir = searchEnvironment), silent = TRUE)
-        if(!inherits(found_nlGen, 'try-error')){
-          if(is.nlGenerator(found_nlGen))
-            nestedListGens[[types$vars[i]]] <- found_nlGen
-          break
+    nestedListGens <- list()
+    for(i in seq_along(types$types)){
+        if(!(types$types[i] %in% basicTypes)){
+            for(searchEnvironment in c(parent.frame(), globalenv())){
+                ## It could become necessary to add "asNamespace("nimble")" to the searchEnvironment list
+                found_nlGen <- try(get(types$types[i], envir = searchEnvironment), silent = TRUE)
+                if(!inherits(found_nlGen, 'try-error')){
+                    if(is.nlGenerator(found_nlGen))
+                        nestedListGens[[types$vars[i]]] <- found_nlGen
+                    break
+                }
+            }
         }
-      }
     }
-  }
     
     classFields <- as.list(rep('ANY', length(types$vars)))
     names(classFields) <- types$vars

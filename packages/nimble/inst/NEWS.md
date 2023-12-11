@@ -5,6 +5,9 @@
 
 - Change argument of `besselK` in manual table to be `x` not `k`.
 
+- Do not allow elements of a `nimbleList` to be named `name`, `predefined`,
+or `where` (issue #1306).
+
 ## DEVELOPER LEVEL CHANGES
 
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`
