@@ -258,7 +258,6 @@ symbolBasic <-
                         }
                     },
                     genCppVar = function(functionArg = FALSE) {
-                        browser()
                         if(type == 'void') return(cppVoid())
                         else if(type == 'integer') cType <- 'int'
                         else if(type == 'double') cType <- 'double'
