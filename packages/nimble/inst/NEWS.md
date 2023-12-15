@@ -1,10 +1,28 @@
+#                            CHANGES IN VERSION 1.1.0 (December 2023) 
+
 ## USER LEVEL CHANGES
 
-- `RW_block` sampler has new control list option `maxDimCovHistory` to specify maximum
-  dimension for saving proposal covariance history.
+- Add `prior_samples` MCMC sampler, which uses an existing set of
+  numerical samples to define the prior distribution of model node(s).
+
+- Change argument of `besselK` in manual table to be `x` not `k`.
+
+- Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
+  specify maximum dimension for saving proposal covariance history.
+
+## DEVELOPER LEVEL CHANGES
+
+- Make change to `nimble-package` documentation to use `"_PACKAGE"`
+  instead of `@docType` per CRAN request (issue #1359).
+
+## BUG FIXES
+
+- Removed the RW_multinomial MCMC sampler, which was found to generate incorrect
+  posterior results.  A corrected version of this sampler may be
+  re-introduced into the package, depending on user interest.
 
 
-#                            CHANGES IN VERSION 1.0.1 (June 2023)
+#                            CHANGES IN VERSION 1.0.1 (June 2023) 
 
 ## USER LEVEL CHANGES
 

@@ -2066,9 +2066,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         usedIndexes <- contexts[[BUGSdecl$contextID]]$indexVarNames %in%
             unlist(all.vars(BUGSdecl$targetExpr))
         if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes) && !length(grep("^lifted", BUGSdecl$targetExpr)))
-            warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
+            messageIfVerbose("  [Warning] Multiple definitions for the same node.\n            Did you forget indexing with '",
                           paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
-                           "' on the left-hand side of '", safeDeparse(BUGSdecl$code), "'?"))
+                           "' on the left-hand side of\n            `", safeDeparse(BUGSdecl$code), "`?")
         if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {
