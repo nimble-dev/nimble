@@ -2241,15 +2241,22 @@ sampler_CAR_proper <- nimbleFunction(
 
 #' MCMC Sampling Algorithms
 #'
-#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
+#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package.
 #'
-#' Derivative-based MCMC sampling algorithms, including Hamiltonian Monte Carlo (HMC), are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, use \code{help(HMC)} for details.
 #'
 #' @param model (uncompiled) model on which the MCMC is to be run
 #' @param mvSaved \code{modelValues} object to be used to store MCMC samples
 #' @param target node(s) on which the sampler will be used
 #' @param control named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
 #'
+#' @section Hamiltonian Monte Carlo samplers:
+#'
+#' Hamiltonian Monte Carlo (HMC) samplers are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, see \code{help(HMC)} for details.
+#'
+#' @section Particle filter samplers:
+#'
+#' As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers are provided separately in the `nimbleSMC` package. After loading \code{nimbleSMC}, see \code(help(samplers)) for details.
+#' 
 #' @section \code{sampler_base}: base class for new samplers
 #'
 #' When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
@@ -2530,14 +2537,10 @@ sampler_CAR_proper <- nimbleFunction(
 #' @section RJ_toggled sampler:
 #'
 #' This sampler operates in the framework of variable selection using reversible jump MCMC.  Specifically, it conditionally performs updates of the target variable of interest using the originally-specified sampling configuration, when variable is "in the model".  This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment.
-#'
-#' @section Particle filter samplers:
-#'
-#' As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers live in the `nimbleSMC` package. Please load that package in order to use the samplers.
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky 
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
