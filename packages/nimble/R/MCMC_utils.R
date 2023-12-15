@@ -429,7 +429,7 @@ mcmc_createModelObject <- function(model, inits, nchains, setSeed, code, constan
 ## create the lists of calcNodes and copyNodes for use in MCMC samplers
 mcmc_determineCalcAndCopyNodes <- function(model, target) {
     targetExpanded <- model$expandNodeNames(target)
-    modelPredictiveNodes <- model$getNodeNames(predictiveOnly = TRUE)
+    modelPredictiveNodes <- model$modelDef$maps$graphID_2_nodeName[model$predictiveNodeIDs]   ## identical to: model$getNodeNames(predictiveOnly = TRUE)
     targetExpandedPPbool <- targetExpanded %in% modelPredictiveNodes
     targetAllPP <- all(targetExpandedPPbool)
     targetAnyPP <- any(targetExpandedPPbool)
@@ -449,14 +449,14 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
         calcNodes <- model$getDependencies(target, includePredictive = TRUE)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE, includePredictive = TRUE)
         ##calcNodesPPomitted <- character()
+        copyNodes <- model$getDependencies(target, self = FALSE)
     } else {
         ## usual case:
         calcNodes <- model$getDependencies(target)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ##calcNodesPPomitted <- setdiff(model$getDependencies(target, includePredictive = TRUE), calcNodes)
+        copyNodes <- calcNodesNoSelf
     }
-    ## copyNodes:
-    copyNodes <- model$getDependencies(target, self = FALSE)
     isStochCopyNodes <- model$isStoch(copyNodes)
     copyNodesDeterm <- copyNodes[!isStochCopyNodes]
     copyNodesStoch <- copyNodes[isStochCopyNodes]
