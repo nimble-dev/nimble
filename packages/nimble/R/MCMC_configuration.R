@@ -352,7 +352,8 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
-                        if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial', control = controlDefaultsArg);     next }
+                        ##if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial', control = controlDefaultsArg);     next }
+                        if(nodeDist == 'dmulti')   stop('  [Error] Support for sampling multinomial distributions was removed from nimble due to incorrect sampling results.\n  Please contact nimble developers at the nimble-users google group or at nimble.stats@gmail.com to let them know this happened.  \n Thank you.', call. = FALSE)
                         if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet',   control = controlDefaultsArg);     next }
                         if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart',     control = controlDefaultsArg);     next }
                         if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart',     control = controlDefaultsArg);     next }
@@ -647,7 +648,14 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!is.character(thisSamplerName)) stop('sampler name should be a character string')
             if(!is.function(samplerFunction)) stop('sampler type does not specify a function')
 
-            if(!(all(model$isStoch(target)))) { warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', '))); return(invisible(samplerConfs)) }   ## ensure all target node(s) are stochastic
+            ## ensure all target node(s) are stochastic
+            if(!(all(model$isStoch(target)))) {
+                ## however, allow assignment of prior_samples sampler to RHS-only nodes
+                if(!(thisSamplerName == 'prior_samples' && all(model$getNodeType(target) == 'RHSonly'))) {
+                    warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', ')))
+                    return(invisible(samplerConfs))
+                }
+            }
 
             ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only  ## usage long since deprecated (Dec 2020)
             ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
@@ -883,7 +891,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                         theseNodesNotIndexed <- theseNodes[!isIndexedVector]
                         if(length(theseNodesNotIndexed)) {
                             if(length(theseNodesNotIndexed) == 1) cat(paste0(indent, theseNodesNotIndexed))
-                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('something wrong with Daniel\'s understanding', call. = FALSE)
+                            if(length(theseNodesNotIndexed) >  1 && length(unique(theseNodesNotIndexed)) > 1) stop('internal error in printSamplersByType method', call. = FALSE)
                             if(length(theseNodesNotIndexed) >  1) cat(paste0(indent, theseNodesNotIndexed[1], '  (', length(theseNodesNotIndexed), ')'))
                             cat('\n')
                         }
@@ -1213,15 +1221,18 @@ Details: See the initialize() function
             return(unsampledNodes)
         },
         
-        warnUnsampledNodes = function() {
+        warnUnsampledNodes = function(includeConfGetUnsampledNodes = TRUE) {
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
                 sTag <- if(numUnsampled > 1) 's' else ''
-                messageIfVerbose('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag, ', use conf$getUnsampledNodes() for node name', sTag, '.')
+                msg <- paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag)
+                if(includeConfGetUnsampledNodes)   msg <- paste0(msg, ', use conf$getUnsampledNodes() for node name', sTag)
+                msg <- paste0(msg, '.')
+                messageIfVerbose(msg)
             }
         },
 
-        printComments = function() {
+        printComments = function(...) {
             setUnsampledNodes()
             anyComments <-
                 length(postPredSamplerDownstreamNodes) ||
@@ -1229,16 +1240,16 @@ Details: See the initialize() function
             if(anyComments) {
                 cat('===== Comments =====\n')
                 if(length(postPredSamplerDownstreamNodes))   message('  [Note] Additional downstream predictive nodes are also being sampled by posterior_predictive sampler.')
-                if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes()
+                if(getNimbleOption('MCMCwarnUnsampledStochasticNodes'))   warnUnsampledNodes(...)
             }
         },
 
-        show = function() {
+        show = function(...) {
             cat('===== Monitors =====\n')
             printMonitors()
             cat('===== Samplers =====\n')
             if(length(samplerConfs)) printSamplers(byType = TRUE) else cat('(no samplers assigned)\n')
-            printComments()
+            printComments(...)
         }
     )
 )

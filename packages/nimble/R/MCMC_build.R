@@ -3,6 +3,8 @@
 #' First required argument, which may be of class \code{MCMCconf} (an MCMC configuration object), or inherit from class \code{modelBaseClass} (a NIMBLE model object).  Returns an uncompiled executable MCMC object.  See details.
 #'
 #' @param conf Either an MCMC configuration object of class \code{MCMCconf} or a NIMBLE model object. An MCMC configuration object would be returned from \code{configureMCMC} and contains information on the model, samplers, monitors, and thinning intervals to be used. Alternatively, \code{conf} may a NIMBLE model object, in which case default configuration from calling \code{configureMCMC(model, ...l)} will be used.
+#'
+#' @param print A logical argument, specifying whether to print details of the MCMC samplers and monitors.
 #' 
 #' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object (see \code{help(configureMCMC)}).
 #'
@@ -94,21 +96,44 @@
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
-    setup = function(conf, ...) {
+    setup = function(conf, print, ...) {
+        if(missing(print)) print <- getNimbleOption('verbose')  ## default value defined by getNimbleOption has to be here, inside the setup function code
         dotdotdotArgNames <- names(list(...))
         if(inherits(conf, 'MCMCconf') && ('enableWAIC' %in% dotdotdotArgNames || 'controlWAIC' %in% dotdotdotArgNames))
-            stop("buildMCMC: 'enableWAIC' and 'controlWAIC' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.") 
+            stop("buildMCMC: 'enableWAIC' and 'controlWAIC' can only be given as arguments when running 'buildMCMC' directly on a model object, not on an MCMC configuration object. Instead pass these argument(s) directly to 'configureMCMC'.")
         
-        if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
-        else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
-
+        if(inherits(conf, 'modelBaseClass')) {
+            conf <- configureMCMC(conf, print = FALSE, ...)
+            if(print)   conf$show(includeConfGetUnsampledNodes = FALSE)
+        } else {
+            if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
+            if(getNimbleOption('MCMCwarnUnsampledStochasticNodes')) {
+                conf$setUnsampledNodes()
+                conf$warnUnsampledNodes()
+            }
+        }
+        
         enableWAIC <- conf$enableWAIC
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
         
+        if(getNimbleOption('MCMCorderPriorSamplesSamplersFirst') && length(conf$samplerConfs)) {
+            ## put all prior_samples samplers at the beginning
+            samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
+            priorSamplesSamplerBool <- grepl('^prior_samples$', samplerNames)
+            psSamplerInd <- which(priorSamplesSamplerBool)
+            regularSamplerInd <- which(!priorSamplesSamplerBool)
+            if(length(psSamplerInd) && length(regularSamplerInd) && (max(psSamplerInd) > min(regularSamplerInd))) {
+                messageIfVerbose('  [Note] Reordering prior_samples samplers to execute first')
+                exOrder <- conf$samplerExecutionOrder
+                if((length(exOrder)!=length(conf$samplerConfs)) || !all(exOrder==1:length(conf$samplerConfs))) stop('Halting, rather than reordering samplers in the presence of a modified sampler execution order.  If a modified execution order is needed, then: (1) reorder prior_samples samplers to be first in the MCMC configuration printSamplers method output, (2) set the desired sampler execution order, and (3) run buildMCMC.')
+                conf$samplerConfs <- conf$samplerConfs[c(psSamplerInd, regularSamplerInd)]
+            }
+        }
+        
         if(getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast') && length(conf$samplerConfs)) {
-            ## put all posterior_predictive  samplers at the end
+            ## put all posterior_predictive samplers at the end
             samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
             postPredSamplerBool <- grepl('^posterior_predictive$', samplerNames)
             ppSamplerInd <- which(postPredSamplerBool)
@@ -121,11 +146,6 @@ buildMCMC <- nimbleFunction(
             }
         }
 
-        if(getNimbleOption('MCMCwarnUnsampledStochasticNodes')) {
-            conf$setUnsampledNodes()
-            conf$warnUnsampledNodes()
-        }
-        
         ## build sampler functions.
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
 
@@ -266,7 +286,7 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
-            ## adding "accumulators" to MCMC?
+            ## adding "accumulators" to MCMC
             ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
             if(iter > nburnin) {
                 sampleNumber <- iter - nburnin

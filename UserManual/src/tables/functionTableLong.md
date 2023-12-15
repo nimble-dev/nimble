@@ -39,8 +39,8 @@ indicates if the function can take a vector as an argument (i.e., if the functio
   `round(x)`             round to integer                                             yes     yes
   `trunc(x)`             truncation to integer                                        yes     yes
   `lgamma(x), loggam(x)` log gamma function              $\log \Gamma(x)$             yes     yes
-  `besselK(k, nu,`       modified bessel function        returns vector even if       yes     yes
-  `...expon.scaled)`      of the second kind             $k$ a matrix/array
+  `besselK(x, nu,`       modified bessel function        returns vector even if       yes     yes
+  `...expon.scaled)`      of the second kind             $x$ a matrix/array
   `log1p(x)`             log of 1 + x                    $\log(1+x)$                  yes     yes
   `lfactorial(x),`       log factorial                   $\log x!$                    yes     yes
     `logfact(x)`
