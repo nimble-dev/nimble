@@ -7,6 +7,9 @@
 
 - Change argument of `besselK` in manual table to be `x` not `k`.
 
+- Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
+  specify maximum dimension for saving proposal covariance history.
+
 ## DEVELOPER LEVEL CHANGES
 
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`

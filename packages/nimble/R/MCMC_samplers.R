@@ -388,6 +388,7 @@ sampler_RW_block <- nimbleFunction(
         scale               <- extractControlElement(control, 'scale',               1)
         propCov             <- extractControlElement(control, 'propCov',             'identity')
         tries               <- extractControlElement(control, 'tries',               1)
+        maxDimCovHistory    <- extractControlElement(control, 'maxDimCovHistory',    10)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
@@ -402,9 +403,9 @@ sampler_RW_block <- nimbleFunction(
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
-        scaleHistory <- c(0, 0)                                                  ## scaleHistory
-        acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
-        propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
+        scaleHistory <- c(0, 0)                                                                  ## scaleHistory
+        acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
+        propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
         saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
@@ -463,7 +464,7 @@ sampler_RW_block <- nimbleFunction(
                     scaleHistory[timesAdapted] <<- scale                ## scaleHistory
                     setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
-                    if(d <= 10) {
+                    if(d <= maxDimCovHistory) {
                         propCovTemp <- propCovHistory                                           ## scaleHistory
                         setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
                         if(timesAdapted > 1)                                                    ## scaleHistory
@@ -509,7 +510,7 @@ sampler_RW_block <- nimbleFunction(
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
+            if(!saveMCMChistory | d > maxDimCovHistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.  Note that to reduce memory use, proposal covariance histories are only saved for parameter vectors of length <= 10; this value can be modified using the 'maxDimCovHistory' control list element.")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -536,7 +537,7 @@ sampler_RW_block <- nimbleFunction(
             if(saveMCMChistory) {
                 scaleHistory  <<- c(0, 0)    ## scaleHistory
                 acceptanceHistory  <<- c(0, 0)
-                if(d <= 10) 
+                if(d <= maxDimCovHistory)
                     propCovHistory <<- nimArray(0, dim = c(2,d,d))
             }
             my_calcAdaptationFactor$reset()
@@ -1548,18 +1549,18 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
     name = 'sampler_RW_lkj_corr_cholesky',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)  
-        ##
+        ## numeric value generation
         d <- sqrt(length(targetAsScalar))
         nTheta <- d*(d-1)/2    # this many unconstrained elements to be sampled
-        ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
         if(length(adaptInterval) > 1 || length(adaptFactorExponent) > 1 || length(scaleOriginal) > 1)
             stop("RW_lkj_corr_cholesky: 'adaptInterval', 'adaptFactorExponent', and 'scaleOriginal' should be single values.")
         if(scaleOriginal < 0)
@@ -1575,8 +1576,8 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         z                   <- array(0, c(d, d))  # canonical partial correlations
         diag(z)             <- 1
         partialSums         <- array(0, c(d, d))  # 1-x_{13}^2, 1-x_{14}^2, 1-x_{14}^2-x_{24}^2, ...
-        partialSums[1, ]   <- 1
-        ## Temporary vectors for current colum calculations
+        partialSums[1, ]    <- 1
+        ## temporary vectors for current column calculations
         partialSumsProp     <- numeric(d)    
         currentValue        <- numeric(d)
         propValue           <- numeric(d)
@@ -1589,7 +1590,6 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
     run = function() {
         ## calculate transformed values (in unconstrained space) and partial sums in each column
         transform(model[[target]])  # compute z and partialSums
-        ##
         ## Individual univariate RW on the nTheta elements:
         ## advantage: probably better movement through space than with block update
         ## (plus note only column values of target matrix are recalculated for a given scalar update in a given column)
@@ -1688,13 +1688,14 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))      control$adaptScaleOnly      else FALSE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scale               <- if(!is.null(control$scale))               control$scale               else 1
-        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
-        tries               <- if(!is.null(control$tries))               control$tries               else 1
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptScaleOnly      <- extractControlElement(control, 'adaptScaleOnly',      FALSE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
+        propCov             <- extractControlElement(control, 'propCov',             'identity')
+        tries               <- extractControlElement(control, 'tries',               1)
+        maxDimCovHistory    <- extractControlElement(control, 'maxDimCovHistory',    10)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1714,9 +1715,9 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         timesAdapted  <- 0
         p <- sqrt(length(targetAsScalar))
         d <- p*(p-1)/2    # this many unconstrained elements to be sampled
-        scaleHistory  <- c(0, 0)                                                 ## scaleHistory
-        acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
-        propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
+        scaleHistory <- c(0, 0)                                                                  ## scaleHistory
+        acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
+        propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
         saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
@@ -1839,7 +1840,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                     scaleHistory[timesAdapted] <<- scale                ## scaleHistory
                     setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
-                    if(d <= 10) {
+                    if(d <= maxDimCovHistory) {
                         propCovTemp <- propCovHistory                                           ## scaleHistory
                         setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
                         if(timesAdapted > 1)                                                    ## scaleHistory
@@ -1874,7 +1875,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
+            if(!saveMCMChistory | d > maxDimCovHistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.  Note that to reduce memory use, proposal covariance histories are only saved for parameter vectors of length <= 10; this value can be modified using the 'maxDimCovHistory' control list element.")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -1901,7 +1902,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             if(saveMCMChistory) {
                 scaleHistory  <<- c(0, 0)    ## scaleHistory
                 acceptanceHistory  <<- c(0, 0)
-                if(d <= 10) 
+                if(d <= maxDimCovHistory)
                     propCovHistory <<- nimArray(0, dim = c(2,d,d))
             }
             my_calcAdaptationFactor$reset()
