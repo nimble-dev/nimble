@@ -1,3 +1,5 @@
+#                            CHANGES IN VERSION 1.1.0 (December 2023) 
+
 ## USER LEVEL CHANGES
 
 - Add `prior_samples` MCMC sampler, which uses an existing set of
@@ -8,7 +10,13 @@
 ## DEVELOPER LEVEL CHANGES
 
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`
-instead of `@docType` per CRAN request (issue #1359).
+  instead of `@docType` per CRAN request (issue #1359).
+
+## BUG FIXES
+
+- Removed the RW_multinomial MCMC sampler, which was found to generate incorrect
+  posterior results.  A corrected version of this sampler may be
+  re-introduced into the package, depending on user interest.
 
 
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
