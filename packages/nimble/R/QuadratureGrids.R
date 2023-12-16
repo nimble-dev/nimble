@@ -328,14 +328,16 @@ buildQuadGrid <- nimbleFunction(
 			## Keep mode information, otherwise reset.
 			## I assume this all automatically lines up...
       calculated <<- numeric(value = 0, length = nQ)
-			for( i in 1:nQ ) if( abs(sum(zVals[i,])) == 0 ) modeIndex <<- i
+			# for( i in 1:nQ ) if( abs(sum(zVals[i,])) == 0 ) modeIndex <<- i
 		},
 		saveLogDens = function(i = integer(0, default = 1), logDensity = double()){
-			if(i == 0) {
-        logDensTheta[modeIndex] <<- logDensity
+      ## Don't save it if it's NAN or NA. Just make it zero and warn
+      logDens <- logDensity
+      if(i == 0) {
+        logDensTheta[modeIndex] <<- logDens
         calculated[modeIndex] <<- 1        
 			}else{
-        logDensTheta[i] <<- logDensity
+        logDensTheta[i] <<- logDens
         calculated[i] <<- 1
       }
     },
@@ -383,7 +385,7 @@ buildQuadGrid <- nimbleFunction(
       }
     },
     transformGrid = function(skewSD = double(2)){
-      if(method == 1) skewGridPoints(skewSD)     ## ***Make sure you can't skew twice (unless a reset...)
+      if(method == 1) skewGridPoints(skewSD)     ## ***Make sure you can't skew twice (unless a reset...) Need to do add this.
       ## Transform z to theta:
       for( i in 1:nQ ){
         thetaVals[i,] <<- z_to_theta(zVals[i,])
@@ -486,8 +488,7 @@ buildQuadGrid <- nimbleFunction(
 # tmp$buildGrid()
 # tmp$getNodes()
 # tmp$getWeights()
-# tmp$resetGrid(nQUpdate = 5, 1)
-# tmp$buildAGHQOne(51)
+# tmp$resetGrid(nQUpdate = 11, 1)
 
 # np <- pracma::gaussHermite(5)
 # mvq <- mvQuad::createNIGrid(dim=3, type = "GHe", level = 5)
@@ -495,6 +496,8 @@ buildQuadGrid <- nimbleFunction(
 # w=mvQuad::getWeights(mvq)
 
 # tmpc <- compileNimble(tmp)
+# tmp$resetGrid(nQUpdate = 25, 1)
+
 # innerOpt_nfl[[1]]$buildGrid()
 # plot(innerOpt_nfl[[1]]$getNodes())
 # innerOpt_nfl[[2]] <- buildQuadGrid(d = 2, nQ = 3, method = 2, nre = 5)

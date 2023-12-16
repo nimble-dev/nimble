@@ -1425,6 +1425,7 @@ buildApproxPosterior <- nimbleFunction(
 		extraPoints <- c(-15.0, -10.0, -7.0, 7.0, 10.0, 15.0, -5.0, -3.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 3.0, 5.0)
 		aghqPoints <- pracma::gaussHermite(51)$x*sqrt(2)
 		zMargGrid <- sort(unique(c(extraPoints, aghqPoints)))
+    nzMargGrid <- length(zMargGrid)
     postModeFound <- 0
 
 		## Indicator for removing the redundant index -1 in pTransform_indices
@@ -1534,8 +1535,7 @@ buildApproxPosterior <- nimbleFunction(
 		},
 		changeHyperGrid = function(method = character(0, default = "aghq"), 
 				nQUpdate = integer(0, default = 3)){
-      oldGrid <- gridMethod
-			if(method == "ccd"){
+      if(method == "ccd"){
 				gridMethod <<- I_CCD
 				if(gridBuilt[gridMethod] == 0) {
 					theta_grid_nfl[[gridMethod]]$buildGrid()
@@ -1543,15 +1543,14 @@ buildApproxPosterior <- nimbleFunction(
       } else {
 				gridMethod <<- I_AGHQ
         if(gridBuilt[gridMethod] == 0) theta_grid_nfl[[gridMethod]]$buildGrid()
-				if(nQUpdate == nQuadAGHQ){
-					## Do nothing.
-				}else{
+
+				if(nQUpdate != nQuadAGHQ){
 					theta_grid_nfl[[gridMethod]]$resetGrid(nQUpdate = nQUpdate, keepInner = 1)	## Only use resetGrid for aghq.
 					nQuadAGHQ <<- nQUpdate
-				}
-			}
+        }
+      }
       ## If you have already calculated the posterior mode add it to the new grid!
-      if(theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0 & theta_grid_nfl[[oldGrid]]$calcCheck(0) == 1){
+      if(postModeFound == 0 & theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0){
         addModeGridInfo()
       }
       gridBuilt[gridMethod] <<- 1
@@ -1594,7 +1593,8 @@ buildApproxPosterior <- nimbleFunction(
 		calcPostLogProb_pTransformed = function(pTransform = double(1)) {
 			ans <- calcPostLogProb(pTransform, trans = TRUE) + logDetJacobian(pTransform)
       cache_outer_logLik(ans) ## Save outer in the inner to cache values at outer mode.
-			returnType(double())
+      if(is.nan(ans) | is.na(ans)) ans <- -Inf			
+      returnType(double())
 			return(ans)
 		},
 		## Use internally to loop through quadrature point evaluations.
@@ -1615,7 +1615,6 @@ buildApproxPosterior <- nimbleFunction(
       vals[inds] <- pTransform
       
 			ans <- calcPostLogProb_pTransformed(vals)
-      cache_outer_logLik(ans)
 			returnType(double())
 			return(ans)
 		},
@@ -1709,8 +1708,10 @@ buildApproxPosterior <- nimbleFunction(
 		calcMarginalLogLikApprox = function(){
       ## Line 2748 in r-inla/blob/devel/gmrflib/approx-inference.c
       ## Commit # ef4eb20
+      # marg <- logPostProbMode + 0.5*pTransform_length*log(2*pi) -
+        # 0.5*(logDetNegHesspTransform) - sum(log(skewedStdDev[,1] * skewedStdDev[,2]))
       marg <- logPostProbMode + 0.5*pTransform_length*log(2*pi) -
-        0.5*(logDetNegHesspTransform) - sum(log(skewedStdDev[,1] * skewedStdDev[,2]))
+        0.5*(logDetNegHesspTransform) + sum(log((skewedStdDev[,1] + skewedStdDev[,2])/2))
       returnType(double())
 			return(marg)
 		},
@@ -1729,8 +1730,7 @@ buildApproxPosterior <- nimbleFunction(
       for( i in 1:nGrid ){
 				if(theta_grid_nfl[[gridMethod]]$calcCheck(i) == 0 ){
           theta <- theta_grid_nfl[[gridMethod]]$getTheta(i)
-					logDensi <- calcPostLogProb_pTransformed(theta)
-					theta_grid_nfl[[gridMethod]]$saveLogDens(i=i, logDensity = logDensi)
+					theta_grid_nfl[[gridMethod]]$saveLogDens(i=i, logDensity = calcPostLogProb_pTransformed(theta))
           
           ## Save values for inference on fixed- random-effects
           theta_grid_nfl[[gridMethod]]$saveInnerCholesky(i, get_inner_cholesky(atOuterMode = 0))
@@ -1802,7 +1802,7 @@ buildApproxPosterior <- nimbleFunction(
       for( j in 1:nQp ){
         res[j,1] <- zwtheta[j,1]*stdDev + pTransformPostMode[pIndex]
         indexFix <<- pIndex               ## Need these values fixed for calcPostLogProb_pTransformedj.
-        pTransformFix <<- res[j,1]       
+        pTransformFix <<- res[j,1] 
 
         ## If this is the mode then we know some information:
         if(zwtheta[j,1] == 0){
@@ -1816,8 +1816,7 @@ buildApproxPosterior <- nimbleFunction(
         theta_grid_marg$transformGrid(skewSD = skewedStdDev) # Won't Skew as this is AGHQ.
         for( i in 1:nQinner ){
           if( i != theta_grid_marg$getThetaModeIndex()) {
-            postProbi <- calcPostLogProb_pTransformedj(theta_grid_marg$getTheta(i))
-            theta_grid_marg$saveLogDens(i=i, postProbi)
+            theta_grid_marg$saveLogDens(i=i, calcPostLogProb_pTransformedj(theta_grid_marg$getTheta(i)))
           }
         }
         res[j,2] <- theta_grid_marg$quadSum()
@@ -1836,7 +1835,7 @@ buildApproxPosterior <- nimbleFunction(
 			stdDev <- sqrt(covTheta[pIndex, pIndex])
 			thetai <- rep(0, pTransform_length)
       res <- matrix(0, nrow = 69, ncol = 2)
-			for( i in 1:69 ){	# Known fixed # of points
+			for( i in 1:nzMargGrid ){	# Known fixed # of points
 				thetai[pIndex] <- pTransformPostMode[pIndex] + zMargGrid[i] * stdDev
         res[i, 1] <- thetai[pIndex]
 				## Find the conditional mean:
@@ -1852,7 +1851,7 @@ buildApproxPosterior <- nimbleFunction(
 				for( j in 1:pTransform_length ){
 					side <- 2
 					if(zi[j] <= 0) side <- 1
-					logDens <- logDens - 0.5*zi[j]^2/skewedStdDev[j, side]
+					logDens <- logDens - 0.5*(zi[j]/skewedStdDev[j, side])^2
 				}
         res[i, 2] <- logDens
 			}
@@ -2034,10 +2033,7 @@ buildApproxPosterior <- nimbleFunction(
     ## AGHQuad approximation in terms of transformed parameters
     calcLogLik_pTransformed = function(pTransform = double(1)) {
       ans <- calcLogLik(pTransform, trans = TRUE)
-      ## if(!one_time_fixes_done) one_time_fixes()
-      ## p <- paramsTransform$inverseTransform(pTransform)
-      ## ans <- calcLogLik(p)
-      ## if(is.nan(ans) | is.na(ans)) ans <- -Inf
+      if(is.nan(ans) | is.na(ans)) ans <- -Inf
       return(ans)
       returnType(double())
     },
