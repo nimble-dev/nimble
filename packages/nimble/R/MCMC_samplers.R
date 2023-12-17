@@ -1553,7 +1553,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
         adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
         adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
-        scale               <- extractControlElement(control, 'scale',               1)
+        scaleOriginal       <- extractControlElement(control, 'scale',               1)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
