@@ -645,6 +645,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
 modifyForAD_handlers <- c(list(
+    `[` = 'modifyForAD_indexingBracket',
     pow = 'modifyForAD_issuePowWarning',
     eigenBlock = 'modifyForAD_eigenBlock',
     calculate = 'modifyForAD_calculate',
@@ -658,6 +659,7 @@ modifyForAD_handlers <- c(list(
     `*` = 'modifyForAD_matmult',
     eigInverse = 'modifyForAD_matinverse',
     MAKE_FIXED_VECTOR = 'modifyForAD_MAKE_FIXED_VECTOR'),
+  #  makeCallList(assignmentOperators, 'modifyForAD_assign'), # Handled manually inside modifyForAD_recurseForAD
     makeCallList(recyclingRuleOperatorsAD, 'modifyForAD_RecyclingRule'),
     makeCallList(c('EIGEN_FS', 'EIGEN_BS', 'EIGEN_SOLVE', 'EIGEN_CHOL', 'nimNewMatrixD', 'nimCd',
                    'nimRepd','nimDiagonalD', 'nimNonseqIndexedd'),
@@ -729,11 +731,21 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
   if(is.list(code$aux))
     if(isTRUE(code$aux$.avoidAD))
       return(invisible(NULL))
+  assignment <- isTRUE(any(code$name == assignmentOperators))
   for(i in seq_along(code$args)) {
     if(inherits(code$args[[i]], 'exprClass')) {
+      if(assignment) workEnv$onLHS <- i == 1
       exprClasses_modifyForAD(code$args[[i]], symTab, workEnv)
+      if(assignment) workEnv$onLHS <- FALSE
     }
   }
+  invisible(NULL)
+}
+
+modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
+  if(is.null(code$type)) return(invisible(NULL)) # arises from constructions like setMap that lack type annotation
+  if(isTRUE(workEnv$onLHS)) code$name <- "stoch_ind_set"
+  else code$name <- "stoch_ind_get"
   invisible(NULL)
 }
 

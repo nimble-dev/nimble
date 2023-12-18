@@ -544,3 +544,19 @@ binaryMatrixOpTests2 <- make_AD_test_batch(
   binaryMatrixOps, binaryMatrixArgs, maker = make_AD_test2
 )
 
+#######################
+## indexing bracket ops with dynamic (stochastic) indices
+#######################
+
+indexBracketOps <- c("[")
+indexBracketArgs <- list(list(c("double(1)", "double(0)"), "double(0)"))
+indexBracketTests2 <- make_AD_test_batch(
+  indexBracketOps, indexBracketArgs, maker = make_AD_test2
+)
+modify_on_match(indexBracketTests2, "", "size",
+                list(arg1 = c(20),
+                     arg2 = 1))
+modify_on_match(indexBracketTests2, "", "input_gen_funs",
+                list(arg1 = function(x) rnorm(x),
+                     arg2 = function(x) sample(1:20, size = 1)))
+test_AD_batch(indexBracketTests2, testFun = test_AD2)

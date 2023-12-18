@@ -435,7 +435,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
   using std::cout;
   using std::endl;
   bool use_meta_tape = true;
-  //  cout<<"in getDerivs_calculate_internal"<<endl;
+ // cout<<"in getDerivs_calculate_internal "<<ADinfo.ADtape_empty()<<" "<<reset<<endl;
   // Record tape(s) if this is the first time or if reset is true.
   if(ADinfo.ADtape_empty() || reset) {
     // Delete previous tape if it exists.
@@ -531,7 +531,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
   // Recording, if needed, is done.
   // From here on is use of the tape(s).  This may be used much more often than recording section above.
 
-  // std::cout<<"getDerivs_calculate_internal A"<<std::endl;
+  //std::cout<<"getDerivs_calculate_internal A"<<std::endl;
   // Copy values from the model into the independentVars
   int length_wrt = nodes.model_wrt_accessor.getTotalLength();
   int length_independent = length_wrt;
@@ -562,17 +562,22 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
     //std::cout<<std::endl;
     ADinfo.ADtape()->new_dynamic(dynamicVars);
   }
+//  std::cout<<"getDerivs_calculate_internal B"<<std::endl;
 
   if(use_meta_tape) {
     // manage orders and use regular calculate for value
     // and tape for jacobian or hessian
+  //std::cout<<"getDerivs_calculate_internal C"<<std::endl;
     int maxOrder;
     bool ordersFound[3];
     setOrdersFound(derivOrders, ordersFound, maxOrder);
+ // std::cout<<"getDerivs_calculate_internal C2"<<std::endl;
     if(ordersFound[0]) {
       ansList->value.setSize(1, false, false);
       ansList->value[0] = calculate(nodes);
     }
+  //    std::cout<<"getDerivs_calculate_internal C3"<<std::endl;
+
     NimArr<1, double> derivOrders_nested;
     int higherOrders = 0;
     if(ordersFound[1]) ++higherOrders;
@@ -584,6 +589,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
       if(ordersFound[2]) derivOrders_nested[higherOrders] = 1; // If Hessian was requested, get Jacobian of meta tape
       nimSmartPtr<NIMBLE_ADCLASS> ansList_nested = new NIMBLE_ADCLASS;
       //std::cout<<"about to call getDerivs_internal"<<std::endl;
+//  std::cout<<"getDerivs_calculate_internal D"<<std::endl;
       getDerivs_internal<double,
                          CppAD::ADFun<double>,
                          NIMBLE_ADCLASS>(ADinfo.independentVars,
@@ -591,6 +597,7 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
                                          derivOrders_nested,
                                          wrtVector, // NOTE: This will not behave fully correctly in non-default use without further thought.
                                          ansList_nested);
+//  std::cout<<"getDerivs_calculate_internal E"<<std::endl;
       if(ordersFound[1]) {
         ansList->jacobian.setSize(1, length_wrt, false, false);
         for(int ii = 0; ii < length_wrt; ++ii) //We could rewrite this with better pointer magic

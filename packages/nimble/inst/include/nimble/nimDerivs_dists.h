@@ -524,40 +524,30 @@ Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
 /* Categorial */
 template<class Type>
 Type nimDerivs_nimArr_dcat(const Type &x,
-		    const NimArr<1, Type> &prob,
-		    const Type &give_log)
+                           const NimArr<1, Type> &prob,
+                           const Type &give_log)
 {
-  CppAD::VecAD<double> vecProb(prob.size());
   Type sumProb = 0.;
-  CppAD::AD<double> i; // Per CppAD example, index assigning into VecAD must be a CppAD::AD<>
-  for(i = 0; size_t(Integer(i) ) < prob.size(); i += 1.) {
-    vecProb[i] = prob[ size_t(Integer(i) ) ];
-  }
   for(int j = 0; j < prob.size(); ++j) {
     sumProb += prob[ j ];
   }
-  Type ansProb = vecProb[x - 1] / sumProb;
+  Type ansProb = stoch_ind_get(prob, x - 1) / sumProb;
   Type ans = CppAD::CondExpEq(give_log, Type(1),
-			      log(ansProb),
-			      ansProb);
+                              log(ansProb),
+                              ansProb);
   return(ans);
 }
 
 template<class Type>
 Type nimDerivs_nimArr_dcat_logFixed(const Type &x,
-			     const NimArr<1, Type> &prob,
-			     int give_log)
+                                    const NimArr<1, Type> &prob,
+                                    int give_log)
 {
-  CppAD::VecAD<double> vecProb(prob.size());
   Type sumProb = 0.;
-  CppAD::AD<double> i;
-  for(i = 0; size_t(Integer(i) ) < prob.size(); i += 1.) {
-    vecProb[i] = prob[ size_t(Integer(i) ) ];
-  }
   for(int j = 0; j < prob.size(); ++j) {
     sumProb += prob[ j ];
   }
-  Type ansProb = vecProb[x - 1] / sumProb;
+  Type ansProb = stoch_ind_get(prob, x - 1) / sumProb;
   if(give_log) {
     return log(ansProb);
   } else {

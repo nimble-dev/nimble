@@ -240,16 +240,32 @@ nndf_createMethodList <- function(LHS,
         caseName <- paste0("getBound_",nDimSupported,"D_double")
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
-## The next three lines are left over from old approach to AD.  It is not clear if these are still needed.
-parentsArgs <-c()
+    ## The next three lines are left over from old approach to AD.  It is not clear if these are still needed.
+    parentsArgs <-c()
     ADexceptionNames <- c(names(parentsArgs), deparse(logProbNodeExpr[[2]]))
-    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
+    exceptionNames <- c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_")
+    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = exceptionNames,
                                                     ADexceptionNames = ADexceptionNames)
     if(isTRUE(buildDerivs)) {
         methodList[['calculate_ADproxyModel']] <- methodList[['calculate']]
-        if(type=="stoch")
+        if(type=="stoch") {
+          if(!is.null(dynamicIndexLimitsExpr)) {# If we have stochastic indexing, make the AD version not include the error-trapping of lower and upper bounds, because it won't work.
+            ## Twist here is to introduce the name AD_return_value_MPQVRBHW_ (which should be unique enough)
+            ## so that it can be returned without a second indexing call just to get the returned value.
+            tempMethodList <- eval(substitute(
+              list(
+                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { AD_return_value_MPQVRBHW_ <- STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(AD_return_value_MPQVRBHW_)) }
+              ),
+              list(STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = NULL, RHSnonReplaced = RHSnonReplaced),
+                   LOGPROB = logProbNodeExpr)))
+            tempMethodList <- nndf_addModelDollarSignsToMethods(tempMethodList, exceptionNames = c(exceptionNames, "AD_return_value_MPQVRBHW_"),
+                                                                ADexceptionNames = ADexceptionNames)
+
+            newBody <- body(tempMethodList[['calculate']])
+          } else {
             newBody <- body(methodList[['calculate']])
-        else {
+          }
+        } else {
             newBody <- body(methodList[['simulate']])
             newBody[[length(newBody) + 1]] <- quote(return(0))
             newBody[[length(newBody) + 1]] <- quote(returnType(double()))
