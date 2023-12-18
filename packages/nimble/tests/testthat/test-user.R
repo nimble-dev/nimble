@@ -515,6 +515,16 @@ test_that("Test that missing/mismatched returnType in 'r' function is trapped", 
     Rmodel <- nimbleModel(code)
 })
 
+test_that("default argument for `x` in density is trapped", {
+  ddist <- nimbleFunction(
+    run = function(x = double(0, default = 0), log = integer(default = 1)) {
+        returnType(double())
+        return(0)
+    }
+  )
+  expect_error(registerDistributions('ddist'), "not allowed to have a default")
+})
+
 
 sink(NULL)
 
