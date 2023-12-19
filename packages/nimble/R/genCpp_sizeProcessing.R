@@ -2045,6 +2045,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         }
     }
     if(is.null(RHStype) || length(RHStype)==0) {
+        if(startsWith(RHSname, "r") && gsub( "^r", "d", RHSname) %in% nimbleUserNamespace$distributions$namesVector)  # Fix issue 1355.
+            stop("Missing simulation function '", RHSname, "', perhaps because it was deleted. Please use `deregisterDistributions` to deregister the distribution.")
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '", RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     }
     if(LHS$isName) {

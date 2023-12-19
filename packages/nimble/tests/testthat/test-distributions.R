@@ -836,6 +836,39 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
     out <- cf(x[1:3], param) 
     expect_identical(out, c(d, p, q), info = 'dinvgamma nf')
 })
+
+test_that("Trap case where simulate function is removed", {
+    dfoo <- nimbleFunction(
+        run = function(x=double(), log=integer(0, default=0)) {
+            return(0)
+            returnType(double())
+        }
+    )
+
+    m <- nimbleModel(
+        nimbleCode({
+            x ~ dfoo()
+        })
+    )
+
+    cm <- compileNimble(m)
+
+    rm('rfoo')
+    dfoo <- nimbleFunction(
+        run = function(x=double(), log=integer(0, default=0)) {
+            return(0)
+            returnType(double())
+        }
+    )
+
+    m <- nimbleModel(
+        nimbleCode({
+            x ~ dfoo()
+        })
+    )
+
+    expect_error(cm <- compileNimble(m), "Missing simulation function")
+})
     
    
 sink(NULL)
