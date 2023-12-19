@@ -1531,31 +1531,33 @@ buildApproxPosterior <- nimbleFunction(
 			theta_grid_nfl[[gridMethod]]$buildGrid()
 			gridBuilt[gridMethod] <<- 1
 			thetaModeIndex <<- theta_grid_nfl[[gridMethod]]$getThetaModeIndex()
-      if(postModeFound == 1) addModeGridInfo() # If someone already ran optim.
+      addModeGridInfo() # Find the posterior mode if it isn't present.
 		},
 		changeHyperGrid = function(method = character(0, default = "aghq"), 
 				nQUpdate = integer(0, default = 3)){
+        
       if(method == "ccd"){
 				gridMethod <<- I_CCD
 				if(gridBuilt[gridMethod] == 0) {
 					theta_grid_nfl[[gridMethod]]$buildGrid()
 				}	
-      } else {
+      }else{
 				gridMethod <<- I_AGHQ
-        if(gridBuilt[gridMethod] == 0) theta_grid_nfl[[gridMethod]]$buildGrid()
-
+        if(gridBuilt[gridMethod] == 0) {
+          theta_grid_nfl[[gridMethod]]$buildGrid()
+        }
 				if(nQUpdate != nQuadAGHQ){
 					theta_grid_nfl[[gridMethod]]$resetGrid(nQUpdate = nQUpdate, keepInner = 1)	## Only use resetGrid for aghq.
 					nQuadAGHQ <<- nQUpdate
         }
       }
-      ## If you have already calculated the posterior mode add it to the new grid!
-      if(postModeFound == 0 & theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0){
+      ## If you have already calculated the posterior mode add it to the new grid.
+      if(postModeFound == 1 & theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0){
         addModeGridInfo()
       }
       gridBuilt[gridMethod] <<- 1
 			nGrid <<- theta_grid_nfl[[gridMethod]]$getGridSize()
-			thetaModeIndex <<- theta_grid_nfl[[gridMethod]]$getThetaModeIndex()			
+			thetaModeIndex <<- theta_grid_nfl[[gridMethod]]$getThetaModeIndex()
 		},
 		## Added functions for INLA to get posterior density
 		##***************************************			
@@ -1692,6 +1694,8 @@ buildApproxPosterior <- nimbleFunction(
 		## Functions to approximate posterior distribution of theta.
     ## This needs optim run and thetaGrid built...
 		calcSkewedSD = function() {
+      ## Require the grid to have been built and the mode found.
+      if(gridBuilt[gridMethod] == 0 | postModeFound != 1) addModeGridInfo()
 			for( i in 1:pTransform_length){
 				z <- numeric(value = 0, length = pTransform_length)
 				z[i] <- -sqrt(2)
@@ -1704,12 +1708,17 @@ buildApproxPosterior <- nimbleFunction(
 				skewedStdDev[i, 2] <<- sqrt(2 / (2.0 * (logPostProbMode-logDens2Pos))) 	## numerator (-sqrt(2)) ^2
 			}
 		},
+    getSkewedStdDev = function(){
+      returnType(double(2))
+      return(skewedStdDev)
+    },
     ## Skew Needs to be calculated first.
 		calcMarginalLogLikApprox = function(){
       ## Line 2748 in r-inla/blob/devel/gmrflib/approx-inference.c
       ## Commit # ef4eb20
       # marg <- logPostProbMode + 0.5*pTransform_length*log(2*pi) -
         # 0.5*(logDetNegHesspTransform) - sum(log(skewedStdDev[,1] * skewedStdDev[,2]))
+      ## *** What Paul thinks it should be. ***
       marg <- logPostProbMode + 0.5*pTransform_length*log(2*pi) -
         0.5*(logDetNegHesspTransform) + sum(log((skewedStdDev[,1] + skewedStdDev[,2])/2))
       returnType(double())
@@ -1719,11 +1728,7 @@ buildApproxPosterior <- nimbleFunction(
 		## It stores all values we need for simulation inference on the fixed and random-effects.
 		## Once this is called, we can then simulate.
 		calcHyperGrid = function(){
-			if( gridBuilt[gridMethod] == 0 ) buildHyperGrid()
-      if(postModeFound == 0) findPostMode(pStartTransform = rep(0, pTransform_length), method = "BFGS", hessian = TRUE, buildGrid = TRUE)
-      if(theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0){ ## If log dens at the mode hasn't been calculated.
-        addModeGridInfo()
-      }
+      if(gridBuilt[gridMethod] == 0 | postModeFound != 1 | theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0) addModeGridInfo()
       ## Transform the grid from z to theta.
       theta_grid_nfl[[gridMethod]]$transformGrid(skewedStdDev)
       ## Now fill in the grid values.
@@ -1806,8 +1811,7 @@ buildApproxPosterior <- nimbleFunction(
 
         ## If this is the mode then we know some information:
         if(zwtheta[j,1] == 0){
-          theta_grid_marg$saveOptimInfo(pTransformMax = initPTransform, negHessian = subsetNegHess)
-          theta_grid_marg$saveLogDens(i=0, logPostProbMode)
+          theta_grid_marg$saveOptimInfo(pTransformMax = initPTransform, maxLogDens = logPostProbMode, negHessian = subsetNegHess)
         }else{
           findPostModeFixedj(pStartTransform = initPTransform, 
               j=pIndex, pTransformFixed=res[j,1], method = "BFGS", 
@@ -1949,16 +1953,20 @@ buildApproxPosterior <- nimbleFunction(
 			returnType(optimResultNimbleList())
 		},
     addModeGridInfo = function(){
-      if( gridBuilt[gridMethod] == 0 ) buildHyperGrid()
+      if( gridBuilt[gridMethod] == 0 ) {
+        buildHyperGrid()
+        gridBuilt[gridMethod] <<- 1
+      }
       if(postModeFound != 1) findPostMode(pStartTransform = rep(0, pTransform_length), method = "BFGS", hessian = TRUE, buildGrid = TRUE)
-      theta_grid_nfl[[gridMethod]]$saveOptimInfo(pTransformMax =  pTransformPostMode, negHessian = negHesspTransformPostMode)
-      theta_grid_nfl[[gridMethod]]$saveLogDens(i=0, logPostProbMode)
-      covTheta <<- theta_grid_nfl[[gridMethod]]$getCovTheta()
-      logDetNegHesspTransform <<- theta_grid_nfl[[gridMethod]]$getLogDetNegHess()
-
-      ## New Caching system to save this as the actual mode if requested atOuterMode = 1
-      theta_grid_nfl[[gridMethod]]$saveInnerMode(i=0, innerMode = get_inner_mode(atOuterMode = 1))
-      theta_grid_nfl[[gridMethod]]$saveInnerCholesky(i=0, innerCholesky = get_inner_cholesky(atOuterMode = 1))  
+      
+      if(theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0){ ## If log dens at the mode hasn't been calculated.
+        theta_grid_nfl[[gridMethod]]$saveOptimInfo(pTransformMax =  pTransformPostMode, maxLogDens = logPostProbMode, negHessian = negHesspTransformPostMode)
+        covTheta <<- theta_grid_nfl[[gridMethod]]$getCovTheta()
+        logDetNegHesspTransform <<- theta_grid_nfl[[gridMethod]]$getLogDetNegHess()
+        ## New Laplace Caching system to save this as the actual mode if requested atOuterMode = 1
+        theta_grid_nfl[[gridMethod]]$saveInnerMode(i=0, innerMode = get_inner_mode(atOuterMode = 1))
+        theta_grid_nfl[[gridMethod]]$saveInnerCholesky(i=0, innerCholesky = get_inner_cholesky(atOuterMode = 1))  
+      }
     },
 		findPostModeFixedj = function(pStartTransform  = double(1, default = Inf),
 						 j = integer(0, default = 1), 
@@ -1983,8 +1991,7 @@ buildApproxPosterior <- nimbleFunction(
           theta_grid_marg$buildGrid()
           gridBuiltMarg <<- 1
         }
-        theta_grid_marg$saveOptimInfo(pTransformMax = optRes$par, negHessian = -optRes$hessian)
-        theta_grid_marg$saveLogDens(i=0, optRes$value)
+        theta_grid_marg$saveOptimInfo(pTransformMax = optRes$par, maxLogDens = optRes$value, negHessian = -optRes$hessian)
       }
 			return(optRes)
 			returnType(optimResultNimbleList())
