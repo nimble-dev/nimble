@@ -1540,7 +1540,7 @@ buildApproxPosterior <- nimbleFunction(
 				gridMethod <<- I_CCD
 				if(gridBuilt[gridMethod] == 0) {
 					theta_grid_nfl[[gridMethod]]$buildGrid()
-				}	
+				}
       }else{
 				gridMethod <<- I_AGHQ
         if(gridBuilt[gridMethod] == 0) {

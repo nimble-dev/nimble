@@ -366,13 +366,15 @@ buildQuadGrid <- nimbleFunction(
         calculated[i] <<- 1
       }
     },
-    saveInnerMode = function(i = integer(0, default = 1), innerMode = double(1) ){
+    saveInnerMode = function(i = integer(0, default = 0), innerMode = double(1) ){
       if(nre != dim(reMode)[2]) setSize(reMode, c(nQ, nre)) ## Size them here for storage purposes.
-			reMode[i,] <<- innerMode
+			if(i == 0) reMode[modeIndex,] <<- innerMode
+      else reMode[i,] <<- innerMode
     },
-    saveInnerCholesky = function(i = integer(0, default = 1), innerCholesky = double(2) ){
+    saveInnerCholesky = function(i = integer(0, default = 0), innerCholesky = double(2) ){
       if(nre != dim(cholVals)[2]) setSize(cholVals, c(nQ, nre, nre)) ## Size them here for storage purposes.
-			cholVals[i,,] <<- innerCholesky      
+			if(i == 0) cholVals[modeIndex,,] <<- innerCholesky 
+			else cholVals[i,,] <<- innerCholesky
     },
     saveOptimInfo = function(pTransformMax = double(1), maxLogDens = double(0), negHessian = double(2)){
       optimInfo <<- 1
