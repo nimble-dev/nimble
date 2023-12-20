@@ -837,6 +837,7 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
     expect_identical(out, c(d, p, q), info = 'dinvgamma nf')
 })
 
+
 test_that("Trap case where simulate function is removed", {
     dfoo <- nimbleFunction(
         run = function(x=double(), log=integer(0, default=0)) {
@@ -850,10 +851,11 @@ test_that("Trap case where simulate function is removed", {
             x ~ dfoo()
         })
     )
+    assign(
 
     cm <- compileNimble(m)
 
-    rm('rfoo')
+    rm('rfoo', pos = .GlobalEnv)
     dfoo <- nimbleFunction(
         run = function(x=double(), log=integer(0, default=0)) {
             return(0)
@@ -868,6 +870,7 @@ test_that("Trap case where simulate function is removed", {
     )
 
     expect_error(cm <- compileNimble(m), "Missing simulation function")
+    deregisterDistributions('dfoo')
 })
     
    
