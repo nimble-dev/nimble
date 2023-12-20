@@ -9,6 +9,11 @@
 
 - Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
   specify maximum dimension for saving proposal covariance history.
+  
+- Change names of two arguments of the `addSampler` method of MCMC
+  configuration object.  The `expandTarget` argument is renamed to
+  `nodeWiseAssignment`, and the `scalarComponents` is renamed to
+  `scalarElementsAsNodes`.
 
 ## DEVELOPER LEVEL CHANGES
 
