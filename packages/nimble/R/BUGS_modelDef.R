@@ -372,6 +372,10 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
         }
     }
 
+    ## update added Dec 2023, DT ... tbt earlier update in newModel method (Oct 2015)
+    ## handling for JAGS style inits (a list of lists)
+    if(length(initsList) > 0 && is.list(initsList[[1]]))   initsList <- inits[[1]]
+    ##
     # add dimensions of any *non-scalar* inits to dimensionsList
     # we'll try to be smart about this: check for duplicate names in inits and dimensions, and make sure they agree
     for(i in seq_along(initsList)) {
