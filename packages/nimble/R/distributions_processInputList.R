@@ -614,17 +614,17 @@ deregisterDistributions <- function(distributionsNames, userEnv = parent.frame()
         } else {  # all distributions to be removed
               rm(distributions, envir = nimbleUserNamespace)
         }
+        ## Remove placeholder `r` function if it exists so that user could modify
+        ## their `d` function (NCT issue 485).
+        sapply(distributionsNames, function(densityName) {
+            rName <- sub("^d", "r", densityName)
+            if(exists(rName, userEnv)) {
+                rFun <- get(rName, userEnv)
+                if(length(body(rFun)) >= 2 && length(grep("provided without random", deparse(body(rFun)[[2]]))))
+                    eval(substitute(rm(list = rName, pos = userEnv), list(rName = rName))) 
+            }})
     }
 
-    ## Remove placeholder `r` function if it exists so that user could modify
-    ## their `d` function (NCT issue 485).
-    sapply(distributionsNames, function(densityName) {
-        rName <- sub("^d", "r", densityName)
-        if(exists(rName, userEnv)) {
-            rFun <- get(rName, userEnv)
-            if(length(body(rFun)) >= 2 && grep("provided without random", deparse(body(rFun)[[2]])))
-                eval(substitute(rm(list = rName, pos = userEnv), list(rName = rName))) 
-        }})
     invisible(NULL)
 }
     
