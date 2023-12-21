@@ -721,5 +721,33 @@ test_that("optim() respects parscale for Hessian in R and C++", {
   }
 })
 
+test_that("no spurious warning about missing nimbleFunction", {
+    ## This tests issue 1356.
+    objectiveFunction_inner <- nimbleFunction(
+         run = function(par = double(1), power = double(0), scaling = double(0)) {
+             return(sum(par) * exp(-sum(par ^ power) / scaling))
+             returnType(double(0))
+         }
+    )
+    objectiveFunction <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(objectiveFunction_inner(par, 2, 3))
+             returnType(double(0))
+         }
+     )
+     optimizer <- nimbleFunction(
+         run = function(method = character(0), fnscale = double(0)) {
+             control <- optimDefaultControl()
+             control$fnscale <- fnscale
+             par <- c(0.1, -0.1)
+             out <- optim(par, objectiveFunction, method = method, control = control)
+             return(out)
+             returnType(optimResultNimbleList())
+         }
+     )
+     expect_no_warning(cOptimizer <- compileNimble(optimizer))
+     
+    })
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
