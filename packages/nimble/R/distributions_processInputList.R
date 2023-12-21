@@ -594,7 +594,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #' @param distributionsNames a character vector giving the names of the distributions to be dergistered
 #' @author Christopher Paciorek
 #' @export
-deregisterDistributions <- function(distributionsNames) {
+deregisterDistributions <- function(distributionsNames, userEnv = parent.frame()) {
     if(!exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
         warning("No user-supplied distributions are registered.")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
@@ -615,6 +615,16 @@ deregisterDistributions <- function(distributionsNames) {
               rm(distributions, envir = nimbleUserNamespace)
         }
     }
+
+    ## Remove placeholder `r` function if it exists so that user could modify
+    ## their `d` function (NCT issue 485).
+    sapply(distributionsNames, function(densityName) {
+        rName <- sub("^d", "r", densityName)
+        if(exists(rName, userEnv)) {
+            rFun <- get(rName, userEnv)
+            if(length(body(rFun)) >= 2 && grep("provided without random", deparse(body(rFun)[[2]])))
+                eval(substitute(rm(list = rName, pos = userEnv), list(rName = rName))) 
+        }})
     invisible(NULL)
 }
     
