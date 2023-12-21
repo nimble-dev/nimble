@@ -210,10 +210,10 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                             code$sizeExprs <- list()
                             code$toEigenize <- 'maybe'
                         } else {
-                            warning(paste0("variable '",
+                            stop("variable '",
                                            code$name,
-                                           "' has not been created yet."),
-                                    call.=FALSE) 
+                                 "' has not been created yet.",
+                            call.=FALSE)
                         }
                 }
             } else {
