@@ -470,7 +470,7 @@ test_that("Missing variables in nf code cause error (not warning)", {
         return(c)
         returnType(double(0))
     })
-    expect_error(compileNimble(test1), "has not been created")
+    expect_error(compileNimble(test1), "is not available")
 
     test2 <- nimbleFunction(
     run = function() {
@@ -478,7 +478,7 @@ test_that("Missing variables in nf code cause error (not warning)", {
         return(a + b)
         returnType(double(0))
     })
-    expect_error(compileNimble(test1), "has not been created")
+    expect_error(compileNimble(test1), "is not available")
 })
 
 
