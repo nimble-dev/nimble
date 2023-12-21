@@ -745,9 +745,13 @@ test_that("no spurious warning about missing nimbleFunction", {
              returnType(optimResultNimbleList())
          }
      )
+     temporarilyAssignInGlobalEnv(objectiveFunction_inner)
+     temporarilyAssignInGlobalEnv(objectiveFunction)
+
+     cOptimizer <- compileNimble(optimizer)
      expect_no_warning(cOptimizer <- compileNimble(optimizer))
      
-    })
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
