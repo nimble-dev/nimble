@@ -602,8 +602,8 @@ Invisibly returns a list of the current sampler configurations, which are sample
 
             print <- if(is.null(print)) FALSE else print                        ## default of print is FALSE otherwise
 
-            if(!missing(expandTarget))       { cat('  [Warning] \"expandTarget\" argument is deprecated, and was renamed to \"nodeWiseAssignment\".\n');          nodeWiseAssignment    <- expandTarget     }
-            if(!missing(scalarComponents))   { cat('  [Warning] \"scalarComponents\" argument is deprecated, and was renamed to \"scalarElementsAsNodes\".\n');   scalarElementsAsNodes <- scalarComponents }
+            if(!missing(expandTarget))       { messageIfVerbose('  [Warning] `expandTarget` argument name has been deprecated; please use `nodeWiseAssignment.');          nodeWiseAssignment    <- expandTarget     }
+            if(!missing(scalarComponents))   { messageIfVerbose('  [Warning] `scalarComponents` argument name has been deprecated; please use `scalarElementsAsNodes.');   scalarElementsAsNodes <- scalarComponents }
             
             nameProvided <- !missing(name)
             if(is.character(type)) {
