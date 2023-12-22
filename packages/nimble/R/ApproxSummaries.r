@@ -5,7 +5,7 @@ marginalSpline = function(theta, logdens){
     rn <- range(theta)
     rnl <- diff(rn)
     thetarange <- c(min(rn) - rnl/2,max(rn) + rnl/2)
-    finegrid <- c(seq(thetarange[1],thetarange[2],length.out=1000))
+    finegrid <- c(seq(thetarange[1],thetarange[2],length.out=1000)) ## This is based off of Stringer for a fine grid.
 		if (n <= 3) {
 			log_pdf <- as.function(polynom::poly.calc(x = theta, y = logdens))
 			logPDF <- log_pdf(finegrid)		
@@ -18,7 +18,9 @@ marginalSpline = function(theta, logdens){
   pdf <- exp(logPDF)
   d <- (finegrid[2]-finegrid[1])
   pdf <- pdf/(sum(pdf)*d)
-  return(cbind(finegrid, pdf))
+  cdf <- cumsum(pdf*d)
+  ## Return the PDF:
+  return(cbind(finegrid, pdf, cdf))
 }
 
 marginalSplineR <- nimbleRcall(function(theta = double(1), logdens = double(1)){},
