@@ -1438,7 +1438,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
     
     fnCode <- code$args$fn
     if(!inherits(fnCode, 'exprClass')) {
-        stop(exprClassProcessingErrorMsg(code, 'In sizeOptim.  fn is not valid.'), call. = FALSE)
+        stop(exprClassProcessingErrorMsg(code, '`fn` argument to `optim` is not valid.'), call. = FALSE)
     }
     if (fnCode$name == 'nfMethod') {
         # This is handled in cppOutputNFmethod.
@@ -1452,7 +1452,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         # Handle fn arguments that are RCfunctions.
         fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
     } else {
-        stop(paste0('unsupported fn argument in optim(par, fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
+        stop('in `optim`, the `fn` argument, `', fnCode$name, '`, is not available or is not a nimbleFunction or nimbleFunction method.')
     }
 
     grCode <- code$args$gr
