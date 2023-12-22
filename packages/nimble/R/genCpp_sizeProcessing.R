@@ -3149,23 +3149,28 @@ sizeReturn <- function(code, symTab, typeEnv) {
         stop(exprClassProcessingErrorMsg(code, 'returnType was declared void() (default) (or something invalid), which is not consistent with the object you are trying to return.'), call. = FALSE)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
-        if(typeEnv$return$type == 'nimbleList' || code$args[[1]]$type == 'nimbleList') {
+        if(typeEnv$return$type == 'nimbleList' || isTRUE(code$args[[1]]$type == 'nimbleList')) {
             if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
             if(code$args[[1]]$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
             ## equivalent to symTab$getSymbolObject(code$args[[1]]$name)$nlProc, if it is a name
             if(!identical(code$args[[1]]$sizeExprs$nlProc, typeEnv$return$sizeExprs$nlProc)) stop(exprClassProcessingErrorMsg(code, paste0('nimbleList given in return() argument does not match nimbleList type declared in returnType()')), call. = FALSE)
         } else { ## check numeric types and nDim
             fail <- FALSE
-            if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
-                if(typeEnv$return$nDim > 0) { ## allow scalar casting of returns without error
-                    failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
+            if(is.null(code$args[[1]]$type)) {  # Issue 1364
+                failMsg <- paste0(code$args[[1]]$name, " is not available or its output type is unknown.")
+                fail <- TRUE
+            } else {
+                if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
+                    if(typeEnv$return$nDim > 0) { ## allow scalar casting of returns without error
+                        failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
+                        fail <- TRUE
+                    }
+                }
+                if(!isTRUE(all.equal(code$args[[1]]$nDim, typeEnv$return$nDim))) {
+                    failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
+                                      paste0('Number of dimensions ', code$args[[1]]$nDim, ' of the return() argument does not match number ',  typeEnv$return$nDim, ' given in the returnType() statement.'))
                     fail <- TRUE
                 }
-            }
-            if(!isTRUE(all.equal(code$args[[1]]$nDim, typeEnv$return$nDim))) {
-                failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
-                                  paste0('Number of dimensions ', code$args[[1]]$nDim, ' of the return() argument does not match number ',  typeEnv$return$nDim, ' given in the returnType() statement.'))
-                fail <- TRUE
             }
             if(fail)
                 stop(exprClassProcessingErrorMsg(code, failMsg), call. = FALSE)
