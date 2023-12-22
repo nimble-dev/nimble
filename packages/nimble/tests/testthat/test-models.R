@@ -1016,6 +1016,7 @@ test_that("Warning printed when indexing info in user environment.", {
             y[i] ~ dnorm(0,1)
     })
     N <- 3
+    temporarilyAssignInGlobalEnv(N)
     expect_message(m <- nimbleModel(code, constants = list(foo=3)),
                    "Information has been found in the user's environment")
 })
