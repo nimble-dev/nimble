@@ -327,7 +327,7 @@ modelDefClass$methods(assignBUGScode = function(code) {
 })
 modelDefClass$methods(assignConstants = function(constants) {
     ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
-    constantsEnv <<- new.env()
+    constantsEnv <<- new.env() 
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
@@ -1465,6 +1465,10 @@ determineContextSize <- function(context, useContext = rep(TRUE, length(context$
     test <- try(eval(innerLoopCode, evalEnv))
     if(is(test, 'try-error'))
         stop("Could not evaluate loop syntax: is indexing information provided via 'constants'?")
+    wh <- which(!all.vars(innerLoopCode) %in% c(ls(evalEnv), context$indexVarNames))
+    if(length(wh))
+        messageIfVerbose("  [Warning] Indexing information for ", paste(all.vars(innerLoopCode)[wh], collapse = ", "),
+                " not provided in `constants`.\n            Information has been found in the user's environment,\n            but we recommend all indexing information be provided via `constants`.")
     ans <- evalEnv$iAns
     rm(list = c('iAns', context$indexVarNames[useContext]), envir = evalEnv)
     return(ans)
