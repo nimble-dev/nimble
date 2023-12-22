@@ -666,17 +666,25 @@ modifyForAD_handlers <- c(list(
                  'modifyForAD_prependNimDerivs'))
 
 exprClasses_modifyForAD <- function(code, symTab,
-                                    workEnv = list2env(list(wrap_in_value = FALSE))) {
+                                    workEnv = list2env(list(wrap_in_value = FALSE,
+                                                            .anyAD = FALSE))) {
   if(code$isName) {
+    symObj <- symTab$getSymbolObject(code$name, inherits = TRUE)
+    # Check if the symbol is TYPE_ or CppAD::AD or a NimArr of TYPE_ or CppAD::AD
+    symIsAD <- !is.null(symObj) && (identical(symObj$baseType, "TYPE_") ||
+                                    identical(symObj$baseType, "CppAD::AD") ||
+                                    identical(symObj$baseType, "NimArr") && (identical(symObj$templateArgs[[2]], "TYPE_") ||
+                                                                             (inherits(symObj$templateArgs[[2]], "cppVarFull") &&
+                                                                              identical(symObj$templateArgs[[2]]$baseType, "CppAD::AD"))))
+    if(isTRUE(symIsAD)) workEnv$.anyAD <- TRUE
+
+    # Is this "wrap_in_value" step ever used or is it cruft?
     if(!isTRUE(workEnv[['wrap_in_value']]))
       return(invisible())
     else {
-      symObj <- symTab$getSymbolObject(code$name)
-      if(!is.null(symObj)) {
-        if(identical(symObj$baseType, "CppAD::AD")) {
+      if(isTRUE(symIsAD)) ## N.B. Previously this came from symTab$getSymbolObject(code$name, inherits = FALSE)
+        if(identical(symObj$baseType, "CppAD::AD")) # What objects get this type, rather than TYPE_
           insertExprClassLayer(code$caller, code$callerArgID, 'Value') ## It is ok to leave some fields (type, sizeExpr) unpopulated at this late processing stage
-        }
-      }
     }
   }
   if(code$isCall) {
@@ -687,14 +695,17 @@ exprClasses_modifyForAD <- function(code, symTab,
     if(workEnv$RsymTab$symbolExists(code$name, TRUE)) ## Could be a nimbleFunction class method
       modifyForAD_recordable(code, symTab, workEnv)
     else {
-      if(!is.null(code$aux)) {
-        if(isTRUE(code$aux[['buildDerivs']])) ## This is added in sizeRCfunction
-          modifyForAD_RCfunction(code, symTab, workEnv)
-      }
+      modifyForAD_RCfunction(code, symTab, workEnv)
     }
   }
   if(is.null(code$caller)) { ## It is the top level `{`
     if(identical(code$name, "{")) {
+      if(!isTRUE(workEnv$.inModel)) {
+        if(isTRUE(workEnv$.illegalADcall)) {
+          allMsgs <- paste(workEnv$.illegalADmsgs, collapse="\n")
+          stop(paste("Problem(s) creating derivative code.\n", allMsgs))
+        }
+      }
       if(isTRUE(workEnv[['hasCalculate']])) {
         if(is.null( workEnv[['nodeFxnVector_name']] ) )
           stop("While setting up C++ AD code: calculate found but nodeFxnVector_name not set.")
@@ -731,19 +742,26 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
   if(is.list(code$aux))
     if(isTRUE(code$aux$.avoidAD))
       return(invisible(NULL))
+  anyAD_on_input <- workEnv$.anyAD
+  anyAD_thisCall <- FALSE
   assignment <- isTRUE(any(code$name == assignmentOperators))
   for(i in seq_along(code$args)) {
     if(inherits(code$args[[i]], 'exprClass')) {
       if(assignment) workEnv$onLHS <- i == 1
+      workEnv$.anyAD <- FALSE
       exprClasses_modifyForAD(code$args[[i]], symTab, workEnv)
+      anyAD_thisCall <- anyAD_thisCall || isTRUE(workEnv$.anyAD)
       if(assignment) workEnv$onLHS <- FALSE
     }
   }
+  workEnv$.anyAD <- anyAD_thisCall
   invisible(NULL)
 }
 
 modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
+  if(!isTRUE(workEnv$.anyAD)) return(invisible(NULL))
   if(is.null(code$type)) return(invisible(NULL)) # arises from constructions like setMap that lack type annotation
+  if(length(code$args) > 4) return(invisible(NULL)) # 4D or higher is not handled, assumed to be static indexing
   if(isTRUE(workEnv$onLHS)) code$name <- "stoch_ind_set"
   else code$name <- "stoch_ind_get"
   invisible(NULL)
@@ -865,7 +883,59 @@ modifyForAD_prependNimDerivs <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_RCfunction <- function(code, symTab, workEnv) {
-  code$name <- paste0(code$name, "< CppAD::AD<double> >")
+  # If there is no AD happening, skip everything
+  if(isTRUE(workEnv$.anyAD)) {
+    lacksADsupport <- any(code$name == callsNotAllowedInAD)
+    # If there is lack of AD support due to disallowed keyword, skip to error handling
+    if(!lacksADsupport) {
+      isRCwithoutAD <- FALSE
+      # If there is code$aux, this is a potential AD call
+      if(!is.null(code$aux)) {
+        buildDerivs <- code$aux[['buildDerivs']]
+        # If code$aux$buildDerivs is set, this is a potential AD call
+        if(!is.null(buildDerivs)) {
+          # If code$aux$buildDerivs is TRUE, insert the template argument
+          if(isTRUE(buildDerivs)) {
+            code$name <- paste0(code$name, "< CppAD::AD<double> >")
+          } else {
+            # If code$aux$buildDerivs is not TRUE, this is an RC function without AD support
+            isRCwithoutAD <- TRUE
+          }
+        }
+      }
+      # So far lacksADsupport must be FALSE. Now we update it to include case isRCwithoutAD
+      lacksADsupport <- isRCwithoutAD
+    }
+    if(lacksADsupport) {
+      workEnv$.illegalADcall <- TRUE
+      if(!is.character(workEnv$.illegalADmsgs)) workEnv$.illegalADmsgs <- character()
+      workEnv$.illegalADmsgs <- c(workEnv$.illegalADmsgs,
+                                  exprClassProcessingErrorMsg(
+                                    code,
+                                    "A function that might be intended for derivative tracking does not have buildDerivs set to enable that."
+                                  ))
+    }
+  }
+  ## if(isTRUE(workEnv$.anyAD)) {
+  ##   isRCwithoutAD <- (!is.null(code$aux)) && (!isTRUE(code$aux[['buildDerivs']]))
+  ##   isRCwithAD <- (!is.null(code$aux)) && (isTRUE(code$aux[['buildDerivs']]))
+  ##   lacksADsupport <- isRCwithoutAD ||
+  ##                      any(code$name == callsNotAllowedInAD)
+  ##   supportsAD <- !lacksADsupport
+  ##   if(supportsAD) {
+  ##     if(isRCwithAD)
+  ##       code$name <- paste0(code$name, "< CppAD::AD<double> >")
+  ##   } else {
+  ##     browser()
+  ##     workEnv$.illegalADcall <- TRUE
+  ##     if(!is.character(workEnv$.illegalADmsgs)) workEnv$.illegalADmsgs <- character()
+  ##     workEnv$.illegalADmsgs <- c(workEnv$.illegalADmsgs,
+  ##                                 exprClassProcessingErrorMsg(
+  ##                                   code,
+  ##                                   "A function that might be intended for derivative tracking does not have buildDerivs set to enable that."
+  ##                                 ))
+  ##   }
+  ## }
   invisible(NULL)
 }
 
@@ -907,14 +977,36 @@ modifyForAD_chainedCall <- function(code, symTab, workEnv) {
   invisible(NULL)
 }
 
+# This is when the current method (which has buildDerivs set, else we wouldn't be here)
+# has a call to another method. We assume that method should also have buildDerivs set
+# any thus we should append the "_AD2_" on its name and throw an error if it doesn't
+# have buildDerivs set.
+# However, if no arguments seem to involve AD, we leave the call unmodified.
 modifyForAD_recordable <- function(code, symTab, workEnv) {
   symObj <- workEnv$RsymTab$getSymbolObject(code$name, TRUE)
   buildDerivs <- symObj$nfMethodRCobj$buildDerivs
-  if(!is.null(buildDerivs))
-    if(!isFALSE(buildDerivs)) {
+  anyAD <- workEnv$.anyAD
+  callSupportsAD <- (!is.null(buildDerivs)) && (!isFALSE(buildDerivs))
+  if(anyAD) {
+    if(callSupportsAD) {
       code$name <- paste0(code$name, "_AD2_")
       setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
+    } else {
+      browser()
+      workEnv$.illegalADcall <- TRUE
+      if(!is.character(workEnv$.illegalADmsgs)) workEnv$.illegalADmsgs <- character()
+      workEnv$.illegalADmsgs <- c(workEnv$.illegalADmsgs,
+                                  exprClassProcessingErrorMsg(
+                                    code,
+                                    "A function that might be intended for derivative tracking does not have buildDerivs set to enable that."
+                                  ))
     }
+  }
+  ## if(!is.null(buildDerivs))
+  ##   if(!isFALSE(buildDerivs)) {
+  ##     code$name <- paste0(code$name, "_AD2_")
+  ##     setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
+  ##   }
   invisible(NULL)
 }
 
@@ -962,49 +1054,79 @@ modifyForAD_calculate <- function(code, symTab, workEnv) {
 }
 
 updateADproxyModelMethods <- function(.self) {
-    ## Update return type and names of functions like dnorm -> nimDerivs_dnorm
-    functionNames <- names(.self$functionDefs)
-    ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
-    if(length(ADproxyModel_functionNames) > 0) {
-        ## The following two headers were added to CPPincludes because nimDerives_dists must
-        ## come before Rmath.h
-        .self$CPPincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
-                               nimbleIncludeFile("nimDerivs_dists.h"), .self$CPPincludes)
+  ## Update return type and names of functions like dnorm -> nimDerivs_dnorm
+  functionNames <- names(.self$functionDefs)
+  ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
+  if(length(ADproxyModel_functionNames) > 0) {
+    ## The following two headers were added to CPPincludes because nimDerives_dists must
+    ## come before Rmath.h
+    .self$CPPincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
+                           nimbleIncludeFile("nimDerivs_dists.h"), .self$CPPincludes)
+  }
+
+  classST <- .self$objectDefs
+  classSymNames <- classST$getSymbolNames()
+  ADproxySymNames <- classSymNames[ grepl("ADproxyModel_", classSymNames ) ]
+  for(sn in ADproxySymNames) {
+    newSym <-
+      cppVarSym2templateTypeCppVarSym(classST$getSymbolObject(sn),
+                                      replacementBaseType = "CppAD::AD",
+                                      replacementTemplateArgs = "double") ## These end up the header file so they should not use TYPE_ as that is not typedef'd there
+    classST$addSymbol(newSym, allowReplace = TRUE)
+  }
+
+  for(fn in ADproxyModel_functionNames) {
+    thisDef <- .self$functionDefs[[fn]]
+    thisDef$returnType <- cppVarSym2templateTypeCppVarSym( thisDef$returnType,
+                                                          replacementBaseType = "CppAD::AD",
+                                                          replacementTemplateArgs = "double" )
+    parentST <- thisDef$code$objectDefs$getParentST()
+    thisDef$code$objectDefs <-
+      symbolTable2templateTypeSymbolTable(thisDef$code$objectDefs) #,
+    ##                                                replacementBaseType = "CppAD::AD",
+    ##                                                replacementTemplateArgs = "double" )
+    thisDef$code$objectDefs$setParentST(parentST)
+    thisDef$code$cppADCode <- 2L
+    ADtypeDefs <- symbolTable()
+    ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd", name = "EigenMapStrd_TYPE_") )
+    ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd_TYPE_") )
+    ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef CppAD::AD<double>", name = "TYPE_") )
+    thisDef$code$typeDefs <- ADtypeDefs
+    workEnv <- new.env()
+    workEnv$RsymTab <- thisDef$RCfunProc$compileInfo$newLocalSymTab
+    workEnv$.inModel <- TRUE
+    exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs, workEnv)
+    if(isTRUE(workEnv$.illegalADcall)) {
+      firstSym <- cppVarFull(name = "first", static = TRUE, baseType = "bool", constructor = "{true}")
+      thisDef$code$objectDefs <- symbolTable$new()
+      thisDef$code$typeDefs <- symbolTable$new()
+      thisDef$code$objectDefs$setParentST(parentST)
+      thisDef$code$objectDefs$addSymbol(firstSym)
+      errorTrappingCode <- quote({
+        if(first) {
+          nimPrint("Error: In C++, a model node is being included in derivatives that does not support them.\n",
+                   "Please check messages from building the model, when better information might be\n",
+                   "available. This message will only be shown once. Results will not be valid.")
+          first <- false
+        }
+        return(`CppAD::AD<double>`(0))
+      })
+      errorTrappingExpr <- RparseTree2ExprClasses(errorTrappingCode)
+      thisDef$code$code <- errorTrappingExpr
     }
-    for(fn in ADproxyModel_functionNames) {
-        thisDef <- .self$functionDefs[[fn]]
-        thisDef$returnType <- cppVarSym2templateTypeCppVarSym( thisDef$returnType,
-                                                              replacementBaseType = "CppAD::AD",
-                                                              replacementTemplateArgs = "double" )
-        parentST <- thisDef$code$objectDefs$getParentST()
-        thisDef$code$objectDefs <-
-            symbolTable2templateTypeSymbolTable(thisDef$code$objectDefs) #,
-##                                                replacementBaseType = "CppAD::AD",
-##                                                replacementTemplateArgs = "double" )
-        thisDef$code$objectDefs$setParentST(parentST)
-        thisDef$code$cppADCode <- 2L 
-        ADtypeDefs <- symbolTable()
-        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<CppAD::AD<double> >::typeEigenMapStrd", name = "EigenMapStrd_TYPE_") )
-        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd_TYPE_") )
-        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef CppAD::AD<double>", name = "TYPE_") )
-        thisDef$code$typeDefs <- ADtypeDefs
-        workEnv <- new.env()
-        workEnv$RsymTab <- thisDef$RCfunProc$compileInfo$newLocalSymTab
-        workEnv$.inModel <- TRUE
-        exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs, workEnv)
-    }
-    classST <- .self$objectDefs
-    classSymNames <- classST$getSymbolNames()
-    ADproxySymNames <- classSymNames[ grepl("ADproxyModel_", classSymNames ) ]
-    for(sn in ADproxySymNames) {
-        newSym <-
-            cppVarSym2templateTypeCppVarSym(classST$getSymbolObject(sn),
-                                            replacementBaseType = "CppAD::AD",
-                                            replacementTemplateArgs = "double") ## These end up the header file so they should not use TYPE_ as that is not typedef'd there
-        classST$addSymbol(newSym, allowReplace = TRUE)
-    }
-  
-    NULL
+  }
+  ## classST <- .self$objectDefs
+  ## classSymNames <- classST$getSymbolNames()
+  ## ADproxySymNames <- classSymNames[ grepl("ADproxyModel_", classSymNames ) ]
+  ## for(sn in ADproxySymNames) {
+  ##   newSym <-
+  ##     cppVarSym2templateTypeCppVarSym(classST$getSymbolObject(sn),
+  ##                                     replacementBaseType = "CppAD::AD",
+  ##                                     replacementTemplateArgs = "double") ## These end up the header file so they should not use TYPE_ as that is not typedef'd there
+  ##   classST$addSymbol(newSym, allowReplace = TRUE)
+  ## }
+
+  NULL
 }
 
 makeSingleCopyCall <- function(varName, cppCopyType,

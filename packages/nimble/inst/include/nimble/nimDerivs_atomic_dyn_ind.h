@@ -23,7 +23,8 @@ void dyn_ind_set(CppAD::vector<CppAD::AD<double> > &y,
                  const size_t offset=0,
                  const size_t nrow=1, const int ny_=-1);
 
-
+/////////////
+// Compile-time type processing for dyn_ind_get and dyn_ind_set templates
 template<class I_>
 struct IsCppAD {
   // This case catches all NON-CppAD
@@ -46,29 +47,44 @@ struct IsCppAD<const CppAD::AD<S_> > {
   static constexpr bool ans=true;
 };
 
-template<class I1, class I2>
-struct AnyCppAD {
-  typedef CppAD::AD<double> type;
-  // make viable if I1 or I2 is a CppAD type
-
-  template<bool TF>
-  struct truefalse {
-    static constexpr bool value = true;
-  };
-  template<>
-  struct truefalse<false> {
-    static constexpr bool value = false;
-  };
-
-  static constexpr bool value =
-    std::conditional<IsCppAD<I1>::ans,
-                     truefalse<true>,
-                     typename std::conditional<IsCppAD<I2>::ans,
-                                               truefalse<true>,
-                                               truefalse<false> >::type >::type::value;
-
+template<bool TF>
+struct dyn_ind_truefalse {
+  static constexpr bool value = true;
+};
+template<>
+struct dyn_ind_truefalse<false> {
+  static constexpr bool value = false;
 };
 
+
+template<class I1, class I2>
+struct AnyCppAD2D {
+  typedef CppAD::AD<double> type;
+  // make viable if I1 or I2 is a CppAD type
+  static constexpr bool value =
+    std::conditional<IsCppAD<I1>::ans,
+                     dyn_ind_truefalse<true>,
+                     typename std::conditional<IsCppAD<I2>::ans,
+                                               dyn_ind_truefalse<true>,
+                                               dyn_ind_truefalse<false> >::type >::type::value;
+};
+
+
+template<class I1, class I2, class I3>
+struct AnyCppAD3D {
+  typedef CppAD::AD<double> type;
+  // make viable if I1 or I2 is a CppAD type
+  static constexpr bool value =
+    std::conditional<IsCppAD<I1>::ans,
+                     dyn_ind_truefalse<true>,
+                     typename std::conditional<IsCppAD<I2>::ans,
+                                               dyn_ind_truefalse<true>,
+                                               typename std::conditional<IsCppAD<I3>::ans,
+                                                                         dyn_ind_truefalse<true>,
+                                                                         dyn_ind_truefalse<false> >::type >::type>::type::value;
+};
+
+// Extract a value whether from a CppAD or non-CppAD type
 template<class T>
 struct CppADvalue {
   static size_t v(const T &x){return static_cast<size_t>(x);}
@@ -79,6 +95,10 @@ struct CppADvalue<CppAD::AD<T> > {
   static size_t v(const CppAD::AD<T> &x){return static_cast<size_t>(CppAD::Value(x));}
 };
 
+///////////////////
+// dyn_ind_get
+//////////////////
+// 1D get
 // Non-CppAD case for t[i] when t is a pointer. Neither t nor i are CppAD.
 template<class T_, class I_ >
 inline typename std::conditional<IsCppAD<I_>::no, T_, void>::type
@@ -87,7 +107,8 @@ stoch_ind_get(const T_ *t, const I_ &i) {
   return t[i];
 }
 
-// 1D CppAD case when i is not a CppAD type
+// 1D get
+// index is not CppAD type
 template<class I_>
 typename std::conditional<IsCppAD<I_>::no,
                           CppAD::AD<double>,
@@ -97,18 +118,10 @@ stoch_ind_get(const NimArr<1, CppAD::AD<double> > &x, const I_ &i ) {
   return x[i];
 }
 
-// 2D case when i1 and i2 are not CppAD
-template<class I1_, class I2_,
-         typename std::enable_if<!AnyCppAD<I1_, I2_>::value, int>::type = 1>
-CppAD::AD<double> stoch_ind_get(const NimArr<2, CppAD::AD<double> > &x,
-              const I1_ &i1,
-              const I2_ &i2) {
-  //std::cout<<"in template 2D stoch_ind_get"<<std::endl;
-  return x(i1, i2);
-}
-
-// 1D CppAD when i is also CppAD. This could be directly coded with I_ set to CppAD::AD<double>,
-// but we put it in template form to get that right building to higher dimensional cases.
+// 1D get
+// index is a CppAD type
+// (This could be directly coded with I_ set to CppAD::AD<double>,
+//  but we put it in template form to get that right building to higher dimensional cases.)
 template<class I_>
 inline typename std::conditional<IsCppAD<I_>::yes,
                                  CppAD::AD<double>,
@@ -123,10 +136,21 @@ stoch_ind_get(const NimArr<1, CppAD::AD<double> > &x,
   return dyn_ind_get(x_, i); // dummy version: x[CppAD::Value(i)];
 }
 
-// Any mix of indices should be allowed through here,
-// as long as at least one is CppAD
+// 2D get
+// i1 and i2 are not CppAD
 template<class I1_, class I2_,
-         typename std::enable_if<AnyCppAD<I1_, I2_>::value, int>::type = 1>
+         typename std::enable_if<!AnyCppAD2D<I1_, I2_>::value, int>::type = 1>
+CppAD::AD<double> stoch_ind_get(const NimArr<2, CppAD::AD<double> > &x,
+                                const I1_ &i1,
+                                const I2_ &i2) {
+  //std::cout<<"in template 2D stoch_ind_get"<<std::endl;
+  return x(i1, i2);
+}
+
+// 2D get
+// at least one of i1 or i2 is CppAD
+template<class I1_, class I2_,
+         typename std::enable_if<AnyCppAD2D<I1_, I2_>::value, int>::type = 1>
 CppAD::AD<double> stoch_ind_get(const NimArr<2, CppAD::AD<double> > &x,
                                 const I1_ &i1,
                                 const I2_ &i2) {
@@ -146,6 +170,50 @@ CppAD::AD<double> stoch_ind_get(const NimArr<2, CppAD::AD<double> > &x,
   return dyn_ind_get(x_, flat_i);
 }
 
+// 3D get
+// i1, i2, and i3 and not CppAD
+template<class I1_, class I2_, class I3_,
+         typename std::enable_if<!AnyCppAD3D<I1_, I2_, I3_>::value, int>::type = 1>
+CppAD::AD<double> stoch_ind_get(const NimArr<3, CppAD::AD<double> > &x,
+                                const I1_ &i1,
+                                const I2_ &i2,
+                                const I3_ &i3) {
+  //std::cout<<"in template 2D stoch_ind_get"<<std::endl;
+  return x(i1, i2, i3);
+}
+
+
+// 3D get
+// at least one index is CppAD
+template<class I1_, class I2_, class I3_,
+         typename std::enable_if<AnyCppAD3D<I1_, I2_, I3_>::value, int>::type = 1>
+CppAD::AD<double> stoch_ind_get(const NimArr<3, CppAD::AD<double> > &x,
+                                const I1_ &i1,
+                                const I2_ &i2,
+                                const I3_ &i3) {
+  //std::cout<<"in CppAD 2D stoch_ind_get"<<std::endl;
+  if(x.isMap()) std::cout<<"have not implemented NimArr map case yet."<<std::endl;
+  const int *strides = x.strides();
+  CppAD::AD<double> flat_i = i1*strides[0] + i2*strides[1] + i3*strides[2]; // ignore x.offset because map case needs special handling anyway
+  if(CppAD::Constant(flat_i)) return x(CppADvalue<I1_>::v(i1), CppADvalue<I2_>::v(i2), CppADvalue<I3_>::v(i3));
+  CppAD::vector< CppAD::AD<double> > x_(x.size());
+  const int *xdim = x.dim();
+  size_t new_i = 0;
+  for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
+    for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+      for(size_t j3 = 0; j3 < xdim[2]; ++j3 ) {
+        x_[new_i++] = x(j1, j2, j3);
+      }
+    }
+  }
+  return dyn_ind_get(x_, flat_i);
+}
+
+///////////////////
+// stoch_ind_set
+
+// 1D set
+// base class
 template<class I_>
 class stoch_ind_set1_base_c {
   public:
@@ -155,6 +223,8 @@ class stoch_ind_set1_base_c {
   I_ i;
 };
 
+// 1D set
+// index is not CppAD
 template<class I_>
 class stoch_ind_set1_c : public stoch_ind_set1_base_c<I_> {
   using stoch_ind_set1_base_c<I_>::stoch_ind_set1_base_c;
@@ -168,6 +238,8 @@ class stoch_ind_set1_c : public stoch_ind_set1_base_c<I_> {
   }
 };
 
+// 1D set
+// index is CppAD
 template<>
 class stoch_ind_set1_c<CppAD::AD<double> > : public stoch_ind_set1_base_c<CppAD::AD<double> > {
   using stoch_ind_set1_base_c<CppAD::AD<double> >::stoch_ind_set1_base_c;
@@ -186,6 +258,15 @@ class stoch_ind_set1_c<CppAD::AD<double> > : public stoch_ind_set1_base_c<CppAD:
   }
 };
 
+// 1D set
+// function to catch types and dispatch to classes
+template<class I_>
+stoch_ind_set1_c<I_> stoch_ind_set(NimArr<1, CppAD::AD<double> > &x, const I_ &i) {
+  return stoch_ind_set1_c<I_>(x, i);
+}
+
+// 2D set
+// base class
 template<class I1_, class I2_>
 class stoch_ind_set2_base_c {
   public:
@@ -195,9 +276,13 @@ class stoch_ind_set2_base_c {
   I1_ i1; I2_ i2;
 };
 
+// 2D set
+// template base class for specialization
 template<class I1_, class I2_, bool UseCppAD = false>
 class stoch_ind_set2_c;
 
+// 2D set
+// no indicies are CppAD
 template<class I1_, class I2_>
 class stoch_ind_set2_c<I1_, I2_, false> : public stoch_ind_set2_base_c<I1_, I2_> {
   using stoch_ind_set2_base_c<I1_, I2_>::stoch_ind_set2_base_c;
@@ -212,6 +297,8 @@ class stoch_ind_set2_c<I1_, I2_, false> : public stoch_ind_set2_base_c<I1_, I2_>
   }
 };
 
+// 2D set
+// at least one index is CppAD
 template<class I1_, class I2_>
 class stoch_ind_set2_c<I1_, I2_, true> : public stoch_ind_set2_base_c<I1_, I2_> {
   using stoch_ind_set2_base_c<I1_, I2_>::stoch_ind_set2_base_c;
@@ -241,17 +328,96 @@ class stoch_ind_set2_c<I1_, I2_, true> : public stoch_ind_set2_base_c<I1_, I2_> 
   }
 };
 
-template<class I_>
-stoch_ind_set1_c<I_> stoch_ind_set(NimArr<1, CppAD::AD<double> > &x, const I_ &i) {
-  return stoch_ind_set1_c<I_>(x, i);
-}
-
+// 2D set
+// function to catch types and dispatch to classes
 template<class I1_, class I2_>
-stoch_ind_set2_c<I1_, I2_, AnyCppAD<I1_, I2_>::value>
+stoch_ind_set2_c<I1_, I2_, AnyCppAD2D<I1_, I2_>::value>
 stoch_ind_set(NimArr<2, CppAD::AD<double> > &x,
                                          const I1_ &i1,
                                          const I2_ &i2) {
-  return stoch_ind_set2_c<I1_, I2_, AnyCppAD<I1_, I2_>::value>(x, i1, i2);
+  return stoch_ind_set2_c<I1_, I2_, AnyCppAD2D<I1_, I2_>::value>(x, i1, i2);
+}
+
+
+///////////////
+// 3D set
+
+// 3D set
+// base class
+template<class I1_, class I2_, class I3_>
+class stoch_ind_set3_base_c {
+  public:
+  typedef NimArr<3, CppAD::AD<double> > ArrADd;
+  ArrADd *x_ptr;
+  stoch_ind_set3_base_c(ArrADd &x_, const I1_ &i1_, const I2_ &i2_, const I3_ &i3_) : x_ptr(&x_), i1(i1_), i2(i2_), i3(i3_) {}
+  I1_ i1; I2_ i2; I3_ i3;
+};
+
+// 3D set
+// template base class for specialization
+template<class I1_, class I2_, class I3_, bool UseCppAD = false>
+class stoch_ind_set3_c;
+
+// 3D set
+// no indicies are CppAD
+template<class I1_, class I2_, class I3_>
+class stoch_ind_set3_c<I1_, I2_, I3_, false> : public stoch_ind_set3_base_c<I1_, I2_, I3_> {
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::stoch_ind_set3_base_c;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::x_ptr;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::i1;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::i2;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::i3;
+  public:
+  CppAD::AD<double> operator=(const CppAD::AD<double> &v) {
+    //std::cout<<"In operator= for template 2D stoch_ind_set_c"<<std::endl;
+    (*x_ptr)(i1, i2, i3) = v;
+    return v;
+  }
+};
+
+// 3D set
+// at least one index is CppAD
+template<class I1_, class I2_, class I3_>
+class stoch_ind_set3_c<I1_, I2_, I3_, true> : public stoch_ind_set3_base_c<I1_, I2_, I3_> {
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::stoch_ind_set3_base_c;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::x_ptr;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::i1;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::i2;
+  using stoch_ind_set3_base_c<I1_, I2_, I3_>::i3;
+  public:
+  CppAD::AD<double> operator=(const CppAD::AD<double> &v) {
+    //std::cout<<"In operator= for CppAD 2D stoch_ind_set_c"<<std::endl;
+    if((*x_ptr).isMap()) std::cout<<"have not implemented NimArr map case yet."<<std::endl;
+    const int *strides = (*x_ptr).strides();
+    CppAD::AD<double> flat_i = i1*strides[0] + i2*strides[1] + i3*strides[2]; // ignore x.offset because map case needs special handling anyway
+    if(CppAD::Constant(flat_i)) {
+      (*x_ptr)(CppADvalue<I1_>::v(i1), CppADvalue<I2_>::v(i2), CppADvalue<I3_>::v(i3)) = v;
+    } else {
+      const int *xdim = (*x_ptr).dim();
+      size_t new_i = 0;
+      CppAD::vector< CppAD::AD<double> > x_((*x_ptr).size());
+      for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
+        for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+          for(size_t j3 = 0; j3 < xdim[2]; ++j3 ) {
+            x_[new_i++] = (*x_ptr)(j1, j2, j3);
+          }
+        }
+      }
+      dyn_ind_set(x_, flat_i, v);
+    }
+    return v;
+  }
+};
+
+// 3D set
+// function to catch types and dispatch to classes
+template<class I1_, class I2_, class I3_>
+stoch_ind_set3_c<I1_, I2_, I3_, AnyCppAD3D<I1_, I2_, I3_>::value>
+stoch_ind_set(NimArr<3, CppAD::AD<double> > &x,
+              const I1_ &i1,
+              const I2_ &i2,
+              const I3_ &i3) {
+  return stoch_ind_set3_c<I1_, I2_, I3_, AnyCppAD3D<I1_, I2_, I3_>::value>(x, i1, i2, i3);
 }
 
 class atomic_dyn_ind_get_class : public CppAD::atomic_three< double >, public nimble_atomic_base {

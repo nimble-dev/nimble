@@ -1714,7 +1714,15 @@ test_that("Laplace with nested random effects works", {
   expect_equal(nimres$randomEffects$estimates[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
 })
 
+## This test is crashing after changes for dyn_ind handling
 test_that("Laplace error trapping of wrong-length parameters works", {
+  ## debugging
+  library(nimble)
+  library(testthat)
+  nimbleOptions(pauseAfterWritingFiles=TRUE)
+  ###
+
+
   m <- nimbleModel(
     nimbleCode({
       d[1:3] ~ ddirch(alpha[1:3]) # params
@@ -1755,6 +1763,16 @@ test_that("Laplace error trapping of wrong-length parameters works", {
   expect_output(expect_error(cmLaplace$calcLaplace(c(.4, .5, .1), trans = TRUE)), "should be length")
   expect_output(expect_error(cmLaplace$gr_logLik(c(.4, .5, .1), trans = TRUE)), "should be length")
   expect_output(expect_error(cmLaplace$gr_Laplace(c(.4, .5, .1), trans = TRUE)), "should be length")
+
+  ## debugging
+mLaplace$paramsTransform$transform(c(.4,.5,.1))
+mLaplace$paramsTransform$inverseTransform(c(.4,.5))
+  output <- cmLaplace$gr_logLik(c(.4, .5), trans=TRUE)
+  output <- cmLaplace$gr_logLik_pTransformed(c(.4, .5))
+  output <- cmLaplace$calcLogLik(c(.4, .5), trans=TRUE)
+  output <- cmLaplace$calcLogLik_pTransformed(c(.4, .5))
+  output <- cmLaplace$findMLE(c(.4, .5, .1), "BFGS", TRUE)
+  ##
 
   output <- cmLaplace$findMLE(c(.4, .5, .1))
   expect_true(all(output$counts > 0))

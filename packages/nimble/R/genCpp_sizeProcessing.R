@@ -1651,12 +1651,13 @@ sizeRCfunction <- function(code, symTab, typeEnv, nfmObj, RCfunProc) {
     returnType <- nfmObj$returnType
     ## argInfo <- nfmObj$argInfo
     ## Insert buildDerivs label into code$aux
-    if(is.list(nfmObj$buildDerivs)) {
-        if(is.null(code$aux))
-            code$aux <- list(buildDerivs = TRUE)
-        else
-            code$aux[['buildDerivs']] <- TRUE
-    }
+    thisBuildDerivs <- is.list(nfmObj$buildDerivs)
+
+    if(is.null(code$aux))
+      code$aux <- list(buildDerivs = thisBuildDerivs)
+    else
+      code$aux[['buildDerivs']] <- thisBuildDerivs
+
     code$name <- nfmObj$uniqueName
     returnSymbol <- RCfunProc$compileInfo$returnSymbol
     argSymTab <- RCfunProc$compileInfo$origLocalSymTab
