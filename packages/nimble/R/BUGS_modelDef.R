@@ -340,7 +340,7 @@ modelDefClass$methods(assignBUGScode = function(code) {
 })
 modelDefClass$methods(assignConstants = function(constants) {
     ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
-    constantsEnv <<- new.env()
+    constantsEnv <<- new.env() 
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
@@ -385,6 +385,10 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
         }
     }
 
+    ## update added Dec 2023, DT ... tbt earlier update in newModel method (Oct 2015)
+    ## handling for JAGS style inits (a list of lists)
+    if(length(initsList) > 0 && is.list(initsList[[1]]))   initsList <- initsList[[1]]
+    ##
     # add dimensions of any *non-scalar* inits to dimensionsList
     # we'll try to be smart about this: check for duplicate names in inits and dimensions, and make sure they agree
     for(i in seq_along(initsList)) {
@@ -1474,6 +1478,10 @@ determineContextSize <- function(context, useContext = rep(TRUE, length(context$
     test <- try(eval(innerLoopCode, evalEnv))
     if(is(test, 'try-error'))
         stop("Could not evaluate loop syntax: is indexing information provided via 'constants'?")
+    wh <- which(!all.vars(innerLoopCode) %in% c(ls(evalEnv), context$indexVarNames))
+    if(length(wh))
+        messageIfVerbose("  [Warning] Indexing information for ", paste(all.vars(innerLoopCode)[wh], collapse = ", "),
+                " not provided in `constants`.\n            Information has been found in the user's environment,\n            but we recommend all indexing information be provided via `constants`.")
     ans <- evalEnv$iAns
     rm(list = c('iAns', context$indexVarNames[useContext]), envir = evalEnv)
     return(ans)
@@ -2079,9 +2087,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         usedIndexes <- contexts[[BUGSdecl$contextID]]$indexVarNames %in%
             unlist(all.vars(BUGSdecl$targetExpr))
         if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes) && !length(grep("^lifted", BUGSdecl$targetExpr)))
-            warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
+            messageIfVerbose("  [Warning] Multiple definitions for the same node.\n            Did you forget indexing with '",
                           paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
-                           "' on the left-hand side of '", safeDeparse(BUGSdecl$code), "'?"))
+                           "' on the left-hand side of\n            `", safeDeparse(BUGSdecl$code), "`?")
         if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {

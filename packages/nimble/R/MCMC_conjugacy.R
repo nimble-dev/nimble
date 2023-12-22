@@ -1203,7 +1203,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 expandedNodeNames <- expandedNodeNamesRaw
             }
         }
-        if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
+        if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText) && (exprText %in% expandedNodeNamesRaw)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
             ## this next block covers a **real corner case** (from a legacy BUGS model: biops) where dimensions are inferred
@@ -1215,8 +1215,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             if((length(type) > 1) && ('RHSonly'  %in% type) && !all(type == 'RHSonly'))   type <- setdiff(type, 'RHSonly')
             if(length(type) > 1) {
                 ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
-                if(exprText %in% expandedNodeNamesRaw) type <- type[which(exprText == expandedNodeNamesRaw)]
-                else stop('internal error #1 in cc_expandDetermNodesInExpr method', call. = FALSE)
+                type <- type[which(exprText == expandedNodeNamesRaw)]
             }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
@@ -1225,7 +1224,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansionsNode))
             }
             if(type == 'RHSonly') return(expr)
-            stop('internal error #2 in cc_expandDetermNodesInExpr method', call. = FALSE)
+            stop(paste0('Unexpected model structure for expression: ', exprText, '. Please report this to the NIMBLE development team.'))
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         if(is.call(newExpr) && newExpr[[1]] == 'structureExpr') {  ## recurse, if there's a newly created structureExpr()

@@ -1031,6 +1031,10 @@ We will not investigate results in detail, but here is a summary to see that rea
 summary(coda::as.mcmc(samples))
 ```
 
+### Particle filter samplers
+
+The `nimbleSMC` package provides samplers that perform particle MCMC, primarily intended for state-space or hidden Markov models of time-series data.
+     
 #### Automatic parameter transformation
 
 In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(sec:parameter-transform).

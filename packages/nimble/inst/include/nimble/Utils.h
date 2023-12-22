@@ -169,7 +169,8 @@ bool nimNot(bool x);
 
 static inline bool isTRUE(bool x) {return(x);}
 
-double pow_int(double a, double b);
+inline double pow_int(double a, double b) {return pow(a, round(b));}
+inline double pow_int(double a, int b) {return pow(a, static_cast<double>(b));}
 
 // All the nimDerivs_FOO functions
 // were templated, but in a rush we
@@ -183,71 +184,71 @@ double pow_int(double a, double b);
 #define T CppAD::AD<double>
 
 // needed for link functions
-double ilogit(double x);
+inline double ilogit(double x) {return(1./(1. + exp(-x)));}
 //template<class T>
 inline T nimDerivs_ilogit(T x){
   return(1./(1. + exp(-x)));
 }
 
-double icloglog(double x);
+inline double icloglog(double x) {return(1.-exp(-exp(x)));}
 //template<class T>
 inline T nimDerivs_icloglog(T x){
   return(1.-exp(-exp(x)));
 }
 
-double iprobit(double x);
-double probit(double x);
+inline double iprobit(double x) {return(pnorm(x, 0., 1., 1, 0));}
+inline double probit(double x) {return(qnorm(x, 0., 1., 1, 0));}
 
 //double abs(double x);
-double cloglog(double x);
+inline double cloglog(double x) {return(log(-log(1.-x)));}
 //template<class T>
 inline T nimDerivs_cloglog(T x){
   return(log(-log(T(1) - x)));
 }
 
-int nimEquals(double x1, double x2);
+inline int nimEquals(double x1, double x2) {return(x1 == x2 ? 1 : 0);}
 //template<class T>
 inline T nimDerivs_nimEquals(T x1, T x2){
-  return(CondExpEq(x1, x2, T(1), T(0))); 
+  return(CondExpEq(x1, x2, T(1), T(0)));
 }
 
-double nimbleIfElse(bool condition, double x1, double x2);
-double lfactorial(double x);
-double factorial(double x);
+inline double nimbleIfElse(bool condition, double x1, double x2) {return(condition ? x1 : x2);}
+inline double lfactorial(double x) {return(lgammafn(x + 1));}
+inline double factorial(double x) {return(gammafn(1+x));}
 //double loggam(double x);
-double logit(double x);
+inline double logit(double x) {return(log(x / (1.-x)));}
 //template<class T>
 inline T nimDerivs_logit(T x) {
   return(log(x / (T(1)-x)));
 }
 
-double nimRound(double x);
-double pairmax(double x1, double x2);
+inline double nimRound(double x) {return(round(x));}
+inline double pairmax(double x1, double x2) {return(x1 > x2 ? x1 : x2);}
 //template<class T>
 inline T nimDerivs_pairmax(T x1, T x2) {
   return(CondExpGt(x1, x2, x1, x2));
 }
 
-double pairmin(double x1, double x2);
+inline double pairmin(double x1, double x2) {return(x1 < x2 ? x1 : x2);}
 //template<class T>
 inline T nimDerivs_pairmin(T x1, T x2) {
   return(CondExpLt(x1, x2, x1, x2));
 }
 
 //double phi(double x);
-int nimStep(double x); 
+inline int nimStep(double x) { return(x >= 0 ? 1 : 0);}
 //template<class T>
 inline T nimDerivs_nimStep(T x){
 	return(CondExpGe(x, T(0), T(1), T(0)));
-} 
+}
 
-double cube(double x);
+inline double cube(double x) {return(x*x*x);}
 //template<class T>
 inline T nimDerivs_cube(T x){
 	return(x*x*x);
 }
 
-double inprod(double v1, double v2);
+inline double inprod(double v1, double v2) {return(v1*v2);}
 //template<class T>
 inline T nimDerivs_inprod(T v1, T v2) {
   return(v1*v2);
