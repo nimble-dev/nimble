@@ -210,10 +210,13 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                             code$sizeExprs <- list()
                             code$toEigenize <- 'maybe'
                         } else {
-                            warning(paste0("variable '",
-                                           code$name,
-                                           "' has not been created yet."),
-                                    call.=FALSE) 
+                            if(nimbleOptions('errorIfMissingNFVariable')) {
+                                stop("variable `",
+                                     code$name,
+                                     "` is not available.",
+                                     call.=FALSE)
+                            } else
+                                messageIfVerbose("  [Warning] Variable `", code$name, "` is not available.")
                         }
                 }
             } else {
