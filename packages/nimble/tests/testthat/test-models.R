@@ -545,7 +545,7 @@ test_that("warnings for multiply-defined model nodes:", {
             mu ~ dnorm(mu0[i],1)
         }
     })
-    expect_warning(m <- nimbleModel(code), "'i' on the left-hand side of 'mu ~ ", fixed = TRUE)
+    expect_message(m <- nimbleModel(code), "Multiple definitions", fixed = TRUE)
     code <- nimbleCode({
         tmp ~ dnorm(0,1)
         for(i in 1:3) {
@@ -553,7 +553,7 @@ test_that("warnings for multiply-defined model nodes:", {
             mu ~ dnorm(0,1)
         }
     })
-    expect_warning(m <- nimbleModel(code), "'i' on the left-hand side of 'mu ~ ", fixed = TRUE)
+    expect_message(m <- nimbleModel(code), "Multiple definitions", fixed = TRUE)
     code <- nimbleCode({
         tmp ~ dnorm(0,1)
         for(i in 1:3) {
@@ -561,7 +561,7 @@ test_that("warnings for multiply-defined model nodes:", {
                 mu[i+2,1] ~ dnorm(0,1)
         }
     })
-    expect_warning(m <- nimbleModel(code), "'j' on the left-hand side of 'mu[i + 2, 1] ~ ", fixed = TRUE)
+    expect_message(m <- nimbleModel(code), "Multiple definitions", fixed = TRUE)
     code <- nimbleCode({
         tmp ~ dnorm(0,1)
         for(i in 1:3) {
@@ -570,7 +570,7 @@ test_that("warnings for multiply-defined model nodes:", {
                 mu[i+2,1,1] ~ dnorm(0,1)
         }
     })
-    expect_warning(m <- nimbleModel(code), "'j,k' on the left-hand side of 'mu[i + 2, 1, 1] ~ ", fixed = TRUE)
+    expect_message(m <- nimbleModel(code), "Multiple definitions", fixed = TRUE)
 })
 
 test_that("handling of missing indexes of expressions:", {
