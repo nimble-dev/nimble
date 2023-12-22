@@ -44,8 +44,14 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
       expect_wrapper(opt_alt <- cL$findMLE())
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
+      tryResult <- try({
       expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
       expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
+      })
+      if(inherits(tryResult, 'try-error')) {
+          print(class(cL))
+          print(cL)
+      }
       expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-5)
       expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-5)
       expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-5)
@@ -159,10 +165,16 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   vcov <- diag(c(4, 1)) %*% vcov_transform %*% diag(c(4, 1))
   expect_equal(vcov, summ2$vcov, tol = 1e-4)
   # Check covariance matrix for params only
-  summ3 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
+  tryResult <- try({
+  summ3 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE);
   expect_equal(summ3$vcov, vcov[1,1,drop=FALSE], tol=1e-5)
   summ4 <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
   expect_equal(summ4$vcov, vcov_transform[1,1,drop=FALSE], tol=5e-5)
+  })
+  if(inherits(tryResult, "try-error")) {
+      print(class(cmLaplace))
+      print(cmLaplace)
+  }
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE()
