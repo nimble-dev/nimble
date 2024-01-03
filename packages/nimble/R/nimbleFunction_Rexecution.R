@@ -1326,8 +1326,8 @@ nimOptimDefaultControl <- function() {
 #' NIMBLE wrapper around R's builtin \code{\link{integrate}}. Adaptive quadrature
 #' of functions of one variable over a finite or infinite interval.
 #'
-#' @param f nimbleFunction of one input for which the integral is desired. See below
-#'          for details on requirements for how \code{f} must be defined.
+#' @param f nimbleFunction of one input for which the integral is desired.
+#' See below for details on requirements for how \code{f} must be defined.
 #' @param lower an optional scalar lower bound for the input of the function.
 #' @param upper an optional scalar upper bound for the input of the function.
 #' @param param a required vector of additional parameters to the function
@@ -1340,9 +1340,12 @@ nimOptimDefaultControl <- function() {
 #' @param abs.tol: absolute accuracy requested.
 #' @param stop.on.error logical. Not used at the moment.
 #'
-#' @return The estimate of the integral. In the future, this may be a list
-#'         containing additional information such as the uncertainty of the
-#'         estimate.
+#' @return A vector with two values, the first the estimate of the integral and
+#' the second an estimate of the modulus of the absolute error. In the future,
+#' the user will ideally have the option of having either (a) just the estimated
+#' integral, (b) a vector containing the estimate and the uncertainty, or
+#' (c) a list containing the estimate,  the uncertainty and a message indicating
+#' the status of the calculation.
 #'
 #' @details
 #' The function \code{f} should take two arguments, the first of type
@@ -1362,8 +1365,6 @@ nimOptimDefaultControl <- function() {
 #' UNDER CONSTRUCTION
 nimIntegrate <- function(f, lower, upper, param, subdivisions = 100L,
           rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol, stop.on.error = TRUE) {
-    ## Note that we can't keep R's use of `.Machine$double.eps^0.25` as
-    ## we can't compile that syntax.
     integrate( f, lower, upper, param, subdivisions = subdivisions,
               rel.tol = rel.tol, abs.tol = abs.tol,
               stop.on.error = stop.on.error)$value

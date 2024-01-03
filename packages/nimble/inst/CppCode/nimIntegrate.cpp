@@ -26,7 +26,6 @@
 #include <float.h>
 #include <Rmath.h> /* for fmax2, fmin2, imin2 */
 
-//#include <R_ext/Applic.h>
 #include <nimble/nimIntegrate.h>
 #include <string.h>
 #include <algorithm>
@@ -36,21 +35,6 @@
 // typedef taken from "Writing R Extensions"
 typedef void integr_fn(double *x, int n, void *ex);
 
-
-// some_actual_integrator is a toy to be replaced by
-// a call to Rdqags or Rdqagi
-double some_actual_integrator(integr_fn my_fn, // my_fn will be NimIntegrateProblem::fn
-                              void *ex,
-                              double lower,
-                              double upper) {
-  int n = 1;
-  std::vector<double> vals(n);
-  vals[0] = (upper - lower)/2.;
-  my_fn( &vals[0], n, ex);
-  double sum = 0.;
-  for(int i = 0; i < n; ++i) sum += vals[i];
-  return sum;
-}
 
 void NimIntegrateProblem::fn(double *x, int n, void *ex) {
   NimIntegrateProblem* problem = static_cast<NimIntegrateProblem*>(ex);
@@ -65,13 +49,6 @@ void NimIntegrateProblem::fn(double *x, int n, void *ex) {
 
 double NimIntegrateProblem::integrate() {
   void* ex = this;
-  //proof of concept
-  /*
-  double result = some_actual_integrator(NimIntegrateProblem::fn,
-                                         ex,
-                                         lower_, upper_);
-  */
-
   result = 0.0;
 
   // Not sure if the allocation should be here or in constructor.
@@ -81,7 +58,7 @@ double NimIntegrateProblem::integrate() {
   if (std::isfinite(lower_) && std::isfinite(upper_)) {
     // Note that `abs_tol` is before `rel_tol` in `Rqdag{s,i}` signature.
     Rdqags(NimIntegrateProblem::fn, ex, &lower_, &upper_,
-           &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ier,
+           &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ierr,
            &subdivisions_, &lenw, &last, iwork, work); 
   } else {
     if (std::isfinite(lower_)) {
@@ -94,7 +71,7 @@ double NimIntegrateProblem::integrate() {
       lower_ = 0.0;
     }
     Rdqagi(NimIntegrateProblem::fn, ex, &lower_, &inf,
-           &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ier,
+           &abs_tol_, &rel_tol_, &result, &abserr, &neval, &ierr,
            &subdivisions_, &lenw, &last, iwork, work); 
   }
  

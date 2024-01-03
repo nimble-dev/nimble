@@ -22,9 +22,12 @@
 #ifndef NIMINTEGRATE_H_
 #define NIMINTEGRATE_H_
 
-#include "nimOptim.h" // has NimBound stuff and other headers needed
-// CJP note: shouldn't we just #include the specific files we need,
-// namely NimArr.h and perhaps nothing else?
+#include <nimble/NimArr.h>
+#include <nimble/predefinedNimbleLists.h>
+#include <nimble/smartPtrs.h>
+#include <nimble/nimbleCppAD.h>
+#include <algorithm>
+#include <string>
 
 class NimIntegrateProblem {
 public:
@@ -39,7 +42,7 @@ public:
     abs_tol_(abs_tol),
     stop_on_error_(stop_on_error) {
 
-    // Actually probably no point in doing this here rather than in `.integrate()`
+    // Probably no point in doing this here rather than in `.integrate()`,
     // since object is instantiated each time `nimIntegrate()` is called.
     lenw = 4*subdivisions_;
     iwork = new int[subdivisions_];
@@ -69,7 +72,7 @@ public:
   double result;
   double abserr;
   int neval;
-  int ier;
+  int ierr;
   int lenw;
   int last;
   int* iwork;
