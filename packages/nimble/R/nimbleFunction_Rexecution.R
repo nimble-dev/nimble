@@ -1341,7 +1341,9 @@ nimOptimDefaultControl <- function() {
 #' @param subdivisions the maximum number of subintervals.
 #' @param rel.tol relative accuracy requested.
 #' @param abs.tol: absolute accuracy requested.
-#' @param stop.on.error logical. Not used at the moment.
+#' @param stop.on.error logical. If \code{TRUE} (the default) an error stops the
+#'        function. Otherwise some errors will give a result with the error
+#'        code given in the third element of the result vector.
 #'
 #' @return A vector with three values, the first the estimate of the integral,
 #' the second an estimate of the modulus of the absolute error, and the third

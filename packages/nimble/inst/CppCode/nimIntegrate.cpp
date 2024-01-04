@@ -80,6 +80,9 @@ NimArr<1, double> NimIntegrateProblem::integrate() {
  
   //delete [] iwork;
   //delete [] work;
+  if (ierr == 6 || (stop_on_error_ && ierr > 0)) {
+      NIMERROR("In nimIntegrate: numerical integration error with code %i\n", ierr);
+  }
   output[0] = result;
   output[1] = abserr;
   output[2] = (double) ierr;
