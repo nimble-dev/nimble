@@ -47,8 +47,11 @@ void NimIntegrateProblem::fn(double *x, int n, void *ex) {
             x);
 }
 
-double NimIntegrateProblem::integrate() {
+NimArr<1, double> NimIntegrateProblem::integrate() {
   void* ex = this;
+  NimArr<1, double> output;
+  output.setSize(3, false, false);
+  
   result = 0.0;
 
   // Not sure if the allocation should be here or in constructor.
@@ -77,7 +80,10 @@ double NimIntegrateProblem::integrate() {
  
   //delete [] iwork;
   //delete [] work;
-  return result;
+  output[0] = result;
+  output[1] = abserr;
+  output[2] = (double) ierr;
+  return output;
 }
 
 

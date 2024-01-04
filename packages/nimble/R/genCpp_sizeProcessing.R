@@ -1508,9 +1508,9 @@ sizeIntegrate <- function(code, symTab, typeEnv) {
   code$args[[1]]$type <- 'function'  # flag so not looked for in symTab (issue 1356)
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   typeEnv$.allowFunctionAsArgument <- FALSE
-  code$sizeExprs <- list()
+  code$sizeExprs <- list(3)
   code$toEigenize <- "no"
-  code$nDim <- 0
+  code$nDim <- 1
   code$type <- 'double'
   fnCode <- code$args$f
   if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {

@@ -49,7 +49,7 @@ public:
     work = new double[lenw];
   };
 
-  double integrate();
+  NimArr<1, double> integrate();
   ~NimIntegrateProblem();
  private:
   static void fn(double *x, int n, void *ex);
@@ -94,7 +94,7 @@ class NimIntegrateProblem_Fun : public NimIntegrateProblem {
 };
 
 template <class Fn>
-inline double nimIntegrate(
+NimArr<1, double> nimIntegrate(
     Fn fn,
     double lower,
     double upper,

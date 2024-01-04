@@ -1343,11 +1343,23 @@ nimOptimDefaultControl <- function() {
 #' @param abs.tol: absolute accuracy requested.
 #' @param stop.on.error logical. Not used at the moment.
 #'
-#' @return A vector with two values, the first the estimate of the integral and
-#' the second an estimate of the modulus of the absolute error. In the future,
-#' the user will ideally have the option of having either (a) just the estimated
-#' integral, (b) a vector containing the estimate and the uncertainty, or
-#' (c) a list containing the estimate,  the uncertainty and a message indicating
+#' @return A vector with three values, the first the estimate of the integral,
+#' the second an estimate of the modulus of the absolute error, and the third
+#' a result code corresponding to the \code{message} returned by \code{integrate}.
+#' The numerical result code can be interpreted as follows:
+#' \itemize{
+#' \item \code{0}: "OK"
+#' \item \code{1}: "maximum number of subdivisions reached"
+#' \item \code{2}: "roundoff error was detected"
+#' \item \code{3}: "extremely bad integrand behaviour"
+#' \item \code{4}: "roundoff error is detected in the extrapolation table"
+#' \item \code{5}: "the integral is probably divergent"
+#' \item \code{6}: "the input is invalid"
+#' }
+#' 
+#' In the future, the user may be given other options for the form of the output,
+#' in particular just the estimated integral or  a list containing the estimate,
+#' the uncertainty and the actual message text indicating
 #' the status of the calculation.
 #'
 #' @details
@@ -1367,9 +1379,18 @@ nimOptimDefaultControl <- function() {
 #' @examples
 #' UNDER CONSTRUCTION
 nimIntegrate <- function(f, lower, upper, param, subdivisions = 100L,
-          rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol, stop.on.error = TRUE) {
-    integrate( f, lower, upper, param, subdivisions = subdivisions,
+                         rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol, stop.on.error = TRUE) {
+    output <- rep(0, 3)
+    messages <- c("OK", "maximum number of subdivisions reached", 
+        "roundoff error was detected", "extremely bad integrand behaviour", 
+        "roundoff error is detected in the extrapolation table", 
+        "the integral is probably divergent", "the input is invalid")
+    result <- integrate( f, lower, upper, param, subdivisions = subdivisions,
               rel.tol = rel.tol, abs.tol = abs.tol,
-              stop.on.error = stop.on.error)$value
+              stop.on.error = stop.on.error)
+    output[1] <- result$value
+    output[2] <- result$abs.error
+    output[3] <- which(result$message == messages) - 1
+    return(output)           
 }
 
