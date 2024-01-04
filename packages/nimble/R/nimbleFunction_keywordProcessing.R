@@ -788,7 +788,7 @@ length_char_keywordInfo <- keywordInfoClass(
 
 nimIntegrate_keywordInfo <- keywordInfoClass(
     keyword = 'nimIntegrate',
-    processor = function(code, nfProc) {
+    processor = function(code, nfProc, RCfunProc) {
         code$rel.tol <- eval(code$rel.tol)  # To handle cases where a function of `.Machine$double.eps`.
         if(code$abs.tol == quote(rel.tol)) {
             code$abs.tol <- code$rel.tol

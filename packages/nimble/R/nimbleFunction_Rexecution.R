@@ -1334,7 +1334,10 @@ nimOptimDefaultControl <- function() {
 #'               that are fixed with respect to the integration. If \code{f}
 #'               takes no additional arguments (beyond the variable of
 #'               integration), this must be provided but need not be used in
-#'               \code{f}. 
+#'               \code{f}. In order for compilation to work, this must have
+#'               length of at least two, which may require padding with
+#'               arbitrary unused value(s) when there are fewer than two
+#'               parameters.
 #' @param subdivisions the maximum number of subintervals.
 #' @param rel.tol relative accuracy requested.
 #' @param abs.tol: absolute accuracy requested.
