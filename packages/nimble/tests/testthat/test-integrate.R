@@ -188,7 +188,7 @@ test_that("Use in a user-defined model function", {
     m <- nimbleModel(code, data = list(y = y), constants = list(n=5),
                      inits = list(mu = 0))
     cm <- compileNimble(m)
-    value <- cm$calculate('y')
+    expect_silent(value <- cm$calculate('y'))
 
     mcmc <- buildMCMC(m)
     cmcmc <- compileNimble(mcmc,project=m)
@@ -291,8 +291,8 @@ test_that("Error trapping for non-vector `params` or non-scalar `lower`, `upper`
             return(output)
         }
     )
-    temporarilyAssignInGlobalEnv(integrand)
-    temporarilyAssignInGlobalEnv(fun)
+    temporarilyAssignInGlobalEnv(integrand5)
+    temporarilyAssignInGlobalEnv(fun5)
     expect_error(cfun5 <- compileNimble(fun5), "must be scalars")   
 })
 
