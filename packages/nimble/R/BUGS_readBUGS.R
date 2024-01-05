@@ -196,7 +196,9 @@ processModelFile <- function(fileName) {
   codeLines <- paste("\n", codeLines, collapse = "") # make sure first block occurs after a \n so regex below works ok; this allows me to not mistakenly find 'var', 'data', etc as names of nodes
   varBlockRegEx = "\n\\s*var\\s*(\n*.*?)(\n+\\s*(data|model|const).*)"
   dataBlockRegEx = "\n\\s*data\\s*\\{(.*?)\\}(\n+\\s*(var|model|const).*)"
-  modelBlockRegEx = "\n\\s*model\\s*\\{(.*?)\\}\\s*\n+\\s*(var|data|const).*"
+  ## 2023-12-02: added additional regex syntax so that variables beginning with `var`, `data`, `const`
+  ## after a loop are not omitted as part of var/data/const block (issue 1351).
+  modelBlockRegEx = "\n\\s*model\\s*\\{(.*?)\\}\\s*\n+\\s*(var|data|const)(\\s+\\w|\\s*\n\\s*\\w|\\s+\\{|\\s*\n\\s*\\{)"
 
   if(length(grep(varBlockRegEx, codeLines))) {
     varLines <- gsub(varBlockRegEx, "\\1", codeLines)

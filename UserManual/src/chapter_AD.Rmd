@@ -330,6 +330,12 @@ Because derivatives are not tracked for integer or logical variables, arguments 
 
 Note the more elaborate value for `buildDerivs`. Above, this was just a character vector. Here it is a named list, with each element itself being a list of control values. The control value `ignore` is a character vector of variable names to ignore in derivative tracking. `buildDerivs = 'run'` is equivalent to `buildDerivs = list(run = list())`.
 
+#### Holding variables passed from a model out of derivative tracking
+
+In the case of not tracking derivatives for variables passed from a model, using `ignore` will not work. Instead, one should use `ADbreak`. For example if one has a model variable that is passed into a nimbleFunction as the argument `x`, one would do `x_noDeriv <- ADbreak(x)`.
+
+`ignore` doesn't work because it makes the input argument be a base type (`double`) rather than an AD type (`CppAD::AD<double>`). This will not work for model variables passed in as arguments, because all model variables are of a special "AD" type.
+
 ### Using AD with multiple nimbleFunctions
 
 Derivatives will be tracked through whatever series of calculations occur in a method, possibly including calls to other methods or nimbleFunctions that have `buildDerivs` set. Let's look at an example where we have a separate function to return the element-wise square root of an input vector. The net calculation for derivatives will be `sqrt(exp(-d*x)))`.
