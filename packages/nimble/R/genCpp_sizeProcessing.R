@@ -1503,18 +1503,31 @@ sizeOptimDefaultControl <- function(code, symTab, typeEnv) {
     if(length(asserts) == 0) NULL else asserts
 }
 
+checkDim <- function(code, symTab) {
+    if(is.numeric(code))
+        return(length(code) > 1)
+    if(inherits(code, 'exprClass')) {
+        if(symTab$symbolExists(code$name)) {  # a variable
+            return(symTab$getSymbolObject(code$name)$nDim)
+        } else return(code$nDim)  # an expression
+    }
+    stop("Unexpected input to `checkDim` in `nimIntegrate` size processing.")
+}
+
 sizeIntegrate <- function(code, symTab, typeEnv) {
-  if(!"param" %in% names(code$args))
-      stop("`param` argument must be provided to `nimIntegrate`, even if unused in integrand")
-  if(symTab$getSymbolObject(code$args$param$name)$nDim != 1)
-      stop("`param` argument to `nimIntegrate` must be a one-dimensional array (scalar values can be padded with an additional unused value such as zero)")
-  if(symTab$getSymbolObject(code$args$lower$name)$nDim != 0 ||
-     symTab$getSymbolObject(code$args$upper$name)$nDim != 0)
-     stop("`lower` and `upper` arguments to `nimIntegrate` must be scalars")
   typeEnv$.allowFunctionAsArgument <- TRUE
   code$args[[1]]$type <- 'function'  # flag so not looked for in symTab (issue 1356)
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   typeEnv$.allowFunctionAsArgument <- FALSE
+
+  if(!"param" %in% names(code$args))
+      stop("`param` argument must be provided to `nimIntegrate`, even if unused in integrand")
+
+  if(checkDim(code$args$param, symTab) != 1)
+      stop("`param` argument to `nimIntegrate` must be a one-dimensional array (scalar values can be padded with an additional unused value such as zero)")
+  if(checkDim(code$args$lower, symTab) != 0 || checkDim(code$args$upper, symTab) != 0)
+      stop("`lower` and `upper` arguments to `nimIntegrate` must be scalars")
+
   code$sizeExprs <- list(3)
   code$toEigenize <- "no"
   code$nDim <- 1

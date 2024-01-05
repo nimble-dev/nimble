@@ -1369,7 +1369,7 @@ nimOptimDefaultControl <- function() {
 #' \code{double(1)}, i.e., vector. \code{f} should be vectorized
 #' in that it should also return a \code{double(1)} object, containing
 #' the result of applying the function to each element of the first
-#' argument. (The result can be calculated using vectorizezd code or
+#' argument. (The result can be calculated using vectorized NIMBLE code or
 #' using a loop.) The second argument is required to also be of type
 #' \code{double(1)}, containing any additional parameters to the function
 #' that are not being integrated over. This argument can be unused in

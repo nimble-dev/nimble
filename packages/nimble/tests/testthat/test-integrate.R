@@ -17,13 +17,14 @@ test_that("Basic use in a nimbleFunction", {
     
     fun <- nimbleFunction(
         run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            tmp = c(theta, 0)  # cannot be scalar, so pad with zero.
-            output = integrate(integrand, lower, upper, tmp)
+            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
+            output <- integrate(integrand, lower, upper, tmp)
             returnType(double(1))
             return(output)
         }
     )
-
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
     cfun <- compileNimble(fun)
 
     theta <- pi
@@ -33,7 +34,32 @@ test_that("Basic use in a nimbleFunction", {
     expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
     expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
     expect_identical(resultC[3], 0, info = "unexpected error code")
-   
+
+    ## Using explicit values for bounds of `integrate`
+    integrand2 <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            return(x*theta[1])
+            returnType(double(1))
+        }
+    )
+    
+    fun2 <- nimbleFunction(
+        run = function(theta = double(0)) {
+            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
+            output <- integrate(integrand2, .5, 1, tmp)
+            returnType(double(1))
+            return(output)
+        }
+    )
+    temporarilyAssignInGlobalEnv(integrand2)
+    temporarilyAssignInGlobalEnv(fun2)
+    cfun2 <- compileNimble(fun2)
+    resultR <- fun2(theta)
+    resultC <- cfun2(theta)
+    expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
+    expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+    expect_identical(resultC[3], 0, info = "unexpected error code")
+    
 })
 
 test_that("Basic use in a nimbleFunction with infinity bound", {
@@ -46,13 +72,15 @@ test_that("Basic use in a nimbleFunction with infinity bound", {
     
     fun <- nimbleFunction(
         run = function(lower = double(0), upper = double(0)) {
-            tmp = rep(0,2)  # cannot be scalar
-            output = integrate(integrand, lower, upper, tmp)
+            tmp <- rep(0,2)  # cannot be scalar
+            output <- integrate(integrand, lower, upper, tmp)
             returnType(double(1))
             return(output)
         }
     )
 
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
     cfun <- compileNimble(fun)
 
     resultR <- fun(0, Inf)
@@ -73,13 +101,15 @@ test_that("Error trapping", {
     
     fun <- nimbleFunction(
         run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            tmp = c(theta, 0)  # cannot be scalar, so pad with zero.
-            output = integrate(integrand, lower, upper, tmp)
+            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
+            output <- integrate(integrand, lower, upper, tmp)
             returnType(double(1))
             return(output)
         }
     )
 
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
     cfun <- compileNimble(fun)
 
     theta <- 10000  # should be enough to prompt error
@@ -87,27 +117,29 @@ test_that("Error trapping", {
     expect_error(cfun(theta, 0, 1), "integration error with code 1")
 
 
-    integrand <- nimbleFunction(
+    integrand2 <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
             return(sin(x*theta[1]))
             returnType(double(1))
         }
     )
     
-    fun <- nimbleFunction(
+    fun2 <- nimbleFunction(
         run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            tmp = c(theta, 0)  # cannot be scalar, so pad with zero.
-            output = integrate(integrand, lower, upper, tmp, stop.on.error = FALSE)
+            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
+            output <- integrate(integrand2, lower, upper, tmp, stop.on.error = FALSE)
             returnType(double(1))
             return(output)
         }
     )
 
-    cfun <- compileNimble(fun)
+    temporarilyAssignInGlobalEnv(integrand2)
+    temporarilyAssignInGlobalEnv(fun2)
+    cfun2 <- compileNimble(fun2)
 
     theta <- 10000  # should be enough to prompt error
-    resultR <- fun(theta, 0, 1)
-    resultC <- cfun(theta, 0, 1)
+    resultR <- fun2(theta, 0, 1)
+    resultC <- cfun2(theta, 0, 1)
     expect_identical(resultC[3], 1) 
 })
 
@@ -136,27 +168,37 @@ test_that("Use in a user-defined model function", {
                        log = integer(0, default = 0)) {
             returnType(double(0))
             pars <- c(mu,x)
-                                        # 0,5 imply uniform prior on sigma on (0,5)
-            prob <- integrate(integrand, 0, 5, pars)
+            ## 0,5 imply uniform prior on sigma on (0,5)
+            prob <- integrate(integrand, 0, 5, pars)[1]
             if(log) return(log(prob)) else return(prob)
         })
+
+    rintN <- nimbleFunction(
+        run=function(n = integer(0), mu = double(0)) {
+            returnType(double(1))
+            return(rep(0, 2))
+        })
+    
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(dintN)
+    temporarilyAssignInGlobalEnv(rintN)
 
     set.seed(1)
     y  <- rnorm(5)
     m <- nimbleModel(code, data = list(y = y), constants = list(n=5),
                      inits = list(mu = 0))
     cm <- compileNimble(m)
-    cm$calculate('y')
+    value <- cm$calculate('y')
 
     mcmc <- buildMCMC(m)
     cmcmc <- compileNimble(mcmc,project=m)
-    out <- runMCMC(cmcmc, 5000))
+    expect_silent(out <- runMCMC(cmcmc, 50))
    
-}
+})
 
 
 
-test_that("Error trapping for non-vector 'params'", {
+test_that("Error trapping for non-vector `params` or non-scalar `lower`, `upper`", {
     integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
             return(x*theta[1])
@@ -166,16 +208,101 @@ test_that("Error trapping for non-vector 'params'", {
     
     fun <- nimbleFunction(
         run = function(lower = double(0), upper = double(0)) {
-            output = integrate(integrand, lower, upper)
+            output <- integrate(integrand, lower, upper)
             returnType(double(1))
             return(output)
         }
     )
 
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
     expect_error(cfun <- compileNimble(fun), "argument must be provided")
 
-    integrand <- nimbleFunction(
+    integrand2 <- nimbleFunction(
         run = function(x = double(1), theta = double(0)) {
+            return(x*theta[1])
+            returnType(double(1))
+        }
+    )
+    
+    fun2 <- nimbleFunction(
+        run = function(theta = double(0), lower = double(0), upper = double(0)) {
+            output <- integrate(integrand2, lower, upper, theta)
+            returnType(double(1))
+            return(output)
+        }
+    )
+
+    temporarilyAssignInGlobalEnv(integrand2)
+    temporarilyAssignInGlobalEnv(fun2)
+    expect_error(cfun2 <- compileNimble(fun2), "must be a one-dimensional array")   
+
+    integrand3 <- nimbleFunction(
+        run = function(x = double(1), theta = double(0)) {
+            return(x*theta[1])
+            returnType(double(1))
+        }
+    )
+    
+    fun3 <- nimbleFunction(
+        run = function(theta = double(0), lower = double(0), upper = double(0)) {
+            output <- integrate(integrand3, lower, upper, theta+3)
+            returnType(double(1))
+            return(output)
+        }
+    )
+
+    temporarilyAssignInGlobalEnv(integrand3)
+    temporarilyAssignInGlobalEnv(fun3)
+    expect_error(cfun3 <- compileNimble(fun3), "must be a one-dimensional array")   
+
+    integrand4 <- nimbleFunction(
+        run = function(x = double(1), theta = double(0)) {
+            return(x*theta[1])
+            returnType(double(1))
+        }
+    )
+    
+    fun4 <- nimbleFunction(
+        run = function(theta = double(0), lower = double(0), upper = double(0)) {
+            output <- integrate(integrand4, c(lower,1), upper, c(theta, 0))
+            returnType(double(1))
+            return(output)
+        }
+    )
+
+    temporarilyAssignInGlobalEnv(integrand4)
+    temporarilyAssignInGlobalEnv(fun4)
+    expect_error(cfun4 <- compileNimble(fun4), "must be scalars")   
+
+
+    integrand5 <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            return(x*theta[1])
+            returnType(double(1))
+        }
+    )
+    
+    fun5 <- nimbleFunction(
+        run = function(theta = double(0), lower = double(0), upper = double(0)) {
+            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
+            output <- integrate(integrand5, tmp, upper, tmp)
+            returnType(double(1))
+            return(output)
+        }
+    )
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
+    expect_error(cfun5 <- compileNimble(fun5), "must be scalars")   
+})
+
+
+
+test_that("Placeholder to note that user must lift any expression used as `param`", {
+    ## If we leave things as is, we should trap the case and tell user to manually lift.
+  ## also note that use of something like: exp(<some_vector>) as the `param` argument fails in C++ compilation
+   integrand <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
             return(x*theta[1])
             returnType(double(1))
         }
@@ -183,11 +310,13 @@ test_that("Error trapping for non-vector 'params'", {
     
     fun <- nimbleFunction(
         run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            output = integrate(integrand, lower, upper, theta)
+            output <- integrate(integrand, lower, upper, c(theta,0))
             returnType(double(1))
             return(output)
         }
     )
-
-    expect_error(cfun <- compileNimble(fun), "must be a one-dimensional array")   
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
+    expect_error(cfun <- compileNimble(fun))
 })
+
