@@ -1,3 +1,33 @@
+#                            CHANGES IN VERSION 1.1.0 (December 2023) 
+
+## USER LEVEL CHANGES
+
+- Add `prior_samples` MCMC sampler, which uses an existing set of
+  numerical samples to define the prior distribution of model node(s).
+
+- Change argument of `besselK` in manual table to be `x` not `k`.
+
+- Do not allow elements of a `nimbleList` to be named `name`, `predefined`,
+or `where` (issue #1306).
+
+- Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
+  specify maximum dimension for saving proposal covariance history.
+
+## DEVELOPER LEVEL CHANGES
+
+- Fix error with name mangling affecting packages that use nimble
+  and have dot(s) in the package name (issue #1332)
+  
+- Make change to `nimble-package` documentation to use `"_PACKAGE"`
+  instead of `@docType` per CRAN request (issue #1359).
+
+## BUG FIXES
+
+- Removed the RW_multinomial MCMC sampler, which was found to generate incorrect
+  posterior results.  A corrected version of this sampler may be
+  re-introduced into the package, depending on user interest.
+
+
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
 
 ## USER LEVEL CHANGES

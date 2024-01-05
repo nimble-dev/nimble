@@ -352,7 +352,8 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
-                        if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial', control = controlDefaultsArg);     next }
+                        ##if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial', control = controlDefaultsArg);     next }
+                        if(nodeDist == 'dmulti')   stop('  [Error] Support for sampling multinomial distributions was removed from nimble due to incorrect sampling results.\n  Please contact nimble developers at the nimble-users google group or at nimble.stats@gmail.com to let them know this happened.  \n Thank you.', call. = FALSE)
                         if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet',   control = controlDefaultsArg);     next }
                         if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart',     control = controlDefaultsArg);     next }
                         if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart',     control = controlDefaultsArg);     next }
@@ -647,7 +648,14 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!is.character(thisSamplerName)) stop('sampler name should be a character string')
             if(!is.function(samplerFunction)) stop('sampler type does not specify a function')
 
-            if(!(all(model$isStoch(target)))) { warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', '))); return(invisible(samplerConfs)) }   ## ensure all target node(s) are stochastic
+            ## ensure all target node(s) are stochastic
+            if(!(all(model$isStoch(target)))) {
+                ## however, allow assignment of prior_samples sampler to RHS-only nodes
+                if(!(thisSamplerName == 'prior_samples' && all(model$getNodeType(target) == 'RHSonly'))) {
+                    warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', ')))
+                    return(invisible(samplerConfs))
+                }
+            }
 
             ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only  ## usage long since deprecated (Dec 2020)
             ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library

@@ -168,7 +168,15 @@ getParam_keywordInfo <- keywordInfoClass(
 
         if(isCodeArgBlank(code, 'param'))
             stop("'param' argument missing from 'getParam', with no accessor argument supplied")
+
+        ## Avoid situations where user has syntax from run code in `param` or of getting anything from global env (issue 1344).
+        paramVars <- all.vars(code$param)
+        wh <- which(!paramVars %in% nfProc$setupSymTab$getSymbolNames())
+        if(length(wh))
+            stop("`param` argument in `getParam` contains variables not found in setup code: ", paste(paramVars[wh], collapse = ", "), ".")
+            
         paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param, hasIndex = useNodeFunctionVectorByIndex) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
+
         paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
         paramIDname <- paramInfo_SetupTemplate$makeOtherNames(paramInfoName, paramInfo_ArgList)
 
