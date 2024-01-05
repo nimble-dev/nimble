@@ -14,6 +14,7 @@ time	filename
 17.58	test-getDistributionInfo.R
 19.0	test-ADchol.R
 20.0	test-ADmatInverse.R
+20.0	test-integrate.R
 20.85	test-refactorCompilationSteps.R
 21.56	test-testTools.R
 24.03	test-externalCalls.R

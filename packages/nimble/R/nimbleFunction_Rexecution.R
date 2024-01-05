@@ -1015,7 +1015,7 @@ nimCat <- function(...) {
 #' 
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric}, \code{integer} and \code{logical} are immediately converted to \code{nimNumeric}, \code{nimInteger} and \code{nimLogical}, respectively.  
 #' 
-#' @author Daniel Turek, Chris Paciorek, Perry de Valpine
+#' @author Daniel Turek, Christopher Paciorek, Perry de Valpine
 #' @aliases numeric
 #' @seealso \code{\link{nimMatrix}}, \code{\link{nimArray}}
 #' @export
@@ -1377,9 +1377,31 @@ nimOptimDefaultControl <- function() {
 #' 
 #' 
 #' @seealso \code{\link{integrate}}
+#' @author Christopher Paciorek, Paul van Dam-Bates, Perry de Valpine
+#' @aliases integrate
 #' @export
 #' @examples
-#' UNDER CONSTRUCTION
+#' integrand <- nimbleFunction(
+#'    run = function(x = double(1), theta = double(1)) {
+#'        return(x*theta[1])   
+#'    returnType(double(1))
+#'  }
+#')
+#'
+#' fun <- nimbleFunction(
+#'    run = function(theta = double(0), lower = double(0), upper = double(0)) {
+#'        param = c(theta, 0)  # cannot be scalar, so pad with zero.
+#'        output = integrate(integrand, lower, upper, param)
+#'        returnType(double(1))
+#'        return(output)
+#'  })
+#'
+#' foo(3.1415927, 0, 1)
+#' \dontrun{
+#' cfun <- compileNimble(fun)
+#' cfun(3.1415927, 0, 1)
+#' }
+#' 
 nimIntegrate <- function(f, lower, upper, param, subdivisions = 100L,
                          rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol, stop.on.error = TRUE) {
     output <- rep(0, 3)

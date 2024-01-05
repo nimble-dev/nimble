@@ -1504,6 +1504,13 @@ sizeOptimDefaultControl <- function(code, symTab, typeEnv) {
 }
 
 sizeIntegrate <- function(code, symTab, typeEnv) {
+  if(!"param" %in% names(code$args))
+      stop("`param` argument must be provided to `nimIntegrate`, even if unused in integrand")
+  if(symTab$getSymbolObject(code$args$param$name)$nDim != 1)
+      stop("`param` argument to `nimIntegrate` must be a one-dimensional array (scalar values can be padded with an additional unused value such as zero)")
+  if(symTab$getSymbolObject(code$args$lower$name)$nDim != 0 ||
+     symTab$getSymbolObject(code$args$upper$name)$nDim != 0)
+     stop("`lower` and `upper` arguments to `nimIntegrate` must be scalars")
   typeEnv$.allowFunctionAsArgument <- TRUE
   code$args[[1]]$type <- 'function'  # flag so not looked for in symTab (issue 1356)
   asserts <- recurseSetSizes(code, symTab, typeEnv)
@@ -1516,7 +1523,7 @@ sizeIntegrate <- function(code, symTab, typeEnv) {
   if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
     fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
   } else {
-    stop(paste0('unsupported fn argument in integrate(fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
+    stop('unsupported fn argument in integrate(fn = ', fnCode$name, '); try an RCfunction or nfMethod instead')
   }
   if(length(asserts) == 0) NULL else asserts
 }
