@@ -707,7 +707,7 @@ sampler_slice <- nimbleFunction(
                 print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
-       },
+        },
         reset = function() {
             width        <<- widthOriginal
             timesRan     <<- 0
