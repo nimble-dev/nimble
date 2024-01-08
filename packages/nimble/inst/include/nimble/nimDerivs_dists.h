@@ -1052,6 +1052,85 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
   return(logres);
 }
 
+//Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, double* adj, NimArr<1, Type> &weights, double* num, Type tau, int c, int zero_mean, Type give_log) 
+// Should adj,weights,num,c,zero_mean be `Type`? And should they be `const`?
+// do we need `const Type &adj` because used as an index?
+//formerly did (int) adj[count]
+template<class Type>
+Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, const Type &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, Type give_log) 
+{
+  // This method implements the following density calculation:
+  // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
+  // where tau is precision, c = (number of islands), and N is the length of x.
+  // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
+  if(CppAD::Value(tau) < 0) {
+    return Type(R_NaN);
+  }
+  //PRINTF("c is equal to %d\n", c);
+  int N = x.size();
+  int L = adj.size();
+  
+  Type lp = 0;
+  int count = 0;
+  Type xi, xj;
+  for(int i = 0; i < N; i++) {
+    xi = x[i];
+    for(int j = 0; j < num[i]; j++) {
+      xj = x[ adj[count] - 1 ];
+      lp += weights[count] * (xi-xj)*(xi-xj);
+      count++;
+    }
+  }
+  if(Type(count) != Type(L)) {
+    return Type(R_NaN);
+  }
+  lp *= Type(1/2.0);     // accounts for double-summing over all (xi,xj) pairs
+  lp *= Type(-1/2.0) * tau;
+  lp += (Type(N)-c)/Type(2.0) * (log(tau) - Type(M_LN_2PI));
+
+  lp = CppAD::CondExpEq(give_log, Type(1), lp, exp(lp));
+  return(lp);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, const Type &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, int give_log) 
+{
+  // This method implements the following density calculation:
+  // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
+  // where tau is precision, c = (number of islands), and N is the length of x.
+  // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
+  if(CppAD::Value(tau) < 0) {
+    return Type(R_NaN);
+  }
+  //PRINTF("c is equal to %d\n", c);
+  int N = x.size();
+  int L = adj.size();
+
+  Type lp = 0;
+  int count = 0;
+  Type xi, xj;
+  for(int i = 0; i < N; i++) {
+    xi = x[i];
+    for(int j = 0; j < num[i]; j++) {
+      xj = x[ adj[count] - 1 ];
+      lp += weights[count] * (xi-xj)*(xi-xj);
+      count++;
+    }
+  }
+  if(Type(count) != Type(L)) {
+    return Type(R_NaN);
+  }
+  lp *= Type(1/2.0);     // accounts for double-summing over all (xi,xj) pairs
+  lp *= Type(-1/2.0) * tau;
+  lp += (Type(N)-c)/Type(2.0) * (log(tau) - Type(M_LN_2PI));
+  if(!give_log) {
+    lp = exp(lp);
+  }
+  return(lp);
+}
+
+
+
 /*************/
 /* Functions */
 

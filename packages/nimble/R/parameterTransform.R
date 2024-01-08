@@ -178,7 +178,7 @@ parameterTransform <- nimbleFunction(
                     next }
                 stop(paste0('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
             } else {   ## multivariate
-                if(dist %in% c('dmnorm', 'dmvt')) {               ## 6: multivariate {normal, t}; also set for non-scalar determ nodes when allowDeterm is TRUE
+                if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper')) {               ## 6: multivariate {normal, t}; also set for non-scalar determ nodes when allowDeterm is TRUE
                     transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
