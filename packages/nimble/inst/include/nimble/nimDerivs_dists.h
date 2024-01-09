@@ -1057,7 +1057,7 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
 // do we need `const Type &adj` because used as an index?
 //formerly did (int) adj[count]
 template<class Type>
-Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, const Type &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, Type give_log) 
+Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, NimArr<1, Type> &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, Type give_log) 
 {
   // This method implements the following density calculation:
   // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
@@ -1076,7 +1076,7 @@ Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, const Type &adj, NimArr<1,
   for(int i = 0; i < N; i++) {
     xi = x[i];
     for(int j = 0; j < num[i]; j++) {
-      xj = x[ adj[count] - 1 ];
+      xj = x[ CppAD::Value(adj[count]) - 1 ];
       lp += weights[count] * (xi-xj)*(xi-xj);
       count++;
     }
@@ -1093,7 +1093,7 @@ Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, const Type &adj, NimArr<1,
 }
 
 template<class Type>
-Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, const Type &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, int give_log) 
+Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, int give_log) 
 {
   // This method implements the following density calculation:
   // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
@@ -1112,7 +1112,7 @@ Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, const Type &adj, 
   for(int i = 0; i < N; i++) {
     xi = x[i];
     for(int j = 0; j < num[i]; j++) {
-      xj = x[ adj[count] - 1 ];
+      xj = x[ CppAD::Value(adj[count]) - 1 ];
       lp += weights[count] * (xi-xj)*(xi-xj);
       count++;
     }

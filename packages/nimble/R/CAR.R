@@ -231,22 +231,29 @@ CAR_proper_processParams <- function(model, target, C, adj, num, M) {
 #' @export
 CAR_calcNumIslands <- nimbleFunction(
     name = 'CAR_calcNumIslands',
-    run = function(adj = double(1), num = double(1)) {
-        N <- dim(num)[1]
-        numIslands <- 0
-        visited <- rep(0, N)
+    run = function(adj_in = double(1), num_in = double(1)) {
+        N <- dim(num_in)[1]
+        L <- dim(adj_in)[1]
+        adj = nimInteger(L)
+        num = nimInteger(N)
+        for(i in 1:L)
+            adj[i] = ADbreak(adj_in[i])
+        for(i in 1:N)
+            num[i] = ADbreak(num_in[i])
+        numIslands <- 0L
+        visited <- rep(0L, N)
         for(i in 1:N) {
             if(visited[i] == 0) {
                 visited[i] <- 1
                 numIslands <- numIslands + 1
                 nNeighbors <- num[i]
                 if(nNeighbors > 0) {
-                    adjStartInd <- 1
+                    adjStartInd <- 1L
                     if(i > 1) adjStartInd <- adjStartInd + sum(num[1:(i-1)])
-                    indToVisit <- numeric(nNeighbors)
+                    indToVisit <- nimInteger(nNeighbors)
                     indToVisit[1:nNeighbors] <- adj[adjStartInd:(adjStartInd+nNeighbors-1)]
                     lengthIndToVisit <- nNeighbors
-                    l <- 1
+                    l <- 1L
                     while(l <= lengthIndToVisit) {
                         nextInd <- indToVisit[l]
                         if(visited[nextInd] == 0) {
@@ -254,7 +261,7 @@ CAR_calcNumIslands <- nimbleFunction(
                             newNneighbors <- num[nextInd]
                             if(newNneighbors > 0) {
                                 newIndToVisit <- numeric(newNneighbors)
-                                adjStartInd <- 1
+                                adjStartInd <- 1L
                                 if(nextInd > 1) adjStartInd <- adjStartInd + sum(num[1:(nextInd-1)])
                                 new_indToVisit <- c(indToVisit, adj[adjStartInd:(adjStartInd+newNneighbors-1)])
                                 new_lengthIndToVisit <- lengthIndToVisit + newNneighbors
@@ -269,7 +276,8 @@ CAR_calcNumIslands <- nimbleFunction(
         }
         returnType(double())
         return(numIslands)
-    }
+    },
+    buildDerivs = list(run  = list(ignore = c("i")))
 )
 
 
