@@ -218,7 +218,8 @@ test_that("when an RCfunction optim()izes an RCfunction, the DSL and C++ behavio
     )
     nimCaller <- nimbleFunction(
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimCallee, method = method))
+            ans <- optim(par, nimCallee, method = method)
+            return(ans)
             returnType(optimResultNimbleList())
         }
     )
@@ -276,7 +277,8 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ b
             nimCallee <- nimCalleeGen()
         },
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimCallee$run, method = method))
+            ans <- optim(par, nimCallee$run, method = method)
+            return(ans)
             returnType(optimResultNimbleList())
         }
     )()
@@ -377,7 +379,8 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     nimCaller <- nimbleFunction(
         setup = TRUE,
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimFn, nimGr, method = method))
+            ans <- optim(par, nimFn, nimGr, method = method)
+            return(ans)
             returnType(optimResultNimbleList())
         }
     )()
@@ -750,7 +753,7 @@ test_that("no spurious warning about missing nimbleFunction", {
 
      cOptimizer <- compileNimble(optimizer)
      expect_no_warning(cOptimizer <- compileNimble(optimizer))
-     
+
 })
 
 options(warn = RwarnLevel)
