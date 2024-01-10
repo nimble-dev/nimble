@@ -1097,22 +1097,47 @@ updateADproxyModelMethods <- function(.self) {
     workEnv$.inModel <- TRUE
     exprClasses_modifyForAD(thisDef$code$code, thisDef$code$objectDefs, workEnv)
     if(isTRUE(workEnv$.illegalADcall)) {
-      firstSym <- cppVarFull(name = "first", static = TRUE, baseType = "bool", constructor = "{true}")
-      thisDef$code$objectDefs <- symbolTable$new()
-      thisDef$code$typeDefs <- symbolTable$new()
-      thisDef$code$objectDefs$setParentST(parentST)
-      thisDef$code$objectDefs$addSymbol(firstSym)
-      errorTrappingCode <- quote({
-        if(first) {
-          nimPrint("Error: In C++, a model node is being included in derivatives that does not support them.\n",
-                   "Please check messages from building the model, when better information might be\n",
-                   "available. This message will only be shown once. Results will not be valid.")
-          first <- false
-        }
-        return(`CppAD::AD<double>`(0))
-      })
-      errorTrappingExpr <- RparseTree2ExprClasses(errorTrappingCode)
-      thisDef$code$code <- errorTrappingExpr
+      handlingOption <- getNimbleOption("unsupportedDerivativeHandling")
+      if(identical(handlingOption, "ignore")) {
+        # do nothing
+      } else if(identical(handlingOption, "warn")) {
+        firstSym <- cppVarFull(name = "first", static = TRUE, baseType = "bool", constructor = "{true}")
+        thisDef$code$objectDefs <- symbolTable$new()
+        thisDef$code$typeDefs <- symbolTable$new()
+        thisDef$code$objectDefs$setParentST(parentST)
+        thisDef$code$objectDefs$addSymbol(firstSym)
+        errorTrappingCode <- quote({
+          if(first) {
+            nimPrint("Warning: In C++, a model node is being included in derivatives that does not support them.\n",
+                     "Please check messages from building the model, when better information might be\n",
+                     "available. This message will only be shown once. Results will not be valid.\n",
+                     "To make this an error, set nimbleOptions(unsupportedDerivativeHandling='error').\n",
+                     "To skip this error-handling entirely (and allow possible malformed code to be used),\n",
+                     "set nimbleOptions(unsupportedDerivativeHandling='ignore').")
+            first <- false
+          }
+          return(`CppAD::AD<double>`(0))
+        })
+        errorTrappingExpr <- RparseTree2ExprClasses(errorTrappingCode)
+        thisDef$code$code <- errorTrappingExpr
+      } else { #default to error
+        thisDef$code$objectDefs <- symbolTable$new()
+        thisDef$code$typeDefs <- symbolTable$new()
+        thisDef$code$objectDefs$setParentST(parentST)
+        msg <- paste0("Error: In C++, a model node is being included in derivatives that does not support them.\n",
+                     "Please check messages from building the model, when better information might be\n",
+                     "available. Stopping execution.\n",
+                     "To make this a warning, set nimbleOptions(unsupportedDerivativeHandling='warn').\n",
+                     "To skip this error-handling entirely (and allow possible malformed code to be used),\n",
+                     "set nimbleOptions(unsupportedDerivativeHandling='ignore').")
+        errorTrappingCode <- substitute(
+        {
+          nimStop(MSG)
+          return(`CppAD::AD<double>`(0))
+        }, list(MSG = msg))
+        errorTrappingExpr <- RparseTree2ExprClasses(errorTrappingCode)
+        thisDef$code$code <- errorTrappingExpr
+      }
     }
   }
   ## classST <- .self$objectDefs
@@ -1125,7 +1150,6 @@ updateADproxyModelMethods <- function(.self) {
   ##                                     replacementTemplateArgs = "double") ## These end up the header file so they should not use TYPE_ as that is not typedef'd there
   ##   classST$addSymbol(newSym, allowReplace = TRUE)
   ## }
-
   NULL
 }
 

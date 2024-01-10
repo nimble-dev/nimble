@@ -28,8 +28,6 @@ bool atomic_dyn_ind_get_class::rev_depend(
                                           CppAD::vector<bool>&                depend_x    ,
                                           const CppAD::vector<bool>&          depend_y
                                           ) {
-  // To-do:
-  // Here is a place-holder
   size_t n = type_x.size() - 1;
   for(size_t i = 0; i < n; ++i) depend_x[i] = depend_y[0];
   depend_x[n] = depend_y[0];
@@ -48,7 +46,7 @@ bool atomic_dyn_ind_get_class::forward(
   size_t ncol = taylor_x.size()/nrow;
   //size_t nx = ncol-1; // i.e. length of the actual "x"
   size_t i_index = ncol-1;
-  //std::cout<<"in get::forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0 + i_index*nrow]<<" "<<parameter_x[0 + i_index*nrow]<<" ";
+  //  std::cout<<"in get::forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0 + i_index*nrow]<<" "<<parameter_x[0 + i_index*nrow]<<" ";
   int index = static_cast<int>(taylor_x[0 + i_index*nrow]);
   if(order_low == 0)
     taylor_y[0] = taylor_x[0 + index * nrow];
@@ -103,6 +101,7 @@ bool atomic_dyn_ind_get_class::reverse(
   size_t nx = ncol-1;
   size_t i_index = ncol-1;
   int index = static_cast<int>(taylor_x[0 + i_index*nrow]);
+  // std::cout<<"in get reverse "<<order_up<<" "<<index<<std::endl;
   for(size_t order = 0; order <= order_up; ++order) {
     for(size_t i = 0; i < nx; ++i) partial_x[order + i * nrow] = 0;
     partial_x[order + index * nrow] = partial_y[order];
@@ -156,6 +155,8 @@ bool atomic_dyn_ind_set_class::for_type(
   }
 //  max_type = std::max(max_type, type_x[length_x-1]);
   for(size_t i = 0; i < ny; ++i) type_y[i] = max_type;
+  //std::cout<<"exiting dyn_ind_set for_type with max_type = "<<max_type<<std::endl;
+  //           std::cout<<"reference types: "<<CppAD::constant_enum <<" "<<CppAD::dynamic_enum <<" "<<CppAD::variable_enum<<std::endl;
   return true;
 }
 
@@ -171,12 +172,13 @@ bool atomic_dyn_ind_set_class::rev_depend(
   size_t ny = depend_y.size();
   if(ny > 1) {
     for(size_t i = 1; i < ny; ++i)
-      any_depend_y = any_depend_y && depend_y[i];
+      any_depend_y = any_depend_y || depend_y[i];
   }
   size_t length_x = depend_x.size();
   size_t nx = length_x-2;
   assert(nx == ny);
   for(size_t i = 0; i < length_x; ++i) depend_x[i] = any_depend_y;
+  //std::cout<<"exiting dyn_ind_set rev_depend with any_depend_y = "<<any_depend_y<<std::endl;
   return true;
 }
 
@@ -194,6 +196,7 @@ bool atomic_dyn_ind_set_class::forward(
   size_t i_index = ny;
   size_t i_x = ny+1;
   int index = static_cast<int>(taylor_x[0 + i_index*nrow]);
+  //std::cout<<"dyn_ind_set forward order_low = "<<order_low <<" order_up = "<<order_up <<" index = "<<index <<std::endl;
   for(size_t order = order_low; order <= order_up; order++) {
     for(size_t i = 0; i < ny; ++i) taylor_y[order + i*nrow] = taylor_x[order + i*nrow];
     taylor_y[order + index*nrow] = taylor_x[order + i_x*nrow];
@@ -237,6 +240,8 @@ bool atomic_dyn_ind_set_class::reverse(
   size_t i_index = ny;
   size_t i_x = ny+1;
   int index = static_cast<int>(taylor_x[0 + i_index*nrow]);
+  //std::cout<<"dyn_ind_set reverse order_up = "<<order_up <<" index = "<<index <<std::endl;
+
   for(size_t order = 0; order <= order_up; ++order) {
     for(size_t i = 0; i < ny; ++i) partial_x[order + i*nrow] = partial_y[order + i*nrow];
     partial_x[order + i_index*nrow] = 0;

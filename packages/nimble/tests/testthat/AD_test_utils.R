@@ -953,13 +953,17 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
                           input_gen_funs = NULL, more_args = NULL, seed = 0,
                           outer_code = NULL, inner_codes = NULL,
                           size = NULL, inputs = NULL,
-                          includeModelArgs = FALSE) {
+                          includeModelArgs = FALSE,
+                          suffix="") {
   if(!is.list(op)) {
     opParam <- make_op_param(op, argTypes, more_args = more_args,
                              outer_code = outer_code,  inner_codes = inner_codes)
   } else {
     opParam <- op
   }
+  if(is.list(argTypes))
+    argTypes <- argTypes[[1]]
+
   run <- gen_runFunCore(opParam)
 
   if(seed == 0) seed <- round(runif(1, 1, 10000))
@@ -1217,7 +1221,7 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
                   )
   
   list(
-    name = opParam$name,
+    name = paste0(opParam$name, suffix),
     opParam = opParam,
     run = run,
     methods = methods,
@@ -1418,13 +1422,13 @@ make_AD_test <- function(op, argTypes, wrt_args = NULL,
 ##             )
 make_AD_test_batch <- function(ops, argTypes, seed = 0,
                                maker = make_AD_test,
-                               outer_code = NULL, inner_codes = NULL) {
+                               outer_code = NULL, inner_codes = NULL, ...) {
   opTests <- vector(mode = 'list', length = length(ops) * length(argTypes))
   for(i in seq_along(ops)) {
     for(j in seq_along(argTypes)) {
       iOut <- (i-1) * length(argTypes) + j
       opTests[[iOut]] <- maker(op = ops[[i]], argTypes = argTypes[[j]],
-                              seed = seed, outer_code = outer_code, inner_codes = inner_codes)
+                              seed = seed, outer_code = outer_code, inner_codes = inner_codes, ...)
     }
   }
   

@@ -549,3 +549,215 @@ test_AD_batch(binaryMatrixOpTests2, testFun = test_AD2, knownFailures = AD_known
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
+
+
+#######################
+## indexing bracket ops with dynamic (stochastic) indices
+#######################
+############
+# 1D tests
+############
+indexBracketOps <- c("[")
+indexBracketArgs <- list(list(c("double(1)", "double(0)"), "double(0)"))
+indexBracketTests2_1D <- c(
+  make_AD_test_batch(
+    indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
+  ),
+  make_AD_test_batch(
+    indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
+    inner_codes = list(arg1 = NULL, arg2 = quote(2*X)),
+    outer_code = quote(Y*Y),
+    suffix = " inner&outer"
+  )
+)
+
+modify_on_match(indexBracketTests2_1D, "", "size",
+                list(arg1 = c(20),
+                     arg2 = 1))
+modify_on_match(indexBracketTests2_1D, "", "input_gen_funs",
+                list(arg1 = function(x) rnorm(x),
+                     arg2 = function(x) sample(1:10, size = 1))) # only to 10 b/c of 2X for inner_codes
+
+# This works, but it doesn't check derivs wrt index b/c that is a mess
+# in uncompiled execution
+test_AD_batch(indexBracketTests2_1D, testFun = test_AD2,
+              knownFailures = AD_knownFailures, verbose = FALSE)
+
+# set
+opParam1 <- list(
+  name = "dyn_ind_set_1D",
+  expr = quote({arg1[arg2] <- arg3; out <- arg1}),
+  args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
+  outputType = quote(double(1))
+)
+opParam2 <- list(
+  name = "dyn_ind_set_1D",
+  expr = quote({arg1[2*arg2] <- arg3*arg3; out <- arg1}),
+  args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
+  outputType = quote(double(1))
+)
+indexBracketSetTests2_1D <- list(
+  dyn_set_1D_a = make_AD_test2(op = opParam1,
+                argTypes = c("double(1)", "double(0)", "double(0)"),
+                wrt_args = c("arg1", "arg3")),
+  dyn_set_1D_b = make_AD_test2(op = opParam2,
+                argTypes = c("double(1)", "double(0)", "double(0)"),
+                wrt_args = c("arg1", "arg3")))
+modify_on_match(indexBracketSetTests2_1D, "", "size",
+                list(arg1 = c(20),
+                     arg2 = 1,
+                     arg3 = 1))
+modify_on_match(indexBracketSetTests2_1D, "", "input_gen_funs",
+                list(arg1 = function(x) rnorm(x),
+                     arg2 = function(x) sample(1:10, size = 1),
+                     arg3 = function(x) rnorm(x))) # only to 10 b/c of 2X for inner_codes
+
+test_AD_batch(indexBracketSetTests2_1D, testFun = test_AD2,
+              knownFailures = AD_knownFailures, verbose = FALSE)
+
+###
+## The following 2D and 3D tests work.
+## However they can be quite slow for uncompiled, especially for Hessians.
+## For now I am commenting them out to think about what to do.
+############
+# 2D tests
+############
+## indexBracketOps <- c("[")
+## indexBracketArgs <- list(list(c("double(2)", "double(0)", "double(0)"), "double(0)"))
+## indexBracketTests2_2D <- c(
+##   make_AD_test_batch(
+##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
+##   ),
+##   make_AD_test_batch(
+##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
+##     inner_codes = list(arg1 = NULL, arg2 = quote(2*X), arg3 = quote(2*X)),
+##     outer_code = quote(Y*Y),
+##     suffix = " inner&outer"
+##   )
+## )
+## modify_on_match(indexBracketTests2_2D, "", "size",
+##                 list(arg1 = c(6, 8),
+##                      arg2 = 1,
+##                      arg3 = 1))
+## modify_on_match(indexBracketTests2_2D, "", "input_gen_funs",
+##                 list(arg1 = function(x) matrix(rnorm(x), nrow = 6),
+##                      arg2 = function(x) sample(1:3, size = 1),
+##                      arg3 = function(x) sample(1:4, size = 1)))
+
+## # This works, but it doesn't check derivs wrt value b/c that is a mess
+## # in uncompiled execution
+## test_AD_batch(indexBracketTests2_2D, testFun = test_AD2,
+##               knownFailures = AD_knownFailures, verbose = FALSE)
+
+
+## # set
+## opParam1 <- list(
+##   name = "dyn_ind_set_2D",
+##   expr = quote({arg1[arg2, arg3] <- arg4; out <- arg1}),
+##   args = list(arg1 = quote(double(2)), arg2 = quote(double(0)), arg3 = quote(double(0)), arg4 = quote(double(0))),
+##   outputType = quote(double(2))
+## )
+## opParam2 <- list(
+##   name = "dyn_ind_set_2D",
+##   expr = quote({arg1[2*arg2, 2*arg3] <- arg4*arg4; out <- arg1}),
+##   args = list(arg1 = quote(double(2)), arg2 = quote(double(0)), arg3 = quote(double(0)), arg4 = quote(double(0))),
+##   outputType = quote(double(2))
+## )
+## indexBracketSetTests2_2D <- list(
+##   dyn_set_2D_a = make_AD_test2(op = opParam1,
+##                 argTypes = c("double(2)", "double(0)", "double(0)", "double(0)"),
+##                 wrt_args = c("arg1", "arg4")),
+##   dyn_set_2D_b = make_AD_test2(op = opParam2,
+##                 argTypes = c("double(2)", "double(0)", "double(0)", "double(0)"),
+##                 wrt_args = c("arg1", "arg4")))
+## modify_on_match(indexBracketSetTests2_2D, "", "size",
+##                 list(arg1 = c(10, 10),
+##                      arg2 = 1,
+##                      arg3 = 1,
+##                      arg4 = 1))
+## modify_on_match(indexBracketSetTests2_2D, "", "input_gen_funs",
+##                 list(arg1 = function(x) matrix(rnorm(x), nrow = 10),
+##                      arg2 = function(x) sample(1:5, size = 1),
+##                      arg3 = function(x) sample(1:5, size = 1),
+##                      arg4 = function(x) rnorm(x))) # only to 10 b/c of 2X for inner_codes
+
+## test_AD_batch(indexBracketSetTests2_2D, testFun = test_AD2,
+##               knownFailures = AD_knownFailures, verbose = FALSE)
+
+
+## ############
+## # 3D tests
+## ############
+## indexBracketOps <- c("[")
+## indexBracketArgs <- list(list(c("double(3)", "double(0)", "double(0)", "double(0)"), "double(0)"))
+## indexBracketTests2_3D <- c(
+##   make_AD_test_batch(
+##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
+##   ),
+##   make_AD_test_batch(
+##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
+##     inner_codes = list(arg1 = NULL, arg2 = quote(2*X), arg3 = quote(2*X), arg4 = quote(2*X)),
+##     outer_code = quote(Y*Y),
+##     suffix = " inner&outer"
+##   )
+## )
+## modify_on_match(indexBracketTests2_3D, "", "size",
+##                 list(arg1 = c(6, 8, 10),
+##                      arg2 = 1,
+##                      arg3 = 1,
+##                      arg4 = 1))
+## modify_on_match(indexBracketTests2_3D, "", "input_gen_funs",
+##                 list(arg1 = function(x) array(rnorm(x), dim = c(6, 8, 10)),
+##                      arg2 = function(x) sample(1:3, size = 1),
+##                      arg3 = function(x) sample(1:4, size = 1),
+##                      arg4 = function(x) sample(1:5, size = 1)))
+
+## # This works, but it doesn't check derivs wrt value b/c that is a mess
+## # in uncompiled execution
+## test_AD_batch(indexBracketTests2_3D, testFun = test_AD2,
+##               knownFailures = AD_knownFailures, verbose = FALSE)
+
+
+## # set
+## opParam1 <- list(
+##   name = "dyn_ind_set_3D",
+##   expr = quote({arg1[arg2, arg3, arg4] <- arg5; out <- arg1}),
+##   args = list(arg1 = quote(double(3)), arg2 = quote(double(0)), arg3 = quote(double(0)),
+##               arg4 = quote(double(0)), arg5 = quote(double(0))),
+##   outputType = quote(double(3))
+## )
+## opParam2 <- list(
+##   name = "dyn_ind_set_3D",
+##   expr = quote({arg1[2*arg2, 2*arg3, 2*arg4] <- arg5*arg5; out <- arg1}),
+##   args = list(arg1 = quote(double(3)), arg2 = quote(double(0)), arg3 = quote(double(0)),
+##               arg4 = quote(double(0)), arg5 = quote(double(0))),
+##   outputType = quote(double(3))
+## )
+## indexBracketSetTests2_3D <- list(
+##   dyn_set_3D_a = make_AD_test2(op = opParam1,
+##                 argTypes = c("double(3)", "double(0)", "double(0)", "double(0)", "double(0)"),
+##                 wrt_args = c("arg1", "arg5")),
+##   dyn_set_3D_b = make_AD_test2(op = opParam2,
+##                 argTypes = c("double(3)", "double(0)", "double(0)", "double(0)", "double(0)"),
+##                 wrt_args = c("arg1", "arg5")))
+## modify_on_match(indexBracketSetTests2_3D, "", "size",
+##                 list(arg1 = c(4, 6, 8),
+##                      arg2 = 1,
+##                      arg3 = 1,
+##                      arg4 = 1,
+##                      arg5 = 1))
+## modify_on_match(indexBracketSetTests2_3D, "", "input_gen_funs",
+##                 list(arg1 = function(x) array(rnorm(x), dim = c(4, 6, 8)),
+##                      arg2 = function(x) sample(1:2, size = 1),
+##                      arg3 = function(x) sample(1:3, size = 1),
+##                      arg3 = function(x) sample(1:4, size = 1),
+##                      arg4 = function(x) rnorm(x))) # only to 10 b/c of 2X for inner_codes
+
+## test_AD_batch(indexBracketSetTests2_3D, testFun = test_AD2,
+##               knownFailures = AD_knownFailures, verbose = FALSE)
+
+
+# To do:
+# put into models.
+# Update dcat
+# Handle NimArray map cases and test those

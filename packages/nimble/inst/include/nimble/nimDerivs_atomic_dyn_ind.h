@@ -162,8 +162,8 @@ CppAD::AD<double> stoch_ind_get(const NimArr<2, CppAD::AD<double> > &x,
   CppAD::vector< CppAD::AD<double> > x_(x.size());
   const int *xdim = x.dim();
   size_t new_i = 0;
-  for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
-    for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+  for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+    for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
       x_[new_i++] = x(j1, j2);
     }
   }
@@ -199,9 +199,9 @@ CppAD::AD<double> stoch_ind_get(const NimArr<3, CppAD::AD<double> > &x,
   CppAD::vector< CppAD::AD<double> > x_(x.size());
   const int *xdim = x.dim();
   size_t new_i = 0;
-  for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
+  for(size_t j3 = 0; j3 < xdim[2]; ++j3 ) {
     for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
-      for(size_t j3 = 0; j3 < xdim[2]; ++j3 ) {
+      for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
         x_[new_i++] = x(j1, j2, j3);
       }
     }
@@ -253,6 +253,7 @@ class stoch_ind_set1_c<CppAD::AD<double> > : public stoch_ind_set1_base_c<CppAD:
       CppAD::vector< CppAD::AD<double> > x_((*x_ptr).size());
       for(size_t j = 0; j < x_.size(); ++j) x_[j] = (*x_ptr)[j];
       dyn_ind_set(x_, i, v);
+      for(size_t j = 0; j < x_.size(); ++j) (*x_ptr)[j] = x_[j];
     }
     return v;
   }
@@ -317,12 +318,18 @@ class stoch_ind_set2_c<I1_, I2_, true> : public stoch_ind_set2_base_c<I1_, I2_> 
       const int *xdim = (*x_ptr).dim();
       size_t new_i = 0;
       CppAD::vector< CppAD::AD<double> > x_((*x_ptr).size());
-      for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
-        for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+      for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+        for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
           x_[new_i++] = (*x_ptr)(j1, j2);
         }
       }
       dyn_ind_set(x_, flat_i, v);
+      new_i = 0;
+      for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+        for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
+          (*x_ptr)(j1, j2) = x_[new_i++];
+        }
+      }
     }
     return v;
   }
@@ -396,14 +403,22 @@ class stoch_ind_set3_c<I1_, I2_, I3_, true> : public stoch_ind_set3_base_c<I1_, 
       const int *xdim = (*x_ptr).dim();
       size_t new_i = 0;
       CppAD::vector< CppAD::AD<double> > x_((*x_ptr).size());
-      for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
+      for(size_t j3 = 0; j3 < xdim[2]; ++j3 ) {
         for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
-          for(size_t j3 = 0; j3 < xdim[2]; ++j3 ) {
+          for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
             x_[new_i++] = (*x_ptr)(j1, j2, j3);
           }
         }
       }
       dyn_ind_set(x_, flat_i, v);
+      new_i = 0;
+      for(size_t j3 = 0; j3 < xdim[2]; ++j3 ) {
+        for(size_t j2 = 0; j2 < xdim[1]; ++j2 ) {
+          for(size_t j1 = 0; j1 < xdim[0]; ++j1) {
+            (*x_ptr)(j1, j2, j3) = x_[new_i++];
+          }
+        }
+      }
     }
     return v;
   }
