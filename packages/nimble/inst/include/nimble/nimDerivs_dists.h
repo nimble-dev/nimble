@@ -1130,6 +1130,92 @@ Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
 }
 
 
+template<class Type>
+Type nimDerivs_nimArr_dcar_proper(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<1, Type> &C, NimArr<1, Type> &adj, NimArr<1, Type> &num, NimArr<1, Type> &M, Type tau, Type gamma, NimArr<1, Type> &evs, Type give_log) {
+  // This method implements the following density calculation:
+  // x ~ MVN( mean = mu,   cov  = (I-gamma*Cmatrix)^-1* %*% Mmatrix / tau )
+  // note that the scalar 'tau' is a precision term.
+  int N = x.size();
+  int L = adj.size();
+
+  if(CppAD::Value(tau) < 0) {
+    return Type(R_NaN);
+  }
+  Type lp = 0;
+  Type xi, xj;
+  int i, j, index;
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    xi = x[i] - mu[i];
+    lp += xi*xi / M[i];      // (x-mu)' M^-1 (x-mu)
+    //PRINTF("lp is equal to %f\n", lp);
+    for(j = 0; j < num[i]; j++) {
+      index =CppAD::Value(adj[count]) - 1;
+      xj = x[index] - mu[index];
+      lp -= gamma * xi * xj * C[count] / M[i];  // -gamma (x-mu)' M^-1 C (x-mu)
+      count++;
+    }
+  }
+  if(Type(count) != Type(L)) {
+    return Type(R_NaN);
+  }
+  lp *= Type(-1/2.0) * tau;
+  // now add -1/2*log(|2*pi*Sigma|) to lp:
+  // det(Sigma) = det((I-gamma*Cmatrix)^-1 %*% M / tau) = prod(M) / prod(1 - gamma*evs) / tau^N
+  // where evs = eigen(Cmatrix)$values, and tau is precision
+  for(i = 0; i < N; i++) {
+    lp += (log(Type(1) - gamma*evs[i]) - log(M[i])) / Type(2.0);
+  }
+  lp += Type(N / 2.0) * (log(tau) - Type(M_LN_2PI));
+  lp = CppAD::CondExpEq(give_log, Type(1), lp, exp(lp));
+  return(lp);
+}
+
+
+template<class Type>
+Type nimDerivs_nimArr_dcar_proper_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<1, Type> &C, NimArr<1, Type> &adj, NimArr<1, Type> &num, NimArr<1, Type> &M, Type tau, Type gamma, NimArr<1, Type> &evs, int give_log) {
+  // This method implements the following density calculation:
+  // x ~ MVN( mean = mu,   cov  = (I-gamma*Cmatrix)^-1* %*% Mmatrix / tau )
+  // note that the scalar 'tau' is a precision term.
+  int N = x.size();
+  int L = adj.size();
+
+  if(CppAD::Value(tau) < 0) {
+    return Type(R_NaN);
+  }
+  Type lp = 0;
+  Type xi, xj;
+  int i, j, index;
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    xi = x[i] - mu[i];
+    lp += xi*xi / M[i];      // (x-mu)' M^-1 (x-mu)
+    //PRINTF("lp is equal to %f\n", lp);
+    for(j = 0; j < num[i]; j++) {
+      index =CppAD::Value(adj[count]) - 1;
+      xj = x[index] - mu[index];
+      lp -= gamma * xi * xj * C[count] / M[i];  // -gamma (x-mu)' M^-1 C (x-mu)
+      count++;
+    }
+  }
+  if(Type(count) != Type(L)) {
+    return Type(R_NaN);
+  }
+  lp *= Type(-1/2.0) * tau;
+  // now add -1/2*log(|2*pi*Sigma|) to lp:
+  // det(Sigma) = det((I-gamma*Cmatrix)^-1 %*% M / tau) = prod(M) / prod(1 - gamma*evs) / tau^N
+  // where evs = eigen(Cmatrix)$values, and tau is precision
+  for(i = 0; i < N; i++) {
+    lp += (log(Type(1) - gamma*evs[i]) - log(M[i])) / Type(2.0);
+  }
+  lp += Type(N / 2.0) * (log(tau) - Type(M_LN_2PI));
+  if(give_log) {
+    return(lp);
+  }
+  return(exp(lp));
+}
+
+
 
 /*************/
 /* Functions */

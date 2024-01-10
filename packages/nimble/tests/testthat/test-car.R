@@ -286,6 +286,48 @@ test_that('rcar_normal errors out from uncompiled command line execution', {
 })
 
 
+test_that('CAR models compile and run when derivs enabled', {
+    code <- nimbleCode({
+        tau ~ dunif(0,5)
+        s[1:4] ~ dcar_normal(adj[1:L],weights[1:L],num[1:N],tau, zero_mean=0)
+        for(i in 1:N)
+            y[i] ~ dnorm(s[i], 1)
+    })
+    
+    constants <- list(N=4,L=6, weights=rep(1,6), num=c(1,2,2,1), adj=c(2,1,3,2,4,3))
+    data <- list(y=c(1,1.2,.9,.4))
+    inits <- list(tau = 1, s = c(1,1.1,1.2,1.3))
+    
+    m <- nimbleModel(code, data=data, constants=constants, inits=inits, buildDerivs=TRUE)
+
+    conf <- configureMCMC(m, nodes = 'tau')
+    conf$addSampler('s[1:4]', 'RW_block')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc,project=m)
+    expect_silent(out <- runMCMC(cmcmc,niter=10))
+
+    code <- nimbleCode({
+        tau ~ dunif(0,5)
+        mu ~ dnorm(0, sd=10)
+        muvec[1:N] <- mu*ones[1:N]
+        gamma ~ dunif(-1,1)
+        s[1:N] ~ dcar_proper(muvec[1:N], adj = adj[1:L], num = num[1:N], tau = tau, gamma = gamma)
+        for(i in 1:N)
+            y[i] ~ dnorm(s[i], 1)
+    })
+    constants$ones <- rep(1, 4)
+    inits$mu <- 0; inits$gamma <- 0.95
+    m <- nimbleModel(code, data=data, constants=constants, inits=inits, buildDerivs=TRUE)
+
+    conf <- configureMCMC(m, nodes = c('tau','gamma','mu'))
+    conf$addSampler('s[1:4]', 'RW_block')
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc,project=m)
+    out <- runMCMC(cmcmc, niter=10)
+    expect_silent(out <- runMCMC(cmcmc,niter=10))
+})
 
 
 options(warn = RwarnLevel)
