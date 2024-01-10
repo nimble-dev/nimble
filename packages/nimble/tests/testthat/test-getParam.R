@@ -300,5 +300,51 @@ test_that("getParam works in various multi-instance combinations", {
   expect_identical(gsp5_2$run(), cgsp5$gsp5_2$run())
 })
 
+test_that("error trap indexing in param argument of getParam", {
+
+    nf <- nimbleFunction(
+        setup = function(model) {
+            i <- 2
+            params <- c('mean','sd')
+        },
+        run = function() {
+            returnType(double(0))
+            tmp <- model$getParam('y', params[i])
+            return(tmp)
+        })
+
+    code <- nimbleCode({
+        y ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code)
+    rnf <- nf(m)
+    cm <- compileNimble(m)
+    ## Should succeed as `i` in setup.
+    cnf <- compileNimble(rnf, project = m)
+
+    # or i in global; or i in run
+   nf <- nimbleFunction(
+        setup = function(model) {
+             params <- c('mean','sd')
+        },
+        run = function() {
+            i <- 2
+            returnType(double(0))
+            tmp <- model$getParam('y', params[i])
+            return(tmp)
+        })
+
+    code <- nimbleCode({
+        y ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code)
+    rnf <- nf(m)
+    cm <- compileNimble(m)
+    expect_error(cnf <- compileNimble(rnf, project = m),
+                 "contains variables not found in setup")
+
+})
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
