@@ -205,7 +205,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ssdSHLIBcmd <- normalizePath(file.path(R.home('bin'), 'R'),
                                                                           winslash = "\\", mustWork=FALSE)
                                        ssdSHLIBargs <- paste('CMD SHLIB',
-                                                             ifelse(nimbleOptions()precleanCompilation, '--preclean', ''),
+                                                             ifelse(nimbleOptions()$precleanCompilation, '--preclean', ''),
                                                              cppName, '-o', basename(ssDllName))
 
                                        logFile <- paste0(dllName, ".log")
@@ -279,7 +279,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
                                        SHLIBcmd <- normalizePath(file.path(R.home('bin'), 'R'), winslash = "\\", mustWork=FALSE)
                                        SHLIBargs <- paste('CMD SHLIB',
-                                                          ifelse(nimbleOptions()precleanCompilation, '--preclean', ''),
+                                                          ifelse(nimbleOptions()$precleanCompilation, '--preclean', ''),
                                                           paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        cur = getwd()
