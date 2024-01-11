@@ -1437,7 +1437,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
     
     fnCode <- code$args$fn
     if(!inherits(fnCode, 'exprClass')) {
-        stop(exprClassProcessingErrorMsg(code, 'In sizeOptim.  fn is not valid.'), call. = FALSE)
+        stop(exprClassProcessingErrorMsg(code, '`fn` argument to `optim` is not valid.'), call. = FALSE)
     }
     if (fnCode$name == 'nfMethod') {
         # This is handled in cppOutputNFmethod.
@@ -1450,7 +1450,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
     } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
         fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
     } else {
-        stop(paste0('unsupported fn argument in optim(par, fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
+        stop('in `optim`, the `fn` argument, `', fnCode$name, '`, is not available or is not a nimbleFunction or nimbleFunction method.')
     }
 
     grCode <- code$args$gr
@@ -3148,23 +3148,28 @@ sizeReturn <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     typeEnv$.AllowUnknowns <- TRUE
     if(inherits(code$args[[1]], 'exprClass')) {
-        if(typeEnv$return$type == 'nimbleList' || code$args[[1]]$type == 'nimbleList') {
+        if(typeEnv$return$type == 'nimbleList' || isTRUE(code$args[[1]]$type == 'nimbleList')) {
             if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
             if(code$args[[1]]$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
             ## equivalent to symTab$getSymbolObject(code$args[[1]]$name)$nlProc, if it is a name
             if(!identical(code$args[[1]]$sizeExprs$nlProc, typeEnv$return$sizeExprs$nlProc)) stop(exprClassProcessingErrorMsg(code, paste0('nimbleList given in return() argument does not match nimbleList type declared in returnType()')), call. = FALSE)
         } else { ## check numeric types and nDim
             fail <- FALSE
-            if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
-                if(typeEnv$return$nDim > 0) { ## allow scalar casting of returns without error
-                    failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
+            if(is.null(code$args[[1]]$type)) {  # Issue 1364
+                failMsg <- paste0(code$args[[1]]$name, " is not available or its output type is unknown.")
+                fail <- TRUE
+            } else {
+                if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
+                    if(typeEnv$return$nDim > 0) { ## allow scalar casting of returns without error
+                        failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
+                        fail <- TRUE
+                    }
+                }
+                if(!isTRUE(all.equal(code$args[[1]]$nDim, typeEnv$return$nDim))) {
+                    failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
+                                      paste0('Number of dimensions ', code$args[[1]]$nDim, ' of the return() argument does not match number ',  typeEnv$return$nDim, ' given in the returnType() statement.'))
                     fail <- TRUE
                 }
-            }
-            if(!isTRUE(all.equal(code$args[[1]]$nDim, typeEnv$return$nDim))) {
-                failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
-                                  paste0('Number of dimensions ', code$args[[1]]$nDim, ' of the return() argument does not match number ',  typeEnv$return$nDim, ' given in the returnType() statement.'))
-                fail <- TRUE
             }
             if(fail)
                 stop(exprClassProcessingErrorMsg(code, failMsg), call. = FALSE)

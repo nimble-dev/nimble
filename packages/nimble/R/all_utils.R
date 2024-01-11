@@ -24,6 +24,7 @@ labelFunctionMetaCreator <- function() {
                 nextIndex <<- 1
                 return(invisible(NULL))
             }
+            envName <- gsub("\\.", "_dot_", envName)
             lead <- paste(lead, envName , sep = '_')
             ans <- paste0(lead, nextIndex - 1 + (1:count))
             nextIndex <<- nextIndex + count

@@ -559,8 +559,26 @@ test_that("Trap case where simulate function is removed", {
     )
 
     expect_error(cm <- compileNimble(m), "is not available")
+    deregisterDistributions('dfoo')
 })
- 
+
+test_that("Trap case where simulate function should be removed", {
+    dfoo <- nimbleFunction(
+        run = function(x = double(), p = double(), log = integer(default = 0)) {
+            ans <- x * log(p)
+            return(ans)
+            returnType(double())
+        }
+    )
+    m <- nimbleModel(quote({
+        param <- 1.2
+        x ~ dfoo(p = param)
+    }))
+
+    expect_true(exists('rfoo'))
+    deregisterDistributions('dfoo')
+    expect_false(exists('rfoo'))
+})
 
 sink(NULL)
 

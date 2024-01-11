@@ -7,11 +7,17 @@
 
 - Change argument of `besselK` in manual table to be `x` not `k`.
 
+- Do not allow elements of a `nimbleList` to be named `name`, `predefined`,
+or `where` (issue #1306).
+
 - Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
   specify maximum dimension for saving proposal covariance history.
 
 ## DEVELOPER LEVEL CHANGES
 
+- Fix error with name mangling affecting packages that use nimble
+  and have dot(s) in the package name (issue #1332)
+  
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`
   instead of `@docType` per CRAN request (issue #1359).
 

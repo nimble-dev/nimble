@@ -1389,6 +1389,15 @@ test_that("Assignment of list object to list object works (Issue 1246) b", {
   expect_equal(cfoo$run(), 1:3)
 })
 
+test_that("Invalids names of nimbleList elements", {
+    expect_silent(nL <- nimbleList(x = integer(0), Y = double(2), name = 'foo'))
+    expect_error(nimbleList(x = integer(0), Y = double(2), name = logical(0)),
+                 "cannot be named")
+    nimbleListTypes <- list(nimbleType(name = 'predefined', type = 'integer', dim = 0),
+                            nimbleType(name = 'Y', type = 'double', dim = 2))
+    expect_error(nimbleList(nimbleListTypes), "cannot be named")
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 
