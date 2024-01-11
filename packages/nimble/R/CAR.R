@@ -329,7 +329,7 @@ CAR_calcC <- nimbleFunction(
         returnType(double(1))
         return(C)
     },
-    buildDerivs = list(run  = list(ignore = c("i","j")))
+    buildDerivs = list(run  = list(ignore = c("i", "j")))
 )
 
 
@@ -349,7 +349,6 @@ CAR_calcCmatrix <- nimbleFunction(
             adj[i] <- ADbreak(adj_in[i])
         for(i in 1:N)
             num[i] <- ADbreak(num_in[i])
-       
         Cmatrix <- array(0, dim = c(N, N))
         count <- 1L
         for(i in 1:N) {
@@ -513,7 +512,7 @@ CAR_calcEVs3 <- nimbleFunction(
             tmp[i] <- ADbreak(evs[i])
         if(any_nan(tmp)) {
             for(i in 1:N) {
-                tmpi <- tmp[i]
+                tmpi <- tmp[i]  # o.w. lifted node is CppAD double.
                 if(is.nan(tmpi)) evs[i] <- 0
             }
         }
