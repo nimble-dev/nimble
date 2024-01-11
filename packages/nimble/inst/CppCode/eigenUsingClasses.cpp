@@ -30,7 +30,7 @@ template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
   NIM_ASSERT2(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<1, double> called for SEXP that is not a numeric or logical: actual type %s\n",
-    Rf_type2str(TYPEOF(Sn)));
+    Rf_type2char(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
   NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
@@ -39,7 +39,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
   } else {
     NIM_ASSERT2(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<1, double>\n",
-      Rf_type2str(TYPEOF(Sn)));
+      Rf_type2char(TYPEOF(Sn)));
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     for(int i = 0; i < nn; ++i) {
       ans(i) = static_cast<double>(iSn[i]);
@@ -52,7 +52,7 @@ template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
   NIM_ASSERT2(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<1, int> called for SEXP that is not a numeric or logical: actual type %s\n",
-    Rf_type2str(TYPEOF(Sn)));
+    Rf_type2char(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
   NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
@@ -61,7 +61,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
   } else {
     NIM_ASSERT2(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<1, int>\n",
-      Rf_type2str(TYPEOF(Sn)));
+      Rf_type2char(TYPEOF(Sn)));
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     for(int i = 0; i < nn; ++i) {
       ans(i) = static_cast<double>(iSn[i]);
