@@ -558,7 +558,7 @@ test_that("Trap case where simulate function is removed", {
         })
     )
 
-    expect_error(cm <- compileNimble(m), "Missing simulation function")
+    expect_error(cm <- compileNimble(m), "is not available")
 })
  
 
