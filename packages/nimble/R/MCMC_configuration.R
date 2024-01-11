@@ -529,15 +529,15 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target = character(),    ## target argument is *not* expanded (unless nodeWiseAssignment = TRUE)
+        addSampler = function(target = character(),    ## target argument is *not* expanded (unless targetByNode = TRUE)
                               type = 'RW',
                               control = list(),
                               print = NULL,        ## default value print is TRUE when default=TRUE, and FALSE otherwise
                               name,
-                              nodeWiseAssignment = FALSE,
-                              scalarElementsAsNodes = FALSE,
-                              expandTarget,        ## renamed to 'nodeWiseAssignment',    gives a deprecation message
-                              scalarComponents,    ## renamed to 'scalarElementsAsNodes', gives a deprecation message
+                              targetByNode = FALSE,
+                              multivariateNodesAsScalars = FALSE,
+                              expandTarget,        ## renamed to 'targetByNode',               gives a deprecation message
+                              scalarComponents,    ## renamed to 'multivariateNodesAsScalars', gives a deprecation message
                               silent = FALSE,
                               default = FALSE,
                               useConjugacy = getNimbleOption('MCMCuseConjugacy'),
@@ -550,9 +550,9 @@ Adds a sampler to the list of samplers contained in the MCMCconf object.
 
 Arguments:
 
-target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  For univariate samplers, only a single target node should be provided (unless \'nodeWiseAssignment\' is TRUE).  For multivariate samplers, one instance of the multivariate sampler will be assigned to all nodes specified.  Nodes are specified in combination with the \'nodeWiseAssignment\' and \'scalarElementsAsNodes\' arguments.  See details.
+target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  For univariate samplers, only a single target node should be provided (unless \'targetByNode\' is TRUE).  For multivariate samplers, one instance of the multivariate sampler will be assigned to all nodes specified.  Nodes are specified in combination with the \'targetByNode\' and \'multivariateNodesAsScalars\' arguments.  See details.
 
-type: When \'default\' is FALSE, specifies the type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node (unless \'nodeWiseAssignment\' is TRUE).  This argument is not used when the \'default\' argument is TRUE.
+type: When \'default\' is FALSE, specifies the type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node (unless \'targetByNode\' is TRUE).  This argument is not used when the \'default\' argument is TRUE.
 
 control: An optional list of control arguments to sampler functions.  These will override those specified in the control list argument to configureMCMC.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given. For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\'. The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC or addSampler) are contained in the setup code of each sampling algorithm.
 
@@ -560,9 +560,9 @@ print: Logical argument, specifying whether to print the details of newly added 
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
-nodeWiseAssignment: Logical argument, indicating whether to expand the \'target\' argument using \'expandNodeNames\' into the underlying constitutent model nodes.  These may include univariate and/or multivariate nodes, with additional control provided using the \'scalarElementsAsNodes\' argument.  When \'nodeWiseAssignment\' is TRUE and this expansion to individual nodes occurs, samplers will be assigned independently to each (univariate or multivariate) node component of \'target\'.  That is, distinct instances of the specified sampler type will be assigned to each of the nodes which comprise \'target\'.  If \'target\' is comprised of multiple univariate nodes, then a univariate sampler should be specified, and similarly when \'target\' expands to one or more multivariate nodes, then a multivariate sampler should be specified.
+targetByNode: Logical argument, with default FALSE.  This arguments controls whether separate instances of the specified sampler \'type\' should be assigned to each node comprising \'target\'.  When FALSE, a single instance of sampler \'type\' is assigned to operate on \'target\'.  When TRUE, potentially multiple instances of sampler \'type\' will be added to the MCMC configuration, operating on the distinct nodes comprising \'target\'.  For example, if \'target\' is a vector of distinct node names, then a separate sampler will be assigned to each node in this vector.  If \'target\' is a model variable which itself is comprised of multiple distinct nodes, then a separate sampler is assigned to each node comprising the \'target\' variable.  Functionally, when \'targetByNode\' is TRUE, the \'target\' argument is passed through the \'expandNodeNames\' method of the model object, which results in a vector of node names; a separate sampler is assigned to each element of this vector.  Additional control of the handing of multivariate nodes is provided using the \'multivariateNodesAsScalars\' argument.
 
-scalarElementsAsNodes: Logical argument, with default value FALSE.  When \'nodeWiseAssignment\' is TRUE and therefore \'target\' undergoes expansion via \'expandNodeNames\', this argument is passed as the \'returnScalarComponents\' argument to \'expandNodeNames\'.  This has the effect of returning the constituent scalar components which make up any multivariate nodes in \'target\', in which case a separate instance of the specified sampler type will be added to each scalar component.  This argument is only used when \'nodeWiseAssignment\' is TRUE.  See details.
+multivariateNodesAsScalars: Logical argument, with default value FALSE.  When \'targetByNode\' is TRUE and therefore separate instances of sampler \'type\' are assigned to each node comprising \'target\', this argument controls how multivariate nodes (those included in the \'target\') are handled.  When FALSE, any multivariate nodes in \'target\' have a single instance of sampler \'type\' assigned.  When TRUE, any multivariate nodes appearing in \'target\' are themselves decomposed into their scalar elements, and a separate instance of sampler \'type\' is assigned to operate on each scalar element.  Functionally, when \'targetByNode\' is TRUE (and therefore \'target\' is passed through \'expandNodeNames\'), the value of \'multivariateNodesAsScalars\' is provivded as the \'returnScalarComponents\' argument to \'expandNodeNames\'.  This argument is only used when \'targetByNode\' is TRUE.  See details.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
@@ -580,7 +580,7 @@ multivariateNodesAsScalars: Logical argument, with default value FALSE.  If spec
 
 Details:
 
-Samplers will be assigned to nodes specified by the \'target\' argument.  The \'target\' argument does not undergo expansion, unless \'nodeWiseAssignment\' is TRUE, in which case \'target\' is expanded to the underlying (univariate or multivariate) nodes, and a distinct sampler is added to each.  When \'nodeWiseAssignment\' is TRUE and \'scalarElementsAsNodes\' is TRUE, then any multivariate nodes are further decomponsed into their underlying scalar components, and a separate sampler is added to each.
+Samplers will be assigned to nodes specified by the \'target\' argument.  The \'target\' argument does not undergo expansion, unless \'targetByNode\' is TRUE, in which case \'target\' is expanded to the underlying (univariate or multivariate) nodes, and a distinct sampler is added to each.  When \'targetByNode\' is TRUE and \'multivariateNodesAsScalars\' is TRUE, then any multivariate nodes are further decomponsed into their underlying scalar components, and a separate sampler is added to each.
 
 Samplers are added added to the end of the list of samplers for this MCMCconf object, and do not replace any exisiting samplers.  Samplers are removed using the removeSamplers method.
 
@@ -602,8 +602,8 @@ Invisibly returns a list of the current sampler configurations, which are sample
 
             print <- if(is.null(print)) FALSE else print                        ## default of print is FALSE otherwise
 
-            if(!missing(expandTarget))       { messageIfVerbose('  [Warning] `expandTarget` argument name has been deprecated; please use `nodeWiseAssignment.');          nodeWiseAssignment    <- expandTarget     }
-            if(!missing(scalarComponents))   { messageIfVerbose('  [Warning] `scalarComponents` argument name has been deprecated; please use `scalarElementsAsNodes.');   scalarElementsAsNodes <- scalarComponents }
+            if(!missing(expandTarget))       { messageIfVerbose('  [Warning] `expandTarget` argument name has been deprecated; please use `targetByNode.');                     targetByNode               <- expandTarget     }
+            if(!missing(scalarComponents))   { messageIfVerbose('  [Warning] `scalarComponents` argument name has been deprecated; please use `multivariateNodesAsScalars.');   multivariateNodesAsScalars <- scalarComponents }
             
             nameProvided <- !missing(name)
             if(is.character(type)) {
@@ -668,15 +668,15 @@ Invisibly returns a list of the current sampler configurations, which are sample
             controlArgs <- c(control, list(...))
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
-            if(!nodeWiseAssignment) {
-                ## when nodeWiseAssignment = FALSE,
+            if(!targetByNode) {
+                ## when targetByNode = FALSE,
                 ## no node expansion takes place
                 addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
             } else {
-                ## when nodeWiseAssignment = TRUE,
+                ## when targetByNode = TRUE,
                 ## assign sampler type to each component of target after expanding node names,
-                ## also using scalarElementsAsNodes argument here, to control the node expansion
-                targetExpanded <- model$expandNodeNames(target, returnScalarComponents = scalarElementsAsNodes, sort = TRUE)
+                ## also using multivariateNodesAsScalars argument here, to control the node expansion
+                targetExpanded <- model$expandNodeNames(target, returnScalarComponents = multivariateNodesAsScalars, sort = TRUE)
                 for(i in seq_along(targetExpanded)) {
                     addSamplerOne(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, print)
                 }

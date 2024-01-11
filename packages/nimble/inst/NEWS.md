@@ -12,8 +12,8 @@
   
 - Change names of two arguments of the `addSampler` method of MCMC
   configuration object.  The `expandTarget` argument is renamed to
-  `nodeWiseAssignment`, and the `scalarComponents` is renamed to
-  `scalarElementsAsNodes`.
+  `targetByNode`, and the `scalarComponents` is renamed to
+  `multivariateNodesAsScalars`.
 
 ## DEVELOPER LEVEL CHANGES
 
