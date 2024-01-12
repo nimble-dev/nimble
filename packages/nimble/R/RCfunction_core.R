@@ -75,9 +75,10 @@ fxnsNotAllowedInAD <- c(
   'getLogProb',
   'decide',
   'rankSample',
-  'any_na',
+  'any_na', 
   'any_nan',
-  'ISNAN','ISNA',
+  'is.na',
+  'is.nan',
   'nimCopy','carMinBound','carMaxBound'
 )
 

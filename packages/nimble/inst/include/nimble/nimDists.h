@@ -27,8 +27,8 @@
 
 double nim_dnorm(double x, double mu, double sigma, int give_log);
 
-bool R_IsNA(NimArr<1, double> &P); // We use ISNA which is a macro for R_IsNA, so now to overload for the vector case, we muse overload R_IsNA
-bool R_isnancpp(NimArr<1, double> &P);
+bool R_IsNA_ANY(NimArr<1, double> &P); 
+bool R_isnancpp_ANY(NimArr<1, double> &P);
 
 double nimArr_ddirch(NimArr<1, double> &x, NimArr<1, double> &alpha, int give_log);
 void nimArr_rdirch(NimArr<1, double> &ans, NimArr<1, double> &alpha);

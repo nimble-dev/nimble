@@ -86,9 +86,9 @@ toEigenCalls <- c(
                                   scalar_distribution_qFuns,
                                   scalar_distribution_rFuns))
     ], 'toEigenScalarRecurse'),
-    makeCallList(c('isnan',
-                   'ISNAN',
-                   'ISNA'), 'toEigenScalarRecurse'),
+    makeCallList(c('isnan',  # Needed?
+                   'R_IsNA',
+                   'R_isnancpp'), 'toEigenScalarRecurse'),
     makeCallList(c('nimArr_dmnorm_chol',
                    'nimArr_dmvt_chol',
                    'nimArr_dlkj_corr_cholesky',

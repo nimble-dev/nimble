@@ -115,7 +115,7 @@ sizeCalls <- c(
     rt = 'sizeRecyclingRuleRfunction',
     makeCallList(paste0(c('d','q','p'), 'exp'), 'sizeRecyclingRule'),
     rexp = 'sizeRecyclingRuleRfunction',
-    makeCallList(c('isnan','ISNAN','ISNA'), 'sizeScalarRecurse'),
+    makeCallList(c('R_isnancpp_ANY','R_IsNA_ANY'), 'sizeScalarRecurse'),
     makeCallList(c('nimArr_dmnorm_chol',
                    'nimArr_dmvt_chol',
                    'nimArr_dlkj_corr_cholesky',
@@ -154,8 +154,8 @@ sizeCalls <- c(
 
 scalarOutputTypes <- list(decide = 'logical',
                           size = 'integer',
-                          isnan = 'logical',
-                          ISNA = 'logical',
+                          R_IsNA_ANY = 'logical',
+                          R_isnancpp_ANY = 'logical',
                           '!' = 'logical',
                           getNodeFunctionIndexedInfo = 'double',
                           endNimbleTimer = 'double')

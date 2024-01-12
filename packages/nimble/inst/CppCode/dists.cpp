@@ -29,17 +29,17 @@
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
 
-bool R_IsNA(double* P, int s) {
+bool R_IsNA_ANY(double* P, int s) {
   for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
   return(false);
 }
 
-bool R_isnancpp(double* P, int s) {
+bool R_isnancpp_ANY(double* P, int s) {
   for(int i = 0; i < s; ++i) if(R_isnancpp(P[i])) return(true);
   return(false);
 }
 
-bool R_FINITE_VEC(double* P, int s) {
+bool R_FINITE_ANY(double* P, int s) {
   for(int i = 0; i < s; ++i) if(!R_FINITE(P[i])) return(false);
   return(true);
 }
@@ -56,17 +56,17 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
 
   int i, j;
 
-  if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+  if (R_IsNA_ANY(x, p*p) || R_IsNA_ANY(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+  if (R_isnancpp_ANY(x, p*p) || R_isnancpp_ANY(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
     return R_NaN;
 #endif
 
   // also covers df < 0
   if(df < (double) p) ML_ERR_return_NAN;
 
-  if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+  if(!R_FINITE_ANY(x, p*p) || !R_FINITE_ANY(chol, p*p)) return R_D__0;
 
   double dens = -(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2);
   for(i = 0; i < p; i++)
@@ -207,7 +207,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, i
   int i, j, uind, lind;
   
 #ifdef IEEE_754
-  if (R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
+  if (R_isnancpp_ANY(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
     for(j = 0; j < p*p; j++) 
       Z[j] = R_NaN;
     return;
@@ -318,17 +318,17 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
 
   int i, j;
 
-  if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+  if (R_IsNA_ANY(x, p*p) || R_IsNA_ANY(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+  if (R_isnancpp_ANY(x, p*p) || R_isnancpp_ANY(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
     return R_NaN;
 #endif
 
   // also covers df < 0
   if(df < (double) p) ML_ERR_return_NAN;
 
-  if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+  if(!R_FINITE_ANY(x, p*p) || !R_FINITE_ANY(chol, p*p)) return R_D__0;
 
   double dens = -(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2);
   for(i = 0; i < p; i++)
@@ -456,7 +456,7 @@ void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param
   int i, j, uind, lind;
   
 #ifdef IEEE_754
-  if (R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
+  if (R_isnancpp_ANY(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
     for(j = 0; j < p*p; j++) 
       Z[j] = R_NaN;
     return;
@@ -544,16 +544,16 @@ SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 
 
 double dlkj_corr_cholesky(double* x, double eta, int p, int give_log) {
-  if (R_IsNA(x, p*p) || R_IsNA(eta) || R_IsNA(p))
+  if (R_IsNA_ANY(x, p*p) || R_IsNA(eta) || R_IsNA(p))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x, p*p) || R_isnancpp(eta) || R_isnancpp(p))
+  if (R_isnancpp_ANY(x, p*p) || R_isnancpp(eta) || R_isnancpp(p))
     return R_NaN;
 #endif
 
   if(eta <= 0.0) ML_ERR_return_NAN;
 
-  if(!R_FINITE_VEC(x, p*p)) return R_D__0;
+  if(!R_FINITE_ANY(x, p*p)) return R_D__0;
 
   double dens = 0.0;
   int counter = 0;
@@ -676,10 +676,10 @@ double ddirch(double* x, double* alpha, int K, int give_log)
   double sumX(0.0);
   double dens(0.0);
 
-  if (R_IsNA(x, K) || R_IsNA(alpha, K))
+  if (R_IsNA_ANY(x, K) || R_IsNA_ANY(alpha, K))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x, K) || R_isnancpp(alpha, K))
+  if (R_isnancpp_ANY(x, K) || R_isnancpp_ANY(alpha, K))
     return R_NaN;
 #endif
   
@@ -704,7 +704,7 @@ void rdirch(double* ans, double* alpha, int K)
   int i, j;
   //  double* ans = new double[K];
 #ifdef IEEE_754
-  if (R_isnancpp(alpha, K)) {
+  if (R_isnancpp_ANY(alpha, K)) {
     for(j = 0; j < K; j++) 
       ans[j] = R_NaN;
     return;
@@ -784,10 +784,10 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
   double sumX(0.0);
   double logSumProb;
 
-  if (R_IsNA(x, K) || R_IsNA(prob, K) || R_IsNA(size))
+  if (R_IsNA_ANY(x, K) || R_IsNA_ANY(prob, K) || R_IsNA(size))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x, K) || R_isnancpp(prob, K) || R_isnancpp(size))
+  if (R_isnancpp_ANY(x, K) || R_isnancpp_ANY(prob, K) || R_isnancpp(size))
     return R_NaN;
 #endif
 
@@ -917,10 +917,10 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
 double dcat(double x, double* prob, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if (R_IsNA(x) || R_IsNA(prob, K))
+  if (R_IsNA(x) || R_IsNA_ANY(prob, K))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x) || R_isnancpp(prob, K))
+  if (R_isnancpp(x) || R_isnancpp_ANY(prob, K))
     return R_NaN;
 #endif
 
@@ -1037,14 +1037,14 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
   int i;
   // add diagonals of Cholesky
 
-  if (R_IsNA(x, n) || R_IsNA(mean, n) || R_IsNA(chol, n*n) || R_IsNA(prec_param))
+  if (R_IsNA_ANY(x, n) || R_IsNA_ANY(mean, n) || R_IsNA_ANY(chol, n*n) || R_IsNA(prec_param))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x, n) || R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_isnancpp(prec_param))
+  if (R_isnancpp_ANY(x, n) || R_isnancpp_ANY(mean, n) || R_isnancpp_ANY(chol, n*n) || R_isnancpp(prec_param))
     return R_NaN;
 #endif
 
-  if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mean, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
+  if(!R_FINITE_ANY(x, n) || !R_FINITE_ANY(mean, n) || !R_FINITE_ANY(chol, n*n)) return R_D__0;
 
     
 
@@ -1143,14 +1143,14 @@ void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_par
   int i, j;
 
 #ifdef IEEE_754
-  if (R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_isnancpp(prec_param)) {
+  if (R_isnancpp_ANY(mean, n) || R_isnancpp_ANY(chol, n*n) || R_isnancpp(prec_param)) {
     for(j = 0; j < n; j++) 
       ans[j] = R_NaN;
     return;
   }
 #endif
 
-  if(!R_FINITE_VEC(chol, n*n)) { 
+  if(!R_FINITE_ANY(chol, n*n)) { 
     for(j = 0; j < n; j++) 
       ans[j] = R_NaN;
     return;
@@ -1230,14 +1230,14 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   double dens = lgammafn((df + n) / 2) - lgammafn(df / 2) - n * M_LN_SQRT_PI - n * log(df) / 2;
   int i;
   
-  if (R_IsNA(x, n) || R_IsNA(mu, n) || R_IsNA(chol, n*n) || R_IsNA(df) || R_IsNA(prec_param))
+  if (R_IsNA_ANY(x, n) || R_IsNA_ANY(mu, n) || R_IsNA_ANY(chol, n*n) || R_IsNA(df) || R_IsNA(prec_param))
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(x, n) || R_isnancpp(mu, n) || R_isnancpp(chol, n*n) || R_IsNA(df) || R_isnancpp(prec_param))
+  if (R_isnancpp_ANY(x, n) || R_isnancpp_ANY(mu, n) || R_isnancpp_ANY(chol, n*n) || R_IsNA(df) || R_isnancpp(prec_param))
     return R_NaN;
 #endif
   
-  if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mu, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
+  if(!R_FINITE_ANY(x, n) || !R_FINITE_ANY(mu, n) || !R_FINITE_ANY(chol, n*n)) return R_D__0;
   
   // add diagonals of Cholesky
   if(prec_param) {
@@ -1336,14 +1336,14 @@ void rmvt_chol(double *ans, double* mu, double* chol, double df, int n, double p
   int i, j;
   
 #ifdef IEEE_754
-  if (R_isnancpp(mu, n) || R_isnancpp(chol, n*n) || R_isnancpp(df) || R_isnancpp(prec_param)) {
+  if (R_isnancpp_ANY(mu, n) || R_isnancpp_ANY(chol, n*n) || R_isnancpp(df) || R_isnancpp(prec_param)) {
     for(j = 0; j < n; j++) 
       ans[j] = R_NaN;
     return;
   }
 #endif
   
-  if(!R_FINITE_VEC(chol, n*n)) { 
+  if(!R_FINITE_ANY(chol, n*n)) { 
     for(j = 0; j < n; j++) 
       ans[j] = R_NaN;
     return;
@@ -1668,10 +1668,10 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
 double dinterval(double x, double t, double* c, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if (R_IsNA(c, K) || R_IsNA(x) || R_IsNA(t)) 
+  if (R_IsNA_ANY(c, K) || R_IsNA(x) || R_IsNA(t)) 
     return NA_REAL;
 #ifdef IEEE_754
-  if (R_isnancpp(c, K) || R_isnancpp(x) || R_isnancpp(t))
+  if (R_isnancpp_ANY(c, K) || R_isnancpp(x) || R_isnancpp(t))
     return R_NaN;
 #endif
 
@@ -1692,7 +1692,7 @@ double rinterval(double t, double* c, int K)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
 #ifdef IEEE_754
-  if (R_isnancpp(c, K) || R_isnancpp(t) )
+  if (R_isnancpp_ANY(c, K) || R_isnancpp(t) )
     ML_ERR_return_NAN;
 #endif
 
@@ -2732,7 +2732,7 @@ SEXP C_rcar_proper(SEXP n, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau
 void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, double* M, double tau, double gamma, double* evs, int N, int L) {
   
 #ifdef IEEE_754
-  if (R_isnancpp(mu, N) || R_isnancpp(C, L) || R_isnancpp(adj, L) || R_isnancpp(num, N) || R_isnancpp(M, N) || R_isnancpp(tau) || R_isnancpp(gamma) || R_isnancpp(evs, N)) {
+  if (R_isnancpp_ANY(mu, N) || R_isnancpp_ANY(C, L) || R_isnancpp_ANY(adj, L) || R_isnancpp_ANY(num, N) || R_isnancpp_ANY(M, N) || R_isnancpp(tau) || R_isnancpp(gamma) || R_isnancpp_ANY(evs, N)) {
     for(int i = 0; i < N; i++) {
       ans[i] = R_NaN;
     }
@@ -2762,7 +2762,7 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
   int info(0);
   F77_CALL(dpotrf)(&uplo, &N, Qchol, &N, &info FCONE);
   
-  if(!R_FINITE_VEC(Qchol, N*N)) {
+  if(!R_FINITE_ANY(Qchol, N*N)) {
     for(i = 0; i < N; i++) {
       ans[i] = R_NaN;
     }
