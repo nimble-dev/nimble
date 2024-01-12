@@ -25,6 +25,19 @@
 #include "nimble/RcppUtils.h"
 
 // These are used for compilation of DSL code and presumably belong elsewhere. Where?
+
+// Versions of R functions but returning bool not int
+// for use by vectorized `is.na{,n}`.
+// Do we want bool returned or not?
+bool nim_IsNA(double x) {
+  return (bool) R_IsNA(x);
+}
+
+bool nim_isnancpp(double x) {
+  return (bool) R_isnancpp(x);
+}
+
+// Reduction versions of R functions for use by `any_na{,n}`.
 bool R_IsNA_ANY(NimArr<1, double> &P) {
   int s = P.size();
   for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);

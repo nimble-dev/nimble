@@ -27,6 +27,9 @@
 
 double nim_dnorm(double x, double mu, double sigma, int give_log);
 
+bool nim_IsNA(double x);
+bool nim_isnancpp(double x);
+
 bool R_IsNA_ANY(NimArr<1, double> &P); 
 bool R_isnancpp_ANY(NimArr<1, double> &P);
 

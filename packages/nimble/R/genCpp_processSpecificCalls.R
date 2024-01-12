@@ -11,9 +11,9 @@ specificCallReplacements <- list(
 #    '^' = 'pow', # Has its own handler below
     '%%' = 'nimMod',
     length = 'size',
-    is.nan = 'R_isnancpp',
+    is.nan = 'nim_isnancpp',
     any_nan = 'R_isnancpp_ANY',
-    is.na = 'R_IsNA',
+    is.na = 'nim_IsNA',
     any_na = 'R_IsNA_ANY',
     lgamma = 'lgammafn',
     logfact = 'lfactorial',
