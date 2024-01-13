@@ -961,7 +961,7 @@ make_AD_test2 <- function(op, argTypes, wrt_args = NULL,
   } else {
     opParam <- op
   }
-  if(is.list(argTypes))
+  if(isTRUE(attr(argTypes, "includesReturnType")))
     argTypes <- argTypes[[1]]
 
   run <- gen_runFunCore(opParam)

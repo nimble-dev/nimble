@@ -559,6 +559,7 @@ nimbleOptions(buildModelDerivs = BMDopt)
 ############
 indexBracketOps <- c("[")
 indexBracketArgs <- list(list(c("double(1)", "double(0)"), "double(0)"))
+attr(indexBracketArgs[[1]], "includesReturnType") <- TRUE
 indexBracketTests2_1D <- c(
   make_AD_test_batch(
     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
@@ -624,6 +625,7 @@ test_AD_batch(indexBracketSetTests2_1D, testFun = test_AD2,
 ############
 ## indexBracketOps <- c("[")
 ## indexBracketArgs <- list(list(c("double(2)", "double(0)", "double(0)"), "double(0)"))
+## attr(indexBracketArgs[[1]], "includesReturnType") <- TRUE
 ## indexBracketTests2_2D <- c(
 ##   make_AD_test_batch(
 ##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
@@ -690,6 +692,7 @@ test_AD_batch(indexBracketSetTests2_1D, testFun = test_AD2,
 ## ############
 ## indexBracketOps <- c("[")
 ## indexBracketArgs <- list(list(c("double(3)", "double(0)", "double(0)", "double(0)"), "double(0)"))
+## attr(indexBracketArgs[[1]], "includesReturnType") <- TRUE
 ## indexBracketTests2_3D <- c(
 ##   make_AD_test_batch(
 ##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
