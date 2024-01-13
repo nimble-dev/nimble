@@ -204,7 +204,9 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ssDllName <- normalizePath(file.path(dirName, paste0(dllName, .Platform$dynlib.ext)), winslash = "\\", mustWork=FALSE)
                                        ssdSHLIBcmd <- normalizePath(file.path(R.home('bin'), 'R'),
                                                                           winslash = "\\", mustWork=FALSE)
-                                       ssdSHLIBargs <- paste('CMD SHLIB', cppName, '-o', basename(ssDllName))
+                                       ssdSHLIBargs <- paste('CMD SHLIB',
+                                                             ifelse(nimbleOptions()$precleanCompilation, '--preclean', ''),
+                                                             cppName, '-o', basename(ssDllName))
 
                                        logFile <- paste0(dllName, ".log")
                                        errorFile <- paste0(dllName, ".err")
@@ -276,7 +278,9 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
                                        }
                                        SHLIBcmd <- normalizePath(file.path(R.home('bin'), 'R'), winslash = "\\", mustWork=FALSE)
-                                       SHLIBargs <- paste('CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
+                                       SHLIBargs <- paste('CMD SHLIB',
+                                                          ifelse(nimbleOptions()$precleanCompilation, '--preclean', ''),
+                                                          paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        cur = getwd()
                                        setwd(dirName)
