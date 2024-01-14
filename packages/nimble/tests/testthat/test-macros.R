@@ -413,6 +413,20 @@ test_that('duplicate nested indices from macro expansion error-trapped correctly
                 x ~ all_dnorm(mu, start = 1, end = 10)        
         }
         )), "Variable i used multiple times as for loop index")
+
+    # Test stop_after_processing_model_code option suggested by the error here
+    nimbleOptions(stop_after_processing_model_code = TRUE)
+    out <- capture.output( expect_error(model <- nimbleModel(
+        nimbleCode(
+        {
+            for(i in 1:3)
+                x ~ all_dnorm(mu, start = 1, end = 10)        
+        }
+        )), regexp = 'Stopped after processing macros and if/then/else statements')
+    )
+    expect_true(grepl("dnorm(mu[i], 1)", out[2], fixed=TRUE)) 
+
+    nimbleOptions(stop_after_processing_model_code = FALSE)
 })
 
 test_that('constants and env are accessed correctly, even in recursion',
@@ -497,7 +511,7 @@ test_that("macros can add constants", {
   })
   
   modelInfo <- list(constants = inp_constants)
-  out <- nimble:::codeProcessModelMacros(code, modelInfo = modelInfo)
+  out <- nimble:::codeProcessModelMacros(code, modelInfo = modelInfo, env=parent.frame())
   expect_equal(out$code,
     quote({
            x ~ dnorm(0, sd = 1)
@@ -521,7 +535,7 @@ test_that("codeProcessModelMacros converts factors to numeric", {
     }
   })
   
-  mod <- nimble:::codeProcessModelMacros(code, modelInfo=list(constants=inp_constants))
+  mod <- nimble:::codeProcessModelMacros(code, modelInfo=list(constants=inp_constants), env=parent.frame())
 
   expect_equal(
     mod$modelInfo$constants$x,
@@ -558,7 +572,7 @@ test_that("codeProcessModelMacros makes index generator available", {
     x ~ testMacro()
   })
 
-  out <- nimble:::codeProcessModelMacros(code, modelInfo=list())
+  out <- nimble:::codeProcessModelMacros(code, modelInfo=list(), env=parent.frame())
   
   expect_equal(out$code,
                quote({

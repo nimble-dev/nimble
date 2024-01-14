@@ -163,18 +163,19 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
       assignMacroInits(NULL)
       assignMacroParameters(NULL)
     }
+    if(nimbleOptions("stop_after_processing_model_code")) {
+        print(code)
+        stop(paste0('Stopped after processing macros and if/then/else statements\n',
+                    'in model code because\n',
+                    'nimbleOptions("stop_after_processing_model_code") is TRUE\n'),
+             call.=FALSE)
+    }
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
     assignDimensions(dimensions, inits, data)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode(userEnv = userEnv)                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
-    if(nimbleOptions("stop_after_processing_model_code")) {
-        print(code)
-        stop(paste0('Stopped after processing model code because\n',
-                    'nimbleOptions("stop_after_processing_model_code") is TRUE\n'),
-             call.=FALSE)
-    }
 
     ## We will try to infer sizes later
     ##addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
@@ -412,7 +413,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                         " used multiple times as for loop index in nested\n",
                         "loops.\n",
                         "If your model has macros or if-then-else blocks\n",
-                        "you can inspect the processed model code by doing\n",
+                        "you can inspect the resulting model code by doing\n",
                         "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
                         "before calling nimbleModel.\n"
                     ),
