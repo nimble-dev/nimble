@@ -237,8 +237,8 @@ processMacrosInternal <- function(code,
     if(possibleMacroName %in% c('<-', '~') && !is.name(code[[3]])) {
         possibleMacroName <- safeDeparse(code[[3]][[1]], warn = TRUE)
     }
-    if(exists(possibleMacroName)) { ## may need to provide an envir argument
-        possibleMacro <- get(possibleMacroName) ## ditto
+    if(exists(possibleMacroName, envir = env)) { ## may need to provide an envir argument
+        possibleMacro <- get(possibleMacroName, envir = env) ## ditto
         if(inherits(possibleMacro, "model_macro")) {
             expandedInfo <- try(possibleMacro$process(code, 
                                                       modelInfo=modelInfo,
