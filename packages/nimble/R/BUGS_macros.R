@@ -481,7 +481,13 @@ findAllListElementsByName <- function(inputList, name){
 }
 
 # Function to do some final cleanup on the list of generated macro parameters
-# Remove "intermediate" parameters 
+# Remove "intermediate" parameters
+# "Intermediate" parameters could occur if you have macros creating other macros.
+# For example if you have a code-creation pattern like
+# macro(parameter1) --> macro(parameter2) --> final code
+# parameter2 would not show up in the final code and would not be something
+# nimble would be saving/sampling. Thus my assumption is that it would not be of
+# interest to users/developers and should not end up in the output of getMacroParameters().
 # also check for parameters generated more than once on the LHS
 # and a give a message
 # Sometimes this could be a mistake, or it could be correct if e.g.
