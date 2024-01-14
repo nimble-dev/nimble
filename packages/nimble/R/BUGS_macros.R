@@ -282,7 +282,7 @@ processMacrosInternal <- function(code,
             # Comments are simply character strings
             if(getNimbleOption("enableMacroComments")){
               if(getNimbleOption("codeInMacroComments")){
-                macroComment <- paste("#", deparse(code))
+                macroComment <- paste("#", safeDeparse(code, warn = TRUE))
               } else {
                 macroComment <- paste("#", possibleMacroName)
               }
@@ -293,7 +293,7 @@ processMacrosInternal <- function(code,
                 # If this option is also set, then print the entire original
                 # line of code with the macro in the comments instead of just the macro name
                 if(getNimbleOption("codeInMacroComments")){  
-                  macroComment <- paste0(spacer, hashes, " ", deparse(code))
+                  macroComment <- paste0(spacer, hashes, " ", safeDeparse(code, warn = TRUE))
                 } else {
                   macroComment <- paste0(spacer, hashes, " ", possibleMacroName)
                 }
@@ -406,7 +406,7 @@ getParametersFromCodeInternal <- function(code){
   # If the code is just class(name) all by itself (no assignment), return it
   # Calling these "RHS" even though there is no sides
   if(is.name(code)){
-    return(list(LHS = NULL, RHS = deparse(code)))
+    return(list(LHS = NULL, RHS = safeDeparse(code, warn = TRUE)))
   }
   # If we have several lines of code, iterate through them recursively
   if(code[[1]] == "{"){
@@ -451,7 +451,14 @@ getMacroParsFromCodePieceInternal <- function(code){
     return(lapply(code, getMacroParsFromCodePieceInternal))
   } else {
     # return NULL for numbers and blanks, otherwise return parameter name
-    return(sapply(code, function(x) if(is.numeric(x) || x == "") return(NULL) else return(deparse(x))))
+    return(sapply(code, function(x){
+            if(is.numeric(x) || x == ""){
+              return(NULL)
+            } else{
+              return(safeDeparse(x, warn = TRUE))
+            }
+          })
+    )
   }
 }
 
