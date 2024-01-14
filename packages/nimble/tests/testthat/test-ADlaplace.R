@@ -1726,11 +1726,9 @@ test_that("Laplace with nested random effects works", {
   expect_equal(nimres$randomEffects$estimates[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
 })
 
-## This test is crashing after changes for dyn_ind handling
 test_that("Laplace error trapping of wrong-length parameters works", {
   library(nimble)
   library(testthat)
-  nimbleOptions(pauseAfterWritingFiles=TRUE)
 
   m <- nimbleModel(
     nimbleCode({
