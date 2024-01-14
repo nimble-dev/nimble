@@ -612,21 +612,21 @@ test_that("generated parameters are stored in model definition",{
 
 })
 
-test_that("getMacroParsFromCodePiece finds parameters in a chunk of code", {
+test_that("getParsFromCodePiece finds parameters in a chunk of code", {
 
   inp <- quote(1 + 1)
-  expect_equal(nimble:::getMacroParsFromCodePiece(inp), NULL)
+  expect_equal(nimble:::getParsFromCodePiece(inp), NULL)
 
   inp <- quote(x ~ dnorm(alpha, beta))
-  expect_equal(nimble:::getMacroParsFromCodePiece(inp), c("x", "alpha", "beta"))
+  expect_equal(nimble:::getParsFromCodePiece(inp), c("x", "alpha", "beta"))
 
   inp <- quote(x[alpha] <- 1)
-  expect_equal(nimble:::getMacroParsFromCodePiece(inp), c("x", "alpha"))
+  expect_equal(nimble:::getParsFromCodePiece(inp), c("x", "alpha"))
 
   inp <- quote({x ~ dnorm(alpha, beta)
                 y[gamma] <- 1
               })
-  expect_equal(nimble:::getMacroParsFromCodePiece(inp), c("x", "alpha", "beta", "y", "gamma"))
+  expect_equal(nimble:::getParsFromCodePiece(inp), c("x", "alpha", "beta", "y", "gamma"))
 
 })
 
