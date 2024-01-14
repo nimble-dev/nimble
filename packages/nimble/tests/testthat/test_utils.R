@@ -1453,7 +1453,7 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 make_op_param <- function(op, argTypes, more_args = NULL,
                           outer_code = NULL, inner_codes = NULL) {
   returnTypeProvided <- NULL
-  if(is.list(argTypes)) {
+  if(isTRUE(attr(argTypes, "includesReturnType"))) {
     returnTypeProvided <- argTypes[[2]]
     argTypes <- argTypes[[1]]
   }
