@@ -502,7 +502,8 @@ checkMacroPars <- function(parameters, startCode, endCode){
 
        msg <- paste0("  [Note] Macro '", names(final_pars[i]), "' declared LHS parameter(s): '",
                 paste(this_macro[dups], collapse="', '"), "'\n         previously declared by macro '",
-                names(final_pars[j]),"'")
+                names(final_pars[j]),"'.",
+                "\n         This is not a problem if parameter indices don't overlap")
         messageIfVerbose(msg)
 
       }
