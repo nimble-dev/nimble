@@ -309,7 +309,7 @@ processMacrosInternal <- function(code,
             curPars <- modelInfo$parameters
             expandedInfo$modelInfo$parameters <- c(curPars, newPars)
 
-            ## Return object is a list so we can ossibly extract other
+            ## Return object is a list so we can possibly extract other
             ## content in the future.  We recurse on the returned code
             ## to expand macros that it might contain.
             macroOutput <- processMacrosInternal(expandedInfo$code,
@@ -655,9 +655,8 @@ getMacroParameters <- function(model, includeLHS = TRUE, includeRHS = TRUE, incl
   # Cleanup
   lapply(out, function(x){
     lapply(x, function(y){
-      y <- unlist(y)
+      y <- unlist(y, use.names = FALSE)
       if(length(y) == 0) x <- NULL
-      names(y) <- NULL
       unique(y)
     })
   })

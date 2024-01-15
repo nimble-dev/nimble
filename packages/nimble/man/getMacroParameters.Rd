@@ -10,7 +10,7 @@ getMacroParameters(
   includeRHS = TRUE,
   includeDeterm = TRUE,
   includeStoch = TRUE,
-  includeIndices = FALSE
+  includeIndexPars = FALSE
 )
 }
 \arguments{
@@ -26,7 +26,7 @@ assignments (\code{<-} or \code{~}) in the output}
 
 \item{includeStoch}{Include stochastic generated parameters in the output}
 
-\item{includeIndices}{Include index parameters generated for use in for loops
+\item{includeIndexPars}{Include index parameters generated for use in for loops
 in the output}
 }
 \value{
