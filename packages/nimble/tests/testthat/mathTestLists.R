@@ -168,14 +168,17 @@ testsReduction = list(
 # e.g. foo = `+`
 # This set of tests includes one of each of the C++ template cases for different
 # numbers of arguments.
+# Actually, I realized that all except the 1_1 are not relevant, as currently those are
+# distribution functions always defined to return vectors. I am leaving these as
+# placeholders in case we change this in the future.
 testsRecyclingRuleMatrices = list(
- # list(name = 'matrix + 1_1 recycling rule matrix', expr=quote(out<-arg1+pow_int(arg2, 2)), inputDim = c(2, 2), outputDim = 2),
+  list(name = 'matrix + 1_1_2D recycling rule matrix', expr=quote(out<-arg1+pow_int(arg2, 2)), inputDim = c(2, 2), outputDim = 2)
  # list(name = 'matrix + 2_1 recycling rule matrix', expr=quote(out<-arg1+dexp(arg2, 1.2)), inputDim = c(2, 2), outputDim=2),
-  list(name = 'matrix + 3_1 recycling rule matrix', expr=quote(out<-arg1+dnorm(arg2, 1.2, 2.3)), inputDim = c(2, 2), outputDim=2),
-  list(name = 'matrix + 4_1 recycling rule matrix', expr=quote(out<-arg1+dt_nonstandard(arg2, 1.2, 2.3, 0.6)), inputDim = c(2, 2), outputDim=2),
-  list(name = 'matrix + 2_2 recycling rule matrix', expr=quote(out<-arg1+pexp(arg2, 1.2)), inputDim = c(2, 2), outputDim=2),
-  list(name = 'matrix + 3_2 recycling rule matrix', expr=quote(out<-arg1+pnorm(arg2, 1.2, 2.3)), inputDim = c(2, 2), outputDim=2),
-  list(name = 'matrix + 4_2 recycling rule matrix', expr=quote(out<-arg1+pt_nonstandard(arg2, 1.2, 2.3, 0.6)), inputDim = c(2, 2), outputDim=2)
+ # list(name = 'matrix + 3_1 recycling rule matrix', expr=quote(out<-arg1+dnorm(arg2, 1.2, 2.3)), inputDim = c(2, 2), outputDim=2),
+ # list(name = 'matrix + 4_1 recycling rule matrix', expr=quote(out<-arg1+dt_nonstandard(arg2, 1.2, 2.3, 0.6)), inputDim = c(2, 2), outputDim=2),
+ # list(name = 'matrix + 2_2 recycling rule matrix', expr=quote(out<-arg1+pexp(arg2, 1.2)), inputDim = c(2, 2), outputDim=2),
+ # list(name = 'matrix + 3_2 recycling rule matrix', expr=quote(out<-arg1+pnorm(arg2, 1.2, 2.3)), inputDim = c(2, 2), outputDim=2),
+ # list(name = 'matrix + 4_2 recycling rule matrix', expr=quote(out<-arg1+pt_nonstandard(arg2, 1.2, 2.3, 0.6)), inputDim = c(2, 2), outputDim=2)
 )
 
 testsComparison = list(
