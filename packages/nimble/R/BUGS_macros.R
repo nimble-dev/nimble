@@ -401,6 +401,8 @@ getParametersFromCode <- function(code){
 # Recursive function to work through a code chunk and get all parameters
 # Used above
 getParametersFromCodeInternal <- function(code){
+  # Check for length 0 code
+  if(length(code) == 0) return(list(LHS = NULL, RHS = NULL))
   # If this code is a comment, return NULL
   if(is.character(code)) return(list(LHS = NULL, RHS = NULL))
   # If the code is just class(name) all by itself (no assignment), return it
@@ -410,6 +412,8 @@ getParametersFromCodeInternal <- function(code){
   }
   # If we have several lines of code, iterate through them recursively
   if(code[[1]] == "{"){
+    # If empty brackets return now
+    if(length(code) == 1) return(list(LHS = NULL, RHS = NULL))
     return(lapply(as.list(code)[2:length(code)], getParametersFromCodeInternal))
   }
   # If a for loop, iterate through the lines recursively

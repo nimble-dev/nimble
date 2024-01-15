@@ -612,6 +612,14 @@ test_that("generated parameters are stored in model definition",{
 
 })
 
+test_that("getParametersFromCode works with empty brackets",{
+  code <- quote({})
+  expect_equal(
+    nimble:::getParametersFromCode(code),
+    list(LHS = character(0), RHS = character(0))
+  )
+})
+
 test_that("getParsFromCodePiece finds parameters in a chunk of code", {
 
   inp <- quote(1 + 1)
