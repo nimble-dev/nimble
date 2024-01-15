@@ -281,24 +281,22 @@ processMacrosInternal <- function(code,
             # by a particular macro, and one line showing the end (macroEnd)
             # Comments are simply character strings
             if(getNimbleOption("enableMacroComments")){
+              # If this option is also set, then print the entire original
+               # line of code with the macro in the comments instead of just the macro name
               if(getNimbleOption("codeInMacroComments")){
-                macroComment <- paste("#", safeDeparse(code, warn = TRUE))
+                codeOrName <- safeDeparse(code, warn = TRUE)
               } else {
-                macroComment <- paste("#", possibleMacroName)
+                codeOrName <- possibleMacroName
               }
-              macroEnd <- "# ----"
+              spacer <- ""
+              hashes <- "#"
               if(length(recursionLabels > 0)){
                 spacer <- paste(rep("  ", length(recursionLabels)), collapse="")
                 hashes <- paste(rep("#", length(recursionLabels)+1), collapse="")
-                # If this option is also set, then print the entire original
-                # line of code with the macro in the comments instead of just the macro name
-                if(getNimbleOption("codeInMacroComments")){  
-                  macroComment <- paste0(spacer, hashes, " ", safeDeparse(code, warn = TRUE))
-                } else {
-                  macroComment <- paste0(spacer, hashes, " ", possibleMacroName)
-                }
-                macroEnd <- paste0(spacer, hashes, " ----")
               }
+              macroComment <- paste0(spacer, hashes, " ", codeOrName)
+              macroEnd <- paste0(spacer, hashes, " ----")
+
               # Add the starting and ending comments to the code
               macroStartLine <- substitute(MACRO, list(MACRO = macroComment))
               macroEndLine <- substitute(END, list(END = macroEnd))
