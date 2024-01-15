@@ -540,7 +540,7 @@ checkMacroPars <- function(parameters, startCode, endCode){
 #'  assignments (\code{<-} or \code{~}) in the output
 #' @param includeDeterm Include deterministic generated parameters in the output
 #' @param includeStoch Include stochastic generated parameters in the output
-#' @param includeIndices Include index parameters generated for use in for loops
+#' @param includeIndexPars Include index parameters generated for use in for loops
 #'  in the output
 #'
 #' @details Some model macros will generate new parameters to be included in the
@@ -584,7 +584,7 @@ checkMacroPars <- function(parameters, startCode, endCode){
 #' mod$getMacroParameters(includeRHS = FALSE)
 #' # should be list(testMacro = list(c("mu", "alpha")))
 getMacroParameters <- function(model, includeLHS = TRUE, includeRHS = TRUE, includeDeterm = TRUE, 
-                              includeStoch = TRUE, includeIndices = FALSE) {
+                              includeStoch = TRUE, includeIndexPars = FALSE) {
   dc <- model$modelDef$declInfo
   out <- model$modelDef$macroParameters
 
@@ -608,7 +608,7 @@ getMacroParameters <- function(model, includeLHS = TRUE, includeRHS = TRUE, incl
   }
 
   # Indices
-  if(!includeIndices){
+  if(!includeIndexPars){
     idx <- sapply(unlist(lapply(dc, function(x) x$indexExpr)), deparse)
     out <- lapply(out, function(x){
       lapply(x, function(y){
