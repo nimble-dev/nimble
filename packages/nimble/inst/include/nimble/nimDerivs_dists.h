@@ -1187,7 +1187,7 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS4_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dt, CppAD::AD<double>)
 
-MAKE_RECYCLING_RULE_CLASS1_1scalar(nimDerivs_pow_int, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS1_1scalar_2D(nimDerivs_pow_int, CppAD::AD<double>)
 
 #define nimDerivs_nimNewMatrixD newMatrix_impl<MatrixXd_CppAD, CppAD::AD<double> >::newMatrix
 #define nimDerivs_nimDiagonalD diagonal_impl<MatrixXd_CppAD, CppAD::AD<double> >::diagonal

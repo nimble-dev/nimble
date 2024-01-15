@@ -163,6 +163,21 @@ testsReduction = list(
   list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), knownFailure = '(.*compiles|.*runs)') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions, and, in addition, is disabled because of C-R inconsistency so compilation fails as well
   )
 
+# January 2024 (1.0.1). We learned of a bug in recycling rule handling.
+# See Issue #1395. It only happens for foo(x, RR(y)) with x and y both function arguments.
+# e.g. foo = `+`
+# This set of tests includes one of each of the C++ template cases for different
+# numbers of arguments.
+testsRecyclingRuleMatrices = list(
+ # list(name = 'matrix + 1_1 recycling rule matrix', expr=quote(out<-arg1+pow_int(arg2, 2)), inputDim = c(2, 2), outputDim = 2),
+ # list(name = 'matrix + 2_1 recycling rule matrix', expr=quote(out<-arg1+dexp(arg2, 1.2)), inputDim = c(2, 2), outputDim=2),
+  list(name = 'matrix + 3_1 recycling rule matrix', expr=quote(out<-arg1+dnorm(arg2, 1.2, 2.3)), inputDim = c(2, 2), outputDim=2),
+  list(name = 'matrix + 4_1 recycling rule matrix', expr=quote(out<-arg1+dt_nonstandard(arg2, 1.2, 2.3, 0.6)), inputDim = c(2, 2), outputDim=2),
+  list(name = 'matrix + 2_2 recycling rule matrix', expr=quote(out<-arg1+pexp(arg2, 1.2)), inputDim = c(2, 2), outputDim=2),
+  list(name = 'matrix + 3_2 recycling rule matrix', expr=quote(out<-arg1+pnorm(arg2, 1.2, 2.3)), inputDim = c(2, 2), outputDim=2),
+  list(name = 'matrix + 4_2 recycling rule matrix', expr=quote(out<-arg1+pt_nonstandard(arg2, 1.2, 2.3, 0.6)), inputDim = c(2, 2), outputDim=2)
+)
+
 testsComparison = list(
   ## scalar
   list(name = 'greater than, scalar', expr = quote(out <- arg1 > arg2), inputDim = c(0,0), outputDim = 0, returnType = "logical"),
