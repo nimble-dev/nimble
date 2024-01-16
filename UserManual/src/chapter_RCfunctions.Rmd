@@ -83,7 +83,7 @@ Table \@ref(tab:coreR).
 ```{r, child = 'tables/coreRtableLong.md'}
 ```
 
-In addition to the above functions, we provide functions `any_na()` and `any_nan()` for finding if there are any `NA` or `NaN` values in a vector. These are equivalent to using `any(is.na())` and `any(is.nan())` in R.
+In addition to the above functions, we provide functions `any_na()` and `any_nan()` for finding if there are any `NA` or `NaN` values in a vector. These are equivalent to using `any(is.na())` and `any(is.nan())` in R, with the exception noted in the table above regarding `is.na()`.
 
 Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a `nimbleRcall` (see Section \@ref(sec:calling-R-code)).
 

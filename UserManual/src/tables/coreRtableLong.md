@@ -12,9 +12,9 @@ Table: (#tab:coreR) Basic R manipulation functions in NIMBLE. For some of these 
   `diag()<-`      Works for assigning the diagonal vector of a matrix.
   `dim()`         Works on a vector as well as higher-dimensional arguments.
   `length()`
-  `is.na()`       Does not correctly handle NAs from R that are type `'logical'`, 
+  `is.na()`       Does not correctly handle NAs (or NaNs) from R that are type `'logical'`, 
                   so convert these using `as.numeric()` before passing from R to NIMBLE.
-  `is.nan()`      Treats `NA` of type 'double' as being `NaN` and `NA` of type 'logical' as not being `NaN`.
+  `is.nan()`      
   `any()`         One argument only; NAs treated as FALSE.
   `all()`         One argument only; NAs treated as FALSE.
   `numeric()`     Allows additional arguments to control initialization.
