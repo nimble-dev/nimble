@@ -36,7 +36,7 @@ binaryOperators <- c(binaryMidOperators,
 binaryOrUnaryOperators <- c('+','-')
 unaryPromoteNoLogicalOperators <- c('abs','cube')
 unaryIntegerOperators <- c('nimStep') 
-unaryLogicalOperators <- c('!', 'nim_IsNA', 'nim_isnancpp')
+unaryLogicalOperators <- c('!', 'nimIsNA', 'nimIsNaN')
 unaryDoubleOperators <- c('exp',
                           'log',
                           'logit',
@@ -312,8 +312,8 @@ eigProxyTranslateExternalUnary <- list(
     eigFloor = c('floor', 'double', 'double'),
     eigNimStep = c('nimStep', 'double', 'int'),
     'eig!' = c('nimNot','bool','bool', '!'),
-    eigNim_IsNA = c('nim_IsNA', 'double', 'bool'),
-    eigNim_isnancpp = c('nim_isnancpp', 'double', 'bool')    
+    eigNimIsNA = c('nimIsNA', 'double', 'bool'),
+    eigNimIsNaN = c('nimIsNaN', 'double', 'bool')    
 )
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 

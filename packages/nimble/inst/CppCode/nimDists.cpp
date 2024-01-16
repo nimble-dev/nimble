@@ -28,25 +28,30 @@
 
 // Versions of R functions but returning bool not int
 // for use by vectorized `is.na{,n}`.
+// It's hard to track how `is.na{,n}` are processed in R,
+// but in `src/coerce.c` it appears that `do_isna{,n}`
+// call `ISNAN` and `R_isNaN` and doing that here gives
+// results that mimic `is.na{,n}` in R, while using
+// `R_IsNA` and `R_isnancpp` do not.
 // Do we want bool returned or not?
-bool nim_IsNA(double x) {
-  return (bool) R_IsNA(x);
+bool nimIsNA(double x) {
+  return (bool) ISNAN(x);
 }
 
-bool nim_isnancpp(double x) {
-  return (bool) R_isnancpp(x);
+bool nimIsNaN(double x) {
+  return (bool) R_IsNaN(x);  
 }
 
 // Reduction versions of R functions for use by `any_na{,n}`.
-bool R_IsNA_ANY(NimArr<1, double> &P) {
+bool nimAnyNA(NimArr<1, double> &P) {
   int s = P.size();
-  for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
+  for(int i = 0; i < s; ++i) if(ISNAN(P[i])) return(true);
   return(false);
 }
 
-bool R_isnancpp_ANY(NimArr<1, double> &P) {
+bool nimAnyNaN(NimArr<1, double> &P) {
   int s = P.size();
-  for(int i = 0; i < s; ++i) if(R_isnancpp(P[i])) return(true);
+  for(int i = 0; i < s; ++i) if(R_IsNaN(P[i])) return(true);
   return(false);
 }
 

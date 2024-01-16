@@ -27,11 +27,11 @@
 
 double nim_dnorm(double x, double mu, double sigma, int give_log);
 
-bool nim_IsNA(double x);
-bool nim_isnancpp(double x);
+bool nimIsNA(double x);
+bool nimIsNaN(double x);
 
-bool R_IsNA_ANY(NimArr<1, double> &P); 
-bool R_isnancpp_ANY(NimArr<1, double> &P);
+bool nimAnyNA(NimArr<1, double> &P); 
+bool nimAnyNaN(NimArr<1, double> &P);
 
 double nimArr_ddirch(NimArr<1, double> &x, NimArr<1, double> &alpha, int give_log);
 void nimArr_rdirch(NimArr<1, double> &ans, NimArr<1, double> &alpha);
