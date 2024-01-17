@@ -992,7 +992,6 @@ modifyForAD_recordable <- function(code, symTab, workEnv) {
       code$name <- paste0(code$name, "_AD2_")
       setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
     } else {
-      browser()
       workEnv$.illegalADcall <- TRUE
       if(!is.character(workEnv$.illegalADmsgs)) workEnv$.illegalADmsgs <- character()
       workEnv$.illegalADmsgs <- c(workEnv$.illegalADmsgs,

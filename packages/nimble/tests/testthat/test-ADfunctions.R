@@ -557,20 +557,44 @@ nimbleOptions(buildModelDerivs = BMDopt)
 ############
 # 1D tests
 ############
-indexBracketOps <- c("[")
-indexBracketArgs <- list(list(c("double(1)", "double(0)"), "double(0)"))
-attr(indexBracketArgs[[1]], "includesReturnType") <- TRUE
-indexBracketTests2_1D <- c(
-  make_AD_test_batch(
-    indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
-  ),
-  make_AD_test_batch(
-    indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
-    inner_codes = list(arg1 = NULL, arg2 = quote(2*X)),
-    outer_code = quote(Y*Y),
-    suffix = " inner&outer"
-  )
+# get
+
+opParamBase <- list(
+  args = list(arg1 = quote(double(1)), arg2 = quote(double(0))),
+  outputType = quote(double(0))
 )
+opParam1 <- opParamBase; opParam1$name <- "dyn_ind_get_1D_simple"
+opParam1$expr <- quote({out <- arg1[arg2]})
+
+opParam2 <- opParamBase; opParam2$name <- "dyn_ind_get_1D_innerouter"
+opParam2$expr <- quote({out <- arg1[2*arg2]^2})
+
+opParam3 <- opParamBase; opParam3$name <- "dyn_ind_get_1D_map"
+opParam3$expr <- quote({out <- innerRun(arg1[3:12], arg2)})
+
+opParam4 <- opParamBase; opParam4$name <- "dyn_ind_get_1D_map_innerouter"
+opParam4$expr <- quote({out <- innerRun(arg1[3:12], arg2)})
+
+indexBracketTests2_1D <- lapply(list(opParam1, opParam2, opParam3, opParam4),
+                                make_AD_test2,
+                                argTypes = c("double(1)", "double(0)"),
+                                wrt_args = c("arg1"))
+
+indexBracketTests2_1D[[3]]$methods$innerRun <- function(arg1 = double(1), arg2 = double(0)) {
+  out <- arg1[arg2]
+  return(out)
+  returnType(double(0))
+}
+indexBracketTests2_1D[[3]]$buildDerivs$innerRun = list()
+
+indexBracketTests2_1D[[4]]$methods$innerRun <- function(arg1 = double(1), arg2 = double(0)) {
+  out <- arg1[2*arg2]^2
+  return(out)
+  returnType(double(0))
+}
+indexBracketTests2_1D[[4]]$buildDerivs$innerRun = list()
+
+names(indexBracketTests2_1D) <- lapply(indexBracketTests2_1D, `[[`, "name") |> unlist()
 
 modify_on_match(indexBracketTests2_1D, "", "size",
                 list(arg1 = c(20),
@@ -578,6 +602,9 @@ modify_on_match(indexBracketTests2_1D, "", "size",
 modify_on_match(indexBracketTests2_1D, "", "input_gen_funs",
                 list(arg1 = function(x) rnorm(x),
                      arg2 = function(x) sample(1:10, size = 1))) # only to 10 b/c of 2X for inner_codes
+modify_on_match(indexBracketTests2_1D, "map_innerouter", "input_gen_funs",
+                list(arg1 = function(x) rnorm(x),
+                     arg2 = function(x) sample(1:5, size = 1))) # only to 5 b/c of 2X for inner_codes
 
 # This works, but it doesn't check derivs wrt index b/c that is a mess
 # in uncompiled execution
@@ -585,25 +612,45 @@ test_AD_batch(indexBracketTests2_1D, testFun = test_AD2,
               knownFailures = AD_knownFailures, verbose = FALSE)
 
 # set
-opParam1 <- list(
-  name = "dyn_ind_set_1D",
-  expr = quote({arg1[arg2] <- arg3; out <- arg1}),
+opParamBase <- list(
   args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
   outputType = quote(double(1))
 )
-opParam2 <- list(
-  name = "dyn_ind_set_1D",
-  expr = quote({arg1[2*arg2] <- arg3*arg3; out <- arg1}),
-  args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
-  outputType = quote(double(1))
-)
-indexBracketSetTests2_1D <- list(
-  dyn_set_1D_a = make_AD_test2(op = opParam1,
-                argTypes = c("double(1)", "double(0)", "double(0)"),
-                wrt_args = c("arg1", "arg3")),
-  dyn_set_1D_b = make_AD_test2(op = opParam2,
-                argTypes = c("double(1)", "double(0)", "double(0)"),
-                wrt_args = c("arg1", "arg3")))
+opParam1 <- opParamBase; opParam1$name <- "dyn_ind_set_1D_simple"
+opParam1$expr <- quote({arg1[arg2] <- arg3; out <- arg1})
+
+opParam2 <- opParamBase; opParam2$name <- "dyn_ind_set_1D_innerouter"
+opParam2$expr <- quote({arg1[2*arg2] <- arg3*arg3; out <- arg1})
+
+opParam3 <- opParamBase; opParam3$name <- "dyn_ind_set_1D_map"
+opParam3$expr <- quote({out <- innerRun(arg1[3:12], arg2, arg3)})
+
+opParam4 <- opParamBase; opParam4$name <- "dyn_ind_set_1D_map_innerouter"
+opParam4$expr <- quote({out <- innerRun(arg1[3:12], arg2, arg3)})
+
+indexBracketSetTests2_1D <- lapply(list(opParam1, opParam2, opParam3, opParam4),
+                                   make_AD_test2,
+                                   argTypes = c("double(1)", "double(0)", "double(0)"),
+                                   wrt_args = c("arg1", "arg3"))
+
+indexBracketSetTests2_1D[[3]]$methods$innerRun <- function(arg1 = double(1),
+                                                           arg2 = double(0), arg3 = double(0)) {
+  arg1[arg2] <- arg3
+  return(arg1)
+  returnType(double(1))
+}
+indexBracketSetTests2_1D[[3]]$buildDerivs$innerRun = list()
+
+indexBracketSetTests2_1D[[4]]$methods$innerRun <- function(arg1 = double(1),
+                                                           arg2 = double(0), arg3 = double(0)) {
+  arg1[2*arg2] <- arg3*arg3
+  return(arg1)
+  returnType(double(1))
+}
+indexBracketSetTests2_1D[[4]]$buildDerivs$innerRun = list()
+
+names(indexBracketSetTests2_1D) <- lapply(indexBracketSetTests2_1D, `[[`, "name") |> unlist()
+
 modify_on_match(indexBracketSetTests2_1D, "", "size",
                 list(arg1 = c(20),
                      arg2 = 1,
@@ -611,6 +658,10 @@ modify_on_match(indexBracketSetTests2_1D, "", "size",
 modify_on_match(indexBracketSetTests2_1D, "", "input_gen_funs",
                 list(arg1 = function(x) rnorm(x),
                      arg2 = function(x) sample(1:10, size = 1),
+                     arg3 = function(x) rnorm(x))) # only to 10 b/c of 2X for inner_codes
+modify_on_match(indexBracketSetTests2_1D, "map_innerouter", "input_gen_funs",
+                list(arg1 = function(x) rnorm(x),
+                     arg2 = function(x) sample(1:5, size = 1),
                      arg3 = function(x) rnorm(x))) # only to 10 b/c of 2X for inner_codes
 
 test_AD_batch(indexBracketSetTests2_1D, testFun = test_AD2,
@@ -623,36 +674,123 @@ test_AD_batch(indexBracketSetTests2_1D, testFun = test_AD2,
 ############
 # 2D tests
 ############
-## indexBracketOps <- c("[")
-## indexBracketArgs <- list(list(c("double(2)", "double(0)", "double(0)"), "double(0)"))
-## attr(indexBracketArgs[[1]], "includesReturnType") <- TRUE
-## indexBracketTests2_2D <- c(
-##   make_AD_test_batch(
-##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
-##   ),
-##   make_AD_test_batch(
-##     indexBracketOps, indexBracketArgs, maker = make_AD_test2, wrt_args = "arg1",
-##     inner_codes = list(arg1 = NULL, arg2 = quote(2*X), arg3 = quote(2*X)),
-##     outer_code = quote(Y*Y),
-##     suffix = " inner&outer"
-##   )
-## )
-## modify_on_match(indexBracketTests2_2D, "", "size",
-##                 list(arg1 = c(6, 8),
-##                      arg2 = 1,
-##                      arg3 = 1))
-## modify_on_match(indexBracketTests2_2D, "", "input_gen_funs",
-##                 list(arg1 = function(x) matrix(rnorm(x), nrow = 6),
-##                      arg2 = function(x) sample(1:3, size = 1),
-##                      arg3 = function(x) sample(1:4, size = 1)))
+# get
+opParamBase <- list(
+  args = list(arg1 = quote(double(2)), arg2 = quote(double(0)), arg3 = quote(double(0))),
+  outputType = quote(double(0))
+)
+opParam1 <- opParamBase; opParam1$name <- "dyn_ind_get_2D_simple"
+opParam1$expr <- quote({out <- arg1[arg2, arg3]})
 
-## # This works, but it doesn't check derivs wrt value b/c that is a mess
-## # in uncompiled execution
-## test_AD_batch(indexBracketTests2_2D, testFun = test_AD2,
-##               knownFailures = AD_knownFailures, verbose = FALSE)
+opParam2 <- opParamBase; opParam2$name <- "dyn_ind_get_2D_innerouter"
+opParam2$expr <- quote({out <- arg1[2*arg2, 2*arg3]^2})
 
+opParam3 <- opParamBase; opParam3$name <- "dyn_ind_get_2D_map"
+opParam3$expr <- quote({out <- innerRun(arg1[3:8, 3:10], arg2, arg3)})
+
+opParam4 <- opParamBase; opParam4$name <- "dyn_ind_get_2D_map_innerouter"
+opParam4$expr <- quote({out <- innerRun(arg1[3:8, 3:10], arg2, arg3)})
+
+indexBracketTests2_2D <- lapply(list(opParam1, opParam2, opParam3, opParam4),
+                                make_AD_test2,
+                                argTypes = c("double(2)", "double(0)", "double(0)"),
+                                wrt_args = c("arg1"))
+
+indexBracketTests2_2D[[3]]$methods$innerRun <- function(arg1 = double(2),
+                                                        arg2 = double(0), arg3 = double(0)) {
+  out <- arg1[arg2, arg3]
+  return(out)
+  returnType(double(0))
+}
+indexBracketTests2_2D[[3]]$buildDerivs$innerRun = list()
+
+indexBracketTests2_2D[[4]]$methods$innerRun <- function(arg1 = double(2),
+                                                        arg2 = double(0), arg3 = double(0)) {
+  out <- arg1[2*arg2, 2*arg3]^2
+  return(out)
+  returnType(double(0))
+}
+indexBracketTests2_2D[[4]]$buildDerivs$innerRun = list()
+
+names(indexBracketTests2_2D) <- lapply(indexBracketTests2_2D, `[[`, "name") |> unlist()
+
+modify_on_match(indexBracketTests2_2D, "", "size",
+                list(arg1 = c(8, 10),
+                     arg2 = 1, arg3 = 1))
+modify_on_match(indexBracketTests2_2D, "", "input_gen_funs",
+                list(arg1 = function(x) matrix(rnorm(x), nrow = 8),
+                     arg2 = function(x) sample(1:4, size = 1),
+                     arg3 = function(x) sample(1:5, size = 1))) # only to 4 or 5 b/c of 2X for inner_codes
+modify_on_match(indexBracketTests2_2D, "map_innerouter", "input_gen_funs",
+                list(arg1 = function(x) matrix(rnorm(x), nrow = 8),
+                     arg2 = function(x) sample(1:3, size = 1),
+                     arg3 = function(x) sample(1:4, size = 1))) # only to 3 or 4 b/c of 2X for inner_codes
+
+# This works, but it doesn't check derivs wrt index b/c that is a mess
+# in uncompiled execution
+test_AD_batch(indexBracketTests2_2D, testFun = test_AD2,
+              knownFailures = AD_knownFailures, verbose = FALSE)
 
 ## # set
+opParamBase <- list(
+  args = list(arg1 = quote(double(2)), arg2 = quote(double(0)),
+              arg3 = quote(double(0)), arg4 = quote(double(0))),
+  outputType = quote(double(2))
+)
+opParam1 <- opParamBase; opParam1$name <- "dyn_ind_set_2D_simple"
+opParam1$expr <- quote({arg1[arg2, arg3] <- arg4; out <- arg1})
+
+opParam2 <- opParamBase; opParam2$name <- "dyn_ind_set_2D_innerouter"
+opParam2$expr <- quote({arg1[arg2/2, arg3/2] <- arg4*arg4; out <- arg1})
+
+opParam3 <- opParamBase; opParam3$name <- "dyn_ind_set_2D_map"
+opParam3$expr <- quote({out <- innerRun(arg1[2:3, 2:4], arg2, arg3, arg4)})
+
+opParam4 <- opParamBase; opParam4$name <- "dyn_ind_set_2D_map_innerouter"
+opParam4$expr <- quote({out <- innerRun(arg1[2:3, 2:4], arg2, arg3, arg4)})
+
+indexBracketSetTests2_2D <- lapply(list(opParam1, opParam2, opParam3, opParam4),
+                                   make_AD_test2,
+                                   argTypes = c("double(2)", "double(0)", "double(0)", "double(0)"),
+                                   wrt_args = c("arg1", "arg4"))
+
+indexBracketSetTests2_2D[[3]]$methods$innerRun <- function(arg1 = double(2), arg2 = double(0),
+                                                           arg3 = double(0), arg4 = double(0)) {
+  arg1[arg2, arg3] <- arg4
+  return(arg1)
+  returnType(double(2))
+}
+indexBracketSetTests2_2D[[3]]$buildDerivs$innerRun = list()
+
+indexBracketSetTests2_2D[[4]]$methods$innerRun <- function(arg1 = double(2), arg2 = double(0),
+                                                           arg3 = double(0), arg4 = double(0)) {
+  arg1[arg2/2, arg3/2] <- arg4*arg4
+  return(arg1)
+  returnType(double(2))
+}
+indexBracketSetTests2_2D[[4]]$buildDerivs$innerRun = list()
+
+names(indexBracketSetTests2_2D) <- lapply(indexBracketSetTests2_2D, `[[`, "name") |> unlist()
+
+modify_on_match(indexBracketSetTests2_2D, "", "size",
+                list(arg1 = c(3, 4),
+                     arg2 = 1, arg3 = 1, arg4 = 1))
+modify_on_match(indexBracketSetTests2_2D, "", "input_gen_funs",
+                list(arg1 = function(x) matrix(rnorm(x), nrow = 3),
+                     arg2 = (\() {v <- 1; \(x) { v <<- v%%2+1;v } })(), # 1,2,1,2,1,2...
+                     arg3 = (\() {v <- 1; \(x) { v <<- v%%3+1;v } })(), #1,2,3,1,2,3...
+                     arg4 = function(x) rnorm(x))) # only to 4 or 5 b/c of 2X for inner_codes
+modify_on_match(indexBracketSetTests2_2D, "innerouter", "input_gen_funs",
+                list(arg1 = function(x) matrix(rnorm(x), nrow = 3),
+                     arg2 = (\() {v <- 1; \(x) { v <<- v%%2+1; 2*v } })(), # 2, 4, 2, 4...
+                     arg3 = (\() {v <- 1; \(x) { v <<- v%%3+1; 2*v } })(), #, 2, 4, 6, 2...
+                     arg4 = function(x) rnorm(x))) # only to 3 or 4 b/c of 2X for inner_codes
+
+test_AD_batch(indexBracketSetTests2_2D, testFun = test_AD2,
+              knownFailures = AD_knownFailures, verbose = FALSE)
+
+
+
 ## opParam1 <- list(
 ##   name = "dyn_ind_set_2D",
 ##   expr = quote({arg1[arg2, arg3] <- arg4; out <- arg1}),
