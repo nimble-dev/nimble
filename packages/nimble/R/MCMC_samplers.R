@@ -2116,6 +2116,8 @@ sampler_CAR_normal <- nimbleFunction(
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        zero_mean_caused_a_problem <- 0
         ## checks
         if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
         if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
@@ -2151,12 +2153,19 @@ sampler_CAR_normal <- nimbleFunction(
         if(zero_mean) {
             targetValues <- values(model, target)
             values(model, target) <<- targetValues - mean(targetValues)
-            model$calculate(calcNodes)
+            lp <- model$calculate(calcNodes)
+            if(is.na(lp) | is.nan(lp) | abs(lp) == Inf)   zero_mean_caused_a_problem <<- 1
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         }
     },
     methods = list(
+        after_chain = function() {
+            if(zero_mean_caused_a_problem == 1) {
+                print('  [Error] Invalid model values were induced during the MCMC, which were caused by centering of the CAR (dcar_normal) process.  Centering takes place because of the argument zero_mean=1 to the dcar_normal distribution.  Results of this MCMC run may be invalid. This can be avoided by absorbing the mean into the CAR process, and omitting the zero_mean argument.')
+            }
+        },
         reset = function() {
+            zero_mean_caused_a_problem <<- 0
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
