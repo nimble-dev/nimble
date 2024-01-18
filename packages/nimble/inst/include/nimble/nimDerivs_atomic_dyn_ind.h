@@ -192,9 +192,9 @@ CppAD::AD<double> stoch_ind_get(const NimArr<3, CppAD::AD<double> > &x,
                                 const I2_ &i2,
                                 const I3_ &i3) {
   //std::cout<<"in CppAD 2D stoch_ind_get"<<std::endl;
-  if(x.isMap()) std::cout<<"have not implemented NimArr map case yet."<<std::endl;
-  const int *strides = x.strides();
-  CppAD::AD<double> flat_i = i1*strides[0] + i2*strides[1] + i3*strides[2]; // ignore x.offset because map case needs special handling anyway
+  //if(x.isMap()) std::cout<<"have not implemented NimArr map case yet."<<std::endl;
+  const int *dim = x.dim();
+  CppAD::AD<double> flat_i = i1 + dim[0]*(i2 + i3*dim[1]); // ignore x.offset because map case needs special handling anyway
   if(CppAD::Constant(flat_i)) return x(CppADvalue<I1_>::v(i1), CppADvalue<I2_>::v(i2), CppADvalue<I3_>::v(i3));
   CppAD::vector< CppAD::AD<double> > x_(x.size());
   const int *xdim = x.dim();
@@ -394,9 +394,9 @@ class stoch_ind_set3_c<I1_, I2_, I3_, true> : public stoch_ind_set3_base_c<I1_, 
   public:
   CppAD::AD<double> operator=(const CppAD::AD<double> &v) {
     //std::cout<<"In operator= for CppAD 2D stoch_ind_set_c"<<std::endl;
-    if((*x_ptr).isMap()) std::cout<<"have not implemented NimArr map case yet."<<std::endl;
-    const int *strides = (*x_ptr).strides();
-    CppAD::AD<double> flat_i = i1*strides[0] + i2*strides[1] + i3*strides[2]; // ignore x.offset because map case needs special handling anyway
+    //if((*x_ptr).isMap()) std::cout<<"have not implemented NimArr map case yet."<<std::endl;
+    const int *dim = (*x_ptr).dim();
+    CppAD::AD<double> flat_i = i1 + dim[0]*(i2 + dim[1]*i3); // ignore x.offset because map case needs special handling anyway
     if(CppAD::Constant(flat_i)) {
       (*x_ptr)(CppADvalue<I1_>::v(i1), CppADvalue<I2_>::v(i2), CppADvalue<I3_>::v(i3)) = v;
     } else {
