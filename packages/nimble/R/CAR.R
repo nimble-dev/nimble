@@ -299,7 +299,7 @@ CAR_calcM <- nimbleFunction(
         returnType(double(1))
         return(M)
     },
-    buildDerivs = list(run  = list(ignore = c("i")))
+    buildDerivs = list(run  = list(ignore = c("i","M")))
 )
 
 
@@ -507,7 +507,7 @@ CAR_calcEVs3 <- nimbleFunction(
                 Cmatrix[i,j] <- ADbreak(Cmatrix_out[i,j])
         evs <- nimEigen(Cmatrix, only.values = TRUE)$values
         ## NaN eigenvalues occur when Cmatrix is singular.
-        tmp <- numNumeric(N)
+        tmp <- nimNumeric(N)
         for(i in 1:N)
             tmp[i] <- ADbreak(evs[i])
         if(any_nan(tmp)) {
