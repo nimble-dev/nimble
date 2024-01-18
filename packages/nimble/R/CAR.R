@@ -299,7 +299,7 @@ CAR_calcM <- nimbleFunction(
         returnType(double(1))
         return(M)
     },
-    buildDerivs = list(run  = list(ignore = c("i","M")))
+    buildDerivs = list(run  = list(ignore = c("i")))
 )
 
 

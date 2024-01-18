@@ -325,7 +325,6 @@ test_that('CAR models compile and run when derivs enabled', {
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc,project=m)
-    out <- runMCMC(cmcmc, niter=10)
     expect_silent(out <- runMCMC(cmcmc,niter=10))
 })
 
