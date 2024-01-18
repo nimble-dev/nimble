@@ -646,7 +646,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ## to make modifications for AD based on context etc.
 modifyForAD_handlers <- c(list(
     `[` = 'modifyForAD_indexingBracket',
-    pow = 'modifyForAD_issuePowWarning',
+    # pow = 'modifyForAD_issuePowWarning',
     eigenBlock = 'modifyForAD_eigenBlock',
     calculate = 'modifyForAD_calculate',
     getValues = 'modifyForAD_getSetValues',
@@ -767,10 +767,10 @@ modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
   invisible(NULL)
 }
 
-modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
-  message("   [Note] Operator `pow` may cause derivative problems with negative arguments. If the exponent is guaranteed to be an integer, use `pow_int` instead.", call. = FALSE)
-  invisible(NULL)
-}
+## modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
+##   message("   [Note] Operator `pow` may cause derivative problems with negative arguments. If the exponent is guaranteed to be an integer, use `pow_int` instead.")
+##   invisible(NULL)
+## }
 
 modifyForAD_matmult <- function(code, symTab, workEnv) {
   if(isTRUE(nimbleOptions("useADmatMultAtomic")))
