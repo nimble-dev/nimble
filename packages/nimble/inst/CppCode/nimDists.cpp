@@ -31,8 +31,8 @@
 // It's hard to track how `is.na{,n}` are processed in R,
 // but in `src/coerce.c` it appears that `do_isna{,n}`
 // call `ISNAN` and `R_isNaN` and doing that here gives
-// results that mimic `is.na{,n}` in R, while using
-// `R_IsNA` and `R_isnancpp` do not.
+// results that mimic `is.na{,n}` in R. `ISNAN` returns
+// `TRUE` for both `NA` and `NaN`.
 // Do we want bool returned or not?
 bool nimIsNA(double x) {
   return (bool) ISNAN(x);
