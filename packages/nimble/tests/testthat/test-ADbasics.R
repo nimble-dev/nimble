@@ -35,7 +35,7 @@ test_that("AD error-trapping of unsupported dists and fxns in models works", {
   expect_message(
     m <- nimbleModel(
     quote({
-      a ~ dcat(p[1:2])
+      a ~ dinterval(b, c)
     }),
     buildDerivs = TRUE
     ), "does not have support for derivatives")
