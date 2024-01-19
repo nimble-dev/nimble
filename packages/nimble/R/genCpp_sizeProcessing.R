@@ -193,8 +193,17 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                       code$sizeExprs <- thisSymbolObject
                     }
                 } else {
-                    code$type <- 'unknown'
-                    if(!typeEnv$.AllowUnknowns)
+                  code$type <- 'unknown'
+                  #Add RCfunctions to neededRCfuns.
+                  if(typeEnv[['.allowFunctionAsArgument']]) {
+                    if(exists(code$name) && is.rcf(get(code$name))) {
+                      nfmObj <- environment(get(code$name))$nfMethodRCobject
+                      uniqueName <- nfmObj$uniqueName
+                      if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+                        typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+                      }
+                    }
+                  } else if(!typeEnv$.AllowUnknowns)
                         if(identical(code$name, 'pi')) { ## unique because it may be encountered anew on on RHS and be valid
                             assign('pi',
                                    exprTypeInfoClass$new(nDim = 0,
@@ -227,16 +236,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$sizeExprs <- info$sizeExprs
                     code$nDim <- info$nDim
                     code$toEigenize <- 'maybe'
-                }
-            }
-            ## Add RCfunctions to neededRCfuns.
-            if(typeEnv[['.allowFunctionAsArgument']]) { 
-                if(exists(code$name) && is.rcf(get(code$name))) {
-                    nfmObj <- environment(get(code$name))$nfMethodRCobject
-                    uniqueName <- nfmObj$uniqueName
-                    if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
-                        typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
-                    }
                 }
             }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
@@ -1449,7 +1448,6 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
         setArg(code, 2, newExpr)
     } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
-        # Handle fn arguments that are RCfunctions.
         fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
     } else {
         stop('in `optim`, the `fn` argument, `', fnCode$name, '`, is not available or is not a nimbleFunction or nimbleFunction method.')
@@ -1654,12 +1652,13 @@ sizeRCfunction <- function(code, symTab, typeEnv, nfmObj, RCfunProc) {
     returnType <- nfmObj$returnType
     ## argInfo <- nfmObj$argInfo
     ## Insert buildDerivs label into code$aux
-    if(is.list(nfmObj$buildDerivs)) {
-        if(is.null(code$aux))
-            code$aux <- list(buildDerivs = TRUE)
-        else
-            code$aux[['buildDerivs']] <- TRUE
-    }
+    thisBuildDerivs <- is.list(nfmObj$buildDerivs)
+
+    if(is.null(code$aux))
+      code$aux <- list(buildDerivs = thisBuildDerivs)
+    else
+      code$aux[['buildDerivs']] <- thisBuildDerivs
+
     code$name <- nfmObj$uniqueName
     returnSymbol <- RCfunProc$compileInfo$returnSymbol
     argSymTab <- RCfunProc$compileInfo$origLocalSymTab
@@ -2048,8 +2047,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         }
     }
     if(is.null(RHStype) || length(RHStype)==0) {
-        if(startsWith(RHSname, "r") && gsub( "^r", "d", RHSname) %in% nimbleUserNamespace$distributions$namesVector)  # Fix issue 1355.
-            stop("Missing simulation function '", RHSname, "', perhaps because it was deleted. Please use `deregisterDistributions` to deregister the distribution.")
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '", RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     }
     if(LHS$isName) {
@@ -3147,7 +3144,9 @@ sizeReturn <- function(code, symTab, typeEnv) {
     }
     if(identical(typeEnv$return$type, 'void'))
         stop(exprClassProcessingErrorMsg(code, 'returnType was declared void() (default) (or something invalid), which is not consistent with the object you are trying to return.'), call. = FALSE)
+    typeEnv$.AllowUnknowns <- FALSE  # Issue 1356.
     asserts <- recurseSetSizes(code, symTab, typeEnv)
+    typeEnv$.AllowUnknowns <- TRUE
     if(inherits(code$args[[1]], 'exprClass')) {
         if(typeEnv$return$type == 'nimbleList' || isTRUE(code$args[[1]]$type == 'nimbleList')) {
             if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
