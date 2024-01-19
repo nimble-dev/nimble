@@ -76,7 +76,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
         useClearCompiledInADTesting = TRUE,
-        errorIfMissingNFVariable = TRUE
+        errorIfMissingNFVariable = TRUE,
+        stopOnSizeErrors = TRUE
     )
 )
 

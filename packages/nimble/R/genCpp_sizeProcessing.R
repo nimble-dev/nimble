@@ -1713,7 +1713,8 @@ arithmeticOutputType <- function(t1, t2) {
 identityAssert <- function(lhs, rhs, msg = "") {
     if(identical(lhs, rhs)) return(NULL)
     msg <- gsub("\"", "\\\\\"", msg)
-    substitute(if(lhs != rhs) nimPrint(msg), list(lhs = lhs, rhs = rhs, msg = msg))
+    printOrStop <- if(isTRUE(getNimbleOption("stopOnSizeErrors"))) quote(nimStop) else quote(nimPrint)
+    substitute(if(lhs != rhs) PRINTORSTOP(msg), list(PRINTORSTOP = printOrStop, lhs = lhs, rhs = rhs, msg = msg))
 }
 
 
@@ -3508,13 +3509,13 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
                 assertMessage <- paste0("Run-time size error: expected ", deparse(a2sizeExprs[[2]]), " == ", 1)
                 thisAssert <- identityAssert(a2sizeExprs[[2]], 1, assertMessage)
                 if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert                
-                code$sizeExprs <- a2sizeExprs
+                code$sizeExprs <- list(a1sizeExprs[[1]], 1)
             } else {
                 if(a1nDim == 2 & a2nDim == 1) {
                     assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[2]]), " == ", 1)
                     thisAssert <- identityAssert(a1sizeExprs[[2]], 1, assertMessage)
                     if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert
-                    code$sizeExprs <- a1sizeExprs
+                    code$sizeExprs <- list(a2sizeExprs[[1]], 1)
                 } else {
                     stop(exprClassProcessingErrorMsg(code, 'In sizeBinaryCwise: Dimensions do not matchin a way that can be handled.'), call. = FALSE)
                 }
