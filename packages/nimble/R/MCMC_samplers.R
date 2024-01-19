@@ -198,8 +198,8 @@ sampler_categorical <- nimbleFunction(
         if(maxLP == Inf | is.nan(maxLP))   cat("Warning: categorical sampler for '", target, "' encountered an invalid model density, and sampling results are likely invalid.\n")
         logProbs <<- logProbs - maxLP
         probs <<- exp(logProbs)
-        newValue <- rcat(1, probs)   ## rcat normalizes the probabilitiess internally
-        if(newValue != currentValue) {
+        newValue <- rcat(1, probs)   ## rcat normalizes the probabilities internally
+        if(!is.na(newValue) & newValue != currentValue) {
             model[[target]] <<- newValue
             model$calculate(calcNodes)
             ##model$calculate(calcNodesPPomitted)
