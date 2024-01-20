@@ -42,9 +42,7 @@ nimKeyWords <- list(copy = 'nimCopy',
                     max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
-distsNotAllowedInAD <- c(
-  paste0('d', c('interval', 'car_normal', 'car_proper', 'constraint'))
-)
+distsNotAllowedInAD <- NULL # formerly dconstraint, dinterval, dcar_normal, dcar_proper
 
 fxnsNotAllowedInAD <- c(
   '%%',
@@ -69,7 +67,6 @@ fxnsNotAllowedInAD <- c(
   paste0('r', c('cat', 'interval', 'car_normal', 'car_proper',
                 'dirch','mnorm_chol','multi','mvt_chol','lkj_corr_cholesky','wish_chol',
                 'invwish_chol')),
-  paste0('nimArr_d', c('dcar_normal', 'dcar_proper', 'interval')),
   paste0('nimArr_r', c('mnorm_chol','mvt_chol', 'lkj_corr_cholesky','wish_chol',
                        'invwish_chol', 'car_normal','car_proper','multi','dirch') ),
   'getLogProb',
@@ -77,7 +74,7 @@ fxnsNotAllowedInAD <- c(
   'rankSample',
   'any_na',
   'any_nan',
-  'ISNAN','ISNA',
+  'is.na', 'is.nan',
   'nimCopy','carMinBound','carMaxBound'
 )
 

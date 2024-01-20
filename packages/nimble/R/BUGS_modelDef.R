@@ -510,18 +510,14 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
 
 checkADsupportForDistribution <- function(code, userEnv) {
     dist <- as.character(code[[3]][[1]])
-    if(dist %in% c("T", "I")) {
-        dist <- as.character(code[[3]][[2]][[1]])
-        message("   [Warning] Truncation via 'T' or 'I' is not supported for derivatives. This model cannot be compiled.")
-    }
     supported <- TRUE
-    if(dist %in% callsNotAllowedInAD)
+    if(dist %in% callsNotAllowedInAD)  # As of 1.1.0, no longer needed as there are not any of these any more.
         message("   [Warning] Distribution ", dist, " does not have support for derivatives. This model cannot be compiled.")
     else {
         if(!dist %in% distributions$namesVector) {
             dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
             if(!is.rcf(dfun))
-                message("   [warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
+                message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
             else {
                 dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
                 if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs))

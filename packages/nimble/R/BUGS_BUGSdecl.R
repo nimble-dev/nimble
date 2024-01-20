@@ -826,10 +826,6 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 "`. Please set `nimbleOptions(allowDynamicIndexing = TRUE)`.")
                         dynamicIndexParent <- code[[2]]
                     } else {
-                        if(isTRUE(nimbleOptions("doADerrorTraps")))
-                          if(isTRUE(buildDerivs))
-                            message("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing (found in `", safeDeparse(code), "`).  Please use 'buildDerivs = FALSE' to proceed with this model.")
-                      
                         if(any(
                             sapply(contentsCode,
                                    detectNonscalarIndex))
