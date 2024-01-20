@@ -188,7 +188,7 @@ nfProcessing <- setRefClass('nfProcessing',
             debug <- control$debug
             debugCpp <- control$debugCpp
             if(!is.null(getNimbleOption('debugNFProcessing'))) {
-                if(getNmbleOption('debugNFProcessing')) {
+                if(getNimbleOption('debugNFProcessing')) {
                     debug <- TRUE
                     control$debug <- TRUE
                     writeLines("Debugging nfProcessing (nimbleOptions('debugRCfunProcessing') is set to TRUE)") 

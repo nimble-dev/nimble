@@ -363,7 +363,7 @@ nf_createGeneratorFunctionDef <- function(setup) {
       nfRefClassObject <- nfRefClass()   # create an object of the reference class
       nfRefClassObject$.generatorFunction <- generatorFunction   # link upwards to get the generating function of this nf
       ## assign setupOutputs into reference class object
-      if(!getNimbleOptions('compileOnly'))
+      if(!getNimbleOption('compileOnly'))
         for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
           nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
         }

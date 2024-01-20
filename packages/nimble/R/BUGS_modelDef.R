@@ -468,7 +468,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                         "loops.\n",
                         "If your model has macros or if-then-else blocks\n",
                         "you can inspect the processed model code by doing\n",
-                        "getNimbleOption(stop_after_processing_model_code = TRUE)\n",
+                        "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
                         "before calling nimbleModel.\n"
                     ),
                     call. = FALSE)
