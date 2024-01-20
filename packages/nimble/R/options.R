@@ -98,7 +98,7 @@ setNimbleOption <- function(name, value) {
 #' @examples
 #' getNimbleOption('verifyConjugatePosteriors')
 getNimbleOption <- function(x) {
-    option <- try(get(x, envir = .nimbleOptions))
+    option <- try(get(x, envir = .nimbleOptions), silent = TRUE)
     if(inherits(option, 'try-error'))
         return(NULL)
     return(option)
