@@ -406,7 +406,7 @@ sampler_RW_block <- nimbleFunction(
         scaleHistory <- c(0, 0)                                                                  ## scaleHistory
         acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
         propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
-        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
+        saveMCMChistory <- if(getNimbleOption('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -619,7 +619,7 @@ sampler_slice <- nimbleFunction(
         timesAdapted  <- 0
         sumJumps      <- 0
         widthHistory  <- c(0, 0)   ## widthHistory
-        if(nimbleOptions('MCMCsaveHistory')) {
+        if(getNimbleOption('MCMCsaveHistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
         discrete      <- model$isDiscrete(target)
@@ -1718,7 +1718,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         scaleHistory <- c(0, 0)                                                                  ## scaleHistory
         acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
         propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
-        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
+        saveMCMChistory <- if(getNimbleOption('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)

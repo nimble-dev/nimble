@@ -94,7 +94,7 @@ nimbleFunction <- function(setup         = NULL,
         if(length(methods) > 0) stop('Cannot provide multiple methods if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         if(!is.null(contains)) stop('Cannot provide a contains argument if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         thisBuildDerivs <- FALSE
-        if(isTRUE(nimbleOptions("enableDerivs"))) {
+        if(isTRUE(getNimbleOption("enableDerivs"))) {
             if(isTRUE(buildDerivs)) buildDerivs <- list(run = list()) ## empty list means TRUE with no configuration information
             if(isFALSE(buildDerivs)) buildDerivs <- list()
             if(identical(buildDerivs, 'run')) buildDerivs <- list(run = list())
@@ -104,7 +104,7 @@ nimbleFunction <- function(setup         = NULL,
         return(RCfunction(run, name = name, check = check, buildDerivs = thisBuildDerivs, where = where))
     }
 
-    if(isTRUE(nimbleOptions("enableDerivs")) && isTRUE(buildDerivs))
+    if(isTRUE(getNimbleOption("enableDerivs")) && isTRUE(buildDerivs))
         stop("'buildDerivs' cannot be 'TRUE' when a setup function is provided. Please specify the specific method(s) for which 'buildDerivs' should be set.")
 
     virtual <- FALSE
@@ -113,7 +113,7 @@ nimbleFunction <- function(setup         = NULL,
     className <- name
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    if(isTRUE(nimbleOptions('enableDerivs'))
+    if(isTRUE(getNimbleOption('enableDerivs'))
        && length(buildDerivs)>0) {
         ## convert buildDerivs to a format of name = list(controls...)
         if(is.character(buildDerivs)) {
@@ -121,7 +121,7 @@ nimbleFunction <- function(setup         = NULL,
                 lapply(buildDerivs, function(x) list()),
                 names = buildDerivs)
         }
-    } else if(!isTRUE(nimbleOptions('enableDerivs'))
+    } else if(!isTRUE(getNimbleOption('enableDerivs'))
               && length(buildDerivs) > 0)
         stop('To build nimbleFunction derivatives, you must first set "nimbleOptions(enableDerivs = TRUE)".')
     origMethodList <- methodList
@@ -130,7 +130,7 @@ nimbleFunction <- function(setup         = NULL,
 
     for(iM in seq_along(origMethodList)) {
         thisBuildDerivs <- FALSE
-        if(nimbleOptions('enableDerivs')
+        if(getNimbleOption('enableDerivs')
            && length(buildDerivs)>0) {
             thisBuildDerivs <-  !is.null(buildDerivs[[ names(origMethodList)[iM] ]])
         }
@@ -363,7 +363,7 @@ nf_createGeneratorFunctionDef <- function(setup) {
       nfRefClassObject <- nfRefClass()   # create an object of the reference class
       nfRefClassObject$.generatorFunction <- generatorFunction   # link upwards to get the generating function of this nf
       ## assign setupOutputs into reference class object
-      if(!nimbleOptions()$compileOnly)
+      if(!getNimbleOptions('compileOnly'))
         for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
           nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
         }

@@ -21,7 +21,7 @@ nodeFunctionNew <- function(LHS,
     boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
     
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         if(length(dynamicIndexInfo)) {
             for(i in seq_along(dynamicIndexInfo))
                 dynamicIndexInfo[[i]]$indexCode <- nndf_replaceSetupOutputsWithIndexedNodeInfo(dynamicIndexInfo[[i]]$indexCode, setupOutputLabels)
@@ -179,7 +179,7 @@ nndf_createMethodList <- function(LHS,
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))))
         if(FALSE) {
-        if(nimbleOptions()$compileAltParamFunctions) {
+        if(getNimbleOption('compileAltParamFunctions')) {
             distName <- as.character(RHS[[1]])
             ## add accessor function for node value; used in multivariate conjugate sampler functions
             type = getType(distName)

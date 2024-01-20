@@ -193,7 +193,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             '
 For internal use.  Adds default MCMC samplers to the specified nodes.
 '
-            useNewConfigureMCMC <- isTRUE(nimbleOptions("useNewConfigureMCMC"))
+            useNewConfigureMCMC <- isTRUE(getNimbleOption("useNewConfigureMCMC"))
             
             controlDefaultsArg <- list(...)
             for(i in seq_along(control))     controlDefaultsArg[[names(control)[i]]] <- control[[i]]
@@ -1033,7 +1033,7 @@ Details: See the initialize() function
             nl_checkVarNamesInModel(model, vars)
             if(ind == 1)     monitors  <<- sort(unique(c(monitors,  vars)))
             if(ind == 2)     monitors2 <<- sort(unique(c(monitors2, vars)))
-            if(print && nimbleOptions('verbose')) printMonitors()
+            if(print && getNimbleOption('verbose')) printMonitors()
             return(invisible(NULL))
         },
 
@@ -1147,7 +1147,7 @@ Details: See the initialize() function
             if(thin != floor(thin))   stop('cannot use non-integer thin', call. = FALSE)
             if(ind == 1)   thin  <<- thin
             if(ind == 2)   thin2 <<- thin
-            if(print && nimbleOptions('verbose')) printMonitors()
+            if(print && getNimbleOption('verbose')) printMonitors()
             return(invisible(NULL))
         },
         setThin2 = function(thin2, print = TRUE) {
