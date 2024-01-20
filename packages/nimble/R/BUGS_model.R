@@ -656,7 +656,7 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## it is possible that the constants don't exist on LHS of BUGS decls
                                               ## and so are not variables in the model.  In that case we don't want to issue the warning.
                                               if(warnAboutMissingNames
-                                                 && nimble::nimbleOptions("verbose")) {
+                                                 && nimble::getNimbleOption("verbose")) {
                                                   if(varName == '') {
                                                       warning('setData: unnamed element provided to setData.')
                                                   } else 
@@ -1266,7 +1266,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                               }
                                       }
                                     
-                                      if(isTRUE(nimble::nimbleOptions('verbose'))){
+                                      if(isTRUE(nimble::getNimbleOption('verbose'))){
                                         varsWithNAs <- NULL
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
@@ -1496,7 +1496,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                                                                                allSizeAndDimList = parentsSizeAndDims, checkRagged = FALSE)
                                            } else parentsSizeAndDims <- list()
 
-                                           if(nimble::nimbleOptions()$allowDynamicIndexing && length(BUGSdecl$dynamicIndexInfo)) {  ## need dim for node for generating NaN with invalid dynamic indexes
+                                           if(nimble::getNimbleOption('allowDynamicIndexing') && length(BUGSdecl$dynamicIndexInfo)) {  ## need dim for node for generating NaN with invalid dynamic indexes
                                                nodeSizeAndDims <- nimble:::makeSizeAndDimList(LHS, nimble:::safeDeparse(BUGSdecl$targetVarExpr, warn = TRUE),
                                                                                               BUGSdecl$unrolledIndicesMatrix,
                                                                                               checkRagged = FALSE)
@@ -1516,7 +1516,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## This can be necessary in a case like for(j in ...) for(i in ...) x[i,j] ~ ...; because x uses inner index first
 
                                            dynamicIndexInfo <- BUGSdecl$dynamicIndexInfo
-                                           if(nimble::nimbleOptions()$allowDynamicIndexing) {
+                                           if(nimble::getNimbleOption('allowDynamicIndexing')) {
                                                for(iI in seq_along(dynamicIndexInfo))
                                                    dynamicIndexInfo[[iI]]$indexCode <- nimble:::insertSingleIndexBrackets(dynamicIndexInfo[[iI]]$indexCode, modelDef$varInfo)
                                            }

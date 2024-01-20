@@ -24,6 +24,7 @@ labelFunctionMetaCreator <- function() {
                 nextIndex <<- 1
                 return(invisible(NULL))
             }
+            envName <- gsub("\\.", "_dot_", envName)
             lead <- paste(lead, envName , sep = '_')
             ans <- paste0(lead, nextIndex - 1 + (1:count))
             nextIndex <<- nextIndex + count
@@ -149,7 +150,7 @@ deparse <- function(...) {
 ## are cases where not modifying the nlines behavior may be best. 
 safeDeparse <- function(..., warn = FALSE) {
     out <- deparse(...)
-    if(nimbleOptions('useSafeDeparse')) {
+    if(getNimbleOption('useSafeDeparse')) {
         dotArgs <- list(...)
         if("nlines" %in% names(dotArgs))
             nlines <- dotArgs$nlines else nlines <- 1L
@@ -203,4 +204,4 @@ printErrors <- function(excludeWarnings = TRUE) {
 
 #' @export
 messageIfVerbose <- function(...) 
-    if(nimbleOptions('verbose')) message(...)
+    if(getNimbleOption('verbose')) message(...)

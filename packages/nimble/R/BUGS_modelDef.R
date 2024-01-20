@@ -142,7 +142,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     if(debug) browser()
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
-    if(nimbleOptions("enableModelMacros")){
+    if(getNimbleOption("enableModelMacros")){
       # Stuff to do if macros are enabled
       # Bundle key model info
       modelInfo <- list(constants = constants, dimensions = dimensions)
@@ -163,7 +163,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
       assignMacroInits(NULL)
       assignMacroParameters(NULL)
     }
-    if(isTRUE(nimbleOptions("stop_after_processing_model_code"))) {
+    if(isTRUE(getNimbleOption("stop_after_processing_model_code"))) {
         print(code)
         stop(paste0('Stopped after processing macros and if/then/else statements\n',
                     'in model code because\n',
@@ -176,7 +176,6 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     assignDimensions(dimensions, inits, data)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode(userEnv = userEnv)                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
-
     ## We will try to infer sizes later
     ##addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     splitConstantsAndData()           ## deals with case when data is passed in as constants
@@ -277,7 +276,7 @@ modelDefClass$methods(assignBUGScode = function(code) {
 })
 modelDefClass$methods(assignConstants = function(constants) {
     ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
-    constantsEnv <<- new.env()
+    constantsEnv <<- new.env() 
     if(length(constants) > 0) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
@@ -322,6 +321,10 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
         }
     }
 
+    ## update added Dec 2023, DT ... tbt earlier update in newModel method (Oct 2015)
+    ## handling for JAGS style inits (a list of lists)
+    if(length(initsList) > 0 && is.list(initsList[[1]]))   initsList <- initsList[[1]]
+    ##
     # add dimensions of any *non-scalar* inits to dimensionsList
     # we'll try to be smart about this: check for duplicate names in inits and dimensions, and make sure they agree
     for(i in seq_along(initsList)) {
@@ -391,8 +394,8 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             if(code[[i]][[1]] == '~') {
                 code[[i]] <- replaceDistributionAliases(code[[i]])
                 checkUserDefinedDistribution(code[[i]], userEnv)
-                if(isTRUE(nimbleOptions("enableDerivs")))
-                    if(isTRUE(nimbleOptions("doADerrorTraps")))
+                if(isTRUE(getNimbleOption("enableDerivs")))
+                    if(isTRUE(getNimbleOption("doADerrorTraps")))
                         if(buildDerivs)
                             checkADsupportForDistribution(code[[i]], userEnv)
             }
@@ -420,7 +423,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                     call. = FALSE)
             }
             indexRangeExpr <- code[[i]][[3]] ## This is the `1:N`
-            if(nimbleOptions()$prioritizeColonLikeBUGS)
+            if(getNimbleOption('prioritizeColonLikeBUGS'))
                 indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
@@ -532,7 +535,7 @@ modelDefClass$methods(splitConstantsAndData = function() {
         constantsNames <- as.character(constantsNamesList)
         newDataVars <- constantsNames[constantsNames %in% vars]
         if(length(newDataVars)) {
-            if(nimbleOptions('verbose')) message("  [Note] Using '", paste(newDataVars, collapse = ','), "' (given within 'constants') as data.")
+            if(getNimbleOption('verbose')) message("  [Note] Using '", paste(newDataVars, collapse = ','), "' (given within 'constants') as data.")
             constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
             constantsScalarNamesList <<- constantsScalarNamesList[ !(as.character(constantsScalarNamesList) %in% newDataVars) ]
             constantsList[newDataVars] <<- NULL
@@ -1254,7 +1257,7 @@ modelDefClass$methods(genNodeInfo3 = function(debug = FALSE) {
         }
 
         ## Pick out which parts of the context (which for loop indices) are used in this BUGSdecl
-        if(nimbleOptions()$allowDynamicIndexing) {
+        if(getNimbleOption('allowDynamicIndexing')) {
             ## We need NA as indexExpr for useContext to correctly determine not to use context for dynamic indexes.
             indexExprWithNA <- lapply(BUGSdecl$indexExpr, function(x) if(isDynamicIndex(x)) as.numeric(NA) else x)
             useContext <- unlist(lapply(context$singleContexts, function(x) isNameInExprList(x$indexVarExpr, indexExprWithNA)))
@@ -1413,6 +1416,10 @@ determineContextSize <- function(context, useContext = rep(TRUE, length(context$
     test <- try(eval(innerLoopCode, evalEnv))
     if(is(test, 'try-error'))
         stop("Could not evaluate loop syntax: is indexing information provided via 'constants'?")
+    wh <- which(!all.vars(innerLoopCode) %in% c(ls(evalEnv), context$indexVarNames))
+    if(length(wh))
+        messageIfVerbose("  [Warning] Indexing information for ", paste(all.vars(innerLoopCode)[wh], collapse = ", "),
+                " not provided in `constants`.\n            Information has been found in the user's environment,\n            but we recommend all indexing information be provided via `constants`.")
     ans <- evalEnv$iAns
     rm(list = c('iAns', context$indexVarNames[useContext]), envir = evalEnv)
     return(ans)
@@ -1624,7 +1631,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
 
     ## 1. Determine which indexExprs are in parentExpr
     useContext <- unlist(lapply(indexExprs, isNameInExprList, parentExpr))
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         dynamicIndices <- detectDynamicIndexes(parentExpr)
         numDynamicIndices <- sum(dynamicIndices)
         if(numDynamicIndices) {
@@ -1672,7 +1679,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
             if(all(boolIndexNamePiecesExprs)) {
                 varIndicesToUse <- unrolledBUGSindices[ boolUseUnrolledRow, unlist(parentIndexNamePieces) ]
             } else {
-                if(nimbleOptions()$allowDynamicIndexing) {
+                if(getNimbleOption('allowDynamicIndexing')) {
                     boolIndexNamePiecesExprs <- boolIndexNamePiecesExprs[!dynamicIndices]
                     parentIndexNamePieces <- parentIndexNamePieces[!dynamicIndices]
                 }
@@ -1687,10 +1694,10 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
         else { ## is it hard-coded like x ~ dnorm(mu[1,2], 1)
             if(is.null(parentIndexNamePieces))
                 stop("Error in splitVertices: you may have omitted indexing for a multivariate variable: ", as.character(parentExprReplaced), ".")
-            if(nimbleOptions()$allowDynamicIndexing && numDynamicIndices == length(dynamicIndices)) {
+            if(getNimbleOption('allowDynamicIndexing') && numDynamicIndices == length(dynamicIndices)) {
                 varIndicesToUse <- NULL  # only dynamic indexing
             } else {
-                if(nimbleOptions()$allowDynamicIndexing) {
+                if(getNimbleOption('allowDynamicIndexing')) {
                     parentIndexNamePieces <- parentIndexNamePieces[!dynamicIndices]
                     parentExprReplaced <- parentExprReplaced[c(1:2,which(!dynamicIndices)+2)]
                 }
@@ -1703,7 +1710,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
         }
 
         ## now expand.grid (actually Cartesian product) with necessary varInfo
-        if(nimbleOptions()$allowDynamicIndexing) 
+        if(getNimbleOption('allowDynamicIndexing')) 
             if(useDynamicIndices) {
                 if(is.null(varIndicesToUse)) {
                     varIndicesToUse <- unrolledVarIndices
@@ -1833,7 +1840,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
     anyContext <- ncol(unrolledBUGSindices) > 0 
     if(length(anyContext)==0) stop('collectEdges: problem with anyContext')
 
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         ## replace NA with 1 to index into first element, since for unknownIndex vars there should be only one vertex
         for(iii in seq_along(parentIndexNamePieces))
             if(length(parentIndexNamePieces[[iii]]) == 1 && isDynamicIndex(parentIndexNamePieces[[iii]]))
@@ -1901,7 +1908,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 ## pull out dynamic indexing info for use in constraining range in nodeFunctions and then strip out USED_IN_INDEX tagging and replace .DYN_INDEX tagged indexing code with NA
 ## original plan was for some code here (if based on variables) or later (if based on vertices) to find the elements used in dynamic indexing for when we planned to dynamically update the graph
 modelDefClass$methods(findDynamicIndexParticipants = function() {
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         for(iDI in seq_along(declInfo)) {
             if(declInfo[[iDI]]$type == "unknownIndex") next
             declInfo[[iDI]]$dynamicIndexInfo <<- list()
@@ -1934,7 +1941,7 @@ modelDefClass$methods(findDynamicIndexParticipants = function() {
 })
 
 modelDefClass$methods(addFullDimExtentToUnknownIndexDeclarations = function() {
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         for(iDI in seq_along(declInfo)) {
             if(declInfo[[iDI]]$type == "unknownIndex") {
                 parentExpr <- declInfo[[iDI]]$symbolicParentNodes[[1]]
@@ -1988,14 +1995,14 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         varName <- varInfo[[iV]]$varName
         if(varInfo[[iV]]$nDim > 0) {
             vars_2_nodeOrigID[[varName]] <- array(as.numeric(NA), dim = varInfo[[iV]]$maxs)
-            if(nimbleOptions()$allowDynamicIndexing)
+            if(getNimbleOption('allowDynamicIndexing'))
                 if(varName %in% unknownIndexNames) next ## unknownIndex objects have no logProb
             vars2LogProbName[[varName]] <- array(dim = varInfo[[iV]]$maxs)
            ## vars2LogProbID[[varName]] <- array(dim = varInfo[[iV]]$maxs)
             storage.mode(vars2LogProbName[[varName]]) <- 'character'
         } else {
             vars_2_nodeOrigID[[varName]] <- as.numeric(NA)
-            if(nimbleOptions()$allowDynamicIndexing)
+            if(getNimbleOption('allowDynamicIndexing'))
                 if(varName %in% unknownIndexNames) next ## unknownIndex objects have no logProb
             vars2LogProbName[[varName]] <- as.character(NA)
             ##vars2LogProbID[[varName]] <- as.numeric(NA)
@@ -2018,9 +2025,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         usedIndexes <- contexts[[BUGSdecl$contextID]]$indexVarNames %in%
             unlist(all.vars(BUGSdecl$targetExpr))
         if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes) && !length(grep("^lifted", BUGSdecl$targetExpr)))
-            warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
+            messageIfVerbose("  [Warning] Multiple definitions for the same node.\n            Did you forget indexing with '",
                           paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
-                           "' on the left-hand side of '", safeDeparse(BUGSdecl$code), "'?"))
+                           "' on the left-hand side of\n            `", safeDeparse(BUGSdecl$code), "`?")
         if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {
@@ -2078,7 +2085,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
 
     maxOrigNodeID <- next_origID - 1
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         nodeNamesLHSall <- allNodeNames[types != "unknownIndex"]
         numNodeFunctions <<- maxOrigNodeID - sum(types == "unknownIndex")
     } else {
@@ -2208,7 +2215,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ##    In this step a piece like x[3:4] is identified and gets a new unique vertexID
 #    if(debug) browser()
     for(iV in seq_along(varInfo)) {
-        if(nimbleOptions()$allowDynamicIndexing)
+        if(getNimbleOption('allowDynamicIndexing'))
             if(varInfo[[iV]]$varName %in% unknownIndexNames) next 
         if(varInfo[[iV]]$nDim > 0) {
             varName <- varInfo[[iV]]$varName
@@ -2274,7 +2281,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
 
     ## 7d. Treat unknownIndex variables like RHSonly with NAs in vars_2_nodeOrigID
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         for(iV in seq_along(varInfo)) {
             varName <- varInfo[[iV]]$varName
             if(varName %in% unknownIndexNames) 
@@ -2314,14 +2321,14 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 #    if(debug) browser()
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
-        if(nimbleOptions()$allowDynamicIndexing)
+        if(getNimbleOption('allowDynamicIndexing'))
             if(varName %in% unknownIndexNames)  ## inferred vertices are from parent variable not unknownIndex variable
                 next
         newEdges <- collectInferredVertexEdges(vars_2_nodeOrigID[[varName]], vars_2_vertexOrigID[[varName]])
         edgesFrom <- c(edgesFrom, newEdges[[1]])
         edgesTo <- c(edgesTo, newEdges[[2]])
         edgesParentExprID <- c(edgesParentExprID, rep(NA, length(newEdges[[1]])))
-        if(nimbleOptions()$allowDynamicIndexing) {
+        if(getNimbleOption('allowDynamicIndexing')) {
             if(!varName %in% unknownIndexNames)
                 vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
         } else vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
@@ -2374,7 +2381,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         BUGSdecl$graphIDs <- oldGraphID_2_newGraphID[ BUGSdecl$origIDs ]
         graphID_2_declID[ BUGSdecl$graphIDs ] <- iDI
     }
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         ## inserted declInfo elements for unknownIndex vars will be removed later
         unknownIndexDecl <- which(sapply(declInfo, function(x) x$type == "unknownIndex"))
         graphID_2_declID[graphID_2_declID %in% unknownIndexDecl] <- 0 
@@ -2473,7 +2480,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
 
-    if(nimbleOptions('checkDuplicateNodeDefinitions')) {
+    if(getNimbleOption('checkDuplicateNodeDefinitions')) {
         dups <- duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])
         if(any(dups)) {
             ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
@@ -2555,7 +2562,7 @@ modelDefClass$methods(genVarInfo3 = function() {
 
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
-        if(nimbleOptions()$allowDynamicIndexing)
+        if(getNimbleOption('allowDynamicIndexing'))
             if(BUGSdecl$type == "unknownIndex") next  # handled in addUnknownIndexVars to avoid all the processing here
         if(BUGSdecl$numUnrolledNodes == 0) next
         ## LHS:
@@ -2583,7 +2590,7 @@ modelDefClass$methods(genVarInfo3 = function() {
     
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
-        if(nimbleOptions()$allowDynamicIndexing)
+        if(getNimbleOption('allowDynamicIndexing'))
             if(BUGSdecl$type == "unknownIndex") next  # handled in addUnknownIndexVars to avoid all the processing here
         if(BUGSdecl$numUnrolledNodes == 0) next
         ## LHS:
@@ -2624,10 +2631,10 @@ modelDefClass$methods(genVarInfo3 = function() {
 
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
-            if(nimbleOptions()$allowDynamicIndexing)
+            if(getNimbleOption('allowDynamicIndexing'))
                 rhsVar <- stripUnknownIndexFromVarName(rhsVar) # symbolicParentNodes already expressed in terms of unknownIndex entity but we want the inferred variable to be the original one
             if(!(rhsVar %in% names(varInfo))) {
-                if(!nimbleOptions()$allowDynamicIndexing) {
+                if(!getNimbleOption('allowDynamicIndexing')) {
                     nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1)
                                 0
                             else 
@@ -2657,7 +2664,7 @@ modelDefClass$methods(genVarInfo3 = function() {
                         varInfo[[rhsVar]]$maxs[iDim] <<- max(varInfo[[rhsVar]]$maxs[iDim], max(indsHigh))
                     } else {
                         ## If the index is dynamic (marked by NA), there is nothing to learn about index range of the variable.
-                        if(nimbleOptions()$allowDynamicIndexing)
+                        if(getNimbleOption('allowDynamicIndexing'))
                             if(isDynamicIndex(indexNamePieces)) {
                                 varInfo[[rhsVar]]$mins[iDim] <<- min(varInfo[[rhsVar]]$mins[iDim], 1) ## o.w., never changed from 1e5 if only on RHS and in 'dimensions' input
                                 varInfo[[rhsVar]]$maxs[iDim] <<- max(varInfo[[rhsVar]]$maxs[iDim], 1) ## o.w., can end up with (1,0) as (min,max) before 'dimensions' are used
@@ -2713,7 +2720,7 @@ modelDefClass$methods(genVarInfo3 = function() {
 modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
 #    if(debug) browser()
     unknownIndexNames <<- NULL
-    if(nimbleOptions()$allowDynamicIndexing) 
+    if(getNimbleOption('allowDynamicIndexing')) 
         for(iDI in seq_along(declInfo)) {
             BUGSdecl <- declInfo[[iDI]]
             if(BUGSdecl$type != 'unknownIndex') next
@@ -2734,14 +2741,14 @@ modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
 
 ## This removes temporary declarations and vars created because of dynamic indexing.
 modelDefClass$methods(stripUnknownIndexInfo = function() {
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         declInfo[sapply(declInfo, function(x) x$type == 'unknownIndex')] <<- NULL
         sapply(unknownIndexNames, function(x) varInfo[[x]] <<- NULL) # At one point, this was needed for isData stuff since we have unknownIndex vars as part of graph, but doesn't seem to be needed anymore.
     }
 })
 
 modelDefClass$methods(genUnknownIndexDeclarations = function() {
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         nimFunNames <- getAllDistributionsInfo('namesExprList')
         for(i in seq_along(declInfo)){
             for(p in seq_along(declInfo[[i]]$symbolicParentNodes)) {
@@ -2784,7 +2791,7 @@ modelDefClass$methods(genVarNames = function() {
 })
 
 modelDefClass$methods(warnRHSonlyDynIdx = function() {
-    if(!isTRUE(nimbleOptions('allowDynamicIndexing'))) return(NULL);
+    if(!isTRUE(getNimbleOption('allowDynamicIndexing'))) return(NULL);
     ## Warn if dynamic indexing involves non-constant RHS-only nodes as this causes
     ## additional dependencies and slower computations.
     for(i in seq_along(declInfo)) {
@@ -2872,7 +2879,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     }
     
     if(length(data) + length(inits) > 0)
-        if(nimbleOptions('verbose')) message("Setting data and initial values")
+        if(getNimbleOption('verbose')) message("Setting data and initial values")
     model$setData(data)
     # prevent overwriting of data values by inits
     if(FALSE) {  # should now be handled by checking if setInits tries to overwrite data nodes
@@ -2900,17 +2907,17 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$setInits(inits) 
     ## basic size/dimension, NA checking
     if(calculate) {
-        if(nimbleOptions('verbose')) message("Running calculate on model\n  [Note] Any error reports that follow may simply reflect missing values in model variables.")
+        if(getNimbleOption('verbose')) message("Running calculate on model\n  [Note] Any error reports that follow may simply reflect missing values in model variables.")
         result <- try(model$calculate(), silent = TRUE)
-        if(nimbleOptions('verbose')) 
+        if(getNimbleOption('verbose')) 
             if(is(result, 'try-error')) 
                 message(geterrmessage()) 
     }
-    if(nimbleOptions('verbose')) message("Checking model sizes and dimensions")
+    if(getNimbleOption('verbose')) message("Checking model sizes and dimensions")
     model$checkBasics()
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
-        if(nimbleOptions('verbose')) message("Checking model calculations")
+        if(getNimbleOption('verbose')) message("Checking model calculations")
         model$check()
     }
     fixRStudioHanging(model)

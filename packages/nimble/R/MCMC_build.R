@@ -118,8 +118,22 @@ buildMCMC <- nimbleFunction(
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
         
+        if(getNimbleOption('MCMCorderPriorSamplesSamplersFirst') && length(conf$samplerConfs)) {
+            ## put all prior_samples samplers at the beginning
+            samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
+            priorSamplesSamplerBool <- grepl('^prior_samples$', samplerNames)
+            psSamplerInd <- which(priorSamplesSamplerBool)
+            regularSamplerInd <- which(!priorSamplesSamplerBool)
+            if(length(psSamplerInd) && length(regularSamplerInd) && (max(psSamplerInd) > min(regularSamplerInd))) {
+                messageIfVerbose('  [Note] Reordering prior_samples samplers to execute first')
+                exOrder <- conf$samplerExecutionOrder
+                if((length(exOrder)!=length(conf$samplerConfs)) || !all(exOrder==1:length(conf$samplerConfs))) stop('Halting, rather than reordering samplers in the presence of a modified sampler execution order.  If a modified execution order is needed, then: (1) reorder prior_samples samplers to be first in the MCMC configuration printSamplers method output, (2) set the desired sampler execution order, and (3) run buildMCMC.')
+                conf$samplerConfs <- conf$samplerConfs[c(psSamplerInd, regularSamplerInd)]
+            }
+        }
+        
         if(getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast') && length(conf$samplerConfs)) {
-            ## put all posterior_predictive  samplers at the end
+            ## put all posterior_predictive samplers at the end
             samplerNames <- sapply(conf$samplerConfs, `[[`, 'name')
             postPredSamplerBool <- grepl('^posterior_predictive$', samplerNames)
             ppSamplerInd <- which(postPredSamplerBool)
