@@ -234,8 +234,8 @@ CAR_calcNumIslands <- nimbleFunction(
     run = function(adj_in = double(1), num_in = double(1)) {
         N <- dim(num_in)[1]
         L <- dim(adj_in)[1]
-        adj <- nimInteger(L)
-        num <- nimInteger(N)
+        adj <- nimInteger(L, init = FALSE)
+        num <- nimInteger(N, init = FALSE)
         for(i in 1:L)
             adj[i] <- ADbreak(adj_in[i])
         for(i in 1:N)
@@ -250,8 +250,8 @@ CAR_calcNumIslands <- nimbleFunction(
                 if(nNeighbors > 0) {
                     adjStartInd <- 1L
                     if(i > 1) adjStartInd <- adjStartInd + sum(num[1:(i-1)])
-                    indToVisit <- nimInteger(nNeighbors)
-                    indToVisit[1:nNeighbors] <- adj[adjStartInd:(adjStartInd+nNeighbors-1)]
+                    indToVisit <- nimInteger(nNeighbors,
+                                             value = adj[adjStartInd:(adjStartInd+nNeighbors-1)])
                     lengthIndToVisit <- nNeighbors
                     l <- 1L
                     while(l <= lengthIndToVisit) {
@@ -312,7 +312,7 @@ CAR_calcC <- nimbleFunction(
     run = function(adj = double(1), num_in = double(1)) {
         N <- dim(num_in)[1]
         L <- dim(adj)[1]
-        num <- nimInteger(N)
+        num <- nimInteger(N, init = FALSE)
         for(i in 1:N)
             num[i] <- ADbreak(num_in[i])
         C <- rep(0, length = L)
@@ -343,13 +343,13 @@ CAR_calcCmatrix <- nimbleFunction(
     run = function(C = double(1), adj_in = double(1), num_in = double(1)) {
         N <- dim(num_in)[1]
         L <- dim(adj_in)[1]
-        adj <- nimInteger(L)
-        num <- nimInteger(N)
+        adj <- nimInteger(L, init = FALSE)
+        num <- nimInteger(N, init = FALSE)
         for(i in 1:L)
             adj[i] <- ADbreak(adj_in[i])
         for(i in 1:N)
             num[i] <- ADbreak(num_in[i])
-        Cmatrix <- array(0, dim = c(N, N))
+        Cmatrix <- nimMatrix(value = 0, nrow = N, ncol = N)
         count <- 1L
         for(i in 1:N) {
             if(num[i] > 0) {
@@ -468,7 +468,7 @@ CAR_calcEVs2 <- nimbleFunction(
         C <- CAR_calcC(adj, num)
         Cmatrix_out <- CAR_calcCmatrix(C, adj, num)
         ## Need to make sure Cmatrix not tracked or have issue with conversion of CppAD double in call to nimEigen.
-        Cmatrix <- nimMatrix(nrow = N, ncol = N)
+        Cmatrix <- nimMatrix(nrow = N, ncol = N, init = FALSE)
         for(i in 1:N)  
             for(j in 1:N)
                 Cmatrix[i,j] <- ADbreak(Cmatrix_out[i,j])
@@ -501,7 +501,7 @@ CAR_calcEVs3 <- nimbleFunction(
     run = function(C = double(1), adj = double(1), num = double(1)) {
         N <- dim(num)[1]
         Cmatrix_out <- CAR_calcCmatrix(C, adj, num)
-        Cmatrix <- nimMatrix(nrow = N, ncol = N)
+        Cmatrix <- nimMatrix(nrow = N, ncol = N, init = FALSE)
         for(i in 1:N)  
             for(j in 1:N)
                 Cmatrix[i,j] <- ADbreak(Cmatrix_out[i,j])

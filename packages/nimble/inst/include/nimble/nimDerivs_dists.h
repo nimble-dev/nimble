@@ -1064,7 +1064,7 @@ Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, NimArr<1, Type> &adj, NimA
   // where tau is precision, c = (number of islands), and N is the length of x.
   // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
   if(CppAD::Value(tau) < 0) {
-    return Type(R_NaN);
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   //PRINTF("c is equal to %d\n", c);
   int N = x.size();
@@ -1081,8 +1081,8 @@ Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, NimArr<1, Type> &adj, NimA
       count++;
     }
   }
-  if(Type(count) != Type(L)) {
-    return Type(R_NaN);
+  if(count != L) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   lp *= Type(1/2.0);     // accounts for double-summing over all (xi,xj) pairs
   lp *= Type(-1/2.0) * tau;
@@ -1100,7 +1100,7 @@ Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   // where tau is precision, c = (number of islands), and N is the length of x.
   // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
   if(CppAD::Value(tau) < 0) {
-    return Type(R_NaN);
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   //PRINTF("c is equal to %d\n", c);
   int N = x.size();
@@ -1118,7 +1118,7 @@ Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
     }
   }
   if(Type(count) != Type(L)) {
-    return Type(R_NaN);
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   lp *= Type(1/2.0);     // accounts for double-summing over all (xi,xj) pairs
   lp *= Type(-1/2.0) * tau;
@@ -1139,7 +1139,7 @@ Type nimDerivs_nimArr_dcar_proper(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimAr
   int L = adj.size();
 
   if(CppAD::Value(tau) < 0) {
-    return Type(R_NaN);
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   Type lp = 0;
   Type xi, xj;
@@ -1157,7 +1157,7 @@ Type nimDerivs_nimArr_dcar_proper(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimAr
     }
   }
   if(Type(count) != Type(L)) {
-    return Type(R_NaN);
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   lp *= Type(-1/2.0) * tau;
   // now add -1/2*log(|2*pi*Sigma|) to lp:
@@ -1181,7 +1181,7 @@ Type nimDerivs_nimArr_dcar_proper_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   int L = adj.size();
 
   if(CppAD::Value(tau) < 0) {
-    return Type(R_NaN);
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   Type lp = 0;
   Type xi, xj;
@@ -1199,7 +1199,7 @@ Type nimDerivs_nimArr_dcar_proper_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
     }
   }
   if(Type(count) != Type(L)) {
-    return Type(R_NaN);
+    return CppAD::numeric_limits<Type>::quiet_NaN();
   }
   lp *= Type(-1/2.0) * tau;
   // now add -1/2*log(|2*pi*Sigma|) to lp:
