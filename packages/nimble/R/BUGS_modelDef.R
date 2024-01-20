@@ -163,7 +163,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
       assignMacroInits(NULL)
       assignMacroParameters(NULL)
     }
-    if(nimbleOptions("stop_after_processing_model_code")) {
+    if(isTRUE(nimbleOptions("stop_after_processing_model_code"))) {
         print(code)
         stop(paste0('Stopped after processing macros and if/then/else statements\n',
                     'in model code because\n',
