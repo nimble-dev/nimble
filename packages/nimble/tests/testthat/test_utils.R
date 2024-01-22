@@ -1692,7 +1692,14 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_thresho
   result <- rel_diff < tolerance
   all_result <- all(result)
   if(is.na(all_result)) {
-      print(result)
+      if(verbose) {
+          wh <- which(is.na(x) | is.na(y))
+          report <- cbind(x[wh], y[wh])
+          cat("\n******************\n")
+          cat("Detected some NA values ", info, ": ", xlab, " ", ylab, ".\n")
+          print(report)
+          cat("******************\n")
+      }
       return(FALSE)
   }
   if(verbose) {
