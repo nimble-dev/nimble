@@ -1107,12 +1107,11 @@ updateADproxyModelMethods <- function(.self) {
         thisDef$code$objectDefs$addSymbol(firstSym)
         errorTrappingCode <- quote({
           if(first) {
-            nimPrint("Warning: In C++, a model node is being included in derivatives that does not support them.\n",
-                     "Please check messages from building the model, when better information might be\n",
-                     "available. This message will only be shown once. Results will not be valid.\n",
-                     "To make this an error, set nimbleOptions(unsupportedDerivativeHandling='error').\n",
-                     "To skip this error-handling entirely (and allow possible malformed code to be used),\n",
-                     "set nimbleOptions(unsupportedDerivativeHandling='ignore').")
+            nimPrint("\n  [Warning] In C++, a model node is being included in derivatives that does not support them.\n",
+                     "            This message will only be shown once. Results will not be valid.\n",
+                     "            To make this an error, set `nimbleOptions(unsupportedDerivativeHandling='error')`.\n",
+                     "            To skip this error handling entirely (and allow possible malformed code to be used),\n",
+                     "            set `nimbleOptions(unsupportedDerivativeHandling='ignore')`.")
             first <- false
           }
           return(`CppAD::AD<double>`(0))
@@ -1123,12 +1122,10 @@ updateADproxyModelMethods <- function(.self) {
         thisDef$code$objectDefs <- symbolTable$new()
         thisDef$code$typeDefs <- symbolTable$new()
         thisDef$code$objectDefs$setParentST(parentST)
-        msg <- paste0("Error: In C++, a model node is being included in derivatives that does not support them.\n",
-                     "Please check messages from building the model, when better information might be\n",
-                     "available. Stopping execution.\n",
-                     "To make this a warning, set nimbleOptions(unsupportedDerivativeHandling='warn').\n",
-                     "To skip this error-handling entirely (and allow possible malformed code to be used),\n",
-                     "set nimbleOptions(unsupportedDerivativeHandling='ignore').")
+        msg <- paste0("\n  [Error] In C++, a model node is being included in derivatives that does not support them.\n",
+                     "          To make this a warning, set `nimbleOptions(unsupportedDerivativeHandling='warn')`.\n",
+                     "          To skip this error handling entirely (and allow possible malformed code to be used),\n",
+                     "          set `nimbleOptions(unsupportedDerivativeHandling='ignore')`.")
         errorTrappingCode <- substitute(
         {
           nimStop(MSG)

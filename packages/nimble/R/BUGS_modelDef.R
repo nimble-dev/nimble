@@ -511,21 +511,18 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
 checkADsupportForDistribution <- function(code, userEnv) {
     dist <- as.character(code[[3]][[1]])
     supported <- TRUE
-    if(dist %in% callsNotAllowedInAD)  # As of 1.1.0, no longer needed as there are not any of these any more.
-        message("   [Warning] Distribution ", dist, " does not have support for derivatives. This model cannot be compiled.")
-    else {
-        if(!dist %in% distributions$namesVector) {
-            dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
-            if(!is.rcf(dfun))
-                message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
-            else {
-                dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
-                if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs))
-                    message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
-            }
+    if(!dist %in% c(distributions$namesVector, "T", "I")) {
+        dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
+        if(!is.rcf(dfun))
+            message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
+        else {
+            dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
+            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs))
+                message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
         }
     }
 }
+
 
 # check if distribution is defined and if not, attempt to register it
 checkUserDefinedDistribution <- function(code, userEnv) {

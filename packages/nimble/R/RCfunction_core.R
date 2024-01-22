@@ -42,7 +42,9 @@ nimKeyWords <- list(copy = 'nimCopy',
                     max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
-distsNotAllowedInAD <- NULL # formerly dconstraint, dinterval, dcar_normal, dcar_proper
+distsNotAllowedInAD <- c(
+  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper', 'constraint'))
+)
 
 fxnsNotAllowedInAD <- c(
   '%%',
