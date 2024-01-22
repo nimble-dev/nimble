@@ -322,11 +322,11 @@ nlProcessing <- setRefClass('nlProcessing',
                                 process = function(control = list(debug = FALSE, debugCpp = FALSE)) {
                                     debug <- control$debug
                                     debugCpp <- control$debugCpp
-                                    if(!is.null(nimbleOptions()$debugNFProcessing)) {
-                                        if(nimbleOptions()$debugNFProcessing) {
+                                    if(!is.null(getNimbleOption('debugNFProcessing'))) {
+                                        if(getNimbleOption('debugNFProcessing')) {
                                             debug <- TRUE
                                             control$debug <- TRUE
-                                            writeLines('Debugging nfProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
+                                            writeLines("Debugging nfProcessing (nimbleOption('debugRCfunProcessing')) is set to TRUE)") 
                                         }
                                     }
                                     if(debug) browser()

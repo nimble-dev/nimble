@@ -312,7 +312,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## if(static) {
                                                   ##     message("add_deriv_function support for static is not written.")
                                                   ## } else {
-                                                  if(isTRUE(nimbleOptions("useADreconfigure"))) {
+                                                  if(isTRUE(getNimbleOption("useADreconfigure"))) {
                                                       newFunName <- paste0(funName, '_deriv_')
                                                       argTransName <- paste0(funName, '_ADargumentTransfer2_')
                                                       functionDefs[[newFunName]] <<- make_deriv_function(regularFun,
@@ -584,7 +584,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       addInheritance(baseClassName)
                                                       addAncestors('NamedObjects')
                                                   }
-                                                  handleDerivs <- isTRUE(nimbleOptions("enableDerivs")) &&
+                                                  handleDerivs <- isTRUE(getNimbleOption("enableDerivs")) &&
                                                       length(environment(nfProc$nfGenerator)$buildDerivs) > 0
                                                   if(handleDerivs) {
                                                       constructorCode <- addADclassContent() ## Might generate code to insert into constructor, which is built later
@@ -773,7 +773,7 @@ modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
 ## }
 
 modifyForAD_matmult <- function(code, symTab, workEnv) {
-  if(isTRUE(nimbleOptions("useADmatMultAtomic")))
+  if(isTRUE(getNimbleOption("useADmatMultAtomic")))
     if(length(code$args)==2)  ## something is wrong if there are not 2 args
       if(!(isEigScalar(code$args[[1]]) || isEigScalar(code$args[[2]]))) ## are both non-scalar?
         code$name <- 'nimDerivs_matmult'
@@ -781,7 +781,7 @@ modifyForAD_matmult <- function(code, symTab, workEnv) {
 }
 
 modifyForAD_matinverse <- function(code, symTab, workEnv) {
-  if(isTRUE(nimbleOptions("useADmatInverseAtomic")))
+  if(isTRUE(getNimbleOption("useADmatInverseAtomic")))
     code$name <- 'nimDerivs_matinverse'
   invisible(NULL)
 }
@@ -870,10 +870,10 @@ modifyForAD_prependNimDerivs <- function(code, symTab, workEnv) {
   origName <- code$name
   atomic <- TRUE
   if(origName == 'EIGEN_FS' | origName == 'EIGEN_BS')
-    if(!isTRUE(nimbleOptions("useADsolveAtomic")))
+    if(!isTRUE(getNimbleOption("useADsolveAtomic")))
         atomic <- FALSE
   if(origName == "EIGEN_CHOL")
-    if(!isTRUE(nimbleOptions("useADcholAtomic")))
+    if(!isTRUE(getNimbleOption("useADcholAtomic")))
         atomic <- FALSE
   if(atomic)
     code$name <- paste0("nimDerivs_", origName)

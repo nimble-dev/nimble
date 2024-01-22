@@ -85,12 +85,13 @@ invokes another macro.
 }
 \examples{
 nimbleOptions(enableModelMacros = TRUE)
+nimbleOptions(enableMacroComments = FALSE)
 nimbleOptions(verbose = FALSE)
 
 ## Example 1: Say one is tired of writing "for" loops.
 ## This macro will generate a "for" loop with dnorm declarations
 all_dnorm <- model_macro_builder(
-    function(stoch, LHS, RHSvar, start, end, sd = 1) {
+    function(stoch, LHS, RHSvar, start, end, sd = 1, modelInfo, .env) {
         newCode <- substitute(
             for(i in START:END) {
                 LHS[i] ~ dnorm(RHSvar[i], SD)
@@ -126,7 +127,7 @@ model1$getCode()
 ## Example 2: Say one is tired of writing priors.
 ## This macro will generate a set of priors in one statement
 flat_normal_priors <- model_macro_builder(
-    function(...) {
+    function(..., modelInfo, .env) {
         allVars <- list(...)
         priorDeclarations <- lapply(allVars,
                                     function(x)
@@ -151,11 +152,8 @@ model2 <- nimbleModel(
 model2$getCode()
 ## The result should be:
 ## {
-##     {
-##         mu ~ dnorm(0, sd = 1000)
-##         beta ~ dnorm(0, sd = 1000)
-##         gamma ~ dnorm(0, sd = 1000)
-##     }
+##    mu ~ dnorm(0, sd = 1000)
+##    beta ~ dnorm(0, sd = 1000)
+##    gamma ~ dnorm(0, sd = 1000)
 ## }
-## Extra curly braces do not matter.
 }

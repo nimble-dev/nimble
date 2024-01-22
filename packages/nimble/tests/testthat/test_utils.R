@@ -1702,6 +1702,17 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_thresho
   rel_diff <- abs((x-y)/denom)
   result <- rel_diff < tolerance
   all_result <- all(result)
+  if(is.na(all_result)) {
+      if(verbose) {
+          wh <- which(is.na(x) | is.na(y))
+          report <- cbind(x[wh], y[wh])
+          cat("\n******************\n")
+          cat("Detected some NA values ", info, ": ", xlab, " ", ylab, ".\n")
+          print(report)
+          cat("******************\n")
+      }
+      return(FALSE)
+  }
   if(verbose) {
     if(!all_result) {
       ord <- order(rel_diff, decreasing = TRUE)

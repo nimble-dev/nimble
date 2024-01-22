@@ -43,7 +43,7 @@ nimKeyWords <- list(copy = 'nimCopy',
                     derivs = 'nimDerivs')
 
 distsNotAllowedInAD <- c(
-  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper', 'constraint'))
+  paste0('d', c('cat', 'interval', 'constraint'))
 )
 
 fxnsNotAllowedInAD <- c(

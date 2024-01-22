@@ -20,6 +20,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         disallow_multivariate_argument_expressions = TRUE,
         stop_after_processing_model_code = FALSE,
         enableModelMacros = FALSE,
+        enableMacroComments = FALSE,
+        codeInMacroComments = FALSE,
         allowDynamicIndexing = TRUE,
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
@@ -100,7 +102,10 @@ setNimbleOption <- function(name, value) {
 #' @examples
 #' getNimbleOption('verifyConjugatePosteriors')
 getNimbleOption <- function(x) {
-    get(x, envir = .nimbleOptions)
+    option <- try(get(x, envir = .nimbleOptions), silent = TRUE)
+    if(inherits(option, 'try-error'))
+        return(NULL)
+    return(option)
 }
 
 #' NIMBLE Options Settings
