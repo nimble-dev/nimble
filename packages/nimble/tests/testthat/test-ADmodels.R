@@ -673,6 +673,31 @@ test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNod
                       useFasterRderivs = TRUE, verbose = verbose, name = 'Dirichlet paramTransform') 
 
 
+## Various likelihood-level non-differentiable constructs/distributions
+
+set.seed(1)
+code <- nimbleCode({
+    y ~ T(dnorm(mu, 1), -100, Inf)
+    z ~ dconstraint(mu > 100)
+    cens ~ dinterval(mu, c)
+    mu ~ dnorm(mu0, 1)
+    mu0 ~ dnorm(0, 1)
+})
+
+model <- nimbleModel(code, data = list(y = 1.5, z = 1, cens = 1), constants = list(c = 100),
+                     inits = list(mu0 = rnorm(1), mu = rnorm(1)))
+relTolTmp <- relTol
+
+test_ADModelCalculate(model, relTol = relTolTmp, wrt = 'mu0', calcNodes = c('mu0','mu'),
+                      verbose = verbose, name = 'non-differentiable constructs', useFasterRderivs = TRUE)
+
+
+
+## dcat as likelihood
+
+## dinterval, dconstraint
+
+## stochastic indexing, latent dcat
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)
