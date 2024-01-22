@@ -1691,6 +1691,10 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_thresho
   rel_diff <- abs((x-y)/denom)
   result <- rel_diff < tolerance
   all_result <- all(result)
+  if(is.na(all_result)) {
+      print(result)
+      return(FALSE)
+  }
   if(verbose) {
     if(!all_result) {
       ord <- order(rel_diff, decreasing = TRUE)
