@@ -69,6 +69,7 @@ fxnsNotAllowedInAD <- c(
   paste0('r', c('cat', 'interval', 'car_normal', 'car_proper',
                 'dirch','mnorm_chol','multi','mvt_chol','lkj_corr_cholesky','wish_chol',
                 'invwish_chol')),
+  paste0('nimArr_d', c('interval')),
   paste0('nimArr_r', c('mnorm_chol','mvt_chol', 'lkj_corr_cholesky','wish_chol',
                        'invwish_chol', 'car_normal','car_proper','multi','dirch') ),
   'getLogProb',
