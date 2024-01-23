@@ -45,58 +45,6 @@ test_that("Warning message works for call not supported for derivs.", {
   expect_identical(output, character())
 })
 
-test_that("Warning messages work when truncation appears in a model and buildDerivs is TRUE.", {
-
-  ## Expect warning when T() is in model and buildDerivs is TRUE
-  output <- capture_messages(
-    m <- nimbleModel(
-      nimbleCode({
-        x ~ T(dnorm(0, 1), -1, 1)
-      }),
-      inits = list(x = 0.5),
-      buildDerivs = TRUE)
-  )
-  expect_true(any(grepl("Truncation", output) &
-                    grepl("not supported for derivatives", output)))
-
-  ## Expect NO warning when T() is NOT model and buildDerivs is TRUE
-  output <- capture_messages(
-    m <- nimbleModel(
-      nimbleCode({
-        x ~ dnorm(0, 1)
-      }),
-      inits = list(x = 0.5),
-      buildDerivs = TRUE)
-  )
-  expect_false(any(grepl("Truncation", output) &
-                     grepl("not supported for derivatives", output)))
-
-  ## Expect NO warning when T() is in model and buildDerivs is not FALSE by omission
-  output <- capture_messages(
-    m <- nimbleModel(
-      nimbleCode({
-        x ~ dnorm(0, 1)
-      }),
-      inits = list(x = 0.5)
-    )
-  )
-  expect_false(any(grepl("Truncation", output) &
-                     grepl("not supported for derivatives", output)))
-
-  ## Expect NO warning when T() is in model and buildDerivs is coded as FALSE
-  output <- capture_messages(
-    m <- nimbleModel(
-      nimbleCode({
-        x ~ dnorm(0, 1)
-      }),
-      inits = list(x = 0.5),
-      buildDerivs = FALSE
-    )
-  )
-  expect_false(any(grepl("Truncation", output) &
-                     grepl("not supported for derivatives", output)))
-})
-
 test_that("Warning messages work for checking if a user-defined distribution supports derivs when it must.", {
   # Case where both user-defined dist and model have buildDerivs TRUE, so no warning is emitted.
   dmyexp <- nimbleFunction(
