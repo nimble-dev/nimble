@@ -85,7 +85,7 @@ nimbleFunction <- function(setup         = NULL,
     force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
-    ## Ceck for correct entries in `buildDerivs` separately from `nfMethodRC$new()` because
+    ## Check for correct entries in `buildDerivs` separately from `nfMethodRC$new()` because
     ## that only has access to `thisBuildDerivs`, and we need to check if `buildDerivs` is set
     ## for the method on which `nimDerivs` is called.
     tmp <- sapply(c(list(run = run), methods), nf_checkDSLcode_buildDerivs, buildDerivs)
