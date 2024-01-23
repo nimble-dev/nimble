@@ -312,6 +312,8 @@ test_AD2_oneCall <- function(Robj, Cobj,
                     pass <- pass && localPass
                     if(verbose && !pass) {
                         cat(paste('Some C-to-R derivatives to not match for order', o, '.\n'))
+                        print(RansSet[[1]])
+                        print(CansSet)
                     }
                 }
                 if(length(CansSet) > 1) {
@@ -321,6 +323,8 @@ test_AD2_oneCall <- function(Robj, Cobj,
                     pass <- pass && localPass
                     if(verbose && !pass) {
                         cat(paste('Some C-to-C derivatives to not match for order', o, '.\n'))
+                        print(CansSet[[1]])
+                        print(CansSet[-1])
                     }
                 }
             }
