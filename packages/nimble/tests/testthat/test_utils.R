@@ -1452,6 +1452,12 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 ##              to `art1 + arg2^2`.
 make_op_param <- function(op, argTypes, more_args = NULL,
                           outer_code = NULL, inner_codes = NULL) {
+  returnTypeProvided <- NULL
+  if(isTRUE(attr(argTypes, "includesReturnType"))) {
+    returnTypeProvided <- argTypes[[2]]
+    argTypes <- argTypes[[1]]
+  }
+
   arg_names <- names(argTypes)
 
   if (is.null(arg_names)) {
@@ -1502,11 +1508,16 @@ make_op_param <- function(op, argTypes, more_args = NULL,
     parse(text = arg)[[1]]
   })
 
+  if(is.null(returnTypeProvided))
+    outputType <- return_type_string(op, argTypes)
+  else
+    outputType <- returnTypeProvided
+
   list(
     name = name,
     expr = expr,
     args = argTypesList,
-    outputType = parse(text = return_type_string(op, argTypes))[[1]]
+    outputType = parse(text = outputType)[[1]]
   )
 }
 

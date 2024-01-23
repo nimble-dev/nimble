@@ -78,7 +78,9 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
         useClearCompiledInADTesting = TRUE,
+        unsupportedDerivativeHandling = 'error', # default is error, other options are 'warn' and 'ignore'. Handled in updateADproxyModelMethods in cppDefs_nimbleFunction.R
         errorIfMissingNFVariable = TRUE
+
     )
 )
 

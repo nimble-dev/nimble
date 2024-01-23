@@ -1727,6 +1727,9 @@ test_that("Laplace with nested random effects works", {
 })
 
 test_that("Laplace error trapping of wrong-length parameters works", {
+  library(nimble)
+  library(testthat)
+
   m <- nimbleModel(
     nimbleCode({
       d[1:3] ~ ddirch(alpha[1:3]) # params
@@ -1768,6 +1771,7 @@ test_that("Laplace error trapping of wrong-length parameters works", {
   expect_output(expect_error(cmLaplace$gr_logLik(c(.4, .5, .1), trans = TRUE)), "should be length")
   expect_output(expect_error(cmLaplace$gr_Laplace(c(.4, .5, .1), trans = TRUE)), "should be length")
 
+  ##
   output <- cmLaplace$findMLE(c(.4, .5, .1))
   expect_true(all(output$counts > 0))
   # We couldn't throw an error from a nimbleList-returning method

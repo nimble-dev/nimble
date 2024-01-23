@@ -824,8 +824,8 @@ nimDerivs_keywordInfo <- keywordInfoClass(
         newCode <- calculate_keywordInfo$processor(innerCode, nfProc, RCfunProc)
         newCode[[1]] <- as.name('nimDerivs_calculate')
         newCode$orderVector <- code$order
+        newCode$update <- if(is.null(code[['update']])) TRUE else code[['update']]
         newCode$reset <- if(is.null(code[['reset']])) FALSE else code[['reset']]
-        newCode$do_update <- if(is.null(code[['do_update']])) TRUE else code[['do_update']]
         return(newCode)
     }
     ## Not a calculate case:
