@@ -1321,6 +1321,12 @@ sampler_CRP <- nimbleFunction(
     if(!is.null(control$printTruncation))
       printMessage <- control$printTruncation else printMessage <- TRUE
 
+    ## Irregular association of dependencies with clusters because of
+    ## not including predictive nodes prevents CRP sampler from being set up.
+    getDependenciesIncludesPredictiveNodes_save <- getNimbleOption('getDependenciesIncludesPredictiveNodes')
+    on.exit(nimbleOptions(getDependenciesIncludesPredictiveNodes = getDependenciesIncludesPredictiveNodes_save))
+    nimbleOptions(getDependenciesIncludesPredictiveNodes = TRUE)
+    
     targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     targetVar <- model$getVarNames(nodes = target)
     n <- length(targetElements)
