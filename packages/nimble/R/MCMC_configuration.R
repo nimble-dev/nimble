@@ -168,8 +168,14 @@ print: A logical argument specifying whether to print the montiors and samplers.
             if(missing(nodes)) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
+            } else if(is.null(nodes) || length(nodes)==0) {
+                nodes <- character(0)
             } else {
-                if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
+                ## nodes argument was specified by user (as something other than NULL or an empty vector).
+                ## from entry point configureMCMC, we *never* assign samplers to data nodes (can only be done via addSampler);
+                ## so filter out data nodes here:
+                nodes <- model$expandNodeNames(nodes)
+                nodes <- nodes[!model$isData(nodes)]
             }
             
             addDefaultSampler(nodes = nodes,
@@ -543,6 +549,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                               useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                               onlyRW = FALSE,
                               onlySlice = FALSE,
+                              allowData = FALSE,
                               ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
@@ -573,6 +580,8 @@ onlyRW: Logical argument, with default value FALSE.  If specified as TRUE, then 
 
 onlySlice: Logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.  This argument is only used when the \'default\' argument is TRUE.
 
+allowData: Logical argument, with default value FALSE.  When FALSE, samplers will not be assigned to operate on data nodes, even if data nodes are included in \'target\'.  When TRUE, samplers will be assigned to \'target\' without regard to whether nodes are designated as data.
+
 ...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details:
@@ -582,6 +591,8 @@ Samplers are added added to the end of the list of samplers for this MCMCconf ob
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
 '
             if(length(target) == 0)   return(invisible(samplerConfs))
+
+            if(!(isTRUE(allowData) || isFALSE(allowData)))   stop('allowData argument can only be TRUE or FALSE', call. = FALSE)
 
             if(default) {
                 addDefaultSampler(nodes = target,
@@ -666,24 +677,25 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!targetByNode) {
                 ## when targetByNode = FALSE,
                 ## no node expansion takes place
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
+                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, allowData, print)
             } else {
                 ## when targetByNode = TRUE,
                 ## assign sampler type to each component of target after expanding node names,
                 ## also using multivariateNodesAsScalars argument here, to control the node expansion
                 targetExpanded <- model$expandNodeNames(target, returnScalarComponents = multivariateNodesAsScalars, sort = TRUE)
                 for(i in seq_along(targetExpanded)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, print)
+                    addSamplerOne(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, allowData, print)
                 }
             }
             
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, print) {
+        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, allowData, print) {
             '
 For internal use only
 '
+            if(!allowData && model$isData(targetOne))   return()
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
