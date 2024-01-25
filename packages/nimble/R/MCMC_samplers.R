@@ -198,8 +198,8 @@ sampler_categorical <- nimbleFunction(
         if(maxLP == Inf | is.nan(maxLP))   cat("Warning: categorical sampler for '", target, "' encountered an invalid model density, and sampling results are likely invalid.\n")
         logProbs <<- logProbs - maxLP
         probs <<- exp(logProbs)
-        newValue <- rcat(1, probs)   ## rcat normalizes the probabilitiess internally
-        if(newValue != currentValue) {
+        newValue <- rcat(1, probs)   ## rcat normalizes the probabilities internally
+        if(!is.na(newValue) & newValue != currentValue) {
             model[[target]] <<- newValue
             model$calculate(calcNodes)
             ##model$calculate(calcNodesPPomitted)
@@ -406,7 +406,7 @@ sampler_RW_block <- nimbleFunction(
         scaleHistory <- c(0, 0)                                                                  ## scaleHistory
         acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
         propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
-        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
+        saveMCMChistory <- if(getNimbleOption('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -619,7 +619,7 @@ sampler_slice <- nimbleFunction(
         timesAdapted  <- 0
         sumJumps      <- 0
         widthHistory  <- c(0, 0)   ## widthHistory
-        if(nimbleOptions('MCMCsaveHistory')) {
+        if(getNimbleOption('MCMCsaveHistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
         discrete      <- model$isDiscrete(target)
@@ -707,7 +707,7 @@ sampler_slice <- nimbleFunction(
                 print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
-       },
+        },
         reset = function() {
             width        <<- widthOriginal
             timesRan     <<- 0
@@ -1718,7 +1718,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         scaleHistory <- c(0, 0)                                                                  ## scaleHistory
         acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
         propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
-        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
+        saveMCMChistory <- if(getNimbleOption('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -2116,6 +2116,8 @@ sampler_CAR_normal <- nimbleFunction(
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        zero_mean_caused_a_problem <- 0
         ## checks
         if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
         if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
@@ -2151,12 +2153,19 @@ sampler_CAR_normal <- nimbleFunction(
         if(zero_mean) {
             targetValues <- values(model, target)
             values(model, target) <<- targetValues - mean(targetValues)
-            model$calculate(calcNodes)
+            lp <- model$calculate(calcNodes)
+            if(is.na(lp) | is.nan(lp) | abs(lp) == Inf)   zero_mean_caused_a_problem <<- 1
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         }
     },
     methods = list(
+        after_chain = function() {
+            if(zero_mean_caused_a_problem == 1) {
+                print('  [Error] Invalid model values were induced during the MCMC, which were caused by centering of the CAR (dcar_normal) process.  Centering takes place because of the argument zero_mean=1 to the dcar_normal distribution.  Results of this MCMC run may be invalid. This can be avoided by absorbing the mean into the CAR process, and omitting the zero_mean argument.')
+            }
+        },
         reset = function() {
+            zero_mean_caused_a_problem <<- 0
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }

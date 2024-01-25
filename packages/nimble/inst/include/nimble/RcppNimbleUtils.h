@@ -239,11 +239,11 @@ template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
   NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric or logical: actual type %s\n",
-    ndim, Rf_type2str(TYPEOF(Sn)));
+    ndim, Rf_type2char(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
   NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric: expected %d, actual %d\n",
-    ndim, ndim, inputDims.size());
+    ndim, ndim, static_cast<int>(inputDims.size()));
   // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
@@ -252,7 +252,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
   } else {
     NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<%d, double>\n",
-      Rf_type2str(TYPEOF(Sn)), ndim);
+      Rf_type2char(TYPEOF(Sn)), ndim);
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
@@ -263,7 +263,7 @@ template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
   NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric or logical: actual type %s\n",
-    ndim, Rf_type2str(TYPEOF(Sn)));
+    ndim, Rf_type2char(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
   NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric: expected %d, actual %d\n",
@@ -276,7 +276,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
   } else {
     NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, int>\n",
-      Rf_type2str(TYPEOF(Sn)), ndim);
+      Rf_type2char(TYPEOF(Sn)), ndim);
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
@@ -286,7 +286,7 @@ template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
   NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric or logical: actual type %s\n",
-    ndim, Rf_type2str(TYPEOF(Sn)));
+    ndim, Rf_type2char(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
   NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric: expected %d, actual %d\n",
@@ -299,7 +299,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
   } else {
     NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, bool>\n",
-      Rf_type2str(TYPEOF(Sn)), ndim);
+      Rf_type2char(TYPEOF(Sn)), ndim);
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }

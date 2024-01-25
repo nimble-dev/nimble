@@ -83,7 +83,7 @@ Table \@ref(tab:coreR).
 ```{r, child = 'tables/coreRtableLong.md'}
 ```
 
-In addition to the above functions, we provide functions `any_na()` and `any_nan()` for finding if there are any `NA` or `NaN` values in a vector. These are equivalent to using `any(is.na())` and `any(is.nan())` in R.
+In addition to the above functions, we provide functions `any_na()` and `any_nan()` for finding if there are any `NA` or `NaN` values in a vector. These are equivalent to using `any(is.na())` and `any(is.nan())` in R, with the exception noted in the table above regarding `is.na()`.
 
 Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a `nimbleRcall` (see Section \@ref(sec:calling-R-code)).
 
@@ -95,7 +95,7 @@ Next we cover some of these functions in more detail.
 floating-point (or 'double' [precision]), integer, or logical values, respectively.  The `length` argument specifies the vector 
 length (default 0), and the `value` argument specifies the initial 
  value either as a scalar (used for all vector elements, with default
- 0) or a vector. If a vector and its length is not equal to `length`, the remaining values will be zero, but we plan to implement R-style recycling in the next version of NIMBLE. The `init` argument specifies 
+ 0) or a vector. If a vector and its length is not equal to `length`, the remaining values will be filled by R-style recycling if the `recycle` argument is `TRUE` (which is the default). The `init` argument specifies 
 whether or not to initialize the elements in compiled code (default `TRUE`).  If
 first use of the variable does not rely on initial values,  using
 `init = FALSE` will yield slightly more efficient performance.
@@ -498,11 +498,9 @@ vector will be treated as a matrix.
 Here is a guide to such issues.  Suppose `v1` and `v2` are vectors, and `M1` is a matrix.  Then
 
 
-  -  `v1 + M1` generates a compilation error unless one dimension of
-`M1` is known at compile-time to be 1.  If so, then `v1` is promoted to a
-1-row or 1-column matrix to conform with `M1`, and the result is a
-matrix of the same sizes.  This behavior occurs for
-all component-wise binary functions.
+  -  `v1 + M1` promotes `v1` to a 1-column matrix if `M1` is a one-column
+  matrix. Otherwise, this results in a run-time error.
+  This behavior occurs for all component-wise binary functions.
   - `v1 %*% M1` defaults to promoting `v1` to a 1-row matrix,
   unless it is known at compile-time that `M1` has 1 row, in which case
   `v1` is promoted to a 1-column matrix.

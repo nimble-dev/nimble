@@ -2808,17 +2808,17 @@ test_that('Check MCMC sampler dependencies with and without predictive nodes inc
     expect_identical(conf$getSamplers()[[1]]$name, 'AF_slice')
     ##
     conf$setSamplers()
-    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', scalarComponents = TRUE, print = FALSE)
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', multivariateNodesAsScalars = TRUE, print = FALSE)
     expect_true(length(conf$getSamplers()) == 1)
     expect_identical(conf$getSamplers()[[1]]$target, c('x', 'z2', 'z3'))
     expect_identical(conf$getSamplers()[[1]]$name, 'AF_slice')
     ##
     conf$setSamplers()
-    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', expandTarget = TRUE, print = FALSE)
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', targetByNode = TRUE, print = FALSE)
     expect_true(length(conf$getSamplers()) == 12)
     ##
     conf$setSamplers()
-    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', expandTarget = TRUE, scalarComponents = TRUE, print = FALSE)
+    conf$addSampler(c('x', 'z2', 'z3'), type = 'AF_slice', targetByNode = TRUE, multivariateNodesAsScalars = TRUE, print = FALSE)
     expect_true(length(conf$getSamplers()) == 15)
     expect_identical(sapply(conf$getSamplers(), `[[`, 'target'), Rmodel$expandNodeNames(c('x', 'z2', 'z3'), returnScalarComponents = TRUE))
     expect_identical(sapply(conf$getSamplers(), `[[`, 'name'), rep('AF_slice', 15))
@@ -2878,7 +2878,7 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
     expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
-    expect_true(all(samples == 1))
+    expect_true(all(samples == 2))
     ##
     code <- nimbleCode({
         x ~ dcat(prob = a[1:3])
@@ -2895,7 +2895,7 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
     expect_output(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'encountered an invalid model density, and sampling results are likely invalid')
-    expect_true(all(samples == 1))
+    expect_true(all(samples == 2))
 })
 
 test_that('prior_samples sampler operates correctly', {

@@ -106,7 +106,7 @@ class nimbleTimerClass_ {
 
 #define ML_ERR_return_NAN { ML_ERROR(ME_DOMAIN, ""); return ML_NAN; }
 
-#define ML_ERROR(x, s) { \
+#define ML_ERROR(x, s) {                        \
    if(x > ME_DOMAIN) { \
        const char *msg = ""; \
        switch(x) { \

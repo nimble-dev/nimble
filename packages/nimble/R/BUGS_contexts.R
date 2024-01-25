@@ -81,7 +81,7 @@ genIndexVarValues_recurse <- function(singleContexts, constantsEnvCopy) {
         if(rangeValueL <= rangeValueU) {
             rangeValues <- rangeValueL:rangeValueU
         } else {
-            optionValue <- nimbleOptions()$processBackwardsModelIndexRanges
+            optionValue <- getNimbleOption('processBackwardsModelIndexRanges')
             if(optionValue)  { rangeValues <- rangeValueU:rangeValueL      ## for(i in 9:7) --> for(i in c(9, 8, 7))
             } else           { rangeValues <- numeric(0)               }   ## for(i in 9:7) --> for(i in numeric(0))
         }

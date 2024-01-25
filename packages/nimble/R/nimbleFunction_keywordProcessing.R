@@ -251,7 +251,7 @@ calculate_keywordInfo <- keywordInfoClass(
 
         buildDerivs <- FALSE
         withDerivsOutputOnly <- FALSE
-        if(isTRUE(nimbleOptions("enableDerivs"))) {
+        if(isTRUE(getNimbleOption("enableDerivs"))) {
           derivControl <- environment(nfProc$nfGenerator)$buildDerivs[[RCfunProc$name]]
           ## There are two cases.
           ## If buildDerivs has an entry, then derivatives are enabled either
@@ -522,13 +522,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
                     isMVto <- as.integer(to_ArgList$class == 'symbolModelValuesAccessorVector') 
                     accessTo_name <- as.character(code$to) 
                 }
-        if(nimbleOptions()$useNewNimCopy) {
+        if(getNimbleOption('useNewNimCopy')) {
             copierVector_ArgList <- list(accessFrom_name = accessFrom_name, accessTo_name = accessTo_name, isMVto = isMVto, isMVfrom = isMVfrom)
             copierVector_name <- copierVector_setupCodeTemplate$makeName(copierVector_ArgList)
             addNecessarySetupCode(copierVector_name, copierVector_ArgList, copierVector_setupCodeTemplate, nfProc) 
         }
         
-        if(!nimbleOptions()$useNewNimCopy) {
+        if(!getNimbleOption('useNewNimCopy')) {
             ##What happens below is a bit convoluted and really for backwards compatibility 	
             runCode <- substitute(nimCopy(from = FROM_ACCESS, rowFrom = NA, to = TO_ACCESS, rowTo = NA), 
                                   list(FROM_ACCESS = as.name(accessFrom_name), TO_ACCESS = as.name(accessTo_name)))
@@ -824,8 +824,8 @@ nimDerivs_keywordInfo <- keywordInfoClass(
         newCode <- calculate_keywordInfo$processor(innerCode, nfProc, RCfunProc)
         newCode[[1]] <- as.name('nimDerivs_calculate')
         newCode$orderVector <- code$order
+        newCode$update <- if(is.null(code[['update']])) TRUE else code[['update']]
         newCode$reset <- if(is.null(code[['reset']])) FALSE else code[['reset']]
-        newCode$do_update <- if(is.null(code[['do_update']])) TRUE else code[['do_update']]
         return(newCode)
     }
     ## Not a calculate case:

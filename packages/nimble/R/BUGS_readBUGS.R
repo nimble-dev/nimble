@@ -104,6 +104,14 @@ nimbleModel <- function(code,
     md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits,
                   data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
+    if(nimbleOptions("enableModelMacros")){
+      # Do this stuff if macros are enabled:
+      # Update constants in case any new ones were created by macros
+      newConstants <- md$constantsList[!names(md$constantsList) %in% names(constants)]
+      constants <- c(constants, newConstants)
+      # Update inits in case new ones were created by macros
+      inits <- addMacroInits(inits, md$macroInits)
+    }
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
     if(debug) browser()

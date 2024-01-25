@@ -224,7 +224,7 @@ template<typename NimArrOutput, typename NimArrInput>
     }
     sizeToCopy = totSize;
   }
-  if(input.isMap() | (output.getNimType() != input.getNimType())) { 
+  if(input.isMap() || (output.getNimType() != input.getNimType())) { 
     for(int i = 0; i < sizeToCopy; i++) output.valueNoMap(i) = input[i];
     if(sizeToCopy < totSize) {
       if(recycle) {
