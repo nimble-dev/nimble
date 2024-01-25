@@ -1014,7 +1014,7 @@ test_that("Reserved keywords as model vars are trapped.", {
     code <- nimbleCode({
         double ~ dnorm(0,1)
     })
-    expect_error(m <- nimbleModel(code), "Found variable names that conflict")
+    expect_error(m <- nimbleModel(code), "Found variable name that conflicts")
 })
 
 test_that("Warning printed when indexing info in user environment.", {
