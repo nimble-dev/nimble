@@ -1047,7 +1047,6 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @name CAR-Proper
 #'
 #' @param x vector of values.
-#' @param n number of observations.
 #' @param mu vector of the same length as \code{x}, specifying the mean for each spatial location.
 #' @param C vector of the same length as \code{adj}, giving the weights associated with each pair of neighboring locations.  See \sQuote{Details}.
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.

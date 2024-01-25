@@ -15,8 +15,8 @@ processModelVarAccess <- function(Robject, manyAccessName) {
         mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
         Robject[[manyAccessName]] <- structure(list(mapInfo[[1]], mapInfo[[2]], cModel$.basePtr),
                                                class = 'processedModelVarAccess')
-        if(isTRUE(nimbleOptions("enableDerivs")))
-            if(isTRUE(nimbleOptions('useADreconfigure')))
+        if(isTRUE(getNimbleOption("enableDerivs")))
+            if(isTRUE(getNimbleOption('useADreconfigure')))
                 if(is.list(cModel$.ADptrs))
                     Robject[[manyAccessName]][[4]] <- cModel$.ADptrs[[1]]
     }
@@ -39,8 +39,8 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
     ## This is klugey, but it avoids re-doing  processModelVarAccess
     ## and anticipates that in the future these objects might be
     ## combined more naturally.
-    if(isTRUE(nimbleOptions("enableDerivs")))
-        if(isTRUE(nimbleOptions('useADreconfigure'))) {
+    if(isTRUE(getNimbleOption("enableDerivs")))
+        if(isTRUE(getNimbleOption('useADreconfigure'))) {
             ADname <- paste0(manyAccessName, "_AD_")
             ## We don't have a good way to know about the name, so we check from the compiled object
             availableNames <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, fxnPtr))
