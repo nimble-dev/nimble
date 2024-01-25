@@ -81,7 +81,7 @@ compileModel_impl <- function(.self,
                               showCompilerOutput,
                               where) {
     disableWrite <- FALSE
-    if(nimbleOptions('enableSpecialHandling')) {
+    if(getNimbleOption('enableSpecialHandling')) {
         filenames <- filenameFromSpecialHandling(model)
         if(!is.null(filenames)) {
             filename <- filenames$filename
@@ -117,7 +117,7 @@ compileModel_impl <- function(.self,
     cppProj$addClass(mvc, filename = filename)
     cppProj$addClass(modelCpp, modelDefName, filename)
 
-    buildDerivsForThisModel <- isTRUE(modelDef[["buildDerivs"]]) # could check nimbleOptions("enableDerivs") but why?
+    buildDerivsForThisModel <- isTRUE(modelDef[["buildDerivs"]]) # could check getNimbleOption("enableDerivs") but why?
     
     if(buildDerivsForThisModel) {
         CnameAD <- paste0(Cname,"_AD")
@@ -530,9 +530,9 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             }
             cppClass
         },
-        compileRCfun = function( fun, filename = NULL, initialTypeInference = FALSE, control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, returnAsList = FALSE), showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+        compileRCfun = function( fun, filename = NULL, initialTypeInference = FALSE, control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, returnAsList = FALSE), showCompilerOutput = getNimbleOption('showCompilerOutput')) {
             disableWrite <- FALSE
-            if(nimbleOptions('enableSpecialHandling')) {
+            if(getNimbleOption('enableSpecialHandling')) {
                 SH <- filenameFromSpecialHandling(fun)
                 if(!is.null(filename)) {
                     filename <- SH
@@ -594,7 +594,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
         compileModel = function(model,
                                 filename = NULL,
                                 control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
-                                showCompilerOutput = nimbleOptions('showCompilerOutput'),
+                                showCompilerOutput = getNimbleOption('showCompilerOutput'),
                                 where = globalenv()) {
             compileModel_impl(.self,
                               model = model,
@@ -884,7 +884,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
             if(is.null(nlCppDef$CmultiInterface)) ok <- FALSE
             else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dllToUse)
           }
-          if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
+          if(!ok) stop("There is something in this compilation job that doesn\'t fit together. This can happen in some cases if you are trying to compile new pieces into an existing project.If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble. Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble. For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
           ans
         },
         instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
@@ -924,7 +924,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
         },
         compileNimbleFunctionMulti = function(funList, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
             control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
-            reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorFunNames = NULL, alreadyAdded = FALSE, showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+            reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorFunNames = NULL, alreadyAdded = FALSE, showCompilerOutput = getNimbleOption('showCompilerOutput')) {
             if(!is.list(funList)) stop('funList in compileNimbleFunctionMulti should be a list', call. = FALSE)
             allGeneratorNames <- if(is.null(generatorFunNames)) lapply(funList, nfGetDefVar, 'name') else generatorFunNames
             uniqueGeneratorNames <- unique(allGeneratorNames)
@@ -954,7 +954,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
         },
         compileNimbleFunction = function(fun, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
             control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
-            reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE, showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+            reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE, showCompilerOutput = getNimbleOption('showCompilerOutput')) {
           if(is.character(fun)) {
                 tmp <- nimbleFunctions[[fun]]
                 if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)
@@ -1115,7 +1115,7 @@ clearCompiled <- function(obj) { # for now just take one obj as input
 compileNimble <- function(..., project, dirName = NULL, projectName = '',
                           control = list(),
                           resetFunctions = FALSE, 
-			  showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+			  showCompilerOutput = getNimbleOption('showCompilerOutput')) {
 ## 1. Extract compilation items
     reset <- FALSE
     ## This pulls out ... arguments, makes names from their expressions if names weren't provided, and combines them with any ... arguments that are lists.
@@ -1139,7 +1139,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     ## 2. Get project or make new project
     if(missing(project)) {
         if(reset) warning("You requested 'reset = TRUE', but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item. For example, 'compileNimble(myFunction, project = myFunction, reset = TRUE)'.")
-        if(!is.null(nimbleOptions()$nimbleProject)) project <- nimbleOptions()$nimbleProject
+        if(!is.null(getNimbleOption('nimbleProject'))) project <- getNimbleOption('nimbleProject')
         else project <- nimbleProjectClass(dirName, name = projectName)
 
         ## Check for uncompiled models.
@@ -1176,7 +1176,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     if(sum(rcfUnits) > 0) {
         whichUnits <- which(rcfUnits)
         for(i in whichUnits) {
-            if(isTRUE(nimbleOptions("enableDerivs"))) {
+            if(isTRUE(getNimbleOption("enableDerivs"))) {
               if(!isFALSE(environment(units[[i]])$nfMethodRCobject$buildDerivs))
                 stop(paste0("A nimbleFunction without setup code and with buildDerivs = TRUE can't be included\n",
                             "directly in a call to compileNimble.  It can be called by another nimbleFunction and,\n",

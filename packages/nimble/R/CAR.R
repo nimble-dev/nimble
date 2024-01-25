@@ -23,7 +23,7 @@ CAR_convertWeightMatrix <- function(weightMatrix) {
 #' 
 #' Two alternate representations are handled:
 #'
-#' A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights;
+#' A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights.
 #'
 #' Two lists will be interpreted as (the first) a list of numeric vectors
 #' specifying the adjacency (neighboring) indices of each CAR process component,
@@ -231,22 +231,29 @@ CAR_proper_processParams <- function(model, target, C, adj, num, M) {
 #' @export
 CAR_calcNumIslands <- nimbleFunction(
     name = 'CAR_calcNumIslands',
-    run = function(adj = double(1), num = double(1)) {
-        N <- dim(num)[1]
-        numIslands <- 0
-        visited <- rep(0, N)
+    run = function(adj_in = double(1), num_in = double(1)) {
+        N <- dim(num_in)[1]
+        L <- dim(adj_in)[1]
+        adj <- nimInteger(L, init = FALSE)
+        num <- nimInteger(N, init = FALSE)
+        for(i in 1:L)
+            adj[i] <- ADbreak(adj_in[i])
+        for(i in 1:N)
+            num[i] <- ADbreak(num_in[i])
+        numIslands <- 0L
+        visited <- rep(0L, N)
         for(i in 1:N) {
             if(visited[i] == 0) {
                 visited[i] <- 1
                 numIslands <- numIslands + 1
                 nNeighbors <- num[i]
                 if(nNeighbors > 0) {
-                    adjStartInd <- 1
+                    adjStartInd <- 1L
                     if(i > 1) adjStartInd <- adjStartInd + sum(num[1:(i-1)])
-                    indToVisit <- numeric(nNeighbors)
-                    indToVisit[1:nNeighbors] <- adj[adjStartInd:(adjStartInd+nNeighbors-1)]
+                    indToVisit <- nimInteger(nNeighbors,
+                                             value = adj[adjStartInd:(adjStartInd+nNeighbors-1)])
                     lengthIndToVisit <- nNeighbors
-                    l <- 1
+                    l <- 1L
                     while(l <= lengthIndToVisit) {
                         nextInd <- indToVisit[l]
                         if(visited[nextInd] == 0) {
@@ -254,7 +261,7 @@ CAR_calcNumIslands <- nimbleFunction(
                             newNneighbors <- num[nextInd]
                             if(newNneighbors > 0) {
                                 newIndToVisit <- numeric(newNneighbors)
-                                adjStartInd <- 1
+                                adjStartInd <- 1L
                                 if(nextInd > 1) adjStartInd <- adjStartInd + sum(num[1:(nextInd-1)])
                                 new_indToVisit <- c(indToVisit, adj[adjStartInd:(adjStartInd+newNneighbors-1)])
                                 new_lengthIndToVisit <- lengthIndToVisit + newNneighbors
@@ -269,7 +276,8 @@ CAR_calcNumIslands <- nimbleFunction(
         }
         returnType(double())
         return(numIslands)
-    }
+    },
+    buildDerivs = list(run  = list(ignore = c("i")))
 )
 
 
@@ -285,12 +293,13 @@ CAR_calcM <- nimbleFunction(
         M <- rep(-1234, length = N)   ## Mi = -1234 indicates M was auto-generated, and region i has 0 neighbors
         for(i in 1:N) {
             if(num[i] > 0) {
-                M[i] <- 1/num[i]
+                M[i] <- ADbreak(1/num[i])
             }
         }
         returnType(double(1))
         return(M)
-    }
+    },
+    buildDerivs = list(run  = list(ignore = c("i")))
 )
 
 
@@ -300,11 +309,14 @@ CAR_calcM <- nimbleFunction(
 ## @author Daniel Turek
 CAR_calcC <- nimbleFunction(
     name = 'CAR_calcC',
-    run = function(adj = double(1), num = double(1)) {
-        N <- dim(num)[1]
+    run = function(adj = double(1), num_in = double(1)) {
+        N <- dim(num_in)[1]
         L <- dim(adj)[1]
+        num <- nimInteger(N, init = FALSE)
+        for(i in 1:N)
+            num[i] <- ADbreak(num_in[i])
         C <- rep(0, length = L)
-        count <- 1
+        count <- 1L
         for(i in 1:N) {
             if(num[i] > 0) {
                 for(j in 1:num[i]) {
@@ -316,7 +328,8 @@ CAR_calcC <- nimbleFunction(
         if(count != L+1)   stop('dcar distribution internal error')
         returnType(double(1))
         return(C)
-    }
+    },
+    buildDerivs = list(run  = list(ignore = c("i", "j")))
 )
 
 
@@ -327,15 +340,21 @@ CAR_calcC <- nimbleFunction(
 ## @author Daniel Turek
 CAR_calcCmatrix <- nimbleFunction(
     name = 'CAR_calcCmatrix',
-    run = function(C = double(1), adj = double(1), num = double(1)) {
-        N <- dim(num)[1]
-        L <- dim(adj)[1]
-        Cmatrix <- array(0, dim = c(N, N))
-        count <- 1
+    run = function(C = double(1), adj_in = double(1), num_in = double(1)) {
+        N <- dim(num_in)[1]
+        L <- dim(adj_in)[1]
+        adj <- nimInteger(L, init = FALSE)
+        num <- nimInteger(N, init = FALSE)
+        for(i in 1:L)
+            adj[i] <- ADbreak(adj_in[i])
+        for(i in 1:N)
+            num[i] <- ADbreak(num_in[i])
+        Cmatrix <- nimMatrix(value = 0, nrow = N, ncol = N)
+        count <- 1L
         for(i in 1:N) {
             if(num[i] > 0) {
                 for(j in 1:num[i]) {
-                    Cmatrix[i, adj[count]] <- C[count]
+                    Cmatrix[i, adj[count]] <- ADbreak(C[count])
                     count <- count + 1
                 }
             }
@@ -343,7 +362,8 @@ CAR_calcCmatrix <- nimbleFunction(
         if(count != L+1)   stop('dcar distribution internal error')
         returnType(double(2))
         return(Cmatrix)
-    }
+    },
+    buildDerivs = list(run  = list(ignore = c("i", "j")))
 )
 
 
@@ -444,20 +464,30 @@ carMaxBound <- nimbleFunction(
 CAR_calcEVs2 <- nimbleFunction(
     name = 'CAR_calcEVs2',
     run = function(adj = double(1), num = double(1)) {
+        N <- dim(num)[1]
         C <- CAR_calcC(adj, num)
-        Cmatrix <- CAR_calcCmatrix(C, adj, num)
+        Cmatrix_out <- CAR_calcCmatrix(C, adj, num)
+        ## Need to make sure Cmatrix not tracked or have issue with conversion of CppAD double in call to nimEigen.
+        Cmatrix <- nimMatrix(nrow = N, ncol = N, init = FALSE)
+        for(i in 1:N)  
+            for(j in 1:N)
+                Cmatrix[i,j] <- ADbreak(Cmatrix_out[i,j])
         evs <- nimEigen(Cmatrix, only.values = TRUE)$values
-        ## new code below, to replace NaN eigenvalues of Cmatrix with 0,
-        ## which occurs when Cmatrix is singular
-        ## -DT June 2020
-        if(any_nan(evs)) {
-            for(i in 1:length(evs)) {
-                if(is.nan(evs[i])) evs[i] <- 0
+        ## NaN eigenvalues occur when Cmatrix is singular.
+        ## Need to make sure arg of `any_nan` and `is.nan` are not CppAD types.
+        tmp <- nimNumeric(N)
+        for(i in 1:N)
+            tmp[i] <- ADbreak(evs[i])
+        if(any_nan(tmp)) {
+            for(i in 1:N) {
+                tmpi <- tmp[i]  # o.w. lifted node is CppAD double.
+                if(is.nan(tmpi)) evs[i] <- 0
             }
         }
         returnType(double(1))
         return(evs)
-    }
+    },
+    buildDerivs = list(run  = list(ignore = c("i", "j", "tmp", "tmpi", "Cmatrix")))
 )
 
 
@@ -469,19 +499,27 @@ CAR_calcEVs2 <- nimbleFunction(
 CAR_calcEVs3 <- nimbleFunction(
     name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
-        Cmatrix <- CAR_calcCmatrix(C, adj, num)
+        N <- dim(num)[1]
+        Cmatrix_out <- CAR_calcCmatrix(C, adj, num)
+        Cmatrix <- nimMatrix(nrow = N, ncol = N, init = FALSE)
+        for(i in 1:N)  
+            for(j in 1:N)
+                Cmatrix[i,j] <- ADbreak(Cmatrix_out[i,j])
         evs <- nimEigen(Cmatrix, only.values = TRUE)$values
-        ## new code below, to replace NaN eigenvalues of Cmatrix with 0,
-        ## which occurs when Cmatrix is singular
-        ## -DT June 2020
-        if(any_nan(evs)) {
-            for(i in 1:length(evs)) {
-                if(is.nan(evs[i])) evs[i] <- 0
+        ## NaN eigenvalues occur when Cmatrix is singular.
+        tmp <- nimNumeric(N)
+        for(i in 1:N)
+            tmp[i] <- ADbreak(evs[i])
+        if(any_nan(tmp)) {
+            for(i in 1:N) {
+                tmpi <- tmp[i]  # o.w. lifted node is CppAD double.
+                if(is.nan(tmpi)) evs[i] <- 0
             }
         }
         returnType(double(1))
         return(evs)
-    }
+    },
+    buildDerivs = list(run  = list(ignore = c("i", "tmp", "tmpi", "Cmatrix")))
 )
 
 

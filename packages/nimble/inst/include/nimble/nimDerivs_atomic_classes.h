@@ -19,6 +19,7 @@
 #include "nimDerivs_atomic_cholesky.h"
 #include "nimDerivs_atomic_cache.h"
 #include "nimDerivs_atomic_probit.h"
+#include "nimDerivs_atomic_dyn_ind.h"
 
 CppAD::AD<double> nimDerivs_lgammafn_base(CppAD::AD<double> x, int baseOrder, bool verbose = FALSE);
 CppAD::AD<double> nimDerivs_lgammafn(CppAD::AD<double> x);

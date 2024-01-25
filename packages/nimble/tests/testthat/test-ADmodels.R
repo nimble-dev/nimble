@@ -673,6 +673,88 @@ test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNod
                       useFasterRderivs = TRUE, verbose = verbose, name = 'Dirichlet paramTransform') 
 
 
+## Various likelihood-level non-differentiable constructs/distributions
+
+set.seed(1)
+code <- nimbleCode({
+    y ~ T(dnorm(mu, 1), -100, Inf)
+    z ~ dconstraint(mu > 100)
+    cens ~ dinterval(mu, c)
+    mu ~ dnorm(mu0, 1)
+    mu0 ~ dnorm(0, 1)
+})
+
+model <- nimbleModel(code, data = list(y = 1.5, z = 1, cens = 1), constants = list(c = 100),
+                     inits = list(mu0 = rnorm(1), mu = rnorm(1)))
+relTolTmp <- relTol
+
+test_ADModelCalculate(model, relTol = relTolTmp, wrt = 'mu0', calcNodes = c('mu0','mu'),
+                      verbose = verbose, name = 'non-differentiable constructs', useFasterRderivs = TRUE)
+
+
+## dflat
+
+set.seed(1)
+code <- nimbleCode({
+    y ~ dnorm(mu, 1)
+    mu ~ dflat()
+})
+
+model <- nimbleModel(code, data = list(y = 1.5),
+                     inits = list(mu = rnorm(1)))
+relTolTmp <- relTol
+
+test_ADModelCalculate(model, relTol = relTolTmp, 
+                      verbose = verbose, name = 'dflat')
+
+## dcat as likelihood
+
+set.seed(1)
+code <- nimbleCode({
+    z ~ dcat(p[1:3])
+    p[1:3] ~ ddirch(alpha[1:3])
+})
+
+model <- nimbleModel(code, data = list(z = 2), inits = list(alpha = 1:3, p = c(.2,.3,.5))) 
+relTolTmp <- relTol
+
+relTolTmp <- relTol
+relTolTmp[1] <- 1e-14
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-3
+relTolTmp[5] <- 1e-12
+
+
+test_ADModelCalculate(model, relTol = relTolTmp, absTolThreshold = 1e-12,
+                      newConstantNodes = list(z = 1), xNew = list(p = c(.35,.25,.4)),
+                      verbose = verbose, name = 'dcat likelihood',
+                      checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, useParamTransform = TRUE)
+
+## stochastic indexing, dcat as latent variable
+
+set.seed(1)
+code <- nimbleCode({
+    for(i in 1:5) {
+        y[i] ~ dnorm(mu[z[i]], 1)
+        z[i] ~ dcat(p[1:3])
+    }
+    for(i in 1:3)
+        mu[i] ~ dnorm(0,1)
+    p[1:3] ~ ddirch(alpha[1:3])
+})
+
+model <- nimbleModel(code, data = list(y = rnorm(5)), inits = list(z = c(1,2,2,1,3), mu = rnorm(3), alpha = 1:3, p = c(.2,.3,.5))) 
+
+relTolTmp <- relTol
+relTolTmp[1] <- 1e-14
+relTolTmp[3] <- 1e-5
+relTolTmp[4] <- 1e-3
+
+test_ADModelCalculate(model, wrt = c('mu','p'), relTol = relTolTmp, absTolThreshold = 1e-12,
+                      newUpdateNodes = list(z=c(3,3,2,1,2)), xNew = list(p = c(.35,.25,.4)), 
+                      verbose = verbose, name = 'dcat latent, stochastic indexing',
+                      checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, useParamTransform = TRUE)
+
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

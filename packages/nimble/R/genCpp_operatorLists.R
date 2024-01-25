@@ -342,6 +342,7 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsq
                                    "dt_nonstandard", "nimArr_dmulti", "nimArr_dcat", "dnbinom", "dunif", "pairmax", "pairmin", 
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", 
                                    "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
+                                   "nimArr_dcar_normal", "nimArr_dcar_proper",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
                                    "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial",
                                    "logit", "floor", "ceil", "nimRound", "ftrunc",

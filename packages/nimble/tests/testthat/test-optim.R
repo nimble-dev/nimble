@@ -218,7 +218,8 @@ test_that("when an RCfunction optim()izes an RCfunction, the DSL and C++ behavio
     )
     nimCaller <- nimbleFunction(
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimCallee, method = method))
+            ans <- optim(par, nimCallee, method = method)
+            return(ans)
             returnType(optimResultNimbleList())
         }
     )
@@ -276,7 +277,8 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ b
             nimCallee <- nimCalleeGen()
         },
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimCallee$run, method = method))
+            ans <- optim(par, nimCallee$run, method = method)
+            return(ans)
             returnType(optimResultNimbleList())
         }
     )()
@@ -377,7 +379,8 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     nimCaller <- nimbleFunction(
         setup = TRUE,
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimFn, nimGr, method = method))
+            ans <- optim(par, nimFn, nimGr, method = method)
+            return(ans)
             returnType(optimResultNimbleList())
         }
     )()
@@ -719,6 +722,38 @@ test_that("optim() respects parscale for Hessian in R and C++", {
     expect_equal(optR$par, optC$par)
     expect_equal(optR$hessian, optC$hessian)
   }
+})
+
+test_that("no spurious warning about missing nimbleFunction", {
+    ## This tests issue 1356.
+    objectiveFunction_inner <- nimbleFunction(
+         run = function(par = double(1), power = double(0), scaling = double(0)) {
+             return(sum(par) * exp(-sum(par ^ power) / scaling))
+             returnType(double(0))
+         }
+    )
+    objectiveFunction <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(objectiveFunction_inner(par, 2, 3))
+             returnType(double(0))
+         }
+     )
+     optimizer <- nimbleFunction(
+         run = function(method = character(0), fnscale = double(0)) {
+             control <- optimDefaultControl()
+             control$fnscale <- fnscale
+             par <- c(0.1, -0.1)
+             out <- optim(par, objectiveFunction, method = method, control = control)
+             return(out)
+             returnType(optimResultNimbleList())
+         }
+     )
+     temporarilyAssignInGlobalEnv(objectiveFunction_inner)
+     temporarilyAssignInGlobalEnv(objectiveFunction)
+
+     cOptimizer <- compileNimble(optimizer)
+     expect_no_warning(cOptimizer <- compileNimble(optimizer))
+
 })
 
 options(warn = RwarnLevel)

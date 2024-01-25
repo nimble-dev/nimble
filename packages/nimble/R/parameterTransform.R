@@ -96,7 +96,7 @@ parameterTransform <- nimbleFunction(
         ## 3: scalar interval-constrained (0, 1)
         ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
         ## 5: scalar interval-constrained (a, b)
-        ## 6: multivariate {normal, t}
+        ## 6: multivariate {normal, t, CAR}
         ## 7: multivariate {wishart, inverse-wishart}
         ## 8: multivariate dirichlet
         ## 9: LKJ 
@@ -178,7 +178,7 @@ parameterTransform <- nimbleFunction(
                     next }
                 stop(paste0('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
             } else {   ## multivariate
-                if(dist %in% c('dmnorm', 'dmvt')) {               ## 6: multivariate {normal, t}; also set for non-scalar determ nodes when allowDeterm is TRUE
+                if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper')) {               ## 6: multivariate {normal, t, CAR}; also set for non-scalar determ nodes when allowDeterm is TRUE
                     transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
@@ -233,7 +233,7 @@ parameterTransform <- nimbleFunction(
                           theseTransformed <- logit(theseValues),  ## 3: scalar interval-constrained (0, 1)
                           theseTransformed <- log(transformData[iNode,DATA2] * (theseValues - transformData[iNode,DATA1])),    ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
                           theseTransformed <- logit((theseValues - transformData[iNode,DATA1]) / transformData[iNode,DATA2]),  ## 5: scalar interval-constrained (a, b)
-                          theseTransformed <- theseValues,         ## 6: multivariate {normal, t}
+                          theseTransformed <- theseValues,         ## 6: multivariate {normal, t, CAR}
                           {                                        ## 7: multivariate {wishart, inverse-wishart}
                               ## log-Cholesky transform, values are column-wise
                               dd <- transformData[iNode,DATA1]
@@ -306,7 +306,7 @@ parameterTransform <- nimbleFunction(
                           theseInvTransformed <- ilogit(theseValues),  ## 3: scalar interval-constrained (0, 1)
                           theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * exp(theseValues),    ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
                           theseInvTransformed <- transformData[iNode,DATA1] + transformData[iNode,DATA2] * expit(theseValues),  ## 5: scalar interval-constrained (a, b)
-                          theseInvTransformed <- theseValues,          ## 6: multivariate {normal, t}
+                          theseInvTransformed <- theseValues,          ## 6: multivariate {normal, t, CAR}
                           {                                            ## 7: multivariate {wishart, inverse-wishart}
                               dd <- transformData[iNode,DATA1]
                               cholAsMatrix <- nimArray(0, dim = c(dd, dd))
@@ -389,7 +389,7 @@ parameterTransform <- nimbleFunction(
                               x <- theseValues[1]
                               lpAdd <- log(transformData[iNode,DATA2]) - log(exp(x)+exp(-x)+2)  ## alternate: -2*log(1+exp(-x))-x)
                           },
-                          lpAdd <- 0,               ## 6: multivariate {normal, t}
+                          lpAdd <- 0,               ## 6: multivariate {normal, t, CAR}
                           {                         ## 7: multivariate {wishart, inverse-wishart}
                               dd <- transformData[iNode,DATA1]
                               lpAdd <- dd * log(2)
