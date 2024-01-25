@@ -1010,6 +1010,13 @@ test_that("Example of splitVertices bug from Issue 1268 works.", {
   expect_no_error(Rmodel <- nimbleModel(code, constants = list(index=c(1,1))))
 })
 
+test_that("Reserved keywords as model vars are trapped.", {
+    code <- nimbleCode({
+        double ~ dnorm(0,1)
+    })
+    expect_error(m <- nimbleModel(code), "Found variable names that conflict")
+})
+
 test_that("Warning printed when indexing info in user environment.", {
     code <- nimbleCode({
         for(i in 1:N)
