@@ -511,7 +511,7 @@ relTolTmp[1] <- 1e-14
 relTolTmp[4] <- 1e-3
 
 ## 361 sec.
-test_ADModelCalculate(model, newUpdateNodes = list(dist = newDist), useParamTransform = TRUE,
+test_ADModelCalculate(model, newConstantNodes = list(dist = newDist), useParamTransform = TRUE,
                       checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE,
                       relTol = relTolTmp, verbose = verbose, name = 'user-defined distribution')
 
@@ -558,7 +558,7 @@ relTolTmp[5] <- 1e-13
 
 ## 462 sec.
 test_ADModelCalculate(model,absTolThreshold = 1e-12, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE,
-                      newUpdateNodes = list(dist = newDist, pr = newPr), useFasterRderivs = TRUE,
+                      newConstantNodes = list(dist = newDist, pr = newPr), useFasterRderivs = TRUE,
                       relTol = relTolTmp, verbose = verbose, name = 'various matrix functions')
 
 
