@@ -195,12 +195,10 @@ Much of the math supported by NIMBLE will work for AD. Here are some details on 
 
 Features that are not supported for AD include:
 
-- stochastic indexing (i.e. the index itself in a latent state) in models.
-- cumulative ("p") and quantile ("q") functions for distributions.
-- truncated distributions in models (because they use cumulative distribution functions).
-- random number generation.
-- specific distributions including `dcat`, `dcar_normal`, `dcar_proper`, and `dinterval`.
-- some specific functions including `step`, `%%` (mod), `eigen`, `svd`, and `bessel_k`.
+- cumulative ("p") and quantile ("q") functions for distributions;
+- truncated distributions in models (because they use cumulative distribution functions);
+- random number generation;
+- some specific functions including `step`, `%%` (mod), `eigen`, `svd`, and `bessel_k`; and
 - specific model operations including `model$calculateDiff`, `model$simulate`, `model$getBound`, and `model$getParam`.
 
 Some details on what is supported include:

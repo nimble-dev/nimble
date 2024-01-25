@@ -62,8 +62,8 @@ bool decide(double lMHr) { // simple function accept or reject based on log Metr
   return(false);
 }
 
-void nimStop(string msg) {NIMERROR(msg.c_str());}
-void nimStop() {NIMERROR("");}
+void nimStop(string msg) {NIMERROR("%s", msg.c_str());}
+void nimStop() {NIMERROR("Error. Exiting from compiled execution.");}
 
 bool nimNot(bool x) {return(!x);}
 

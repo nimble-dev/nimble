@@ -35,8 +35,8 @@ binaryOperators <- c(binaryMidOperators,
 
 binaryOrUnaryOperators <- c('+','-')
 unaryPromoteNoLogicalOperators <- c('abs','cube')
-unaryIntegerOperators <- 'nimStep'
-unaryLogicalOperators <- '!'
+unaryIntegerOperators <- c('nimStep') 
+unaryLogicalOperators <- c('!', 'nimIsNA', 'nimIsNaN')
 unaryDoubleOperators <- c('exp',
                           'log',
                           'logit',
@@ -311,7 +311,9 @@ eigProxyTranslateExternalUnary <- list(
     eigCeil = c('ceil', 'double', 'double'),
     eigFloor = c('floor', 'double', 'double'),
     eigNimStep = c('nimStep', 'double', 'int'),
-    'eig!' = c('nimNot','bool','bool', '!')
+    'eig!' = c('nimNot','bool','bool', '!'),
+    eigNimIsNA = c('nimIsNA', 'double', 'bool'),
+    eigNimIsNaN = c('nimIsNaN', 'double', 'bool')    
 )
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
@@ -340,6 +342,7 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dsq
                                    "dt_nonstandard", "nimArr_dmulti", "nimArr_dcat", "dnbinom", "dunif", "pairmax", "pairmin", 
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", 
                                    "nimArr_dwish_chol", "nimArr_dinvwish_chol", "nimArr_dlkj_corr_cholesky",
+                                   "nimArr_dcar_normal", "nimArr_dcar_proper",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
                                    "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial",
                                    "logit", "floor", "ceil", "nimRound", "ftrunc",
