@@ -3509,13 +3509,13 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
                 assertMessage <- paste0("Run-time size error: expected ", deparse(a2sizeExprs[[2]]), " == ", 1)
                 thisAssert <- identityAssert(a2sizeExprs[[2]], 1, assertMessage)
                 if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert                
-                code$sizeExprs <- list(a1sizeExprs[[1]], 1)
+                code$sizeExprs <- if(!isTRUE(getNimbleOption('useOldcWiseRule'))) list(a1sizeExprs[[1]], 1) else a2sizeExprs
             } else {
                 if(a1nDim == 2 & a2nDim == 1) {
                     assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[2]]), " == ", 1)
                     thisAssert <- identityAssert(a1sizeExprs[[2]], 1, assertMessage)
                     if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert
-                    code$sizeExprs <- list(a2sizeExprs[[1]], 1)
+                    code$sizeExprs <- if(!isTRUE(getNimbleOption('useOldcWiseRule'))) list(a2sizeExprs[[1]], 1) else a1sizeExprs
                 } else {
                     stop(exprClassProcessingErrorMsg(code, 'In sizeBinaryCwise: Dimensions do not matchin a way that can be handled.'), call. = FALSE)
                 }

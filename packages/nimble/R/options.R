@@ -77,7 +77,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCenableWAIC = FALSE,
         useClearCompiledInADTesting = TRUE,
         errorIfMissingNFVariable = TRUE,
-        stopOnSizeErrors = TRUE
+        stopOnSizeErrors = TRUE,
+        useOldcWiseRule = FALSE # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
     )
 )
 
