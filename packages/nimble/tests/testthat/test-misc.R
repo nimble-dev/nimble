@@ -260,13 +260,9 @@ test_that('is.na of scalar', {
             returnType(logical())
         })
     cnf <- compileNimble(nf)
-    for (x in c(0, 1, -Inf, Inf, NA, -1.234)) {
+    for (x in c(0, 1, -Inf, Inf, NA, NaN, -1.234)) {
         expect_identical(nf(x), cnf(x), info = paste('x =', x))
     }
-    
-    # Known failure https://github.com/nimble-dev/nimble/issues/487
-    x <- NaN
-    expect_failure(expect_identical(nf(x), cnf(x), info = paste('x =', x)))
 })
 
 test_that("pi case 1", {
