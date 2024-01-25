@@ -5160,9 +5160,6 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
 
 
   ## clusters not indep, with mv declaration - not allowed
-  ## errors when trying to wrap sampler because there is only
-  ## one cluster node. Might want have configureMCMC
-  ## give up on wrapping and then have error occur in buildMCMC().
   code <- nimbleCode({
       for(i in 1:4) 
           y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -5172,8 +5169,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   data = list(y = rnorm(4))
   inits = list(xi = rep(1,4), iden = diag(4))
   model <- nimbleModel(code, data = data, inits = inits)
-  expect_error(conf <- configureMCMC(model, print = FALSE),
-               "Cannot determine wrapped sampler for cluster parameter")
+  conf <- configureMCMC(model, print = FALSE)
+  expect_error(mcmc <- buildMCMC(conf), "must be part of conditionally independent nodes")
 
   ## clusters indep G0 but not IID
   code <- nimbleCode({

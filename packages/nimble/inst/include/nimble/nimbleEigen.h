@@ -1078,24 +1078,28 @@ struct FUNNAME ## _RR_impl {\
 
 
 // This case doesn't even really recycle, but for consistency:
-#define MAKE_RECYCLING_RULE_CLASS1_1scalar(FUNNAME, RETURNSCALARTYPE) \
+#define MAKE_RECYCLING_RULE_CLASS1_1scalar_2D(FUNNAME, RETURNSCALARTYPE) \
 template<typename Index, typename DerivedA1, typename DerivedA2> \
 class FUNNAME ## RecyclingRuleClass { \
 public: \
   const DerivedA1 &Arg1;\
   const DerivedA2 &Arg2;\
   unsigned int size1, outputSize;\
+  unsigned int nrow;\
+  unsigned int ncol;\
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2 ) :\
   Arg1(A1), Arg2(A2)\
 {\
   outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
+  nrow = nimble_size_impl<DerivedA1>::getRows(Arg1); \
+  ncol = nimble_size_impl<DerivedA1>::getCols(Arg1); \
   } \
   RETURNSCALARTYPE operator()(Index i) const { \
     return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nrow, size1), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0)); \
   }\
 }; \
@@ -1116,12 +1120,13 @@ struct FUNNAME ## _RR_impl {\
   static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >\
   FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2) {\
     FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2> obj(A1, A2);\
-    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >(obj.outputSize, 1, obj));\
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >(obj.nrow, obj.ncol, obj));\
   }\
 };
 
 
 // Here is the large macro for creating a functor class to be used in a NullaryExpr
+// This might actually be cruft, as more specific cases below are really used.
 #define MAKE_RECYCLING_RULE_CLASS3(FUNNAME, RETURNSCALARTYPE) \
   template<typename Index, typename DerivedA1, typename DerivedA2, typename DerivedA3>	\
 class FUNNAME ## RecyclingRuleClass { \
@@ -1145,9 +1150,9 @@ public: \
 		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nimble_size_impl<DerivedA1>::getRows(Arg1), size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nimble_size_impl<DerivedA2>::getRows(Arg2), size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i+j*nimble_size_impl<DerivedA3>::getRows(Arg3), size3)); \
   }\
 }; \
 \
@@ -1179,12 +1184,15 @@ public: \
   const DerivedA2 &Arg2;\
   const DerivedA3 &Arg3;\
   unsigned int size1, size2, outputSize;				\
+  unsigned int nrow1, nrow2; \
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3 ) : \
   Arg1(A1), Arg2(A2), Arg3(A3) \
 {\
   outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
   size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
-  if(size2 > outputSize) outputSize = size2;	      \
+  nrow1 = nimble_size_impl<DerivedA1>::getRows(Arg1); \
+  nrow2 = nimble_size_impl<DerivedA2>::getRows(Arg2);  \
+  if(size2 > outputSize) outputSize = size2;           \
 }						      \
   RETURNSCALARTYPE operator()(Index i) const { \
     return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
@@ -1192,8 +1200,8 @@ public: \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nrow1, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nrow2, size2), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0)); \
   }\
 }; \
@@ -1227,11 +1235,14 @@ public: \
   const DerivedA3 &Arg3;\
   const DerivedA4 &Arg4;						\
   unsigned int size1, size2, outputSize;				\
+  unsigned int nrow1, nrow2; \
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4 ) : \
   Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4)				\
 {\
   outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
   size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
+  nrow1 = nimble_size_impl<DerivedA1>::getRows(Arg1); \
+  nrow2 = nimble_size_impl<DerivedA2>::getRows(Arg2);  \
   if(size2 > outputSize) outputSize = size2;	      \
 }						      \
   RETURNSCALARTYPE operator()(Index i) const { \
@@ -1241,8 +1252,8 @@ public: \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nrow1, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nrow2, size2), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0), \
     		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
@@ -1270,6 +1281,7 @@ struct FUNNAME ## _RR_impl {\
 
 
 // Here is the large macro for creating a functor class to be used in a NullaryExpr
+// similar to CLASS3 above, I am not sure this more general one is actually used anymore/anywhere
 #define MAKE_RECYCLING_RULE_CLASS4(FUNNAME, RETURNSCALARTYPE) \
   template<typename Index, typename DerivedA1, typename DerivedA2, typename DerivedA3, typename DerivedA4>	\
 class FUNNAME ## RecyclingRuleClass { \
@@ -1297,10 +1309,10 @@ public: \
 		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nimble_size_impl<DerivedA1>::getRows(Arg1), size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nimble_size_impl<DerivedA2>::getRows(Arg2), size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i+j*nimble_size_impl<DerivedA3>::getRows(Arg3), size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i+j*nimble_size_impl<DerivedA4>::getRows(Arg4), size4)); \
   }\
 }; \
 \
@@ -1335,12 +1347,16 @@ public: \
   const DerivedA3 &Arg3;\
   const DerivedA4 &Arg4;\
   unsigned int size1, size2, size3, outputSize;			\
+  unsigned int nrow1, nrow2, nrow3; \
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4 ) : \
   Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4) \
 {\
   outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
   size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
   size3 = nimble_size_impl<DerivedA3>::getSize(Arg3); \
+  nrow1 = nimble_size_impl<DerivedA1>::getRows(Arg1); \
+  nrow2 = nimble_size_impl<DerivedA2>::getRows(Arg2);  \
+  nrow3 = nimble_size_impl<DerivedA3>::getRows(Arg3);  \
   if(size2 > outputSize) outputSize = size2; \
   if(size3 > outputSize) outputSize = size3; \
   } \
@@ -1351,9 +1367,9 @@ public: \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nrow1, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nrow2, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i+j*nrow3, size3), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
 }; \
@@ -1390,12 +1406,16 @@ public: \
   const DerivedA4 &Arg4;\
   const DerivedA5 &Arg5;\
   unsigned int size1, size2, size3, outputSize;			\
+  unsigned int nrow1, nrow2, nrow3; \
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4, const DerivedA5 &A5 ) : \
   Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4), Arg5(A5)			\
 {\
   outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
   size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
   size3 = nimble_size_impl<DerivedA3>::getSize(Arg3); \
+  nrow1 = nimble_size_impl<DerivedA1>::getRows(Arg1);  \
+  nrow2 = nimble_size_impl<DerivedA2>::getRows(Arg2);  \
+  nrow3 = nimble_size_impl<DerivedA3>::getRows(Arg3);  \
   if(size2 > outputSize) outputSize = size2; \
   if(size3 > outputSize) outputSize = size3; \
   } \
@@ -1407,9 +1427,9 @@ public: \
     		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nrow1, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nrow2, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i+j*nrow3, size3), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0), \
     		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
   }\
@@ -1446,6 +1466,7 @@ public: \
   const DerivedA4 &Arg4;\
   const DerivedA5 &Arg5;\
   unsigned int size1, size2, size3, size4, outputSize;	\
+  unsigned int nrow1, nrow2, nrow3, nrow4; \
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4, const DerivedA5 &A5 ) : \
   Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4), Arg5(A5)	\
 {\
@@ -1453,6 +1474,10 @@ public: \
   size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
   size3 = nimble_size_impl<DerivedA3>::getSize(Arg3); \
   size4 = nimble_size_impl<DerivedA4>::getSize(Arg4); \
+  nrow1 = nimble_size_impl<DerivedA1>::getRows(Arg1); \
+  nrow2 = nimble_size_impl<DerivedA2>::getRows(Arg2);  \
+  nrow3 = nimble_size_impl<DerivedA3>::getRows(Arg3); \
+  nrow4 = nimble_size_impl<DerivedA4>::getRows(Arg4);  \
   if(size2 > outputSize) outputSize = size2;   \
   if(size3 > outputSize) outputSize = size3; \
   if(size4 > outputSize) outputSize = size4; \
@@ -1465,10 +1490,10 @@ public: \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4), \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nrow1, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nrow2, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i+j*nrow3, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i+j*nrow4, size4), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
   }\
 }; \
@@ -1506,6 +1531,7 @@ public: \
   const DerivedA5 &Arg5;\
   const DerivedA6 &Arg6;\
   unsigned int size1, size2, size3, size4, outputSize;			\
+  unsigned int nrow1, nrow2, nrow3, nrow4; \
   FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4, const DerivedA5 &A5, const DerivedA6 &A6 ) : \
   Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4), Arg5(A5), Arg6(A6)		\
 {\
@@ -1513,6 +1539,10 @@ public: \
   size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
   size3 = nimble_size_impl<DerivedA3>::getSize(Arg3); \
   size4 = nimble_size_impl<DerivedA4>::getSize(Arg4); \
+  nrow1 = nimble_size_impl<DerivedA1>::getRows(Arg1); \
+  nrow2 = nimble_size_impl<DerivedA2>::getRows(Arg2);  \
+  nrow3 = nimble_size_impl<DerivedA3>::getRows(Arg3); \
+  nrow4 = nimble_size_impl<DerivedA4>::getRows(Arg4);  \
   if(size2 > outputSize) outputSize = size2; \
   if(size3 > outputSize) outputSize = size3; \
   if(size4 > outputSize) outputSize = size4; \
@@ -1526,10 +1556,10 @@ public: \
                    nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA6>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA6, Index >::getCoeff(Arg6, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4), \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i+j*nrow1, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i+j*nrow2, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i+j*nrow3, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i+j*nrow4, size4), \
     		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0), \
 		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA6>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA6, Index >::getCoeff(Arg6, 0)); \
   }\
@@ -1634,7 +1664,7 @@ MAKE_RECYCLING_RULE_CLASS_r3(rt_nonstandard, double)
 MAKE_RECYCLING_RULE_CLASS_r1(rt, double)
 
 MAKE_RECYCLING_RULE_CLASS2_1scalar(bessel_k, double)
-MAKE_RECYCLING_RULE_CLASS1_1scalar(pow_int, double)
+MAKE_RECYCLING_RULE_CLASS1_1scalar_2D(pow_int, double)
 
 // matrix, array, as.numeric, as.matrix, as.array
 
