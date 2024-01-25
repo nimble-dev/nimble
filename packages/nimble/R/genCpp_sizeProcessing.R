@@ -541,7 +541,7 @@ sizeRecyclingRuleBesselK <- function(code, symTab, typeEnv) { ## also need an en
     code$sizeExprs <- newSizeExprs
     code$type <- 'double' ## will need to look up from a list
     code$nDim <- 1
-    code$toEigenize <- TRUE
+    code$toEigenize <- 'yes'
     return(asserts)
 }
 
