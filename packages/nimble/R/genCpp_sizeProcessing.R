@@ -181,128 +181,127 @@ scalarOutputTypes <- list(decide = 'logical',
 expressionSymbolTypeReplacements <- c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction', 'symbolMemberFunction')
 
 exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprClass
-    ## name:
-   if(code$isName) {
-        ## If it doesn't exist and must exist, stop
-        if(code$name != "") { ## e.g. In A[i,], second index gives name==""
-            if(!exists(code$name, envir = typeEnv, inherits = FALSE)) {
-                if(symTab$symbolExists(code$name, TRUE)) {
-                    thisSymbolObject <- symTab$getSymbolObject(code$name, TRUE)
-                    code$type <- class(thisSymbolObject)[1]
-                    if(code$type %in% expressionSymbolTypeReplacements){
-                      code$type <- thisSymbolObject$type
-                      code$sizeExprs <- thisSymbolObject
-                    }
-                } else {
-                  code$type <- 'unknown'
-                  #Add RCfunctions to neededRCfuns.
-                  if(typeEnv[['.allowFunctionAsArgument']]) {
-                    if(exists(code$name) && is.rcf(get(code$name))) {
-                      nfmObj <- environment(get(code$name))$nfMethodRCobject
-                      uniqueName <- nfmObj$uniqueName
-                      if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
-                        typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
-                      }
-                    }
-                  } else if(!typeEnv$.AllowUnknowns)
-                        if(identical(code$name, 'pi')) { ## unique because it may be encountered anew on on RHS and be valid
-                            assign('pi',
-                                   exprTypeInfoClass$new(nDim = 0,
-                                                         type = 'double',
-                                                         sizeExprs = list()),
-                                   envir = typeEnv)
-                            symTab$addSymbol(
-                                symbolBasic(name = 'pi',
-                                            type = 'double',
-                                            nDim = 0))
-                            code$nDim <- 0
-                            code$type <- 'double'
-                            code$sizeExprs <- list()
-                            code$toEigenize <- 'maybe'
-                        } else {
-                            if(getNimbleOption('errorIfMissingNFVariable')) {
-                                stop("variable `",
-                                     code$name,
-                                     "` is not available.",
-                                     call.=FALSE)
-                                } else
-                                   messageIfVerbose("  [Warning] Variable `", code$name, "` is not available.")
-                            }
-                     }   
-                }
+  ## name:
+  if(code$isName) {
+    ## If it doesn't exist and must exist, stop
+    if(code$name != "") { ## e.g. In A[i,], second index gives name==""
+      if(!exists(code$name, envir = typeEnv, inherits = FALSE)) {
+        if(symTab$symbolExists(code$name, TRUE)) {
+          thisSymbolObject <- symTab$getSymbolObject(code$name, TRUE)
+          code$type <- class(thisSymbolObject)[1]
+          if(code$type %in% expressionSymbolTypeReplacements){
+            code$type <- thisSymbolObject$type
+            code$sizeExprs <- thisSymbolObject
+          }
+        } else {
+          code$type <- 'unknown'
+                                        #Add RCfunctions to neededRCfuns.
+          if(typeEnv[['.allowFunctionAsArgument']]) {
+            if(exists(code$name) && is.rcf(get(code$name))) {
+              nfmObj <- environment(get(code$name))$nfMethodRCobject
+              uniqueName <- nfmObj$uniqueName
+              if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+                typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+              }
+            }
+          } else if(!typeEnv$.AllowUnknowns)
+            if(identical(code$name, 'pi')) { ## unique because it may be encountered anew on on RHS and be valid
+              assign('pi',
+                     exprTypeInfoClass$new(nDim = 0,
+                                           type = 'double',
+                                           sizeExprs = list()),
+                     envir = typeEnv)
+              symTab$addSymbol(
+                       symbolBasic(name = 'pi',
+                                   type = 'double',
+                                   nDim = 0))
+              code$nDim <- 0
+              code$type <- 'double'
+              code$sizeExprs <- list()
+              code$toEigenize <- 'maybe'
             } else {
-                ## otherwise fill in type fields from typeEnv object
-                info <- get(code$name, envir = typeEnv)
-                if(inherits(info, 'exprTypeInfoClass')) {
-                    code$type <- info$type
-                    code$sizeExprs <- info$sizeExprs
-                    code$nDim <- info$nDim
-                    code$toEigenize <- 'maybe'
-                }
+              if(getNimbleOption('errorIfMissingNFVariable')) {
+                stop("variable `",
+                     code$name,
+                     "` is not available.",
+                     call.=FALSE)
+              } else
+                messageIfVerbose("  [Warning] Variable `", code$name, "` is not available.")
             }
-            ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
-            return(NULL)
         }
+      } else {
+        ## otherwise fill in type fields from typeEnv object
+        info <- get(code$name, envir = typeEnv)
+        if(inherits(info, 'exprTypeInfoClass')) {
+          code$type <- info$type
+          code$sizeExprs <- info$sizeExprs
+          code$nDim <- info$nDim
+          code$toEigenize <- 'maybe'
+        }
+      }
+      ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
+      return(NULL)
     }
+  }
 
-    if(code$isCall) {
-        if(code$name == '{') {
-            ## recurse over lines
-            for(i in seq_along(code$args)) {
-                if(inherits(code$args[[i]], 'exprClass')) {
-                    newAsserts <-
-                        exprClasses_setSizes(code$args[[i]], symTab, typeEnv)
-                    code$args[[i]]$assertions <-
-                        if(is.null(newAsserts)) list() else newAsserts
-                }
-            }
-            return(invisible(NULL))
+  if(code$isCall) {
+    if(code$name == '{') {
+      ## recurse over lines
+      for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+          newAsserts <-
+            exprClasses_setSizes(code$args[[i]], symTab, typeEnv)
+          code$args[[i]]$assertions <-
+            if(is.null(newAsserts)) list() else newAsserts
         }
-        sizeCall <- sizeCalls[[code$name]]
-        if(!is.null(sizeCall)) {
-            if(.nimbleOptions$debugSizeProcessing) {
-                browser()
-                eval(
-                    substitute(
-                        debugonce(XYZ),
-                        list(XYZ = as.name(sizeCall))
-                    )
-                )
-            }
-            test0 <- eval(call(sizeCall, code, symTab, typeEnv))
-            return(test0)
-        }
-        if(symTab$symbolExists(code$name, TRUE)) { ## could be a nimbleFunction object
-            return(sizeNimbleFunction(code, symTab, typeEnv) )
-        }
-        ## Finally, it could be an RCfunction (a nimbleFunction with no setup == a simple function) {
-
-        if(exists(code$name)) {
-            obj <- get(code$name)
-            if(is.rcf(obj)) { ## it is an RC function
-                nfmObj <- environment(obj)$nfMethodRCobject
-                uniqueName <- nfmObj$uniqueName
-                if(length(uniqueName)==0)
-                    stop(
-                        exprClassProcessingErrorMsg(
-                            code,
-                            'In size processing: A no-setup nimbleFunction with no internal name is being called.'),
-                        call. = FALSE)
-                ## new with nimbleLists: we need to initiate compilation here so we can get full returnType information, including of nimbleLists
-                RCfunProc <-
-                    typeEnv$.nimbleProject$compileRCfun(obj,
-                                                        initialTypeInference = TRUE)
-                
-                if(is.null(typeEnv$neededRCfuns[[uniqueName]])) {
-                    if(!identical(RCfunProc$RCfun$uniqueName, typeEnv$.myUniqueName))
-                        typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
-                }
-                
-                return(sizeRCfunction(code, symTab, typeEnv, nfmObj, RCfunProc))
-            }
-        }
+      }
+      return(invisible(NULL))
     }
-    invisible(NULL)
+    sizeCall <- sizeCalls[[code$name]]
+    if(!is.null(sizeCall)) {
+      if(.nimbleOptions$debugSizeProcessing) {
+        browser()
+        eval(
+          substitute(
+            debugonce(XYZ),
+            list(XYZ = as.name(sizeCall))
+          )
+        )
+      }
+      test0 <- eval(call(sizeCall, code, symTab, typeEnv))
+      return(test0)
+    }
+    if(symTab$symbolExists(code$name, TRUE)) { ## could be a nimbleFunction object
+      return(sizeNimbleFunction(code, symTab, typeEnv) )
+    }
+    ## Finally, it could be an RCfunction (a nimbleFunction with no setup == a simple function) {
+
+    if(exists(code$name)) {
+      obj <- get(code$name)
+      if(is.rcf(obj)) { ## it is an RC function
+        nfmObj <- environment(obj)$nfMethodRCobject
+        uniqueName <- nfmObj$uniqueName
+        if(length(uniqueName)==0)
+          stop(
+            exprClassProcessingErrorMsg(
+              code,
+              'In size processing: A no-setup nimbleFunction with no internal name is being called.'),
+            call. = FALSE)
+        ## new with nimbleLists: we need to initiate compilation here so we can get full returnType information, including of nimbleLists
+        RCfunProc <-
+          typeEnv$.nimbleProject$compileRCfun(obj,
+                                              initialTypeInference = TRUE)
+
+        if(is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+          if(!identical(RCfunProc$RCfun$uniqueName, typeEnv$.myUniqueName))
+            typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+        }
+
+        return(sizeRCfunction(code, symTab, typeEnv, nfmObj, RCfunProc))
+      }
+    }
+  }
+  invisible(NULL)
 }
 
 sizeProxyForDebugging <- function(code, symTab, typeEnv) {
@@ -1503,7 +1502,7 @@ sizeOptimDefaultControl <- function(code, symTab, typeEnv) {
 
 checkDim <- function(code, symTab) {
     if(is.numeric(code))
-        return(length(code) > 1)
+        return(as.numeric(length(code) > 1))
     if(inherits(code, 'exprClass')) {
         if(symTab$symbolExists(code$name)) {  # a variable
             return(symTab$getSymbolObject(code$name)$nDim)
@@ -1514,15 +1513,22 @@ checkDim <- function(code, symTab) {
 
 sizeIntegrate <- function(code, symTab, typeEnv) {
   typeEnv$.allowFunctionAsArgument <- TRUE
-  code$args[[1]]$type <- 'function'  # flag so not looked for in symTab (issue 1356)
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   typeEnv$.allowFunctionAsArgument <- FALSE
 
   if(!"param" %in% names(code$args))
       stop("`param` argument must be provided to `nimIntegrate`, even if unused in integrand")
 
-  if(checkDim(code$args$param, symTab) != 1)
-      stop("`param` argument to `nimIntegrate` must be a one-dimensional array (scalar values can be padded with an additional unused value such as zero)")
+  iParam <-  which(names(code$args)=='param') # This should always be 4
+
+  ## lift param argument if it is an expressions
+  if(inherits(code$args[[iParam]], 'exprClass')) {
+    if(!(code$args[[iParam]]$isName))
+      asserts <- c(asserts, sizeInsertIntermediate(code, iParam, symTab, typeEnv))
+  }
+
+  if(checkDim(code$args[[iParam]], symTab) > 1)
+      stop("`param` argument to `nimIntegrate` must be a one-dimensional array or scalar.")
   if(checkDim(code$args$lower, symTab) != 0 || checkDim(code$args$upper, symTab) != 0)
       stop("`lower` and `upper` arguments to `nimIntegrate` must be scalars")
 
@@ -1531,11 +1537,31 @@ sizeIntegrate <- function(code, symTab, typeEnv) {
   code$nDim <- 1
   code$type <- 'double'
   fnCode <- code$args$f
-  if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
+
+  if(!inherits(fnCode, 'exprClass')) {
+        stop(exprClassProcessingErrorMsg(code, '`f` argument to `integrate` (or `nimIntegrate`) is not valid.'), call. = FALSE)
+  }
+  if (fnCode$name == 'nfMethod') {
+    ## This is handled in cppOutputNFmethod.
+  } else if(identical(fnCode$type, 'Ronly') & identical(class(fnCode$sizeExprs)[1], 'symbolMemberFunction')) {
+    fnCode$name <- fnCode$sizeExprs$RCfunProc$name
+    newCode <- substitute(nfMethod(this, FUN), list(FUN = fnCode$name))
+    newExpr <- RparseTree2ExprClasses(newCode)
+    newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
+    setArg(code, 1, newExpr)
+  } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
     fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
   } else {
-    stop('unsupported fn argument in integrate(fn = ', fnCode$name, '); try an RCfunction or nfMethod instead')
+    stop('in `integrate` (or `nimIntegrate`), the `f` argument, `', fnCode$name, '`, is not available or is not a nimbleFunction or nimbleFunction method.')
   }
+
+  for(arg in c(code$args$lower, code$args$upper, code$args$subdivisions,
+               code$args$rel.tol, code$args$abs.tol, code$args$stop.on.error)) {
+    if(inherits(arg, 'exprClass') && arg$toEigenize=='yes') {
+      asserts <- c(asserts, sizeInsertIntermediate(code, arg$callerArgID, symTab, typeEnv))
+    }
+  }
+
   if(length(asserts) == 0) NULL else asserts
 }
 

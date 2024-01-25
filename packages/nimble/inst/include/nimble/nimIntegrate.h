@@ -108,4 +108,20 @@ NimArr<1, double> nimIntegrate(
                                      rel_tol, abs_tol, stop_on_error).integrate();
 }
 
+template <class Fn>
+NimArr<1, double> nimIntegrate(
+    Fn fn,
+    double lower,
+    double upper,
+    double param,
+    int subdivisions,
+    double rel_tol,
+    double abs_tol,
+    bool stop_on_error) {
+  NimArr<1, double> param_vector;
+    param_vector.initialize(param, true, 1);
+  return NimIntegrateProblem_Fun<Fn>(fn, lower, upper, param_vector, subdivisions,
+                                     rel_tol, abs_tol, stop_on_error).integrate();
+}
+
 #endif // NIMINTEGRATE_H_

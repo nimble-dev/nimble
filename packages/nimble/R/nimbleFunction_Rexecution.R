@@ -1403,8 +1403,10 @@ nimOptimDefaultControl <- function() {
 #' }
 #' 
 nimIntegrate <- function(f, lower, upper, param, subdivisions = 100L,
-                         rel.tol = .Machine$double.eps^0.25, abs.tol = rel.tol, stop.on.error = TRUE) {
-    output <- rep(0, 3)
+                         rel.tol = .Machine$double.eps^0.25, abs.tol = .Machine$double.eps^0.25, stop.on.error = TRUE) {
+  # R's integrate has default abs.tol = rel.tol, but nimble has now way to do that kind of chain of defaults
+  # in compiled code.
+  output <- rep(0, 3)
     messages <- c("OK", "maximum number of subdivisions reached", 
         "roundoff error was detected", "extremely bad integrand behaviour", 
         "roundoff error is detected in the extrapolation table", 

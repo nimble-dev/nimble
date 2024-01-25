@@ -48,9 +48,8 @@ toEigenCalls <- c(
     makeCallList(matrixFlipOperators, 'sizeTranspose'),
     makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
     makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
-    nimOptim = 'toEigenOptim',
-    nimIntegrate = 'toEigenIntegrate',
-    
+    makeCallList(c('nimOptim', 'nimIntegrate'), 'toEigenOptimIntegrate'),
+
     makeCallList(paste0('nimC',c('d','i','b')), 'toEigenConcatenate'),
     makeCallList(paste0('nimRep',c('d','i','b')), 'toEigenRep'),
     list('debugSizeProcessing' = 'sizeProxyForDebugging',
@@ -360,12 +359,7 @@ toEigenGetBound <- function(code, symTab, typeEnv) {
     return(list())
 }
 
-toEigenOptim <- function(code, symTab, typeEnv) {
-    code$toEigenize <- 'no'
-    return(list())
-}
-
-toEigenIntegrate <- function(code, symTab, typeEnv) {
+toEigenOptimIntegrate <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'no'
     return(list())
 }

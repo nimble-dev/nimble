@@ -7,7 +7,7 @@ nimbleOptions(verbose = FALSE)
 
 context("Testing of nimIntegrate() in NIMBLE code")
 
-test_that("Basic use in a nimbleFunction", {
+test_that("Basic use of integrate in an RCfunction calling an RCfunction", {
     integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
             return(x*theta[1])
@@ -16,9 +16,9 @@ test_that("Basic use in a nimbleFunction", {
     )
     
     fun <- nimbleFunction(
-        run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
-            output <- integrate(integrand, lower, upper, tmp)
+      run = function(theta = double(0), lower = double(0), upper = double(0)) {
+            # padding with a 0 is no longer necessary. But integrand should always take a vector.
+            output <- integrate(integrand, lower, upper, theta)
             returnType(double(1))
             return(output)
         }
@@ -34,7 +34,172 @@ test_that("Basic use in a nimbleFunction", {
     expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
     expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
     expect_identical(resultC[3], 0, info = "unexpected error code")
+})
 
+test_that("Basic use of integrate with rel.tol and abs.tol expressions", {
+    integrand <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            return(x*theta[1])
+            returnType(double(1))
+        }
+    )
+
+    fun <- nimbleFunction(
+      run = function(theta = double(0), lower = double(0), upper = double(0)) {
+        # padding with a 0 is no longer necessary. But integrand should always take a vector.
+        abs.tol <- .00001
+        rtvec <- c(0.000005, 0.000005)
+        output <- integrate(integrand, lower, upper, theta, abs.tol = 2*abs.tol/(sqrt(2)^2), rel.tol = sqrt(sum(rtvec)^2))
+            returnType(double(1))
+            return(output)
+        }
+    )
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
+    cfun <- compileNimble(fun)
+
+    theta <- pi
+    expected_result <- theta*0.375
+    resultR <- fun(theta, .5, 1)
+    resultC <- cfun(theta, .5, 1)
+    expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
+    expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+    expect_identical(resultC[3], 0, info = "unexpected error code")
+})
+
+test_that("Basic use of integrate in an RCfunction calling an RCfunction with vector args", {
+    integrand <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            return(x*sum(theta))
+            returnType(double(1))
+        }
+    )
+
+    fun <- nimbleFunction(
+      run = function(theta = double(1), lower = double(0), upper = double(0)) {
+            output <- integrate(integrand, lower, upper, theta)
+            returnType(double(1))
+            return(output)
+        }
+    )
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
+    cfun <- compileNimble(fun)
+
+    theta <- c(pi/2, pi/2)
+    expected_result <- sum(theta)*0.375
+    resultR <- fun(theta, .5, 1)
+    resultC <- cfun(theta, .5, 1)
+    expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
+    expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+    expect_identical(resultC[3], 0, info = "unexpected error code")
+})
+
+
+test_that("Basic use of integrate in a nimbleFunction calling its own method", {
+  nf <- nimbleFunction(
+    setup=TRUE,
+    run = function(theta = double(0), lower = double(0), upper = double(0)) {
+                                        # padding with a 0 is no longer necessary. But integrand should always take a vector.
+      output <- integrate(integrand, lower, upper, theta)
+      returnType(double(1))
+      return(output)
+    },
+    methods = list(
+      integrand = function(x = double(1), theta = double(1)) {
+        return(x*theta[1])
+        returnType(double(1))
+      }
+    )
+  )
+  nf1 <- nf()
+
+  cnf1 <- compileNimble(nf1)
+
+  theta <- pi
+  expected_result <- theta*0.375
+  resultR <- fun(theta, .5, 1)
+  resultC <- cfun(theta, .5, 1)
+  expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
+  expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+  expect_identical(resultC[3], 0, info = "unexpected error code")
+})
+
+test_that("Basic use of integrate in a nimbleFunction calling another nimbleFunction's method", {
+  callee <- nimbleFunction(
+    setup = TRUE,
+    methods = list(
+      integrand = function(x = double(1), theta = double(1)) {
+        return(x*theta[1])
+        returnType(double(1))
+      }
+    )
+  )
+  nf <- nimbleFunction(
+    setup=function(c1) {},
+    run = function(theta = double(0), lower = double(0), upper = double(0)) {
+                                        # padding with a 0 is no longer necessary. But integrand should always take a vector.
+      output <- integrate(c1$integrand, lower, upper, theta)
+      returnType(double(1))
+      return(output)
+    }
+  )
+  c1 <- callee()
+  nf1 <- nf(c1)
+
+  cnf1 <- compileNimble(nf1)
+
+  theta <- pi
+  expected_result <- theta*0.375
+  resultR <- fun(theta, .5, 1)
+  resultC <- cfun(theta, .5, 1)
+  expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
+  expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+  expect_identical(resultC[3], 0, info = "unexpected error code")
+})
+
+# Following case is not supported (also not supported for nimOptim, I believe)
+## test_that("Basic use of integrate in a nimbleFunction using a nimbleFunctionList", {
+##   callee_base <- nimbleFunctionVirtual(
+##     methods = list(integrand = function(x = double(1), theta = double(1)) {returnType(double(1))})
+##   )
+##   callee <- nimbleFunction(
+##     contains = callee_base,
+##     setup = TRUE,
+##     methods = list(
+##       integrand = function(x = double(1), theta = double(1)) {
+##         return(x*theta[1])
+##         returnType(double(1))
+##       }
+##     )
+##   )
+##   nf <- nimbleFunction(
+##     setup=function(c1) {
+##       callee_list <- nimbleFunctionList(callee_base)
+##       callee_list[[1]] <- c1
+##     },
+##     run = function(theta = double(0), lower = double(0), upper = double(0)) {
+##                                         # padding with a 0 is no longer necessary. But integrand should always take a vector.
+##       output <- integrate(callee_list[[1]]$integrand, lower, upper, theta)
+##       returnType(double(1))
+##       return(output)
+##     }
+##   )
+##   c1 <- callee()
+##   nf1 <- nf(c1)
+
+##   ncnf1 <- compileNimble(nf1)
+
+##   theta <- pi
+##   expected_result <- theta*0.375
+##   resultR <- fun(theta, .5, 1)
+##   resultC <- cfun(theta, .5, 1)
+##   expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
+##   expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+##   expect_identical(resultC[3], 0, info = "unexpected error code")
+## })
+
+test_that("basic use of integrate with literal values for bounds", {
     ## Using explicit values for bounds of `integrate`
     integrand2 <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
@@ -45,8 +210,7 @@ test_that("Basic use in a nimbleFunction", {
     
     fun2 <- nimbleFunction(
         run = function(theta = double(0)) {
-            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
-            output <- integrate(integrand2, .5, 1, tmp)
+            output <- integrate(integrand2, .5, 1, theta)
             returnType(double(1))
             return(output)
         }
@@ -59,7 +223,6 @@ test_that("Basic use in a nimbleFunction", {
     expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
     expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
     expect_identical(resultC[3], 0, info = "unexpected error code")
-    
 })
 
 test_that("Basic use in a nimbleFunction with infinity bound", {
@@ -90,6 +253,34 @@ test_that("Basic use in a nimbleFunction with infinity bound", {
     expect_identical(resultC[3], 0, info = "unexpected error code")
 })
 
+test_that("Basic use of nimIntegrate with a bound that uses Eigen implementation", {
+    integrand <- nimbleFunction(
+        run = function(x = double(1), theta = double(1)) {
+            return(dnorm(x))
+            returnType(double(1))
+        }
+    )
+
+    fun <- nimbleFunction(
+       run = function(lower = double(1), upper = double(0)) {
+            output <- integrate(integrand, sum(lower*c(1,1)), upper, 0)
+            returnType(double(1))
+            return(output)
+        }
+    )
+
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
+    cfun <- compileNimble(fun)
+
+    resultR <- fun(c(-1, 1), Inf)
+    resultC <- cfun(c(-1, 1), Inf)
+    expect_equal(resultC[1], 0.5, info = "unexpected nimIntegrate result")
+    expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+    expect_identical(resultC[3], 0, info = "unexpected error code")
+})
+
+
 
 test_that("Error trapping", {
     integrand <- nimbleFunction(
@@ -101,8 +292,7 @@ test_that("Error trapping", {
     
     fun <- nimbleFunction(
         run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
-            output <- integrate(integrand, lower, upper, tmp)
+            output <- integrate(integrand, lower, upper, theta)
             returnType(double(1))
             return(output)
         }
@@ -126,7 +316,7 @@ test_that("Error trapping", {
     
     fun2 <- nimbleFunction(
         run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
+            tmp <- theta
             output <- integrate(integrand2, lower, upper, tmp, stop.on.error = FALSE)
             returnType(double(1))
             return(output)
@@ -198,7 +388,7 @@ test_that("Use in a user-defined model function", {
 
 
 
-test_that("Error trapping for non-vector `params` or non-scalar `lower`, `upper`", {
+test_that("Error trapping for invalid types for `params` or non-scalar `lower`, `upper`", {
     integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
             return(x*theta[1])
@@ -226,7 +416,7 @@ test_that("Error trapping for non-vector `params` or non-scalar `lower`, `upper`
     )
     
     fun2 <- nimbleFunction(
-        run = function(theta = double(0), lower = double(0), upper = double(0)) {
+        run = function(theta = double(2), lower = double(0), upper = double(0)) {
             output <- integrate(integrand2, lower, upper, theta)
             returnType(double(1))
             return(output)
@@ -238,15 +428,15 @@ test_that("Error trapping for non-vector `params` or non-scalar `lower`, `upper`
     expect_error(cfun2 <- compileNimble(fun2), "must be a one-dimensional array")   
 
     integrand3 <- nimbleFunction(
-        run = function(x = double(1), theta = double(0)) {
+        run = function(x = double(1), theta = double(1)) {
             return(x*theta[1])
             returnType(double(1))
         }
     )
     
     fun3 <- nimbleFunction(
-        run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            output <- integrate(integrand3, lower, upper, theta+3)
+        run = function(theta = double(2), lower = double(0), upper = double(0)) {
+            output <- integrate(integrand3, lower, upper, theta + 3)
             returnType(double(1))
             return(output)
         }
@@ -285,8 +475,8 @@ test_that("Error trapping for non-vector `params` or non-scalar `lower`, `upper`
     
     fun5 <- nimbleFunction(
         run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            tmp <- c(theta, 0)  # cannot be scalar, so pad with zero.
-            output <- integrate(integrand5, tmp, upper, tmp)
+            tmp <- c(lower, 0)
+            output <- integrate(integrand5, tmp, upper, 0)
             returnType(double(1))
             return(output)
         }
@@ -298,25 +488,27 @@ test_that("Error trapping for non-vector `params` or non-scalar `lower`, `upper`
 
 
 
-test_that("Placeholder to note that user must lift any expression used as `param`", {
-    ## If we leave things as is, we should trap the case and tell user to manually lift.
-  ## also note that use of something like: exp(<some_vector>) as the `param` argument fails in C++ compilation
-   integrand <- nimbleFunction(
+test_that("integrate with `param` expressions works", {
+    integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
-            return(x*theta[1])
+            return(x*theta[1]/theta[2])
             returnType(double(1))
         }
     )
     
     fun <- nimbleFunction(
-        run = function(theta = double(0), lower = double(0), upper = double(0)) {
-            output <- integrate(integrand, lower, upper, c(theta,0))
+        run = function(theta = double(1), lower = double(0), upper = double(0)) {
+            output <- integrate(integrand, lower, upper, exp(theta))
             returnType(double(1))
             return(output)
         }
     )
-    temporarilyAssignInGlobalEnv(integrand)
-    temporarilyAssignInGlobalEnv(fun)
-    expect_error(cfun <- compileNimble(fun))
+    cfun <- compileNimble(fun)
+    theta <- c(2*pi, 2)
+    expected_result <- exp(theta[1])*0.375/exp(theta[2])
+    resultR <- fun(theta, .5, 1)
+    resultC <- cfun(theta, .5, 1)
+    expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
+    expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
+    expect_identical(resultC[3], 0, info = "unexpected error code")
 })
-
