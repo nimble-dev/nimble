@@ -118,8 +118,9 @@ test_that("Basic use of integrate in a nimbleFunction calling its own method", {
 
   theta <- pi
   expected_result <- theta*0.375
-  resultR <- fun(theta, .5, 1)
-  resultC <- cfun(theta, .5, 1)
+  nf1$integrand # strange bug that integrate(integrand...) will not find integrand unless is has been invoked
+  resultR <- nf1$run(theta, .5, 1)
+  resultC <- cnf1$run(theta, .5, 1)
   expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
   expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
   expect_identical(resultC[3], 0, info = "unexpected error code")
@@ -151,8 +152,8 @@ test_that("Basic use of integrate in a nimbleFunction calling another nimbleFunc
 
   theta <- pi
   expected_result <- theta*0.375
-  resultR <- fun(theta, .5, 1)
-  resultC <- cfun(theta, .5, 1)
+  resultR <- nf1$run(theta, .5, 1)
+  resultC <- cnf1$run(theta, .5, 1)
   expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")
   expect_equal(resultR[1], resultC[1], info = "disparity in compiled and uncompiled nimIntegrate result")
   expect_identical(resultC[3], 0, info = "unexpected error code")
@@ -280,8 +281,6 @@ test_that("Basic use of nimIntegrate with a bound that uses Eigen implementation
     expect_identical(resultC[3], 0, info = "unexpected error code")
 })
 
-
-
 test_that("Error trapping", {
     integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
@@ -386,8 +385,6 @@ test_that("Use in a user-defined model function", {
    
 })
 
-
-
 test_that("Error trapping for invalid types for `params` or non-scalar `lower`, `upper`", {
     integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
@@ -486,8 +483,6 @@ test_that("Error trapping for invalid types for `params` or non-scalar `lower`, 
     expect_error(cfun5 <- compileNimble(fun5), "must be scalars")   
 })
 
-
-
 test_that("integrate with `param` expressions works", {
     integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {
@@ -495,7 +490,7 @@ test_that("integrate with `param` expressions works", {
             returnType(double(1))
         }
     )
-    
+
     fun <- nimbleFunction(
         run = function(theta = double(1), lower = double(0), upper = double(0)) {
             output <- integrate(integrand, lower, upper, exp(theta))
@@ -503,6 +498,9 @@ test_that("integrate with `param` expressions works", {
             return(output)
         }
     )
+    temporarilyAssignInGlobalEnv(integrand)
+    temporarilyAssignInGlobalEnv(fun)
+
     cfun <- compileNimble(fun)
     theta <- c(2*pi, 2)
     expected_result <- exp(theta[1])*0.375/exp(theta[2])

@@ -29,6 +29,27 @@
 #include <algorithm>
 #include <string>
 
+// See comments in nimOptim. Here the NimBind is extended to a method of two vector args.
+template <class RT, class T>
+class NimBoundMethod2 {
+   public:
+    NimBoundMethod2(RT (T::*method)(NimArr<1, double>&, NimArr<1, double>&), T* object)
+        : method_(method), object_(object) {}
+    RT operator()(NimArr<1, double>& par, NimArr<1, double>& args) {
+        return (object_->*method_)(par, args);
+    }
+
+   private:
+    RT (T::*method_)(NimArr<1, double>&, NimArr<1, double>&);
+    T* object_;
+};
+
+template <class RT, class T>
+inline NimBoundMethod2<RT, T> NimBind(RT (T::*method)(NimArr<1, double>&, NimArr<1, double>&),
+                                 T* object) {
+  return NimBoundMethod2<RT, T>(method, object);
+}
+
 class NimIntegrateProblem {
 public:
   NimIntegrateProblem(double lower, double upper, NimArr<1, double>& param, int subdivisions,
