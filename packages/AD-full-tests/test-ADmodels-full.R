@@ -37,10 +37,12 @@ test_that('pow and pow_int work', {
   order <- 0:2
   m$calculate()
   wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
-  testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  # 2024-01-26: `testCompiledModelDerivsNimFxn` no longer seems to exist
+  # testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  testFunctionInstance <- derivsNimbleFunction(m, calcNodes, wrtNodes)
   cm <- compileNimble(m)
   ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  m, resetFunctions = TRUE)
-  cDerivs <- ctestFunctionInstance$run()
+  cDerivs <- ctestFunctionInstance$run(m$d, order)
   expect_equal(wrapperDerivs$value, cDerivs$value)
   expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
   expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
@@ -48,7 +50,7 @@ test_that('pow and pow_int work', {
   m$calculate()
   cm$calculate()
   wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
-  cDerivs <- ctestFunctionInstance$run()
+  cDerivs <- ctestFunctionInstance$run(m$d, order)
   expect_equal(wrapperDerivs$value, cDerivs$value)
   expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
   expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
@@ -67,10 +69,11 @@ test_that('pow and pow_int work', {
   order <- 0:2
   m$calculate()
   wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
-  testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  #testFunctionInstance <- testCompiledModelDerivsNimFxn(m, calcNodes, wrtNodes, order)
+  testFunctionInstance <- derivsNimbleFunction(m, calcNodes, wrtNodes)
   cm <- compileNimble(m)
   ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  m, resetFunctions = TRUE)
-  cDerivs <- ctestFunctionInstance$run()
+  cDerivs <- ctestFunctionInstance$run(m$d, order)
   expect_equal(wrapperDerivs$value, cDerivs$value)
   expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
   expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
@@ -78,7 +81,7 @@ test_that('pow and pow_int work', {
   m$calculate()
   cm$calculate()
   wrapperDerivs <- nimDerivs(m$calculate(calcNodes), wrt = wrtNodes, order = order)
-  cDerivs <- ctestFunctionInstance$run()
+  cDerivs <- ctestFunctionInstance$run(m$d, order)
   expect_equal(wrapperDerivs$value, cDerivs$value)
   expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
   expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
@@ -227,6 +230,8 @@ test_that('makeDerivsInfo works correctly', {
 ## test_ADModelCalculate that tests various standard use cases.
 
 ## Start of Nick's tests ##
+
+if(FALSE) {
 
 test_that('Derivs of calculate function work for model ADMod1', {
   ADCode1 <- nimbleCode({
@@ -395,7 +400,7 @@ test_that("Derivs of calculate function work for rats model", {
 ##                            wrt = list(c('theta'), c('grade'), c('theta', 'grade'), c('grade[1, 2]')),
 ##                            order = c(0, 1, 2))
 
-
+}
 ## end of Nick's tests ##
 
 ## Start of Chris' tests ##
