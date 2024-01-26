@@ -87,6 +87,7 @@ MCMCconf <- setRefClass(
         controlDefaults     = 'ANY',
         unsampledNodes      = 'ANY',
         postPredSamplerDownstreamNodes = 'ANY',
+        allowData_global    = 'ANY',
         ##namedSamplerLabelMaker = 'ANY',  ## usage long since deprecated (Dec 2020)
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
@@ -171,6 +172,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             } else if(is.null(nodes) || length(nodes)==0) {
                 nodes <- character(0)
             } else   nodes <- filterOutDataNodes(nodes)   ## configureMCMC *never* assigns samplers to data nodes
+            allowData_global <<- FALSE
             
             addDefaultSampler(nodes = nodes,
                               useConjugacy = useConjugacy,
@@ -589,6 +591,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!(isTRUE(allowData) || isFALSE(allowData)))   stop('allowData argument can only be TRUE or FALSE', call. = FALSE)
 
             if(default) {
+                allowData_global <<- allowData
                 addDefaultSampler(nodes = target,
                                   control = control,
                                   useConjugacy = useConjugacy,
@@ -597,6 +600,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                                   multivariateNodesAsScalars = multivariateNodesAsScalars,
                                   print = if(is.null(print)) TRUE else print,   ## default of print is TRUE when adding default sampler
                                   ...)
+                allowData_global <<- FALSE
                 return(invisible(samplerConfs))
             }
 
@@ -689,7 +693,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
             '
 For internal use only
 '
-            if(!allowData) {
+            if(!allowData && !allowData_global) {
                 if(all(model$isData(targetOne)))   return()
                 if(any(model$isData(targetOne)))   targetOne <- filterOutDataNodes(targetOne)
             }
