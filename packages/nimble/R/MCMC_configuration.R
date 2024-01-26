@@ -677,25 +677,25 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!targetByNode) {
                 ## when targetByNode = FALSE,
                 ## no node expansion takes place
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, allowData, print)
+                addOneSampler(thisSamplerName, samplerFunction, target, thisControlList, allowData, print)
             } else {
                 ## when targetByNode = TRUE,
                 ## assign sampler type to each component of target after expanding node names,
                 ## also using multivariateNodesAsScalars argument here, to control the node expansion
                 targetExpanded <- model$expandNodeNames(target, returnScalarComponents = multivariateNodesAsScalars, sort = TRUE)
                 for(i in seq_along(targetExpanded)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, allowData, print)
+                    addOneSampler(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, allowData, print)
                 }
             }
             
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, allowData, print) {
+        addOneSampler = function(thisSamplerName, samplerFunction, targetOne, thisControlList, allowData, print) {
             '
 For internal use only
 '
-            if(!allowData && model$isData(targetOne))   return()
+            if(!allowData && any(model$isData(targetOne)))   return()
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
