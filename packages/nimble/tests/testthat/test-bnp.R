@@ -2989,7 +2989,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     tau ~ dnorm(muTilde[xi[1]], 1)
   })
   Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
-  Data=list(y=rnorm(10,0, 1), tau=1)
+  Data=list(y=rnorm(10,0, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
   expect_error(mConf <- configureMCMC(m), "Discovered predictive node")
   nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
