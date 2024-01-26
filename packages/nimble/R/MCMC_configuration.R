@@ -501,19 +501,19 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 }
 
                                 samplers <- getSamplers(clusterNodes)
-                                removeSamplers(clusterNodes)
                                 for(i in seq_along(samplers)) {
                                     node <- samplers[[i]]$target
                                     ## getSamplers() returns samplers in order of configuration not in order of input.
                                     clusterID <- which(clusterNodes == node)
-                                    if(length(clusterID) != 1)
-                                        stop("Cannot determine wrapped sampler for cluster parameter ", node, ".")
-                                    controlCRP <- controlDefaultsArg
-                                    controlCRP$wrapped_type <- samplers[[i]]$name
-                                    controlCRP$wrapped_conf <- samplers[[i]]
-                                    controlCRP$dcrpNode <- dcrpNode[[k]]
-                                    controlCRP$clusterID <- clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]
-                                    addSampler(target = node, type = 'CRP_cluster_wrapper', control = controlCRP)
+                                    if(length(clusterID) ==1) {  # Joint sampling on multiple nodes won't use wrapping.
+                                        removeSamplers(node)
+                                        controlCRP <- controlDefaultsArg
+                                        controlCRP$wrapped_type <- samplers[[i]]$name
+                                        controlCRP$wrapped_conf <- samplers[[i]]
+                                        controlCRP$dcrpNode <- dcrpNode[[k]]
+                                        controlCRP$clusterID <- clusterNodeInfo[[k]]$clusterIDs[[idx]][clusterID]
+                                        addSampler(target = node, type = 'CRP_cluster_wrapper', control = controlCRP)
+                                    }
                                 }
                             }
                         }
