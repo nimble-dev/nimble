@@ -177,9 +177,11 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     for(i in crpDists) {
                         clusterNodeInfo <- findClusterNodes(model, deparse(nodeExprs[[i]]))
                         allClusterNodesVec <- unlist(clusterNodeInfo$clusterNodes)
-                        clusterNodeDeps <- model$getDependencies(allClusterNodesVec, stochOnly = TRUE, self = FALSE)
-                        if(any(clusterNodeDeps %in% model$getNodeNames(predictiveOnly = TRUE)))
-                            stop("Discovered predictive node dependencies of dCRP node. This will generally be incompatible with NIMBLE's default MCMC configuration for CRP-based models. You can proceed with sampling by setting `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` before setting up your MCMC.")
+                        if(length(allClusterNodesVec)) {
+                            clusterNodeDeps <- model$getDependencies(allClusterNodesVec, stochOnly = TRUE, self = FALSE)
+                            if(any(clusterNodeDeps %in% model$getNodeNames(predictiveOnly = TRUE)))
+                                stop("Discovered predictive node dependencies of dCRP node. This will generally be incompatible with NIMBLE's default MCMC configuration for CRP-based models. You can proceed with sampling by setting `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` before setting up your MCMC.")
+                        }
                     }
                 }
             }
