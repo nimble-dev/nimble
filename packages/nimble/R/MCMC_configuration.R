@@ -169,10 +169,11 @@ print: A logical argument specifying whether to print the montiors and samplers.
             ## Conservatively insist that include any predictive nodes for CRP sampling.
             if(!getNimbleOption('MCMCusePredictiveDependenciesInCalculations')) {
                 allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
-                allDists <- allDists[!is.na(allDists)]
+                nonNAs <- !is.na(allDists)
+                allDists <- allDists[nonNAs]
                 crpDists <- which(allDists == "dCRP")
                 if(length(crpDists)) {
-                    nodeExprs <- unlist(lapply(model$modelDef$declInfo, `[[`, 'targetNodeExpr'))
+                    nodeExprs <- unlist(lapply(model$modelDef$declInfo, `[[`, 'targetNodeExpr'))[nonNAs]
                     for(i in crpDists) {
                         clusterNodeInfo <- findClusterNodes(model, deparse(nodeExprs[[i]]))
                         allClusterNodesVec <- unlist(clusterNodeInfo$clusterNodes)
