@@ -2972,13 +2972,32 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     xi[1:10] ~ dCRP(1 , size=10)
     tau ~ dnorm(muTilde[xi[1]], 1)
   })
-  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), tau=1)
-  Data=list(y=rnorm(10,0, 1))
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
+  Data=list(y=rnorm(10,0, 1), tau=1)
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m)
   expect_error(mcmc <- buildMCMC(mConf),
                'sampler_CRP: Detected unusual indexing')
 
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(0, 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+    tau ~ dnorm(muTilde[xi[1]], 1)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
+  Data=list(y=rnorm(10,0, 1), tau=1)
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  expect_error(mConf <- configureMCMC(m), "Discovered predictive node")
+  nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Detected unusual indexing')
+  nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+  
   ## This is ok because y and x are same length.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
