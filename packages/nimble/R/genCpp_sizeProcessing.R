@@ -195,7 +195,7 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
           }
         } else {
           code$type <- 'unknown'
-                                        #Add RCfunctions to neededRCfuns.
+          ## Add RCfunctions to neededRCfuns.
           if(typeEnv[['.allowFunctionAsArgument']]) {
             if(exists(code$name) && is.rcf(get(code$name))) {
               nfmObj <- environment(get(code$name))$nfMethodRCobject
