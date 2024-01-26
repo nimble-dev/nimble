@@ -219,6 +219,8 @@ test_that("basic use of integrate with literal values for bounds", {
     temporarilyAssignInGlobalEnv(integrand2)
     temporarilyAssignInGlobalEnv(fun2)
     cfun2 <- compileNimble(fun2)
+    theta <- pi
+    expected_result <- theta*0.375
     resultR <- fun2(theta)
     resultC <- cfun2(theta)
     expect_equal(resultC[1], expected_result, info = "unexpected nimIntegrate result")

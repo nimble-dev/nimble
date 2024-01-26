@@ -1330,13 +1330,11 @@ nimOptimDefaultControl <- function() {
 #' See below for details on requirements for how \code{f} must be defined.
 #' @param lower an optional scalar lower bound for the input of the function.
 #' @param upper an optional scalar upper bound for the input of the function.
-#' @param param a required vector of additional parameters to the function
+#' @param param additional parameter(s) to the function
 #'               that are fixed with respect to the integration. If \code{f}
 #'               takes no additional arguments (beyond the variable of
 #'               integration), this must be provided but need not be used in
-#'               \code{f}. In order for compilation to work, this must have
-#'               length of at least two, which may require padding with
-#'               arbitrary unused value(s) when there are fewer than two
+#'               \code{f}. Can be of length one or more.
 #'               parameters.
 #' @param subdivisions the maximum number of subintervals.
 #' @param rel.tol relative accuracy requested.
@@ -1366,9 +1364,12 @@ nimOptimDefaultControl <- function() {
 #' the result of applying the function to each element of the first
 #' argument. (The result can be calculated using vectorized NIMBLE code or
 #' using a loop.) The second argument is required to also be of type
-#' \code{double(1)}, containing any additional parameters to the function
+#' \code{double(1)}, containing any additional parameter(s) to the function
 #' that are not being integrated over. This argument can be unused in
 #' the function if the function does not need additional parameters.
+#' Note that this must be of type \code{double(1)} even if \code{param}
+#' contains a single element (NIMBLE will manage the lengths behind the
+#' scenes).
 #'
 #' Note that unlike with R's \code{integrate}, additional parameters
 #' must be passed as part of a vector, specified via \code{param},
