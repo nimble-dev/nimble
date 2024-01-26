@@ -170,13 +170,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 # Check of all(model$isStoch(nodes)) is not needed in this case
             } else if(is.null(nodes) || length(nodes)==0) {
                 nodes <- character(0)
-            } else {
-                ## nodes argument was specified by user (as something other than NULL or an empty vector).
-                ## from entry point configureMCMC, we *never* assign samplers to data nodes (can only be done via addSampler);
-                ## so filter out data nodes here:
-                nodes <- model$expandNodeNames(nodes)
-                nodes <- nodes[!model$isData(nodes)]
-            }
+            } else   nodes <- filterOutDataNodes(nodes)   ## configureMCMC *never* assigns samplers to data nodes
             
             addDefaultSampler(nodes = nodes,
                               useConjugacy = useConjugacy,
@@ -695,11 +689,19 @@ Invisibly returns a list of the current sampler configurations, which are sample
             '
 For internal use only
 '
-            if(!allowData && any(model$isData(targetOne)))   return()
+            if(!allowData) {
+                if(all(model$isData(targetOne)))   return()
+                if(any(model$isData(targetOne)))   targetOne <- filterOutDataNodes(targetOne)
+            }
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
             if(print) printSamplers(newSamplerInd)
+        },
+
+        filterOutDataNodes = function(nodes) {
+            nodes <- model$expandNodeNames(nodes)
+            return(nodes[!model$isData(nodes)])
         },
         
         removeSamplers = function(..., ind, print = FALSE) {
