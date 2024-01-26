@@ -796,17 +796,19 @@ length_char_keywordInfo <- keywordInfoClass(
 
 nimIntegrate_keywordInfo <- keywordInfoClass(
     keyword = 'nimIntegrate',
-  processor = function(code, nfProc, RCfunProc) {
-    iTols <- which(names(code) %in% c('rel.tol','abs.tol'))
-    for(i in iTols) {
-      code_i <- code[[i]]
-      if(length(code_i) > 1) {
-        if(".Machine" %in% all.vars(code_i)) # Must be an expression using .Machine$double.eps or related
-          code[[i]] <- eval(code_i)
+    processor = function(code, nfProc, RCfunProc) {
+        if(code$abs.tol == quote(rel.tol)) 
+            code$abs.tol = code$rel.tol
+        iTols <- which(names(code) %in% c('rel.tol','abs.tol'))
+        for(i in iTols) {
+            code_i <- code[[i]]
+            if(length(code_i) > 1) {
+                if(".Machine" %in% all.vars(code_i)) # Must be an expression using .Machine$double.eps or related
+                    code[[i]] <- eval(code_i)
+            }
         }
-      }
-    code
-  }
+        code
+    }
 )
 
 nimDerivs_keywordInfo <- keywordInfoClass(

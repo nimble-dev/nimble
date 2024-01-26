@@ -1359,11 +1359,6 @@ nimOptimDefaultControl <- function() {
 #' \item \code{6}: "the input is invalid"
 #' }
 #' 
-#' In the future, the user may be given other options for the form of the output,
-#' in particular just the estimated integral or  a list containing the estimate,
-#' the uncertainty and the actual message text indicating
-#' the status of the calculation.
-#'
 #' @details
 #' The function \code{f} should take two arguments, the first of type
 #' \code{double(1)}, i.e., vector. \code{f} should be vectorized
@@ -1374,7 +1369,10 @@ nimOptimDefaultControl <- function() {
 #' \code{double(1)}, containing any additional parameters to the function
 #' that are not being integrated over. This argument can be unused in
 #' the function if the function does not need additional parameters.
-#' 
+#'
+#' Note that unlike with R's \code{integrate}, additional parameters
+#' must be passed as part of a vector, specified via \code{param},
+#' and cannot be passed as individual named arguments.
 #' 
 #' @seealso \code{\link{integrate}}
 #' @author Christopher Paciorek, Paul van Dam-Bates, Perry de Valpine
@@ -1396,7 +1394,7 @@ nimOptimDefaultControl <- function() {
 #'        return(output)
 #'  })
 #'
-#' foo(3.1415927, 0, 1)
+#' fun(3.1415927, 0, 1)
 #' \dontrun{
 #' cfun <- compileNimble(fun)
 #' cfun(3.1415927, 0, 1)
