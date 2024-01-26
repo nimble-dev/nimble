@@ -6194,11 +6194,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_silent(conf <- configureMCMC(model, print = FALSE))
   expect_error(mcmc <- buildMCMC(conf),
                "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
-
-
 })
-
-
 
 ## simple tests of models
 

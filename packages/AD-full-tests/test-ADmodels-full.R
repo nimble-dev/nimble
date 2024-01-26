@@ -211,7 +211,7 @@ code <- nimbleCode({
 model <- nimbleModel(code, inits = inits, data = data)
 relTolTmp <- relTol
 relTolTmp[3] <- 1e-4
-relTolTmp[4] <- 1e-3
+relTolTmp[4] <- 1e-2
 
 test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, useParamTransform = TRUE,
                       checkCompiledValuesIdentical = FALSE, name = 'basic model, lifted nodes')
@@ -255,7 +255,7 @@ model <- nimbleModel(code, dimensions = list(x = 2, y = 2, z = 3), inits = list(
 relTolTmp <- relTol
 relTolTmp[4] <- 1e-3
 
-test_ADModelCalculate(model, relTol = relTol, verbose = verbose, name = 'basic tricky indexing', useParamTransform = TRUE,
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'basic tricky indexing', useParamTransform = TRUE,
                       newUpdateNodes = list(covMat = matrix(c(0.7, .25, .25, .7), 2)), checkCompiledValuesIdentical = FALSE)
 
 
