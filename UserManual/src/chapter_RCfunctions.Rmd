@@ -288,6 +288,64 @@ the `nimOptimDefaultControl` function, and set any desired fields.
 
 See `help(nimOptim)` for details, including example usage. 
 
+### Integration: *integrate* and *nimIntegrate*
+
+NIMBLE provides a `nimIntegrate` function that implement's R's
+`integrate` function, which carries out adaptive Gauss-Kronrod
+quadrature to integrate a function of one variable over a finite
+or infinite interval.
+
+In addition to general use in a nimbleFunction, this can, of course,
+be used in a user-defined function in
+model code, e.g., to implement models that involve
+an integral, such as certain point process and survival models.
+
+One could also consider using `nimIntegrate` to numerically
+integrate over a parameter in a model, such as to remove
+a parameter that is not mixing well in an MCMC. Note that
+NIMBLE's Laplace approximation is a version of this,
+being equivalent to Gauss-Hermite quadrature with a single
+integration point (aka node). In a future version of NIMBLE, we will
+be making Gauss-Hermite quadrature available more generally
+as an extension of NIMBLE's Laplace approximation.
+
+See `help(nimIntegrate)` for details, including basic example usage.
+
+Here is an example of using `nimIntegrate` to implement a vectorized von Mises distribution.
+
+```{r}
+integrand <- nimbleFunction(
+    run = function(x = double(1), theta = double(1)) {
+        return( exp(theta[1] * cos(x) + theta[2] * cos(2 * (x + theta[3]))) )
+        returnType(double(1))
+})
+
+dGenVonMises <- nimbleFunction(
+  run = function(x = double(1), mu1 = double(), mu2 = double(), kappa1 = double(), kappa2 = double(),
+  limits = double(1), log = integer(0, default = 0)){
+    range <- limits[2] - limits[1]
+    mu1R <- (mu1 - range/2)/range*2*pi
+    mu2R <- (mu2 - range/2)/range*2*pi
+    z <- (x - range/2)/range*2*pi
+    d <- (mu1R - mu2R) %% pi
+    num <- exp(kappa1 * cos(z - mu1R) + kappa2 * cos(2 * (z - muR2)))
+    tmp <- c(kappa1, kappa2, d)
+    den <- nimIntegrate(integrand, lower = 0, upper = 2*pi, tmp)[1]
+    dens <- num/den
+    result <- dens*2*pi/range
+    if(log) {
+        return(log(result))
+    } else return(result)
+    returnType(double(1))
+  }
+)
+
+cgvonmises <- compileNimble(dGenVonMises)
+x <- 0:360
+# plot(x, circular::dgenvonmises(circular(x, type = "angles", units = "degrees"), -1, 1, 2, 1))
+# plot(x, cgvonmises(x, mu1=20, mu2=300, kappa1=2, kappa2=1, limits = c(0, 360)), type = 'l')
+```
+
 ### 'nim' synonyms for some functions {#sec:altern-keyw-some}
 
 NIMBLE uses some keywords, such as `dim` and `print`, in ways
@@ -316,6 +374,8 @@ replacements include
   - `switch` $\rightarrow$ `nimSwitch`
   - `numeric, integer, logical` $\rightarrow$ `nimNumeric, nimInteger, nimLogical`
   - `matrix, array` $\rightarrow$ `nimMatrix, nimArray`
+  - `optim` $\rightarrow$ `nimOptim`
+  - `integrate` $\rightarrow$ `nimIntegrate`
 
 
 

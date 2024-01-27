@@ -19,7 +19,7 @@ included.  Can also be a call to  \code{model$calculate(nodes)}, or to
 with respect to.  If left empty, derivatives will be taken with respect to 
 all arguments to \code{nimFxn}.}
 
-\item{order}{an integer vector with values within the set {0, 1, 2}, 
+\item{order}{an integer vector with values within the set \eqn{{0, 1, 2}}, 
 corresponding to whether the function value, Jacobian, and Hessian should be
  returned respectively.  Defaults to \code{c(0, 1, 2)}.}
 

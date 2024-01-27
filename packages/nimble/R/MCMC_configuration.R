@@ -165,6 +165,27 @@ print: A logical argument specifying whether to print the montiors and samplers.
             controlDefaults <<- list(...)
             ##namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')  ## usage long since deprecated (Dec 2020)
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
+
+            ## Conservatively insist that include any predictive nodes for CRP sampling.
+            if(!getNimbleOption('MCMCusePredictiveDependenciesInCalculations')) {
+                allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
+                nonNAs <- !is.na(allDists)
+                allDists <- allDists[nonNAs]
+                crpDists <- which(allDists == "dCRP")
+                if(length(crpDists)) {
+                    nodeExprs <- unlist(lapply(model$modelDef$declInfo, `[[`, 'targetNodeExpr'))[nonNAs]
+                    for(i in crpDists) {
+                        clusterNodeInfo <- findClusterNodes(model, deparse(nodeExprs[[i]]))
+                        allClusterNodesVec <- unlist(clusterNodeInfo$clusterNodes)
+                        if(length(allClusterNodesVec)) {
+                            clusterNodeDeps <- model$getDependencies(allClusterNodesVec, stochOnly = TRUE, self = FALSE)
+                            if(any(clusterNodeDeps %in% model$getNodeNames(predictiveOnly = TRUE)))
+                                stop("Discovered predictive node dependencies of dCRP node. This will generally be incompatible with NIMBLE's default MCMC configuration for CRP-based models. You can proceed with sampling by setting `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` before setting up your MCMC.")
+                        }
+                    }
+                }
+            }
+            
             if(missing(nodes)) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
