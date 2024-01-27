@@ -35,11 +35,11 @@ parameters.}
 
 \item{rel.tol}{relative accuracy requested.}
 
+\item{abs.tol}{absolute accuracy requested.}
+
 \item{stop.on.error}{logical. If \code{TRUE} (the default) an error stops the
 function. Otherwise some errors will give a result with the error
 code given in the third element of the result vector.}
-
-\item{abs.tol:}{absolute accuracy requested.}
 }
 \value{
 A vector with three values, the first the estimate of the integral,

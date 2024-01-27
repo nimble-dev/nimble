@@ -691,10 +691,10 @@ relTolTmp[5] <- 1e-13
 
 test_ADModelCalculate(model,
                       newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),
-                      relTol = relTolTmp, verbose = verbose, name = 'various dmvt parameterizations')
+                      checkCompiledValuesIdentical = FALSE, relTol = relTolTmp, verbose = verbose, name = 'various dmvt parameterizations')
 
 ## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE,
+test_ADModelCalculate(model, useParamTransform = TRUE,checkCompiledValuesIdentical = FALSE,
                       newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),
                       relTol = relTolTmp, verbose = verbose, name = 'various dmvt parameterizations')
 

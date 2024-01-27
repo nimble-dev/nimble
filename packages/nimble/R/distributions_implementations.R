@@ -1056,6 +1056,7 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @param gamma scalar representing the overall degree of spatial dependence.  See \sQuote{Details}.
 #' @param evs vector of eigenvalues of the adjacency matrix implied by \code{C}, \code{adj}, and \code{num}.  This parameter should not be provided; it will always be calculated using the adjacency information.
 #' @param log logical; if \code{TRUE}, probability density is returned on the log scale.
+#' @param n number of observations.
 #'
 #' @author Daniel Turek
 #'

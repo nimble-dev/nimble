@@ -1338,7 +1338,7 @@ nimOptimDefaultControl <- function() {
 #'               parameters.
 #' @param subdivisions the maximum number of subintervals.
 #' @param rel.tol relative accuracy requested.
-#' @param abs.tol: absolute accuracy requested.
+#' @param abs.tol absolute accuracy requested.
 #' @param stop.on.error logical. If \code{TRUE} (the default) an error stops the
 #'        function. Otherwise some errors will give a result with the error
 #'        code given in the third element of the result vector.
