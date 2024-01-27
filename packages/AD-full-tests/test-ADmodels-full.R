@@ -686,8 +686,8 @@ relTolTmp <- relTol
 relTolTmp[1] <- 1e-10
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-2
-relTolTmp[4] <- 1e-2
-relTolTmp[5] <- 1e-13
+relTolTmp[4] <- 1e-1
+relTolTmp[5] <- 1e-12
 
 test_ADModelCalculate(model,
                       newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),

@@ -232,8 +232,8 @@ CAR_proper_processParams <- function(model, target, C, adj, num, M) {
 CAR_calcNumIslands <- nimbleFunction(
     name = 'CAR_calcNumIslands',
     run = function(adj = double(1), num = double(1)) {
-        N <- dim(num_in)[1]
-        L <- dim(adj_in)[1]
+        N <- dim(num)[1]
+        L <- dim(adj)[1]
         adj_int <- nimInteger(L, init = FALSE)
         num_int <- nimInteger(N, init = FALSE)
         for(i in 1:L)
