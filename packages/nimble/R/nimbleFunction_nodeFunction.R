@@ -146,7 +146,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
                                      dynamicIndexLimitsExpr, RHSnonReplaced) {
   deparseAndParse <- TRUE
   if(isTRUE(getNimbleOption('allowNFinModel'))) {
-    if(length(RHS) > 1) {
+    if(length(RHS[[1]]) > 1) {
       deparseAndParse <- FALSE # a nf method like a$ddist
       BUGSdistName <- safeDeparse(RHS[[1]])
     }
