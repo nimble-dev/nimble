@@ -794,6 +794,23 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
+nimIntegrate_keywordInfo <- keywordInfoClass(
+    keyword = 'nimIntegrate',
+    processor = function(code, nfProc, RCfunProc) {
+        if(code$abs.tol == quote(rel.tol)) 
+            code$abs.tol = code$rel.tol
+        iTols <- which(names(code) %in% c('rel.tol','abs.tol'))
+        for(i in iTols) {
+            code_i <- code[[i]]
+            if(length(code_i) > 1) {
+                if(".Machine" %in% all.vars(code_i)) # Must be an expression using .Machine$double.eps or related
+                    code[[i]] <- eval(code_i)
+            }
+        }
+        code
+    }
+)
+
 nimDerivs_keywordInfo <- keywordInfoClass(
   keyword = 'nimDerivs',
   processor = function(code, nfProc, RCfunProc) {
@@ -964,6 +981,8 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
+keywordList[['nimIntegrate']] <- nimIntegrate_keywordInfo
+
 keywordList[['nimDerivs']] <- nimDerivs_keywordInfo
 keywordList[['derivInfo']] <- derivInfo_keywordInfo
 
@@ -997,6 +1016,7 @@ matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, lo
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- nimOptim
+matchFunctions[['nimIntegrate']] <- nimIntegrate
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}

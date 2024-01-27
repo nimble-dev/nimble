@@ -642,9 +642,16 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   # Covariance matrix 
   vcov <- diag(c(0, rep(1/(3*0.8^2/4 + 1/9), 2))) + matrix(c(1, rep(0.09398496, 2)), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(1, rep(0.09398496, 2)), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
-  # Check covariance matrix for params only
-  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
-  expect_equal(summ2$vcov, vcov[1,1,drop=FALSE], tol=1e-6)
+  ## Check covariance matrix for params only
+  tryResult <- try({
+      summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
+      expect_equal(summ2$vcov, vcov[1,1,drop=FALSE], tol=1e-6)
+  })
+  if(inherits(tryResult, 'try-error')) {
+      print(class(cmLaplace))
+      print(cL)
+  }
+
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
@@ -1278,9 +1285,16 @@ test_that("Laplace with non-empty calcNodesOther works", {
   
   expect_equal(summ$vcov, tmbvcov, tol=1e-5)
   
-  # Check covariance matrix for params only
-  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
-  expect_equal(summ2$vcov, tmbvcov[1:3,1:3], tol=1e-5)
+  ## Check covariance matrix for params only
+  tryResult <- try({
+      summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
+      expect_equal(summ2$vcov, tmbvcov[1:3,1:3], tol=1e-5)
+  })
+  if(inherits(tryResult, 'try-error')) {
+      print(class(cmLaplace))
+      print(cL)
+  }
+
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE()

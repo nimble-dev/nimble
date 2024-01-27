@@ -1015,7 +1015,7 @@ nimCat <- function(...) {
 #' 
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric}, \code{integer} and \code{logical} are immediately converted to \code{nimNumeric}, \code{nimInteger} and \code{nimLogical}, respectively.  
 #' 
-#' @author Daniel Turek, Chris Paciorek, Perry de Valpine
+#' @author Daniel Turek, Christopher Paciorek, Perry de Valpine
 #' @aliases numeric
 #' @seealso \code{\link{nimMatrix}}, \code{\link{nimArray}}
 #' @export
@@ -1215,7 +1215,9 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-#' Nimble wrapper around R's builtin \code{\link{optim}}.
+#' General-purpose Optimization
+#'
+#' NIMBLE wrapper around R's builtin \code{\link{optim}}.
 #'
 #' @param par Initial values for the parameters to be optimized over.
 #' @param fn  A function to be minimized (or maximized), with first argument the
@@ -1292,7 +1294,7 @@ optimDefaultControl <- function() {
     return(list())
 }
 
-#' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+#' Creates a default \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
@@ -1318,3 +1320,102 @@ nimOptimDefaultControl <- function() {
   control$temp <- 10
   return(control)
 }
+
+#' Integration of One-Dimensional Functions
+#'
+#' NIMBLE wrapper around R's builtin \code{\link{integrate}}. Adaptive quadrature
+#' of functions of one variable over a finite or infinite interval.
+#'
+#' @param f nimbleFunction of one input for which the integral is desired.
+#' See below for details on requirements for how \code{f} must be defined.
+#' @param lower an optional scalar lower bound for the input of the function.
+#' @param upper an optional scalar upper bound for the input of the function.
+#' @param param additional parameter(s) to the function
+#'               that are fixed with respect to the integration. If \code{f}
+#'               takes no additional arguments (beyond the variable of
+#'               integration), this must be provided but need not be used in
+#'               \code{f}. Can be of length one or more.
+#'               parameters.
+#' @param subdivisions the maximum number of subintervals.
+#' @param rel.tol relative accuracy requested.
+#' @param abs.tol absolute accuracy requested.
+#' @param stop.on.error logical. If \code{TRUE} (the default) an error stops the
+#'        function. Otherwise some errors will give a result with the error
+#'        code given in the third element of the result vector.
+#'
+#' @return A vector with three values, the first the estimate of the integral,
+#' the second an estimate of the modulus of the absolute error, and the third
+#' a result code corresponding to the \code{message} returned by \code{integrate}.
+#' The numerical result code can be interpreted as follows:
+#' \itemize{
+#' \item \code{0}: "OK"
+#' \item \code{1}: "maximum number of subdivisions reached"
+#' \item \code{2}: "roundoff error was detected"
+#' \item \code{3}: "extremely bad integrand behaviour"
+#' \item \code{4}: "roundoff error is detected in the extrapolation table"
+#' \item \code{5}: "the integral is probably divergent"
+#' \item \code{6}: "the input is invalid"
+#' }
+#' 
+#' @details
+#' The function \code{f} should take two arguments, the first of type
+#' \code{double(1)}, i.e., vector. \code{f} should be vectorized
+#' in that it should also return a \code{double(1)} object, containing
+#' the result of applying the function to each element of the first
+#' argument. (The result can be calculated using vectorized NIMBLE code or
+#' using a loop.) The second argument is required to also be of type
+#' \code{double(1)}, containing any additional parameter(s) to the function
+#' that are not being integrated over. This argument can be unused in
+#' the function if the function does not need additional parameters.
+#' Note that this must be of type \code{double(1)} even if \code{param}
+#' contains a single element (NIMBLE will manage the lengths behind the
+#' scenes).
+#'
+#' Note that unlike with R's \code{integrate}, additional parameters
+#' must be passed as part of a vector, specified via \code{param},
+#' and cannot be passed as individual named arguments.
+#' 
+#' @seealso \code{\link{integrate}}
+#' @author Christopher Paciorek, Paul van Dam-Bates, Perry de Valpine
+#' @aliases integrate
+#' @export
+#' @examples
+#' integrand <- nimbleFunction(
+#'    run = function(x = double(1), theta = double(1)) {
+#'        return(x*theta[1])   
+#'    returnType(double(1))
+#'  }
+#')
+#'
+#' fun <- nimbleFunction(
+#'    run = function(theta = double(0), lower = double(0), upper = double(0)) {
+#'        param = c(theta, 0)  # cannot be scalar, so pad with zero.
+#'        output = integrate(integrand, lower, upper, param)
+#'        returnType(double(1))
+#'        return(output)
+#'  })
+#'
+#' fun(3.1415927, 0, 1)
+#' \dontrun{
+#' cfun <- compileNimble(fun)
+#' cfun(3.1415927, 0, 1)
+#' }
+#' 
+nimIntegrate <- function(f, lower, upper, param, subdivisions = 100L,
+                         rel.tol = .Machine$double.eps^0.25, abs.tol = .Machine$double.eps^0.25, stop.on.error = TRUE) {
+  # R's integrate has default abs.tol = rel.tol, but nimble has now way to do that kind of chain of defaults
+  # in compiled code.
+  output <- rep(0, 3)
+    messages <- c("OK", "maximum number of subdivisions reached", 
+        "roundoff error was detected", "extremely bad integrand behaviour", 
+        "roundoff error is detected in the extrapolation table", 
+        "the integral is probably divergent", "the input is invalid")
+    result <- integrate( f, lower, upper, param, subdivisions = subdivisions,
+              rel.tol = rel.tol, abs.tol = abs.tol,
+              stop.on.error = stop.on.error)
+    output[1] <- result$value
+    output[2] <- result$abs.error
+    output[3] <- which(result$message == messages) - 1
+    return(output)           
+}
+

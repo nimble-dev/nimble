@@ -61,6 +61,7 @@ nimblePreevaluationFunctionNames <- c('+',
                                       'inprod',
                                       'optim',
                                       'nimOptim',
+                                      'nimIntegrate', # Either we need optim and integrate, or neither; maybe neither?
                                       'optimDefaultControl',
                                       'nimOptimDefaultControl',
                                       'mean',

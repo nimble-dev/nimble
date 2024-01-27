@@ -762,8 +762,11 @@ modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
   if(!isTRUE(workEnv$.anyAD)) return(invisible(NULL))
   if(is.null(code$type)) return(invisible(NULL)) # arises from constructions like setMap that lack type annotation
   if(length(code$args) > 4) return(invisible(NULL)) # 4D or higher is not handled, assumed to be static indexing
-  if(isTRUE(workEnv$onLHS)) code$name <- "stoch_ind_set"
-  else code$name <- "stoch_ind_get"
+  newName <- "stoch_ind_get"
+  if(isTRUE(workEnv$onLHS))
+    if(code$caller$name %in% assignmentOperators)
+      newName <- "stoch_ind_set"
+  code$name <- newName
   invisible(NULL)
 }
 

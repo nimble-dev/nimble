@@ -2,7 +2,7 @@
 % Please edit documentation in R/nimbleFunction_Rexecution.R
 \name{nimOptimDefaultControl}
 \alias{nimOptimDefaultControl}
-\title{Creates a deafult \code{control} argument for \code{\link{nimOptim}}.}
+\title{Creates a default \code{control} argument for \code{\link{nimOptim}}.}
 \usage{
 nimOptimDefaultControl()
 }
@@ -10,7 +10,7 @@ nimOptimDefaultControl()
 \code{\link{optimControlNimbleList}}
 }
 \description{
-Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+Creates a default \code{control} argument for \code{\link{nimOptim}}.
 }
 \seealso{
 \code{\link{nimOptim}}, \code{\link{optim}}
