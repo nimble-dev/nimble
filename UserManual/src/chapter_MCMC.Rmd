@@ -965,10 +965,10 @@ The samplers provided in `nimbleHMC` can be used in `nimble`'s general MCMC syst
 
 As of version 1.1.0, we now support the following new functionality for AD in models:
 
-- Dynamic indexing is supported, although of course one cannot have derivatives taken with respect to (and hence not do HMC sampling for) the actual index values, since they are discrete.
+- Dynamic indexing is supported, although of course one cannot take derivatives with respect to the actual index values, since they are discrete. This means the index values cannot be sampled by HMC.
 - One can take derivatives with respect to nodes assigned CAR priors, so HMC sampling can be performed on variables assigned a CAR prior(i.e., `dcar_normal` and `dcar_proper`).
-- One can take derivatives with respect to the parameters/arguments of `dcat`, `dconstraint`, and `dinterval`. Hence HMC sampling is supported for nodes that have `dcat`, `dconstraint`, and `dinterval` dependencies (derivatives of the discrete random variables themselves of course cannot be taken).
-- Truncated distributions can be used, but one cannot take derivatives of nodes that have truncated nodes as dependencies and hence HMC sampling **cannot** be performed on nodes that have truncated nodes as dependencies.
+- One can take derivatives with respect to the parameters of `dcat`, `dconstraint`, and `dinterval`. Hence HMC sampling is supported for *parameters* of nodes that have `dcat`, `dconstraint`, and `dinterval` dependencies. (However, the nodes that follow one of these distributions are discrete, so derivatives with respect to those nodes themselves are not supported, and HMC cannot sample those nodes.)
+- Truncated distributions can be used, but one cannot take derivatives with respect to their parameters or the nodes themselves. This means that HMC sampling **cannot** be performed on nodes that have truncated nodes as dependencies.
 
 More information is available from the help pages, e.g. `help(nimbleHMC)`, `help(buildHMC)`, `help(configureHMC)`, or `help(addHMC)`.
 

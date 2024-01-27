@@ -44,7 +44,7 @@ nimbleOptions(enableDerivs = TRUE)
 
 To allow algorithms to use automatic derivatives for a model, include `buildDerivs=TRUE` in the call to `nimbleModel`. If you want derivatives to be set up for all models, you can run `nimbleOptions(buildModelDerivs = TRUE)` and omit the `buildDerivs` argument.
 
-We'll re-introduce the simple Poisson Generalized Linear Mixed Model (GLMM) example model from \@ref(subsec:HMC-example) use Laplace approximation on it. There will be 10 groups (`i`) of 5 observations (`j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
+We'll re-introduce the simple Poisson Generalized Linear Mixed Model (GLMM) example model from \@ref(subsec:HMC-example) and use Laplace approximation on it. There will be 10 groups (`i`) of 5 observations (`j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
 ```{r eval=TRUE}
 model_code <- nimbleCode({
   # priors 
@@ -122,7 +122,7 @@ MLE$value   # MLE log likelihood value
 The final outputs show the MLE for `intercept`, `beta`, and `sigma`, followed by the maximum (approximate) likelihood.
 
 More information about the MLE can be obtained in two ways. The `summary` method
-can give estimated and standard errors as well as the variance-covariance matrix
+can give estimated random effects and standard errors as well as the variance-covariance matrix
 for the parameters and/or the random effects. The `summaryLaplace` function
 returns similar information but with names included in a more useful way. For example:
 
@@ -133,7 +133,7 @@ summaryLaplace(Cglmm_laplace, MLE)$params
 
 `buildLaplace` actually offers several choices in how computations are done, differing in how they use *double taping* for derivatives or not. In some cases one or another choice might be more efficient. See `help(buildLaplace)` if you want to explore it further.
 
-Finally, let's confirm that it worked by comparing to results from package `glmmTMB`. In this case, nimble's Laplace approximation is faster than `glmmTMB`, but it is not the point of this example. Here our interest is in checking that nimble's Laplace approximation worked correctly in a case where we have an established tool such as `glmmTMB`.
+Finally, let's confirm that it worked by comparing to results from package `glmmTMB`. In this case, nimble's Laplace approximation is faster than `glmmTMB` (on the machine used here), but that is not the point of this example. Here our interest is in checking that nimble's Laplace approximation worked correctly in a case where we have an established tool such as `glmmTMB`.
 
 ```{r eval=eval}
 library(glmmTMB)
@@ -146,9 +146,9 @@ summary(tmb_fit)
 logLik(tmb_fit)
 ```
 
-The results match within numerical tolerance typical of optimization problems. Specifically, the coefficients for `(Intercept)` and `X` match nimble's `Intercept` and `beta`, the random effects standard deviation for `group` matches nimble's `sigma`, and the maximum likelihood values match.
+The results match within numerical tolerance typical of optimization problems. Specifically, the coefficients for `(Intercept)` and `X` match nimble's `Intercept` and `beta`, the random effects standard deviation for `group` matches nimble's `sigma`, and the standard errors match.
 
-## How to support derivatives in user-defined functions and distributions
+## How to support derivatives in user-defined functions and distributions {#sec:AD-user-def}
 
 It is possible to activate derivative support for a user-defined function or distribution used in a model. Simply set `buildDerivs=TRUE` in `nimbleFunction`.
 
@@ -191,23 +191,26 @@ Now `toyModel` can be used in algorithms such as HMC and Laplace approximation, 
 
 ## What operations are and aren't supported for AD
 
-Much of the math supported by NIMBLE will work for AD. Here are some details on what is and isn't supported, as well as on some options to control how linear algebra operations are handled.
+Much of the math supported by NIMBLE will work for AD. Here are some details on what is and isn't supported, as well as on some options to control how linear algebra is handled.
 
 Features that are not supported for AD include:
 
 - cumulative ("p") and quantile ("q") functions for distributions;
-- truncated distributions as dependencies of nodes for which derivatives are being taken in models (because they use cumulative distribution functions);
+- truncated distributions (because they use cumulative distribution functions), for any derivatives;
+- discrete distributions, for derivatives with respect to the random variable;
 - random number generation;
-- some specific functions including `step`, `%%` (mod), `eigen`, `svd`, and `bessel_k`; and
-- specific model operations including `model$calculateDiff`, `model$simulate`, `model$getBound`, and `model$getParam`.
+- some specific functions including `step`, `%%` (mod), `eigen`, `svd`, and `besselK`; and
+- most model operations (other than `model$calculate`, which is supported) including `model$calculateDiff`, `model$simulate`, `model$getBound`, and `model$getParam`.
+
+Note that functions and distributions that are not supported can still be used in a model, as long as no algorithm tries to take derivatives with respect to node(s) that is (are) not supported. For example, `x ~ dcat(p[1:3])` declares `x` to be a discrete random variable following a categorical distribution. An algorithm can use derivatives with respect to `p[1:3]` (or with respect to parent nodes of `p[1:3]`) because the calculation of the log probability of `x` given `p[1:3]` is continuous with respect to `p`. However, derivatives with respect to `x` will not work. In the case of truncated distributions, neither derivatives with respect to parameters nor to random variable are supported.
 
 Some details on what is supported include:
 
 - `round`, `floor`, `ceil`,  and `trunc` are all supported with derivatives defined to be zero everywhere.
-- `pow(a, b)` requires positive `a` and `b`.
+- `pow(a, b)` requires positive `a` and `b`. Note that if `b` is coded as a (possibly negative) integer, `pow_int` will be used. For example `pow(tau, -2)` will be converted to `pow_int(tau, -2)`.
 - A new function `pow_int(a, b)` returns `pow(a, round(b))` and thus sets all derivatives with respect to `b` to zero. This allows valid derivatives with respect to `a` even if it takes a negative value.
 
-For the linear algebra functions `%*%`, `chol`, `forwardsolve`, `backsolve`, and `inverse`, there are special extensions provided by NIMBLE for CppAD called (in CppAD terms) "atomics". By default, these atomics will be used and often improve efficiency. There may be cases where they decrease efficiency, which might include when the matrix operands are small or contain many zeros. To compare results with and without use of the atomics, they can be turned off with a set of options:
+For the linear algebra functions `%*%`, `chol`, `forwardsolve`, `backsolve`, and `inverse`, there are special extensions provided by NIMBLE for CppAD called (in CppAD jargon) "atomics". By default, these atomics will be used and often improve efficiency. There may be cases where they decrease efficiency, which might include when the matrix operands are small or contain many zeros. To compare results with and without use of the atomics, they can be turned off with a set of options:
 ```{r eval=FALSE}
 nimbleOptions(useADmatMultAtomic = FALSE) # for %*%
 nimbleOptions(useADcholAtomic = FALSE)    # for chol
@@ -219,16 +222,16 @@ When a linear algebra atomic is turned off, the AD system simply uses all the sc
 
 Another important feature of AD is that sometimes values get "baked in" to AD calculations, meaning they are used *and permanently retained* from the first set of calculations and then can't have their value changed later (unless an algorithm does a "reset", described below). For people writing user-defined distributions and functions, a brief summary of what can get baked in includes:
 
-- the extent of any for-loops.
+- the extent (iteration values) of any for-loops.
 - values of any arguments that are not of type 'double', including e.g. the 'log' argument in `d_my_norm`. ('d' functions called from models always have `log = TRUE`, so in that case it is not a problem.)
 - the evaluation path followed by any if-then-else calls.
-- values of any indices.
+- values of any integer indices.
 
 See below for more thorough explanations.
 
 ## Basics of obtaining derivatives in `nimbleFunctions`
 
-Now that we have seen a derivative-enabled algorithm work, let's see how to obtain derivatives in methods you write. From here on, this part of the manual is oriented towards algorithm developers. We'll start by showing how derivatives work in nimbleFunctions *without* using a model. The AD system allows you to obtain derivatives of one function or method from another.
+Now that we have seen a derivative-enabled algorithm work, let's see how to obtain derivatives in methods you write. From here on, this part of the chapter is oriented towards algorithm developers. We'll start by showing how derivatives work in nimbleFunctions *without* using a model. The AD system allows you to obtain derivatives of one function or method from another.
 
 Let's get derivatives of the function `y = exp(-d * x)` where `x` is a vector, `d` is a scalar, and `y` is a vector.
 
@@ -289,7 +292,9 @@ We can see that the results are very close, but typically not identical, to thos
 
 ### Holding some local variables out of derivative tracking
 
-Sometimes one wants to omit tracking of certain variables in derivative calculations. Here is an example. Say that we write `exp(-d*x)` using a for-loop instead of a vectorized operation as above. It wouldn't make sense to track derivatives for the for-loop index (`i`), and indeed it would cause `compileNimble` to fail. The code to use a for-loop while telling `derivs` to ignore the for-loop index is:
+Sometimes one wants to omit tracking of certain variables in derivative calculations. There are three ways to do this: naming variables in an `ignore` set; ensuring a variable's type is `integer` (not simply `numeric` with an integer value) or `logical`; or using the `ADbreak` function. The `ignore` method is coarse, holding a variable such as a for-loop counter entirely out of derivative tracking. The `ADbreak` method provides more fine-grained control and is essential when function arguments might be passed from models. Here is an example of `ignore`, while `ADbreak` is described below.
+
+Say that we write `exp(-d*x)` using a for-loop instead of a vectorized operation as above. It wouldn't make sense to track derivatives for the for-loop index (`i`), and indeed it would cause `compileNimble` to fail. The code to use a for-loop while telling `derivs` to ignore the for-loop index is:
 
 ```{r eval=eval}
 derivs_demo2 <- nimbleFunction(
@@ -328,13 +333,26 @@ Because derivatives are not tracked for integer or logical variables, arguments 
 
 Note the more elaborate value for `buildDerivs`. Above, this was just a character vector. Here it is a named list, with each element itself being a list of control values. The control value `ignore` is a character vector of variable names to ignore in derivative tracking. `buildDerivs = 'run'` is equivalent to `buildDerivs = list(run = list())`.
 
-#### Holding variables passed from a model out of derivative tracking
+#### Holding function arguments (including variables passed from a model) out of derivative tracking
 
-In the case of not tracking derivatives for variables passed from a model, using `ignore` will not work. Instead, one should use `ADbreak`. For example if one has a model variable that is passed into a nimbleFunction as the argument `x`, one would do `x_noDeriv <- ADbreak(x)`.
+Derivatives can be tracked through function calls, including from a model to a user-defined distribution or function (see \@ref{sec:AD-user-def} and \@ref{sec:AD-multiple-NF}). However, if one function is tracking derivatives for `x` and passes `x` as an argument to another function that does not track its derivatives, there will be an error (most likely from `compileNimble`). The problem is that the C++ variable types used for tracking derivatives or not are different. Importantly, variables passed from models always have derivatives tracked.
 
-`ignore` doesn't work because it makes the input argument be a base type (`double`) rather than an AD type (`CppAD::AD<double>`). This will not work for model variables passed in as arguments, because all model variables are of a special "AD" type.
+For this situation, you can use `ADbreak` to stop derivative tracking. For example, if one has a nimbleFunction argument `x`, one would do `x_noDeriv <- ADbreak(x)` and then use `x_noDeriv` in subsequent calculations. This "breaks" derivative tracking in the sense that the derivative of `x_noDeriv` with respect to `x` is 0. 
 
-### Using AD with multiple nimbleFunctions
+Including `"x"` in the `ignore` set won't work because, if `x` is a function argument, its type will then be changed to be a non-derivative type. If a derivative-tracking type is then passed as the value for `x` there will be a mismatch in types. Since variables passed from models always allow derivative-tracking, one should not `ignore` the corresponding function arguments. 
+
+The `ADbreak` method can be useful in other situations as well, not only for function arguments whose derivatives you don't want to track.
+
+Note that `ADbreak` only works for scalars. If you need to break AD tracking for a non-scalar, you have to write a for-loop to apply `ADbreak` for each element. For example:
+
+```{r eval=FALSE}
+x_noDeriv <- nimNumeric(length(x), init=FALSE)
+i <- 1L
+for(i in 1:length(x)) x_noDeriv[i] <- ADbreak(x[i])
+```
+
+### Using AD with multiple nimbleFunctions {#sec:AD-multiple-NF}
+
 
 Derivatives will be tracked through whatever series of calculations occur in a method, possibly including calls to other methods or nimbleFunctions that have `buildDerivs` set. Let's look at an example where we have a separate function to return the element-wise square root of an input vector. The net calculation for derivatives will be `sqrt(exp(-d*x)))`.
 
@@ -664,7 +682,7 @@ To fix ideas, say that we want derivatives with respect to `ran_eff[1]` for calc
 ```{r eval=eval}
 model$getDependencies('ran_eff[1]')
 ```
-(The "lifted" nodes here are for the `exp(intercept + beta*X[i,j] + ran_eff[i])`, i.e. the inputs to `dpois`. See chapters \@ref(#cha-lightning-intro) and \@ref(#cha-using-models) to learn about lifted nodes.)
+(The "lifted" nodes here are for the `exp(intercept + beta*X[i,j] + ran_eff[i])`, i.e. the inputs to `dpois`. See chapters \@ref(cha-lightning-intro) and \@ref(cha-using-models) to learn about lifted nodes.)
 
 In this case, the log probability of `ran_eff[1]` itself requires `sigma`. Since `sigma` is not in `wrt_nodes`, it is not assigned into the model by the line `values(model, wrt_nodes) <<- x_trans`. It is also not a deterministic node (or any node) in `calc_nodes`, so it must be included in `updateNodes` or `constantNodes`. Since it might change between calls, it should be included in `updateNodes`.
 
