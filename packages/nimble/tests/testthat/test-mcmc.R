@@ -1,4 +1,5 @@
-source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
+library(nimble, lib.loc = '~/Documents/')
+source('~/github/nimble/nimble/packages/nimble/tests/testthat/test_utils.R')
 
 context("Testing of default MCMC")
 
@@ -31,10 +32,13 @@ nimbleWarnUnsampledNodesSetting <- nimbleOptions('MCMCwarnUnsampledStochasticNod
 ## e.g. nimbleOptions(generateGoldFileForMCMCtesting = getwd())
 ## Comparison to the gold file won't work until it is installed with the package.
 
-goldFileName <- 'mcmcTestLog_Correct.Rout'
+nimbleOptions(generateGoldFileForMCMCtesting = '~/github/nimble/nimble/packages/nimble/tests/testthat')
+
+goldFileName <- 'mcmcTestLog_Correct_NEW.Rout'
 tempFileName <- 'mcmcTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCMCtesting'))
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForMCMCtesting'), goldFileName) else tempFileName
+
 
 ## capture warnings
 sink_with_messages(outputFile)
