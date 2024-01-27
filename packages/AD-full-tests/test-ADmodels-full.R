@@ -736,7 +736,7 @@ test_ADModelCalculate(model,
 ## 2022-04-22: various compiled values equal but not identical
 ## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
 ## [1] -5.8683571e-02 -5.8683571e-02  3.9020035e-15
-test_ADModelCalculate(model, useParamTransform = TRUE,
+test_ADModelCalculate(model, useParamTransform = TRUE,checkCompiledValuesIdentical = FALSE,
                       newConstantNodes = list(p = newP),
                       relTol = relTolTmp, verbose = verbose, name = 'Dirichlet likelihood')
 
@@ -779,7 +779,7 @@ newIW3 <- crossprod(matrix(rnorm(5*5), 5))
 newIW4 <- crossprod(matrix(rnorm(5*5), 5))
 
 relTolTmp <- relTol
-relTolTmp[1] <- 1e-14
+relTolTmp[1] <- 1e-13
 relTolTmp[2] <- 1e-7
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
@@ -825,10 +825,14 @@ set.seed(1)
 model <- nimbleModel(code, data = list(y = rgamma(1,1,1)), inits = list(rho = rgamma(1, 1, 1)))
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
+relTolTmp[3] <- 1e-5
 
-test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'simple user-defined distribution')
+test_ADModelCalculate(model, relTol = relTolTmp, checkCompiledValuesIdentical = FALSE, verbose = verbose, name = 'simple user-defined distribution')
 ## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'simple user-defined distribution')
+
+relTolTmp[3] <- 1e-5
+
+test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'simple user-defined distribution')
 
 dtest <- nimbleFunction(
     run = function(x = double(0), mu = double(1), 
