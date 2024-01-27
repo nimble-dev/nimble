@@ -461,5 +461,26 @@ test_that("nimbleFunctionVirtual works with abstract and non-abstract methods", 
   expect_true(grepl("hello world", res)) 
 })
 
+test_that("Missing variables in nf code cause error (not warning)", {
+
+    test1 <- nimbleFunction(
+    run = function() {
+        a  <- 7
+        c <- a+b  # warning about 'b' not yet created
+        return(c)
+        returnType(double(0))
+    })
+    expect_error(compileNimble(test1), "is not available")
+
+    test2 <- nimbleFunction(
+    run = function() {
+        a  <- 7
+        return(a + b)
+        returnType(double(0))
+    })
+    expect_error(compileNimble(test1), "is not available")
+})
+
+
 options(warn = RwarnLevel)
 

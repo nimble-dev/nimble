@@ -6,7 +6,7 @@
 \usage{
 nimbleList(
   ...,
-  name = NA,
+  name = as.character(NA),
   predefined = FALSE,
   where = getNimbleFunctionEnvironment()
 )

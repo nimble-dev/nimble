@@ -187,11 +187,11 @@ nfProcessing <- setRefClass('nfProcessing',
             ## Modifications to R code
             debug <- control$debug
             debugCpp <- control$debugCpp
-            if(!is.null(nimbleOptions()$debugNFProcessing)) {
-                if(nimbleOptions()$debugNFProcessing) {
+            if(!is.null(getNimbleOption('debugNFProcessing'))) {
+                if(getNimbleOption('debugNFProcessing')) {
                     debug <- TRUE
                     control$debug <- TRUE
-                    writeLines('Debugging nfProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
+                    writeLines("Debugging nfProcessing (nimbleOptions('debugRCfunProcessing') is set to TRUE)") 
                 }
             }
             
@@ -236,7 +236,7 @@ nfProcessing <- setRefClass('nfProcessing',
 
             collectRCfunNeededTypes()
 
-            if(isTRUE(nimbleOptions("enableDerivs"))) {
+            if(isTRUE(getNimbleOption("enableDerivs"))) {
                 collect_nimDerivs_info()
             }
             
@@ -512,7 +512,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
     return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]))) 
   }
   if(inherits(instances[[1]][[name]], 'ADproxyModelClass')) {
-      if(!isTRUE(nimbleOptions("enableDerivs")))
+      if(!isTRUE(getNimbleOption("enableDerivs")))
           stop("It looks like derivatives are being created but nimbleOptions('enableDerivs') is not TRUE.")
       return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]$model))) 
   }
@@ -594,7 +594,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
         nDim <- 1
       }
       size <- if(length(instances[[1]][[name]])==1) 1L else as.numeric(NA)
-      if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+      if(getNimbleOption('convertSingleVectorsToScalarsInSetupArgs')) {
         if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
       }
       return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
@@ -612,7 +612,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
       nDim <- 1
       lengths <- unlist(lapply(instanceObjs, length))
       size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
-      if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+      if(getNimbleOption('convertSingleVectorsToScalarsInSetupArgs')) {
         if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
       }
       return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
@@ -623,7 +623,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
       type <- storage.mode(instances[[1]][[name]])
       nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
       size <- if(length(instances[[1]][[name]])==1) rep(1L, nDim) else rep(as.numeric(NA), nDim)
-      if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+      if(getNimbleOption('convertSingleVectorsToScalarsInSetupArgs')) {
         if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
       }
       return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
@@ -640,7 +640,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
         nDim <- 1
         lengths <- unlist(lapply(instanceObjs, length))
         size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
-        if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+        if(getNimbleOption('convertSingleVectorsToScalarsInSetupArgs')) {
           if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
         }
       } else {

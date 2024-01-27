@@ -756,10 +756,33 @@ logicalTests <- list(
          outputType = quote(double(2)), checkEqual = TRUE)
 )
 
+isNaTests <- list(
+    list(name = "use is.na", expr = quote(out <- is.na(arg1)),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- rnorm(5); arg1[2] <- NA; arg1[3] <- NaN}),
+         outputType = quote(logical(1))),
+    list(name = "use is.nan", expr = quote(out <- is.nan(arg1)),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- rnorm(5); arg1[2] <- NA; arg1[3] <- NaN}),
+         outputType = quote(logical(1)))
+)
+
 anyNaTests <- list(
-    list(name = "use any_na", expr = quote(out <- any_na(arg1)),
+    list(name = "use any_na with NA", expr = quote(out <- any_na(arg1)),
          args = list(arg1 = quote(double(1))),
          setArgVals = quote({arg1 <- rnorm(5); arg1[2] <- NA}),
+         outputType = quote(logical(0))),
+    list(name = "use any_na with NaN", expr = quote(out <- any_na(arg1)),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- rnorm(5); arg1[2] <- NaN}),
+         outputType = quote(logical(0))),
+    list(name = "use any_nan with NA", expr = quote(out <- any_nan(arg1)),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- rnorm(5); arg1[2] <- NA}),
+         outputType = quote(logical(0))),
+    list(name = "use any_nan with NaN", expr = quote(out <- any_nan(arg1)),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- rnorm(5); arg1[2] <- NaN}),
          outputType = quote(logical(0)))
 )
 

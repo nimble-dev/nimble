@@ -9,7 +9,6 @@ void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *las
     *result++ = CppAD::Value(*orig++);
 }
 
-
 void copy_CppADdouble_to_double(CppAD::AD<double> &from, double &to) {
   to = CppAD::Value(from);
 }
@@ -22,7 +21,6 @@ void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBas
 void setSizeGeneric( ) {
 
 }
-
 
 #ifdef _TIME_AD_GENERAL // need also _TIME_AD in nimbleCppAD.h
 ad_timer derivs_main_timer("derivs_main");

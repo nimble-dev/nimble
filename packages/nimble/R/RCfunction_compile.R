@@ -226,10 +226,10 @@ RCfunProcessing <- setRefClass(
                            doKeywords = TRUE,
                            nimbleProject = NULL,
                            initialTypeInferenceOnly = FALSE) {
-            if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
-                if(nimbleOptions()$debugRCfunProcessing) {
+            if(!is.null(getNimbleOption('debugRCfunProcessing'))) {
+                if(getNimbleOption('debugRCfunProcessing')) {
                     debug <- TRUE
-                    writeLines('Debugging RCfunProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
+                    writeLines("Debugging RCfunProcessing (nimbleOptions('debugRCfunProcessing') is set to TRUE)") 
                 }
             }
           
@@ -243,8 +243,8 @@ RCfunProcessing <- setRefClass(
 
             if(!initialTypeInferenceDone) {
                 
-                if(!is.null(nimbleOptions()$debugCppLineByLine)) {
-                    if(nimbleOptions()$debugCppLineByLine) {
+                if(!is.null(getNimbleOption('debugCppLineByLine'))) {
+                    if(getNimbleOption('debugCppLineByLine')) {
                         debugCpp <- TRUE
                         if(length(debugCppLabel) == 0) debugCppLabel <- name
                     }
@@ -317,7 +317,7 @@ RCfunProcessing <- setRefClass(
                 writeLines('***** READY FOR setSizes *****')
                 browser()
             }
-            
+
             compileInfo$typeEnv[['neededRCfuns']] <<- list()
             compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
             compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
@@ -378,7 +378,7 @@ RCfunProcessing <- setRefClass(
                 browser()
             }
             
-            if(nimbleOptions('experimentalNewSizeProcessing')) {
+            if(getNimbleOption('experimentalNewSizeProcessing')) {
                 exprClasses_setToEigenize(compileInfo$nimExpr,
                                           compileInfo$newLocalSymTab,
                                           compileInfo$typeEnv)

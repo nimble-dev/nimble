@@ -287,6 +287,17 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         } else stop(paste0("checkDistributionFunctions: density function for ", densityName,
                     " is not available.  It must be a nimbleFunction (with no setup code)."))
     }
+
+    dargs <- args <- formals(get(densityName, pos = userEnv))
+    nArgs <- length(args)
+    if(nArgs < 2) stop(paste0("checkDistributionFunctions: expecting at least two arguments ('x', 'log') as arguments for the density function for ", densityName, "."))
+    if(names(args)[1] != "x") stop(paste0("checkDistributionFunctions: expecting 'x' as the first argument for the density function for ", densityName, "."))
+    if(names(args)[nArgs] != "log") stop(paste0("checkDistributionFunctions: expecting 'log' as the last argument for the density function for ", densityName, "."))
+    dargs <- dargs[-c(1,nArgs)]
+    dtype <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo[['x']]
+    if("default" %in% names(dtype))
+        stop("checkDistributionFunctions: `x` argument is not allowed to have a default value.")
+    
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
         messageIfVerbose("  [Warning] Random generation function for ", densityName,
                     " is not available. NIMBLE is generating a placeholder function, ", simulateName, ", that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.")
@@ -327,12 +338,6 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         }
     }
 
-    dargs <- args <- formals(get(densityName, pos = userEnv))
-    nArgs <- length(args)
-    if(nArgs < 2) stop(paste0("checkDistributionFunctions: expecting at least two arguments ('x', 'log') as arguments for the density function for ", densityName, "."))
-    if(names(args)[1] != "x") stop(paste0("checkDistributionFunctions: expecting 'x' as the first argument for the density function for ", densityName, "."))
-    if(names(args)[nArgs] != "log") stop(paste0("checkDistributionFunctions: expecting 'log' as the last argument for the density function for ", densityName, "."))
-    dargs <- dargs[-c(1,nArgs)]
     
     rargs <- args <- formals(get(simulateName, pos = userEnv))
     nArgs <- length(args)
@@ -600,10 +605,12 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #' Deregister distributional information originally supplied by the user
 #' for use in BUGS model code
 #'
-#' @param distributionsNames a character vector giving the names of the distributions to be dergistered
+#' @param distributionsNames a character vector giving the names of the distributions to be deregistered.
+#' @param userEnv environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.
+#'
 #' @author Christopher Paciorek
 #' @export
-deregisterDistributions <- function(distributionsNames) {
+deregisterDistributions <- function(distributionsNames, userEnv = parent.frame()) {
     if(!exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
         warning("No user-supplied distributions are registered.")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
@@ -623,7 +630,17 @@ deregisterDistributions <- function(distributionsNames) {
         } else {  # all distributions to be removed
               rm(distributions, envir = nimbleUserNamespace)
         }
+        ## Remove placeholder `r` function if it exists so that user could modify
+        ## their `d` function (NCT issue 485).
+        sapply(distributionsNames, function(densityName) {
+            rName <- sub("^d", "r", densityName)
+            if(exists(rName, userEnv)) {
+                rFun <- get(rName, userEnv)
+                if(length(body(rFun)) >= 2 && length(grep("provided without random", deparse(body(rFun)[[2]]))))
+                    eval(substitute(rm(list = rName, pos = userEnv), list(rName = rName))) 
+            }})
     }
+
     invisible(NULL)
 }
     

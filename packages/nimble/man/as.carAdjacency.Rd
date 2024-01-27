@@ -16,7 +16,7 @@ This will convert alternate representations of CAR process structure into
 \details{
 Two alternate representations are handled:
 
-A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights;
+A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights.
 
 Two lists will be interpreted as (the first) a list of numeric vectors
 specifying the adjacency (neighboring) indices of each CAR process component,

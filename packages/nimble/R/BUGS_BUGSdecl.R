@@ -61,6 +61,7 @@ nimblePreevaluationFunctionNames <- c('+',
                                       'inprod',
                                       'optim',
                                       'nimOptim',
+                                      'nimIntegrate', # Either we need optim and integrate, or neither; maybe neither?
                                       'optimDefaultControl',
                                       'nimOptimDefaultControl',
                                       'mean',
@@ -432,7 +433,7 @@ BUGSdeclClass$methods(
                                        envir = envir,
                                        buildDerivs = buildDerivs)
             )
-    if(!nimbleOptions()$allowDynamicIndexing) {
+    if(!getNimbleOption('allowDynamicIndexing')) {
         rhsVars <<-
             unlist(
                 lapply(
@@ -479,7 +480,7 @@ BUGSdeclClass$methods(
             stop(paste('Error occurred defining ',
                        safeDeparse(targetExprReplaced)),
                  call. = FALSE)
-    if(!nimbleOptions()$allowDynamicIndexing) {
+    if(!getNimbleOption('allowDynamicIndexing')) {
         parentIndexNamePieces <<-
             lapply(symbolicParentNodesReplaced,
                    function(x)
@@ -692,7 +693,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     ## - hasIndex: is there an index inside
     ## numeric constant
     if(is.numeric(code) || is.logical(code) || 
-       (nimbleOptions()$allowDynamicIndexing &&
+       (getNimbleOption('allowDynamicIndexing') &&
                        length(code) > 1 &&
                        code[[1]] == ".DYN_INDEXED")
        ) 
@@ -820,16 +821,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices (or constant vectors, which are not allowed)
-                    if(!nimbleOptions()$allowDynamicIndexing) {
+                    if(!getNimbleOption('allowDynamicIndexing')) {
                         message("  [Note] It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: `",
                                 safeDeparse(code),
                                 "`. Please set `nimbleOptions(allowDynamicIndexing = TRUE)`.")
                         dynamicIndexParent <- code[[2]]
                     } else {
-                        if(isTRUE(nimbleOptions("doADerrorTraps")))
-                          if(isTRUE(buildDerivs))
-                            message("  [Warning] Derivatives cannot currently be built for models that include dynamic indexing (found in `", safeDeparse(code), "`).  Please set 'nimbleOptions(buildDerivs = FALSE)' to proceed with this model.")
-                      
                         if(any(
                             sapply(contentsCode,
                                    detectNonscalarIndex))
@@ -956,7 +953,7 @@ genReplacementsAndCodeRecurse <- function(code,
                                           checkAD = FALSE) {
     if(debug) browser()
     if(is.numeric(code) || is.logical(code) ||
-       (nimbleOptions()$allowDynamicIndexing &&
+       (getNimbleOption('allowDynamicIndexing') &&
                        length(code) > 1 &&
                        code[[1]] == '.DYN_INDEXED')
        )
@@ -1102,7 +1099,7 @@ genReplacementsAndCodeRecurse <- function(code,
         if(isRfunction & allContentsReplaceable)
           return(replaceAllCodeSuccessfully(code))
 
-        if(checkAD && isTRUE(nimbleOptions('doADerrorTraps'))) {
+        if(checkAD && isTRUE(getNimbleOption('doADerrorTraps'))) {
           thisCallName <- safeDeparse(code[[1]])
           thisCheck <- try(any(thisCallName==fxnsNotAllowedInAD))
           if(isTRUE(thisCheck)) {

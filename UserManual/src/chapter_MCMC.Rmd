@@ -451,6 +451,14 @@ samples <- as.matrix(Cmcmc$mvSamples)
 The `samples` matrix will contain both MCMC samples and model log-probabilities.
 
 
+#### Using numeric samples to define a prior distribution
+
+A set of numeric samples, perhaps generated from another MCMC algorithm, can be used to define the prior distribution of model nodes.  This is accomplished using the `prior_samples` MCMC sampler.  When assigning the `prior_samples` sampler to a `target` node, you must also provide a vector of numeric values (when `target` is a scalar node), or a matrix of values in the multidimenional case.  A new value (or rows of values) is selected either sequentially (or randomly) from this numeric vector/matrix, and assigned into the `target` node on each MCMC iteration.  See `help(prior_samples)` for more details:
+```{r, eval=FALSE}
+mcmcConf <- configureMCMC(Rmodel)
+mcmcConf$addSampler(target = 'theta', type = 'prior_samples', samples = rnorm(100))
+```
+
 
 ## Building and compiling the MCMC {#sec:build-compile-mcmc}
 
@@ -500,6 +508,7 @@ It is often important to provide valid and reasonable initial values to an MCMC,
 Not doing so can cause slow convergence or even failure of an MCMC algorithm (e.g., if the values the model is initialized with are not valid). When starting an MCMC, when NIMBLE encounters a missing parameter value, it simulates from the prior distribution. NIMBLE can be more sensitive to missing or bad starting values than some MCMC packages.
 
 The following cases are particularly important to consider when initializing:
+
   - In a model with flat priors (i.e., using `x~dflat()` or `x~dhalfflat()`), NIMBLE cannot generate initial values from those priors.
   - In a model with diffuse priors, initializing from the prior can give unreasonable/extreme initial values. 
   - In a model with stochastic indices (e.g., `x[idx[i]]` with `idx[i]` unknown), those indices should have (valid) initial values.
@@ -954,6 +963,13 @@ The samplers provided in `nimbleHMC` can be used in `nimble`'s general MCMC syst
 - `addHMC`  manages use of `addSampler` to specifically add an HMC sampler for a chosen set of nodes to an exisiting MCMC configuration. It optionally removes other samplers operating on the specified nodes. Use `addHMC` to add an HMC sampler operating one or more target nodes to an exisiting MCMC configuration object.
 - For the most fine-grained control, you can use the `addSampler` method speciying the the argument `type="NUTS"` or `type="NUTS_classic"` to add HMC sampler(s) to an MCMC configuration object.
 
+As of version 1.1.0, we now support the following new functionality for AD in models:
+
+- Dynamic indexing is supported, although of course one cannot have derivatives taken with respect to (and hence not do HMC sampling for) the actual index values, since they are discrete.
+- One can take derivatives with respect to nodes assigned CAR priors, so HMC sampling can be performed on variables assigned a CAR prior(i.e., `dcar_normal` and `dcar_proper`).
+- One can take derivatives with respect to the parameters/arguments of `dcat`, `dconstraint`, and `dinterval`. Hence HMC sampling is supported for nodes that have `dcat`, `dconstraint`, and `dinterval` dependencies (derivatives of the discrete random variables themselves of course cannot be taken).
+- Truncated distributions can be used, but one cannot take derivatives of nodes that have truncated nodes as dependencies and hence HMC sampling **cannot** be performed on nodes that have truncated nodes as dependencies.
+
 More information is available from the help pages, e.g. `help(nimbleHMC)`, `help(buildHMC)`, `help(configureHMC)`, or `help(addHMC)`.
 
 #### HMC example {#subsec:HMC-example}
@@ -1023,6 +1039,10 @@ We will not investigate results in detail, but here is a summary to see that rea
 summary(coda::as.mcmc(samples))
 ```
 
+### Particle filter samplers
+
+The `nimbleSMC` package provides samplers that perform particle MCMC, primarily intended for state-space or hidden Markov models of time-series data.
+     
 #### Automatic parameter transformation
 
 In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(sec:parameter-transform).

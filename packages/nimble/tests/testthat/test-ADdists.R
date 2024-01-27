@@ -216,6 +216,8 @@ invwish_test_out <- test_AD2(invwish_test_log)
 
 ## LKJ
 
+set.seed(1)
+
 p <- 5
 
 lkj_test_log <- make_AD_test2(

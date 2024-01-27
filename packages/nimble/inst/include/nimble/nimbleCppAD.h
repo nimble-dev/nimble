@@ -141,6 +141,8 @@ class atomic_log_pow_int_class;
 class atomic_zb_over_a_class;
 class atomic_probit_class;
 class atomic_iprobit_class;
+class atomic_dyn_ind_get_class;
+class atomic_dyn_ind_set_class;
 
 void copy_CppADdouble_to_double(CppAD::AD<double> *first, CppAD::AD<double> *last, double *output);
 void copy_CppADdouble_to_double(NimArrBase< CppAD::AD<double> > &from, NimArrBase< double > &to);
@@ -318,7 +320,19 @@ class nimble_CppAD_tape_mgr {
   atomic_iprobit_class* new_atomic_iprobit(const std::string& name);
   void delete_atomic_iprobit(atomic_iprobit_class *atomic_iprobit);
   atomic_iprobit_class *get_atomic_iprobit(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
-  
+
+  int dyn_ind_get_index;
+  bool dyn_ind_get_exists;
+  atomic_dyn_ind_get_class* new_atomic_dyn_ind_get(const std::string& name);
+  void delete_atomic_dyn_ind_get(atomic_dyn_ind_get_class *atomic_dyn_ind_get);
+  atomic_dyn_ind_get_class *get_atomic_dyn_ind_get(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+  int dyn_ind_set_index;
+  bool dyn_ind_set_exists;
+  atomic_dyn_ind_set_class* new_atomic_dyn_ind_set(const std::string& name);
+  void delete_atomic_dyn_ind_set(atomic_dyn_ind_set_class *atomic_dyn_ind_set);
+  atomic_dyn_ind_set_class *get_atomic_dyn_ind_set(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
   atomic_backsolve_class* new_atomic_backsolve(const std::string& name);
   void delete_atomic_backsolve(atomic_backsolve_class *atomic_backsolve);
   atomic_forwardsolve_class* new_atomic_forwardsolve(const std::string& name);

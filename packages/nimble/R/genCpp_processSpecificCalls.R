@@ -11,12 +11,10 @@ specificCallReplacements <- list(
 #    '^' = 'pow', # Has its own handler below
     '%%' = 'nimMod',
     length = 'size',
-    is.nan = 'ISNAN',
-    any_nan = 'ISNAN',
-    is.nan.vec = 'ISNAN',  ## retained for backward compatibility
-    is.na = 'ISNA',
-    any_na = 'ISNA',
-    is.na.vec = 'ISNA',    ## retained for backward compatibility
+    is.nan = 'nimIsNaN',
+    any_nan = 'nimAnyNaN',
+    is.na = 'nimIsNA',
+    any_na = 'nimAnyNA',
     lgamma = 'lgammafn',
     logfact = 'lfactorial',
     loggam = 'lgammafn',

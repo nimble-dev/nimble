@@ -35,14 +35,6 @@ test_that("AD error-trapping of unsupported dists and fxns in models works", {
   expect_message(
     m <- nimbleModel(
     quote({
-      a ~ dcat(p[1:2])
-    }),
-    buildDerivs = TRUE
-    ), "does not have support for derivatives")
-
-  expect_message(
-    m <- nimbleModel(
-    quote({
       a <- b %% c
     }),
     buildDerivs = TRUE
@@ -889,4 +881,149 @@ test_that('AD works with a model with do_update in double-taping', {
   nim_expect_equal(Rans$value, Cans$value, RCrelTol0)
   nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
+})
+
+
+## Following are some draft tests relating to how we handle
+## non-AD functions within an AD-enabled model (and functions)
+
+test_that('non-AD function in AD-enabled model', {
+    dfoo <- nimbleFunction(
+        run = function(x = double(), k = double(), log = integer(0, default = 0)) {
+            return(-k * x)
+            returnType(double())
+        },
+        buildDerivs= FALSE
+    )
+    temporarilyAssignInGlobalEnv(dfoo)
+    mc <- nimbleCode({
+        a ~ dnorm(0, 1)
+        z ~ dfoo(a)
+    })
+
+    expect_message(m <- nimbleModel(mc, data = list(z = 2.3), buildDerivs = TRUE),
+                   "Distribution dfoo does not appear to support derivatives")
+})
+
+
+test_that("derivatives work if a non-supported user-defined call is not included", {
+  dfoo2 <- nimbleFunction(
+    run = function(x = double(), k = double(), log = integer(0, default = 0)) {
+      return(-k * x)
+      returnType(double())
+    },
+    buildDerivs= FALSE
+  )
+  temporarilyAssignInGlobalEnv(dfoo2)
+  mc <- nimbleCode({
+    a ~ dnorm(0, 1)
+    z ~ dfoo2(a)
+  })
+
+  m <- nimbleModel(mc, data = list(z = 2.3), inits = list(a = 1.5),
+                   buildDerivs = TRUE)
+  temporarilyAssignInGlobalEnv(rfoo2)
+  cm <- compileNimble(m)
+
+  test <- nimbleFunction(
+    setup = function(m, nodes) {},
+    run = function() {
+      ans <- nimDerivs(m$calculate(nodes), wrt = "a", order = 0:1 )
+      return(ans)
+      returnType(ADNimbleList())
+    }
+  )
+
+  test1 <- test(m, "a")
+  ctest1 <- compileNimble(test1, project = m)
+  ans <- ctest1$run()
+  expect_equal( round(ans$value, digits = 2), -2.04 )
+  expect_equal( round(ans$jacobian, digits = 2), matrix(-1.5) )
+})
+
+test_that("C++ run-time error if non-supported user-defined call is included in model$calculate", {
+  dfoo3 <- nimbleFunction(
+    run = function(x = double(), k = double(), log = integer(0, default = 0)) {
+      return(-k * x)
+      returnType(double())
+    },
+    buildDerivs= FALSE
+  )
+  temporarilyAssignInGlobalEnv(dfoo3)
+
+  mc <- nimbleCode({
+    a ~ dnorm(0, 1)
+    z ~ dfoo3(a)
+  })
+
+  m <- nimbleModel(mc, data = list(z = 2.3), inits = list(a = 1.5),
+                   buildDerivs = TRUE)
+  temporarilyAssignInGlobalEnv(rfoo3)
+  cm <- compileNimble(m)
+
+  test <- nimbleFunction(
+    setup = function(m, nodes) {},
+    run = function() {
+      ans <- nimDerivs(m$calculate(nodes), wrt = "a", order = 0:1 )
+      return(ans)
+      returnType(ADNimbleList())
+    }
+  )
+
+  test1 <- test(m, c("a", "z"))
+  ctest1 <- compileNimble(test1, project = m)
+  expect_error(ans <- ctest1$run(), "a model node is being included in derivatives that does not support them")
+})
+
+test_that("C++ run-time error if non-supported user-defined call is included in model$calculate", {
+  mc <- nimbleCode({
+    a ~ dnorm(0, 1)
+    z ~ dconstraint(a > 1)
+  })
+
+  m <- nimbleModel(mc, data = list(z = 2.3), inits = list(a = 1.5),
+                   buildDerivs = TRUE)
+  cm <- compileNimble(m)
+
+  test <- nimbleFunction(
+    setup = function(m, nodes) {},
+    run = function() {
+      ans <- nimDerivs(m$calculate(nodes), wrt = "a", order = 0:1 )
+      return(ans)
+      returnType(ADNimbleList())
+    }
+  )
+
+  test1 <- test(m, c("a", "z"))
+  ctest1 <- compileNimble(test1, project = m)
+  expect_error(ctest1$run(), "a model node is being included in derivatives that does not support them")
+})
+
+
+test_that("warn if non-supported user-defined call is included in model$calculate", {
+    nimbleOptions(unsupportedDerivativeHandling='warn')
+    mc <- nimbleCode({
+        a ~ dnorm(0, 1)
+        z ~ dconstraint(a > 1)
+    })
+
+    m <- nimbleModel(mc, data = list(z = 2.3), inits = list(a = 1.5),
+                     buildDerivs = TRUE)
+    cm <- compileNimble(m)
+    nimbleOptions(unsupportedDerivativeHandling='error')
+
+    test <- nimbleFunction(
+        setup = function(m, nodes) {},
+        run = function() {
+            ans <- nimDerivs(m$calculate(nodes), wrt = "a", order = 0:1 )
+            return(ans)
+            returnType(ADNimbleList())
+        }
+    )
+
+    test1 <- test(m, c("a", "z"))
+    ctest1 <- compileNimble(test1, project = m)
+    expect_output(ctest1$run(),
+                   "a model node is being included in derivatives that does not support them")
+    nimbleOptions(unsupportedDerivativeHandling='error')
 })

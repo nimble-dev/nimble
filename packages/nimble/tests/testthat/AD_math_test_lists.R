@@ -543,4 +543,3 @@ binaryMatrixArgs <- as.list(
 binaryMatrixOpTests2 <- make_AD_test_batch(
   binaryMatrixOps, binaryMatrixArgs, maker = make_AD_test2
 )
-

@@ -21,7 +21,7 @@ nodeFunctionNew <- function(LHS,
     boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
     
-    if(nimbleOptions()$allowDynamicIndexing) {
+    if(getNimbleOption('allowDynamicIndexing')) {
         if(length(dynamicIndexInfo)) {
             for(i in seq_along(dynamicIndexInfo))
                 dynamicIndexInfo[[i]]$indexCode <- nndf_replaceSetupOutputsWithIndexedNodeInfo(dynamicIndexInfo[[i]]$indexCode, setupOutputLabels)
@@ -203,8 +203,10 @@ nndf_createMethodList <- function(LHS,
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))))
         if(FALSE) {
-        if(nimbleOptions()$compileAltParamFunctions) {
+
+        if(getNimbleOption('compileAltParamFunctions')) {
             distName <- safeDeparse(RHS[[1]])
+
             ## add accessor function for node value; used in multivariate conjugate sampler functions
             type = getType(distName)
             nDim <- getDimension(distName)
@@ -264,16 +266,32 @@ nndf_createMethodList <- function(LHS,
         caseName <- paste0("getBound_",nDimSupported,"D_double")
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
-## The next three lines are left over from old approach to AD.  It is not clear if these are still needed.
-parentsArgs <-c()
+    ## The next three lines are left over from old approach to AD.  It is not clear if these are still needed.
+    parentsArgs <-c()
     ADexceptionNames <- c(names(parentsArgs), deparse(logProbNodeExpr[[2]]))
-    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
+    exceptionNames <- c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_")
+    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = exceptionNames,
                                                     ADexceptionNames = ADexceptionNames)
     if(isTRUE(buildDerivs)) {
         methodList[['calculate_ADproxyModel']] <- methodList[['calculate']]
-        if(type=="stoch")
+        if(type=="stoch") {
+          if(!is.null(dynamicIndexLimitsExpr)) {# If we have stochastic indexing, make the AD version not include the error-trapping of lower and upper bounds, because it won't work.
+            ## Twist here is to introduce the name AD_return_value_MPQVRBHW_ (which should be unique enough)
+            ## so that it can be returned without a second indexing call just to get the returned value.
+            tempMethodList <- eval(substitute(
+              list(
+                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { AD_return_value_MPQVRBHW_ <- STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(AD_return_value_MPQVRBHW_)) }
+              ),
+              list(STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = NULL, RHSnonReplaced = RHSnonReplaced),
+                   LOGPROB = logProbNodeExpr)))
+            tempMethodList <- nndf_addModelDollarSignsToMethods(tempMethodList, exceptionNames = c(exceptionNames, "AD_return_value_MPQVRBHW_"),
+                                                                ADexceptionNames = ADexceptionNames)
+
+            newBody <- body(tempMethodList[['calculate']])
+          } else {
             newBody <- body(methodList[['calculate']])
-        else {
+          }
+        } else {
             newBody <- body(methodList[['simulate']])
             newBody[[length(newBody) + 1]] <- quote(return(0))
             newBody[[length(newBody) + 1]] <- quote(returnType(double()))

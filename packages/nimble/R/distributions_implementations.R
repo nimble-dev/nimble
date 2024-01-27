@@ -1047,7 +1047,6 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @name CAR-Proper
 #'
 #' @param x vector of values.
-#' @param n number of observations.
 #' @param mu vector of the same length as \code{x}, specifying the mean for each spatial location.
 #' @param C vector of the same length as \code{adj}, giving the weights associated with each pair of neighboring locations.  See \sQuote{Details}.
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
@@ -1057,6 +1056,7 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @param gamma scalar representing the overall degree of spatial dependence.  See \sQuote{Details}.
 #' @param evs vector of eigenvalues of the adjacency matrix implied by \code{C}, \code{adj}, and \code{num}.  This parameter should not be provided; it will always be calculated using the adjacency information.
 #' @param log logical; if \code{TRUE}, probability density is returned on the log scale.
+#' @param n number of observations.
 #'
 #' @author Daniel Turek
 #'
