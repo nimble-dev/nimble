@@ -2,7 +2,7 @@
 % Please edit documentation in R/nimbleFunction_Rexecution.R
 \name{nimOptim}
 \alias{nimOptim}
-\title{Nimble wrapper around R's builtin \code{\link{optim}}.}
+\title{General-purpose Optimization}
 \usage{
 nimOptim(
   par,
@@ -43,7 +43,7 @@ Note that the R methods "SANN", "Brent" are not supported.}
 \code{\link{optimResultNimbleList}}
 }
 \description{
-Nimble wrapper around R's builtin \code{\link{optim}}.
+NIMBLE wrapper around R's builtin \code{\link{optim}}.
 }
 \examples{
 \dontrun{

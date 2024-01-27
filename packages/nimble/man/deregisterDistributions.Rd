@@ -4,7 +4,7 @@
 \alias{deregisterDistributions}
 \title{Remove user-supplied distributions from use in NIMBLE BUGS models}
 \usage{
-deregisterDistributions(distributionsNames)
+deregisterDistributions(distributionsNames, userEnv = parent.frame())
 }
 \arguments{
 \item{distributionsNames}{a character vector giving the names of the distributions to be dergistered}

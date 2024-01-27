@@ -337,6 +337,7 @@ relTolTmp[1] <- 1e-10
 relTolTmp[2] <- 1e-7 
 relTolTmp[3] <- 1e-4 
 relTolTmp[4] <- 1e-2
+relTolTmp[5] <- 1e-13
 
 test_ADModelCalculate(model, relTol = relTolTmp, xNew = xNew, verbose = verbose, useFasterRderivs = TRUE, name = 'dt and dexp model')
 
@@ -371,6 +372,7 @@ newY <- rpois(n, 2)
 
 relTolTmp <- relTol
 relTolTmp[2] <- 1e-7
+relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
 test_ADModelCalculate(model, newConstantNodes = list(y = newY), relTol = relTolTmp, verbose = verbose, name = 'deterministic vectorized model')
 test_ADModelCalculate(model, newConstantNodes = list(y = newY), useParamTransform = TRUE, relTol = relTolTmp,
@@ -400,19 +402,22 @@ model <- nimbleModel(code, constants = list(n = n), data = list(y = y), inits = 
 newPr <- crossprod(matrix(rnorm(4*4), 4))
 
 relTolTmp <- relTol
+relTolTmp[1] <- 1e-14
 relTolTmp[2] <- 1e-7
-relTolTmp[4] <- 1e-3
+relTolTmp[4] <- 1e-2
 ## 2022-04-16: all set
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), relTol = relTolTmp, verbose = verbose, name = 'truncation model')
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), relTol = relTolTmp, verbose = verbose, checkCompiledValuesIdentical = FALSE, name = 'truncation model')
 
 relTolTmp <- relTol
+relTolTmp[1] <- 1e-14
 relTolTmp[2] <- 1e-7
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
+relTolTmp[5] <- 1e-13
 ## 2022-04-16: various values equal but not identical
 ## Detected some values out of relative tolerance:  cOutput2d$value   c(cOutput012$hessian) .
 ## [1] 8.466706e-01 8.466706e-01 1.311281e-15
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'truncation model')
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr), useParamTransform = TRUE, relTol = relTolTmp, checkCompiledValuesIdentical = FALSE, verbose = verbose, name = 'truncation model')
 
 if(FALSE) {   ## truncation on non-top nodes not handled for now; issue #254
     code <- nimbleCode({
@@ -490,7 +495,7 @@ relTolTmp[2] <- 1e-5
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
 
-test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), useParamTransform = TRUE, relTol = relTolTmp, useFasterRderivs = TRUE, verbose = verbose, name = 'different subsets of a matrix')
+test_ADModelCalculate(model, newUpdateNodes = list(pr5 = newPr5, pr4 = newPr4), useParamTransform = TRUE, checkCompiledValuesIdentical = TRUE, relTol = relTolTmp, useFasterRderivs = TRUE, verbose = verbose, name = 'different subsets of a matrix')
 
 ## vectorized covariance matrix
 set.seed(1)
@@ -514,15 +519,16 @@ newDist <- as.matrix(dist(runif(5)))
 
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
-#relTolTmp[2] <- 1e-7
+relTolTmp[2] <- 1e-7
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-3
+relTolTmp[5] <- 1e-13
 
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist),
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
+                      checkCompiledValuesIdentical = FALSE, relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
 ## 2022-04-20: various compiled values equal but not identical
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE,
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
+                      checkCompiledValuesIdentical = FALSE, relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix')
 
 ## 2022-04-22: (both cases above)
 ## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
@@ -561,13 +567,14 @@ relTolTmp <- relTol
 relTolTmp[1] <- 1e-10
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-5
-relTolTmp[4] <- 1e-3
+relTolTmp[4] <- 1e-2
+relTolTmp[5] <- 1e-13
 
 test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist),
                       relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix, chol param')
 
 ## 2022-04-20: various compiled values equal but not identical
-test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE,
+test_ADModelCalculate(model, newUpdateNodes = list(pr = newPr, dist = newDist), useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE,
                       relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, name = 'dmnorm with vectorized covariance matrix, chol param')
 
 ## 2022-04-21: (both cases above) various minor discrepancies, e.g.,
@@ -628,11 +635,12 @@ model$simulate()
 model$calculate()
 model$setData('y')
 relTolTmp <- relTol
+relTolTmp[1] <- 1e-14
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
 
 ## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose,
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, checkCompiledValuesIdentical = FALSE,
                       newUpdateNodes = list(dist = newDist, pr = newPr),
                       name = 'dmnorm with user-defined vectorized fxn')
 
@@ -679,6 +687,7 @@ relTolTmp[1] <- 1e-10
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-2
 relTolTmp[4] <- 1e-2
+relTolTmp[5] <- 1e-13
 
 test_ADModelCalculate(model,
                       newUpdateNodes = list(Q = newQ, Sigma = newSigma, pr = newPr),

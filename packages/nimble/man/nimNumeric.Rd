@@ -56,5 +56,5 @@ When used in a \code{nimbleFunction} (in \code{run} or other member function), \
 \code{\link{nimMatrix}}, \code{\link{nimArray}}
 }
 \author{
-Daniel Turek, Chris Paciorek, Perry de Valpine
+Daniel Turek, Christopher Paciorek, Perry de Valpine
 }

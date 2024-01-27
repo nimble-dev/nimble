@@ -4,7 +4,7 @@
 \alias{CAR_calcNumIslands}
 \title{Calculate number of islands based on a CAR adjacency matrix.}
 \usage{
-CAR_calcNumIslands(adj, num)
+CAR_calcNumIslands(adj_in, num_in)
 }
 \arguments{
 \item{adj}{vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.}

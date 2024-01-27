@@ -4,10 +4,12 @@
 \alias{buildMCMC}
 \title{Create an MCMC object from a NIMBLE model, or an MCMC configuration object}
 \usage{
-buildMCMC(conf, ...)
+buildMCMC(conf, print, ...)
 }
 \arguments{
 \item{conf}{Either an MCMC configuration object of class \code{MCMCconf} or a NIMBLE model object. An MCMC configuration object would be returned from \code{configureMCMC} and contains information on the model, samplers, monitors, and thinning intervals to be used. Alternatively, \code{conf} may a NIMBLE model object, in which case default configuration from calling \code{configureMCMC(model, ...l)} will be used.}
+
+\item{print}{A logical argument, specifying whether to print details of the MCMC samplers and monitors.}
 
 \item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object (see \code{help(configureMCMC)}).}
 }

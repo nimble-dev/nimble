@@ -963,6 +963,13 @@ The samplers provided in `nimbleHMC` can be used in `nimble`'s general MCMC syst
 - `addHMC`  manages use of `addSampler` to specifically add an HMC sampler for a chosen set of nodes to an exisiting MCMC configuration. It optionally removes other samplers operating on the specified nodes. Use `addHMC` to add an HMC sampler operating one or more target nodes to an exisiting MCMC configuration object.
 - For the most fine-grained control, you can use the `addSampler` method speciying the the argument `type="NUTS"` or `type="NUTS_classic"` to add HMC sampler(s) to an MCMC configuration object.
 
+As of version 1.1.0, we now support the following new functionality for AD in models:
+
+- Dynamic indexing is supported, although of course one cannot have derivatives taken with respect to (and hence not do HMC sampling for) the actual index values, since they are discrete.
+- One can take derivatives with respect to nodes assigned CAR priors, so HMC sampling can be performed on variables assigned a CAR prior(i.e., `dcar_normal` and `dcar_proper`).
+- One can take derivatives with respect to the parameters/arguments of `dcat`, `dconstraint`, and `dinterval`. Hence HMC sampling is supported for nodes that have `dcat`, `dconstraint`, and `dinterval` dependencies (derivatives of the discrete random variables themselves of course cannot be taken).
+- Truncated distributions can be used, but one cannot take derivatives of nodes that have truncated nodes as dependencies and hence HMC sampling **cannot** be performed on nodes that have truncated nodes as dependencies.
+
 More information is available from the help pages, e.g. `help(nimbleHMC)`, `help(buildHMC)`, `help(configureHMC)`, or `help(addHMC)`.
 
 #### HMC example {#subsec:HMC-example}

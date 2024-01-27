@@ -2249,7 +2249,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section Particle filter samplers:
 #'
-#' As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers are provided separately in the `nimbleSMC` package. After loading \code{nimbleSMC}, see \code(help(samplers)) for details.
+#' As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers are provided separately in the `nimbleSMC` package. After loading \code{nimbleSMC}, see \code{help(samplers)} for details.
 #' 
 #' @section \code{sampler_base}: base class for new samplers
 #'

@@ -2,6 +2,7 @@
 % Please edit documentation in R/MCMC_samplers.R, R/MCMC_RJ.R, R/BNP_samplers.R
 \name{sampler_BASE}
 \alias{sampler_BASE}
+\alias{sampler_prior_samples}
 \alias{sampler_posterior_predictive}
 \alias{sampler_binary}
 \alias{sampler_categorical}
@@ -13,7 +14,6 @@
 \alias{sampler_AF_slice}
 \alias{sampler_crossLevel}
 \alias{sampler_RW_llFunction_block}
-\alias{sampler_RW_multinomial}
 \alias{sampler_RW_dirichlet}
 \alias{sampler_RW_wishart}
 \alias{sampler_RW_lkj_corr_cholesky}
@@ -24,10 +24,10 @@
 \alias{sampler}
 \alias{binary}
 \alias{categorical}
+\alias{prior_samples}
 \alias{posterior_predictive}
 \alias{RW}
 \alias{RW_block}
-\alias{RW_multinomial}
 \alias{RW_dirichlet}
 \alias{RW_wishart}
 \alias{RW_llFunction}
@@ -35,6 +35,7 @@
 \alias{AF_slice}
 \alias{crossLevel}
 \alias{RW_llFunction_block}
+\alias{sampler_RW_multinomial}
 \alias{CRP}
 \alias{CRP_concentration}
 \alias{DPmeasure}
@@ -54,6 +55,8 @@
 \title{MCMC Sampling Algorithms}
 \usage{
 sampler_BASE()
+
+sampler_prior_samples(model, mvSaved, target, control)
 
 sampler_posterior_predictive(model, mvSaved, target, control)
 
@@ -76,8 +79,6 @@ sampler_AF_slice(model, mvSaved, target, control)
 sampler_crossLevel(model, mvSaved, target, control)
 
 sampler_RW_llFunction_block(model, mvSaved, target, control)
-
-sampler_RW_multinomial(model, mvSaved, target, control)
 
 sampler_RW_dirichlet(model, mvSaved, target, control)
 
@@ -113,11 +114,20 @@ sampler_slice_CRP_base_param(model, mvSaved, target, control)
 \item{control}{named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.}
 }
 \description{
-Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
+Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package.
 }
-\details{
-Derivative-based MCMC sampling algorithms, including Hamiltonian Monte Carlo (HMC), are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, use \code{help(HMC)} for details.
+\section{Hamiltonian Monte Carlo samplers}{
+
+
+Hamiltonian Monte Carlo (HMC) samplers are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, see \code{help(HMC)} for details.
 }
+
+\section{Particle filter samplers}{
+
+
+As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers are provided separately in the `nimbleSMC` package. After loading \code{nimbleSMC}, see \code{help(samplers)} for details.
+}
+
 \section{\code{sampler_base}}{
  base class for new samplers
 
@@ -277,18 +287,6 @@ The RW_llFunction_block sampler accepts the following control list elements:
 }
 }
 
-\section{RW_multinomial sampler}{
-
-
-This sampler is designed for sampling multinomial target distributions.  The sampler performs a series of Metropolis-Hastings steps between pairs of groups.  Proposals are generated via a draw from a binomial distribution, whereafter the proposed number density is moved from one group to another group.  The acceptance or rejection of these proposals follows a standard Metropolis-Hastings procedure.  Probabilities for the random binomial proposals are adapted to a target acceptance rate of 0.5.
-
-The \code{RW_multinomial} sampler accepts the following control list elements:
-\itemize{
-\item adaptive.  A logical argument, specifying whether the sampler should adapt the binomial proposal probabilities throughout the course of MCMC execution. (default = TRUE)
-\item adaptInterval.  The interval on which to perform adaptation.  A minimum value of 100 is required. (default = 200)
-}
-}
-
 \section{RW_dirichlet sampler}{
 
 
@@ -396,6 +394,26 @@ The CRP sampler is designed for fitting models involving Dirichlet process mixtu
 The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using the Chinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and can only be used when the prior for the concentration parameter is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
 }
 
+\section{prior_samples sampler}{
+
+
+The prior_samples sampler uses a provided set of numeric values (\code{samples}) to define the prior distribution of one or more model nodes.  One every MCMC iteration, the prior_samples sampler takes value(s) from the numeric values provided, and stores these value(s) into the target model node(s).  This allows one to define the prior distribution of model parameters empirically, using a set of numeric \code{samples}, presumably obtained previously using MCMC.  The \code{target} node may be either a single scalar node (scalar case), or a collection of model nodes.
+
+The prior_samples sampler provides two options for selection of the value to use on each MCMC iteration.  The default behaviour is to take sequential values from the \code{samples} vector (scalar case), or in the case of multiple dimensions, sequential rows of the \code{samples} matrix are used.  The alternative behaviour, by setting the control argument \code{randomDraws = TRUE}, will instead use random draws from the \code{samples} vector (scalar case), or randomly selected rows of the \code{samples} matrix in the multidimensional case.
+
+If the default of sequential selection of values is used, and the number of MCMC iterations exceeds the length of the \code{samples} vector (scalar case) or the number of rows of the \code{samples} matrix, then \code{samples} will be recycled as necessary for the number of MCMC iterations.  A message to this effect is also printed at the beginning of the MCMC chain.
+
+Logically, prior_samples samplers might want to operate first, in advance of other samplers, on every MCMC iteration.  By default, at the time of MCMC building, all prior_samples samplers are re-ordered to appear first in the list of MCMC samplers.  This behaviour can be subverted, however, by setting nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE).
+
+The prior_samples sampler can be assigned to non-stochastic model nodes (nodes which are not assigned a prior distribution in the model). In fact, it is recommended that nodes being assigned a prior_samples are not provided with a prior distribution in the model, and rather, that these nodes only appear on the right-hand-side of model declaration lines.  In such case that a prior_samples sampler is assigned to a nodes with a prior distribution, the prior distribution will be overridden by the sample values provided to the sampler; however, the node will still be a stochastic node for other purposes, and will contribute to the model joint-density (using the sample values provided relative to the prior distribution), will have an MCMC sampler assigned to it by default, and also may introduce potential for confusion.  In this case, a message is issued at the time of MCMC building.
+
+The prior_samples sampler accepts the following control list elements:
+\itemize{
+\item \code{samples}. A numeric vector or matrix.  When the \code{target} node is a single scalar-valued node, \code{samples} should be a numeric vector.  When the \code{target} node specifies d > 2 model dimensions, \code{samples} should be a matrix containing d columns.  The \code{samples} control argument is required.
+\item \code{randomDraws}. A logical argument, specifying whether to use a random draw from \code{samples} on each iteration.  If \code{samples} is a matrix, then a randomly-selected row of the \code{samples} matrix is used.  When \code{FALSE}, sequential values (or sequential matrix rows) are used (default = \code{FALSE}).
+}
+}
+
 \section{posterior_predictive sampler}{
 
 
@@ -426,12 +444,6 @@ This sampler proposes transitions of a binary indicator variable, corresponding 
 This sampler operates in the framework of variable selection using reversible jump MCMC.  Specifically, it conditionally performs updates of the target variable of interest using the originally-specified sampling configuration, when variable is "in the model".  This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment.
 }
 
-\section{Particle filter samplers}{
-
-
-As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers live in the `nimbleSMC` package. Please load that package in order to use the samplers.
-}
-
 \examples{
 ## y[1] ~ dbern() or dbinom():
 # mcmcConf$addSampler(target = 'y[1]', type = 'binary')   
@@ -455,8 +467,6 @@ As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers
 #    control = list(adaptive = TRUE, sliceMaxSteps = 1))
 
 # mcmcConf$addSampler(target = 'x[1:10]', type = 'ess')   ## x[1:10] ~ dmnorm()
-
-# mcmcConf$addSampler(target = 'x[1:5]', type = 'RW_multinomial')   ## x[1:5] ~ dmulti()
 
 # mcmcConf$addSampler(target = 'p[1:5]', type = 'RW_dirichlet')   ## p[1:5] ~ ddirch()
 

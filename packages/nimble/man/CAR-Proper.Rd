@@ -51,8 +51,6 @@ rcar_proper(
 \item{evs}{vector of eigenvalues of the adjacency matrix implied by \code{C}, \code{adj}, and \code{num}.  This parameter should not be provided; it will always be calculated using the adjacency information.}
 
 \item{log}{logical; if \code{TRUE}, probability density is returned on the log scale.}
-
-\item{n}{number of observations.}
 }
 \value{
 \code{dcar_proper} gives the density, and \code{rcar_proper} generates random deviates.
