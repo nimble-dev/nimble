@@ -18,6 +18,13 @@ or `where` (issue #1306).
   `targetByNode`, and the `scalarComponents` is renamed to
   `multivariateNodesAsScalars`.
 
+- `configureMCMC` will no longer assign samplers to data nodes, even if
+  the `nodes` argument includes data nodes.
+  
+- New argument `allowData` to the `addSampler` method of MCMC
+  configuration objects, with default value FALSE.  When TRUE,
+  samplers can be assigned to operate on data nodes.
+
 ## DEVELOPER LEVEL CHANGES
 
 - Fix error with name mangling affecting packages that use nimble

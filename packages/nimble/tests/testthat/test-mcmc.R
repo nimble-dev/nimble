@@ -2957,6 +2957,83 @@ test_that('prior_samples sampler operates correctly', {
     expect_true(all(samples[,'y[3]'] %in% c(49,64,81)))
 })
 
+test_that('assigning samplers to data and allowData argument', {
+    code <- nimbleCode({
+        a ~ dnorm(0, 1)
+        b ~ dnorm(0, 1)
+        y[1] ~ dnorm(a, 1)
+        y[2] ~ dnorm(y[1], 1)
+        y[3] ~ dnorm(b^2, 1)
+        y[4] ~ dnorm(b^2, 1)
+    })
+    Rmodel <- nimbleModel(code, inits = list(a=0, b=0), data = list(y = c(0,0,0,NA)))
+    ##
+    conf <- configureMCMC(Rmodel)
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 3)
+    ##
+    conf <- configureMCMC(Rmodel, nodes = c('a', 'y'))
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 2)
+    expect_true(samps[[1]]$target == 'a')
+    expect_true(samps[[1]]$name == 'conjugate_dnorm_dnorm_identity')
+    expect_true(samps[[2]]$target == 'y[4]')
+    expect_true(samps[[2]]$name == 'posterior_predictive')
+    ##
+    conf <- configureMCMC(Rmodel, nodes = c('y[2]', 'b', 'y[3]'))
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 1)
+    expect_true(samps[[1]]$target == 'b')
+    ##
+    conf <- configureMCMC(Rmodel, nodes = 'y')
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 1)
+    expect_true(samps[[1]]$name == 'posterior_predictive')
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', type = 'AF_slice')
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 1)
+    expect_true(samps[[1]]$target == 'y[4]')
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', type = 'AF_slice', allowData = TRUE)
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 1)
+    expect_true(samps[[1]]$target == 'y')
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', type = 'slice', targetByNode = TRUE)
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 1)
+    expect_true(samps[[1]]$target == 'y[4]')
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', type = 'slice', targetByNode = TRUE, allowData = TRUE)
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 4)
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', default = TRUE)
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 1)
+    expect_true(samps[[1]]$target == 'y[4]')
+    expect_true(samps[[1]]$name == 'posterior_predictive')
+    ##
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('y', default = TRUE, allowData = TRUE)
+    samps <- conf$getSamplers()
+    expect_true(length(samps) == 4)
+    expect_true(samps[[1]]$target == 'y[1]')
+    expect_true(samps[[1]]$name == 'conjugate_dnorm_dnorm_identity')
+    expect_true(samps[[2]]$target == 'y[2]')
+    expect_true(samps[[2]]$name == 'RW')
+    expect_true(samps[[3]]$target == 'y[3]')
+    expect_true(samps[[3]]$name == 'RW')
+    expect_true(samps[[4]]$target == 'y[4]')
+    expect_true(samps[[4]]$name == 'posterior_predictive')
+})
+
 sink(NULL)
 
 if(!generatingGoldFile) {

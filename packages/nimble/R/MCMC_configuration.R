@@ -87,6 +87,7 @@ MCMCconf <- setRefClass(
         controlDefaults     = 'ANY',
         unsampledNodes      = 'ANY',
         postPredSamplerDownstreamNodes = 'ANY',
+        allowData_global    = 'ANY',
         ##namedSamplerLabelMaker = 'ANY',  ## usage long since deprecated (Dec 2020)
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
@@ -189,9 +190,10 @@ print: A logical argument specifying whether to print the montiors and samplers.
             if(missing(nodes)) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
-            } else {
-                if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
-            }
+            } else if(is.null(nodes) || length(nodes)==0) {
+                nodes <- character(0)
+            } else   nodes <- filterOutDataNodes(nodes)   ## configureMCMC *never* assigns samplers to data nodes
+            allowData_global <<- FALSE
             
             addDefaultSampler(nodes = nodes,
                               useConjugacy = useConjugacy,
@@ -564,6 +566,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                               useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                               onlyRW = FALSE,
                               onlySlice = FALSE,
+                              allowData = FALSE,
                               ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
@@ -594,6 +597,8 @@ onlyRW: Logical argument, with default value FALSE.  If specified as TRUE, then 
 
 onlySlice: Logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.  This argument is only used when the \'default\' argument is TRUE.
 
+allowData: Logical argument, with default value FALSE.  When FALSE, samplers will not be assigned to operate on data nodes, even if data nodes are included in \'target\'.  When TRUE, samplers will be assigned to \'target\' without regard to whether nodes are designated as data.
+
 ...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details:
@@ -604,7 +609,10 @@ Invisibly returns a list of the current sampler configurations, which are sample
 '
             if(length(target) == 0)   return(invisible(samplerConfs))
 
+            if(!(isTRUE(allowData) || isFALSE(allowData)))   stop('allowData argument can only be TRUE or FALSE', call. = FALSE)
+
             if(default) {
+                allowData_global <<- allowData
                 addDefaultSampler(nodes = target,
                                   control = control,
                                   useConjugacy = useConjugacy,
@@ -613,6 +621,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                                   multivariateNodesAsScalars = multivariateNodesAsScalars,
                                   print = if(is.null(print)) TRUE else print,   ## default of print is TRUE when adding default sampler
                                   ...)
+                allowData_global <<- FALSE
                 return(invisible(samplerConfs))
             }
 
@@ -687,28 +696,37 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!targetByNode) {
                 ## when targetByNode = FALSE,
                 ## no node expansion takes place
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
+                addOneSampler(thisSamplerName, samplerFunction, target, thisControlList, allowData, print)
             } else {
                 ## when targetByNode = TRUE,
                 ## assign sampler type to each component of target after expanding node names,
                 ## also using multivariateNodesAsScalars argument here, to control the node expansion
                 targetExpanded <- model$expandNodeNames(target, returnScalarComponents = multivariateNodesAsScalars, sort = TRUE)
                 for(i in seq_along(targetExpanded)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, print)
+                    addOneSampler(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, allowData, print)
                 }
             }
             
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, print) {
+        addOneSampler = function(thisSamplerName, samplerFunction, targetOne, thisControlList, allowData, print) {
             '
 For internal use only
 '
+            if(!allowData && !allowData_global) {
+                if(all(model$isData(targetOne)))   return()
+                if(any(model$isData(targetOne)))   targetOne <- filterOutDataNodes(targetOne)
+            }
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
             if(print) printSamplers(newSamplerInd)
+        },
+
+        filterOutDataNodes = function(nodes) {
+            nodes <- model$expandNodeNames(nodes)
+            return(nodes[!model$isData(nodes)])
         },
         
         removeSamplers = function(..., ind, print = FALSE) {
