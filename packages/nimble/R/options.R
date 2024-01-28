@@ -81,8 +81,9 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         unsupportedDerivativeHandling = 'error', # default is error, other options are 'warn' and 'ignore'. Handled in updateADproxyModelMethods in cppDefs_nimbleFunction.R
         errorIfMissingNFVariable = TRUE,
         stopOnSizeErrors = TRUE,
-        useOldcWiseRule = FALSE # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
-    )
+        useOldcWiseRule = FALSE, # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
+        stripUnusedTypeDefs = TRUE
+      )
 )
 
 # sets a single option
