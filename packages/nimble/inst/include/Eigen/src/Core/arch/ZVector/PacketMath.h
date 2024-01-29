@@ -10,8 +10,6 @@
 #ifndef EIGEN_PACKET_MATH_ZVECTOR_H
 #define EIGEN_PACKET_MATH_ZVECTOR_H
 
-#include <stdint.h>
-
 namespace Eigen {
 
 namespace internal {
@@ -22,10 +20,6 @@ namespace internal {
 
 #ifndef EIGEN_HAS_SINGLE_INSTRUCTION_MADD
 #define EIGEN_HAS_SINGLE_INSTRUCTION_MADD
-#endif
-
-#ifndef EIGEN_HAS_SINGLE_INSTRUCTION_CJMADD
-#define EIGEN_HAS_SINGLE_INSTRUCTION_CJMADD
 #endif
 
 #ifndef EIGEN_ARCH_DEFAULT_NUMBER_OF_REGISTERS
@@ -51,10 +45,10 @@ typedef struct {
 #endif
 
 typedef union {
-  int32_t   i[4];
-  uint32_t ui[4];
-  int64_t   l[2];
-  uint64_t ul[2];
+  numext::int32_t   i[4];
+  numext::uint32_t ui[4];
+  numext::int64_t   l[2];
+  numext::uint64_t ul[2];
   double    d[2];
   float     f[4];
   Packet4i  v4i;
@@ -96,8 +90,9 @@ static _EIGEN_DECLARE_CONST_FAST_Packet2d(ZERO, 0);
 static _EIGEN_DECLARE_CONST_FAST_Packet2l(ZERO, 0);
 static _EIGEN_DECLARE_CONST_FAST_Packet2l(ONE, 1);
 
-static Packet2d p2d_ONE = { 1.0, 1.0 }; 
-static Packet2d p2d_ZERO_ = { -0.0, -0.0 };
+static Packet2d p2d_ONE = { 1.0, 1.0 };
+static Packet2d p2d_ZERO_ = { numext::bit_cast<double>0x8000000000000000ull),
+                              numext::bit_cast<double>0x8000000000000000ull) };
 
 #if !defined(__ARCH__) || (defined(__ARCH__) && __ARCH__ >= 12)
 #define _EIGEN_DECLARE_CONST_FAST_Packet4f(NAME,X) \
@@ -173,33 +168,31 @@ template<> struct packet_traits<int>    : default_packet_traits
   };
 };
 
-template<> struct packet_traits<float> : default_packet_traits
-{
+template <>
+struct packet_traits<float> : default_packet_traits {
   typedef Packet4f type;
   typedef Packet4f half;
   enum {
     Vectorizable = 1,
     AlignedOnScalar = 1,
-    size=4,
+    size = 4,
     HasHalfPacket = 0,
 
-    HasAdd  = 1,
-    HasSub  = 1,
-    HasMul  = 1,
-    HasDiv  = 1,
-    HasMin  = 1,
-    HasMax  = 1,
-    HasAbs  = 1,
-    HasSin  = 0,
-    HasCos  = 0,
-    HasLog  = 0,
-#if !defined(__ARCH__) || (defined(__ARCH__) && __ARCH__ >= 12)
-    HasExp  = 0,
-#else
-    HasExp  = 1,
-#endif
+    HasAdd = 1,
+    HasSub = 1,
+    HasMul = 1,
+    HasDiv = 1,
+    HasMin = 1,
+    HasMax = 1,
+    HasAbs = 1,
+    HasSin = 0,
+    HasCos = 0,
+    HasLog = 0,
+    HasExp = 1,
     HasSqrt = 1,
     HasRsqrt = 1,
+    HasTanh = 1,
+    HasErf = 1,
     HasRound = 1,
     HasFloor = 1,
     HasCeil = 1,
@@ -239,9 +232,9 @@ template<> struct packet_traits<double> : default_packet_traits
   };
 };
 
-template<> struct unpacket_traits<Packet4i> { typedef int    type; enum {size=4, alignment=Aligned16}; typedef Packet4i half; };
-template<> struct unpacket_traits<Packet4f> { typedef float  type; enum {size=4, alignment=Aligned16}; typedef Packet4f half; };
-template<> struct unpacket_traits<Packet2d> { typedef double type; enum {size=2, alignment=Aligned16}; typedef Packet2d half; };
+template<> struct unpacket_traits<Packet4i> { typedef int    type; enum {size=4, alignment=Aligned16, vectorizable=true, masked_load_available=false, masked_store_available=false}; typedef Packet4i half; };
+template<> struct unpacket_traits<Packet4f> { typedef float  type; enum {size=4, alignment=Aligned16, vectorizable=true, masked_load_available=false, masked_store_available=false}; typedef Packet4f half; };
+template<> struct unpacket_traits<Packet2d> { typedef double type; enum {size=2, alignment=Aligned16, vectorizable=true, masked_load_available=false, masked_store_available=false}; typedef Packet2d half; };
 
 /* Forward declaration */
 EIGEN_DEVICE_FUNC inline void ptranspose(PacketBlock<Packet4f,4>& kernel);
@@ -295,33 +288,6 @@ inline std::ostream & operator <<(std::ostream & s, const Packet4f & v)
   return s;
 }
 #endif
-
-
-template<int Offset>
-struct palign_impl<Offset,Packet4i>
-{
-  static EIGEN_STRONG_INLINE void run(Packet4i& first, const Packet4i& second)
-  {
-    switch (Offset % 4) {
-    case 1:
-      first = vec_sld(first, second, 4); break;
-    case 2:
-      first = vec_sld(first, second, 8); break;
-    case 3:
-      first = vec_sld(first, second, 12); break;
-    }
-  }
-};
-
-template<int Offset>
-struct palign_impl<Offset,Packet2d>
-{
-  static EIGEN_STRONG_INLINE void run(Packet2d& first, const Packet2d& second)
-  {
-    if (Offset == 1)
-      first = reinterpret_cast<Packet2d>(vec_sld(reinterpret_cast<Packet4i>(first), reinterpret_cast<Packet4i>(second), 8));
-  }
-};
 
 template<> EIGEN_STRONG_INLINE Packet4i pload<Packet4i>(const int*     from)
 {
@@ -528,45 +494,6 @@ template<> EIGEN_STRONG_INLINE double predux<Packet2d>(const Packet2d& a)
   return pfirst(sum);
 }
 
-template<> EIGEN_STRONG_INLINE Packet4i preduxp<Packet4i>(const Packet4i* vecs)
-{
-  Packet4i v[4], sum[4];
-
-  // It's easier and faster to transpose then add as columns
-  // Check: http://www.freevec.org/function/matrix_4x4_transpose_floats for explanation
-  // Do the transpose, first set of moves
-  v[0] = vec_mergeh(vecs[0], vecs[2]);
-  v[1] = vec_mergel(vecs[0], vecs[2]);
-  v[2] = vec_mergeh(vecs[1], vecs[3]);
-  v[3] = vec_mergel(vecs[1], vecs[3]);
-  // Get the resulting vectors
-  sum[0] = vec_mergeh(v[0], v[2]);
-  sum[1] = vec_mergel(v[0], v[2]);
-  sum[2] = vec_mergeh(v[1], v[3]);
-  sum[3] = vec_mergel(v[1], v[3]);
-
-  // Now do the summation:
-  // Lines 0+1
-  sum[0] = padd<Packet4i>(sum[0], sum[1]);
-  // Lines 2+3
-  sum[1] = padd<Packet4i>(sum[2], sum[3]);
-  // Add the results
-  sum[0] = padd<Packet4i>(sum[0], sum[1]);
-
-  return sum[0];
-}
-
-template<> EIGEN_STRONG_INLINE Packet2d preduxp<Packet2d>(const Packet2d* vecs)
-{
-  Packet2d v[2], sum;
-  v[0] = padd<Packet2d>(vecs[0], reinterpret_cast<Packet2d>(vec_sld(reinterpret_cast<Packet4ui>(vecs[0]), reinterpret_cast<Packet4ui>(vecs[0]), 8)));
-  v[1] = padd<Packet2d>(vecs[1], reinterpret_cast<Packet2d>(vec_sld(reinterpret_cast<Packet4ui>(vecs[1]), reinterpret_cast<Packet4ui>(vecs[1]), 8)));
- 
-  sum = reinterpret_cast<Packet2d>(vec_sld(reinterpret_cast<Packet4ui>(v[0]), reinterpret_cast<Packet4ui>(v[1]), 8));
-
-  return sum;
-}
-
 // Other reduction functions:
 // mul
 template<> EIGEN_STRONG_INLINE int predux_mul<Packet4i>(const Packet4i& a)
@@ -672,30 +599,6 @@ template<int element> EIGEN_STRONG_INLINE Packet4f vec_splat_packet4f(const Pack
   }
   return splat;
 }
-
-/* This is a tricky one, we have to translate float alignment to vector elements of sizeof double
- */
-template<int Offset>
-struct palign_impl<Offset,Packet4f>
-{
-  static EIGEN_STRONG_INLINE void run(Packet4f& first, const Packet4f& second)
-  {
-    switch (Offset % 4) {
-    case 1:
-      first.v4f[0] = vec_sld(first.v4f[0], first.v4f[1], 8);
-      first.v4f[1] = vec_sld(first.v4f[1], second.v4f[0], 8);
-      break;
-    case 2:
-      first.v4f[0] = first.v4f[1];
-      first.v4f[1] = second.v4f[0];
-      break;
-    case 3:
-      first.v4f[0] = vec_sld(first.v4f[1],  second.v4f[0], 8);
-      first.v4f[1] = vec_sld(second.v4f[0], second.v4f[1], 8);
-      break;
-    }
-  }
-};
 
 template<> EIGEN_STRONG_INLINE Packet4f pload<Packet4f>(const float*   from)
 {
@@ -829,16 +732,16 @@ template<> EIGEN_STRONG_INLINE Packet4f pand<Packet4f>(const Packet4f& a, const 
 template<> EIGEN_STRONG_INLINE Packet4f por<Packet4f>(const Packet4f& a, const Packet4f& b)
 {
   Packet4f res;
-  res.v4f[0] = pand(a.v4f[0], b.v4f[0]);
-  res.v4f[1] = pand(a.v4f[1], b.v4f[1]);
+  res.v4f[0] = por(a.v4f[0], b.v4f[0]);
+  res.v4f[1] = por(a.v4f[1], b.v4f[1]);
   return res;
 }
 
 template<> EIGEN_STRONG_INLINE Packet4f pxor<Packet4f>(const Packet4f& a, const Packet4f& b)
 {
   Packet4f res;
-  res.v4f[0] = pand(a.v4f[0], b.v4f[0]);
-  res.v4f[1] = pand(a.v4f[1], b.v4f[1]);
+  res.v4f[0] = pxor(a.v4f[0], b.v4f[0]);
+  res.v4f[1] = pxor(a.v4f[1], b.v4f[1]);
   return res;
 }
 
@@ -906,21 +809,6 @@ template<> EIGEN_STRONG_INLINE float predux<Packet4f>(const Packet4f& a)
   sum = padd<Packet2d>(a.v4f[0], a.v4f[1]);
   double first = predux<Packet2d>(sum);
   return static_cast<float>(first);
-}
-
-template<> EIGEN_STRONG_INLINE Packet4f preduxp<Packet4f>(const Packet4f* vecs)
-{
-  PacketBlock<Packet4f,4> transpose;
-  transpose.packet[0] = vecs[0];
-  transpose.packet[1] = vecs[1];
-  transpose.packet[2] = vecs[2];
-  transpose.packet[3] = vecs[3];
-  ptranspose(transpose);
-
-  Packet4f sum = padd(transpose.packet[0], transpose.packet[1]);
-  sum = padd(sum, transpose.packet[2]);
-  sum = padd(sum, transpose.packet[3]);
-  return sum;
 }
 
 template<> EIGEN_STRONG_INLINE float predux_mul<Packet4f>(const Packet4f& a)
@@ -993,23 +881,32 @@ template<> EIGEN_STRONG_INLINE Packet4f pblend(const Selector<4>& ifPacket, cons
   result.v4f[1] = vec_sel(elsePacket.v4f[1], thenPacket.v4f[1], mask_lo);
   return result;
 }
-#else
-template<int Offset>
-struct palign_impl<Offset,Packet4f>
-{
-  static EIGEN_STRONG_INLINE void run(Packet4f& first, const Packet4f& second)
-  {
-    switch (Offset % 4) {
-    case 1:
-      first = vec_sld(first, second, 4); break;
-    case 2:
-      first = vec_sld(first, second, 8); break;
-    case 3:
-      first = vec_sld(first, second, 12); break;
-    }
-  }
-};
 
+template<> Packet4f EIGEN_STRONG_INLINE pcmp_le<Packet4f>(const Packet4f& a, const Packet4f& b)
+{
+  Packet4f res;
+  res.v4f[0] = pcmp_le(a.v4f[0], b.v4f[0]);
+  res.v4f[1] = pcmp_le(a.v4f[1], b.v4f[1]);
+  return res;
+}
+
+template<> Packet4f EIGEN_STRONG_INLINE pcmp_lt<Packet4f>(const Packet4f& a, const Packet4f& b)
+{
+  Packet4f res;
+  res.v4f[0] = pcmp_lt(a.v4f[0], b.v4f[0]);
+  res.v4f[1] = pcmp_lt(a.v4f[1], b.v4f[1]);
+  return res;
+}
+
+template<> Packet4f EIGEN_STRONG_INLINE pcmp_eq<Packet4f>(const Packet4f& a, const Packet4f& b)
+{
+  Packet4f res;
+  res.v4f[0] = pcmp_eq(a.v4f[0], b.v4f[0]);
+  res.v4f[1] = pcmp_eq(a.v4f[1], b.v4f[1]);
+  return res;
+}
+
+#else
 template<> EIGEN_STRONG_INLINE Packet4f pload<Packet4f>(const float* from)
 {
   // FIXME: No intrinsic yet
@@ -1102,34 +999,6 @@ template<> EIGEN_STRONG_INLINE float predux<Packet4f>(const Packet4f& a)
   b   = vec_sld(sum, sum, 4);
   sum = padd<Packet4f>(sum, b);
   return pfirst(sum);
-}
-
-template<> EIGEN_STRONG_INLINE Packet4f preduxp<Packet4f>(const Packet4f* vecs)
-{
-  Packet4f v[4], sum[4];
-
-  // It's easier and faster to transpose then add as columns
-  // Check: http://www.freevec.org/function/matrix_4x4_transpose_floats for explanation
-  // Do the transpose, first set of moves
-  v[0] = vec_mergeh(vecs[0], vecs[2]);
-  v[1] = vec_mergel(vecs[0], vecs[2]);
-  v[2] = vec_mergeh(vecs[1], vecs[3]);
-  v[3] = vec_mergel(vecs[1], vecs[3]);
-  // Get the resulting vectors
-  sum[0] = vec_mergeh(v[0], v[2]);
-  sum[1] = vec_mergel(v[0], v[2]);
-  sum[2] = vec_mergeh(v[1], v[3]);
-  sum[3] = vec_mergel(v[1], v[3]);
-
-  // Now do the summation:
-  // Lines 0+1
-  sum[0] = padd<Packet4f>(sum[0], sum[1]);
-  // Lines 2+3
-  sum[1] = padd<Packet4f>(sum[2], sum[3]);
-  // Add the results
-  sum[0] = padd<Packet4f>(sum[0], sum[1]);
-
-  return sum[0];
 }
 
 // Other reduction functions:
