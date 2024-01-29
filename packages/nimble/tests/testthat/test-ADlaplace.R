@@ -1660,7 +1660,7 @@ test_that("Laplace with crossed random effects works", {
     }),
     constants = list(N = N, np = np, ns = ns, plate = plate, sample = sample),
     data = list(y = Penicillin$diameter),
-    # inits = list(beta = 0, sigma = 1, sigma_p = 1, sigma_s = 1, mus = rep(0, ns), mup = rep(0, np)),
+    inits = list(beta = 20, sigma = 1, sigma_p = 1, sigma_s = 1, mus = rep(0, ns), mup = rep(0, np)),
     buildDerivs = TRUE
   )
   mLaplace <- buildLaplace(model = m)
