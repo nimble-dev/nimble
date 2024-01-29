@@ -783,6 +783,7 @@ relTolTmp[1] <- 1e-13
 relTolTmp[2] <- 1e-7
 relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-2
+relTolTmp[5] <- 1e-12
 
 test_ADModelCalculate(model, newUpdateNodes = list(dist = newDist),
                       newConstantNodes = list(W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4,
@@ -790,7 +791,7 @@ test_ADModelCalculate(model, newUpdateNodes = list(dist = newDist),
                       relTol = relTolTmp, verbose = verbose, name = 'dwish, dinvwish')
 
 ## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE, newUpdateNodes = list(dist = newDist),
+test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE, newUpdateNodes = list(dist = newDist),
                       newConstantNodes = list(W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4,
                                         IW1 = newIW1, IW2 = newIW2, IW3 = newIW3, IW4 = newIW4),
                       relTol = relTolTmp, verbose = verbose, name = 'dwish, dinvwish')
@@ -867,30 +868,9 @@ relTolTmp[1] <- 1e-14
 
 test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'vectorized power')
 ## 2022-04-22: various compiled values equal but not identical
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'vectorized power')
+test_ADModelCalculate(model, checkCompiledValuesIdentical = FALSE, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, name = 'vectorized power')
 
 
-dGPdist <- nimbleFunction(
-    run = function(x = double(1), dist = double(2), rho = double(0),
-                   log = integer(0, default = 0)) {
-        returnType(double(0))
-        Sigma <- exp(-dist/rho)
-        L <- t(chol(Sigma))
-        out <- -sum(log(diag(L)))
-        qf <- forwardsolve(L, x)
-        out <- out - 0.5*sum(qf^2)
-        if(log) return(out) else return(exp(out))
-    }, buildDerivs = TRUE)
-
-rGPdist <- nimbleFunction(
-    run = function(n = integer(0), dist = double(2), rho = double(0)) {
-        returnType(double(1))
-        Sigma <- exp(-dist/rho)
-        U <- chol(Sigma)
-        p <- dim(dist)[1]
-        out <- (U %*% rnorm(p))[,1]
-        return(out)
-    })
 
 
 
@@ -913,7 +893,7 @@ relTolTmp[2] <- 1e-7
 relTolTmp[3] <- 1e-2
 relTolTmp[4] <- 1e-2
 
-test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNodes = list(p = newP), newConstantNodes = list(y = newY),
+test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNodes = list(p = newP), newConstantNodes = list(y = newY), checkCompiledValuesIdentical = FALSE,
                       relTol = relTolTmp,absTolThreshold = 1e-12, verbose = verbose, name = 'Dirichlet paramTransform') 
 ## 2022-04-25: various cases not identical
 ## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
@@ -928,6 +908,27 @@ test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNod
 ##               [,1]          [,2]       [,3]
 ## [1,] -3.576279e-06 -3.778980e-06 0.05363926
 
+dGPdist <- nimbleFunction(
+    run = function(x = double(1), dist = double(2), rho = double(0),
+                   log = integer(0, default = 0)) {
+        returnType(double(0))
+        Sigma <- exp(-dist/rho)
+        L <- t(chol(Sigma))
+        out <- -sum(log(diag(L)))
+        qf <- forwardsolve(L, x)
+        out <- out - 0.5*sum(qf^2)
+        if(log) return(out) else return(exp(out))
+    }, buildDerivs = TRUE)
+
+rGPdist <- nimbleFunction(
+    run = function(n = integer(0), dist = double(2), rho = double(0)) {
+        returnType(double(1))
+        Sigma <- exp(-dist/rho)
+        U <- chol(Sigma)
+        p <- dim(dist)[1]
+        out <- (U %*% rnorm(p))[,1]
+        return(out)
+    })
 
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
@@ -992,9 +993,10 @@ relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-2
+relTolTmp[5] <- 1e-12
 
 test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR, W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4, W5 = newW5, W6 = newW6),
-                      x = 'prior', absTolThreshold = 1e-12,
+                      x = 'prior', absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
                       relTol = relTolTmp, verbose = verbose,
                       name = 'various multivariate dists')
@@ -1126,7 +1128,7 @@ relTolTmp[3] <- 1e-4
 test_ADModelCalculate(m, xNew = list(gamma = rnorm(3, m$gamma, .1), theta = .15, phi = .07, beta = m$beta + c(.005, rnorm(7, 0, .2)),
                                      alpha = rnorm(e$D*e$M, m$alpha, 0.2), T = newT), newUpdateNodes = list(T = newT, R = newR),
                       newConstantNodes = list(R = newR, prec = newPrec, Y = newY), 
-                      absTolThreshold = 1e-11,
+                      absTolThreshold = 1e-11, checkCompiledValuesIdentical = FALSE,
                       useParamTransform = TRUE, useFasterRderivs = TRUE,
                       relTol = relTolTmp, verbose = verbose,
                       name = 'schools facsimile')
