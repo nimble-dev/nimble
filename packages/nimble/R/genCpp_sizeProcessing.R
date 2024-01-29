@@ -2949,7 +2949,10 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     for(i in 1:2) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
-              if(! (code$args[[i]]$name == '[' && (code$args[[i]]$args[[1]]$name == 'dim' && code$args[[i]]$args[[1]]$args[[1]]$name == 'nfVar'))){
+              if(! (code$args[[i]]$name == '[' &&
+                    (code$args[[i]]$args[[1]]$name == 'dim' &&
+                     (code$args[[i]]$args[[1]]$args[[1]]$isName ||
+                      code$args[[i]]$args[[1]]$args[[1]]$name == 'nfVar')))){
                 asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv, forceType = "integer") )
               }
             }

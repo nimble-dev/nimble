@@ -328,7 +328,7 @@ dGenVonMises <- nimbleFunction(
     mu2R <- (mu2 - range/2)/range*2*pi
     z <- (x - range/2)/range*2*pi
     d <- (mu1R - mu2R) %% pi
-    num <- exp(kappa1 * cos(z - mu1R) + kappa2 * cos(2 * (z - muR2)))
+    num <- exp(kappa1 * cos(z - mu1R) + kappa2 * cos(2 * (z - mu2R)))
     tmp <- c(kappa1, kappa2, d)
     den <- nimIntegrate(integrand, lower = 0, upper = 2*pi, tmp)[1]
     dens <- num/den
