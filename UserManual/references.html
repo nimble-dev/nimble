@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>References | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="References | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -159,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.0.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.1.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -275,8 +275,9 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="7.11.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.11.1</b> Conjugate (‘Gibbs’) samplers</a></li>
 <li class="chapter" data-level="7.11.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#subsec:HMC"><i class="fa fa-check"></i><b>7.11.2</b> Hamiltonian Monte Carlo (HMC)</a></li>
-<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.3</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
-<li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Particle MCMC sampler</a></li>
+<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-filter-samplers"><i class="fa fa-check"></i><b>7.11.3</b> Particle filter samplers</a></li>
+<li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
+<li class="chapter" data-level="7.11.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.11.5</b> Particle MCMC sampler</a></li>
 </ul></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
@@ -348,7 +349,8 @@ div.csl-indent {
 <li class="chapter" data-level="11.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>11.2.6</b> <em>print</em> and <em>cat</em></a></li>
 <li class="chapter" data-level="11.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>11.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
 <li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
-<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
+<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#integration-integrate-and-nimintegrate"><i class="fa fa-check"></i><b>11.2.9</b> Integration: <em>integrate</em> and <em>nimIntegrate</em></a></li>
+<li class="chapter" data-level="11.2.10" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.10</b> ‘nim’ synonyms for some functions</a></li>
 </ul></li>
 <li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
 <ul>
@@ -445,13 +447,13 @@ div.csl-indent {
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
 <li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#how-to-use-laplace-approximation"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation</a></li>
-<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#how-to-support-derivatives-in-user-defined-functions-and-distributions"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
+<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
 <li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
 <li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#holding-some-local-variables-out-of-derivative-tracking"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
-<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#using-ad-with-multiple-nimblefunctions"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
+<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
 <li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#understanding-more-about-how-ad-works-taping-of-operations"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
 <li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
 <li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
@@ -538,6 +540,9 @@ Green, Peter J. 1995. <span>“Reversible Jump <span>M</span>arkov Chain <span>M
 <div id="ref-griewank-walther-08" class="csl-entry">
 Griewank, Andreas, and Andrea Walther. 2008. <em>Evaluating <span>Derivatives</span>: <span>Principles</span> and <span>Techniques</span> of <span>Algorithmic</span> <span>Differentiation</span>, <span>Second</span> <span>Edition</span></em>. Second edition. Philadelphia, PA: Society for Industrial; Applied Mathematic.
 </div>
+<div id="ref-hoffman2014no" class="csl-entry">
+Hoffman, Matthew D, and Andrew Gelman. 2014. <span>“The No-u-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo.”</span> <em>J. Mach. Learn. Res.</em> 15 (1): 1593–623.
+</div>
 <div id="ref-Hug_Paciorek_2021" class="csl-entry">
 Hug, Joshua E., and Christopher J. Paciorek. 2021. <span>“A Numerically Stable Online Implementation and Exploration of <span>WAIC</span> Through Variations of the Predictive Density, Using <span>NIMBLE</span>.”</span> arXiv preprint. <a href="https://arxiv.org/abs/2106.13359">https://arxiv.org/abs/2106.13359</a>.
 </div>
@@ -588,6 +593,9 @@ Stan Development Team. 2021a. <span>“Stan Language Functions Reference Manual.
 </div>
 <div id="ref-Stan_Lang_2021" class="csl-entry">
 ———. 2021b. <span>“Stan Language Reference Manual.”</span> 2.27 ed.
+</div>
+<div id="ref-stan2023stan" class="csl-entry">
+———. 2023. <span>“Stan Modeling Language Users Guide and Reference Manual, Version 2.32.2.”</span> <a href="https://mc-stan.org">https://mc-stan.org</a>.
 </div>
 <div id="ref-Vehtari_etal_2017" class="csl-entry">
 Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. <span>“Practical Bayesian Model Evaluation Using Leave-One-Out Cross-Validation and WAIC.”</span> <em>Statistics and Computing</em> 27 (5): 1413–32.

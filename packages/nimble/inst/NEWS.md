@@ -31,11 +31,10 @@
   by erroring out, but letting users know that setting 
   `MCMCusePredictiveDependenciesInCalculations` to `TRUE` will make MCMC 
   possible (PR #1402).
-  
+    
 - Rename `expandTarget` and `returnScalarComponents` arguments of `addSampler`
   to be `targetByNode` and `multivariateNodesAsScalars`, respectively, to 
-  improve clarity, as well as improving clarity of `addSampler` help info
-  (PR #1375).
+  improve clarity. Also clarify help info for `addSampler` (PR #1375).
   
 - Stop instead of warning when encountering run-time size errors, to avoid
   the possibility of incorrect results (PR #1401).
@@ -54,7 +53,7 @@
   
 - Allow users to provide list of lists for `inits` in `nimbleModel` (PR #1376).
  
-- Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
+- Add new control list option, `maxDimCovHistory` to `RW_block` sampler to 
   specify maximum dimension for saving proposal covariance history.
   
 - Change argument of `besselK` in manual table to be `x` not `k`.

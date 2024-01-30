@@ -335,7 +335,8 @@ Note the more elaborate value for `buildDerivs`. Above, this was just a characte
 
 #### Holding function arguments (including variables passed from a model) out of derivative tracking
 
-Derivatives can be tracked through function calls, including from a model to a user-defined distribution or function (see \@ref{sec:AD-user-def} and \@ref{sec:AD-multiple-NF}). However, if one function is tracking derivatives for `x` and passes `x` as an argument to another function that does not track its derivatives, there will be an error (most likely from `compileNimble`). The problem is that the C++ variable types used for tracking derivatives or not are different. Importantly, variables passed from models always have derivatives tracked.
+
+Derivatives can be tracked through function calls, including from a model to a user-defined distribution or function (see \@ref(sec:AD-user-def) and \@ref(sec:AD-multiple-NF)). However, if one function is tracking derivatives for `x` and passes `x` as an argument to another function that does not track its derivatives, there will be an error (most likely from `compileNimble`). The problem is that the C++ variable types used for tracking derivatives or not are different. Importantly, variables passed from models always have derivatives tracked.
 
 For this situation, you can use `ADbreak` to stop derivative tracking. For example, if one has a nimbleFunction argument `x`, one would do `x_noDeriv <- ADbreak(x)` and then use `x_noDeriv` in subsequent calculations. This "breaks" derivative tracking in the sense that the derivative of `x_noDeriv` with respect to `x` is 0. 
 
