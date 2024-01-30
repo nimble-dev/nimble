@@ -230,7 +230,7 @@ subsets of nodes, or variables.  Note the following:
 
    - In `model[[v]]`, `v` can only be a single node or variable name, not a vector of multiple nodes nor an element of such a vector (`model[[ nodes[i] ]]` does not work).  The node itself may be a vector, matrix or array node.
    - In fact, `v` can be a node-name-like character string, even if it is not actually a node in the model.  See example 4 in the code below.
-   - One can also use `model$varName`, with the caveat that `varName` must be a variable name.  This usage would only make sense for a nimbleFunction written for models known to have a specific variable.  (Note that if `a` is a scalar node in `model`, then `model[['a']]` will be a scalar but `model$a` will be a vector of length -)
+   - One can also use `model$varName`, with the caveat that `varName` must be a variable name.  This usage would only make sense for a nimbleFunction written for models known to have a specific variable.  (Note that if `a` is a scalar node in `model`, then `model[['a']]` will be a scalar but `model$a` will be a vector of length 1.
    - one should use the `<<-` global assignment operator to assign into model nodes. 
 
 

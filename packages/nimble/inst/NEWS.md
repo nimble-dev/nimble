@@ -32,7 +32,7 @@
   `MCMCusePredictiveDependenciesInCalculations` to `TRUE` will make MCMC 
   possible (PR #1402).
   
-- Rename `expandTarget` and `returnScalarComponents` arguments to `addSampler`
+- Rename `expandTarget` and `returnScalarComponents` arguments of `addSampler`
   to be `targetByNode` and `multivariateNodesAsScalars`, respectively, to 
   improve clarity, as well as improving clarity of `addSampler` help info
   (PR #1375).
@@ -41,7 +41,7 @@
   the possibility of incorrect results (PR #1401).
   
 - Add a warning to MCMC sampling of `CAR_normal` nodes when `zero_mean=1`
-  and the on-the-fly centering causes an invalid models state (PR #1400).
+  and the on-the-fly centering causes an invalid model state (PR #1400).
   
 - Cleanly error out when a variable name in a model would conflict with 
   C++ keywords (PR #1382).
@@ -54,11 +54,6 @@
   
 - Allow users to provide list of lists for `inits` in `nimbleModel` (PR #1376).
  
-- Change argument of `besselK` in manual table to be `x` not `k`.
-
-- Do not allow elements of a `nimbleList` to be named `name`, `predefined`,
-  or `where` (PR #1384).
-
 - Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
   specify maximum dimension for saving proposal covariance history.
   
@@ -66,6 +61,11 @@
   configuration object.  The `expandTarget` argument is renamed to
   `targetByNode`, and the `scalarComponents` is renamed to
   `multivariateNodesAsScalars`.
+
+- Change argument of `besselK` in manual table to be `x` not `k`.
+
+- Do not allow elements of a `nimbleList` to be named `name`, `predefined`,
+  or `where` (PR #1384).
 
 - Better notify users when automatically generated `r` function for a user-
   defined distribution has been removed (PR #1374).
@@ -90,9 +90,6 @@
 
 - Add some functionality to support model macros (PR #1361).
 
-- Fix error with name mangling affecting packages that use nimble
-  and have dot(s) in the package name (issue #1332)
-  
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`
   instead of `@docType` per CRAN request (issue #1359).
   
@@ -117,7 +114,7 @@
   and ensure they mimic behavior in R apart from logical or integer inputs to
   `is.na` (PR #1394).
 
-- Removed the RW_multinomial MCMC sampler, which was found to generate incorrect
+- Remove the `RW_multinomial` MCMC sampler, which was found to generate incorrect
   posterior results.  A corrected version of this sampler may be
   re-introduced into the package, depending on user interest.
   

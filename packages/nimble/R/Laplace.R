@@ -2581,8 +2581,8 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #' \itemize{
 #'
-#'    \item \code{p_transformed_gr_Laplace(pTransform)}. Gradient of the Laplace
-#'     approximation (\code{p_transformed_Laplace(pTransform)}) at transformed 
+#'    \item \code{gr_logLik_pTransformed}. Gradient of the Laplace
+#'     approximation (\code{calcLogLik_pTransformed(pTransform)}) at transformed 
 #'     (unconstrained) parameter value \code{pTransform}.
 #'
 #'    \item \code{pInverseTransform(pTransform)}. Back-transform the transformed
@@ -2622,7 +2622,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'   when necessary internally to fix dimensionality issues if there is only
 #'   one parameter in the model.
 #'
-#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at
+#'   \item \code{calcLogLik_pTransformed(pTransform)}. Laplace approximation at
 #'         transformed (unconstrained) parameter value \code{pTransform}. To
 #'         make maximizing the Laplace likelihood unconstrained, an automated
 #'         transformation via \code{\link{parameterTransform}} is performed on
