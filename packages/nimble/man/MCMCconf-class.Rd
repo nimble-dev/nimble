@@ -49,7 +49,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{addMonitors2(..., print = TRUE)}}{Adds variables to the list of monitors2.
@@ -60,7 +62,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{addOneSampler(
@@ -103,9 +107,9 @@ print: Logical argument, specifying whether to print the details of newly added 
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If 'name' is not provided, the 'type' argument is used to generate the sampler name.
 
-targetByNode: Logical argument, with default FALSE.  This arguments controls whether separate instances of the specified sampler 'type' should be assigned to each node contained in 'target'.  When FALSE, a single instance of sampler 'type' is assigned to operate on 'target'.  When TRUE, potentially multiple instances of sampler 'type' will be added to the MCMC configuration, operating on the distinct nodes which compose 'target'.  For example, if 'target' is a vector of distinct node names, then a separate sampler will be assigned to each node in this vector.  If 'target' is a model variable which itself is comprised of multiple distinct nodes, then a separate sampler is assigned to each node composing the 'target' variable.  Functionally, when 'targetByNode' is TRUE, the 'target' argument is passed through the 'expandNodeNames' method of the model object, which results in a vector of node names; a separate sampler is assigned to each element of this vector.  Additional control of the 
+targetByNode: Logical argument, with default FALSE.  This arguments controls whether separate instances of the specified sampler 'type' should be assigned to each node contained in 'target'.  When FALSE, a single instance of sampler 'type' is assigned to operate on 'target'.  When TRUE, potentially multiple instances of sampler 'type' will be added to the MCMC configuration, operating on the distinct nodes which compose 'target'.  For example, if 'target' is a vector of distinct node names, then a separate sampler will be assigned to each node in this vector.  If 'target' is a model variable which itself is comprised of multiple distinct nodes, then a separate sampler is assigned to each node composing the 'target' variable. Additional control of the handling of multivariate nodes is provided using the 'multivariateNodesAsScalars' argument.
 
-multivariateNodesAsScalars: Logical argument, with default value FALSE.  This argument is used in two ways.  Functionally, both uses result in separate instances of samplers being added to the scalar components which compose multivariate nodes.  The first usage occurs when 'targetByNode' is TRUE and therefore separate instances of sampler 'type' are assigned to each node which compose 'target'.  In this first usage, this argument controls how multivariate nodes (those included in the 'target') are handled.  If FALSE, any multivariate nodes in 'target' have a single instance of sampler 'type' assigned.  If TRUE, any multivariate nodes appearing in 'target' are themselves decomposed into their scalar elements, and a separate instance of sampler 'type' is assigned to operate on each scalar element.  The second usage occurs when 'default' is TRUE, and therefore samplers are assigned according to the default logic of configureMCMC, which is further controlled by the arguments 'useConjugacy'
+multivariateNodesAsScalars: Logical argument, with default value FALSE.  This argument is used in two ways.  Functionally, both uses result in separate instances of samplers being added to the scalar components which compose multivariate nodes. See details below.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
@@ -123,18 +127,26 @@ allowData: Logical argument, with default value FALSE.  When FALSE, samplers wil
 
 Details:
 
-Samplers are added added to the end of the list of samplers for this MCMCconf object, and do not replace any exisiting samplers.  Samplers are removed using the removeSamplers method.
+Samplers are added to the end of the list of samplers for this MCMCconf object, and do not replace any existing samplers.  Samplers are removed using the removeSamplers method.
 
-Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.}
+Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
+
+'multivariateNodesAsScalars' has two usages. The first usage occurs when 'targetByNode' is TRUE and therefore separate instances of sampler 'type' are assigned to each node which compose 'target'.  In this first usage, this argument controls how multivariate nodes (those included in the 'target') are handled.  If FALSE, any multivariate nodes in 'target' have a single instance of sampler 'type' assigned.  If TRUE, any multivariate nodes appearing in 'target' are themselves decomposed into their scalar elements, and a separate instance of sampler 'type' is assigned to operate on each scalar element.
+
+The second usage of 'multivariateNodesAsScalars' occurs when 'default' is TRUE, and therefore samplers are assigned according to the default logic of configureMCMC, which is further controlled by the arguments 'useConjugacy', 'onlyRW', 'onlySlice' and 'multivariateNodesAsScalars'.  In this second usage, if 'multivariateNodesAsScalars' is TRUE, then multivariate nodes will be decomposed into their scalar components, and separate samplers assigned to each scalar element.  Note, however, that multivariate nodes appearing in conjugate relationships will still be assigned the corresponding conjugate sampler (provided 'useConjugacy' is TRUE), regardless of the value of this argument.  If 'multivariateNodesAsScalars' is FALSE, then a single multivarate sampler will be assigned to update each multivariate node.  The default value of this argument can be controlled using the nimble option 'MCMCmultivariateNodesAsScalars'.}
 
 \item{\code{getMonitors()}}{Returns a character vector of the current monitors
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{getMonitors2()}}{Returns a character vector of the current monitors2
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{getSamplerDefinition(ind, print = FALSE)}}{Returns the nimbleFunction definition of an MCMC sampler.
@@ -216,7 +228,9 @@ print: A logical argument specifying whether to print the montiors and samplers.
 
 \item{\code{printMonitors()}}{Prints all current monitors and monitors2
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{printSamplers(
@@ -272,7 +286,9 @@ This function also has the side effect of resetting the sampler execution orderi
 
 \item{\code{resetMonitors()}}{Resets the current monitors and monitors2 lists to nothing.
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{setMonitors(..., ind = 1, print = TRUE)}}{Sets new variables to the list of monitors.
@@ -283,7 +299,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{setMonitors2(..., print = TRUE)}}{Sets new variables to the list of monitors2.
@@ -294,7 +312,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{setSampler(...)}}{Alias for setSamplers method}
@@ -334,7 +354,9 @@ thin: The new value for the thinning interval 'thin'.
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 
 \item{\code{setThin2(thin2, print = TRUE)}}{Sets the value of thin2.
@@ -345,7 +367,9 @@ thin2: The new value for the thinning interval 'thin2'.
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             }
 }}
 
