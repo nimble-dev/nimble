@@ -1215,8 +1215,8 @@ sampler_RW_llFunction_block <- nimbleFunction(
 ##### RW_multinomial sampler for multinomial distributions ##############################
 #########################################################################################
 ##
-###' @rdname samplers
-###' @export
+## @rdname samplers
+## @export
 ##sampler_RW_multinomial <- nimbleFunction(
 ##    name = 'sampler_RW_multinomial',
 ##    contains = sampler_BASE,

@@ -63,6 +63,15 @@ print: A logical argument specifying whether to print all current monitors (defa
 Details: See the initialize() function
             }
 
+\item{\code{addOneSampler(
+  thisSamplerName,
+  samplerFunction,
+  targetOne,
+  thisControlList,
+  allowData,
+  print
+)}}{For internal use only}
+
 \item{\code{addSampler(
   target = character(),
   type = "RW",
@@ -78,6 +87,7 @@ Details: See the initialize() function
   useConjugacy = getNimbleOption("MCMCuseConjugacy"),
   onlyRW = FALSE,
   onlySlice = FALSE,
+  allowData = FALSE,
   ...
 )}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -107,6 +117,8 @@ onlyRW: Logical argument, with default value FALSE.  If specified as TRUE, then 
 
 onlySlice: Logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.  This argument is only used when the 'default' argument is TRUE.
 
+allowData: Logical argument, with default value FALSE.  When FALSE, samplers will not be assigned to operate on data nodes, even if data nodes are included in 'target'.  When TRUE, samplers will be assigned to 'target' without regard to whether nodes are designated as data.
+
 ...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details:
@@ -114,14 +126,6 @@ Details:
 Samplers are added added to the end of the list of samplers for this MCMCconf object, and do not replace any exisiting samplers.  Samplers are removed using the removeSamplers method.
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.}
-
-\item{\code{addSamplerOne(
-  thisSamplerName,
-  samplerFunction,
-  targetOne,
-  thisControlList,
-  print
-)}}{For internal use only}
 
 \item{\code{getMonitors()}}{Returns a character vector of the current monitors
 
