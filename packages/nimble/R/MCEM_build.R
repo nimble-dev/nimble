@@ -129,28 +129,22 @@ getMCEMRanges <- nimbleFunction(name = 'getMCEMRanges',
 #' @return
 #' an R list with two elements:
 #' \itemize{
-#' \item{\code{run}} {A function that runs the MCEM algorithm. This function takes the arguments listed in \code{run} Arguments below.}
-#' \item{\code{estimateCov}} {An function that estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
-#' This function takes the arguments listed in \code{estimateCov} Arguments below.}
+#' \item \code{run}. A function that runs the MCEM algorithm. This function takes the arguments listed in \code{run} Arguments below.
+#' \item \code{estimateCov}. An function that estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
+#' This function takes the arguments listed in \code{estimateCov} Arguments below.
 #' }
 #'
 #'
 #' @section \code{run} Arguments:
 #'	\itemize{
-#'	\item{\code{initM}}	{
-#'    starting number of iterations for the algorithm.
-#'	}
+#'	\item \code{initM}. Starting number of iterations for the algorithm.
 #'  }
 #' @section \code{estimateCov} Arguments:
 #'  \itemize{
-#'  \item{\code{MLEs}}{
-#'    named vector of MLE values.  Must have a named MLE value for each stochastic, non-data, non-latent node.  If the \code{run()} method has alread been called,
+#'  \item \code{MLEs}. Named vector of MLE values.  Must have a named MLE value for each stochastic, non-data, non-latent node.  If the \code{run()} method has alread been called,
 #'    MLEs do not need to be provided.
-#'  } 
-#'  \item{\code{useExistingSamples}}{
-#'    logical argument.  If \code{TRUE} and the \code{run()} method has previously been called, the covariance estimation will use MCMC samples from the last step of the MCEM algorithm.
+#'  \item \code{useExistingSamples}. Logical argument.  If \code{TRUE} and the \code{run()} method has previously been called, the covariance estimation will use MCMC samples from the last step of the MCEM algorithm.
 #'    Otherwise, an MCMC algorithm will be run for 10,000 iterations, and those samples will be used.  Defaults to \code{FALSE}.
-#'  }
 #'  } 
 #' @references 
 #' 

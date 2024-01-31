@@ -2744,10 +2744,10 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' Kass, R. and Steffey, D. (1989). Approximate Bayesian inference in
 #' conditionally independent hierarchical models (parametric empirical Bayes
 #' models). \emph{Journal of the American Statistical Association}, 84(407),
-#' 717–726.
+#' 717-726.
 #' 
 #' Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal
 #' likelihood in non-Gaussian hierarchical models. \emph{Computational
-#' Statistics & Data Analysis}, 56, 699–709.
+#' Statistics & Data Analysis}, 56, 699-709.
 #' 
 NULL
