@@ -47,10 +47,10 @@ dCRP(x, conc = 1, size=10)
 }
 \references{
 Blackwell, D., and MacQueen, J. B. (1973). Ferguson distributions via 
-P\'{o}lya urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
+\enc{Pólya}{Polya} urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
 
-Aldous, D. J. (1985). Exchangeability and related topics. In \emph{\'{E}cole d'\'{E}t\'{e} 
-de Probabilit\'{e}s de Saint-Flour XIII - 1983} (pp. 1-198). Springer, Berlin, 
+Aldous, D. J. (1985). Exchangeability and related topics. In \emph{\enc{École}{Ecole} d'\enc{Été}{Ete} 
+de \enc{Probabilités}{Probabilites} de Saint-Flour XIII - 1983} (pp. 1-198). Springer, Berlin, 
 Heidelberg.
 
 Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{IMS Lecture
