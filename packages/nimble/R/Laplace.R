@@ -2692,12 +2692,12 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' algorithm: (1) maximizing the joint log-likelihood of random effects and data 
 #' given a parameter value to construct the Laplace approximation to the marginal 
 #' log-likelihood at the given parameter value; (2) maximizing the Laplace 
-#' marginal log-likelihood (i.e. \code{calcLaplace}) to find the MLEs of model 
-#' parameters. In the \code{control} list above, the prefix 'inner' refers to 
-#' optimization (1) and 'out' refers to optimization (2). Currently both 
-#' optimizations use the optimizer \code{optim}. However, one can easily turn to
-#' other optimizers (say \code{\link{nlminb}}) in R for optimization (2); see
-#' the example below. 
+#' approximation to the marginal log-likelihood (i.e. \code{calcLaplace}) to find
+#' the MLEs of model parameters. In the \code{control} list above, the prefix
+#' 'inner' refers to optimization (1) and 'out' refers to optimization (2).
+#' Currently both optimizations use the optimizer \code{optim}. However, one
+#' can easily turn to other optimizers (say \code{\link{nlminb}}) in R for
+#' optimization (2); see the example below. 
 #'
 #' @author Wei Zhang, Perry de Valpine
 #' 
