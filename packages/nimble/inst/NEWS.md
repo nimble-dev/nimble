@@ -77,6 +77,9 @@
 
 ## DEVELOPER LEVEL CHANGES
 
+- Update to Eigen 3.4.0 but comment out various pragmas in
+  `DisableStupidWarnings.h` preventing CRAN checks from passing (PR #1406).
+
 - Improve efficiency of `mcmc_determineCalcAndCopyNodes` by avoiding repeated
   calls (PR #1333).
 
