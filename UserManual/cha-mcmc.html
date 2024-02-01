@@ -277,7 +277,6 @@ div.csl-indent {
 <li class="chapter" data-level="7.11.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#subsec:HMC"><i class="fa fa-check"></i><b>7.11.2</b> Hamiltonian Monte Carlo (HMC)</a></li>
 <li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-filter-samplers"><i class="fa fa-check"></i><b>7.11.3</b> Particle filter samplers</a></li>
 <li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
-<li class="chapter" data-level="7.11.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.11.5</b> Particle MCMC sampler</a></li>
 </ul></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
@@ -1438,14 +1437,14 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 ## intercept -1.6013 -0.42914 -0.1681 -0.002989 0.3520
 ## sigma      0.2935  0.53669  0.6886  0.943581 2.0846</code></pre>
 </div>
+<div id="automatic-parameter-transformation" class="section level4 hasAnchor" number="7.11.2.2">
+<h4><span class="header-section-number">7.11.2.2</span> Automatic parameter transformation<a href="cha-mcmc.html#automatic-parameter-transformation" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>In the example above, <code>sigma</code> is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE’s HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section <a href="cha-AD.html#sec:parameter-transform">16.8</a>.</p>
+</div>
 </div>
 <div id="particle-filter-samplers" class="section level3 hasAnchor" number="7.11.3">
 <h3><span class="header-section-number">7.11.3</span> Particle filter samplers<a href="cha-mcmc.html#particle-filter-samplers" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>The <code>nimbleSMC</code> package provides samplers that perform particle MCMC, primarily intended for state-space or hidden Markov models of time-series data.</p>
-<div id="automatic-parameter-transformation" class="section level4 hasAnchor" number="7.11.3.1">
-<h4><span class="header-section-number">7.11.3.1</span> Automatic parameter transformation<a href="cha-mcmc.html#automatic-parameter-transformation" class="anchor-section" aria-label="Anchor link to header"></a></h4>
-<p>In the example above, <code>sigma</code> is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE’s HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section <a href="cha-AD.html#sec:parameter-transform">16.8</a>.</p>
-</div>
+<p>The <code>nimbleSMC</code> package provides samplers that perform particle MCMC, primarily intended for sampling top-level parameters in state-space or hidden Markov models of time-series data. This sampler is described in Section <a href="cha-algos-provided.html#sec:particle-mcmc">8.1.2</a>.</p>
 </div>
 <div id="customized-log-likelihood-evaluations-rw_llfunction-sampler" class="section level3 hasAnchor" number="7.11.4">
 <h3><span class="header-section-number">7.11.4</span> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -1484,10 +1483,6 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 <!---  ### Terminal node `posterior_predictive sampler` 
 % The `posterior_predictive` sampler is only appropriate for use on terminal stochastic nodes (that is, those having no stochastic dependencies).  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->
-</div>
-<div id="particle-mcmc-sampler" class="section level3 hasAnchor" number="7.11.5">
-<h3><span class="header-section-number">7.11.5</span> Particle MCMC sampler<a href="cha-mcmc.html#particle-mcmc-sampler" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>For state space models, a particle MCMC (PMCMC) sampler can be specified for top-level parameters. This sampler is described in Section <a href="cha-algos-provided.html#sec:particle-mcmc">8.1.2</a>.</p>
 </div>
 </div>
 <div id="sec:mcmc-example-litters" class="section level2 hasAnchor" number="7.12">

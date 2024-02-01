@@ -277,7 +277,6 @@ div.csl-indent {
 <li class="chapter" data-level="7.11.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#subsec:HMC"><i class="fa fa-check"></i><b>7.11.2</b> Hamiltonian Monte Carlo (HMC)</a></li>
 <li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-filter-samplers"><i class="fa fa-check"></i><b>7.11.3</b> Particle filter samplers</a></li>
 <li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
-<li class="chapter" data-level="7.11.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.11.5</b> Particle MCMC sampler</a></li>
 </ul></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
@@ -498,8 +497,8 @@ algorithms along with compilation for fast execution.</p>
 stable, but we have a lot of plans to expand and improve it. The
 algorithm library provides MCMC with a lot of user control and ability
 to write new samplers easily. Other algorithms include particle
-filtering (sequential Monte Carlo) and Monte Carlo Expectation
-Maximization (MCEM).</p>
+filtering (sequential Monte Carlo), Laplace approximation,
+and Monte Carlo Expectation Maximization (MCEM).</p>
 <p>But NIMBLE is about much more than providing an algorithm library. It
 provides a language for writing model-generic algorithms. We hope you
 will program in NIMBLE and make an R package providing your method.
