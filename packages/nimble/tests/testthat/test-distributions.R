@@ -836,7 +836,9 @@ test_that("recycling behavior from R and within nimbleFunctions for non-R-native
     out <- cf(x[1:3], param) 
     expect_identical(out, c(d, p, q), info = 'dinvgamma nf')
 })
-    
+
+
+   
    
 sink(NULL)
 

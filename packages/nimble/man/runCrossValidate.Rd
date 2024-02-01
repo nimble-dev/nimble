@@ -59,10 +59,10 @@ to use when estimating the Monte Carlo error of the cross-validation metric. Def
 \value{
 an R list with four elements:
 \itemize{
-\item{\code{CVvalue}} {The CV value, measuring the model's ability to predict new data.  Smaller relative values indicate better model performance.}
-\item{\code{CVstandardError}} {The standard error of the CV value, giving an indication of the total Monte Carlo error in the CV estimate.}
-\item{\code{foldCVInfo}} {An list of fold CV values and standard errors for each fold.}
-\item{\code{samples}} {An R list, only returned when \code{returnSamples = TRUE}.  The i'th element of this list will be a matrix of posterior samples from the model with the i'th fold of data left out.  There will be \code{k} sets of samples.}
+\item \code{CVvalue}. The CV value, measuring the model's ability to predict new data.  Smaller relative values indicate better model performance.
+\item \code{CVstandardError}. The standard error of the CV value, giving an indication of the total Monte Carlo error in the CV estimate.
+\item \code{foldCVInfo}. An list of fold CV values and standard errors for each fold.
+\item \code{samples}. An R list, only returned when \code{returnSamples = TRUE}.  The i'th element of this list will be a matrix of posterior samples from the model with the i'th fold of data left out.  There will be \code{k} sets of samples.
 }
 }
 \description{
@@ -109,12 +109,8 @@ See \sQuote{Examples} for an example of a user-defined loss function.
 
 The \code{MCMCcontrol} argument is a list with the following elements:
 \itemize{
-  \item{\code{niter}}{
-     an integer argument determining how many MCMC iterations should be run for each loss value calculation.  Defaults to 10000, but should probably be manually set.
-  }
-\item{\code{nburnin}}{
-   the number of samples from the start of the MCMC chain to discard as burn-in for each loss value calculation.  Must be between 0 and \code{niter}.  Defaults to 10% of \code{niter}.
-  }
+  \item \code{niter}. An integer argument determining how many MCMC iterations should be run for each loss value calculation.  Defaults to 10000, but should probably be manually set.
+\item \code{nburnin}. The number of samples from the start of the MCMC chain to discard as burn-in for each loss value calculation.  Must be between 0 and \code{niter}.  Defaults to 10% of \code{niter}.
  }
 }
 

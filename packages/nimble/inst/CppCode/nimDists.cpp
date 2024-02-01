@@ -24,17 +24,37 @@
 #include "nimble/nimDists.h"
 #include "nimble/RcppUtils.h"
 
-bool R_IsNA(NimArr<1, double> &P) {
+// These are used for compilation of DSL code and presumably belong elsewhere. Where?
+
+// Versions of R functions but returning bool not int
+// for use by vectorized `is.na{,n}`.
+// It's hard to track how `is.na{,n}` are processed in R,
+// but in `src/coerce.c` it appears that `do_isna{,n}`
+// call `ISNAN` and `R_isNaN` and doing that here gives
+// results that mimic `is.na{,n}` in R. `ISNAN` returns
+// `TRUE` for both `NA` and `NaN`.
+// Do we want bool returned or not?
+bool nimIsNA(double x) {
+  return (bool) ISNAN(x);
+}
+
+bool nimIsNaN(double x) {
+  return (bool) R_IsNaN(x);  
+}
+
+// Reduction versions of R functions for use by `any_na{,n}`.
+bool nimAnyNA(NimArr<1, double> &P) {
   int s = P.size();
-  for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
+  for(int i = 0; i < s; ++i) if(ISNAN(P[i])) return(true);
   return(false);
 }
 
-bool R_isnancpp(NimArr<1, double> &P) {
+bool nimAnyNaN(NimArr<1, double> &P) {
   int s = P.size();
-  for(int i = 0; i < s; ++i) if(R_isnancpp(P[i])) return(true);
+  for(int i = 0; i < s; ++i) if(R_IsNaN(P[i])) return(true);
   return(false);
 }
+
 
 // template<int nDim, class T>
 // NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {

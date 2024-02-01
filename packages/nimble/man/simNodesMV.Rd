@@ -35,14 +35,8 @@ Each of these will expand variables or index blocks and topologically sort them 
 \section{Run time arguments}{
 
 \itemize{
-\item{\code{m} }{
-
-(\code{simNodesMV} only). Number of simulations requested.}
-
-     \item{\code{saveLP}}{
-
-     (\code{calcNodesMV}only). Whether to save the logProb values in \code{mv}.  Should be given as \code{TRUE} unless there is a good reason not to.}
-
+\item \code{m}. (\code{simNodesMV} only). Number of simulations requested.
+     \item \code{saveLP}. (\code{calcNodesMV}only). Whether to save the logProb values in \code{mv}.  Should be given as \code{TRUE} unless there is a good reason not to.
 }
 }
 

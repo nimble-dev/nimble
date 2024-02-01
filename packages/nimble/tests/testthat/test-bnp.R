@@ -2972,13 +2972,32 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     xi[1:10] ~ dCRP(1 , size=10)
     tau ~ dnorm(muTilde[xi[1]], 1)
   })
-  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), tau=1)
-  Data=list(y=rnorm(10,0, 1))
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
+  Data=list(y=rnorm(10,0, 1), tau=1)
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m)
   expect_error(mcmc <- buildMCMC(mConf),
                'sampler_CRP: Detected unusual indexing')
 
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(0, 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+    tau ~ dnorm(muTilde[xi[1]], 1)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  expect_error(mConf <- configureMCMC(m), "Discovered predictive node")
+  nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Detected unusual indexing')
+  nimbleOptions(MCMCusePredictiveDependenciesInCalculations = FALSE)
+  
   ## This is ok because y and x are same length.
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
@@ -5160,9 +5179,6 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
 
 
   ## clusters not indep, with mv declaration - not allowed
-  ## errors when trying to wrap sampler because there is only
-  ## one cluster node. Might want have configureMCMC
-  ## give up on wrapping and then have error occur in buildMCMC().
   code <- nimbleCode({
       for(i in 1:4) 
           y[i] ~ dnorm(thetaTilde[xi[i]], 1)
@@ -5172,8 +5188,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   data = list(y = rnorm(4))
   inits = list(xi = rep(1,4), iden = diag(4))
   model <- nimbleModel(code, data = data, inits = inits)
-  expect_error(conf <- configureMCMC(model, print = FALSE),
-               "Cannot determine wrapped sampler for cluster parameter")
+  conf <- configureMCMC(model, print = FALSE)
+  expect_error(mcmc <- buildMCMC(conf), "must be part of conditionally independent nodes")
 
   ## clusters indep G0 but not IID
   code <- nimbleCode({
@@ -6197,11 +6213,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   expect_silent(conf <- configureMCMC(model, print = FALSE))
   expect_error(mcmc <- buildMCMC(conf),
                "sampler_CRP: Detected use of multiple stochastic indexes of a variable")
-
-
 })
-
-
 
 ## simple tests of models
 

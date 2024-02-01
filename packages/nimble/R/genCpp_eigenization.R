@@ -91,7 +91,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     makeCallList('bessel_k', 'eigenize_recyclingRuleFunction'),
-    makeCallList('pow_int', 'eigenize_recyclingRuleFunction'),
+    makeCallList('pow_int', 'eigenize_cWiseByScalarArray'), #'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_dFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_pFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),
@@ -612,13 +612,17 @@ eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
 eigenize_cWiseByScalarArray <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
     if(!is.numeric(code$args[[2]]))
-        if(code$args[[2]]$nDim != 0) stop(exprClassProcessingErrorMsg(code, 'the second argument to pow or pow_int must be a scalar.'), call. = FALSE)
-    newName <- eigenizeTranslate[[code$name]]
-    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
-    code$name <- newName
-    code$eigMatrix <- FALSE
-    if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
-    promoteTypes(code)
+      if(code$args[[2]]$nDim != 0) stop(exprClassProcessingErrorMsg(code, 'the second argument to pow or pow_int must be a scalar.'), call. = FALSE)
+    if(code$name == 'pow') {
+      newName <- eigenizeTranslate[[code$name]]
+      if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+      code$name <- newName
+      code$eigMatrix <- FALSE
+      if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+      promoteTypes(code)
+    } else { # 'pow_int' case
+      return(eigenize_recyclingRuleFunction(code, symTab, typeEnv, workEnv))
+    }
     invisible(NULL)
 }
 

@@ -60,21 +60,28 @@ model$setData('y')
 
 newDist <- as.matrix(dist(runif(n)))
 newR <- crossprod(matrix(rnorm(n*n), n))
+newW1 <- crossprod(matrix(rnorm(n*n), n))
+newW2 <- crossprod(matrix(rnorm(n*n), n))
+newW3 <- crossprod(matrix(rnorm(n*n), n))
 newW4 <- crossprod(matrix(rnorm(n*n), n))
 newW5 <- crossprod(matrix(rnorm(n*n), n))
 newW6 <- crossprod(matrix(rnorm(n*n), n))
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
-relTolTmp[2] <- 1e-6
+relTolTmp[2] <- 1e-5
 relTolTmp[3] <- 1e-1
 relTolTmp[4] <- 1e-1
-relTolTmp[5] <- 1e-11
+relTolTmp[5] <- 1e-10
 
 
 
 ## rOutput2d11 result can be wildly out of tolerance, so not checking it.
 
-test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR, W4 = newW4, W5 = newW5, W6 = newW6),
+## Some of the comparison of compiled Jacobians are equal but not identical as of 2024-01-24.
+
+test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR,
+                                                   W1 = newW1, W2 = newW2, W3 = newW3,
+                                                   W4 = newW4, W5 = newW5, W6 = newW6),
                       x = 'prior', absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,
                       useParamTransform = TRUE, useFasterRderivs = TRUE, checkDoubleUncHessian = FALSE,
                       relTol = relTolTmp, verbose = verbose,

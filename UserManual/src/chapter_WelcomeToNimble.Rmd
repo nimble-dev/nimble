@@ -14,8 +14,8 @@ As of version `r nimbleVersion`, NIMBLE has been around for a while and is reaso
 stable, but we have a lot of plans to expand and improve it.  The
 algorithm library provides MCMC with a lot of user control and ability
 to write new samplers easily.  Other algorithms include particle
-filtering (sequential Monte Carlo) and Monte Carlo Expectation
-Maximization (MCEM).  
+filtering (sequential Monte Carlo), Laplace approximation,
+and Monte Carlo Expectation Maximization (MCEM).  
 
 But NIMBLE is about much more than providing an algorithm library.  It
 provides a language for writing model-generic algorithms.  We hope you

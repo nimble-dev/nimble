@@ -83,7 +83,7 @@ Table \@ref(tab:coreR).
 ```{r, child = 'tables/coreRtableLong.md'}
 ```
 
-In addition to the above functions, we provide functions `any_na()` and `any_nan()` for finding if there are any `NA` or `NaN` values in a vector. These are equivalent to using `any(is.na())` and `any(is.nan())` in R.
+In addition to the above functions, we provide functions `any_na()` and `any_nan()` for finding if there are any `NA` or `NaN` values in a vector. These are equivalent to using `any(is.na())` and `any(is.nan())` in R, with the exception noted in the table above regarding `is.na()`.
 
 Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a `nimbleRcall` (see Section \@ref(sec:calling-R-code)).
 
@@ -95,7 +95,7 @@ Next we cover some of these functions in more detail.
 floating-point (or 'double' [precision]), integer, or logical values, respectively.  The `length` argument specifies the vector 
 length (default 0), and the `value` argument specifies the initial 
  value either as a scalar (used for all vector elements, with default
- 0) or a vector. If a vector and its length is not equal to `length`, the remaining values will be zero, but we plan to implement R-style recycling in the next version of NIMBLE. The `init` argument specifies 
+ 0) or a vector. If a vector and its length is not equal to `length`, the remaining values will be filled by R-style recycling if the `recycle` argument is `TRUE` (which is the default). The `init` argument specifies 
 whether or not to initialize the elements in compiled code (default `TRUE`).  If
 first use of the variable does not rely on initial values,  using
 `init = FALSE` will yield slightly more efficient performance.
@@ -288,6 +288,64 @@ the `nimOptimDefaultControl` function, and set any desired fields.
 
 See `help(nimOptim)` for details, including example usage. 
 
+### Integration: *integrate* and *nimIntegrate*
+
+NIMBLE provides a `nimIntegrate` function that implement's R's
+`integrate` function, which carries out adaptive Gauss-Kronrod
+quadrature to integrate a function of one variable over a finite
+or infinite interval.
+
+In addition to general use in a nimbleFunction, this can, of course,
+be used in a user-defined function in
+model code, e.g., to implement models that involve
+an integral, such as certain point process and survival models.
+
+One could also consider using `nimIntegrate` to numerically
+integrate over a parameter in a model, such as to remove
+a parameter that is not mixing well in an MCMC. Note that
+NIMBLE's Laplace approximation is a version of this,
+being equivalent to Gauss-Hermite quadrature with a single
+integration point (aka node). In a future version of NIMBLE, we will
+be making Gauss-Hermite quadrature available more generally
+as an extension of NIMBLE's Laplace approximation.
+
+See `help(nimIntegrate)` for details, including basic example usage.
+
+Here is an example of using `nimIntegrate` to implement a vectorized von Mises distribution.
+
+```{r}
+integrand <- nimbleFunction(
+    run = function(x = double(1), theta = double(1)) {
+        return( exp(theta[1] * cos(x) + theta[2] * cos(2 * (x + theta[3]))) )
+        returnType(double(1))
+})
+
+dGenVonMises <- nimbleFunction(
+  run = function(x = double(1), mu1 = double(), mu2 = double(), kappa1 = double(), kappa2 = double(),
+  limits = double(1), log = integer(0, default = 0)){
+    range <- limits[2] - limits[1]
+    mu1R <- (mu1 - range/2)/range*2*pi
+    mu2R <- (mu2 - range/2)/range*2*pi
+    z <- (x - range/2)/range*2*pi
+    d <- (mu1R - mu2R) %% pi
+    num <- exp(kappa1 * cos(z - mu1R) + kappa2 * cos(2 * (z - mu2R)))
+    tmp <- c(kappa1, kappa2, d)
+    den <- nimIntegrate(integrand, lower = 0, upper = 2*pi, tmp)[1]
+    dens <- num/den
+    result <- dens*2*pi/range
+    if(log) {
+        return(log(result))
+    } else return(result)
+    returnType(double(1))
+  }
+)
+
+cgvonmises <- compileNimble(dGenVonMises)
+x <- 0:360
+# plot(x, circular::dgenvonmises(circular(x, type = "angles", units = "degrees"), -1, 1, 2, 1))
+# plot(x, cgvonmises(x, mu1=20, mu2=300, kappa1=2, kappa2=1, limits = c(0, 360)), type = 'l')
+```
+
 ### 'nim' synonyms for some functions {#sec:altern-keyw-some}
 
 NIMBLE uses some keywords, such as `dim` and `print`, in ways
@@ -316,6 +374,8 @@ replacements include
   - `switch` $\rightarrow$ `nimSwitch`
   - `numeric, integer, logical` $\rightarrow$ `nimNumeric, nimInteger, nimLogical`
   - `matrix, array` $\rightarrow$ `nimMatrix, nimArray`
+  - `optim` $\rightarrow$ `nimOptim`
+  - `integrate` $\rightarrow$ `nimIntegrate`
 
 
 
@@ -498,11 +558,9 @@ vector will be treated as a matrix.
 Here is a guide to such issues.  Suppose `v1` and `v2` are vectors, and `M1` is a matrix.  Then
 
 
-  -  `v1 + M1` generates a compilation error unless one dimension of
-`M1` is known at compile-time to be 1.  If so, then `v1` is promoted to a
-1-row or 1-column matrix to conform with `M1`, and the result is a
-matrix of the same sizes.  This behavior occurs for
-all component-wise binary functions.
+  -  `v1 + M1` promotes `v1` to a 1-column matrix if `M1` is a one-column
+  matrix. Otherwise, this results in a run-time error.
+  This behavior occurs for all component-wise binary functions.
   - `v1 %*% M1` defaults to promoting `v1` to a 1-row matrix,
   unless it is known at compile-time that `M1` has 1 row, in which case
   `v1` is promoted to a 1-column matrix.

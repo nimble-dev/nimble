@@ -168,7 +168,15 @@ getParam_keywordInfo <- keywordInfoClass(
 
         if(isCodeArgBlank(code, 'param'))
             stop("'param' argument missing from 'getParam', with no accessor argument supplied")
+
+        ## Avoid situations where user has syntax from run code in `param` or of getting anything from global env (issue 1344).
+        paramVars <- all.vars(code$param)
+        wh <- which(!paramVars %in% nfProc$setupSymTab$getSymbolNames())
+        if(length(wh))
+            stop("`param` argument in `getParam` contains variables not found in setup code: ", paste(paramVars[wh], collapse = ", "), ".")
+            
         paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param, hasIndex = useNodeFunctionVectorByIndex) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
+
         paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
         paramIDname <- paramInfo_SetupTemplate$makeOtherNames(paramInfoName, paramInfo_ArgList)
 
@@ -243,7 +251,7 @@ calculate_keywordInfo <- keywordInfoClass(
 
         buildDerivs <- FALSE
         withDerivsOutputOnly <- FALSE
-        if(isTRUE(nimbleOptions("enableDerivs"))) {
+        if(isTRUE(getNimbleOption("enableDerivs"))) {
           derivControl <- environment(nfProc$nfGenerator)$buildDerivs[[RCfunProc$name]]
           ## There are two cases.
           ## If buildDerivs has an entry, then derivatives are enabled either
@@ -514,13 +522,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
                     isMVto <- as.integer(to_ArgList$class == 'symbolModelValuesAccessorVector') 
                     accessTo_name <- as.character(code$to) 
                 }
-        if(nimbleOptions()$useNewNimCopy) {
+        if(getNimbleOption('useNewNimCopy')) {
             copierVector_ArgList <- list(accessFrom_name = accessFrom_name, accessTo_name = accessTo_name, isMVto = isMVto, isMVfrom = isMVfrom)
             copierVector_name <- copierVector_setupCodeTemplate$makeName(copierVector_ArgList)
             addNecessarySetupCode(copierVector_name, copierVector_ArgList, copierVector_setupCodeTemplate, nfProc) 
         }
         
-        if(!nimbleOptions()$useNewNimCopy) {
+        if(!getNimbleOption('useNewNimCopy')) {
             ##What happens below is a bit convoluted and really for backwards compatibility 	
             runCode <- substitute(nimCopy(from = FROM_ACCESS, rowFrom = NA, to = TO_ACCESS, rowTo = NA), 
                                   list(FROM_ACCESS = as.name(accessFrom_name), TO_ACCESS = as.name(accessTo_name)))
@@ -786,6 +794,23 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
+nimIntegrate_keywordInfo <- keywordInfoClass(
+    keyword = 'nimIntegrate',
+    processor = function(code, nfProc, RCfunProc) {
+        if(code$abs.tol == quote(rel.tol)) 
+            code$abs.tol = code$rel.tol
+        iTols <- which(names(code) %in% c('rel.tol','abs.tol'))
+        for(i in iTols) {
+            code_i <- code[[i]]
+            if(length(code_i) > 1) {
+                if(".Machine" %in% all.vars(code_i)) # Must be an expression using .Machine$double.eps or related
+                    code[[i]] <- eval(code_i)
+            }
+        }
+        code
+    }
+)
+
 nimDerivs_keywordInfo <- keywordInfoClass(
   keyword = 'nimDerivs',
   processor = function(code, nfProc, RCfunProc) {
@@ -816,8 +841,8 @@ nimDerivs_keywordInfo <- keywordInfoClass(
         newCode <- calculate_keywordInfo$processor(innerCode, nfProc, RCfunProc)
         newCode[[1]] <- as.name('nimDerivs_calculate')
         newCode$orderVector <- code$order
+        newCode$update <- if(is.null(code[['update']])) TRUE else code[['update']]
         newCode$reset <- if(is.null(code[['reset']])) FALSE else code[['reset']]
-        newCode$do_update <- if(is.null(code[['do_update']])) TRUE else code[['do_update']]
         return(newCode)
     }
     ## Not a calculate case:
@@ -956,6 +981,8 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
+keywordList[['nimIntegrate']] <- nimIntegrate_keywordInfo
+
 keywordList[['nimDerivs']] <- nimDerivs_keywordInfo
 keywordList[['derivInfo']] <- derivInfo_keywordInfo
 
@@ -989,6 +1016,7 @@ matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, lo
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- nimOptim
+matchFunctions[['nimIntegrate']] <- nimIntegrate
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}

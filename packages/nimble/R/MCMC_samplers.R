@@ -23,6 +23,61 @@ sampler_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
+### prior_samples sampler for using exisiting samples as prior #####
+####################################################################
+
+#' @rdname samplers
+#' @export
+sampler_prior_samples <- nimbleFunction(
+    name = 'sampler_prior_samples',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        samples     <- extractControlElement(control, 'samples',     error = '  [Error] prior_samples sampler missing required control argument: samples')
+        randomDraws <- extractControlElement(control, 'randomDraws', FALSE)   ## default is taking sequential draws
+        ## node list generation
+        targetExpanded <- model$expandNodeNames(target)
+        targetAsScalar <- model$expandNodeNames(targetExpanded, returnScalarComponents = TRUE)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, targetExpanded)
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
+        ## numeric value generation
+        k <- length(targetAsScalar)
+        if(is.null(dim(samples)))   samples <- matrix(samples, ncol = 1)    ## make vectors into 1-column array
+        nSamples <- dim(samples)[1]
+        ind <- 0
+        ## checks
+        if(length(dim(samples)) != 2)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument must be a 2-dimensional array, but value provided was a ', length(dim(samples)), '-dimensional array'), call. = FALSE)
+        if(!(storage.mode(samples) %in% c('integer', 'double')))   stop('  [Error] prior_samples sampler \'samples\' control argument must be numeric or integer type', call. = FALSE)
+        if(dim(samples)[2] != k)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument had ', dim(samples)[2], ' columns, but target nodes have ', k, ' scalar elements.  These numbers must be equal.'), call. = FALSE)
+        if(any(model$getNodeType(target) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
+    },
+    run = function() {
+        if(randomDraws) {
+            ind <<- ceiling(runif(1, 0, nSamples))   ## random draws
+        } else {
+            ind <<- ind + 1                          ## sequential draws (the default)
+            if(ind > nSamples)   ind <<- 1           ## recycle sequential draws, if necessary
+        }
+        values(model, targetExpanded) <<- samples[ind, 1:k]
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = FALSE)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+    },
+    methods = list(
+        before_chain = function(MCMCniter = double(), MCMCnburnin = double(), MCMCchain = double()) {
+            ## issue a note if sequential draws from prior samples will have to be recycled
+            if((!randomDraws) & (MCMCniter > nSamples))   cat('  [Note] prior_samples sampler will recycle sequential draws from prior samples, since ', nSamples, ' samples were provided, and ', MCMCniter, ' MCMC iterations will be run.\n')
+        },
+        reset = function() {
+            ind <<- 0
+        }
+    )
+)
+
+
+
+####################################################################
 ### posterior_predictive sampler for trailing non-data networks ####
 ####################################################################
 
@@ -143,8 +198,8 @@ sampler_categorical <- nimbleFunction(
         if(maxLP == Inf | is.nan(maxLP))   cat("Warning: categorical sampler for '", target, "' encountered an invalid model density, and sampling results are likely invalid.\n")
         logProbs <<- logProbs - maxLP
         probs <<- exp(logProbs)
-        newValue <- rcat(1, probs)   ## rcat normalizes the probabilitiess internally
-        if(newValue != currentValue) {
+        newValue <- rcat(1, probs)   ## rcat normalizes the probabilities internally
+        if(!is.na(newValue) & newValue != currentValue) {
             model[[target]] <<- newValue
             model$calculate(calcNodes)
             ##model$calculate(calcNodesPPomitted)
@@ -333,6 +388,7 @@ sampler_RW_block <- nimbleFunction(
         scale               <- extractControlElement(control, 'scale',               1)
         propCov             <- extractControlElement(control, 'propCov',             'identity')
         tries               <- extractControlElement(control, 'tries',               1)
+        maxDimCovHistory    <- extractControlElement(control, 'maxDimCovHistory',    10)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
@@ -347,10 +403,10 @@ sampler_RW_block <- nimbleFunction(
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
-        scaleHistory <- c(0, 0)                                                 ## scaleHistory
-        acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
-        propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
-        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
+        scaleHistory <- c(0, 0)                                                                  ## scaleHistory
+        acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
+        propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
+        saveMCMChistory <- if(getNimbleOption('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -408,7 +464,7 @@ sampler_RW_block <- nimbleFunction(
                     scaleHistory[timesAdapted] <<- scale                ## scaleHistory
                     setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
-                    if(d <= 10) {
+                    if(d <= maxDimCovHistory) {
                         propCovTemp <- propCovHistory                                           ## scaleHistory
                         setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
                         if(timesAdapted > 1)                                                    ## scaleHistory
@@ -454,7 +510,7 @@ sampler_RW_block <- nimbleFunction(
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
+            if(!saveMCMChistory | d > maxDimCovHistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.  Note that to reduce memory use, proposal covariance histories are only saved for parameter vectors of length <= 10; this value can be modified using the 'maxDimCovHistory' control list element.")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -481,7 +537,7 @@ sampler_RW_block <- nimbleFunction(
             if(saveMCMChistory) {
                 scaleHistory  <<- c(0, 0)    ## scaleHistory
                 acceptanceHistory  <<- c(0, 0)
-                if(d <= 10) 
+                if(d <= maxDimCovHistory)
                     propCovHistory <<- nimArray(0, dim = c(2,d,d))
             }
             my_calcAdaptationFactor$reset()
@@ -563,7 +619,7 @@ sampler_slice <- nimbleFunction(
         timesAdapted  <- 0
         sumJumps      <- 0
         widthHistory  <- c(0, 0)   ## widthHistory
-        if(nimbleOptions('MCMCsaveHistory')) {
+        if(getNimbleOption('MCMCsaveHistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
         discrete      <- model$isDiscrete(target)
@@ -651,7 +707,7 @@ sampler_slice <- nimbleFunction(
                 print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
                 return(numeric(1, 0))
             }
-       },
+        },
         reset = function() {
             width        <<- widthOriginal
             timesRan     <<- 0
@@ -1155,134 +1211,118 @@ sampler_RW_llFunction_block <- nimbleFunction(
     )
 )
 
-#######################################################################################
-### RW_multinomial sampler for multinomial distributions ##############################
-#######################################################################################
-
-#' @rdname samplers
-#' @export
-sampler_RW_multinomial <- nimbleFunction(
-    name = 'sampler_RW_multinomial',
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        ## control list extraction
-        adaptive      <- extractControlElement(control, 'adaptive',      TRUE)
-        adaptInterval <- extractControlElement(control, 'adaptInterval', 200)
-        ## node list generation
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        targetAllNodes <- unique(model$expandNodeNames(target))
-        calcNodes      <- model$getDependencies(target) 
-        lTarget        <- length(targetAsScalar)
-        Ntotal         <- sum(values(model,target))
-        NOverL         <- Ntotal / lTarget
-        ## numeric value generation
-        Zeros             <- matrix(0, lTarget, lTarget)
-        Ones              <- matrix(1, lTarget, lTarget)
-        timesRan          <- Zeros
-        AcceptRates       <- Zeros
-        ScaleShifts       <- Zeros
-        totalAdapted      <- Zeros
-        timesAccepted     <- Zeros
-        ENSwapMatrix      <- Ones
-        ENSwapDeltaMatrix <- Ones
-        RescaleThreshold  <- 0.2 * Ones
-        lpProp  <- 0
-        lpRev   <- 0
-        Pi      <- pi 
-        PiOver2 <- Pi / 2 ## Irrational number prevents recycling becoming degenerate
-        u       <- runif(1, 0, Pi)
-        ## nested function and function list definitions
-        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        my_decideAndJump       <- decideAndJump(model, mvSaved, target = target)
-        ## checks
-        if(model$getDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
-        if(length(targetAllNodes) > 1)                  stop('cannot use RW_multinomial sampler on more than one target')
-        if(adaptive & adaptInterval < 100)              stop('adaptInterval < 100 is not recommended for RW_multinomial sampler')
-    },
-    run = function() {
-        for(iFROM in 1:lTarget) {            
-            for(iTO in 1:(lTarget-1)) {
-                if(u > PiOver2) {                
-                    iFrom <- iFROM
-                    iTo   <- iTO
-                    if (iFrom == iTo)
-                        iTo <- lTarget
-                    u <<- 2 * (u - PiOver2)   # recycle u
-                } else {
-                    iFrom <- iTO
-                    iTo   <- iFROM
-                    if (iFrom == iTo)
-                        iFrom <- lTarget
-                    u <<- 2 * (PiOver2 - u)   # recycle u
-                }
-                propValueVector <- generateProposalVector(iFrom, iTo)
-                lpMHR <- my_setAndCalculateDiff$run(propValueVector) + lpRev - lpProp 
-                jump  <- my_decideAndJump$run(lpMHR, 0, 0, 0)
-                if(adaptive)   adaptiveProcedure(jump=jump, iFrom=iFrom, iTo=iTo)
-            }
-        }
-    },
-    methods = list(
-        generateProposalVector = function(iFrom = integer(), iTo = integer()) { 
-            propVector <- values(model,target) 
-            pSwap      <- min(1, max(1, ENSwapMatrix[iFrom,iTo]) / propVector[iFrom]) 
-            nSwap      <- rbinom(n=1,   size=propVector[iFrom], prob=pSwap) 
-            lpProp    <<- dbinom(nSwap, size=propVector[iFrom], prob=pSwap, log=TRUE) 
-            propVector[iFrom] <- propVector[iFrom] - nSwap 
-            propVector[iTo]   <- propVector[iTo]   + nSwap 
-            pRevSwap   <- min(1, max(1, ENSwapMatrix[iTo,iFrom]) / (propVector[iTo] + nSwap)) 
-            lpRev     <<- dbinom(nSwap, size=propVector[iTo], prob=pRevSwap, log=TRUE) 
-            returnType(double(1)) 
-            return(propVector) 
-        },
-        adaptiveProcedure = function(jump=logical(), iFrom=integer(), iTo=integer()) {
-            NVector <- values(model,target) 
-            timesRan[iFrom, iTo] <<- timesRan[iFrom, iTo] + 1
-            if(jump)
-                timesAccepted[iFrom, iTo] <<- timesAccepted[iFrom, iTo] + 1
-            if (timesRan[iFrom, iTo] %% adaptInterval == 0) {
-                totalAdapted[iFrom, iTo] <<- totalAdapted[iFrom, iTo] + 1
-                accRate                   <- timesAccepted[iFrom, iTo] / timesRan[iFrom, iTo]
-                AcceptRates[iFrom, iTo]  <<- accRate
-                if (accRate > 0.5) {
-                    ENSwapMatrix[iFrom, iTo] <<-
-                        min(Ntotal,
-                            ENSwapMatrix[iFrom,iTo] + ENSwapDeltaMatrix[iFrom, iTo] / totalAdapted[iFrom,iTo])
-                } else {
-                    ENSwapMatrix[iFrom, iTo] <<-
-                        max(1,
-                            ENSwapMatrix[iFrom,iTo] - ENSwapDeltaMatrix[iFrom,iTo] / totalAdapted[iFrom,iTo])
-                } 
-                if(accRate<RescaleThreshold[iFrom,iTo] | accRate>(1-RescaleThreshold[iFrom,iTo])) {
-                    ## rescale iff ENSwapMatrix[iFrom, iTo] is not set to an upper or lower bound 
-                    if (ENSwapMatrix[iFrom, iTo] > 1 & ENSwapMatrix[iFrom, iTo] < Ntotal) {
-                        ScaleShifts[iFrom, iTo]       <<- ScaleShifts[iFrom, iTo] + 1 
-                        ENSwapDeltaMatrix[iFrom, iTo] <<- min(NOverL, ENSwapDeltaMatrix[iFrom, iTo] * totalAdapted[iFrom,iTo] / 10)
-                        ENSwapDeltaMatrix[iTo, iFrom] <<- ENSwapDeltaMatrix[iFrom, iTo] 
-                        RescaleThreshold[iFrom,iTo]   <<- 0.2 * 0.95^ScaleShifts[iFrom, iTo]
-                    }
-                }
-                ## lower Bound 
-                if(ENSwapMatrix[iFrom, iTo] < 1)
-                    ENSwapMatrix[iFrom, iTo] <<- 1                
-                ## symmetry in ENSwapMatrix helps maintain good acceptance rates
-                ENSwapMatrix[iTo,iFrom]   <<- ENSwapMatrix[iFrom,iTo]
-                timesRan[iFrom, iTo]      <<- 0
-                timesAccepted[iFrom, iTo] <<- 0
-            }
-        },
-        reset = function() {
-            timesRan          <<- Zeros
-            AcceptRates       <<- Zeros
-            ScaleShifts       <<- Zeros
-            totalAdapted      <<- Zeros
-            timesAccepted     <<- Zeros
-            ENSwapMatrix      <<- Ones
-            ENSwapDeltaMatrix <<- Ones
-            RescaleThreshold  <<- 0.2 * Ones
-        }
-    )
-)
+#########################################################################################
+##### RW_multinomial sampler for multinomial distributions ##############################
+#########################################################################################
+##
+## @rdname samplers
+## @export
+##sampler_RW_multinomial <- nimbleFunction(
+##    name = 'sampler_RW_multinomial',
+##    contains = sampler_BASE,
+##    setup = function(model, mvSaved, target, control) {
+##        ## control list extraction
+##        adaptive      <- extractControlElement(control, 'adaptive',      TRUE)
+##        adaptInterval <- extractControlElement(control, 'adaptInterval', 200)
+##        ## node list generation
+##        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+##        targetAllNodes <- unique(model$expandNodeNames(target))
+##        calcNodes      <- model$getDependencies(target)
+##        lTarget        <- length(targetAsScalar)
+##        Ntotal         <- sum(values(model,target))
+##        NOverL         <- Ntotal / lTarget
+##        ## numeric value generation
+##        propVector        <- rep(0, lTarget)
+##        Zeros             <- matrix(0, lTarget, lTarget)
+##        Ones              <- matrix(1, lTarget, lTarget)
+##        timesRan          <- Zeros
+##        AcceptRates       <- Zeros
+##        ScaleShifts       <- Zeros
+##        totalAdapted      <- Zeros
+##        timesAccepted     <- Zeros
+##        ENSwapMatrix      <- Ones
+##        ENSwapDeltaMatrix <- Ones
+##        RescaleThreshold  <- 0.2 * Ones
+##        ## nested function and function list definitions
+##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+##        my_decideAndJump       <- decideAndJump(model, mvSaved, target = target)
+##        ## checks
+##        if(model$getDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
+##        if(length(targetAllNodes) > 1)                  stop('cannot use RW_multinomial sampler on more than one target')
+##        if(adaptive & adaptInterval < 100)              stop('adaptInterval < 100 is not recommended for RW_multinomial sampler')
+##    },
+##    run = function() {
+##        for(iFROM in 1:lTarget) {
+##            for(iTO in 1:(lTarget-1)) {
+##                if(runif(1,0,1) > 0.5) {
+##                    iFrom <- iFROM
+##                    iTo   <- iTO
+##                    if(iFrom == iTo)   iTo <- lTarget
+##                } else {
+##                    iFrom <- iTO
+##                    iTo   <- iFROM
+##                    if(iFrom == iTo)   iFrom <- lTarget
+##                }
+##                ## generate proposal vector
+##                propVector <<- values(model,target)
+##                pSwap       <- min(1, max(1, ENSwapMatrix[iFrom,iTo]) / propVector[iFrom])
+##                nSwap       <- rbinom(n=1,   size=propVector[iFrom], prob=pSwap)
+##                lpProp      <- dbinom(nSwap, size=propVector[iFrom], prob=pSwap, log=TRUE)
+##                propVector[iFrom] <<- propVector[iFrom] - nSwap
+##                propVector[iTo]   <<- propVector[iTo]   + nSwap
+##                pRevSwap    <- min(1, max(1, ENSwapMatrix[iTo,iFrom]) / propVector[iTo])
+##                lpRev       <- dbinom(nSwap, size=propVector[iTo], prob=pRevSwap, log=TRUE)
+##                ## decide and jump
+##                lpMHR <- my_setAndCalculateDiff$run(propVector) + lpRev - lpProp
+##                jump  <- my_decideAndJump$run(lpMHR, 0, 0, 0)
+##                ## adaptation
+##                if(adaptive)   adaptiveProcedure(jump=jump, iFrom=iFrom, iTo=iTo)
+##            }
+##        }
+##    },
+##    methods = list(
+##        adaptiveProcedure = function(jump=logical(), iFrom=integer(), iTo=integer()) {
+##            timesRan[iFrom, iTo] <<- timesRan[iFrom, iTo] + 1
+##            if(jump)
+##                timesAccepted[iFrom, iTo] <<- timesAccepted[iFrom, iTo] + 1
+##            if(timesRan[iFrom, iTo] %% adaptInterval == 0) {
+##                totalAdapted[iFrom, iTo] <<- totalAdapted[iFrom, iTo] + 1
+##                accRate                   <- timesAccepted[iFrom, iTo] / timesRan[iFrom, iTo]
+##                AcceptRates[iFrom, iTo]  <<- accRate
+##                if(accRate > 0.5) {
+##                    ENSwapMatrix[iFrom, iTo] <<- min(Ntotal, ENSwapMatrix[iFrom,iTo] + ENSwapDeltaMatrix[iFrom, iTo] / totalAdapted[iFrom,iTo])
+##                } else {
+##                    ENSwapMatrix[iFrom, iTo] <<- max(1, ENSwapMatrix[iFrom,iTo] - ENSwapDeltaMatrix[iFrom,iTo] / totalAdapted[iFrom,iTo])
+##                }
+##                if(accRate<RescaleThreshold[iFrom,iTo] | (accRate > (1-RescaleThreshold[iFrom,iTo]))) {
+##                    ## rescale iff ENSwapMatrix[iFrom, iTo] is not set to an upper or lower bound
+##                    if(ENSwapMatrix[iFrom, iTo] > 1 & ENSwapMatrix[iFrom, iTo] < Ntotal) {
+##                        ScaleShifts[iFrom, iTo]       <<- ScaleShifts[iFrom, iTo] + 1
+##                        ENSwapDeltaMatrix[iFrom, iTo] <<- min(NOverL, ENSwapDeltaMatrix[iFrom, iTo] * totalAdapted[iFrom,iTo] / 10)
+##                        ENSwapDeltaMatrix[iTo, iFrom] <<- ENSwapDeltaMatrix[iFrom, iTo]
+##                        RescaleThreshold[iFrom,iTo]   <<- 0.2 * 0.95^ScaleShifts[iFrom, iTo]
+##                    }
+##                }
+##                ## lower Bound
+##                if(ENSwapMatrix[iFrom, iTo] < 1)   ENSwapMatrix[iFrom, iTo] <<- 1
+##                ## symmetry in ENSwapMatrix helps maintain good acceptance rates
+##                ENSwapMatrix[iTo,iFrom]   <<- ENSwapMatrix[iFrom,iTo]
+##                timesRan[iFrom, iTo]      <<- 0
+##                timesAccepted[iFrom, iTo] <<- 0
+##            }
+##        },
+##        reset = function() {
+##            timesRan          <<- Zeros
+##            AcceptRates       <<- Zeros
+##            ScaleShifts       <<- Zeros
+##            totalAdapted      <<- Zeros
+##            timesAccepted     <<- Zeros
+##            ENSwapMatrix      <<- Ones
+##            ENSwapDeltaMatrix <<- Ones
+##            RescaleThreshold  <<- 0.2 * Ones
+##        }
+##    )
+##)
 
 
 
@@ -1509,18 +1549,18 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
     name = 'sampler_RW_lkj_corr_cholesky',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scaleOriginal       <- extractControlElement(control, 'scale',               1)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodesNoSelf <- model$getDependencies(target, self = FALSE)  
-        ##
+        ## numeric value generation
         d <- sqrt(length(targetAsScalar))
         nTheta <- d*(d-1)/2    # this many unconstrained elements to be sampled
-        ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scaleOriginal       <- if(!is.null(control$scale))               control$scale               else 1
         if(length(adaptInterval) > 1 || length(adaptFactorExponent) > 1 || length(scaleOriginal) > 1)
             stop("RW_lkj_corr_cholesky: 'adaptInterval', 'adaptFactorExponent', and 'scaleOriginal' should be single values.")
         if(scaleOriginal < 0)
@@ -1536,8 +1576,8 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         z                   <- array(0, c(d, d))  # canonical partial correlations
         diag(z)             <- 1
         partialSums         <- array(0, c(d, d))  # 1-x_{13}^2, 1-x_{14}^2, 1-x_{14}^2-x_{24}^2, ...
-        partialSums[1, ]   <- 1
-        ## Temporary vectors for current colum calculations
+        partialSums[1, ]    <- 1
+        ## temporary vectors for current column calculations
         partialSumsProp     <- numeric(d)    
         currentValue        <- numeric(d)
         propValue           <- numeric(d)
@@ -1550,7 +1590,6 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
     run = function() {
         ## calculate transformed values (in unconstrained space) and partial sums in each column
         transform(model[[target]])  # compute z and partialSums
-        ##
         ## Individual univariate RW on the nTheta elements:
         ## advantage: probably better movement through space than with block update
         ## (plus note only column values of target matrix are recalculated for a given scalar update in a given column)
@@ -1649,13 +1688,14 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive            <- if(!is.null(control$adaptive))            control$adaptive            else TRUE
-        adaptScaleOnly      <- if(!is.null(control$adaptScaleOnly))      control$adaptScaleOnly      else FALSE
-        adaptInterval       <- if(!is.null(control$adaptInterval))       control$adaptInterval       else 200
-        adaptFactorExponent <- if(!is.null(control$adaptFactorExponent)) control$adaptFactorExponent else 0.8
-        scale               <- if(!is.null(control$scale))               control$scale               else 1
-        propCov             <- if(!is.null(control$propCov))             control$propCov             else 'identity'
-        tries               <- if(!is.null(control$tries))               control$tries               else 1
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptScaleOnly      <- extractControlElement(control, 'adaptScaleOnly',      FALSE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
+        propCov             <- extractControlElement(control, 'propCov',             'identity')
+        tries               <- extractControlElement(control, 'tries',               1)
+        maxDimCovHistory    <- extractControlElement(control, 'maxDimCovHistory',    10)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1675,10 +1715,10 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         timesAdapted  <- 0
         p <- sqrt(length(targetAsScalar))
         d <- p*(p-1)/2    # this many unconstrained elements to be sampled
-        scaleHistory  <- c(0, 0)                                                 ## scaleHistory
-        acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
-        propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
-        saveMCMChistory <- if(nimbleOptions('MCMCsaveHistory')) TRUE else FALSE
+        scaleHistory <- c(0, 0)                                                                  ## scaleHistory
+        acceptanceHistory <- c(0, 0)                                                             ## scaleHistory
+        propCovHistory <- if(d <= maxDimCovHistory) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
+        saveMCMChistory <- if(getNimbleOption('MCMCsaveHistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -1800,7 +1840,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
                     scaleHistory[timesAdapted] <<- scale                ## scaleHistory
                     setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
-                    if(d <= 10) {
+                    if(d <= maxDimCovHistory) {
                         propCovTemp <- propCovHistory                                           ## scaleHistory
                         setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
                         if(timesAdapted > 1)                                                    ## scaleHistory
@@ -1835,7 +1875,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
-            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less.")
+            if(!saveMCMChistory | d > maxDimCovHistory)   print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.  Note that to reduce memory use, proposal covariance histories are only saved for parameter vectors of length <= 10; this value can be modified using the 'maxDimCovHistory' control list element.")
             returnType(double(3))
             return(propCovHistory)
         },
@@ -1862,7 +1902,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             if(saveMCMChistory) {
                 scaleHistory  <<- c(0, 0)    ## scaleHistory
                 acceptanceHistory  <<- c(0, 0)
-                if(d <= 10) 
+                if(d <= maxDimCovHistory)
                     propCovHistory <<- nimArray(0, dim = c(2,d,d))
             }
             my_calcAdaptationFactor$reset()
@@ -2076,6 +2116,8 @@ sampler_CAR_normal <- nimbleFunction(
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        zero_mean_caused_a_problem <- 0
         ## checks
         if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
         if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
@@ -2111,12 +2153,19 @@ sampler_CAR_normal <- nimbleFunction(
         if(zero_mean) {
             targetValues <- values(model, target)
             values(model, target) <<- targetValues - mean(targetValues)
-            model$calculate(calcNodes)
+            lp <- model$calculate(calcNodes)
+            if(is.na(lp) | is.nan(lp) | abs(lp) == Inf)   zero_mean_caused_a_problem <<- 1
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         }
     },
     methods = list(
+        after_chain = function() {
+            if(zero_mean_caused_a_problem == 1) {
+                print('  [Error] Invalid model values were induced during the MCMC, which were caused by centering of the CAR (dcar_normal) process.  Centering takes place because of the argument zero_mean=1 to the dcar_normal distribution.  Results of this MCMC run may be invalid. This can be avoided by absorbing the mean into the CAR process, and omitting the zero_mean argument.')
+            }
+        },
         reset = function() {
+            zero_mean_caused_a_problem <<- 0
             for(iSF in seq_along(componentSamplerFunctions))
                 componentSamplerFunctions[[iSF]]$reset()
         }
@@ -2186,15 +2235,22 @@ sampler_CAR_proper <- nimbleFunction(
 
 #' MCMC Sampling Algorithms
 #'
-#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
+#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package.
 #'
-#' Derivative-based MCMC sampling algorithms, including Hamiltonian Monte Carlo (HMC), are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, use \code{help(HMC)} for details.
 #'
 #' @param model (uncompiled) model on which the MCMC is to be run
 #' @param mvSaved \code{modelValues} object to be used to store MCMC samples
 #' @param target node(s) on which the sampler will be used
 #' @param control named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
 #'
+#' @section Hamiltonian Monte Carlo samplers:
+#'
+#' Hamiltonian Monte Carlo (HMC) samplers are provided separately in the \code{nimbleHMC} R package.  After loading \code{nimbleHMC}, see \code{help(HMC)} for details.
+#'
+#' @section Particle filter samplers:
+#'
+#' As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers are provided separately in the `nimbleSMC` package. After loading \code{nimbleSMC}, see \code{help(samplers)} for details.
+#' 
 #' @section \code{sampler_base}: base class for new samplers
 #'
 #' When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
@@ -2333,17 +2389,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
 #' }
 #'
-#'
-#' @section RW_multinomial sampler:
-#'
-#' This sampler is designed for sampling multinomial target distributions.  The sampler performs a series of Metropolis-Hastings steps between pairs of groups.  Proposals are generated via a draw from a binomial distribution, whereafter the proposed number density is moved from one group to another group.  The acceptance or rejection of these proposals follows a standard Metropolis-Hastings procedure.  Probabilities for the random binomial proposals are adapted to a target acceptance rate of 0.5.
-#'
-#' The \code{RW_multinomial} sampler accepts the following control list elements:
-#' \itemize{
-#' \item adaptive.  A logical argument, specifying whether the sampler should adapt the binomial proposal probabilities throughout the course of MCMC execution. (default = TRUE)
-#' \item adaptInterval.  The interval on which to perform adaptation.  A minimum value of 100 is required. (default = 200)
-#' }
-#'
 #' @section RW_dirichlet sampler:
 #'
 #' This sampler is designed for sampling non-conjugate Dirichlet distributions.  The sampler performs a series of Metropolis-Hastings updates (on the log scale) to each component of a gamma-reparameterization of the target Dirichlet distribution.  The acceptance or rejection of these proposals follows a standard Metropolis-Hastings procedure.
@@ -2435,7 +2480,25 @@ sampler_CAR_proper <- nimbleFunction(
 #' @section CRP_concentration sampler:
 #' 
 #' The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using the Chinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and can only be used when the prior for the concentration parameter is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
-#' 
+#'
+#' @section prior_samples sampler:
+#'
+#' The prior_samples sampler uses a provided set of numeric values (\code{samples}) to define the prior distribution of one or more model nodes.  One every MCMC iteration, the prior_samples sampler takes value(s) from the numeric values provided, and stores these value(s) into the target model node(s).  This allows one to define the prior distribution of model parameters empirically, using a set of numeric \code{samples}, presumably obtained previously using MCMC.  The \code{target} node may be either a single scalar node (scalar case), or a collection of model nodes.
+#'
+#' The prior_samples sampler provides two options for selection of the value to use on each MCMC iteration.  The default behaviour is to take sequential values from the \code{samples} vector (scalar case), or in the case of multiple dimensions, sequential rows of the \code{samples} matrix are used.  The alternative behaviour, by setting the control argument \code{randomDraws = TRUE}, will instead use random draws from the \code{samples} vector (scalar case), or randomly selected rows of the \code{samples} matrix in the multidimensional case.
+#'
+#' If the default of sequential selection of values is used, and the number of MCMC iterations exceeds the length of the \code{samples} vector (scalar case) or the number of rows of the \code{samples} matrix, then \code{samples} will be recycled as necessary for the number of MCMC iterations.  A message to this effect is also printed at the beginning of the MCMC chain.
+#'
+#' Logically, prior_samples samplers might want to operate first, in advance of other samplers, on every MCMC iteration.  By default, at the time of MCMC building, all prior_samples samplers are re-ordered to appear first in the list of MCMC samplers.  This behaviour can be subverted, however, by setting nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE).
+#'
+#' The prior_samples sampler can be assigned to non-stochastic model nodes (nodes which are not assigned a prior distribution in the model). In fact, it is recommended that nodes being assigned a prior_samples are not provided with a prior distribution in the model, and rather, that these nodes only appear on the right-hand-side of model declaration lines.  In such case that a prior_samples sampler is assigned to a nodes with a prior distribution, the prior distribution will be overridden by the sample values provided to the sampler; however, the node will still be a stochastic node for other purposes, and will contribute to the model joint-density (using the sample values provided relative to the prior distribution), will have an MCMC sampler assigned to it by default, and also may introduce potential for confusion.  In this case, a message is issued at the time of MCMC building.
+#'
+#' The prior_samples sampler accepts the following control list elements:
+#' \itemize{
+#' \item \code{samples}. A numeric vector or matrix.  When the \code{target} node is a single scalar-valued node, \code{samples} should be a numeric vector.  When the \code{target} node specifies d > 2 model dimensions, \code{samples} should be a matrix containing d columns.  The \code{samples} control argument is required.
+#' \item \code{randomDraws}. A logical argument, specifying whether to use a random draw from \code{samples} on each iteration.  If \code{samples} is a matrix, then a randomly-selected row of the \code{samples} matrix is used.  When \code{FALSE}, sequential values (or sequential matrix rows) are used (default = \code{FALSE}).
+#' }
+#'
 #' @section posterior_predictive sampler:
 #'
 #' The posterior_predictive sampler operates only on posterior predictive stochastic nodes. A posterior predictive node is a node that is not itself data and has no data nodes in its entire downstream (descendant) dependency network. Note that such nodes play no role in inference for model parameters but have often been included in BUGS models to make predictions, including for posterior predictive checks. As of version 0.13.0, NIMBLE samples model parameters without conditioning on the posterior predictive nodes and samples conditionally from the posterior predictive nodes as the last step of each MCMC iteration.
@@ -2457,14 +2520,10 @@ sampler_CAR_proper <- nimbleFunction(
 #' @section RJ_toggled sampler:
 #'
 #' This sampler operates in the framework of variable selection using reversible jump MCMC.  Specifically, it conditionally performs updates of the target variable of interest using the originally-specified sampling configuration, when variable is "in the model".  This is a specialized sampler used by \code{configureRJ} when adding a reversible jump MCMC . See \code{help{configureRJ}} for details. It is not intended for direct assignment.
-#'
-#' @section Particle filter samplers:
-#'
-#' As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers live in the `nimbleSMC` package. Please load that package in order to use the samplers.
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky 
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
@@ -2489,8 +2548,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' #    control = list(adaptive = TRUE, sliceMaxSteps = 1))
 #' 
 #' # mcmcConf$addSampler(target = 'x[1:10]', type = 'ess')   ## x[1:10] ~ dmnorm()
-#' 
-#' # mcmcConf$addSampler(target = 'x[1:5]', type = 'RW_multinomial')   ## x[1:5] ~ dmulti()
 #' 
 #' # mcmcConf$addSampler(target = 'p[1:5]', type = 'RW_dirichlet')   ## p[1:5] ~ ddirch()
 #'
@@ -2539,3 +2596,16 @@ NULL
 
 
 
+
+##
+## Note: RW_multinomial sampler was removed from package, following version 0.1.0
+##
+##@section RW_multinomial sampler:
+##
+##This sampler is designed for sampling multinomial target distributions.  The sampler performs a series of Metropolis-Hastings steps between pairs of groups.  Proposals are generated via a draw from a binomial distribution, whereafter the proposed number density is moved from one group to another group.  The acceptance or rejection of these proposals follows a standard Metropolis-Hastings procedure.  Probabilities for the random binomial proposals are adapted to a target acceptance rate of 0.5.
+##
+##The \code{RW_multinomial} sampler accepts the following control list elements:
+##\itemize{
+##\item adaptive.  A logical argument, specifying whether the sampler should adapt the binomial proposal probabilities throughout the course of MCMC execution. (default = TRUE)
+##\item adaptInterval.  The interval on which to perform adaptation.  A minimum value of 100 is required. (default = 200)
+##}

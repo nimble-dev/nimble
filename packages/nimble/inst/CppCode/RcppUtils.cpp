@@ -234,7 +234,7 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
 
 int SEXP_2_int(SEXP Sn, int i ) {
   if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_int called for SEXP that is not numeric or logical\n");
-  if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_int called for element %i% >= length of %i.\n", i, LENGTH(Sn));
+  if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_int called for element %i which is beyond the length of %i.\n", i, LENGTH(Sn));
   if(Rf_isInteger(Sn) || Rf_isLogical(Sn)) {
     if(Rf_isInteger(Sn))
       return(INTEGER(Sn)[i]);
@@ -270,7 +270,7 @@ SEXP bool_2_SEXP(bool ind){
 
 bool SEXP_2_bool(SEXP Sn, int i) {
   if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_bool called for SEXP that is not numeric or logical\n");
-  if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_bool called for element %i% >= length of %i.\n", i, LENGTH(Sn));
+  if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_bool called for element %i which is beyond the length of %i.\n", i, LENGTH(Sn));
   if(Rf_isLogical(Sn)) {
     return(static_cast<bool>(LOGICAL(Sn)[i]));
   } else {

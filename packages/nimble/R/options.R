@@ -20,6 +20,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         disallow_multivariate_argument_expressions = TRUE,
         stop_after_processing_model_code = FALSE,
         enableModelMacros = FALSE,
+        enableMacroComments = FALSE,
+        codeInMacroComments = FALSE,
         allowDynamicIndexing = TRUE,
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
@@ -52,6 +54,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         checkModel = FALSE,
         checkNimbleFunction = TRUE,
         checkDuplicateNodeDefinitions = TRUE,
+        precleanCompilation = TRUE,
         verbose = TRUE,
         verboseErrors = FALSE,
 
@@ -67,14 +70,20 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCmultivariateNodesAsScalars = FALSE,
         MCMCmonitorAllSampledNodes = FALSE,
         MCMCuseConjugacy = TRUE,
+        MCMCorderPriorSamplesSamplersFirst = TRUE,
         MCMCorderPosteriorPredictiveSamplersLast = TRUE,
         MCMCusePredictiveDependenciesInCalculations = FALSE,
         MCMCusePosteriorPredictiveSampler = TRUE,
         MCMCwarnUnsampledStochasticNodes = TRUE,
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
-        useClearCompiledInADTesting = TRUE
-    )
+        useClearCompiledInADTesting = TRUE,
+        unsupportedDerivativeHandling = 'error', # default is error, other options are 'warn' and 'ignore'. Handled in updateADproxyModelMethods in cppDefs_nimbleFunction.R
+        errorIfMissingNFVariable = TRUE,
+        stopOnSizeErrors = TRUE,
+        useOldcWiseRule = FALSE, # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
+        stripUnusedTypeDefs = TRUE
+      )
 )
 
 # sets a single option
@@ -95,7 +104,10 @@ setNimbleOption <- function(name, value) {
 #' @examples
 #' getNimbleOption('verifyConjugatePosteriors')
 getNimbleOption <- function(x) {
-    get(x, envir = .nimbleOptions)
+    option <- try(get(x, envir = .nimbleOptions), silent = TRUE)
+    if(inherits(option, 'try-error'))
+        return(NULL)
+    return(option)
 }
 
 #' NIMBLE Options Settings

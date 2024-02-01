@@ -187,7 +187,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                                            i = 0:(length(SallinheritanceNames)))
                                    packListLines <- cppLiteral(packListLines)
                                    
-                                   notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
+                                   notificationLine <- if(getNimbleOption('messagesWhenBuildingOrFinalizingCppObjects'))
                                                            paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << newObj << \"\\n\";')
                                                        else character(0)
                                    if(is.null(finalizer)) finalizer <- paste0(name,'_Finalizer')
@@ -207,7 +207,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                buildSEXPfinalizer = function() {
                                    CBobjectDefs <- list(cppVar(name = 'oldObj', baseType = name, ptr = 1))
                                    inputArgs <- list(cppSEXP(name = 'Sv'))
-                                   notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
+                                   notificationLine <- if(getNimbleOption('messagesWhenBuildingOrFinalizingCppObjects'))
                                        paste0('std::cout<< \"In finalizer for ', name, ' with pointer \" << R_ExternalPtrAddr(Sv) << \"\\n\";')
                                    else character(0)
                                    castLine <- paste0('oldObj = static_cast<',name,' *>(R_ExternalPtrAddr(Sv));')
@@ -223,6 +223,26 @@ cppClassDef <- setRefClass('cppClassDef',
                                )
                            )
 
+stripUnusedTypeDefs <- function(cppOutput) {
+  cppOrigOutput <- cppOutput
+  ans <- try({
+    cppOutput <- unlist(cppOutput)
+    typeDefLines <- grep("^typedef", cppOutput)
+    lines_to_remove <- integer()
+    for(i in typeDefLines) {
+      pieces <- strsplit(cppOutput[typeDefLines[i]], ' ')[[1]]
+      typedef_name <- pieces[length(pieces)]
+      typedef_name <- gsub(";","",typedef_name)
+      i_typedef_name <- grep(typedef_name, cppOutput)
+      if(length(i_typedef_name)==1 && i_typedef_name[1]==i) {
+        lines_to_remove <- c(lines_to_remove, i)
+      }
+    }
+    if(length(lines_to_remove)>0) cppOutput<-cppOutput[-lines_to_remove]
+    cppOutput
+  })
+  if(inherits(ans, 'try-error')) cppOrigOutput else ans
+}
 
 ## A cppCodeBlock is an arbitrary collection of parse tree and other cppCodeBlocks (defined below)
 ## The parse tree can be either an R parse tree or one of our exprClass objects
@@ -263,6 +283,8 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                     } else {
                                         outputCppCode <- c(outputCppCode, outputCppParseTree2(code, indent))
                                     }
+                                    if(isTRUE(getNimbleOption("stripUnusedTypeDefs")))
+                                       outputCppCode <- stripUnusedTypeDefs(outputCppCode)
                                     outputCppCode
                                   }
                                 )

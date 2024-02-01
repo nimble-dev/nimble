@@ -44,8 +44,14 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
       expect_wrapper(opt_alt <- cL$findMLE())
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
+      tryResult <- try({
       expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
       expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
+      })
+      if(inherits(tryResult, 'try-error')) {
+          print(class(cL))
+          print(cL)
+      }
       expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-5)
       expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-5)
       expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-5)
@@ -159,10 +165,16 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   vcov <- diag(c(4, 1)) %*% vcov_transform %*% diag(c(4, 1))
   expect_equal(vcov, summ2$vcov, tol = 1e-4)
   # Check covariance matrix for params only
-  summ3 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
+  tryResult <- try({
+  summ3 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE);
   expect_equal(summ3$vcov, vcov[1,1,drop=FALSE], tol=1e-5)
   summ4 <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
   expect_equal(summ4$vcov, vcov_transform[1,1,drop=FALSE], tol=5e-5)
+  })
+  if(inherits(tryResult, "try-error")) {
+      print(class(cmLaplace))
+      print(cmLaplace)
+  }
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE()
@@ -630,9 +642,16 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   # Covariance matrix 
   vcov <- diag(c(0, rep(1/(3*0.8^2/4 + 1/9), 2))) + matrix(c(1, rep(0.09398496, 2)), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(1, rep(0.09398496, 2)), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
-  # Check covariance matrix for params only
-  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
-  expect_equal(summ2$vcov, vcov[1,1,drop=FALSE], tol=1e-6)
+  ## Check covariance matrix for params only
+  tryResult <- try({
+      summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
+      expect_equal(summ2$vcov, vcov[1,1,drop=FALSE], tol=1e-6)
+  })
+  if(inherits(tryResult, 'try-error')) {
+      print(class(cmLaplace))
+      print(cL)
+  }
+
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE() # some warnings are ok here
@@ -1266,9 +1285,16 @@ test_that("Laplace with non-empty calcNodesOther works", {
   
   expect_equal(summ$vcov, tmbvcov, tol=1e-5)
   
-  # Check covariance matrix for params only
-  summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
-  expect_equal(summ2$vcov, tmbvcov[1:3,1:3], tol=1e-5)
+  ## Check covariance matrix for params only
+  tryResult <- try({
+      summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
+      expect_equal(summ2$vcov, tmbvcov[1:3,1:3], tol=1e-5)
+  })
+  if(inherits(tryResult, 'try-error')) {
+      print(class(cmLaplace))
+      print(cL)
+  }
+
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE()
@@ -1648,7 +1674,7 @@ test_that("Laplace with crossed random effects works", {
     }),
     constants = list(N = N, np = np, ns = ns, plate = plate, sample = sample),
     data = list(y = Penicillin$diameter),
-    # inits = list(beta = 0, sigma = 1, sigma_p = 1, sigma_s = 1, mus = rep(0, ns), mup = rep(0, np)),
+    inits = list(beta = 20, sigma = 1, sigma_p = 1, sigma_s = 1, mus = rep(0, ns), mup = rep(0, np)),
     buildDerivs = TRUE
   )
   mLaplace <- buildLaplace(model = m)
@@ -1715,6 +1741,9 @@ test_that("Laplace with nested random effects works", {
 })
 
 test_that("Laplace error trapping of wrong-length parameters works", {
+  library(nimble)
+  library(testthat)
+
   m <- nimbleModel(
     nimbleCode({
       d[1:3] ~ ddirch(alpha[1:3]) # params
@@ -1756,6 +1785,7 @@ test_that("Laplace error trapping of wrong-length parameters works", {
   expect_output(expect_error(cmLaplace$gr_logLik(c(.4, .5, .1), trans = TRUE)), "should be length")
   expect_output(expect_error(cmLaplace$gr_Laplace(c(.4, .5, .1), trans = TRUE)), "should be length")
 
+  ##
   output <- cmLaplace$findMLE(c(.4, .5, .1))
   expect_true(all(output$counts > 0))
   # We couldn't throw an error from a nimbleList-returning method

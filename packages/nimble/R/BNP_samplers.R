@@ -2311,7 +2311,7 @@ sampler_slice_CRP_base_param <- nimbleFunction(
         timesAdapted  <- 0
         sumJumps      <- 0
         widthHistory  <- c(0, 0)   ## widthHistory
-        if(nimbleOptions('MCMCsaveHistory')) {
+        if(getNimbleOption('MCMCsaveHistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
         discrete      <- model$isDiscrete(target)

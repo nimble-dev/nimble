@@ -12,6 +12,7 @@ otherDSLcalls <- c("{",
                    "nimEigen",
                    "nimSvd",
                    "nimOptim",
+                   "nimIntegrate",
                    "nimOptimDefaultControl",
                    "nimDerivs",
                    "any_na",
@@ -37,13 +38,14 @@ nimKeyWords <- list(copy = 'nimCopy',
                     eigen = 'nimEigen',
                     svd = 'nimSvd',
                     optim = 'nimOptim',
+                    integrate = 'nimIntegrate',
                     optimDefaultControl = 'nimOptimDefaultControl',
                     min.bound = 'carMinBound',
                     max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
 distsNotAllowedInAD <- c(
-  paste0('d', c('cat', 'interval', 'car_normal', 'car_proper', 'constraint'))
+  paste0('d', c('interval', 'constraint'))
 )
 
 fxnsNotAllowedInAD <- c(
@@ -69,15 +71,16 @@ fxnsNotAllowedInAD <- c(
   paste0('r', c('cat', 'interval', 'car_normal', 'car_proper',
                 'dirch','mnorm_chol','multi','mvt_chol','lkj_corr_cholesky','wish_chol',
                 'invwish_chol')),
-  paste0('nimArr_d', c('cat', 'dcar_normal', 'dcar_proper', 'interval')),
+  paste0('nimArr_d', c('interval','constraint')),
   paste0('nimArr_r', c('mnorm_chol','mvt_chol', 'lkj_corr_cholesky','wish_chol',
                        'invwish_chol', 'car_normal','car_proper','multi','dirch') ),
   'getLogProb',
   'decide',
   'rankSample',
-  'any_na',
+  'any_na', 
   'any_nan',
-  'ISNAN','ISNA',
+  'is.na',
+  'is.nan',
   'nimCopy','carMinBound','carMaxBound'
 )
 

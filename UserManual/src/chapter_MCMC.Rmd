@@ -451,6 +451,14 @@ samples <- as.matrix(Cmcmc$mvSamples)
 The `samples` matrix will contain both MCMC samples and model log-probabilities.
 
 
+#### Using numeric samples to define a prior distribution
+
+A set of numeric samples, perhaps generated from another MCMC algorithm, can be used to define the prior distribution of model nodes.  This is accomplished using the `prior_samples` MCMC sampler.  When assigning the `prior_samples` sampler to a `target` node, you must also provide a vector of numeric values (when `target` is a scalar node), or a matrix of values in the multidimenional case.  A new value (or rows of values) is selected either sequentially (or randomly) from this numeric vector/matrix, and assigned into the `target` node on each MCMC iteration.  See `help(prior_samples)` for more details:
+```{r, eval=FALSE}
+mcmcConf <- configureMCMC(Rmodel)
+mcmcConf$addSampler(target = 'theta', type = 'prior_samples', samples = rnorm(100))
+```
+
 
 ## Building and compiling the MCMC {#sec:build-compile-mcmc}
 
@@ -500,6 +508,7 @@ It is often important to provide valid and reasonable initial values to an MCMC,
 Not doing so can cause slow convergence or even failure of an MCMC algorithm (e.g., if the values the model is initialized with are not valid). When starting an MCMC, when NIMBLE encounters a missing parameter value, it simulates from the prior distribution. NIMBLE can be more sensitive to missing or bad starting values than some MCMC packages.
 
 The following cases are particularly important to consider when initializing:
+
   - In a model with flat priors (i.e., using `x~dflat()` or `x~dhalfflat()`), NIMBLE cannot generate initial values from those priors.
   - In a model with diffuse priors, initializing from the prior can give unreasonable/extreme initial values. 
   - In a model with stochastic indices (e.g., `x[idx[i]]` with `idx[i]` unknown), those indices should have (valid) initial values.
@@ -940,24 +949,32 @@ If one wants information about conjugate node relationships for other purposes, 
 
 ### Hamiltonian Monte Carlo (HMC) {#subsec:HMC}
 
-As of version 1.0.0, NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha-AD). AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 of the `nimble` package.
+As of version 1.0.0, NIMBLE provides support for automatic differentiation (AD), as described in Chapter \@ref(cha-AD). AD is needed for Hamiltonian Monte Carlo (HMC) sampling. The HMC algorithm is provided through the `nimbleHMC` package, which requires version 1.0.0 (or higher) of the `nimble` package.
 
+HMC is an MCMC sampling algorithm that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. HMC sampling can operate on any continuous-valued model dimensions, including multiple dimensions simultaneously.  HMC sampling is more flexibly applicable using `nimbleHMC` than in other implementations, since HMC can be applied to some parts of a model while other samplers are used on other (potentially overlapping) parts of the same model. Indeed, @neal-11 discusses this mixed application of HMC with other sampling methods.
 
-The HMC sampler in package `nimbleHMC` implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within `nimble`, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, @neal-11 discussed using it in this way.
+The `nimbleHMC` package provides two distinct HMC samplers, which implement two versions of No-U-Turn (NUTS) HMC sampling.  HMC-NUTS sampling is a self-tuning version of standard HMC, which self-tunes the step-size and the number of integration steps used in the numeric integrator's exploration of parameter space.  The `NUTS_classic` sampler in `nimbleHMC` implements the original ("classic") HMC-NUTS algorithm developed in @hoffman2014no, which was the seminal version of HMC-NUTS.  The `NUTS` sampler in `nimbleHMC` is a modern version of HMC-NUTS sampling with improved adaptation routines and convergence criteria, which matches the HMC sampler available in version 2.32.2 of Stan [@stan2023stan].
 
-At its core, HMC in NIMBLE is just another MCMC sampler that can be used in NIMBLE's general MCMC system, possibly along with other samplers. For convenience, `nimbleHMC` provides different ways to set up and run HMC that allow different degrees of control:
+The samplers provided in `nimbleHMC` can be used in `nimble`'s general MCMC system, and may be used in combination with other samplers provided with `nimble` operating on different (or overlapping) parts of the model.  For convenience, `nimbleHMC` provides several different ways to set up and run HMC which allow different degrees of control:
 
-- `nimbleHMC` is analogous to `nimbleMCMC`: It takes model `code`, `data`, `inits` and `constants` and does all steps from building the model to running one or more MCMC chains. Use this if you want one call to get default HMC samples of the entire model.
-- `configureHMC` is analogous to `configureMCMC`: It sets up a default MCMC configuration that comprises one HMC sampler for all model nodes (or nodes you choose). You can then use `addSampler` and other methods of the configuration to fully customize it before building and using the MCMC.  Use `configureHMC` if you want to do MCMC with both HMC and other samplers and you find it easier to start with HMC in the configuration first.
-- `buildHMC` is analogous to `buildMCMC`: It builds a configuration that, if not provided, will be created by `configureHMC`. Use this if you want to manage MCMC runs through `runMCMC` instead of `nimbleHMC` and you don't need to customize the configuration by doing `configureHMC` yourself.
-- `addHMC`: This manages use of `addSampler` for an MCMC configuration to add specifically an HMC sampler for a chosen set of nodes. It optionally removes other samplers for those nodes first. Use this if you want to do MCMC with both HMC and other samplers and you find it easier to start with the other sampler in the configuration, i.e. from the result of `configureMCMC`. 
-- For the most fine-grained control, you can call `configureMCMC` and then use the `addSampler` with `type="HMC"` to add HMC sampler(s).
+- `nimbleHMC` is analogous to `nimbleMCMC`: It accpets model `code`, `data`, `inits` and `constants` arguments, and performs all steps from building the model to running one or more MCMC chains. Use the `nimbleHMC` function if you want one call to apply `NUTS` sampling to all continuous-valued model dimensions, and `nimble`'s default samplers for all discrete-valued dimensions.
+- `buildHMC` is analogous to `buildMCMC`: It accepts a model object as an argument, and builds an MCMC algorithm which applies `NUTS` sampling to all continuous-valued model dimensions, and `nimble`'s default samplers for all discrete-valued dimensions.  Use `buildHMC` if you have created a model object, and want to automatically build the default HMC algorithm for your model.
+- `configureHMC` is analogous to `configureMCMC`: It accepts a model object as an argument, and sets up a default MCMC configuration containing one `NUTS` sampler operating on all continuous-valued model dimensions, and `nimble`'s default samplers for all discrete-valued dimensions.  You can also specify which `nodes` should have samplers assigned. You can then modify the MCMC configuration (use `addSampler` and other methods) to further customize it before building and running the MCMC.  Use `configureHMC` if you are familiar with MCMC configuration objects, and may want to further customize your MCMC using HMC or other samplers or monitors before building the MCMC.
+- `addHMC`  manages use of `addSampler` to specifically add an HMC sampler for a chosen set of nodes to an exisiting MCMC configuration. It optionally removes other samplers operating on the specified nodes. Use `addHMC` to add an HMC sampler operating one or more target nodes to an exisiting MCMC configuration object.
+- For the most fine-grained control, you can use the `addSampler` method speciying the the argument `type="NUTS"` or `type="NUTS_classic"` to add HMC sampler(s) to an MCMC configuration object.
 
-More information on these is available from the help pages, e.g. `help(configureHMC)`.
+As of version 1.1.0, we now support the following new functionality for AD in models:
+
+- Dynamic indexing is supported, although of course one cannot take derivatives with respect to the actual index values, since they are discrete. This means the index values cannot be sampled by HMC.
+- One can take derivatives with respect to nodes assigned CAR priors, so HMC sampling can be performed on variables assigned a CAR prior(i.e., `dcar_normal` and `dcar_proper`).
+- One can take derivatives with respect to the parameters of `dcat`, `dconstraint`, and `dinterval`. Hence HMC sampling is supported for *parameters* of nodes that have `dcat`, `dconstraint`, and `dinterval` dependencies. (However, the nodes that follow one of these distributions are discrete, so derivatives with respect to those nodes themselves are not supported, and HMC cannot sample those nodes.)
+- Truncated distributions can be used, but one cannot take derivatives with respect to their parameters or the nodes themselves. This means that HMC sampling **cannot** be performed on nodes that have truncated nodes as dependencies.
+
+More information is available from the help pages, e.g. `help(nimbleHMC)`, `help(buildHMC)`, `help(configureHMC)`, or `help(addHMC)`.
 
 #### HMC example {#subsec:HMC-example}
 
-Here we will configure and build an MCMC to use HMC on a GLMM example. In this case we'll use HMC for the whole model, i.e., all parameters and latent states.
+Here we will configure and build an MCMC to use the `NUTS` HMC sampler on a GLMM example. In this case we'll use HMC sampling for the whole model, i.e., all parameters and latent states.
 
 We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC (and also for Laplace approximation in \@ref(sec:use-derivs)). There will be 10 groups (indexed by `i`) of 5 observations (indexed by `j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
 
@@ -1026,6 +1043,10 @@ summary(coda::as.mcmc(samples))
 
 In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(sec:parameter-transform).
 
+### Particle filter samplers
+
+The `nimbleSMC` package provides samplers that perform particle MCMC, primarily intended for sampling top-level parameters in state-space or hidden Markov models of time-series data. This sampler is described in Section \@ref(sec:particle-mcmc).
+     
 ### Customized log-likelihood evaluations: *RW_llFunction sampler*
  
 Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm [@Andrieu_Doucet_Holenstein_2010].  The `RW_llFunction` sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
@@ -1070,10 +1091,6 @@ Note that we need to return `ll[1]` and not just `ll` because there are no scala
 <!---  ### Terminal node `posterior_predictive sampler` 
 % The `posterior_predictive` sampler is only appropriate for use on terminal stochastic nodes (that is, those having no stochastic dependencies).  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->
-
-
-### Particle MCMC sampler
-For state space models, a particle MCMC (PMCMC) sampler can be specified for top-level parameters.  This sampler is described in Section \@ref(sec:particle-mcmc).
 
 ## Detailed MCMC example: *litters* {#sec:mcmc-example-litters}
 

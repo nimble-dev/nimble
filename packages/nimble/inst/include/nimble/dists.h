@@ -37,9 +37,10 @@
 
 using std::max;
 
-bool R_IsNA(double*, int);
-bool R_isnancpp(double*, int);
-bool R_FINITE_VEC(double*, int);
+bool R_IsNA_ANY(double*, int);
+bool R_IsNaN_ANY(double*, int);
+bool ISNAN_ANY(double*, int);
+bool R_FINITE_ANY(double*, int);
 
 extern "C" {
 // BLAS/LAPACK routines

@@ -18,6 +18,7 @@ cppOutputCalls <- c(## makeCallList(recyclingRuleOperatorsAD, 'cppOutputRecyclin
                     list(nimDerivs_dummy = 'cppOutputNimDerivs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     makeCallList(c("TFsetInput_", "TFgetOutput_", "TFrun_"), 'cppOutputMemberFunctionDeref'),
+                    makeCallList(c("stoch_ind_get", "stoch_ind_set"), "cppOutputStochIndGetSet"),
     list(
         'cwiseSqrt' = 'cppOutputEigMemberFunctionNoTranslate',
         'cwiseAbs' = 'cppOutputEigMemberFunctionNoTranslate_specialAD',
@@ -524,6 +525,14 @@ cppMinusOne <- function(x) {
 cppOutputBracket <- function(code, symTab) {
     brackets <- if(length(code$args) <= 2) c('[',']') else c('(',')')
     paste0( nimGenerateCpp(code$args[[1]], symTab), brackets[1], paste0(unlist(lapply(code$args[-1], function(x) cppMinusOne(nimGenerateCpp(x, symTab) ) ) ), collapse = ', '), brackets[2] )
+}
+
+# Used for stoch_ind_get and stoch_ind_set, part of AD code only.
+cppOutputStochIndGetSet <- function(code, symTab) {
+  if(length(code$args) < 2) warning("There is a stochastic indexing call for AD with no indices.")
+    paste0(exprName2Cpp(code, symTab), '(',
+           nimGenerateCpp(code$args[[1]], symTab), ", ",
+           paste0(unlist(lapply(code$args[-1], function(x) cppMinusOne(nimGenerateCpp(x, symTab, asArg = TRUE) ) ) ), collapse = ', '), ')' )
 }
 
 cppOutputDoubleBracket <- function(code, symTab) {

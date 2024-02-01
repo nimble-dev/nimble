@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 11 Writing simple nimbleFunctions | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -159,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.0.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.1.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -275,8 +275,8 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="7.11.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.11.1</b> Conjugate (‘Gibbs’) samplers</a></li>
 <li class="chapter" data-level="7.11.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#subsec:HMC"><i class="fa fa-check"></i><b>7.11.2</b> Hamiltonian Monte Carlo (HMC)</a></li>
-<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.3</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
-<li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Particle MCMC sampler</a></li>
+<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-filter-samplers"><i class="fa fa-check"></i><b>7.11.3</b> Particle filter samplers</a></li>
+<li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
 </ul></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
@@ -348,7 +348,8 @@ div.csl-indent {
 <li class="chapter" data-level="11.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>11.2.6</b> <em>print</em> and <em>cat</em></a></li>
 <li class="chapter" data-level="11.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>11.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
 <li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
-<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
+<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#integration-integrate-and-nimintegrate"><i class="fa fa-check"></i><b>11.2.9</b> Integration: <em>integrate</em> and <em>nimIntegrate</em></a></li>
+<li class="chapter" data-level="11.2.10" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.10</b> ‘nim’ synonyms for some functions</a></li>
 </ul></li>
 <li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
 <ul>
@@ -445,13 +446,13 @@ div.csl-indent {
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
 <li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#how-to-use-laplace-approximation"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation</a></li>
-<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#how-to-support-derivatives-in-user-defined-functions-and-distributions"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
+<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
 <li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
 <li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#holding-some-local-variables-out-of-derivative-tracking"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
-<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#using-ad-with-multiple-nimblefunctions"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
+<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
 <li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#understanding-more-about-how-ad-works-taping-of-operations"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
 <li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
 <li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
@@ -500,23 +501,23 @@ can also be used as new functions and distributions in NIMBLE’s
 extension of BUGS (Chapter <a href="cha-user-defined.html#cha-user-defined">12</a>).</p>
 <p>Here’s a basic example implementing the textbook calculation of
 least squares estimation of linear regression parameters<a href="#fn21" class="footnote-ref" id="fnref21"><sup>21</sup></a>:</p>
-<div class="sourceCode" id="cb229"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb229-1"><a href="cha-RCfunctions.html#cb229-1" aria-hidden="true" tabindex="-1"></a>solveLeastSquares <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb229-2"><a href="cha-RCfunctions.html#cb229-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">X =</span> <span class="fu">double</span>(<span class="dv">2</span>), <span class="at">y =</span> <span class="fu">double</span>(<span class="dv">1</span>)) { <span class="co"># type declarations</span></span>
-<span id="cb229-3"><a href="cha-RCfunctions.html#cb229-3" aria-hidden="true" tabindex="-1"></a>        ans <span class="ot">&lt;-</span> <span class="fu">inverse</span>(<span class="fu">t</span>(X) <span class="sc">%*%</span> X) <span class="sc">%*%</span> (<span class="fu">t</span>(X) <span class="sc">%*%</span> y)</span>
-<span id="cb229-4"><a href="cha-RCfunctions.html#cb229-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(ans)</span>
-<span id="cb229-5"><a href="cha-RCfunctions.html#cb229-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">2</span>))  <span class="co"># return type declaration</span></span>
-<span id="cb229-6"><a href="cha-RCfunctions.html#cb229-6" aria-hidden="true" tabindex="-1"></a>    } )</span>
-<span id="cb229-7"><a href="cha-RCfunctions.html#cb229-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb229-8"><a href="cha-RCfunctions.html#cb229-8" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">400</span>), <span class="at">nrow =</span> <span class="dv">100</span>)</span>
-<span id="cb229-9"><a href="cha-RCfunctions.html#cb229-9" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)</span>
-<span id="cb229-10"><a href="cha-RCfunctions.html#cb229-10" aria-hidden="true" tabindex="-1"></a><span class="fu">solveLeastSquares</span>(X, y)</span></code></pre></div>
+<div class="sourceCode" id="cb230"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb230-1"><a href="cha-RCfunctions.html#cb230-1" aria-hidden="true" tabindex="-1"></a>solveLeastSquares <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb230-2"><a href="cha-RCfunctions.html#cb230-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">X =</span> <span class="fu">double</span>(<span class="dv">2</span>), <span class="at">y =</span> <span class="fu">double</span>(<span class="dv">1</span>)) { <span class="co"># type declarations</span></span>
+<span id="cb230-3"><a href="cha-RCfunctions.html#cb230-3" aria-hidden="true" tabindex="-1"></a>        ans <span class="ot">&lt;-</span> <span class="fu">inverse</span>(<span class="fu">t</span>(X) <span class="sc">%*%</span> X) <span class="sc">%*%</span> (<span class="fu">t</span>(X) <span class="sc">%*%</span> y)</span>
+<span id="cb230-4"><a href="cha-RCfunctions.html#cb230-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(ans)</span>
+<span id="cb230-5"><a href="cha-RCfunctions.html#cb230-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">2</span>))  <span class="co"># return type declaration</span></span>
+<span id="cb230-6"><a href="cha-RCfunctions.html#cb230-6" aria-hidden="true" tabindex="-1"></a>    } )</span>
+<span id="cb230-7"><a href="cha-RCfunctions.html#cb230-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb230-8"><a href="cha-RCfunctions.html#cb230-8" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">400</span>), <span class="at">nrow =</span> <span class="dv">100</span>)</span>
+<span id="cb230-9"><a href="cha-RCfunctions.html#cb230-9" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)</span>
+<span id="cb230-10"><a href="cha-RCfunctions.html#cb230-10" aria-hidden="true" tabindex="-1"></a><span class="fu">solveLeastSquares</span>(X, y)</span></code></pre></div>
 <pre><code>##              [,1]
 ## [1,]  0.088547575
 ## [2,]  0.002025635
 ## [3,] -0.090387283
 ## [4,] -0.072660391</code></pre>
-<div class="sourceCode" id="cb231"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb231-1"><a href="cha-RCfunctions.html#cb231-1" aria-hidden="true" tabindex="-1"></a>CsolveLeastSquares <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(solveLeastSquares)</span>
-<span id="cb231-2"><a href="cha-RCfunctions.html#cb231-2" aria-hidden="true" tabindex="-1"></a><span class="fu">CsolveLeastSquares</span>(X, y)</span></code></pre></div>
+<div class="sourceCode" id="cb232"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb232-1"><a href="cha-RCfunctions.html#cb232-1" aria-hidden="true" tabindex="-1"></a>CsolveLeastSquares <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(solveLeastSquares)</span>
+<span id="cb232-2"><a href="cha-RCfunctions.html#cb232-2" aria-hidden="true" tabindex="-1"></a><span class="fu">CsolveLeastSquares</span>(X, y)</span></code></pre></div>
 <pre><code>##              [,1]
 ## [1,]  0.088547575
 ## [2,]  0.002025635
@@ -610,7 +611,7 @@ Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
 </tr>
 <tr class="odd">
 <td align="left"><code>is.na()</code></td>
-<td align="left">Does not correctly handle NAs from R that are type <code>'logical'</code>,</td>
+<td align="left">Does not correctly handle NAs (or NaNs) from R that are type <code>'logical'</code> or <code>'integer'</code>,</td>
 </tr>
 <tr class="even">
 <td align="left"></td>
@@ -618,7 +619,7 @@ Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
 </tr>
 <tr class="odd">
 <td align="left"><code>is.nan()</code></td>
-<td align="left">Treats <code>NA</code> of type ‘double’ as being <code>NaN</code> and <code>NA</code> of type ‘logical’ as not being <code>NaN</code>.</td>
+<td align="left"></td>
 </tr>
 <tr class="even">
 <td align="left"><code>any()</code></td>
@@ -662,7 +663,7 @@ Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
 </tr>
 </tbody>
 </table>
-<p>In addition to the above functions, we provide functions <code>any_na()</code> and <code>any_nan()</code> for finding if there are any <code>NA</code> or <code>NaN</code> values in a vector. These are equivalent to using <code>any(is.na())</code> and <code>any(is.nan())</code> in R.</p>
+<p>In addition to the above functions, we provide functions <code>any_na()</code> and <code>any_nan()</code> for finding if there are any <code>NA</code> or <code>NaN</code> values in a vector. These are equivalent to using <code>any(is.na())</code> and <code>any(is.nan())</code> in R, with the exception noted in the table above regarding <code>is.na()</code>.</p>
 <p>Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a <code>nimbleRcall</code> (see Section <a href="cha-RCfunctions.html#sec:calling-R-code">11.7</a>).</p>
 <p>Next we cover some of these functions in more detail.</p>
 <div id="numeric-integer-logical-matrix-and-array" class="section level4 hasAnchor" number="11.2.2.1">
@@ -671,7 +672,7 @@ Table <a href="cha-RCfunctions.html#tab:coreR">11.1</a>.</p>
 floating-point (or ‘double’ [precision]), integer, or logical values, respectively. The <code>length</code> argument specifies the vector
 length (default 0), and the <code>value</code> argument specifies the initial
 value either as a scalar (used for all vector elements, with default
-0) or a vector. If a vector and its length is not equal to <code>length</code>, the remaining values will be zero, but we plan to implement R-style recycling in the next version of NIMBLE. The <code>init</code> argument specifies
+0) or a vector. If a vector and its length is not equal to <code>length</code>, the remaining values will be filled by R-style recycling if the <code>recycle</code> argument is <code>TRUE</code> (which is the default). The <code>init</code> argument specifies
 whether or not to initialize the elements in compiled code (default <code>TRUE</code>). If
 first use of the variable does not rely on initial values, using
 <code>init = FALSE</code> will yield slightly more efficient performance.</p>
@@ -983,7 +984,7 @@ indicates if the function can take a vector as an argument (i.e., if the functio
 <td>yes</td>
 </tr>
 <tr class="even">
-<td align="left"><code>besselK(k, nu,</code></td>
+<td align="left"><code>besselK(x, nu,</code></td>
 <td align="left">modified bessel function</td>
 <td align="left">returns vector even if</td>
 <td>yes</td>
@@ -992,7 +993,7 @@ indicates if the function can take a vector as an argument (i.e., if the functio
 <tr class="odd">
 <td align="left"><code>...expon.scaled)</code></td>
 <td align="left">of the second kind</td>
-<td align="left"><span class="math inline">\(k\)</span> a matrix/array</td>
+<td align="left"><span class="math inline">\(x\)</span> a matrix/array</td>
 <td></td>
 <td></td>
 </tr>
@@ -1348,8 +1349,59 @@ datatype for the <code>control</code> parameter, whereas R’s <code>optim</code
 the <code>nimOptimDefaultControl</code> function, and set any desired fields.</p>
 <p>See <code>help(nimOptim)</code> for details, including example usage.</p>
 </div>
-<div id="sec:altern-keyw-some" class="section level3 hasAnchor" number="11.2.9">
-<h3><span class="header-section-number">11.2.9</span> ‘nim’ synonyms for some functions<a href="cha-RCfunctions.html#sec:altern-keyw-some" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="integration-integrate-and-nimintegrate" class="section level3 hasAnchor" number="11.2.9">
+<h3><span class="header-section-number">11.2.9</span> Integration: <em>integrate</em> and <em>nimIntegrate</em><a href="cha-RCfunctions.html#integration-integrate-and-nimintegrate" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>NIMBLE provides a <code>nimIntegrate</code> function that implement’s R’s
+<code>integrate</code> function, which carries out adaptive Gauss-Kronrod
+quadrature to integrate a function of one variable over a finite
+or infinite interval.</p>
+<p>In addition to general use in a nimbleFunction, this can, of course,
+be used in a user-defined function in
+model code, e.g., to implement models that involve
+an integral, such as certain point process and survival models.</p>
+<p>One could also consider using <code>nimIntegrate</code> to numerically
+integrate over a parameter in a model, such as to remove
+a parameter that is not mixing well in an MCMC. Note that
+NIMBLE’s Laplace approximation is a version of this,
+being equivalent to Gauss-Hermite quadrature with a single
+integration point (aka node). In a future version of NIMBLE, we will
+be making Gauss-Hermite quadrature available more generally
+as an extension of NIMBLE’s Laplace approximation.</p>
+<p>See <code>help(nimIntegrate)</code> for details, including basic example usage.</p>
+<p>Here is an example of using <code>nimIntegrate</code> to implement a vectorized von Mises distribution.</p>
+<div class="sourceCode" id="cb234"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb234-1"><a href="cha-RCfunctions.html#cb234-1" aria-hidden="true" tabindex="-1"></a>integrand <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb234-2"><a href="cha-RCfunctions.html#cb234-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">theta =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb234-3"><a href="cha-RCfunctions.html#cb234-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>( <span class="fu">exp</span>(theta[<span class="dv">1</span>] <span class="sc">*</span> <span class="fu">cos</span>(x) <span class="sc">+</span> theta[<span class="dv">2</span>] <span class="sc">*</span> <span class="fu">cos</span>(<span class="dv">2</span> <span class="sc">*</span> (x <span class="sc">+</span> theta[<span class="dv">3</span>]))) )</span>
+<span id="cb234-4"><a href="cha-RCfunctions.html#cb234-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb234-5"><a href="cha-RCfunctions.html#cb234-5" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb234-6"><a href="cha-RCfunctions.html#cb234-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb234-7"><a href="cha-RCfunctions.html#cb234-7" aria-hidden="true" tabindex="-1"></a>dGenVonMises <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb234-8"><a href="cha-RCfunctions.html#cb234-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">mu1 =</span> <span class="fu">double</span>(), <span class="at">mu2 =</span> <span class="fu">double</span>(), <span class="at">kappa1 =</span> <span class="fu">double</span>(), <span class="at">kappa2 =</span> <span class="fu">double</span>(),</span>
+<span id="cb234-9"><a href="cha-RCfunctions.html#cb234-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">limits =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)){</span>
+<span id="cb234-10"><a href="cha-RCfunctions.html#cb234-10" aria-hidden="true" tabindex="-1"></a>    range <span class="ot">&lt;-</span> limits[<span class="dv">2</span>] <span class="sc">-</span> limits[<span class="dv">1</span>]</span>
+<span id="cb234-11"><a href="cha-RCfunctions.html#cb234-11" aria-hidden="true" tabindex="-1"></a>    mu1R <span class="ot">&lt;-</span> (mu1 <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
+<span id="cb234-12"><a href="cha-RCfunctions.html#cb234-12" aria-hidden="true" tabindex="-1"></a>    mu2R <span class="ot">&lt;-</span> (mu2 <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
+<span id="cb234-13"><a href="cha-RCfunctions.html#cb234-13" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> (x <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
+<span id="cb234-14"><a href="cha-RCfunctions.html#cb234-14" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> (mu1R <span class="sc">-</span> mu2R) <span class="sc">%%</span> pi</span>
+<span id="cb234-15"><a href="cha-RCfunctions.html#cb234-15" aria-hidden="true" tabindex="-1"></a>    num <span class="ot">&lt;-</span> <span class="fu">exp</span>(kappa1 <span class="sc">*</span> <span class="fu">cos</span>(z <span class="sc">-</span> mu1R) <span class="sc">+</span> kappa2 <span class="sc">*</span> <span class="fu">cos</span>(<span class="dv">2</span> <span class="sc">*</span> (z <span class="sc">-</span> mu2R)))</span>
+<span id="cb234-16"><a href="cha-RCfunctions.html#cb234-16" aria-hidden="true" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> <span class="fu">c</span>(kappa1, kappa2, d)</span>
+<span id="cb234-17"><a href="cha-RCfunctions.html#cb234-17" aria-hidden="true" tabindex="-1"></a>    den <span class="ot">&lt;-</span> <span class="fu">nimIntegrate</span>(integrand, <span class="at">lower =</span> <span class="dv">0</span>, <span class="at">upper =</span> <span class="dv">2</span><span class="sc">*</span>pi, tmp)[<span class="dv">1</span>]</span>
+<span id="cb234-18"><a href="cha-RCfunctions.html#cb234-18" aria-hidden="true" tabindex="-1"></a>    dens <span class="ot">&lt;-</span> num<span class="sc">/</span>den</span>
+<span id="cb234-19"><a href="cha-RCfunctions.html#cb234-19" aria-hidden="true" tabindex="-1"></a>    result <span class="ot">&lt;-</span> dens<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi<span class="sc">/</span>range</span>
+<span id="cb234-20"><a href="cha-RCfunctions.html#cb234-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(log) {</span>
+<span id="cb234-21"><a href="cha-RCfunctions.html#cb234-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">log</span>(result))</span>
+<span id="cb234-22"><a href="cha-RCfunctions.html#cb234-22" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="fu">return</span>(result)</span>
+<span id="cb234-23"><a href="cha-RCfunctions.html#cb234-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb234-24"><a href="cha-RCfunctions.html#cb234-24" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb234-25"><a href="cha-RCfunctions.html#cb234-25" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb234-26"><a href="cha-RCfunctions.html#cb234-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb234-27"><a href="cha-RCfunctions.html#cb234-27" aria-hidden="true" tabindex="-1"></a>cgvonmises <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(dGenVonMises)</span>
+<span id="cb234-28"><a href="cha-RCfunctions.html#cb234-28" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">360</span></span>
+<span id="cb234-29"><a href="cha-RCfunctions.html#cb234-29" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(x, circular::dgenvonmises(circular(x, type = &quot;angles&quot;, units = &quot;degrees&quot;), -1, 1, 2, 1))</span></span>
+<span id="cb234-30"><a href="cha-RCfunctions.html#cb234-30" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(x, cgvonmises(x, mu1=20, mu2=300, kappa1=2, kappa2=1, limits = c(0, 360)), type = &#39;l&#39;)</span></span></code></pre></div>
+</div>
+<div id="sec:altern-keyw-some" class="section level3 hasAnchor" number="11.2.10">
+<h3><span class="header-section-number">11.2.10</span> ‘nim’ synonyms for some functions<a href="cha-RCfunctions.html#sec:altern-keyw-some" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE uses some keywords, such as <code>dim</code> and <code>print</code>, in ways
 similar but not identical to R. In addition, there are some keywords
 in NIMBLE that have the same names as R functions with quite different functionality.
@@ -1375,6 +1427,8 @@ replacements include</p>
 <li><code>switch</code> <span class="math inline">\(\rightarrow\)</span> <code>nimSwitch</code></li>
 <li><code>numeric, integer, logical</code> <span class="math inline">\(\rightarrow\)</span> <code>nimNumeric, nimInteger, nimLogical</code></li>
 <li><code>matrix, array</code> <span class="math inline">\(\rightarrow\)</span> <code>nimMatrix, nimArray</code></li>
+<li><code>optim</code> <span class="math inline">\(\rightarrow\)</span> <code>nimOptim</code></li>
+<li><code>integrate</code> <span class="math inline">\(\rightarrow\)</span> <code>nimIntegrate</code></li>
 </ul>
 <p>This system gives programmers the choice between using the keywords like
 <code>nimPrint</code> directly, to avoid confusion in their own code about
@@ -1414,7 +1468,7 @@ evaluated. NIMBLE’s static types makes it stricter than R.</p>
 <h4><span class="header-section-number">11.3.2.1</span> When NIMBLE can automatically set a numeric type<a href="cha-RCfunctions.html#sec:when-nimble-can" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>When a variable is first created by assignment, its type is determined
 automatically by that assignment. For example, if <code>x</code> has not appeared before, then</p>
-<div class="sourceCode" id="cb233"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb233-1"><a href="cha-RCfunctions.html#cb233-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> A <span class="sc">%*%</span> B <span class="co"># assume A and B are double matrices or vectors</span></span></code></pre></div>
+<div class="sourceCode" id="cb235"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb235-1"><a href="cha-RCfunctions.html#cb235-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> A <span class="sc">%*%</span> B <span class="co"># assume A and B are double matrices or vectors</span></span></code></pre></div>
 <p>will create <code>x</code> to be a double matrix of the correct size
 (determined during execution).</p>
 <div id="avoid-changing-types-of-a-variable-within-a-nimblefunction" class="section level5 hasAnchor" number="11.3.2.1.1">
@@ -1425,9 +1479,9 @@ If <code>x</code> is used subsequently, it can
 only be used as a double matrix. This is true even if it is assigned a
 new value, which will again set its size automatically but cannot
 change its type.</p>
-<div class="sourceCode" id="cb234"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb234-1"><a href="cha-RCfunctions.html#cb234-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> A <span class="sc">%*%</span> B <span class="co"># assume A and B are double matrices or vectors</span></span>
-<span id="cb234-2"><a href="cha-RCfunctions.html#cb234-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">nimMatrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span></span>
-<span id="cb234-3"><a href="cha-RCfunctions.html#cb234-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></span></code></pre></div>
+<div class="sourceCode" id="cb236"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb236-1"><a href="cha-RCfunctions.html#cb236-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> A <span class="sc">%*%</span> B <span class="co"># assume A and B are double matrices or vectors</span></span>
+<span id="cb236-2"><a href="cha-RCfunctions.html#cb236-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">nimMatrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span></span>
+<span id="cb236-3"><a href="cha-RCfunctions.html#cb236-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></span></code></pre></div>
 </div>
 </div>
 <div id="sec:when-numeric-object" class="section level4 hasAnchor" number="11.3.2.2">
@@ -1438,10 +1492,10 @@ it must be large enough for its eventual contents; it will not be automatically
 resized if assignments are made beyond its current size. For example,
 in the following code, <code>x</code> must be created before being filled with
 contents for specific indices.</p>
-<div class="sourceCode" id="cb235"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb235-1"><a href="cha-RCfunctions.html#cb235-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">10</span>)</span>
-<span id="cb235-2"><a href="cha-RCfunctions.html#cb235-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb235-3"><a href="cha-RCfunctions.html#cb235-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) </span>
-<span id="cb235-4"><a href="cha-RCfunctions.html#cb235-4" aria-hidden="true" tabindex="-1"></a>   x[i] <span class="ot">&lt;-</span> <span class="fu">foo</span>(y[i]) </span></code></pre></div>
+<div class="sourceCode" id="cb237"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb237-1"><a href="cha-RCfunctions.html#cb237-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">10</span>)</span>
+<span id="cb237-2"><a href="cha-RCfunctions.html#cb237-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb237-3"><a href="cha-RCfunctions.html#cb237-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) </span>
+<span id="cb237-4"><a href="cha-RCfunctions.html#cb237-4" aria-hidden="true" tabindex="-1"></a>   x[i] <span class="ot">&lt;-</span> <span class="fu">foo</span>(y[i]) </span></code></pre></div>
 </div>
 <div id="how-nimble-handles-na" class="section level4 hasAnchor" number="11.3.2.3">
 <h4><span class="header-section-number">11.3.2.3</span> How NIMBLE handles <code>NA</code><a href="cha-RCfunctions.html#how-nimble-handles-na" class="anchor-section" aria-label="Anchor link to header"></a></h4>
@@ -1458,30 +1512,30 @@ contents for specific indices.</p>
 <h4><span class="header-section-number">11.3.2.4</span> Changing the sizes of existing objects: <em>setSize</em><a href="cha-RCfunctions.html#sec:chang-sizes-exist" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p><code>setSize</code> changes the size of an object, preserving its contents in
 column-major order.</p>
-<div class="sourceCode" id="cb236"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb236-1"><a href="cha-RCfunctions.html#cb236-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example of creating and resizing a floating-point vector</span></span>
-<span id="cb236-2"><a href="cha-RCfunctions.html#cb236-2" aria-hidden="true" tabindex="-1"></a><span class="co"># myNumericVector will be of length 10, with all elements initialized to 2 </span></span>
-<span id="cb236-3"><a href="cha-RCfunctions.html#cb236-3" aria-hidden="true" tabindex="-1"></a>myNumericVector <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">10</span>, <span class="at">value =</span> <span class="dv">2</span>) </span>
-<span id="cb236-4"><a href="cha-RCfunctions.html#cb236-4" aria-hidden="true" tabindex="-1"></a><span class="co"># resize this numeric vector to be length 20; last 10 elements will be 0</span></span>
-<span id="cb236-5"><a href="cha-RCfunctions.html#cb236-5" aria-hidden="true" tabindex="-1"></a><span class="fu">setSize</span>(myNumericVector, <span class="dv">20</span>)</span></code></pre></div>
-<div class="sourceCode" id="cb237"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb237-1"><a href="cha-RCfunctions.html#cb237-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example of creating a 1-by-10 matrix with values 1:10 and resizing it</span></span>
-<span id="cb237-2"><a href="cha-RCfunctions.html#cb237-2" aria-hidden="true" tabindex="-1"></a>myMatrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">nrow =</span> <span class="dv">1</span>, <span class="at">ncol =</span> <span class="dv">10</span>) </span>
-<span id="cb237-3"><a href="cha-RCfunctions.html#cb237-3" aria-hidden="true" tabindex="-1"></a><span class="co"># resize this matrix to be a 10-by-10 matrix</span></span>
-<span id="cb237-4"><a href="cha-RCfunctions.html#cb237-4" aria-hidden="true" tabindex="-1"></a><span class="fu">setSize</span>(myMatrix, <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">10</span>))</span>
-<span id="cb237-5"><a href="cha-RCfunctions.html#cb237-5" aria-hidden="true" tabindex="-1"></a><span class="co"># The first column will have the 1:10</span></span></code></pre></div>
+<div class="sourceCode" id="cb238"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb238-1"><a href="cha-RCfunctions.html#cb238-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example of creating and resizing a floating-point vector</span></span>
+<span id="cb238-2"><a href="cha-RCfunctions.html#cb238-2" aria-hidden="true" tabindex="-1"></a><span class="co"># myNumericVector will be of length 10, with all elements initialized to 2 </span></span>
+<span id="cb238-3"><a href="cha-RCfunctions.html#cb238-3" aria-hidden="true" tabindex="-1"></a>myNumericVector <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">10</span>, <span class="at">value =</span> <span class="dv">2</span>) </span>
+<span id="cb238-4"><a href="cha-RCfunctions.html#cb238-4" aria-hidden="true" tabindex="-1"></a><span class="co"># resize this numeric vector to be length 20; last 10 elements will be 0</span></span>
+<span id="cb238-5"><a href="cha-RCfunctions.html#cb238-5" aria-hidden="true" tabindex="-1"></a><span class="fu">setSize</span>(myNumericVector, <span class="dv">20</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb239"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb239-1"><a href="cha-RCfunctions.html#cb239-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example of creating a 1-by-10 matrix with values 1:10 and resizing it</span></span>
+<span id="cb239-2"><a href="cha-RCfunctions.html#cb239-2" aria-hidden="true" tabindex="-1"></a>myMatrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">nrow =</span> <span class="dv">1</span>, <span class="at">ncol =</span> <span class="dv">10</span>) </span>
+<span id="cb239-3"><a href="cha-RCfunctions.html#cb239-3" aria-hidden="true" tabindex="-1"></a><span class="co"># resize this matrix to be a 10-by-10 matrix</span></span>
+<span id="cb239-4"><a href="cha-RCfunctions.html#cb239-4" aria-hidden="true" tabindex="-1"></a><span class="fu">setSize</span>(myMatrix, <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">10</span>))</span>
+<span id="cb239-5"><a href="cha-RCfunctions.html#cb239-5" aria-hidden="true" tabindex="-1"></a><span class="co"># The first column will have the 1:10</span></span></code></pre></div>
 </div>
 <div id="sec:conf-betw-scal" class="section level4 hasAnchor" number="11.3.2.5">
 <h4><span class="header-section-number">11.3.2.5</span> Confusions between scalars and length-one vectors<a href="cha-RCfunctions.html#sec:conf-betw-scal" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>In R, there is no such thing is a true scalar; scalars can always be
 treated as vectors of length one. NIMBLE allows true scalars, which
 can create confusions. For example, consider the following code:</p>
-<div class="sourceCode" id="cb238"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb238-1"><a href="cha-RCfunctions.html#cb238-1" aria-hidden="true" tabindex="-1"></a>myfun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb238-2"><a href="cha-RCfunctions.html#cb238-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">i =</span> <span class="fu">integer</span>()) { <span class="co"># i is an integer scalar</span></span>
-<span id="cb238-3"><a href="cha-RCfunctions.html#cb238-3" aria-hidden="true" tabindex="-1"></a>        randomValues <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>)   <span class="co"># double vector</span></span>
-<span id="cb238-4"><a href="cha-RCfunctions.html#cb238-4" aria-hidden="true" tabindex="-1"></a>        a <span class="ot">&lt;-</span> randomValues[i]        <span class="co"># double scalar</span></span>
-<span id="cb238-5"><a href="cha-RCfunctions.html#cb238-5" aria-hidden="true" tabindex="-1"></a>        b <span class="ot">&lt;-</span> randomValues[i<span class="sc">:</span>i]      <span class="co"># double vector</span></span>
-<span id="cb238-6"><a href="cha-RCfunctions.html#cb238-6" aria-hidden="true" tabindex="-1"></a>        d <span class="ot">&lt;-</span> a <span class="sc">+</span> b                  <span class="co"># double vector</span></span>
-<span id="cb238-7"><a href="cha-RCfunctions.html#cb238-7" aria-hidden="true" tabindex="-1"></a>        f <span class="ot">&lt;-</span> <span class="fu">c</span>(i)                   <span class="co"># integer vector</span></span>
-<span id="cb238-8"><a href="cha-RCfunctions.html#cb238-8" aria-hidden="true" tabindex="-1"></a>    })</span></code></pre></div>
+<div class="sourceCode" id="cb240"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb240-1"><a href="cha-RCfunctions.html#cb240-1" aria-hidden="true" tabindex="-1"></a>myfun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb240-2"><a href="cha-RCfunctions.html#cb240-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">i =</span> <span class="fu">integer</span>()) { <span class="co"># i is an integer scalar</span></span>
+<span id="cb240-3"><a href="cha-RCfunctions.html#cb240-3" aria-hidden="true" tabindex="-1"></a>        randomValues <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>)   <span class="co"># double vector</span></span>
+<span id="cb240-4"><a href="cha-RCfunctions.html#cb240-4" aria-hidden="true" tabindex="-1"></a>        a <span class="ot">&lt;-</span> randomValues[i]        <span class="co"># double scalar</span></span>
+<span id="cb240-5"><a href="cha-RCfunctions.html#cb240-5" aria-hidden="true" tabindex="-1"></a>        b <span class="ot">&lt;-</span> randomValues[i<span class="sc">:</span>i]      <span class="co"># double vector</span></span>
+<span id="cb240-6"><a href="cha-RCfunctions.html#cb240-6" aria-hidden="true" tabindex="-1"></a>        d <span class="ot">&lt;-</span> a <span class="sc">+</span> b                  <span class="co"># double vector</span></span>
+<span id="cb240-7"><a href="cha-RCfunctions.html#cb240-7" aria-hidden="true" tabindex="-1"></a>        f <span class="ot">&lt;-</span> <span class="fu">c</span>(i)                   <span class="co"># integer vector</span></span>
+<span id="cb240-8"><a href="cha-RCfunctions.html#cb240-8" aria-hidden="true" tabindex="-1"></a>    })</span></code></pre></div>
 <p>In the line that creates <code>b</code>, the index range <code>i:i</code> is not
 evaluated until run time. Even though <code>i:i</code> will always evaluate
 to simpy <code>i</code>, the compiler does not determine that. Since there is
@@ -1494,15 +1548,15 @@ illustrated in the last line.</p>
 <div id="sec:conf-betw-scal2" class="section level4 hasAnchor" number="11.3.2.6">
 <h4><span class="header-section-number">11.3.2.6</span> Confusions between vectors and one-column or one-row matrices<a href="cha-RCfunctions.html#sec:conf-betw-scal2" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>Consider the following code:</p>
-<div class="sourceCode" id="cb239"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb239-1"><a href="cha-RCfunctions.html#cb239-1" aria-hidden="true" tabindex="-1"></a>myfun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb239-2"><a href="cha-RCfunctions.html#cb239-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>() { </span>
-<span id="cb239-3"><a href="cha-RCfunctions.html#cb239-3" aria-hidden="true" tabindex="-1"></a>        A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">value =</span> <span class="fu">rnorm</span>(<span class="dv">9</span>), <span class="at">nrow =</span> <span class="dv">3</span>)</span>
-<span id="cb239-4"><a href="cha-RCfunctions.html#cb239-4" aria-hidden="true" tabindex="-1"></a>        B <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">3</span>)</span>
-<span id="cb239-5"><a href="cha-RCfunctions.html#cb239-5" aria-hidden="true" tabindex="-1"></a>        Cmatrix <span class="ot">&lt;-</span> A <span class="sc">%*%</span> B                <span class="co"># double matrix, one column</span></span>
-<span id="cb239-6"><a href="cha-RCfunctions.html#cb239-6" aria-hidden="true" tabindex="-1"></a>        Cvector <span class="ot">&lt;-</span> (A <span class="sc">%*%</span> B)[,<span class="dv">1</span>]          <span class="co"># double vector</span></span>
-<span id="cb239-7"><a href="cha-RCfunctions.html#cb239-7" aria-hidden="true" tabindex="-1"></a>        Cmatrix <span class="ot">&lt;-</span> (A <span class="sc">%*%</span> B)[,<span class="dv">1</span>]          <span class="co"># error, vector assigned to matrix</span></span>
-<span id="cb239-8"><a href="cha-RCfunctions.html#cb239-8" aria-hidden="true" tabindex="-1"></a>        Cmatrix[,<span class="dv">1</span>] <span class="ot">&lt;-</span> (A <span class="sc">%*%</span> B)[,<span class="dv">1</span>]      <span class="co"># ok, if Cmatrix is large enough</span></span>
-<span id="cb239-9"><a href="cha-RCfunctions.html#cb239-9" aria-hidden="true" tabindex="-1"></a>    })</span></code></pre></div>
+<div class="sourceCode" id="cb241"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb241-1"><a href="cha-RCfunctions.html#cb241-1" aria-hidden="true" tabindex="-1"></a>myfun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb241-2"><a href="cha-RCfunctions.html#cb241-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>() { </span>
+<span id="cb241-3"><a href="cha-RCfunctions.html#cb241-3" aria-hidden="true" tabindex="-1"></a>        A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">value =</span> <span class="fu">rnorm</span>(<span class="dv">9</span>), <span class="at">nrow =</span> <span class="dv">3</span>)</span>
+<span id="cb241-4"><a href="cha-RCfunctions.html#cb241-4" aria-hidden="true" tabindex="-1"></a>        B <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">3</span>)</span>
+<span id="cb241-5"><a href="cha-RCfunctions.html#cb241-5" aria-hidden="true" tabindex="-1"></a>        Cmatrix <span class="ot">&lt;-</span> A <span class="sc">%*%</span> B                <span class="co"># double matrix, one column</span></span>
+<span id="cb241-6"><a href="cha-RCfunctions.html#cb241-6" aria-hidden="true" tabindex="-1"></a>        Cvector <span class="ot">&lt;-</span> (A <span class="sc">%*%</span> B)[,<span class="dv">1</span>]          <span class="co"># double vector</span></span>
+<span id="cb241-7"><a href="cha-RCfunctions.html#cb241-7" aria-hidden="true" tabindex="-1"></a>        Cmatrix <span class="ot">&lt;-</span> (A <span class="sc">%*%</span> B)[,<span class="dv">1</span>]          <span class="co"># error, vector assigned to matrix</span></span>
+<span id="cb241-8"><a href="cha-RCfunctions.html#cb241-8" aria-hidden="true" tabindex="-1"></a>        Cmatrix[,<span class="dv">1</span>] <span class="ot">&lt;-</span> (A <span class="sc">%*%</span> B)[,<span class="dv">1</span>]      <span class="co"># ok, if Cmatrix is large enough</span></span>
+<span id="cb241-9"><a href="cha-RCfunctions.html#cb241-9" aria-hidden="true" tabindex="-1"></a>    })</span></code></pre></div>
 <p>This creates a matrix <code>A</code>, a vector <code>B</code>, and matrix-multiplies
 them. The vector <code>B</code> is automatically treated as a one-column
 matrix in matrix algebra computations. The result of matrix multiplication is always a matrix, but
@@ -1525,11 +1579,9 @@ compilation. When needed <code>asRow</code> and <code>asCol</code> can control h
 vector will be treated as a matrix.</p>
 <p>Here is a guide to such issues. Suppose <code>v1</code> and <code>v2</code> are vectors, and <code>M1</code> is a matrix. Then</p>
 <ul>
-<li><code>v1 + M1</code> generates a compilation error unless one dimension of
-<code>M1</code> is known at compile-time to be 1. If so, then <code>v1</code> is promoted to a
-1-row or 1-column matrix to conform with <code>M1</code>, and the result is a
-matrix of the same sizes. This behavior occurs for
-all component-wise binary functions.</li>
+<li><code>v1 + M1</code> promotes <code>v1</code> to a 1-column matrix if <code>M1</code> is a one-column
+matrix. Otherwise, this results in a run-time error.
+This behavior occurs for all component-wise binary functions.</li>
 <li><code>v1 %*% M1</code> defaults to promoting <code>v1</code> to a 1-row matrix,
 unless it is known at compile-time that <code>M1</code> has 1 row, in which case
 <code>v1</code> is promoted to a 1-column matrix.</li>
@@ -1574,14 +1626,14 @@ and will be re-sized for the result.</li>
 <h4><span class="header-section-number">11.3.2.8</span> Size warnings and the potential for crashes<a href="cha-RCfunctions.html#sec:size-warn-potent" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>For matrix algebra, NIMBLE cannot ensure perfect behavior because
 sizes are not known until run time. Therefore, it is possible for you
-to write code that will crash your R session. In Version 1.0.1, NIMBLE
+to write code that will crash your R session. In Version 1.1.0, NIMBLE
 attempts to issue a warning if sizes are not compatible, but it does not
 halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication,
 NIMBLE will output a warning that the number of rows of <code>M1</code> does not
 match the number of columns of <code>M2</code>. After that warning the statement
 will be executed and may result in a crash. Another easy way to write
 code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to
-prevent crashes, but in Version 1.0.1 we limit ourselves to trying to provide
+prevent crashes, but in Version 1.1.0 we limit ourselves to trying to provide
 useful information.</p>
 </div>
 </div>
@@ -1603,9 +1655,9 @@ For example, <code>double(2, c(4, 5))</code> declares a <span class="math inline
 are omitted, they will be set either by assignment or by <code>setSize</code>.</p>
 <p>In the case of scalar arguments only, a default value can be
 provided. For example, to provide 1.2 as a default:</p>
-<div class="sourceCode" id="cb240"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb240-1"><a href="cha-RCfunctions.html#cb240-1" aria-hidden="true" tabindex="-1"></a>myfun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb240-2"><a href="cha-RCfunctions.html#cb240-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="fl">1.2</span>)) {</span>
-<span id="cb240-3"><a href="cha-RCfunctions.html#cb240-3" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb242"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb242-1"><a href="cha-RCfunctions.html#cb242-1" aria-hidden="true" tabindex="-1"></a>myfun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb242-2"><a href="cha-RCfunctions.html#cb242-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="fl">1.2</span>)) {</span>
+<span id="cb242-3"><a href="cha-RCfunctions.html#cb242-3" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
 <p>Functions with return values must have their return type explicitly declared using <code>returnType</code>, which can occur anywhere in the run code. For example <code>returnType(integer(2))</code> declares the return type to be a matrix of integers. A return type of <code>void()</code> means there is
 no return value, which is the default if no <code>returnType</code> statement
 is included.</p>

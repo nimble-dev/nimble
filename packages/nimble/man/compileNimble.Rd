@@ -11,7 +11,7 @@ compileNimble(
   projectName = "",
   control = list(),
   resetFunctions = FALSE,
-  showCompilerOutput = nimbleOptions("showCompilerOutput")
+  showCompilerOutput = getNimbleOption("showCompilerOutput")
 )
 }
 \arguments{

@@ -104,6 +104,14 @@ nimbleModel <- function(code,
     md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits,
                   data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
+    if(nimbleOptions("enableModelMacros")){
+      # Do this stuff if macros are enabled:
+      # Update constants in case any new ones were created by macros
+      newConstants <- md$constantsList[!names(md$constantsList) %in% names(constants)]
+      constants <- c(constants, newConstants)
+      # Update inits in case new ones were created by macros
+      inits <- addMacroInits(inits, md$macroInits)
+    }
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
     if(debug) browser()
@@ -196,7 +204,9 @@ processModelFile <- function(fileName) {
   codeLines <- paste("\n", codeLines, collapse = "") # make sure first block occurs after a \n so regex below works ok; this allows me to not mistakenly find 'var', 'data', etc as names of nodes
   varBlockRegEx = "\n\\s*var\\s*(\n*.*?)(\n+\\s*(data|model|const).*)"
   dataBlockRegEx = "\n\\s*data\\s*\\{(.*?)\\}(\n+\\s*(var|model|const).*)"
-  modelBlockRegEx = "\n\\s*model\\s*\\{(.*?)\\}\\s*\n+\\s*(var|data|const).*"
+  ## 2023-12-02: added additional regex syntax so that variables beginning with `var`, `data`, `const`
+  ## after a loop are not omitted as part of var/data/const block (issue 1351).
+  modelBlockRegEx = "\n\\s*model\\s*\\{(.*?)\\}\\s*\n+\\s*(var|data|const)(\\s+\\w|\\s*\n\\s*\\w|\\s+\\{|\\s*\n\\s*\\{)"
 
   if(length(grep(varBlockRegEx, codeLines))) {
     varLines <- gsub(varBlockRegEx, "\\1", codeLines)
@@ -260,7 +270,10 @@ processNonParseableCode <- function(text) {
 #'
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'. See \code{\link{nimbleOptions}} for details.
 #'
-#' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
+#' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.
+#'
+#' @param buildDerivs logical indicating whether to build derivative capabilities for the model.
+
 #'
 #' @author Christopher Paciorek
 #'
@@ -291,7 +304,7 @@ processNonParseableCode <- function(text) {
 #' pumpModel$getVarNames()
 #' pumpModel$x
 #' 
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE, buildDerivs = getNimbleOption('buildModelDerivs')) {
 
   # helper function
   doEval <- function(vec, env) {
@@ -463,7 +476,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # create R model
   # 'data' will have constants and data, but BUGSmodel is written to be ok with this
   # we can't separate them before building model as we don't know names of nodes in model
-  Rmodel <- nimbleModel(code = model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug, check = check, calculate = calculate)
+  Rmodel <- nimbleModel(code = model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug, check = check, calculate = calculate, buildDerivs = buildDerivs)
 
   # now provide values for data nodes from 'data' list
   if(FALSE) { # now handled within nimbleModel

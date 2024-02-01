@@ -3,19 +3,19 @@ Title: MCMC, Particle Filtering, and Programmable Hierarchical Modeling
 Description: A system for writing hierarchical statistical models largely
     compatible with 'BUGS' and 'JAGS', writing nimbleFunctions to operate models
     and do basic R-style math, and compiling both models and nimbleFunctions via
-    custom-generated C++. 'NIMBLE' includes default methods for MCMC, Monte Carlo
-    Expectation Maximization, and some other tools. The nimbleFunction system makes
-    it easy to do things like implement new MCMC samplers from R, customize the
-    assignment of samplers to different parts of a model from R, and compile the
-    new samplers automatically via C++ alongside the samplers 'NIMBLE' provides.
-    'NIMBLE' extends the 'BUGS'/'JAGS' language by making it extensible: New
-    distributions and functions can be added, including as calls to external
-    compiled code. Although most people think of MCMC as the main goal of the
-    'BUGS'/'JAGS' language for writing models, one can use 'NIMBLE' for writing
-    arbitrary other kinds of model-generic algorithms as well. A full User Manual is
-    available at <https://r-nimble.org>.
-Version: 1.0.1
-Date: 2023-06-15
+    custom-generated C++. 'NIMBLE' includes default methods for MCMC, Laplace
+    Approximation, Monte Carlo Expectation Maximization, and some other tools.
+    The nimbleFunction system makes it easy to do things like implement new MCMC
+    samplers from R, customize the assignment of samplers to different parts of
+    a model from R, and compile the new samplers automatically via C++ alongside
+    the samplers 'NIMBLE' provides. 'NIMBLE' extends the 'BUGS'/'JAGS' language
+    by making it extensible: New distributions and functions can be added,
+    including as calls to external compiled code. Although most people think
+    of MCMC as the main goal of the 'BUGS'/'JAGS' language for writing models,
+    one can use 'NIMBLE' for writing arbitrary other kinds of model-generic
+    algorithms as well. A full User Manual is available at <https://r-nimble.org>.
+Version: 1.1.0
+Date: 2024-01-29
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
     person("Perry", "de Valpine", role = "aut"),
@@ -30,7 +30,7 @@ Authors@R: c(
     person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
-    person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
+    person("Paul", "van Dam-Bates", role = "aut", comment = "nimIntegrate"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
     person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
     person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")

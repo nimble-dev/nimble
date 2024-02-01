@@ -515,6 +515,70 @@ test_that("Test that missing/mismatched returnType in 'r' function is trapped", 
     Rmodel <- nimbleModel(code)
 })
 
+test_that("default argument for `x` in density is trapped", {
+  ddist <- nimbleFunction(
+    run = function(x = double(0, default = 0), log = integer(default = 1)) {
+        returnType(double())
+        return(0)
+    }
+  )
+  expect_error(registerDistributions('ddist'), "not allowed to have a default")
+})
+
+test_that("Trap case where simulate function is removed", {
+    dfoo <- nimbleFunction(
+        run = function(x=double(), log=integer(0, default=0)) {
+            return(0)
+            returnType(double())
+        }
+    )
+    temporarilyAssignInGlobalEnv(dfoo, replace=TRUE)
+
+    m <- nimbleModel(
+        nimbleCode({
+            x ~ dfoo()
+        })
+    )
+    temporarilyAssignInGlobalEnv(rfoo, replace=TRUE)
+
+    cm <- compileNimble(m)
+
+    rm('rfoo', pos = .GlobalEnv)
+    dfoo <- nimbleFunction(
+        run = function(x=double(), log=integer(0, default=0)) {
+            return(0)
+            returnType(double())
+        }
+    )
+    temporarilyAssignInGlobalEnv(dfoo, replace=TRUE)
+
+    m <- nimbleModel(
+        nimbleCode({
+            x ~ dfoo()
+        })
+    )
+
+    expect_error(cm <- compileNimble(m), "is not available")
+    deregisterDistributions('dfoo')
+})
+
+test_that("Trap case where simulate function should be removed", {
+    dfoo <- nimbleFunction(
+        run = function(x = double(), p = double(), log = integer(default = 0)) {
+            ans <- x * log(p)
+            return(ans)
+            returnType(double())
+        }
+    )
+    m <- nimbleModel(quote({
+        param <- 1.2
+        x ~ dfoo(p = param)
+    }))
+
+    expect_true(exists('rfoo'))
+    deregisterDistributions('dfoo')
+    expect_false(exists('rfoo'))
+})
 
 sink(NULL)
 

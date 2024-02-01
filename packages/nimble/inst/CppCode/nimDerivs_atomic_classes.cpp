@@ -37,6 +37,8 @@ ATOMIC_NEW_DELETE_(log_pow_int)
 ATOMIC_NEW_DELETE_(zb_over_a)
 ATOMIC_NEW_DELETE_(probit)
 ATOMIC_NEW_DELETE_(iprobit)
+ATOMIC_NEW_DELETE_(dyn_ind_get)
+ATOMIC_NEW_DELETE_(dyn_ind_set)
 
 atomic_lgamma_class* new_atomic_lgamma(void* tape_mgr_ptr, const std::string& name, int bO) {
   return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->new_atomic_lgamma(name, bO);
@@ -199,6 +201,34 @@ atomic_zb_over_a_class *nimble_CppAD_tape_mgr::get_atomic_zb_over_a(std::vector<
   }
   return dynamic_cast<atomic_zb_over_a_class*>(atomic_ptrs[zb_over_a_index].first);
 }
+
+atomic_dyn_ind_get_class *track_atomic_dyn_ind_get(void* tape_mgr_ptr,
+                                                   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_dyn_ind_get(vec_ptr);
+}
+atomic_dyn_ind_get_class *nimble_CppAD_tape_mgr::get_atomic_dyn_ind_get(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!dyn_ind_get_exists) {
+    dyn_ind_get_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_dyn_ind_get("atomic_dyn_ind_get_managed"), vec_ptr) );
+    dyn_ind_get_exists = true;
+  }
+  return dynamic_cast<atomic_dyn_ind_get_class*>(atomic_ptrs[dyn_ind_get_index].first);
+}
+
+atomic_dyn_ind_set_class *track_atomic_dyn_ind_set(void* tape_mgr_ptr,
+                                                   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_dyn_ind_set(vec_ptr);
+}
+
+atomic_dyn_ind_set_class *nimble_CppAD_tape_mgr::get_atomic_dyn_ind_set(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!dyn_ind_set_exists) {
+    dyn_ind_set_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_dyn_ind_set("atomic_dyn_ind_set_managed"), vec_ptr) );
+    dyn_ind_set_exists = true;
+  }
+  return dynamic_cast<atomic_dyn_ind_set_class*>(atomic_ptrs[dyn_ind_set_index].first);
+}
+
 
 /***********************************/
 

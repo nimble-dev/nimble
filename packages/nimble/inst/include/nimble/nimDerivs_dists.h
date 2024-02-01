@@ -524,40 +524,30 @@ Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
 /* Categorial */
 template<class Type>
 Type nimDerivs_nimArr_dcat(const Type &x,
-		    const NimArr<1, Type> &prob,
-		    const Type &give_log)
+                           const NimArr<1, Type> &prob,
+                           const Type &give_log)
 {
-  CppAD::VecAD<double> vecProb(prob.size());
   Type sumProb = 0.;
-  CppAD::AD<double> i; // Per CppAD example, index assigning into VecAD must be a CppAD::AD<>
-  for(i = 0; size_t(Integer(i) ) < prob.size(); i += 1.) {
-    vecProb[i] = prob[ size_t(Integer(i) ) ];
-  }
   for(int j = 0; j < prob.size(); ++j) {
     sumProb += prob[ j ];
   }
-  Type ansProb = vecProb[x - 1] / sumProb;
+  Type ansProb = stoch_ind_get(prob, x - 1) / sumProb;
   Type ans = CppAD::CondExpEq(give_log, Type(1),
-			      log(ansProb),
-			      ansProb);
+                              log(ansProb),
+                              ansProb);
   return(ans);
 }
 
 template<class Type>
 Type nimDerivs_nimArr_dcat_logFixed(const Type &x,
-			     const NimArr<1, Type> &prob,
-			     int give_log)
+                                    const NimArr<1, Type> &prob,
+                                    int give_log)
 {
-  CppAD::VecAD<double> vecProb(prob.size());
   Type sumProb = 0.;
-  CppAD::AD<double> i;
-  for(i = 0; size_t(Integer(i) ) < prob.size(); i += 1.) {
-    vecProb[i] = prob[ size_t(Integer(i) ) ];
-  }
   for(int j = 0; j < prob.size(); ++j) {
     sumProb += prob[ j ];
   }
-  Type ansProb = vecProb[x - 1] / sumProb;
+  Type ansProb = stoch_ind_get(prob, x - 1) / sumProb;
   if(give_log) {
     return log(ansProb);
   } else {
@@ -1052,6 +1042,171 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
   return(logres);
 }
 
+//Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, double* adj, NimArr<1, Type> &weights, double* num, Type tau, int c, int zero_mean, Type give_log) 
+// Should adj,weights,num,c,zero_mean be `Type`? And should they be `const`?
+// do we need `const Type &adj` because used as an index?
+//formerly did (int) adj[count]
+template<class Type>
+Type nimDerivs_nimArr_dcar_normal(NimArr<1, Type> &x, NimArr<1, Type> &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, Type give_log) 
+{
+  // This method implements the following density calculation:
+  // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
+  // where tau is precision, c = (number of islands), and N is the length of x.
+  // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
+  if(CppAD::Value(tau) < 0) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  //PRINTF("c is equal to %d\n", c);
+  int N = x.size();
+  int L = adj.size();
+  
+  Type lp = 0;
+  int count = 0;
+  Type xi, xj;
+  for(int i = 0; i < N; i++) {
+    xi = x[i];
+    for(int j = 0; j < num[i]; j++) {
+      xj = x[ CppAD::Value(adj[count]) - 1 ];
+      lp += weights[count] * (xi-xj)*(xi-xj);
+      count++;
+    }
+  }
+  if(count != L) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  lp *= Type(1/2.0);     // accounts for double-summing over all (xi,xj) pairs
+  lp *= Type(-1/2.0) * tau;
+  lp += (Type(N)-c)/Type(2.0) * (log(tau) - Type(M_LN_2PI));
+
+  lp = CppAD::CondExpEq(give_log, Type(1), lp, exp(lp));
+  return(lp);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dcar_normal_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &adj, NimArr<1, Type> &weights, NimArr<1, Type> &num, Type tau, Type c, Type zero_mean, int give_log) 
+{
+  // This method implements the following density calculation:
+  // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
+  // where tau is precision, c = (number of islands), and N is the length of x.
+  // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
+  if(CppAD::Value(tau) < 0) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  //PRINTF("c is equal to %d\n", c);
+  int N = x.size();
+  int L = adj.size();
+
+  Type lp = 0;
+  int count = 0;
+  Type xi, xj;
+  for(int i = 0; i < N; i++) {
+    xi = x[i];
+    for(int j = 0; j < num[i]; j++) {
+      xj = x[ CppAD::Value(adj[count]) - 1 ];
+      lp += weights[count] * (xi-xj)*(xi-xj);
+      count++;
+    }
+  }
+  if(Type(count) != Type(L)) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  lp *= Type(1/2.0);     // accounts for double-summing over all (xi,xj) pairs
+  lp *= Type(-1/2.0) * tau;
+  lp += (Type(N)-c)/Type(2.0) * (log(tau) - Type(M_LN_2PI));
+  if(!give_log) {
+    lp = exp(lp);
+  }
+  return(lp);
+}
+
+
+template<class Type>
+Type nimDerivs_nimArr_dcar_proper(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<1, Type> &C, NimArr<1, Type> &adj, NimArr<1, Type> &num, NimArr<1, Type> &M, Type tau, Type gamma, NimArr<1, Type> &evs, Type give_log) {
+  // This method implements the following density calculation:
+  // x ~ MVN( mean = mu,   cov  = (I-gamma*Cmatrix)^-1* %*% Mmatrix / tau )
+  // note that the scalar 'tau' is a precision term.
+  int N = x.size();
+  int L = adj.size();
+
+  if(CppAD::Value(tau) < 0) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  Type lp = 0;
+  Type xi, xj;
+  int i, j, index;
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    xi = x[i] - mu[i];
+    lp += xi*xi / M[i];      // (x-mu)' M^-1 (x-mu)
+    //PRINTF("lp is equal to %f\n", lp);
+    for(j = 0; j < num[i]; j++) {
+      index =CppAD::Value(adj[count]) - 1;
+      xj = x[index] - mu[index];
+      lp -= gamma * xi * xj * C[count] / M[i];  // -gamma (x-mu)' M^-1 C (x-mu)
+      count++;
+    }
+  }
+  if(Type(count) != Type(L)) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  lp *= Type(-1/2.0) * tau;
+  // now add -1/2*log(|2*pi*Sigma|) to lp:
+  // det(Sigma) = det((I-gamma*Cmatrix)^-1 %*% M / tau) = prod(M) / prod(1 - gamma*evs) / tau^N
+  // where evs = eigen(Cmatrix)$values, and tau is precision
+  for(i = 0; i < N; i++) {
+    lp += (log(Type(1) - gamma*evs[i]) - log(M[i])) / Type(2.0);
+  }
+  lp += Type(N / 2.0) * (log(tau) - Type(M_LN_2PI));
+  lp = CppAD::CondExpEq(give_log, Type(1), lp, exp(lp));
+  return(lp);
+}
+
+
+template<class Type>
+Type nimDerivs_nimArr_dcar_proper_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<1, Type> &C, NimArr<1, Type> &adj, NimArr<1, Type> &num, NimArr<1, Type> &M, Type tau, Type gamma, NimArr<1, Type> &evs, int give_log) {
+  // This method implements the following density calculation:
+  // x ~ MVN( mean = mu,   cov  = (I-gamma*Cmatrix)^-1* %*% Mmatrix / tau )
+  // note that the scalar 'tau' is a precision term.
+  int N = x.size();
+  int L = adj.size();
+
+  if(CppAD::Value(tau) < 0) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  Type lp = 0;
+  Type xi, xj;
+  int i, j, index;
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    xi = x[i] - mu[i];
+    lp += xi*xi / M[i];      // (x-mu)' M^-1 (x-mu)
+    //PRINTF("lp is equal to %f\n", lp);
+    for(j = 0; j < num[i]; j++) {
+      index =CppAD::Value(adj[count]) - 1;
+      xj = x[index] - mu[index];
+      lp -= gamma * xi * xj * C[count] / M[i];  // -gamma (x-mu)' M^-1 C (x-mu)
+      count++;
+    }
+  }
+  if(Type(count) != Type(L)) {
+    return CppAD::numeric_limits<Type>::quiet_NaN();
+  }
+  lp *= Type(-1/2.0) * tau;
+  // now add -1/2*log(|2*pi*Sigma|) to lp:
+  // det(Sigma) = det((I-gamma*Cmatrix)^-1 %*% M / tau) = prod(M) / prod(1 - gamma*evs) / tau^N
+  // where evs = eigen(Cmatrix)$values, and tau is precision
+  for(i = 0; i < N; i++) {
+    lp += (log(Type(1) - gamma*evs[i]) - log(M[i])) / Type(2.0);
+  }
+  lp += Type(N / 2.0) * (log(tau) - Type(M_LN_2PI));
+  if(give_log) {
+    return(lp);
+  }
+  return(exp(lp));
+}
+
+
+
 /*************/
 /* Functions */
 
@@ -1187,7 +1342,7 @@ MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dweibull, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS4_1scalar(nimDerivs_dt_nonstandard, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS2_1scalar(nimDerivs_dt, CppAD::AD<double>)
 
-MAKE_RECYCLING_RULE_CLASS1_1scalar(nimDerivs_pow_int, CppAD::AD<double>)
+MAKE_RECYCLING_RULE_CLASS1_1scalar_2D(nimDerivs_pow_int, CppAD::AD<double>)
 
 #define nimDerivs_nimNewMatrixD newMatrix_impl<MatrixXd_CppAD, CppAD::AD<double> >::newMatrix
 #define nimDerivs_nimDiagonalD diagonal_impl<MatrixXd_CppAD, CppAD::AD<double> >::diagonal

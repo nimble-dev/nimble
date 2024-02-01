@@ -1393,9 +1393,33 @@ compareFilesByLine <- function(trialResults, correctResults, main = "") {
     linesToTest <- min(length(trialResults), length(correctResults))
     mapply(function(lineno, trialLine, correctLine) {
         expect_identical(trialLine, correctLine)
-    }, 1:linesToTest, trialResults, correctResults)
+    }, 1:linesToTest, trialResults[1:linesToTest], correctResults[1:linesToTest])
     invisible(NULL)
 }
+
+#### process test-mcmc.R output
+##trialResults <- readLines(tempFileName)
+##trialResults <- trialResults[grep('Error in x$.self$finalize() : attempt to apply non-function', trialResults, invert = TRUE, fixed = TRUE)]
+##newResults <- trialResults
+##i <- 1
+##while(i <= length(newResults)) {
+##    if(grepl('Test passed', newResults[i])) {
+##        if(i < length(newResults)) {
+##            newResults[i] <- paste0(gsub('Test passed.*', '', newResults[i]), newResults[i+1])
+##            newResults <- newResults[-(i+1)]
+##        } else {
+##            ## i == length(newResults)
+##            if(grepl('^Test passed', newResults[i])) {
+##                newResults <- newResults[-i]
+##            } else {
+##                newResults[i] <- gsub('Test passed.*', '', newResults[i])
+##            }
+##        }
+##    } else {
+##        i <- i + 1
+##    }
+##}
+##writeLines(newResults, FILENAME)
 
 compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
     if(main == "") main <- paste0(trialFile, ' and ', correctFile, ' do not match\n')
@@ -1428,6 +1452,12 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 ##              to `art1 + arg2^2`.
 make_op_param <- function(op, argTypes, more_args = NULL,
                           outer_code = NULL, inner_codes = NULL) {
+  returnTypeProvided <- NULL
+  if(isTRUE(attr(argTypes, "includesReturnType"))) {
+    returnTypeProvided <- argTypes[[2]]
+    argTypes <- argTypes[[1]]
+  }
+
   arg_names <- names(argTypes)
 
   if (is.null(arg_names)) {
@@ -1478,11 +1508,16 @@ make_op_param <- function(op, argTypes, more_args = NULL,
     parse(text = arg)[[1]]
   })
 
+  if(is.null(returnTypeProvided))
+    outputType <- return_type_string(op, argTypes)
+  else
+    outputType <- returnTypeProvided
+
   list(
     name = name,
     expr = expr,
     args = argTypesList,
-    outputType = parse(text = return_type_string(op, argTypes))[[1]]
+    outputType = parse(text = outputType)[[1]]
   )
 }
 
@@ -1667,6 +1702,17 @@ nim_all_equal <- function(x, y, tolerance = .Machine$double.eps^0.5, abs_thresho
   rel_diff <- abs((x-y)/denom)
   result <- rel_diff < tolerance
   all_result <- all(result)
+  if(is.na(all_result)) {
+      if(verbose) {
+          wh <- which(is.na(x) | is.na(y))
+          report <- cbind(x[wh], y[wh])
+          cat("\n******************\n")
+          cat("Detected some NA values ", info, ": ", xlab, " ", ylab, ".\n")
+          print(report)
+          cat("******************\n")
+      }
+      return(FALSE)
+  }
   if(verbose) {
     if(!all_result) {
       ord <- order(rel_diff, decreasing = TRUE)
