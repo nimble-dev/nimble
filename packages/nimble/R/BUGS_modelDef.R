@@ -149,6 +149,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     on.exit(options(scipen = scipen))
     if(debug) browser()
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
+    setUserEnv(userEnv = userEnv)                           ## set userEnv field of modelDef object
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(getNimbleOption("enableModelMacros")){
       # Stuff to do if macros are enabled
@@ -220,7 +221,6 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
     genVarNames()                         ## sets varNames <<- c(names(varInfo), names(logProbVarInfo))
     warnRHSonlyDynIdx()                   ## warns user if RHS-only nodes used in indexing (inefficient)
-    setUserEnv(userEnv = userEnv)         ## set userEnv field of modelDef object
     return(NULL)        
 })
 
@@ -415,8 +415,8 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                 if(isTRUE(getNimbleOption("enableDerivs")))
                     if(isTRUE(getNimbleOption("doADerrorTraps")))
                         if(buildDerivs) {
-                            dist <- as.character(code[[3]][[1]])
-                            checkADsupportForDistribution(dist)
+                            dist <- as.character(code[[i]][[3]][[1]])
+                            checkADsupportForDistribution(dist, verbose = TRUE)
                         }
             }
             if(code[[i]][[1]] == '<-')
@@ -479,18 +479,26 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     lineNumber
 })
 
-modelDefClass$methods(checkADsupportForDistribution = function(dist) {
+modelDefClass$methods(checkADsupportForDistribution = function(dist, verbose = FALSE) {
     supported <- TRUE
     if(!dist %in% c(distributions$namesVector, "T", "I")) {
         dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
-        if(!is.rcf(dfun))
-            message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
+        if(!is.rcf(dfun)) {
+            if(verbose)   message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
+            supported <- FALSE
+        }
         else {
             dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
-            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs))
-                message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
+            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs)) {
+                if(verbose)   message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
+                supported <- FALSE
+            }
         }
+    } else {
+        ## dist is truncated
+        supported <- FALSE
     }
+    return(supported)
 })
 
 
