@@ -113,6 +113,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genGraphNodesList              = function() {},
                                  setUserEnv                     = function() {},
                                  getUserEnv                     = function() {},
+                                 checkADsupportForDistribution  = function() {},
                                                                   
                                  newModel                       = function() {},
                                  fixRStudioHanging              = function() {},
@@ -413,8 +414,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                 checkUserDefinedDistribution(code[[i]], userEnv)
                 if(isTRUE(getNimbleOption("enableDerivs")))
                     if(isTRUE(getNimbleOption("doADerrorTraps")))
-                        if(buildDerivs)
-                            checkADsupportForDistribution(code[[i]], userEnv)
+                        if(buildDerivs) {
+                            dist <- as.character(code[[3]][[1]])
+                            checkADsupportForDistribution(dist)
+                        }
             }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
@@ -476,8 +479,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     lineNumber
 })
 
-checkADsupportForDistribution <- function(code, userEnv) {
-    dist <- as.character(code[[3]][[1]])
+modelDefClass$methods(checkADsupportForDistribution = function(dist) {
     supported <- TRUE
     if(!dist %in% c(distributions$namesVector, "T", "I")) {
         dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
