@@ -55,6 +55,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  graphNodesList = 'ANY',   ## list of graphNode objects, set in genGraphNodesList()
                                  maps = 'ANY',   ## object of mapsClass, set in buildMaps()
                                  numNodeFunctions = 'ANY',  ## FIXME: obsolete as only used in buildNodeFunctions_old()
+                                 userEnv = 'ANY',   ## userEnv argument to nimbleModel call
                                  
                                  modelClass = 'ANY',   ## custom model class
                                  modelValuesClassName = 'ANY',    ## set in setModelValuesClassName()
@@ -110,6 +111,8 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genVarNames                    = function() {},
                                  buildSymbolTable               = function() {},
                                  genGraphNodesList              = function() {},
+                                 setUserEnv                     = function() {},
+                                 getUserEnv                     = function() {},
                                                                   
                                  newModel                       = function() {},
                                  fixRStudioHanging              = function() {},
@@ -216,6 +219,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
     genVarNames()                         ## sets varNames <<- c(names(varInfo), names(logProbVarInfo))
     warnRHSonlyDynIdx()                   ## warns user if RHS-only nodes used in indexing (inefficient)
+    setUserEnv(userEnv = userEnv)         ## set userEnv field of modelDef object
     return(NULL)        
 })
 
@@ -2998,6 +3002,14 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){
     output <- output[!is.na(output)]
 
     return(output)
+})
+
+modelDefClass$methods(setUserEnv = function(userEnv) {
+    userEnv <<- userEnv
+})
+
+modelDefClass$methods(getUserEnv = function() {
+    return(userEnv)
 })
 
 parseEvalNumeric <- function(x, env){
