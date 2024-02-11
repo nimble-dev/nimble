@@ -491,7 +491,7 @@ modelDefClass$methods(checkADsupportForDistribution = function(dist) {
                 message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
         }
     }
-}
+})
 
 
 # check if distribution is defined and if not, attempt to register it
