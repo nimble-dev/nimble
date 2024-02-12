@@ -485,18 +485,14 @@ modelDefClass$methods(checkADsupportForDistribution = function(dist, verbose = F
         dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
         if(!is.rcf(dfun)) {
             if(verbose)   message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
-            supported <- FALSE
-        }
-        else {
+                supported <- FALSE
+        } else {
             dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
             if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs)) {
                 if(verbose)   message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
                 supported <- FALSE
             }
         }
-    } else {
-        ## dist is truncated
-        supported <- FALSE
     }
     return(supported)
 })
