@@ -1,1 +1,1 @@
-PKG_CPPFLAGS= -DR_NO_REMAP -DR_NO_REMAP_RMATH -I"../include"
+PKG_CPPFLAGS= -DR_NO_REMAP -I"../include"
