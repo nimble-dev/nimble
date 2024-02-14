@@ -3,7 +3,7 @@
 
 #include <nimble/predefinedNimbleLists.h>
 //#include <math.h>
-#include <Rmath.h>
+//#include <Rmath.h>
 #include <iostream>
 #include <nimble/EigenTypedefs.h>
 #include <nimble/RcppUtils.h>
