@@ -4,6 +4,7 @@
 #ifndef __NIMBLE_PREDEFINEDNIMBLELISTS_H
 #define __NIMBLE_PREDEFINEDNIMBLELISTS_H
 
+#include <Rmath.h>
 #include <nimble/smartPtrs.h>
 #include <Rinternals.h>
 #include <nimble/NamedObjects.h>
