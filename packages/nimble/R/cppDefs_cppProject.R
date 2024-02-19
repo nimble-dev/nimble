@@ -174,7 +174,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ## if math.h/Rmath.h are included later.
                                        math <- which(CPPincludes == "<math.h>")
                                        Rmath <- which(CPPincludes == "<Rmath.h>")
-                                       CPPincludes <- c(CPPincludes[math], CPPincludes[Rmath], CPPincludes[-c(math,Rmath)])
+                                       if(length(math) || length(Rmath))
+                                           CPPincludes <- c(CPPincludes[math], CPPincludes[Rmath], CPPincludes[-c(math,Rmath)])
 
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
