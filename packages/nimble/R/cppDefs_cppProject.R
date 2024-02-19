@@ -168,7 +168,14 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               ifndefName = ifndefName)
                                        selfInclude <- if(is.character(con)) paste0('"', con, '.h', '"') else '"[FILENAME].h"'
                                        CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen (this may be moot, 7/17)
-                                       
+
+                                       ## RHEL reports:
+                                       ## /usr/include/R/Rmath.h:210:15: error: 'std::Rf_beta' has not been declared
+                                       ## if math.h/Rmath.h are included later.
+                                       math <- which(CPPincludes == "<math.h>")
+                                       Rmath <- which(CPPincludes == "<Rmath.h>")
+                                       CPPincludes <- c(CPPincludes[math], CPPincludes[Rmath], CPPincludes[-c(math,Rmath)])
+
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
                                                                   includes = CPPincludes,
