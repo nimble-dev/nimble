@@ -34,17 +34,17 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
 ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
   subdone <- FALSE
+  BUGSdistName <- safeDeparse(RHS[[1]])
   if(isTRUE(getNimbleOption('allowNFinModel'))) {
-    if(length(RHS) > 1) {
-      BUGSdistName <- safeDeparse(RHS[[1]])
-      RHS[[1]] <- parse(text = getDistributionInfo(BUGSdistName)$simulateName,
-                        keep.source=FALSE)[[1]]
+    if(length(RHS[[1]]) > 1) {
+      sim_code <- getDistributionInfo(BUGSdistName)$sim_code
+      if(is.null(sim_code)) stop("Could not find simulation ('r') function for ",BUGSdistName)
+      RHS[[1]] <- sim_code
       subdone <- TRUE
     }
   }
   if(!subdone) {
-    BUGSdistName <- safeDeparse(RHS[[1]])
-    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
+    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substitution of the distribution name
   }
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'    
@@ -153,7 +153,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
   }
   if(deparseAndParse) {
     BUGSdistName <- as.character(RHS[[1]])
-    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
+    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substitution of the distribution name
   }
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS

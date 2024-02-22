@@ -904,8 +904,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 allContentsReplaceable <- TRUE
             }
             ## check if the function can be called only in R, not NIMBLE
-            isRfunction <- !any(code[[1]] == nimbleFunctionNames)
+          ## The purpose of deparsing code[[1]] and then making it a name for checking nimbleFunctionNames
+          ## is that a user-defined distribution in a nimbleFunction object will appear as `NF$dfoo` (i.e. the "$" is just part of the name)
+          ## as a result of being registered that way by registerDistributions
             funName <- safeDeparse(code[[1]], warn = TRUE)
+            code1name <- if(is.name(code[[1]])) code[[1]] else as.name(funName)
+            isRfunction <- !any(code1name == nimbleFunctionNames)
             isRonly <- isRfunction &
                 (!checkNimbleOrRfunctionNames(funName, envir))
             ## if it can be called only in R but not all contents are replaceable, generate error:
@@ -935,10 +939,23 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
 
 checkNimbleOrRfunctionNames <- function(functionName, envir) {
     if(any(functionName == nimbleOrRfunctionNames))
-        return(TRUE)
-    if(exists(functionName, envir) &&
-       is.rcf(get(functionName, envir)))
+      return(TRUE)
+    sdollar <- strsplit(functionName, "\\$")[[1]]
+    if(length(sdollar) == 1) { # It is foo(...), not a$foo(...)
+      if(exists(functionName, envir) &&
+         is.rcf(get(functionName, envir)))
         return(TRUE)  ## Would like to do this by R's scoping rules here and in genCpp_sizeProcessing but that is problematic
+    } else {
+      objectName = sdollar[1]
+      methodName = sdollar[2]
+      if(exists(objectName, envir)) {
+        NFobject <- get(objectName, envir)
+        if(is.nf(NFobject)) {
+          if(methodName %in% names(nf_getMethodList(NFobject)))
+            return(TRUE)
+        }
+      }
+    }
     return(FALSE)
 }
 

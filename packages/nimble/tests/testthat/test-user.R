@@ -513,6 +513,7 @@ test_that("Test that missing/mismatched returnType in 'r' function is trapped", 
     code <- nimbleCode({ x ~ dDist()})
     
     Rmodel <- nimbleModel(code)
+    deregisterDistributions('dDist')
 })
 
 test_that("default argument for `x` in density is trapped", {
@@ -539,11 +540,11 @@ test_that("Trap case where simulate function is removed", {
             x ~ dfoo()
         })
     )
-    temporarilyAssignInGlobalEnv(rfoo, replace=TRUE)
+    temporarilyAssignInGlobalEnv(rfoo__dummy, replace=TRUE)
 
     cm <- compileNimble(m)
 
-    rm('rfoo', pos = .GlobalEnv)
+    rm('rfoo__dummy', pos = .GlobalEnv)
     dfoo <- nimbleFunction(
         run = function(x=double(), log=integer(0, default=0)) {
             return(0)
@@ -575,9 +576,9 @@ test_that("Trap case where simulate function should be removed", {
         x ~ dfoo(p = param)
     }))
 
-    expect_true(exists('rfoo'))
+    expect_true(exists('rfoo__dummy'))
     deregisterDistributions('dfoo')
-    expect_false(exists('rfoo'))
+    expect_false(exists('rfoo__dummy'))
 })
 
 sink(NULL)
@@ -589,6 +590,292 @@ if(!generatingGoldFile) {
         compareFilesByLine(trialResults, correctResults)
     })
 }
+
+###############################################
+## Tests for nimbleFunctions with setup code ##
+###############################################
+
+currentOption <- getNimbleOption("allowNFinModel")
+nimbleOptions(allowNFinModel = TRUE)
+
+test_that("user-defined dists with setup code with d only",{
+  myDist <- nimbleFunction(
+    setup = function() {mean <- 1},
+    methods = list(
+      dmynorm = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      })
+  )
+
+  myDist1 <- myDist()
+  temporarilyAssignInGlobalEnv(myDist1)
+
+  mc <- nimbleCode({
+    x ~ myDist1$dmynorm(2)
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
+  temporarilyAssignInGlobalEnv(rmynorm_myDist1_dummy)
+
+  cm <- compileNimble(m)
+  expect_equal(m$calculate(), cm$calculate())
+  deregisterDistributions('myDist1$dmynorm')
+})
+
+test_that("user-defined dists with setup code: trap non-existing object",{
+  mc <- nimbleCode({
+    x ~ myGhost1$dmynorm(2)
+  })
+  expect_error(
+    m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5)),
+    "could not find"
+  )
+})
+
+test_that("user-defined dists with setup code: trap non-existing method",{
+  myGhost <- nimbleFunction(
+    setup = function() {mean <- 1},
+    methods = list(
+      dmynorm = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      })
+  )
+
+  myGhost1 <- myGhost()
+  temporarilyAssignInGlobalEnv(myGhost1)
+
+  mc <- nimbleCode({
+    x ~ myGhost1$dmyexp(2) # wrong name, needs to be trapped
+  })
+
+  expect_error(
+    m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5)),
+    "is not a method"
+  )
+})
+
+test_that("user-defined dists with setup code with d and r",{
+  myDist <- nimbleFunction(
+    setup = function() {mean <- 1},
+    methods = list(
+      dmynorm = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      },
+      rmynorm = function(n = integer(), sd = double()) {
+        return(rnorm(1, mean = mean, sd = sd))
+        returnType(double())
+      })
+  )
+
+  myDist1 <- myDist()
+  temporarilyAssignInGlobalEnv(myDist1)
+
+  mc <- nimbleCode({
+    x ~ myDist1$dmynorm(2)
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
+  set.seed(1)
+  m$simulate()
+  expect_false(exists("rmynorm_myDist1_dummy", inherits=FALSE))
+
+  cm <- compileNimble(m)
+  set.seed(1)
+  cm$simulate()
+  expect_equal(m$x, cm$x)
+  deregisterDistributions('myDist1$dmynorm')
+})
+
+test_that("user-defined dists with setup code: trap error of simulating with dummy r",{
+  myDist <- nimbleFunction(
+    setup = function() {mean <- 1},
+    methods = list(
+      dmynorm = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      })
+  )
+
+  myDist1 <- myDist()
+  temporarilyAssignInGlobalEnv(myDist1)
+
+  mc <- nimbleCode({
+    x ~ myDist1$dmynorm(2)
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
+  temporarilyAssignInGlobalEnv(rmynorm_myDist1_dummy)
+  expect_error(m$simulate(), "provided without random generation")
+
+  cm <- compileNimble(m)
+  expect_error(cm$simulate(), "provided without random generation")
+  expect_equal(m$calculate(), cm$calculate())
+  deregisterDistributions('myDist1$dmynorm')
+})
+
+test_that("deregister user-defined dists with setup code",{
+  myDist <- nimbleFunction(
+    setup = function() {mean <- 1},
+    methods = list(
+      dmynorm = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      })
+  )
+
+  myDist1 <- myDist()
+  temporarilyAssignInGlobalEnv(myDist1)
+
+  mc <- nimbleCode({
+    x ~ myDist1$dmynorm(2)
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
+
+  expect_true(exists("rmynorm_myDist1_dummy", inherits = FALSE))
+  deregisterDistributions('myDist1$dmynorm')
+  expect_false(exists("rmynorm_myDist1_dummy", inherits = FALSE))
+})
+
+test_that("user-defined dists with setup code with reduced name",{
+  myDist <- nimbleFunction(
+    setup = function() {mean <- 1},
+    methods = list(
+      d = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      })
+  )
+
+  myDist1 <- myDist()
+  temporarilyAssignInGlobalEnv(myDist1)
+
+  mc <- nimbleCode({
+    x ~ myDist1$d(2)
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
+  temporarilyAssignInGlobalEnv(r_myDist1_dummy)
+
+  cm <- compileNimble(m)
+  expect_equal(m$calculate(), cm$calculate())
+  deregisterDistributions('myDist1$d')
+})
+
+test_that("user-defined dists with setup code with r and multiple dists",{
+  myDist <- nimbleFunction(
+    setup = function() {mean <- 1; lambda <- 2},
+    methods = list(
+      d1 = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      },
+      d2 = function(x = double(0), log = integer(0, default = 0)) {
+        return(dpois(x, lambda, log = log))
+        returnType(double())
+      },
+      r1 = function(n = integer(), sd = double()) {
+        return(rnorm(1, mean = mean, sd = sd))
+        returnType(double())
+      })
+  )
+
+  myDist1 <- myDist()
+  temporarilyAssignInGlobalEnv(myDist1)
+
+  mc <- nimbleCode({
+    x ~ myDist1$d1(2)
+    y ~ myDist1$d2()
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5, y = 2))
+  temporarilyAssignInGlobalEnv(r2_myDist1_dummy)
+
+  cm <- compileNimble(m)
+  expect_equal(m$calculate(), cm$calculate())
+  deregisterDistributions('myDist1$d1')
+  deregisterDistributions('myDist1$d2')
+})
+
+test_that("user-defined functions with setup code and dist in same NF",{
+  foo <- nimbleFunction(
+    setup = function() {f <- 2},
+    run = function(z = double(1)) {
+      return(f*z)
+      returnType(double(1))
+    },
+    methods = list(
+      go = function() {
+        return(f)
+        returnType(double())
+      },
+      dbar = function(x = double(), mean = double(), log = integer(0, default=0)) {
+        return(dnorm(x, mean = mean, sd = f, log = log))
+        returnType(double())
+      }
+    )
+  )
+
+  foo1 <- foo()
+  temporarilyAssignInGlobalEnv(foo1)
+
+  mc <- nimbleCode({
+    for(i in 1:2) z[i] ~ dnorm(0, sd = 1)
+    y[1:2] <- foo1$run(z[1:2])
+    x[1:2] <- exp(foo1$run(y[1:2])) # check that it works nexted
+    w ~ dnorm(sum(y[1:2]), sd = 1)
+    q <- foo1$go()
+    r ~ foo1$dbar(q)
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = c(1.5, 2.5)), inits = list(z = c(.5, .7)))
+  temporarilyAssignInGlobalEnv(rbar_foo1_dummy)
+
+  cm <- compileNimble(m) # error
+  expect_equal(m$calculate(), cm$calculate())
+  deregisterDistributions('foo1$dbar')
+})
+
+
+test_that("user-defined functions: trap non-existent object",{
+  mc <- nimbleCode({
+    q <- Ghost2$go()
+  })
+
+  expect_error(
+    m <- nimbleModel(mc, debug = FALSE, data = list(y = c(1.5, 2.5)), inits = list(z = c(.5, .7))),
+    "not found"
+  )
+})
+
+test_that("user-defined functions: trap (message only) non-existent method",{
+  foo <- nimbleFunction(
+    setup = function() {f <- 2},
+    methods = list(
+      go = function() {
+        return(f)
+        returnType(double())
+      }
+    )
+  )
+
+  foo1 <- foo()
+  temporarilyAssignInGlobalEnv(foo1)
+
+  mc <- nimbleCode({
+    q <- foo1$ghost()
+  })
+
+  expect_message(
+    m <- nimbleModel(mc, debug = FALSE, data = list(y = c(1.5, 2.5)), inits = list(z = c(.5, .7))),
+    "not a valid field or method"
+  )
+})
+
+nimbleOptions(allowNFinModel = currentOption)
 
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

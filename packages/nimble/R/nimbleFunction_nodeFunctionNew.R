@@ -132,7 +132,7 @@ nndf_createSetupFunction <- function(buildDerivs = FALSE, RHS) {
 
     if(isTRUE(getNimbleOption('allowNFinModel'))) {
       find_NFs_recurse <- function(code, result = list()) {
-        if(length(code)==1) return(result)
+        if(length(code)==1 && !is.call(code)) return(result)
         if(code[[1]]=="$") return(c(result, list(code[[2]])))
         for(i in seq_along(code)) {
           result <- c(result, find_NFs_recurse(code[[i]]))

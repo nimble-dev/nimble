@@ -537,7 +537,7 @@ checkForDeterministicDorR <- function(code) {
             dFunsUser <- get('namesVector', nimbleUserNamespace$distributions)
             drFuns <- c(drFuns, dFunsUser, paste0("r", stripPrefix(dFunsUser)))
         }
-        if(as.character(code[[3]][[1]]) %in% c(drFuns, "T", "I"))
+        if(deparse(code[[3]][[1]]) %in% c(drFuns, "T", "I"))
             message("  [Warning] Model includes deterministic assignment using '<-' of the result of a density ('d') or simulation ('r') calculation. This is likely not what you intended in: ", safeDeparse(code), ".")
     }
     return(NULL)
@@ -683,13 +683,12 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
             newCode <- BUGSdecl$code
             newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
 
-            distName <- as.character(newCode[[3]][[1]])
+            distName <- safeDeparse(newCode[[3]][[1]])
             if(!getAllDistributionsInfo('pqAvail')[distName]) 
                 stop("Cannot implement truncation for ", distName, "; 'p' and 'q' functions not available.")
 
             distRange <- getDistributionInfo(distName)$range
             boundExprs <- distRange
-
         
             if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") 
                 boundExprs$lower <- BUGSdecl$valueExpr[[3]]
@@ -1006,8 +1005,8 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             allReplaceable <- TRUE
         }
         if(allReplaceable) {
-            if(!any(code[[1]] == getAllDistributionsInfo('namesVector'))) {
-                callChar <- as.character(code[[1]])
+          callChar <- safeDeparse(code[[1]])
+          if(!any(callChar == getAllDistributionsInfo('namesVector'))) {
                 if(exists(callChar, constEnv)) {
                     # if(callChar != ':') {
                     if(!is.vectorized(code)) {
