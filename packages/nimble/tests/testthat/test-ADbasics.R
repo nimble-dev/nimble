@@ -922,7 +922,7 @@ test_that("derivatives work if a non-supported user-defined call is not included
 
   m <- nimbleModel(mc, data = list(z = 2.3), inits = list(a = 1.5),
                    buildDerivs = TRUE)
-  temporarilyAssignInGlobalEnv(rfoo2)
+  temporarilyAssignInGlobalEnv(rfoo2__dummy)
   cm <- compileNimble(m)
 
   test <- nimbleFunction(

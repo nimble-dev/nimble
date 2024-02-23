@@ -131,6 +131,11 @@ nndf_createSetupFunction <- function(buildDerivs = FALSE, RHS) {
     }
 
     if(isTRUE(getNimbleOption('allowNFinModel'))) {
+      # We will find things like a$foo and insert a line of setup code
+      # so that a is created in setup code and thus will be identified by the
+      # nimble compiler as a setup output, which later makes it a class member variable in C++.
+      # This line of code is "a <- eval(a)". (The eval environment should be correct
+      # because the nodeFunction [nimbleFunction] sets that up.)
       find_NFs_recurse <- function(code, result = list()) {
         if(length(code)==1 && !is.call(code)) return(result)
         if(code[[1]]=="$") return(c(result, list(code[[2]])))
@@ -141,16 +146,23 @@ nndf_createSetupFunction <- function(buildDerivs = FALSE, RHS) {
       }
       new_NFs <- find_NFs_recurse(RHS)
       new_NFs <- unique(new_NFs)
-      any_nested_dollar_signs <- new_NFs |> lapply(\(x) length(x) > 1 && x[[1]]=='$') |> unlist() |> any()
-      if(any_nested_dollar_signs) {
-        warning("  [warning] when using a nimbleFunction within model code, there can only be one '$' (e.g. a$b, not a$b$c).")
+      if(length(new_NFs)) {
+        any_nested_dollar_signs <- new_NFs |> lapply(\(x) length(x) > 1 && x[[1]]=='$') |> unlist() |> any()
+        if(any_nested_dollar_signs) {
+          warning("  [warning] when using a nimbleFunction within model code, there can only be one '$' (e.g. a$b, not a$b$c).")
+        }
+        # One can get a $ in a line of model code from something like
+        # a[] <- eigen(B[,])$values
+        # so we must ignore anything like a$foo where the a part is itself a call.
+        ignore <- new_NFs |> lapply(is.call) |> unlist()
+        new_NFs <- new_NFs[!ignore]
+        new_lines <- new_NFs |> lapply(\(x) substitute(X <- eval(X),
+                                                       list(X = x)))
+        new_lines <- c(new_lines, quote(invisible(NULL)))
+        new_body <- body(setup)
+        new_body <- as.call(c(as.list(new_body), new_lines))
+        body(setup) <- new_body
       }
-      new_lines <- new_NFs |> lapply(\(x) substitute(X <- eval(X),
-                                                     list(X = x)))
-      new_lines <- c(new_lines, quote(invisible(NULL)))
-      new_body <- body(setup)
-      new_body <- as.call(c(as.list(new_body), new_lines))
-      body(setup) <- new_body
     }
 
     return(setup)
