@@ -389,6 +389,7 @@ test_that("Test that user-defined distributions without 'r' function doesn't cau
     m <- nimbleModel(code)
     cm <- compileNimble(m)
     expect_output(print(m), "Rmodel object")
+    deregisterDistributions("dfoo2")
 })
 
 
@@ -441,6 +442,9 @@ test_that("Test that non-scalar integer in user-defined distributions is trapped
         y  ~ dfoo5(theta)
     })
     m <- nimbleModel(code)
+    deregisterDistributions("dfoo3")
+    deregisterDistributions("dfoo4")
+    deregisterDistributions("dfoo5")
 })
 
 test_that("Test that missing/mismatched returnType in 'r' function is trapped", {

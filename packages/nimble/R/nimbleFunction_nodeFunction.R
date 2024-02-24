@@ -33,24 +33,16 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
 ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
-  subdone <- FALSE
-  BUGSdistName <- safeDeparse(RHS[[1]])
- # if(isTRUE(getNimbleOption('allowNFinModel'))) {
- #   if(length(RHS[[1]]) > 1) {
-      sim_code <- getDistributionInfo(BUGSdistName)$sim_code
-      if(is.null(sim_code)) stop("Could not find simulation ('r') function for ",BUGSdistName)
-  #    subdone <- TRUE
-  #  }
-  #}
-  #if(!subdone) {
-  #  RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substitution of the distribution name
-  #}
+    subdone <- FALSE
+    BUGSdistName <- safeDeparse(RHS[[1]])
+    distInfo <- getDistributionInfo(BUGSdistName)
+    sim_code <- distInfo$sim_code
+    if(is.null(sim_code)) stop("Could not find simulation ('r') function for ", BUGSdistName)
+    RHS[[1]] <- sim_code
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'    
     if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
-        RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
-    } else {
-      RHS[[1]] <- sim_code
+        RHS <- ndf_createStochSimulateTrunc(RHS, distInfo = distInfo, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
     }
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         if(is.null(nodeDim)) {
@@ -77,17 +69,16 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
 
 ## changes 'rnorm(mean=1, sd=2, lower_=0, upper_=3)' into correct truncated simulation
 ##   using inverse CDF
-ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
+ndf_createStochSimulateTrunc <- function(RHS, distInfo, discrete = FALSE) {
     lowerPosn <- which("lower_" == names(RHS))
     upperPosn <- which("upper_" == names(RHS))
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
-    d_code <- RHS[[1]]
-    dist <- safeDeparse(RHS[[1]])
+    d_code <- distInfo$density_code
 
-    cdf_code <- getDistributionInfo(dist)$cdf_code
-    quantile_code <- getDistributionInfo(dist)$quantile_code
+    cdf_code <- distInfo$cdf_code
+    quantile_code <- distInfo$quantile_code
     if(is.null(cdf_code) || is.null(quantile_code))
       stop("Could not find probability ('p') and/or quantile ('q') function for ", dist)
 
@@ -151,21 +142,13 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
 ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
                                      ##ADFunc = FALSE,
                                      dynamicIndexLimitsExpr, RHSnonReplaced) {
-  deparseAndParse <- TRUE
-  if(isTRUE(getNimbleOption('allowNFinModel'))) {
-    if(length(RHS[[1]]) > 1) {
-      deparseAndParse <- FALSE # a nf method like a$ddist
-      BUGSdistName <- safeDeparse(RHS[[1]])
-    }
-  }
-  if(deparseAndParse) {
-    BUGSdistName <- as.character(RHS[[1]])
-    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substitution of the distribution name
-  }
+    BUGSdistName <- safeDeparse(RHS[[1]])
+    distInfo <- getDistributionInfo(BUGSdistName)
+    RHS[[1]] <- distInfo$density_code
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
     if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
-        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, discrete = getAllDistributionsInfo('discrete')[BUGSdistName], dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))
+        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, distInfo=distInfo, discrete = getAllDistributionsInfo('discrete')[BUGSdistName], dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))
     } else {
         userDist <- BUGSdistName %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
         RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
@@ -207,19 +190,20 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
 }
 
 ## changes 'dnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated calculation
-ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, discrete = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
+ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, distInfo, discrete = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
     lowerPosn <- which("lower_" == names(RHS))
     upperPosn <- which("upper_" == names(RHS))
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
-    d_code <- RHS[[1]]
-    dist <- safeDeparse(RHS[[1]])
+    d_code <- distInfo$density_code
+#    dist <- safeDeparse(RHS[[1]])
+
     lowerTailName <- 'lower.tail' 
     logpName <- 'log.p' 
     logName <- 'log' 
 
-    cdf_code <- getDistributionInfo(dist)$cdf_code
+    cdf_code <- distInfo$cdf_code
     if(is.null(cdf_code))
       stop("Could not find probability ('p') function for ", dist)
 
