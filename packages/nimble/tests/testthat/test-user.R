@@ -875,6 +875,38 @@ test_that("user-defined functions: trap (message only) non-existent method",{
   )
 })
 
+test_that("user-defined distributions: p and q found and used", {
+  myDist <- nimbleFunction(
+    setup = function() {mean <- 1},
+    methods = list(
+      dmynorm = function(x = double(0), sd = double(), log = integer(0, default = 0)) {
+        return(dnorm(x, mean = mean, sd = sd, log = log))
+        returnType(double())
+      },
+      qmynorm = function(p = double(), sd = double(), lower.tail = integer(0, default=1), log.p = integer(0, default = 0)) {
+        return(qnorm(p, mean = mean, sd = sd, lower.tail = lower.tail, log.p = log.p))
+        returnType(double())
+      },
+      pmynorm = function(q = double(), sd = double(), lower.tail = integer(0, default=1), log.p = integer(0, default = 0)) {
+        return(pnorm(q, mean = mean, sd = sd, lower.tail = lower.tail, log.p = log.p))
+        returnType(double())
+      }
+    )
+  )
+
+  myDist1 <- myDist()
+  temporarilyAssignInGlobalEnv(myDist1)
+
+  mc <- nimbleCode({
+    x ~ T(myDist1$dmynorm(2), 0, Inf)
+#    x ~ T(dnorm(2, sd = 2), 0, Inf)
+  })
+
+  m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
+  cm <- compileNimble(m)
+})
+
+
 nimbleOptions(allowNFinModel = currentOption)
 
 nimbleOptions(verbose = nimbleVerboseSetting)

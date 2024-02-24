@@ -35,22 +35,23 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
 ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
   subdone <- FALSE
   BUGSdistName <- safeDeparse(RHS[[1]])
-  if(isTRUE(getNimbleOption('allowNFinModel'))) {
-    if(length(RHS[[1]]) > 1) {
+ # if(isTRUE(getNimbleOption('allowNFinModel'))) {
+ #   if(length(RHS[[1]]) > 1) {
       sim_code <- getDistributionInfo(BUGSdistName)$sim_code
       if(is.null(sim_code)) stop("Could not find simulation ('r') function for ",BUGSdistName)
-      RHS[[1]] <- sim_code
-      subdone <- TRUE
-    }
-  }
-  if(!subdone) {
-    RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substitution of the distribution name
-  }
+  #    subdone <- TRUE
+  #  }
+  #}
+  #if(!subdone) {
+  #  RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substitution of the distribution name
+  #}
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'    
     if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
         RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
-    } 
+    } else {
+      RHS[[1]] <- sim_code
+    }
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         if(is.null(nodeDim)) {
             nanExpr <- NaN
@@ -82,21 +83,27 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
-    dist <- substring(safeDeparse(RHS[[1]]), 2, 1000)
-    
+    d_code <- RHS[[1]]
+    dist <- safeDeparse(RHS[[1]])
+
+    cdf_code <- getDistributionInfo(dist)$cdf_code
+    quantile_code <- getDistributionInfo(dist)$quantile_code
+    if(is.null(cdf_code) || is.null(quantile_code))
+      stop("Could not find probability ('p') and/or quantile ('q') function for ", dist)
+
     lowerTailName <- 'lower.tail' 
     logpName <- 'log.p' 
     logName <- 'log' 
     # setup for runif(1, pdist(lower,...), pdist(upper,...))
     # pdist() expression template for inputs to runif()
     pdistTemplate <- RHS
-    pdistTemplate[[1]] <- as.name(paste0("p", dist))
+    pdistTemplate[[1]] <- cdf_code # as.name(paste0("p", dist))
     pdistTemplate <- addArg(pdistTemplate, 1, lowerTailName)
     pdistTemplate <- addArg(pdistTemplate, 0, logpName)
 
     if(discrete) {
         ddistTemplate <- RHS
-        ddistTemplate[[1]] <- as.name(paste0("d", dist))
+        ddistTemplate[[1]] <- d_code # as.name(paste0("d", dist))
         ddistTemplate <- addArg(ddistTemplate, 0, logName)
         ceilTemplate <- quote(ceiling(x))
     } else ddistTemplate <- NULL
@@ -132,7 +139,7 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
         VALUE = VALUE_EXPR)), list(e = substCode)))
 
     # create full qdist(runif(...),...) expression
-    RHS[[1]] <- as.name(paste0("q", dist))
+    RHS[[1]] <- quantile_code # as.name(paste0("q", dist))
     RHS[[2]] <- RUNIF_EXPR
     RHS <- addArg(RHS, 1, lowerTailName)
     RHS <- addArg(RHS, 0, logpName)
@@ -206,19 +213,24 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
-    dist <- substring(safeDeparse(RHS[[1]]), 2, 1000)
+    d_code <- RHS[[1]]
+    dist <- safeDeparse(RHS[[1]])
     lowerTailName <- 'lower.tail' 
     logpName <- 'log.p' 
     logName <- 'log' 
 
+    cdf_code <- getDistributionInfo(dist)$cdf_code
+    if(is.null(cdf_code))
+      stop("Could not find probability ('p') function for ", dist)
+
     pdistTemplate <- RHS
-    pdistTemplate[[1]] <- as.name(paste0("p", dist))
+    pdistTemplate[[1]] <- cdf_code # as.name(paste0("p", dist))
     pdistTemplate <- addArg(pdistTemplate, 1, lowerTailName)
     pdistTemplate <- addArg(pdistTemplate, 0, logpName)
 
     if(discrete) {
         ddistTemplate <- RHS
-        ddistTemplate[[1]] <- as.name(paste0("d", dist))
+        ddistTemplate[[1]] <- d_code # as.name(paste0("d", dist))
         ddistTemplate <- addArg(ddistTemplate, 0, logName)
         ceilTemplate <- quote(ceiling(x))
     } else ddistTemplate <- NULL
