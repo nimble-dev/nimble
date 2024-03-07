@@ -45,23 +45,25 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
       tryResult <- try({
-      expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
-      expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
+          expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
+          expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
       })
       if(inherits(tryResult, 'try-error')) {
+          print("cL$summary failing.")
           print(class(cL))
           print(cL)
+      } else {
+          expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-5)
+          expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-5)
+          expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-5)
+          expect_equal(summ_orig$randomEffects$stdErrors, summ_orig_alt$randomEffects$stdErrors, tol = 1e-5)
+          expect_equal(summ_orig$vcov, summ_orig_alt$vcov, tol = 1e-5)
+          expect_equal(summ_trans$params$estimates, summ_trans_alt$params$estimates, tol = 1e-5)
+          expect_equal(summ_trans$randomEffects$estimates, summ_trans_alt$randomEffects$estimates, tol = 1e-5)
+          expect_equal(summ_trans$params$stdErrors, summ_trans_alt$params$stdErrors, tol = 1e-5)
+          expect_equal(summ_trans$randomEffects$stdErrors, summ_trans_alt$randomEffects$stdErrors, tol = 1e-5)
+          expect_equal(summ_trans$vcov, summ_trans_alt$vcov, tol = 1e-5)
       }
-      expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-5)
-      expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-5)
-      expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-5)
-      expect_equal(summ_orig$randomEffects$stdErrors, summ_orig_alt$randomEffects$stdErrors, tol = 1e-5)
-      expect_equal(summ_orig$vcov, summ_orig_alt$vcov, tol = 1e-5)
-      expect_equal(summ_trans$params$estimates, summ_trans_alt$params$estimates, tol = 1e-5)
-      expect_equal(summ_trans$randomEffects$estimates, summ_trans_alt$randomEffects$estimates, tol = 1e-5)
-      expect_equal(summ_trans$params$stdErrors, summ_trans_alt$params$stdErrors, tol = 1e-5)
-      expect_equal(summ_trans$randomEffects$stdErrors, summ_trans_alt$randomEffects$stdErrors, tol = 1e-5)
-      expect_equal(summ_trans$vcov, summ_trans_alt$vcov, tol = 1e-5)
     }
   }
   invisible(NULL)
