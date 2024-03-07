@@ -416,6 +416,7 @@ sampler_RW_block <- nimbleFunction(
         targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
+        if(any(model$isDiscrete(target)))       stop('cannot use RW_block sampler on discrete-valued target')
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')

@@ -146,7 +146,7 @@ buildMCMC <- nimbleFunction(
             }
         }
 
-        ## build sampler functions.
+        ## build sampler functions
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
 
         predictiveNodeIDs <- conf$model$getPredictiveNodeIDs()
