@@ -224,6 +224,7 @@ buildMCMC <- nimbleFunction(
         thin                  = double(default = -1),
         thin2                 = double(default = -1),
         resetWAIC             = logical(default = TRUE),
+        initializeModel       = logical(default = FALSE),
         chain                 = integer(default =  1)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
@@ -235,7 +236,7 @@ buildMCMC <- nimbleFunction(
             if(thinToUseVec[iThin] < 1)   stop('cannot use thin < 1')
             if(thinToUseVec[iThin] != floor(thinToUseVec[iThin]))   stop('cannot use non-integer thin')
         }
-        my_initializeModel$run()
+        if(initializeModel)   my_initializeModel$run()
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
