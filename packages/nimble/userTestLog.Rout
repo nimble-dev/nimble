@@ -1,0 +1,12 @@
+> nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+> nimbleOptions(MCMCprogressBar = FALSE)
+> test_that("User-supplied functions", {
++     dbl <- nimbleFunction(
++         run = function(x = double(0)) {
++             returnType(double(0))
++             return(2*x)
++         }
++     )
++     temporarilyAssignInGlobalEnv(dbl)
++     ## not working at moment as enclosing env of fun is getting  .... [TRUNCATED] 
+Test passed 🎊
