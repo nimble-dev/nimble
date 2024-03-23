@@ -226,7 +226,7 @@ buildMCMC <- nimbleFunction(
         thin                  = double(default = -1),
         thin2                 = double(default = -1),
         resetWAIC             = logical(default = TRUE),
-        initializeModel       = logical(default = FALSE),
+        initializeModel       = logical(default = TRUE),
         chain                 = integer(default =  1)) {
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
