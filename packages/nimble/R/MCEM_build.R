@@ -1125,9 +1125,17 @@ buildMCEM <- nimbleFunction(
         returnTrans <- trans
       }
       if(trans) {
+        if(length(params) != lengthParamsTrans) {
+          print("  [Warning] For vcov with trans=TRUE, params should be length ", lengthParamsTrans, " but is length ", length(params), ".")
+          stop()
+        }
         paramsTrans <- params
         paramsActual <- inverseTransform(params)
       } else {
+        if(length(params) != lengthParams) {
+          print("  [Warning] For vcov, params should be length ", lengthParams, " but is length ", length(params), ".")
+          stop()
+        }
         paramsActual <- params
         paramsTrans <- transform(params)
       }
