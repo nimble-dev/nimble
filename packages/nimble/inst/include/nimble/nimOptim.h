@@ -142,22 +142,27 @@ void NimOptimProblem_Fun<Fn>::gradient() {
             // on the fn scale and so are upper_ and lower_.
             const double h_pos = std::min(h, upper_[i] - par_[i]);
             const double h_neg = std::min(h, par_[i] - lower_[i]);
+            // We have to defensively copy par_h = par_ each time in case fn_ modifies the length or values of par_h
+            par_h = par_;
             par_h[i] = par_[i] + h_pos;
             const double pos = fn_(par_h);
+            par_h = par_;
             par_h[i] = par_[i] - h_neg;
             const double neg = fn_(par_h);
-            par_h[i] = par_[i];
+            //par_h[i] = par_[i];
             ans_[i] = parscale[i] * (pos - neg) / (h_pos + h_neg);
         }
     } else {
         // Unconstrained optimization.
         for (int i = 0; i < n; ++i) {
             const double h = working_ndeps[i]*parscale[i];
+            par_h = par_;
             par_h[i] = par_[i] + h;
             const double pos = fn_(par_h);
+            par_h = par_;
             par_h[i] = par_[i] - h;
             const double neg = fn_(par_h);
-            par_h[i] = par_[i];
+            //par_h[i] = par_[i];
             ans_[i] = (pos - neg) / (2 * working_ndeps[i]);
         }
     }
@@ -182,9 +187,9 @@ class NimOptimProblem_Fun_Grad : public NimOptimProblem {
       // This should return gradient on par/parscale.
       // But gr_ calculates the gradient wrt par.
       // So we have to multiply by parscale.
+      const int n = par_.dimSize(0);
       ans_ = gr_(par_);
       double* parscale = working_parscale.getPtr();
-      const int n = par_.dimSize(0);
       for (int i = 0; i < n; ++i) {
         ans_[i] *= parscale[i];
       }
