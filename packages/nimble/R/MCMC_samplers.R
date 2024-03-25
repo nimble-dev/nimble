@@ -1245,9 +1245,6 @@ sampler_RW_multinomial <- nimbleFunction(
         ENSwapMatrix      <- Ones
         ENSwapDeltaMatrix <- Ones
         RescaleThreshold  <- 0.2 * Ones
-        Pi      <- pi
-        PiOver2 <- Pi / 2   ## irrational number prevents recycling becoming degenerate
-        u       <- runif(1, 0, Pi)
         ## nested function and function list definitions
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         my_decideAndJump       <- decideAndJump(model, mvSaved, target = target)
@@ -1259,18 +1256,14 @@ sampler_RW_multinomial <- nimbleFunction(
     run = function() {
         for(iFROM in 1:lTarget) {
             for(iTO in 1:(lTarget-1)) {
-                if(u > PiOver2) {
+                if(runif(1,0,1) > 0.5) {
                     iFrom <- iFROM
                     iTo   <- iTO
-                    if(iFrom == iTo)
-                        iTo <- lTarget
-                    u <<- 2 * (u - PiOver2)   ## recycle u
+                    if(iFrom == iTo)   iTo <- lTarget
                 } else {
                     iFrom <- iTO
                     iTo   <- iFROM
-                    if(iFrom == iTo)
-                        iFrom <- lTarget
-                    u <<- 2 * (PiOver2 - u)   ## recycle u
+                    if(iFrom == iTo)   iFrom <- lTarget
                 }
                 ## generate proposal vector
                 propVector <<- values(model,target)
@@ -1332,7 +1325,6 @@ sampler_RW_multinomial <- nimbleFunction(
         }
     )
 )
-
 
 #####################################################################################
 ### RW_dirichlet sampler for dirichlet distributions ################################
