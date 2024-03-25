@@ -375,8 +375,8 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
-                        ##if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial', control = controlDefaultsArg);     next }
-                        if(nodeDist == 'dmulti')   stop('  [Error] Support for sampling multinomial distributions was removed from nimble due to incorrect sampling results.\n  Please contact nimble developers at the nimble-users google group or at nimble.stats@gmail.com to let them know this happened.  \n Thank you.', call. = FALSE)
+                        if(nodeDist == 'dmulti')              { addSampler(target = node, type = 'RW_multinomial', control = controlDefaultsArg);     next }
+                        ##if(nodeDist == 'dmulti')   stop('  [Error] Support for sampling multinomial distributions was removed from nimble due to incorrect sampling results.\n  Please contact nimble developers at the nimble-users google group or at nimble.stats@gmail.com to let them know this happened.  \n Thank you.', call. = FALSE)
                         if(nodeDist == 'ddirch')              { addSampler(target = node, type = 'RW_dirichlet',   control = controlDefaultsArg);     next }
                         if(nodeDist == 'dwish')               { addSampler(target = node, type = 'RW_wishart',     control = controlDefaultsArg);     next }
                         if(nodeDist == 'dinvwish')            { addSampler(target = node, type = 'RW_wishart',     control = controlDefaultsArg);     next }
