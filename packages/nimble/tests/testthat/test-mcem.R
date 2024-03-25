@@ -109,6 +109,7 @@ test_that("MCEM pump with all defaults (roxygen example)", {
 
  CpumpMCEM <- compileNimble(pumpMCEM, project=pumpModel)
 
+ set.seed(1)
  MLE <- CpumpMCEM$findMLE()
  vcov <- CpumpMCEM$vcov(MLE$par)
 
