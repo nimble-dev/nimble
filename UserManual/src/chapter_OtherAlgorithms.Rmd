@@ -338,7 +338,7 @@ control list entry must satsify the following:
   MCEM can be slow but is also a general workhorse method that is applicable to a wide range of problems.
   
   `buildMCEM` provides an (optionally) ascent-based MCEM algorithm based on
-  @Caffo_etal_2005. `buildMCEM` was re-written for nimble version 1.2.0 and is
+  @Caffo_etal_2005. `buildMCEM` was re-written for nimble version 1.1.1 and is
   not compatible with previous versions. For the E (expectation) step,
   `buildMCEM` uses an MCMC for the latent states given the data and current
   parameters. For the M (maximization) step, `buildMCEM` uses `optim`.

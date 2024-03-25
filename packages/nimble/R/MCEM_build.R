@@ -459,7 +459,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'   for a model and choices (perhaps default) of nodes in different roles in
 #'   the model. The MCEM can then be compiled for fast execution with a compiled model.
 #'
-#' Note that \code{buildMCEM} was re-written for nimble version 1.2.0 and is not
+#' Note that \code{buildMCEM} was re-written for nimble version 1.1.1 and is not
 #' backward-compatible with previous versions.
 #'
 #' Denote data by Y, latent states (or missing data) by X, and parameters by T.
