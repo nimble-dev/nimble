@@ -40,7 +40,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6,pracma,numDeriv
 Suggests:
-    testthat
+    testthat,mcmcse
 URL: https://r-nimble.org, https://github.com/nimble-dev/nimble
 BugReports: https://github.com/nimble-dev/nimble/issues
 SystemRequirements: GNU make
