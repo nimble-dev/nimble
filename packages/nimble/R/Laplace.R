@@ -2191,7 +2191,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
     findMLE = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE),
-                       MAPE = logical(0, default = FALSE)) {
+                       MAP = logical(0, default = FALSE)) {
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
       if(length(pStart) != npar) {
         print("  [Warning] For findMLE, pStart should be length ", npar, " but is length ", length(pStart), ".")
@@ -2207,7 +2207,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       else pStartTransform <- paramsTransform$transform(pStart)
       ## In case bad start values are provided 
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
-      if(MAPE) {
+      if(MAP) {
         optRes <- optim(pStartTransform, calcPostLogProb_pTransformed, gr_postLogProb_pTransformed, method = method, 
           control = outOptControl, hessian = hessian)
       }else{
@@ -2275,7 +2275,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       
       negHessMethod <- -1
       if(all(p == pMLE)) negHessMethod <- 1
-      if(all(p == pLast)) negHessMethod <- 0
+      else if(all(p == pLast)) negHessMethod <- 0
 
       for(i in seq_along(AGHQuad_nfl)){
         if(negHessMethod == -1 ){
@@ -2301,8 +2301,8 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       pLast <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 0)
       
       negHessMethod <- -1
-      if(all(p == pMLE)) negHessMethod <- 1
-      if(all(p == pLast)) negHessMethod <- 0
+      if(all(p == pMLE)) negHessMethod <- 1 ## Will this have any numerical error?
+      else if(all(p == pLast)) negHessMethod <- 0
 
       for(i in seq_along(AGHQuad_nfl)){
         numre <- lenInternalRENodeSets[i]
