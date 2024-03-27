@@ -134,6 +134,14 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
     outer_mode_max_inner_logLik_saved_par <- as.numeric(c(1, -1))
     outer_param_max <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
     
+    ## Cached gradients for AGHQ.
+    gr_sigmahatwrtre <- numeric(1)
+    gr_sigmahatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
+    gr_rehatwrtp <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1)) # double(1)
+    gr_QuadSum_value <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
+    AGHQuad_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
+    quadrature_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
+    
     ## Convergence check for outer function.
     converged <- 0
     
@@ -181,6 +189,11 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
         logLik3_previous_p <<- fix_one_vec(logLik3_previous_p)
         max_inner_logLik_previous_p <<- fix_one_vec(max_inner_logLik_previous_p)
         outer_param_max <<- fix_one_vec(outer_param_max)
+        gr_sigmahatwrtp <<- fix_one_vec(gr_sigmahatwrtp)
+        gr_rehatwrtp <<- fix_one_vec(gr_rehatwrtp)
+        gr_QuadSum_value <<- fix_one_vec(gr_QuadSum_value)
+        AGHQuad_saved_gr <<- fix_one_vec(AGHQuad_saved_gr)
+        quadrature_previous_p <<- fix_one_vec(quadrature_previous_p)
       }
       reInit <- values(model, randomEffectsNodes)
       set_reInit(reInit)
@@ -535,6 +548,7 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
 
       ## Given all the saved values, weights and log density, do quadrature sum.
       logLik_saved_value <<- aghq_grid$quadSum()
+      quadrature_previous_p <<- p ## Cache this to make sure you have it for 
     },
     ## Gradient of the Laplace approximation (version 2) w.r.t. parameters
     gr_logLik2 = function(p = double(1)){
@@ -548,9 +562,24 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re(p, reTransform)[1]
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re(p, reTransform)[,1]
-      p1 <- gr_joint_logLik_wrt_p(p, reTransform)
-      ans <- p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
-      return(ans)
+
+      if( nQuad == 1 ){
+        ## Gradient of Laplace Approx
+        p1 <- gr_joint_logLik_wrt_p(p, reTransform)
+        AGHQuad_saved_gr <<- p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      }else{
+        ## Gradient of AGHQ Approx.
+        ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+        gr_rehatwrtp <<- hesslogLikwrtpre/negHessian
+        ## dsigma_hat/dp (needed at real scale)
+        sigma_hat <- 1/sqrt(negHessian)
+        gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
+        gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
+        ## Sum gradient of each node.
+        gr_aghq_sum <- gr_AGHQ_nodes(p = p, method = 2)
+        AGHQuad_saved_gr <<- gr_aghq_sum - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+      }
+      return(AGHQuad_saved_gr)
       returnType(double(1))
     },
     ## Gradient of the Laplace approximation (version 1) w.r.t. parameters
@@ -568,6 +597,49 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
         0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
       return(ans)
+      returnType(double(1))
+    },
+    ## Partial gradient of AGHQ nodes w respect to p.
+    gr_AGHQ_nodes = function(p = double(1), method = double()){
+
+      ## Need to have quadrature sum for gradient:
+      if(any(p != quadrature_previous_p)){
+        calcLogLik_AGHQ(p)
+      }
+ 
+      ## Method 2 implies double taping.
+      modeIndex <- aghq_grid$getModeIndex()
+
+      gr_margLogLik_wrt_p <- numeric(value = 0, length = dim(p)[1])
+      wgts_lik <- numeric(value = 0, length = nQuad)
+      for(i in 1:nQuad) {
+        z_node_i <- aghq_grid$getNodes(i)[1]
+        reTrans_i <- aghq_grid$getNodesTransformed(i)
+        wgts_lik[i] <- exp(aghq_grid$getLogDensity(i) - aghq_grid$getLogDensity(modeIndex))*aghq_grid$getWeights(i)
+        
+        ## At the mode (z = 0, don't have additional z*sigma_hat gr complication).
+	      if( modeIndex == i ){
+          if( method == 2 ) gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p(p, reTrans_i)
+          else gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)
+          gr_margLogLik_wrt_p <- gr_margLogLik_wrt_p + wgts_lik[i]*gr_jointlogLikwrtp
+        }else{
+          ## Chain Rule: dll/dre * ( dre_hat/dp + dsigma_hat/dp*z_i )
+          ## dll/dp
+          if(method == 2){
+            gr_logLikwrtrewrtre_i <- gr_joint_logLik_wrt_re(p, reTrans_i)[1]
+            gr_logLikewrtp_i <- gr_joint_logLik_wrt_p(p, reTrans_i)
+          }else{
+            gr_logLikwrtrewrtre_i <- gr_joint_logLik_wrt_re_internal(p, reTrans_i)[1]
+            gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)
+          }
+          gr_logLikwrtrewrtp_i <- gr_logLikwrtrewrtre_i *
+                            ( (1 + gr_sigmahatwrtre*z_node_i) * gr_rehatwrtp  +  gr_sigmahatwrtp*z_node_i )
+          ## The weighted gradient for the ith sum.
+          gr_margLogLik_wrt_p <- gr_margLogLik_wrt_p + wgts_lik[i]*( gr_logLikewrtp_i +  gr_logLikwrtrewrtp_i )
+        }
+      }
+      
+      return(gr_margLogLik_wrt_p / sum(wgts_lik[1:nQuad]))
       returnType(double(1))
     },
 		get_inner_mode = function(atOuterMode = integer(0, default = 0)){
@@ -2040,8 +2112,13 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
     ## Let the user experiment with different quadrature grids:
     setQuadSize = function(nQUpdate = integer()){
       if(nQUpdate < 1) stop("Choose a positive number of grid points.")
-      nQuad <<- nQUpdate
-      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$update_nQuad(nQUpdate)
+      if(nQUpdate %% 2 == 0){
+        print("Currently only allowing odd numbers of quadrature points: Adding one more")
+        nQuad <<- nQUpdate + 1
+      }else{
+        nQuad <<- nQUpdate
+      }
+      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$update_nQuad(nQuad)
     },
     one_time_fixes = function() {
       if(one_time_fixes_done) return()

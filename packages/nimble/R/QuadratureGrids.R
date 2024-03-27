@@ -37,8 +37,8 @@ buildAGHQGrid <- nimbleFunction(
 		one_time_fixes_done <- FALSE
 		wgt <- numeric(nQ + gridFix)
 		logDensity <- numeric(nQ + gridFix)
-		logGradient <- numeric(nQ + gridFix)
  		logdetNegHessian <- 0
+    margProb <- 0
     
     gridBuilt <- FALSE
    
@@ -52,7 +52,6 @@ buildAGHQGrid <- nimbleFunction(
 			if(one_time_fixes_done) return()
 			if(nQ == 1) {
 				logDensity <<- numeric(length = 1, value = logDensity[1])
-        logGradient <<- numeric(length = 1, value = logDensity[1])
 				wgt <<- numeric(length = 1, value = wgt[1])
 			}
 			one_time_fixes_done <<- TRUE
@@ -139,11 +138,11 @@ buildAGHQGrid <- nimbleFunction(
       gridBuilt <<- TRUE
 		},
     quadSum = function(){
-      margProb <- 0
+      margProb <<- 0
       maxVal <- logDensity[modeIndex]
       for( k in 1:nQ ){
-        if(k == modeIndex) margProb <- margProb + wgt[k]
-        else margProb <- margProb + exp(logDensity[k] - maxVal)*wgt[k]
+        if(k == modeIndex) margProb <<- margProb + wgt[k]
+        else margProb <<- margProb + exp(logDensity[k] - maxVal)*wgt[k]
       }
       ans <- log(margProb) + maxVal - 0.5 * logdetNegHessian
       returnType(double())
@@ -161,7 +160,6 @@ buildAGHQGrid <- nimbleFunction(
         setSize(zVals, c(nQ, d))
         setSize(nodeVals, c(nQ, d))
         setSize(logDensity, nQ)
-        setSize(logGradient, nQ)
 
         ## Build the new grid (updates modeIndex).
         buildAGHQ()
@@ -172,13 +170,6 @@ buildAGHQGrid <- nimbleFunction(
         logDensity[modeIndex] <<- logDens
 			}else{
         logDensity[i] <<- logDens
-      }
-    },
-		saveLogGrad = function(i = integer(0, default = -1), logGrad = double()){
-      if(i == -1) {
-         logGradient[modeIndex] <<- logGrad
-			}else{
-         logGradient[i] <<- logGrad
       }
     },
     transformGrid1D = function(negHess = double(2), inner_mode = double(1)){
@@ -237,15 +228,19 @@ buildAGHQGrid <- nimbleFunction(
 	)
 )
 
-# test <- buildAGHQGrid(d = 1, nQuad = 3)
-# testc <- compileNimble(test)
-# testc$buildGrid()
+test <- buildAGHQGrid(d = 1, nQuad = 3)
+testc <- compileNimble(test)
+testc$buildGrid()
 
-# testc$resetGrid(nQUpdate = 5)
-# testc$transformGrid1D(negHess = matrix(negHess), inner_mode = c(mu))
-# testc$getAllNodesTransformed()
+testc$resetGrid(nQUpdate = 5)
+testc$transformGrid1D(negHess = matrix(negHess), inner_mode = c(mu))
+testc$getAllNodesTransformed()
 
-# testc$buildAGHQ()
+testc$buildAGHQ()
+
+for( i in 1:5 ){
+  exp(testc$getLogDensity(i) - testc$getLogDensity(-1))*testc$getWeights(i)
+}
 
 # testc$getNodes(1)
 # testc$getNodes(2)
