@@ -43,7 +43,8 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
 		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
 		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
     check_convergence = function(){returnType(double())},
-    update_nQuad = function(nQUpdate = integer()){}
+    update_nQuad = function(nQUpdate = integer()){},
+    update_transformation = function(transformation = character()){}
   )
 )
 
@@ -711,7 +712,8 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
     update_nQuad = function(nQUpdate = integer()){
       aghq_grid$resetGrid(nQUpdate = nQUpdate)
       nQuad <<- nQUpdate
-    }
+    },
+    update_transformation = function(transformation = character()){}
   ),
   buildDerivs = list(inner_logLik                            = list(),
                      joint_logLik                            = list(),
@@ -830,6 +832,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
 
     ## Build AGHQ grid:
     aghq_grid <- buildAGHQGrid(d = nre, nQuad = nQuad)
+    transMethod <- "cholesky"
     
     converged <- 0
   },
@@ -1284,9 +1287,8 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
     calcLogLik_AGHQ = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
       aghq_grid$buildGrid()
-      ## Add user access if they want spectral decomp instead of cholesky.***
       aghq_grid$transformGrid(cholNegHess = saved_inner_negHess_chol, 
-                                    inner_mode = max_inner_logLik_saved_par, method = "cholesky")
+                                    inner_mode = max_inner_logLik_saved_par, method = transMethod)
       modeIndex <- aghq_grid$getModeIndex()
       nQ <- aghq_grid$getGridSize()
       for(i in 1:nQ) {
@@ -1368,6 +1370,9 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
     update_nQuad = function(nQUpdate = integer()){    
       aghq_grid$resetGrid(nQUpdate = nQUpdate)
       nQuad <<- nQUpdate
+    },
+    update_transformation = function(transformation = character()){
+      transMethod <<- transformation
     }
   ),
   buildDerivs = list(inner_logLik                            = list(),
@@ -2150,6 +2155,10 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
         nQuad <<- nQUpdate
       }
       for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$update_nQuad(nQuad)
+    },
+    setAGHQTransformation = function(method = character()){
+      if(method != "spectral" & method != "cholesky") stop("Choose either cholesky or spectral.")
+      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$update_transformation(transformation = method)
     },
     one_time_fixes = function() {
       if(one_time_fixes_done) return()
