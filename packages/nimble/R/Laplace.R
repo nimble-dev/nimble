@@ -456,8 +456,23 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       }
       logLik3_saved_value <<- logLik_saved_value
 
-      gr_logLik_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
-      logLik3_saved_gr <<- gr_logLik_v
+      if( nQuad == 1 ){
+        ## Gradient of Laplace Approx
+        AGHQuad_saved_gr <<- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
+      }else{
+        ## Gradient of AGHQ Approx.
+        ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+        gr_rehatwrtp <<- hess_cross_terms/negHessValue
+        ## dsigma_hat/dp (needed at real scale)
+        sigma_hat <- 1/sqrt(negHessValue)
+        gr_sigmahatwrtp <<- -0.5*gr_logdetNegHess_wrt_p_v*sigma_hat
+        gr_sigmahatwrtre <<- -0.5*gr_logdetNegHess_wrt_re_v*sigma_hat
+        
+        gr_aghq_sum <- gr_AGHQ_nodes(p = p, method = 2) ## Use method 2 for these?
+        AGHQuad_saved_gr <<- gr_aghq_sum - 0.5 * (gr_logdetNegHess_wrt_p_v + gr_logdetNegHess_wrt_re_v * gr_rehatwrtp)
+      }
+      logLik3_saved_gr <<- AGHQuad_saved_gr
+
       return(ans$value)
       returnType(double(1))
     },
@@ -594,9 +609,25 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       grlogdetNegHesswrtp <- gr_logdetNegHess_wrt_p_internal(p, reTransform)
       grlogdetNegHesswrtre <- gr_logdetNegHess_wrt_re_internal(p, reTransform)[1]
       hesslogLikwrtpre <- hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)[,1]
-      ans <- gr_joint_logLik_wrt_p_internal(p, reTransform) - 
-        0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
-      return(ans)
+
+      if( nQuad == 1 ){
+        ## Gradient of Laplace Approx
+        p1 <- gr_joint_logLik_wrt_p_internal(p, reTransform)
+        AGHQuad_saved_gr <<- p1 - 0.5 * (grlogdetNegHesswrtp + hesslogLikwrtpre * (grlogdetNegHesswrtre / negHessian))
+      }else{
+        ## Gradient of AGHQ Approx.
+        ## dre_hat/dp = d^2ll/drep / d^2ll/dre^2
+        gr_rehatwrtp <<- hesslogLikwrtpre/negHessian
+        ## dsigma_hat/dp (needed at real scale)
+        sigma_hat <- 1/sqrt(negHessian)
+        gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
+        gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
+        ## Sum gradient of each node.
+        gr_aghq_sum <- gr_AGHQ_nodes(p = p, method = 1)
+        AGHQuad_saved_gr <<- gr_aghq_sum - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+      }
+        
+      return(AGHQuad_saved_gr)
       returnType(double(1))
     },
     ## Partial gradient of AGHQ nodes w respect to p.

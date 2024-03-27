@@ -228,19 +228,19 @@ buildAGHQGrid <- nimbleFunction(
 	)
 )
 
-test <- buildAGHQGrid(d = 1, nQuad = 3)
-testc <- compileNimble(test)
-testc$buildGrid()
+# test <- buildAGHQGrid(d = 1, nQuad = 3)
+# testc <- compileNimble(test)
+# testc$buildGrid()
 
-testc$resetGrid(nQUpdate = 5)
-testc$transformGrid1D(negHess = matrix(negHess), inner_mode = c(mu))
-testc$getAllNodesTransformed()
+# testc$resetGrid(nQUpdate = 5)
+# testc$transformGrid1D(negHess = matrix(negHess), inner_mode = c(mu))
+# testc$getAllNodesTransformed()
 
-testc$buildAGHQ()
+# testc$buildAGHQ()
 
-for( i in 1:5 ){
-  exp(testc$getLogDensity(i) - testc$getLogDensity(-1))*testc$getWeights(i)
-}
+# for( i in 1:5 ){
+  # exp(testc$getLogDensity(i) - testc$getLogDensity(-1))*testc$getWeights(i)
+# }
 
 # testc$getNodes(1)
 # testc$getNodes(2)
