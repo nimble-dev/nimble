@@ -10,15 +10,21 @@ buildAGHQGrid <- nimbleFunction(
     
 		## Don't let them use an even quadrature grid. Inefficient.
 		if(nQuad %% 2 == 0) {
-			print("Even Quadrature grids are not recommended")
+			print("Even Quadrature grids are not allowed, adding another node.")
+      nQuad <- nQuad + 1
+		}
+		if(nQuad > 121) {
+			print("We don't currently support more than 121 quadrature nodes per dimension. Setting nQuad to 121")
+      nQuad <- 121
 		}
 
 		## nQ will be total number of quadrature points.
 		nQ <- nQuad^d	## Maybe dimension reduced if we prune.
 		zVals <- matrix(0, nrow = nQ, ncol = d)
     nodeVals <- matrix(0, nrow = nQ, ncol = d)
+
 		## Need to do a reverse for Eigen Vectors:
-		reverse <- nQ:1
+		reverse <- 121:1
 
 		## One time fixes if we run into some scalar issues for compilation.
 		## This is exclusively if the user requests Laplace (nQ = 1 AGHQ).
@@ -29,10 +35,12 @@ buildAGHQGrid <- nimbleFunction(
 
 		## One time fixes for scalar / vector changes.
 		one_time_fixes_done <- FALSE
-		wgt <- numeric(d + gridFix)
+		wgt <- numeric(nQ + gridFix)
 		logDensity <- numeric(nQ + gridFix)
 		logGradient <- numeric(nQ + gridFix)
  		logdetNegHessian <- 0
+    
+    gridBuilt <- FALSE
    
 		## AGHQ mode will be in the middle.
 		modeIndex <- 1
@@ -65,7 +73,7 @@ buildAGHQGrid <- nimbleFunction(
 				E <- eigen(y, symmetric = TRUE)
 				L <- E$values	# Always biggest to smallest.
 				V <- E$vectors
-				inds <- reverse[(nQ-nQ1+1):nQ]
+				inds <- reverse[(121-nQ1+1):121]	## Hard coded to maximum 120.
 				x <- L[inds]
 				## Make mode hard zero. We know nQ is odd and > 1.
 				x[ceiling(nQ1 / 2 ) ] <- 0
@@ -85,7 +93,7 @@ buildAGHQGrid <- nimbleFunction(
 			if( nQuad == 1 ){
 				## Laplace Approximation:
 				zVals <<- matrix(0, nrow = 1, ncol = d)
-				wgt <<- numeric(value = sqrt(2*pi), length = nQ)
+				wgt <<- numeric(value = exp(0.5 * d * log(2*pi)), length = nQ) 
 				modeIndex <<- 1
 			}else{
         nodes <- buildAGHQOne(nQuad)
@@ -127,7 +135,8 @@ buildAGHQGrid <- nimbleFunction(
 		## Doesn't default to building the grid.
 		buildGrid = function(){
 			one_time_fixes()
-			buildAGHQ()
+			if(!gridBuilt) buildAGHQ()
+      gridBuilt <<- TRUE
 		},
     quadSum = function(){
       margProb <- 0
@@ -145,6 +154,7 @@ buildAGHQGrid <- nimbleFunction(
 			one_time_fixes()
       if(nQuad != nQUpdate){
         nQ <<- nQUpdate^d
+        nQuad <<- nQUpdate
         
         ## Update weights and nodes.
         setSize(wgt, nQ)
@@ -157,20 +167,25 @@ buildAGHQGrid <- nimbleFunction(
         buildAGHQ()
       }
     },
-		saveLogDens = function(i = integer(0, default = 0), logDens = double()){
-      if(i == 0) {
+		saveLogDens = function(i = integer(0, default = -1), logDens = double()){
+      if(i == -1) {
         logDensity[modeIndex] <<- logDens
 			}else{
         logDensity[i] <<- logDens
       }
     },
-		saveLogGrad = function(i = integer(0, default = 0), logGrad = double()){
-      if(i == 0) {
+		saveLogGrad = function(i = integer(0, default = -1), logGrad = double()){
+      if(i == -1) {
          logGradient[modeIndex] <<- logGrad
 			}else{
          logGradient[i] <<- logGrad
       }
     },
+    transformGrid1D = function(negHess = double(2), inner_mode = double(1)){
+      SD <- 1/sqrt(negHess[1,1])
+      for( i in 1:nQ) nodeVals[i,] <<- inner_mode + SD*zVals[i,]
+      logdetNegHessian <<- log(negHess[1,1])
+    }, 
     transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
       if(method == "spectral"){
         ## Spectral transformation.
@@ -189,11 +204,11 @@ buildAGHQGrid <- nimbleFunction(
     },
 		getWeights = function(i=integer()){
       returnType(double())
-      if(i == 0)  return(wgt[modeIndex])
+      if(i == -1)  return(wgt[modeIndex])
       return(wgt[i])
     },
 		getNodesTransformed = function(i=integer()){
-      if(i == 0) return(nodeVals[modeIndex,])
+      if(i == -1) return(nodeVals[modeIndex,])
       returnType(double(1)); 
       return(nodeVals[i,])
     },
@@ -202,22 +217,47 @@ buildAGHQGrid <- nimbleFunction(
       return(nodeVals)
     },
 		getNodes = function(i=integer()){
-      if(i == 0) return(zVals[modeIndex,])
+      if(i == -1) return(zVals[modeIndex,])
       returnType(double(1)); 
       return(zVals[i,])
     },
 		getLogDensity = function(i=integer()){
       returnType(double())
-      if(i == 0) return(logDensity[modeIndex])
+      if(i == -1) return(logDensity[modeIndex])
       return(logDensity[i])
+    },
+    getModeIndex = function(){
+      returnType(integer())
+      return(modeIndex)
+    },
+    getGridSize = function(){
+      returnType(integer())
+      return(nQ)
     }
 	)
 )
 
-# test <- buildAGHQGrid(d = 2, nQuad = 5)
+# test <- buildAGHQGrid(d = 1, nQuad = 3)
 # testc <- compileNimble(test)
 # testc$buildGrid()
-# testc$getNodes(i=0)
+
+# testc$resetGrid(nQUpdate = 5)
+# testc$transformGrid1D(negHess = matrix(negHess), inner_mode = c(mu))
+# testc$getAllNodesTransformed()
+
+# testc$buildAGHQ()
+
+# testc$getNodes(1)
+# testc$getNodes(2)
+# testc$getNodes(3)
+# testc$getNodes(4)
+# testc$getNodes(5)
+
+# testc$getNodesTransformed(1)
+
+# testc$saveLogDens(0, log(0.5))
+# testc$quadSum()
+# log(0.5) - 0.5 * -2*log(0.1) + 0.5 * 1 * log(2*pi)
 
 # testc$transformGrid(cholNegHess, method = "cholesky", inner_mode = c(2,1))
 # grd <- testc$getAllNodesTransformed()

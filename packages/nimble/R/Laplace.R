@@ -42,18 +42,19 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
 		get_inner_mode = function(atOuterMode = integer(0, default = 0)){ returnType(double(1))},
 		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
 		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
-    check_convergence = function(){returnType(double())}
+    check_convergence = function(){returnType(double())},
+    update_nQuad = function(nQUpdate = integer()){}
   )
 )
 
 ## A single Laplace approximation for only one scalar random effect node
 buildOneLaplace_DeleteMeLater_1D <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
-  buildOneAGHQuad_DeleteMeLater_1D(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
+  buildOneAGHQuad_DeleteMeLater_1D(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
 }
 
 buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
   contains = AGHQuad_BASE,
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
+  setup = function(model, nQuad, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
     ## Check the number of random effects is 1
     nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
     if(length(nre) != 1) stop("Number of random effects for buildOneAGHQuad_DeleteMeLater_1D or buildOneLaplace_DeleteMeLater_1D must be 1.")
@@ -110,7 +111,7 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
     reTrans <- parameterTransform(model, randomEffectsNodes)
     
     ## The following are used for caching values and gradient in the Laplace3 system
-    logLik3_saved_value <- numeric(1)
+    logLik3_saved_value <- -Inf # numeric(1)
     logLik3_saved_gr <- if(npar > 1) numeric(npar) else as.numeric(c(1, -1))
     logLik3_previous_p <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
     ## The following are used for caching values and gradient in the Laplace3 system
@@ -124,7 +125,9 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
 
     ## Last call cache of neg Hessian.
 		saved_inner_negHess <- matrix(0, nrow = 1, ncol = 1)
-		
+		## Cache log like saved value to keep track of 3 methods.
+    logLik_saved_value <- -Inf
+    
     ## Values to save when max inner log lik reached.
     max_outer_logLik <- -Inf
     outer_mode_inner_negHess <- matrix(0, nrow = 1, ncol = 1)
@@ -133,6 +136,9 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
     
     ## Convergence check for outer function.
     converged <- 0
+    
+    ## Build AGHQ grid for 1D:
+    aghq_grid <- buildAGHQGrid(d = 1, nQuad = nQuad)
     
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE    
@@ -428,9 +434,15 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       ind <- ind + npar
       gr_logdetNegHess_wrt_re_v <- ans$value[ind]
       
-      logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
-      logLik3_saved_value <<- logLik_value
-      
+      if( nQuad == 1) {
+        ## Laplace Approximation
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
+      }else{
+        ## AGHQ Approximation:
+        calcLogLik_AGHQ(p)
+      }
+      logLik3_saved_value <<- logLik_saved_value
+
       gr_logLik_v <- gr_logLik_wrt_p - 0.5*(gr_logdetNegHess_wrt_p_v + hess_cross_terms * (gr_logdetNegHess_wrt_re_v / negHessValue))
       logLik3_saved_gr <<- gr_logLik_v
       return(ans$value)
@@ -468,14 +480,20 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       maxValue <- max_inner_logLik_saved_value
       logdetNegHessian <- logdetNegHess(p, reTransform)
       saved_inner_negHess <<- matrix(exp(logdetNegHessian), nrow = 1, ncol = 1)
-      
-      ## Laplace approximation
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
-      if(ans > max_logLik) {
-        max_logLik <<- ans
+
+      if(nQuad == 1){
+        ## Laplace approximation.
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+      }else{
+        ## Do Quadrature:
+        calcLogLik_AGHQ(p)
+      }
+
+      if(logLik_saved_value > max_logLik) {
+        max_logLik <<- logLik_saved_value
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
       }
-      return(ans)
+      return(logLik_saved_value)
       returnType(double())
     },
     ## Laplace approximation 1: single tapping with separate components
@@ -488,15 +506,35 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       maxValue <- max_inner_logLik_saved_value
       logdetNegHessian <- logdetNegHess(p, reTransform)
       saved_inner_negHess <<- matrix(exp(logdetNegHessian), nrow = 1, ncol = 1)
-
-      ## Laplace approximation
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
-      if(ans > max_logLik) {
-        max_logLik <<- ans
-        max_logLik_saved_re_value <<- max_inner_logLik_saved_par
+      
+      if(nQuad == 1){
+        ## Laplace approximation.
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
+      }else{
+        ## Do Quadrature:
+        calcLogLik_AGHQ(p)
       }
-      return(ans)
+      
+      if(logLik_saved_value > max_logLik) {
+        max_logLik <<- logLik_saved_value
+        max_logLik_saved_re_value <<- max_inner_logLik_saved_par
+      }          
+      
+      return(logLik_saved_value)
       returnType(double())
+    },
+    calcLogLik_AGHQ = function(p = double(1)){
+      ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
+      aghq_grid$buildGrid()
+      aghq_grid$transformGrid1D(negHess = saved_inner_negHess, inner_mode = max_inner_logLik_saved_par)
+      modeIndex <- aghq_grid$getModeIndex()
+      for(i in 1:nQuad) {
+        if(i == modeIndex) aghq_grid$saveLogDens(i, max_inner_logLik_saved_value )
+        else aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
+      }
+
+      ## Given all the saved values, weights and log density, do quadrature sum.
+      logLik_saved_value <<- aghq_grid$quadSum()
     },
     ## Gradient of the Laplace approximation (version 2) w.r.t. parameters
     gr_logLik2 = function(p = double(1)){
@@ -565,6 +603,11 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
     ## Need to reset every time optim is called to recache.
     reset_outer_logLik = function(){
       max_outer_logLik <<- -Inf
+    },
+    ## Allow the user to explore using different sized quadrature grids.
+    update_nQuad = function(nQUpdate = integer()){
+      aghq_grid$resetGrid(nQUpdate = nQUpdate)
+      nQuad <<- nQUpdate
     }
   ),
   buildDerivs = list(inner_logLik                            = list(),
@@ -586,12 +629,12 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
 
 ## A single Laplace approximation for models with more than one scalar random effect node
 buildOneLaplace_DeleteMeLater_ <- function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
-  buildOneAGHQuad_DeleteMeLater_(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
+  buildOneAGHQuad_DeleteMeLater_(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart)
 }
 
 buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
   contains = AGHQuad_BASE,
-  setup = function(model, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
+  setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, optimControl, optimMethod, optimStart) {
     ## Check and add necessary (upstream) deterministic nodes into calcNodes
     ## This ensures that deterministic nodes between paramNodes and calcNodes are used.
     paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE, self=FALSE)
@@ -672,12 +715,18 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
 		## Cache values for access in outer function:
 		saved_inner_negHess <- matrix(0, nrow = nre, ncol = nre)
 		saved_inner_negHess_chol <- matrix(0, nrow = nre, ncol = nre)
+		
+    ## Cache log like saved value to keep track of 3 methods.
+    logLik_saved_value <- -Inf
 
     max_outer_logLik <- -Inf
     outer_mode_inner_negHess <- matrix(0, nrow = nre, ncol = nre)
     outer_mode_inner_negHess_chol <- matrix(0, nrow = nre, ncol = nre)
     outer_mode_max_inner_logLik_saved_par <- if(nreTrans > 1) numeric(nreTrans) else as.numeric(c(1, -1))
     outer_param_max <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
+
+    ## Build AGHQ grid:
+    aghq_grid <- buildAGHQGrid(d = nre, nQuad = nQuad)
     
     converged <- 0
   },
@@ -1027,9 +1076,15 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       ind <- ind + npar
       gr_logdetNegHess_wrt_re_v <- ans$value[(ind):(ind + nreTrans - 1)]
       
-      logLik_value <- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
-      logLik3_saved_value <<- logLik_value
-      
+      if( nQuad == 1) {
+        ## Laplace Approximation
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
+      }else{
+        ## AGHQ Approximation:
+        calcLogLik_AGHQ(p)
+      }
+      logLik3_saved_value <<- logLik_saved_value
+            
       # We need A^T inverse(negHess) B
       # where A = gr_logdetNegHess_wrt_re_v (a vector treated by default as a one-column matrix)
       #  and  B = t(hess_cross_terms)
@@ -1084,11 +1139,17 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
       logdetNegHessian <- logdetNegHess(p, reTransform)
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
-      if(ans > max_logLik) {
-        max_logLik <<- ans
+
+      if(nQuad == 1){
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      }else{
+        calcLogLik_AGHQ(p)
+      }
+      if(logLik_saved_value > max_logLik) {
+        max_logLik <<- logLik_saved_value
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
       }
+
       return(ans)
       returnType(double())
     },
@@ -1102,14 +1163,36 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
       logdetNegHessian <- logdetNegHess(p, reTransform)
-      ans <- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
-      if(ans > max_logLik) {
-        max_logLik <<- ans
+      
+      if(nQuad == 1){
+        ## Laplace Approx
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
+      }else{
+        ## AGHQ Approx
+        calcLogLik_AGHQ(p)
+      }
+      if(logLik_saved_value > max_logLik) {
+        max_logLik <<- logLik_saved_value
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
       }
-      return(ans)
+      return(logLik_saved_value)
       returnType(double())
     },
+    calcLogLik_AGHQ = function(p = double(1)){
+      ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
+      aghq_grid$buildGrid()
+      ## Add user access if they want spectral decomp instead of cholesky.***
+      aghq_grid$transformGrid(cholNegHess = saved_inner_negHess_chol, 
+                                    inner_mode = max_inner_logLik_saved_par, method = "cholesky")
+      modeIndex <- aghq_grid$getModeIndex()
+      nQ <- aghq_grid$getGridSize()
+      for(i in 1:nQ) {
+        if(i == modeIndex) aghq_grid$saveLogDens(i, max_inner_logLik_saved_value )
+        else aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
+      }
+      ## Given all the saved values, weights and log density, do quadrature sum.
+      logLik_saved_value <<- aghq_grid$quadSum()
+    },    
     ## Gradient of the Laplace approximation 2 w.r.t. parameters
     gr_logLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
@@ -1178,6 +1261,10 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
     ## Need to reset every call optim to recache.
     reset_outer_logLik = function(){
       max_outer_logLik <<- -Inf
+    },
+    update_nQuad = function(nQUpdate = integer()){    
+      aghq_grid$resetGrid(nQUpdate = nQUpdate)
+      nQuad <<- nQUpdate
     }
   ),
   buildDerivs = list(inner_logLik                            = list(),
@@ -1839,7 +1926,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
         }
         ## Build AGHQuad
         if(nre > 1) AGHQuad_nfl[[1]] <- buildOneAGHQuad_DeleteMeLater_(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-        else AGHQuad_nfl[[1]] <- buildOneAGHQuad_DeleteMeLater_1D(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+        else AGHQuad_nfl[[1]] <- buildOneAGHQuad_DeleteMeLater_1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- MargNodes$randomEffectsSets
@@ -1878,7 +1965,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
           if(nre_these > 1){
             AGHQuad_nfl[[i]] <- buildOneAGHQuad_DeleteMeLater_(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
           }
-          else AGHQuad_nfl[[i]] <- buildOneAGHQuad_DeleteMeLater_1D(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
+          else AGHQuad_nfl[[i]] <- buildOneAGHQuad_DeleteMeLater_1D(model, nQuad = nQuad, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
         }
       }
       if(length(lenInternalRENodeSets) == 1) lenInternalRENodeSets <- c(lenInternalRENodeSets, -1)
@@ -1949,6 +2036,12 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
     getMethod = function() {
       return(methodID)
       returnType(integer())
+    },
+    ## Let the user experiment with different quadrature grids:
+    setQuadSize = function(nQUpdate = integer()){
+      if(nQUpdate < 1) stop("Choose a positive number of grid points.")
+      nQuad <<- nQUpdate
+      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$update_nQuad(nQUpdate)
     },
     one_time_fixes = function() {
       if(one_time_fixes_done) return()
@@ -2029,9 +2122,20 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       returnType(double())
     },
     calcLaplace = function(p = double(1), trans = logical(0, default = FALSE)) {
+      if(nQuad > 1){
+        print("Setting number of quadrature points to 1. Use setQuadSize() to change it back.")
+        setQuadSize(nQUpdate = 1)
+      }
       ans <- calcLogLik(p, trans)
       return(ans)
       returnType(double())
+    },
+    testSingle = function(p = double(1), index = integer()){
+      if(methodID == 1) ans <-  AGHQuad_nfl[[index]]$calcLogLik1(p)
+      else if(methodID == 2) ans <- AGHQuad_nfl[[index]]$calcLogLik2(p)
+      else ans <- AGHQuad_nfl[[index]]$calcLogLik3(p)
+      return(ans)
+      returnType(double())        
     },
     ## Gradient of the AGHQuad approximation w.r.t. parameters
     gr_logLik = function(p = double(1), trans = logical(0, default=FALSE)) {
