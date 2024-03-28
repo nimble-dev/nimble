@@ -1855,7 +1855,7 @@ buildApproxPosterior <- nimbleFunction(
 		{
 			stdDev <- sqrt(covTheta[pIndex, pIndex])
 			thetai <- rep(0, pTransform_length)
-      marg_theta[pIndex, i, 1]
+
 			for( i in 1:nzMargGrid ){	# Known fixed # of points
 				thetai[pIndex] <- pTransformPostMode[pIndex] + zMargGrid[i] * stdDev
         marg_theta[pIndex, i, 1] <<- thetai[pIndex]
@@ -1882,7 +1882,7 @@ buildApproxPosterior <- nimbleFunction(
 		},
     marginalTransformedSplineDensity = function(pIndex = integer()) {
       returnType(double(2))
-      return(marginalSplineR(marg_theta[pIndex, i, 1], marg_theta[pIndex, i, 2]))
+      return(marginalSplineR(marg_theta[pIndex, , 1], marg_theta[pIndex, , 2]))
     },
     ## Transform these.
     # marginalSplineDensity = function(pIndex = integer()) {
