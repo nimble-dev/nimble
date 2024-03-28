@@ -2117,10 +2117,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
     one_time_fixes_done <- FALSE
     ## Default calculation method for AGHQuad
     methodID <- 2
-    
-    ## For updating outer likelihood internally.
-    findingPosterior <- FALSE
-    
+        
     ## The nimbleList definitions AGHQuad_params and AGHQuad_summary
     ## have moved to predefined nimbleLists.
   },## End of setup
@@ -2234,7 +2231,6 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
         }
       }
       if(is.nan(ans) | is.na(ans)) ans <- -Inf
-      if(!findingPosterior) cache_outer_logLik(ans) ## Save outer in the inner to cache values at outer mode.
       return(ans)
       returnType(double())
     },
@@ -2246,13 +2242,6 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       ans <- calcLogLik(p, trans)
       return(ans)
       returnType(double())
-    },
-    testSingle = function(p = double(1), index = integer()){
-      if(methodID == 1) ans <-  AGHQuad_nfl[[index]]$calcLogLik1(p)
-      else if(methodID == 2) ans <- AGHQuad_nfl[[index]]$calcLogLik2(p)
-      else ans <- AGHQuad_nfl[[index]]$calcLogLik3(p)
-      return(ans)
-      returnType(double())        
     },
     ## Gradient of the AGHQuad approximation w.r.t. parameters
     gr_logLik = function(p = double(1), trans = logical(0, default=FALSE)) {
@@ -2285,6 +2274,10 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       returnType(double(1))
     },
     gr_Laplace = function(p = double(1), trans = logical(0, default=FALSE)) {
+      if(nQuad > 1){
+        print("Setting number of quadrature points to 1. Use setQuadSize() to change it back.")
+        setQuadSize(nQUpdate = 1)
+      }    
       ans <- gr_logLik(p, trans)
       return(ans)
       returnType(double(1))
@@ -2296,6 +2289,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       ## p <- paramsTransform$inverseTransform(pTransform)
       ## ans <- calcLogLik(p)
       ## if(is.nan(ans) | is.na(ans)) ans <- -Inf
+      cache_outer_logLik(ans) ## Save outer in the inner to cache values at outer mode.
       return(ans)
       returnType(double())
     },
@@ -2359,16 +2353,16 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
 			}else{
 				pstar <- p
 			}
-      findingPosterior <<- TRUE ## Don't update internal cache.
 			ans <- calcLogLik(pstar) + calcPrior_p(pstar)
-      findingPosterior <<- FALSE
-      cache_outer_logLik(ans) ## Update internal cache w/ prior.
 			returnType(double())
 			return(ans)
 		},
     ## Calculate posterior density at p transformed, log likelihood + log prior (transformed).
 		calcPostLogProb_pTransformed = function(pTransform = double(1)) {
-			ans <- calcPostLogProb(pTransform, trans = TRUE) + logDetJacobian(pTransform)
+
+      ans <- calcPostLogProb(pTransform, trans = TRUE) + logDetJacobian(pTransform)
+      cache_outer_logLik(ans) ## Update internal cache w/ prior.
+
       if(is.nan(ans) | is.na(ans)) ans <- -Inf			
       returnType(double())
 			return(ans)
