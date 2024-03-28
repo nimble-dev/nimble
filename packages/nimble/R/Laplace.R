@@ -820,7 +820,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
 		## Cache values for access in outer function:
 		saved_inner_negHess <- matrix(0, nrow = nre, ncol = nre)
 		saved_inner_negHess_chol <- matrix(0, nrow = nre, ncol = nre)
-		
+    
     ## Cache log like saved value to keep track of 3 methods.
     logLik_saved_value <- -Inf
 
@@ -1076,12 +1076,15 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       update_once <<- update
     },
     ## Logdet negative Hessian
-    logdetNegHess = function(p = double(1), reTransform = double(1)) {
+    cholNegHess_wrap = function(p = double(1), reTransform = double(1)) {
       negHessian <- negHess(p, reTransform)
-			saved_inner_negHess <<- negHessian
-      cholNegHess <- chol(negHessian)
-			saved_inner_negHess_chol <<- cholNegHess
-      ans <- 2 * sum(log(diag(cholNegHess)))
+      ans <- chol(negHessian)
+      return(ans)
+      returnType(double(2))
+    },
+    ## Logdet negative Hessian
+    logdetNegHess = function(p = double(1), reTransform = double(1)) {
+      ans <- 2 * sum(log(diag(cholNegHess_wrap(p, reTransform))))
       return(ans)
       returnType(double())
     },
@@ -1244,7 +1247,8 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
-      logdetNegHessian <- logdetNegHess(p, reTransform)
+      saved_inner_negHess_chol <<- cholNegHess_wrap(p, reTransform)
+      logdetNegHessian <- 2 * sum(log(diag(saved_inner_negHess_chol)))
 
       if(nQuad == 1){
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
@@ -1256,7 +1260,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
         max_logLik_saved_re_value <<- max_inner_logLik_saved_par
       }
 
-      return(ans)
+      return(logLik_saved_value)
       returnType(double())
     },
     ## Laplace approximation 1: single tapping with separate components
@@ -1268,7 +1272,8 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
-      logdetNegHessian <- logdetNegHess(p, reTransform)
+      saved_inner_negHess_chol <<- cholNegHess_wrap(p, reTransform)
+      logdetNegHessian <- 2 * sum(log(diag(saved_inner_negHess_chol)))
       
       if(nQuad == 1){
         ## Laplace Approx
@@ -1367,7 +1372,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
     reset_outer_logLik = function(){
       max_outer_logLik <<- -Inf
     },
-    update_nQuad = function(nQUpdate = integer()){    
+    update_nQuad = function(nQUpdate = integer()){
       aghq_grid$resetGrid(nQUpdate = nQUpdate)
       nQuad <<- nQUpdate
     },
@@ -1379,6 +1384,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
                      joint_logLik                            = list(),
                      gr_joint_logLik_wrt_re                  = list(),
                      negHess                                 = list(),
+                     cholNegHess_wrap                        = list(),
                      logdetNegHess                           = list(), 
                      gr_inner_logLik_internal                = list(),
                      gr_joint_logLik_wrt_p_internal          = list(),
@@ -2012,6 +2018,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
     AGHQuad_nfl <- nimbleFunctionList(AGHQuad_BASE)
     scalarRENodes <- model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE)
     nre <- length(scalarRENodes)
+    multiSetsCheck <- FALSE ## AGHQ vs Laplace Check in findMLE.
     if(nre > 0){
       ## Record the order of random effects processed internally
       internalRandomEffectsNodes <- NULL
@@ -2033,8 +2040,10 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
           innerOptStart <- all_reTransform$inverseTransform(rep(0, all_reTransform_length))
         }
         ## Build AGHQuad
-        if(nre > 1) AGHQuad_nfl[[1]] <- buildOneAGHQuad_DeleteMeLater_(model, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
-        else AGHQuad_nfl[[1]] <- buildOneAGHQuad_DeleteMeLater_1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+        if(nre > 1) {
+          AGHQuad_nfl[[1]] <- buildOneAGHQuad_DeleteMeLater_(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
+          multiSetsCheck <- TRUE
+        } else AGHQuad_nfl[[1]] <- buildOneAGHQuad_DeleteMeLater_1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- MargNodes$randomEffectsSets
@@ -2071,7 +2080,8 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
           }
           ## Build AGHQuad for each set
           if(nre_these > 1){
-            AGHQuad_nfl[[i]] <- buildOneAGHQuad_DeleteMeLater_(model, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
+            AGHQuad_nfl[[i]] <- buildOneAGHQuad_DeleteMeLater_(model, nQuad = nQuad, paramNodes, these_reNodes, these_calcNodes, innerOptControl, innerOptMethod, innerOptStart)
+            multiSetsCheck <- TRUE
           }
           else AGHQuad_nfl[[i]] <- buildOneAGHQuad_DeleteMeLater_1D(model, nQuad = nQuad, paramNodes, these_reNodes, these_calcNodes, innerOptControl, "CG", innerOptStart)
         }
@@ -2144,6 +2154,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
     },
     ## Let the user experiment with different quadrature grids:
     setQuadSize = function(nQUpdate = integer()){
+      nQuad0 <- nQuad 
       if(nQUpdate < 1) stop("Choose a positive number of grid points.")
       if(nQUpdate %% 2 == 0){
         print("Currently only allowing odd numbers of quadrature points: Adding one more")
@@ -2151,7 +2162,13 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
       }else{
         nQuad <<- nQUpdate
       }
-      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$update_nQuad(nQuad)
+      for(i in seq_along(AGHQuad_nfl)) {
+        if( lenInternalRENodeSets[i]^nQuad > 50000 ){
+          nQuad <<- nQuad0
+          stop("You have exceeded the maximum quadrature grid of 50,000 points.")
+        }
+        AGHQuad_nfl[[i]]$update_nQuad(nQuad)
+      }
     },
     setAGHQTransformation = function(method = character()){
       if(method != "spectral" & method != "cholesky") stop("Choose either cholesky or spectral.")
@@ -2407,6 +2424,7 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE),
                        MAP = logical(0, default = FALSE)) {
+      if(multiSetsCheck & nQuad > 1) stop("Currently only Laplace is supported for Maximization. Use setNodeSize(1) to change.")
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
       if(length(pStart) != npar) {
         print("  [Warning] For findMLE, pStart should be length ", npar, " but is length ", length(pStart), ".")
@@ -2440,14 +2458,12 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
     ## Grab the inner Cholesky from the cached last values.
     cache_outer_logLik = function(logLikVal = double()){
       for(i in seq_along(AGHQuad_nfl)){
-        numre <- lenInternalRENodeSets[i]
         AGHQuad_nfl[[i]]$save_outer_logLik(logLikVal)
       }
     },
     ## Set cached log lik values to -Inf internally.
     reset_outer_inner_logLik = function(){
       for(i in seq_along(AGHQuad_nfl)){
-        numre <- lenInternalRENodeSets[i]
         AGHQuad_nfl[[i]]$reset_outer_logLik()
       }
     },    

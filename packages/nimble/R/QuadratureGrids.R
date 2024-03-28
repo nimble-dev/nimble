@@ -4,6 +4,7 @@
 # nQ - Number of quadrature points for AGHQ or custom
 # method - Grid method to use, either CCD, AGHQ, or Custom (which will require the user to input the grid in future iterations)
 # nre - Number of fixed and random effects.
+# require(nimble)
 buildAGHQGrid <- nimbleFunction(
 	# contains = GRID_BASE,
 	setup = function(d, nQuad){
@@ -228,11 +229,13 @@ buildAGHQGrid <- nimbleFunction(
 	)
 )
 
-# test <- buildAGHQGrid(d = 1, nQuad = 3)
+# test <- buildAGHQGrid(d = 25, nQuad = 1)
 # testc <- compileNimble(test)
 # testc$buildGrid()
 
 # testc$resetGrid(nQUpdate = 5)
+# testc$getNodesTransformed(1)
+
 # testc$transformGrid1D(negHess = matrix(negHess), inner_mode = c(mu))
 # testc$getAllNodesTransformed()
 
