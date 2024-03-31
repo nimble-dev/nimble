@@ -2025,10 +2025,14 @@ nimDerivsInfoClass_init_impl <- function(.self
 
 makeOutputNodes <- function(model,
                             calcNodes) {
-  calcNodeNames <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
-  logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
-  isDetermCalcNodes <- model$isDeterm(calcNodeNames)
-  modelOutputNodes <- c(calcNodeNames[isDetermCalcNodes],
+  ## Need to do `isDeterm` on nodes, not node components (issue 1431).
+  ## Presuming (and based on a simple test) that by now,
+  ## input `calcNodes` would include all encompassing nodes
+  ## and that this next step would not introduce any additional components.  
+  calcNodes <- model$expandNodeNames(calcNodes)
+  logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodes)
+  isDetermCalcNodes <- model$isDeterm(calcNodes)
+  modelOutputNodes <- c(model$expandNodeNames(calcNodes[isDetermCalcNodes], returnScalarComponents = TRUE),
                         logProbCalcNodeNames)
   modelOutputNodes
 }
