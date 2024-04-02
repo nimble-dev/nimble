@@ -199,12 +199,12 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         listElementTable$addSymbol(cppSEXP(name = "S_listName"))
                                       
                                         newListLine[[1]] <- substitute({PROTECT(S_listName <- Rf_allocVector(STRSXP, 1));
-                                          SET_STRING_ELT(S_listName, 0, Rf_mkChar(LISTNAME));}, 
+                                          SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar(LISTNAME)));},
                                           list(LISTNAME = nimCompProc$nimbleListObj$className))
                                         newListLine[[2]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(S_listName)),
                                                                            list())
-                                        newListLine[[3]] <- quote(cppLiteral('RObjectPointer = S_newNimList;'))
-                                        newListLine[[4]] <-   substitute(UNPROTECT(2), list())
+                                        newListLine[[3]] <- quote(cppLiteral('R_PreserveObject(RObjectPointer = S_newNimList);'))
+                                        newListLine[[4]] <-   substitute(UNPROTECT(2+1), list())
                                         allCode <- embedListInRbracket(c(newListLine))
                                         functionDefs[[paste0(name, "_createNewSEXP")]] <<- cppFunctionDef(name = "createNewSEXP",
                                                                                                     args = interfaceArgs,
@@ -231,7 +231,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
                                         envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
-                                          SET_STRING_ELT(ENVNAME, 0, Rf_mkChar(".xData"));}, 
+                                          SET_STRING_ELT(ENVNAME, 0, PROTECT(Rf_mkChar(".xData")));},
                                           list(ENVNAME = as.name(environmentCPPName)))
                                         
                                         for(i in seq_along(elementNames)){
@@ -251,7 +251,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                        list()))
                                         returnLine <- list(substitute(return(ROBJ),
                                                            list(ROBJ = as.name('RObjectPointer'))))
-                                        unprotectLine <- list(substitute(UNPROTECT(N), list(N = 2 * numElements + 1)))
+                                        unprotectLine <- list(substitute(UNPROTECT(N), list(N = 2 * numElements + 1 + 1)))
                                         allCode <- embedListInRbracket(c(conditionalClauseStart, list(envLine),  conditionalLineList,
                                                                          copyToListLines, setFlagLine, unprotectLine,
                                                                          conditionalClauseEnd, returnLine))
@@ -274,12 +274,12 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         Snames <- character(length(argNames))
                                         returnType <- "void"
                                         listElementTable <- symbolTable()
-                                        storeSexpLine <- list(quote(cppLiteral('RObjectPointer =  S_nimList_;')))
+                                        storeSexpLine <- list(quote(cppLiteral('R_PreserveObject(RObjectPointer =  S_nimList_);')))
 
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
                                         envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
-                                          SET_STRING_ELT(ENVNAME, 0, Rf_mkChar(".xData"));}, 
+                                          SET_STRING_ELT(ENVNAME, 0, PROTECT(Rf_mkChar(".xData")));},
                                           list(ENVNAME = as.name(environmentCPPName)))
 
                                         for(i in seq_along(argNames)) {
@@ -294,7 +294,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                             copyLines <- c(copyLines, copyLine)
                                         }
                                         numArgs <- length(argNames)
-                                        unprotectLine <- substitute(UNPROTECT(N), list(N = 2 * numArgs + 1))
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = 2 * numArgs + 1 + 1))
                                         allCode <- embedListInRbracket(c(storeSexpLine, envLine, 
                                                                          copyFromListLines, copyLines,
                                                                          list(unprotectLine)))
