@@ -40,7 +40,7 @@ if (length(grep('^-', argv, invert = TRUE))) {
     allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
     ## SHORTCUT FOR BRANCH fix-vector-elt to run only tests that usually show the intermittent issue
-    allTests <- c("test-ADlaplace.R", "AD-nimbleList.R")
+    allTests <- c("test-ADlaplace.R", "test-nimbleList.R")
 
     # Avoid running these omitlisted tests, since they take too long
     # or involve experimental features.
