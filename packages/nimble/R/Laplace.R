@@ -1076,7 +1076,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       update_once <<- update
     },
     ## Logdet negative Hessian
-    cholNegHess_wrap = function(p = double(1), reTransform = double(1)) {
+    cholNegHessian = function(p = double(1), reTransform = double(1)) {
       negHessian <- negHess(p, reTransform)
       ans <- chol(negHessian)
       return(ans)
@@ -1084,7 +1084,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
     },
     ## Logdet negative Hessian
     logdetNegHess = function(p = double(1), reTransform = double(1)) {
-      ans <- 2 * sum(log(diag(cholNegHess_wrap(p, reTransform))))
+      ans <- 2 * sum(log(diag(cholNegHessian(p, reTransform))))
       return(ans)
       returnType(double())
     },
@@ -1247,7 +1247,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
-      saved_inner_negHess_chol <<- cholNegHess_wrap(p, reTransform)
+      saved_inner_negHess_chol <<- cholNegHessian(p, reTransform)
       logdetNegHessian <- 2 * sum(log(diag(saved_inner_negHess_chol)))
 
       if(nQuad == 1){
@@ -1272,7 +1272,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
       reTransform <- max_inner_logLik_saved_par
       maxValue <- max_inner_logLik_saved_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
-      saved_inner_negHess_chol <<- cholNegHess_wrap(p, reTransform)
+      saved_inner_negHess_chol <<- cholNegHessian(p, reTransform)
       logdetNegHessian <- 2 * sum(log(diag(saved_inner_negHess_chol)))
       
       if(nQuad == 1){
@@ -1384,7 +1384,7 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
                      joint_logLik                            = list(),
                      gr_joint_logLik_wrt_re                  = list(),
                      negHess                                 = list(),
-                     cholNegHess_wrap                        = list(),
+                     cholNegHessian                          = list(),
                      logdetNegHess                           = list(), 
                      gr_inner_logLik_internal                = list(),
                      gr_joint_logLik_wrt_p_internal          = list(),
