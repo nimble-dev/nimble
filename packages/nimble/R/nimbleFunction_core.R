@@ -348,7 +348,7 @@ nf_getNamesFromSetupOutputDeclaration <- function(setupOutputsDeclaration) {
 ## needs to be exported as otherwise use of nimble::: in `nf_createGeneratorFunctionDef()` gives R CMD check NOTE
 #' @export
 nf_preProcessMemberDataObject <- function(obj) {
-    if(is(obj, 'CmodelBaseClass')) {
+    if(inherits(obj, 'CmodelBaseClass')) {
         warning('This nimbleFunction was passed a *compiled* model object.\nInstead, the corresponding *uncompiled* model object was used.', call. = FALSE)
         return(obj$Rmodel)
     }
