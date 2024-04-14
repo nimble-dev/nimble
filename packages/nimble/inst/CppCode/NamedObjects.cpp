@@ -103,10 +103,10 @@ SEXP getAvailableNames(SEXP Sextptr) {
     // _nimble_global_output << "starting "<<i<<"\n"; nimble_print_to_R( _nimble_global_output);
     //_nimble_global_output << iNO->first.c_str() <<" \n";
     //nimble_print_to_R( _nimble_global_output);
-    SET_STRING_ELT(Sans, i, Rf_mkChar(iNO->first.c_str()));
+    SET_STRING_ELT(Sans, i, PROTECT(Rf_mkChar(iNO->first.c_str())));
     //_nimble_global_output << "done with "<<i<<" "<<iNO->first<<" \n"; nimble_print_to_R( _nimble_global_output);
   }
-  UNPROTECT(1);
+  UNPROTECT(numNames + 1);
   return(Sans);
 }
 

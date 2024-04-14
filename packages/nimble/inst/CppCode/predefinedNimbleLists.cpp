@@ -108,9 +108,9 @@ void OptimResultNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_convergence;
   SEXP S_message;
   SEXP S_hessian;
-  RObjectPointer = S_nimList_;
+  R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_par = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                     Rf_install("par")));
   PROTECT(S_value =
@@ -134,7 +134,7 @@ void OptimResultNimbleList::copyFromSEXP(SEXP S_nimList_) {
   convergence = SEXP_2_int(S_convergence);
   message = STRSEXP_2_string(S_message);
   SEXP_2_NimArr<2>(S_hessian, hessian);
-  UNPROTECT(13);
+  UNPROTECT(14);
 }
 SEXP OptimResultNimbleList::copyToSEXP() {
   SEXP S__dot_xData;
@@ -146,7 +146,7 @@ SEXP OptimResultNimbleList::copyToSEXP() {
   SEXP S_hessian;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_par = NimArr_2_SEXP<1>(par));
     PROTECT(S_value = double_2_SEXP(value));
     PROTECT(S_counts = NimArr_2_SEXP<1>(counts));
@@ -166,7 +166,7 @@ SEXP OptimResultNimbleList::copyToSEXP() {
     Rf_defineVar(Rf_install("hessian"), S_hessian,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(13);
+    UNPROTECT(14);
   }
   return (RObjectPointer);
 }
@@ -174,12 +174,16 @@ void OptimResultNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("OptimResultNimbleList"));
+  SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar("OptimResultNimbleList")));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-  RObjectPointer = S_newNimList;
-  UNPROTECT(2);
+  R_PreserveObject(RObjectPointer = S_newNimList);
+  UNPROTECT(3);
 }
-void OptimResultNimbleList::resetFlags() { RCopiedFlag = false; }
+void OptimResultNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void OptimResultNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("par");
@@ -187,7 +191,7 @@ void OptimResultNimbleList::copyFromRobject(SEXP Robject) {
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("counts");
   COPY_INTEGER_SCALAR_FROM_R_OBJECT("convergence");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("hessian");
-  UNPROTECT(7);
+  UNPROTECT(8);
 }
 OptimResultNimbleList::OptimResultNimbleList() {
   RCopiedFlag = false;
@@ -265,9 +269,9 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_pgtol;
   SEXP S_temp;
   SEXP S_tmax;
-  RObjectPointer = S_nimList_;
+    R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_trace =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("trace")));
@@ -331,7 +335,7 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
   pgtol = SEXP_2_double(S_pgtol);
   temp = SEXP_2_double(S_temp);
   tmax = SEXP_2_int(S_tmax);
-  UNPROTECT(35);
+  UNPROTECT(36);
 }
 SEXP OptimControlNimbleList::copyToSEXP() {
   SEXP S__dot_xData;
@@ -354,7 +358,7 @@ SEXP OptimControlNimbleList::copyToSEXP() {
   SEXP S_tmax;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_trace = int_2_SEXP(trace));
     PROTECT(S_fnscale = double_2_SEXP(fnscale));
     PROTECT(S_parscale = NimArr_2_SEXP<1>(parscale));
@@ -407,7 +411,7 @@ SEXP OptimControlNimbleList::copyToSEXP() {
     Rf_defineVar(Rf_install("tmax"), S_tmax,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(35);
+    UNPROTECT(36);
   }
   return (RObjectPointer);
 }
@@ -415,12 +419,16 @@ void OptimControlNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("OptimControlNimbleList"));
+  SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar("OptimControlNimbleList")));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-  RObjectPointer = S_newNimList;
-  UNPROTECT(2);
+  R_PreserveObject(RObjectPointer = S_newNimList);
+  UNPROTECT(3);
 }
-void OptimControlNimbleList::resetFlags() { RCopiedFlag = false; }
+void OptimControlNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void OptimControlNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_INTEGER_SCALAR_FROM_R_OBJECT("trace");
@@ -440,7 +448,7 @@ void OptimControlNimbleList::copyFromRobject(SEXP Robject) {
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("pgtol");
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("temp");
   COPY_INTEGER_SCALAR_FROM_R_OBJECT("tmax");
-  UNPROTECT(19);
+  UNPROTECT(20);
 }
 OptimControlNimbleList::OptimControlNimbleList() {
   RCopiedFlag = false;
@@ -515,9 +523,9 @@ void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_value;
   SEXP S_jacobian;
   SEXP S_hessian;
-  RObjectPointer = S_nimList_;
+  R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_value =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("value")));
@@ -530,7 +538,7 @@ void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   SEXP_2_NimArr<1>(S_value, value);
   SEXP_2_NimArr<2>(S_jacobian, jacobian);
   SEXP_2_NimArr<3>(S_hessian, hessian);
-  UNPROTECT(7);
+  UNPROTECT(8);
 }
 SEXP NIMBLE_ADCLASS::copyToSEXP() {
   PROTECT(RObjectPointer);
@@ -560,19 +568,23 @@ void NIMBLE_ADCLASS::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("NIMBLE_ADCLASS"));
+  SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar("NIMBLE_ADCLASS")));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-  RObjectPointer = S_newNimList;
-  UNPROTECT(2);
+  R_PreserveObject(RObjectPointer = S_newNimList);
+  UNPROTECT(3);
 }
-void NIMBLE_ADCLASS::resetFlags() { RCopiedFlag = false; }
+void NIMBLE_ADCLASS::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 
 void NIMBLE_ADCLASS::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("value");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("jacobian");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("hessian");
-  UNPROTECT(5);
+  UNPROTECT(6);
 }
 
 NIMBLE_ADCLASS::NIMBLE_ADCLASS() {
@@ -634,9 +646,9 @@ void waicNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_WAIC;
   SEXP S_lppd;
   SEXP S_pWAIC;
-  RObjectPointer = S_nimList_;
+  R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_WAIC = Rf_findVarInFrame(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("WAIC")));
   PROTECT(S_lppd = Rf_findVarInFrame(
@@ -647,7 +659,7 @@ void waicNimbleList::copyFromSEXP(SEXP S_nimList_) {
   WAIC = SEXP_2_double(S_WAIC);
   lppd = SEXP_2_double(S_lppd);
   pWAIC = SEXP_2_double(S_pWAIC);
-  UNPROTECT(7);
+  UNPROTECT(8);
 }
 SEXP waicNimbleList::copyToSEXP() {
   SEXP S__dot_xData;
@@ -656,7 +668,7 @@ SEXP waicNimbleList::copyToSEXP() {
   SEXP S_pWAIC;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_WAIC = double_2_SEXP(WAIC));
     PROTECT(S_lppd = double_2_SEXP(lppd));
     PROTECT(S_pWAIC = double_2_SEXP(pWAIC));
@@ -667,7 +679,7 @@ SEXP waicNimbleList::copyToSEXP() {
     Rf_defineVar(Rf_install("pWAIC"), S_pWAIC,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(7);
+    UNPROTECT(8);
   }
   return (RObjectPointer);
 }
@@ -675,18 +687,22 @@ void waicNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("waicNimbleList"));
+  SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar("waicNimbleList")));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-  RObjectPointer = S_newNimList;
-  UNPROTECT(2);
+  R_PreserveObject(RObjectPointer = S_newNimList);
+  UNPROTECT(3);
 }
-void waicNimbleList::resetFlags() { RCopiedFlag = false; }
+void waicNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void waicNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("WAIC");
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("lppd");
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("pWAIC");
-  UNPROTECT(5);
+  UNPROTECT(6);
 }
 waicNimbleList::waicNimbleList() {
   RCopiedFlag = false;
@@ -755,9 +771,9 @@ void waicDetailsNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_WAIC_elements;
   SEXP S_lppd_elements;
   SEXP S_pWAIC_elements;
-  RObjectPointer = S_nimList_;
+  R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_marginal =
               Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("marginal")));
@@ -805,7 +821,7 @@ void waicDetailsNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP_2_NimArr<1>(S_WAIC_elements, WAIC_elements);
   SEXP_2_NimArr<1>(S_lppd_elements, lppd_elements);
   SEXP_2_NimArr<1>(S_pWAIC_elements, pWAIC_elements);
-  UNPROTECT(25);
+  UNPROTECT(26);
 }
 SEXP waicDetailsNimbleList::copyToSEXP() {
   SEXP S__dot_xData;
@@ -823,7 +839,7 @@ SEXP waicDetailsNimbleList::copyToSEXP() {
   SEXP S_pWAIC_elements;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_marginal = bool_2_SEXP(marginal));
     PROTECT(S_niterMarginal = double_2_SEXP(niterMarginal));
     PROTECT(S_thin = bool_2_SEXP(thin));
@@ -863,7 +879,7 @@ SEXP waicDetailsNimbleList::copyToSEXP() {
     Rf_defineVar(Rf_install("pWAIC_elements"), S_pWAIC_elements,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(25);
+    UNPROTECT(26);
   }
   return (RObjectPointer);
 }
@@ -871,12 +887,16 @@ void waicDetailsNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("waicDetailsNimbleList"));
+  SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar("waicDetailsNimbleList")));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-  RObjectPointer = S_newNimList;
-  UNPROTECT(2);
+  R_PreserveObject(RObjectPointer = S_newNimList);
+  UNPROTECT(3);
 }
-void waicDetailsNimbleList::resetFlags() { RCopiedFlag = false; }
+void waicDetailsNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void waicDetailsNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_LOGICAL_SCALAR_FROM_R_OBJECT("marginal");
@@ -891,7 +911,7 @@ void waicDetailsNimbleList::copyFromRobject(SEXP Robject) {
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("WAIC_elements");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("lppd_elements");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("pWAIC_elements");
-  UNPROTECT(13);
+  UNPROTECT(14);
 }
 waicDetailsNimbleList::waicDetailsNimbleList() {
   RCopiedFlag = false;
@@ -962,9 +982,9 @@ void AGHQuad_params::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_names;
   SEXP S_estimates;
   SEXP S_stdErrors;
-  RObjectPointer = S_nimList_;
+  R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_names =
           Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("names")));
@@ -977,7 +997,7 @@ void AGHQuad_params::copyFromSEXP(SEXP S_nimList_) {
   STRSEXP_2_vectorString(S_names, names);
   SEXP_2_NimArr<1>(S_estimates, estimates);
   SEXP_2_NimArr<1>(S_stdErrors, stdErrors);
-  UNPROTECT(7);
+  UNPROTECT(8);
 }
 
 SEXP AGHQuad_params::copyToSEXP() {
@@ -987,7 +1007,7 @@ SEXP AGHQuad_params::copyToSEXP() {
   SEXP S_stdErrors;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_names = vectorString_2_STRSEXP(names));
     PROTECT(S_estimates = NimArr_2_SEXP<1>(estimates));
     PROTECT(S_stdErrors = NimArr_2_SEXP<1>(stdErrors));
@@ -998,7 +1018,7 @@ SEXP AGHQuad_params::copyToSEXP() {
     Rf_defineVar(Rf_install("stdErrors"), S_stdErrors,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(7);
+    UNPROTECT(8);
   }
   return (RObjectPointer);
 }
@@ -1006,12 +1026,16 @@ void AGHQuad_params::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("AGHQuad_params"));
+  SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar("AGHQuad_params")));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-  RObjectPointer = S_newNimList;
-  UNPROTECT(2);
+  R_PreserveObject(RObjectPointer = S_newNimList);
+  UNPROTECT(3);
 }
-void AGHQuad_params::resetFlags() { RCopiedFlag = false; }
+void AGHQuad_params::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void AGHQuad_params::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   // There is no macro for a string vector, so do it by hand here
@@ -1021,7 +1045,7 @@ void AGHQuad_params::copyFromRobject(SEXP Robject) {
                          *static_cast< std::vector<string>* >(getObjectPtr(svarName)));
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("estimates");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("stdErrors");
-  UNPROTECT(3);
+  UNPROTECT(4);
 }
 AGHQuad_params::AGHQuad_params() {
   RCopiedFlag = false;
@@ -1084,9 +1108,9 @@ void AGHQuad_summary::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_randomEffects;
   SEXP S_vcov;
   SEXP S_scale;
-  RObjectPointer = S_nimList_;
+  R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+  SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_params =
           Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("params")));
@@ -1105,7 +1129,7 @@ void AGHQuad_summary::copyFromSEXP(SEXP S_nimList_) {
   randomEffects->copyFromSEXP(S_randomEffects);
   SEXP_2_NimArr<2>(S_vcov, vcov);
   scale = STRSEXP_2_string(S_scale);
-  UNPROTECT(9);
+  UNPROTECT(10);
 }
 
 SEXP  AGHQuad_summary::copyToSEXP (  )  {
@@ -1116,7 +1140,7 @@ SEXP  AGHQuad_summary::copyToSEXP (  )  {
   SEXP S_scale;
   if (!RCopiedFlag){
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(S__dot_xData, 0, Rf_mkChar(".xData"));
+    SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     if (!(*params).RObjectPointer) params->createNewSEXP();
     PROTECT(S_params = params->copyToSEXP());
     if (!(*randomEffects).RObjectPointer) randomEffects->createNewSEXP();
@@ -1128,7 +1152,7 @@ SEXP  AGHQuad_summary::copyToSEXP (  )  {
     Rf_defineVar(Rf_install("vcov"), S_vcov, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("scale"), S_scale, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
-    UNPROTECT(9);
+    UNPROTECT(10);
   }
   return(RObjectPointer);
 }
@@ -1137,15 +1161,17 @@ void  AGHQuad_summary::createNewSEXP (  )  {
   SEXP S_newNimList;
   SEXP S_listName;
   PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, Rf_mkChar("AGHQuad_summary"));
+  SET_STRING_ELT(S_listName, 0, PROTECT(Rf_mkChar("AGHQuad_summary")));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-  RObjectPointer = S_newNimList;
-  UNPROTECT(2);
+  R_PreserveObject(RObjectPointer = S_newNimList);
+  UNPROTECT(3);
 }
 void  AGHQuad_summary::resetFlags (  )  {
   RCopiedFlag = false;
   params->resetFlags();
   randomEffects->resetFlags();
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
 }
 void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
   SETUP_S_xData;
@@ -1153,7 +1179,7 @@ void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
   // or are those handled by direct copying calls from R (for cases not included in the
   // copyFromRobject scheme)?
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("vcov");
-  UNPROTECT(3);
+  UNPROTECT(4);
 }
 AGHQuad_summary::AGHQuad_summary (  )  {
   RCopiedFlag = false;
