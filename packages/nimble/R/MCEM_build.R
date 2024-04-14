@@ -427,18 +427,19 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' latent nodes are to be integrated out in the E-Step, or default choices will
 #' be made based on model structure. All other stochastic non-data nodes will be
 #' maximized over. The E-step is done with a sample from a nimble MCMC
-#' algorithm. The M-step is done by a call t \code{optim}.
+#' algorithm. The M-step is done by a call to \code{optim}.
 #'
 #' @param paramNodes a character vector of names of parameter nodes in the
 #'   model; defaults are provided by \code{\link{setupMargNodes}}.
 #'   Alternatively, \code{paramNodes} can be a list in the format returned by
 #'   \code{setupMargNodes}, in which case \code{latentNodes}, \code{calcNodes},
 #'   and \code{calcNodesOther} are not needed (and will be ignored).
-#' @param latentNodes a character vector of names of unobserved
-#'   (latent) nodes to marginalize (sum or integrate) over; defaults are provided by
-#'   \code{\link{setupMargNodes}}.
+#' @param latentNodes a character vector of names of unobserved (latent) nodes
+#'   to marginalize (sum or integrate) over; defaults are provided by
+#'   \code{\link{setupMargNodes}} (as the \code{randomEffectsNodes} in its
+#'   return list).
 #' @param calcNodes a character vector of names of nodes for calculating
-#'   components of the full-data likelihood that invole \code{latentNodes};
+#'   components of the full-data likelihood that involve \code{latentNodes};
 #'   defaults are provided by \code{\link{setupMargNodes}}. There may be
 #'   deterministic nodes between \code{paramNodes} and \code{calcNodes}. These
 #'   will be included in calculations automatically and thus do not need to be
@@ -459,7 +460,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'   for a model and choices (perhaps default) of nodes in different roles in
 #'   the model. The MCEM can then be compiled for fast execution with a compiled model.
 #'
-#' Note that \code{buildMCEM} was re-written for nimble version 1.1.1 and is not
+#' Note that \code{buildMCEM} was re-written for nimble version 1.2.0 and is not
 #' backward-compatible with previous versions.
 #'
 #' Denote data by Y, latent states (or missing data) by X, and parameters by T.
@@ -480,8 +481,8 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' This attempts to update M when necessary to ensure that step 2 really moves
 #' uphill given that it is maximizing a Monte Carlo approximation and could
 #' accidently move downhill on the real surface of interest due to Monte Carlo
-#' error. The tuning parameters include \code{alpha}, \code{beta}, \code{gamma},
-#' \code{C}, \code{tol} (tolerance), and others.
+#' error. The main tuning parameters include \code{alpha}, \code{beta}, \code{gamma},
+#' \code{Mfactor}, \code{C}, and \code{tol} (tolerance).
 #'
 #' If the model supports derivatives via nimble's automatic differentiation (AD)
 #' (and \code{buildDerivs=TRUE} in \code{nimbleModel}), the maximization step
@@ -489,18 +490,19 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' the control list if derivatives aren't supported or if you don't want to use
 #' them.
 #'
-#' After maximization in step 2, we estimate the Monte Carlo standard error of
-#' the uphill movement. If the standardized uphill step is bigger than 0 with
-#' Type I error rate alpha, the iteration is accepted and the algorithm
-#' continues. Otherwise, it is not certain that step 2 really moved uphill due
-#' to Monte Carlo error, so the MCMC sample size is incremented by a fixed
-#' factor (e.g. 0.33 or 0.5, called \code{Mfactor} in the control list), the
-#' additional samples are added by continuing step 1, and step 2 is tried again.
-#' If the Monte Carlo noise still overwhelms the magnitude of uphill movement,
-#' the sample size is increased again, and so on. alpha should be >0 and <=0.5.
-#' A larger value than usually used for inference is recommended so that there
-#' is an easy threshold to determine uphill movement, which avoids increasing M
-#' prematurely.
+#' In the ascent-based method, after maximization in step 2, the Monte Carlo
+#' standard error of the uphill movement is estimated. If the standardized
+#' uphill step is bigger than 0 with Type I error rate \code{alpha}, the
+#' iteration is accepted and the algorithm continues. Otherwise, it is not
+#' certain that step 2 really moved uphill due to Monte Carlo error, so the MCMC
+#' sample size \code{M} is incremented by a fixed factor (e.g. 0.33 or 0.5, called
+#' \code{Mfactor} in the control list), the additional samples are added by
+#' continuing step 1, and step 2 is tried again. If the Monte Carlo noise still
+#' overwhelms the magnitude of uphill movement, the sample size is increased
+#' again, and so on. \code{alpha} should be between 0 and 0.5. A larger value
+#' than usually used for inference is recommended so that there is an easy
+#' threshold to determine uphill movement, which avoids increasing \code{M}
+#' prematurely. \code{M} will never be increased above \code{maxM}.
 #'
 #' Convergence is determined in a similar way. After a definite move uphill, we
 #' determine if the uphill increment is less than \code{tol}, with Type I error
@@ -548,7 +550,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' second (softer) convergence criterion.
 #'
 #' Parameters to be maximized will by default be handled in an unconstrained
-#' parameter space, transformed if necessary by an
+#' parameter space, transformed if necessary by a
 #' \code{\link{parameterTransform}} object. In that case, the default
 #' \code{\link{optim}} method will be "BFGS" and can can be changed by setting
 #' \code{optimMehod} in the control list. Set \code{useTransform=FALSE} in the
@@ -556,13 +558,13 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' default \code{optimMethod} will be "L-BFGS-B" if there are any actual
 #' constraints, and you can provide a list of \code{boxConstraints} in the
 #' control list. (Constraints may be determined by priors written in the model
-#' for parameters, even though they priors play no other role in MLE. E.g.
+#' for parameters, even though their priors play no other role in MLE. E.g.
 #' \code{sigma ~ halfflat()} indicates \code{sigma > 0}).
 #'
 #' Most of the control list elements can be over-ridden when calling the
 #' \code{findMLE} method. The \code{findMLE} argument \code{continue=TRUE}
 #' results in attempting to continue the algorithm where the previous call
-#' finished, including whatever settings where in use.
+#' finished, including whatever settings were in use.
 #'
 #' See \code{\link{setupMargNodes}} (which is called with the given arguments
 #' for \code{paramNodes}, \code{calcNodes}, and \code{calcNodesOther}; and with
@@ -627,7 +629,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' \item \code{buffer} A small amount added to lower box constraints and
 #' substracted from upper box constraints for all parameters, relevant only if
 #' \code{useTransform=FALSE} and some parameters do have \code{boxConstraints}
-#' set or have bounds that can be determined from the model.
+#' set or have bounds that can be determined from the model. Default=1e-6.
 #'
 #' \item \code{tol} Ascent-based convergence tolerance. Default=0.001.
 #'
@@ -679,11 +681,11 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' algorithms to be used. Default=TRUE.
 #'
 #' \item \code{check} Logical passed as the \code{check} argument to
-#' \code{\link{setupMargNodes}}.
+#' \code{\link{setupMargNodes}}. Default=TRUE.
 #'
 #' \item \code{useDerivs} Logical indicating whether to use AD. If TRUE, the
 #' model must have been build with `buildDerivs=TRUE`. It is not automatically
-#' determined from the model whether derivatives are supported.
+#' determined from the model whether derivatives are supported. Default=TRUE.
 #'
 #' \item \code{config} Optional function to create the MCMC configuration used
 #' for step 1. If missing, the MCMC configuration is created by
@@ -728,9 +730,9 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'
 #'   }
 #'
-#' \code{findMLE} returns on object of class \code{optimResultNimbleList} the
-#' with the results of the final optimization of step 2. The \code{par} element
-#' of this list is the vector of maximum likelihood (MLE) parameters.
+#' \code{findMLE} returns on object of class \code{optimResultNimbleList} with
+#' the results of the final optimization of step 2. The \code{par} element of
+#' this list is the vector of maximum likelihood (MLE) parameters.
 #'
 #' \item \code{vcov} computes the approximate variance-covariance matrix of the MLE using
 #' the method of Louis (1982). It takes the following arguments:
@@ -775,7 +777,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'
 #'    }
 #'
-#' \code{vcov} return a matrix that is the inverse of the negative Hessian of
+#' \code{vcov} returns a matrix that is the inverse of the negative Hessian of
 #' the log likelihood surface, i.e. the usual asymptotic approximation of the
 #' parameter variance-covariance matrix.
 #'
@@ -783,7 +785,8 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' One does not need to call this, as it is called via the MCEM algorithm in
 #' \code{findMLE}. This method is provided for users who want to use the MCMC
 #' for latent states directly. Samples should be retrieved by
-#' \code{as.matrix(compiled_MCEM$mvSamples)}. This method takes the following arguments:
+#' \code{as.matrix(MCEM$mvSamples)}, where \code{MCEM} is the (compiled or
+#' uncompiled) MCEM algorithm object. This method takes the following arguments:
 #'
 #'   \itemize{
 #'

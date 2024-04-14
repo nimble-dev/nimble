@@ -338,7 +338,7 @@ control list entry must satsify the following:
   MCEM can be slow but is also a general workhorse method that is applicable to a wide range of problems.
   
   `buildMCEM` provides an (optionally) ascent-based MCEM algorithm based on
-  @Caffo_etal_2005. `buildMCEM` was re-written for nimble version 1.1.1 and is
+  @Caffo_etal_2005. `buildMCEM` was re-written for nimble version 1.2.0 and is
   not compatible with previous versions. For the E (expectation) step,
   `buildMCEM` uses an MCMC for the latent states given the data and current
   parameters. For the M (maximization) step, `buildMCEM` uses `optim`.
@@ -401,7 +401,7 @@ pumpMCEM <- buildMCEM(model = pump,
 CpumpMCEM <- compileNimble(pumpMCEM, project=pump)
 ```
 
-The first argument `buildMCEM`, `model`, is a NIMBLE model. At the moment, the
+The first argument to `buildMCEM`, `model`, is a NIMBLE model. At the moment, the
 model provided cannot be part of another MCMC sampler.
 
 ```{r, run-MCEM, eval = runMCEMs}
@@ -409,10 +409,11 @@ pumpMLE <- CpumpMCEM$findMLE(initM = 1000)
 pumpMLE$par
 ``` 
 
-Direct maximization after analytically integrating over the latent nodes
-(possible for this model but often not feasible) gives estimates of
-$\hat\alpha=0.823$ and $\hat\beta = 1.261$, so the MCEM seems to do pretty well,
-though tightening the convergence criteria may be warranted in actual usage.
+For this model, we can check the result by analytically integrating over the
+latent nodes (possible for this model but often not feasible), which gives
+maximum likelihood estimates of $\hat\alpha=0.823$ and $\hat\beta = 1.261$. Thus
+the MCEM seems to do pretty well, though tightening the convergence criteria may
+be warranted in actual usage.
 
 For more complicated models, it is worth exploring the tuning parameters (see
 `help(buildMCEM)`). MCEM inherits from the EM algorithm the difficulty that the
