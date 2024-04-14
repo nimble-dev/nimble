@@ -170,7 +170,7 @@ The user-defined distribution is:
 d_my_norm <- nimbleFunction(
   run = function(x = double(), mean = double(), sd = double(),
                  log = integer(0, default = 0)) {
-    ans <- -log(sqrt(2*pi*sd)) - 0.5*((x-mean)/sd)^2
+    ans <- -log(sqrt(2*pi)*sd) - 0.5*((x-mean)/sd)^2
     if(log) return(ans)
     return(exp(ans))
     returnType(double())
@@ -202,7 +202,7 @@ Features that are not supported for AD include:
 - some specific functions including `step`, `%%` (mod), `eigen`, `svd`, and `besselK`; and
 - most model operations (other than `model$calculate`, which is supported) including `model$calculateDiff`, `model$simulate`, `model$getBound`, and `model$getParam`.
 
-Note that functions and distributions that are not supported can still be used in a model, as long as no algorithm tries to take derivatives with respect to node(s) that is (are) not supported. For example, `x ~ dcat(p[1:3])` declares `x` to be a discrete random variable following a categorical distribution. An algorithm can use derivatives with respect to `p[1:3]` (or with respect to parent nodes of `p[1:3]`) because the calculation of the log probability of `x` given `p[1:3]` is continuous with respect to `p`. However, derivatives with respect to `x` will not work. In the case of truncated distributions, neither derivatives with respect to parameters nor to random variable are supported.
+Note that functions and distributions that are not supported can still be used in a model, as long as no algorithm tries to take derivatives with respect to node(s) that is (are) not supported. For example, `x ~ dcat(p[1:3])` declares `x` to be a discrete random variable following a categorical distribution. An algorithm can use derivatives with respect to `p[1:3]` (or with respect to parent nodes of `p[1:3]`) because the calculation of the log probability of `x` given `p[1:3]` is continuous with respect to `p`. However, derivatives with respect to `x` will not work. In the case of truncated distributions, derivatives with respect to neither the parameters nor to the random variable are supported.
 
 Some details on what is supported include:
 
