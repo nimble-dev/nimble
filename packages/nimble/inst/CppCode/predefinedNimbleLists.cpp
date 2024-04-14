@@ -179,7 +179,11 @@ void OptimResultNimbleList::createNewSEXP() {
   R_PreserveObject(RObjectPointer = S_newNimList);
   UNPROTECT(3);
 }
-void OptimResultNimbleList::resetFlags() { RCopiedFlag = false; }
+void OptimResultNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void OptimResultNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("par");
@@ -420,7 +424,11 @@ void OptimControlNimbleList::createNewSEXP() {
   R_PreserveObject(RObjectPointer = S_newNimList);
   UNPROTECT(3);
 }
-void OptimControlNimbleList::resetFlags() { RCopiedFlag = false; }
+void OptimControlNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void OptimControlNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_INTEGER_SCALAR_FROM_R_OBJECT("trace");
@@ -565,7 +573,11 @@ void NIMBLE_ADCLASS::createNewSEXP() {
   R_PreserveObject(RObjectPointer = S_newNimList);
   UNPROTECT(3);
 }
-void NIMBLE_ADCLASS::resetFlags() { RCopiedFlag = false; }
+void NIMBLE_ADCLASS::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 
 void NIMBLE_ADCLASS::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
@@ -680,7 +692,11 @@ void waicNimbleList::createNewSEXP() {
   R_PreserveObject(RObjectPointer = S_newNimList);
   UNPROTECT(3);
 }
-void waicNimbleList::resetFlags() { RCopiedFlag = false; }
+void waicNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void waicNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("WAIC");
@@ -876,7 +892,11 @@ void waicDetailsNimbleList::createNewSEXP() {
   R_PreserveObject(RObjectPointer = S_newNimList);
   UNPROTECT(3);
 }
-void waicDetailsNimbleList::resetFlags() { RCopiedFlag = false; }
+void waicDetailsNimbleList::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void waicDetailsNimbleList::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   COPY_LOGICAL_SCALAR_FROM_R_OBJECT("marginal");
@@ -1011,7 +1031,11 @@ void AGHQuad_params::createNewSEXP() {
   R_PreserveObject(RObjectPointer = S_newNimList);
   UNPROTECT(3);
 }
-void AGHQuad_params::resetFlags() { RCopiedFlag = false; }
+void AGHQuad_params::resetFlags() {
+  RCopiedFlag = false;
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
+}
 void AGHQuad_params::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   // There is no macro for a string vector, so do it by hand here
@@ -1146,6 +1170,8 @@ void  AGHQuad_summary::resetFlags (  )  {
   RCopiedFlag = false;
   params->resetFlags();
   randomEffects->resetFlags();
+  if(RObjectPointer) R_ReleaseObject(RObjectPointer);
+  RObjectPointer = NULL;
 }
 void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
   SETUP_S_xData;

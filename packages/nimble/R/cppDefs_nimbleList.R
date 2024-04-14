@@ -325,7 +325,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                  resetRCopiedFlagLine)
                                           }
                                         }
-                                        allCode <- embedListInRbracket(c(resetFlagLine, resetNestedFlagLines))
+                                        resetRObjLines <- list(quote(cppLiteral("if(RObjectPointer) R_ReleaseObject(RObjectPointer); RObjectPointer=NULL;")))
+                                        allCode <- embedListInRbracket(c(resetFlagLine, resetNestedFlagLines, resetRObjLines))
                                         functionDefs[[paste0(name, "_resetFlags")]] <<- cppFunctionDef(name = "resetFlags",
                                                                                                    args = interfaceArgs,
                                                                                                    code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
