@@ -6,13 +6,15 @@
 #'
 #' @param model A nimble model object.  See details.
 #' 
-#' @param nodes A character vector specifying one or more model node names to undergo transformation.  See details.
+#' @param nodes A character vector specifying model node names to undergo transformation.  See details.
 #'
 #' @param control An optional list allowing for additional control of the transformation. This currently supports a single element \code{allowDeterm}.
 #'
 #' @details
 #' 
 #' The \code{parameterTransform} nimbleFunction is an unspecialized function.  Calling \code{parameterTransform(model, nodes)} will generate and return a specialized nimbleFunction, which provides transformation functionality for the specified hierarchical model and set of model nodes.  The \code{nodes} argument can represent mutliple model nodes arising from distinct prior distributions, which will be simultaneously transformed according to their respective distributions and constraints.
+#'
+#' If the \code{nodes} argument is missing or has length zero, then no nodes will be transformed.  A specialized nimbleFunction is created, but will not transform or operate on any model nodes.
 #'
 #' The \code{control} argument is a list that supports one additional setting. If \code{control$allowDeterm=FALSE} (the default), deterministic nodes are not allowed in the \code{nodes} argument.  If \code{control$allowDeterm=TRUE}, deterministic nodes are allowed and assumed to have no constraints on valid values.
 #'
@@ -77,19 +79,18 @@
 #' @export
 parameterTransform <- nimbleFunction(
     name = 'parameterTransform',
-    setup = function(model, nodes, control = list()) {
+    setup = function(model, nodes = character(), control = list()) {
         nodesExpanded <- model$expandNodeNames(nodes)
         allowDeterm <- if(!is.null(control$allowDeterm)) control$allowDeterm else FALSE
         if(!allowDeterm){
-          if(any(model$isDeterm(nodesExpanded, includeRHSonly = TRUE)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded, includeRHSonly = TRUE)],   collapse = ', ')))
-          if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
+            if(any(model$isDeterm(nodesExpanded, includeRHSonly = TRUE)))   stop(paste0('parameterTransform cannot operate on deterministic nodes: ',        paste0(nodesExpanded[model$isDeterm(nodesExpanded, includeRHSonly = TRUE)],   collapse = ', ')))
+            if(any(model$isDiscrete(nodesExpanded))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpanded)], collapse = ', ')))
         } else {
-          boolDeterm <- model$isDeterm(nodesExpanded, includeRHSonly = TRUE)
-          nodesExpandedNotDeterm <- nodesExpanded[!boolDeterm]
-          if(any(model$isDiscrete(nodesExpandedNotDeterm))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpandedNotDeterm)], collapse = ', ')))
+            boolDeterm <- model$isDeterm(nodesExpanded, includeRHSonly = TRUE)
+            nodesExpandedNotDeterm <- nodesExpanded[!boolDeterm]
+            if(any(model$isDiscrete(nodesExpandedNotDeterm))) stop(paste0('parameterTransform cannot operate on discrete-valued nodes: ',      paste0(nodesExpanded[model$isDiscrete(nodesExpandedNotDeterm)], collapse = ', ')))
         }
         nNodes <- length(nodesExpanded)
-        if(nNodes < 1) stop('parameterTransform requires at least one model node')
         ## transformType:
         ## 1: scalar unconstrained
         ## 2: scalar semi-interval (0, Inf)
@@ -110,24 +111,24 @@ parameterTransform <- nimbleFunction(
         DATA1 <- 5
         DATA2 <- 6
         ##
-        for(i in 1:nNodes) {
+        for(i in seq_along(nodesExpanded)) {   ## use seq_along for case of nNodes = 0
             node <- nodesExpanded[i]
             transformData[i,NIND1] <- if(i==1) 1 else transformData[i-1,NIND2]+1
             transformData[i,TIND1] <- if(i==1) 1 else transformData[i-1,TIND2]+1
             if(allowDeterm) {
-              if(model$isDeterm(node)) {
-                d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
-                if(d == 1) {       ## copied from case #1 below
-                  transformData[i,NIND2] <- transformData[i,NIND1]
-                  transformData[i,TIND2] <- transformData[i,TIND1]
-                  transformType[i] <- 1L; next }
-                if( d > 1) {       ## copied from case #6 below
-                  transformType[i] <- 6L
-                  transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
-                  transformData[i,TIND2] <- transformData[i,TIND1] + d - 1
-                  next }
-                stop("parameter transformation system is not able to configure for node: ", node, ".")
-              }
+                if(model$isDeterm(node)) {
+                    d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+                    if(d == 1) {       ## copied from case #1 below
+                        transformData[i,NIND2] <- transformData[i,NIND1]
+                        transformData[i,TIND2] <- transformData[i,TIND1]
+                        transformType[i] <- 1L; next }
+                    if( d > 1) {       ## copied from case #6 below
+                        transformType[i] <- 6L
+                        transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
+                        transformData[i,TIND2] <- transformData[i,TIND1] + d - 1
+                        next }
+                    stop("parameter transformation system is not able to configure for node: ", node, ".")
+                }
             }
             dist <- model$getDistribution(node)
             if(!model$isMultivariate(node)) {   ## univariate
@@ -213,8 +214,15 @@ parameterTransform <- nimbleFunction(
                 stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
             }
         }
-        nLength <- transformData[nNodes,NIND2]
-        tLength <- transformData[nNodes,TIND2]
+        if(nNodes == 0) {
+            nLength <- 0
+            tLength <- 0
+            transformType <- integer(2)
+            transformData <- array(0, dim = c(1,1))
+        } else {
+            nLength <- transformData[nNodes,NIND2]
+            tLength <- transformData[nNodes,TIND2]
+        }
         if(nLength != length(model$expandNodeNames(nodesExpanded, returnScalarComponents = TRUE))) stop('something wrong with nLength')
     },
     run = function() { print('Warning: run method of parameterTransform is not defined') },
@@ -224,6 +232,7 @@ parameterTransform <- nimbleFunction(
         transform = function(nodeValuesFromModel = double(1)) {
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
+            if(nNodes == 0)   return(transformed)
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
                 thisType <- transformType[iNode]
@@ -294,6 +303,7 @@ parameterTransform <- nimbleFunction(
         inverseTransform = function(transformedValues = double(1)) {
             ## argument on transformed scale, return vector suitable for values(model,)
             modelValuesVector <- nimNumeric(nLength)
+            if(nNodes == 0)   return(modelValuesVector)
             iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L   ## integer types
             for(iNode in 1:nNodes) {
                 ind1 <- transformData[iNode,TIND1]
@@ -374,6 +384,7 @@ parameterTransform <- nimbleFunction(
             ## values(model, nodes) <- pt$inverseTransform(transformedValues)
             ## lp <- model$calculate(calcNodes) + pt$logDetJacobian(transformedValues)
             lp <- 0
+            if(nNodes == 0)   return(lp)
             for(iNode in 1:nNodes) {
                 theseValues <- transformedValues[transformData[iNode,TIND1]:transformData[iNode,TIND2]]
                 thisType <- transformType[iNode]
