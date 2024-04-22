@@ -1238,13 +1238,13 @@ copierVector_setupCodeTemplate <- setupCodeTemplateClass(
     
 
 modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
-	#Note to programmer: required fields of argList are model, nodes and logProb
+	#Note to programmer: required fields of argList are modelValues, nodes and logProb
 
-    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), 'LPO', deparse(argList$logProbOnly), deparse(argList$row), sep = '_'))},
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList[['modelValues']]), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), 'LPO', deparse(argList$logProbOnly), deparse(argList$row), sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB, logProbOnly = LOGPROBONLY) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
-             MODEL = argList$model,
+             MODEL = argList[['modelValues']],
              NODES = argList$nodes,
              LOGPROB = argList$logProb,
              LOGPROBONLY = argList$logProbOnly)
