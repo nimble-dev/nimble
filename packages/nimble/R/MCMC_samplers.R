@@ -236,9 +236,36 @@ sampler_RW <- nimbleFunction(
         adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
         adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
         scale               <- extractControlElement(control, 'scale',               1)
+
+        asis <- extractControlElement(control, 'asis', FALSE)
+        asisType <- extractControlElement(control, 'asisType', NULL)
+        asisEffects <- extractControlElement(control, 'asisEffects', NULL)
+        if(asis) {
+            if(is.null(asisEffects))
+                asisEffects <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
+            p <- length(model$expandNodeNames(asisEffects, returnScalarComponents = FALSE))
+            ## TODO: check asisEffects are all univariate
+            ## TODO: check that not discrete.
+            ## TODO: check that asisEffects are N(target,some_sd) for location case or N(some_mean, target) for scale case.
+
+            ## Dependents of effects and target are the dependents in noncentered parameterization.
+            ## This then considers ASIS as a temporary reparameterization on the fly,
+            ## such that one doesn't need the effect priors in the model logProb as the reparameterized effects
+            ## are not changing. And therefore no need for Jacobian of transformation as it cancels with prior on the original effects.
+            ccList <- nimble:::mcmc_determineCalcAndCopyNodes(model, c(target,asisEffects))
+            ccList$calcNodes <- ccList$calcNodes[!ccList$calcNodes %in% asisEffects]
+            ccList$calcNodesNoSelf <- ccList$calcNodesNoSelf[!ccList$calcNodes %in% asisEffects]
+            if(asisType == "location") {
+                asisType <- 0
+            } else if(asisType == "scale") asisType <- 1 else stop("sampler_RW: `asisType` must be either 'location' or 'scale'")
+        } else {
+            p <- 0
+            ccList <- nimble:::mcmc_determineCalcAndCopyNodes(model, target)
+        }
+        
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+
         calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         scaleOriginal <- scale
@@ -272,27 +299,51 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
+
         logMHR <- model$calculateDiff(target)
         if(logMHR == -Inf) {
             jump <- FALSE
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
+            if(asis) {
+                asisUpdate(asisType, propValue, currentValue)
+                ##  lp <- lp + p * (log(value) - log(x0))  # Jacobian of determinant; accounts for fact we are computing prior for effects, which one doesn't in ASIS formulation. Not needed as in setup we omit effects from calculation, effectively temporarily reparameterizing on the fly.
+            }
             logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
+                if(asis) {  # Now go back to original parameterization.
+                    model$calculate(asisEffects)
+                    nimCopy(from = model, to = mvSaved, row = 1, nodes = asisEffects, logProb = FALSE)
+                }
+
                 ##model$calculate(calcNodesPPomitted)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+
             } else {
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+                if(asis)
+                    nimCopy(from = mvSaved, to = model, row = 1, nodes = asisEffects, logProb = FALSE)
             }
         }
         if(adaptive)     adaptiveProcedure(jump)
     },
     methods = list(
+        asisUpdate = function(type = double(), newValue = double(), oldValue = double()) {
+            ## Need to adjust obtaining mean to handle b_i ~ dnorm(mu + gamma*z[i], sigma) scenario.
+            if(type == 0) {
+                values(model, asisEffects) <<- values(model, asisEffects) - oldValue + newValue
+            }
+            if(type == 1) {
+                mean <- model$getParam(asisEffects[1], 'mean')
+                values(model, asisEffects) <<- mean + (newValue/oldValue) * (values(model, asisEffects) - mean)
+                ##  lp <- lp + p * (log(value) - log(x0))  # Jacobian of determinant; accounts for fact we are computing prior for effects, which one doesn't in ASIS formulation. 
+            }
+        },
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
@@ -367,7 +418,6 @@ sampler_RW <- nimbleFunction(
         }
     )
 )
-
 
 
 ########################################################################
