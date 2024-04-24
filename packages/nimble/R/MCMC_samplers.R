@@ -252,7 +252,7 @@ sampler_RW <- nimbleFunction(
             ## This then considers ASIS as a temporary reparameterization on the fly,
             ## such that one doesn't need the effect priors in the model logProb as the reparameterized effects
             ## are not changing. And therefore no need for Jacobian of transformation as it cancels with prior on the original effects.
-            ccList <- nimble:::mcmc_determineCalcAndCopyNodes(model, c(target,asisEffects))
+            ccList <- mcmc_determineCalcAndCopyNodes(model, c(target,asisEffects))
             ccList$calcNodes <- ccList$calcNodes[!ccList$calcNodes %in% asisEffects]
             ccList$calcNodesNoSelf <- ccList$calcNodesNoSelf[!ccList$calcNodes %in% asisEffects]
             if(asisType == "location") {
@@ -260,7 +260,7 @@ sampler_RW <- nimbleFunction(
             } else if(asisType == "scale") asisType <- 1 else stop("sampler_RW: `asisType` must be either 'location' or 'scale'")
         } else {
             p <- 0
-            ccList <- nimble:::mcmc_determineCalcAndCopyNodes(model, target)
+            ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         }
         
         ## node list generation
