@@ -2379,7 +2379,9 @@ sampler_polyagamma <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        check <- extractControlElement(control, 'check',            TRUE)
+        
+        ## This allows user to override error trapping for unusual model structures.
+        check <- extractControlElement(control, 'check',            TRUE)   
 
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -2392,21 +2394,19 @@ sampler_polyagamma <- nimbleFunction(
         nCoef <- length(targetAsScalar)
         if(nCoef == 1)
             stop("polyagamma sampler not set up to handle a scalar target node")
-        nodeLengths <- sapply(target, function(x) model$expandNodeNames(x, returnScalarComponents = TRUE)
+        nodeLengths <- sapply(target, function(x) model$expandNodeNames(x, returnScalarComponents = TRUE))
         
         
         if(is.null(control$response)) {
             ## We don't need the user to provide the response and prefer they not, but leaving this flexibility for now.
             yNodes <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
-            ## yNodesAsScalar <- model$expandNodeNames(yNodes) ## Ordering really matters here. 
-            ## Don't use y = values(model, yNodes) as that order isn't the same as yNodesAsScalar.          
         } else {
             yNodes <- model$expandNodeNames(control$response)
         }
         N <- length(yNodes)
 
 
-        ## Conjugacy checking
+        ## Conjugacy checking, part 1.
         if(!all(model$getDistribution(target) %in% c("dnorm", "dmnorm")))
             stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors")
         if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin")) ) 
@@ -2423,10 +2423,10 @@ sampler_polyagamma <- nimbleFunction(
         sizeNodes <- setdiff(probAndSizeNodes, probNodes)
 
         zeroInflated <- FALSE
-        inflationNodes <- NULL  # needed given inflationNodes used in run()?
         
         ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed),
         ## that zero-inflation variable multiplies the baseline probability and that baseline probability uses logit link.
+        ## (Conjugacy checking part 2)
         inflationStochNodesOne <- model$getParents(probNodes[1], omit = target, stochOnly = TRUE, self = FALSE, includeData = FALSE)
         if(length(inflationStochNodesOne)) {
             zeroInflated <- TRUE
@@ -2455,12 +2455,16 @@ sampler_polyagamma <- nimbleFunction(
             linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodesNonInflated[1])
             if(check && cc_linkCheck(linearityCheck, 'multiplicative') != 'multiplicative')
                 stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+        } else {
+            inflationNodes <- ""
+            inflationNodesDeps <- ""
+            probNodesInflated <- ""
         }
         
 
         ## At this point, `probNodes` has the nodes for the non-inflated probabilities.
 
-        ## Check linearity of target nodes in logit link.
+        ## Conjugacy checking part 3: Check linearity of target nodes in logit link.
         if(check) {
             if(model$getValueExpr(probNodes[1])[[1]] != 'expit')
                 stop("polyagamma sampler: target must be related to response via logit link as an additive function of the target nodes. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
@@ -2480,7 +2484,7 @@ sampler_polyagamma <- nimbleFunction(
         singleSize <- FALSE
        
         
-        ## Build from control - Design Matrix must include Random-Effects
+        ## Build design matrix, which account for all effects (fixed and random) in target.
         if(is.null(control$designMatrix)) {
             X <- matrix(0, nrow = N, ncol = nCoef)
             fixed <- FALSE
@@ -2517,41 +2521,38 @@ sampler_polyagamma <- nimbleFunction(
 
         Q <- matrix(0, nrow = nCoef, ncol = nCoef)
         mu <- numeric(nCoef)				
-        bTemp <- numeric(nCoef, value = 0)
+        bTemp <- rep(0, nCoef)
         probNonZero <- rep(0, N)  ## Track ids where prob == 0 (zero inflated).
         n <- N  ## Number of active (non-zero-inflated) obs.
+        
         psi <- numeric(N)
-       
         size <- numeric(N)  
         
-        ## Save simulation values:
+        ## Preallocate storage for sampling. Not clear how much some or all of this helps.
         UQ1 <- matrix(0, nrow = nCoef, ncol = nCoef)
         M <-  numeric(nCoef)
-
         XW <- matrix(0, nrow = nCoef, ncol = N)
         Xd <- matrix(0, nrow = N, ncol = nCoef)
+        kpre <- numeric(N)
+        w <- numeric(N)
+
         t0 <- 0
         t1 <- 0
         t2 <- 0
         t3 <- 0
         t4 <- 0
         t5 <- 0
-        kpre <- numeric(N)
-        ## Information about rows of design matrix that are not known.
-        ## Only relevant for stochastic design matrix or stochastic indexing into design matrix.
-        ## We start out being able to determine the design matrix based on the initial values in first call to sampler.
-        resetRows <- numeric(N)
-        nUnresolvedRows <- 0   
     },
     run = function() {
         if(initializeSize | stochSize)
             getSizeParam() 
     
         ## Get current values.
-        b <- values(model, targetAsScalar)
+        b <- values(model, target)
         y <- values(model, yNodes)
         k <- y - size*0.5
 
+        ## Construct prior mean and precision over the target nodes.
         ## Discuss with Paul in light of MVN construction in INLA work.
         ## See buildDerivs function for flexible options here. Minor pain.
         start <- 1
@@ -2580,9 +2581,9 @@ sampler_polyagamma <- nimbleFunction(
         t2 <<- t2 + run.time({
         if(zeroInflated) {
             if(singleSize) {
-                w <- pgSampler$rpolyagamma(size, psi[probNonZero])
-            } else w <- pgSampler$rpolyagamma(size[probNonZero], psi[probNonZero])
-        } else w <- pgSampler$rpolyagamma(size, psi)  ## w|beta ~ pg(n, x %*% beta)
+                w[1:n] <<- pgSampler$rpolyagamma(size, psi[probNonZero])
+            } else w[1:n] <<- pgSampler$rpolyagamma(size[probNonZero], psi[probNonZero])
+        } else w[1:n] <<- pgSampler$rpolyagamma(size, psi)  ## w|beta ~ pg(n, x %*% beta)
         })
         
         ## Note that the calculations below involving X don't take advantage of sparsity, including with random intercepts or
@@ -2591,21 +2592,18 @@ sampler_polyagamma <- nimbleFunction(
         ## matrix manipulations below for components of X.
         if(zeroInflated){
             t3 <<- t3+run.time({
-                Xd[1:n,] <- X[probNonZero,]         
+                Xd[1:n,] <<- X[probNonZero,]         
                 for( j in 1:nCoef ){
-                    XW[j,1:n] <-  Xd[1:n,j]*w
+                    XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
                     b[j] <- sum(Xd[1:n,j] * k[probNonZero]) + sum(Q[j,] * mu[j])
                 }
                 Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
             })
             t4 <<- t4 + run.time({
-                indx <- which(prob0 == 0)
-                n <- dim(indx)[1]
-                Xd[1:n,] <- X[probNonZero,]
-                wpre[1:n] <- w
-                kpre[1:n] <- k[probNonZero]
+                Xd[1:n,] <<- X[probNonZero,]
+                kpre[1:n] <<- k[probNonZero]
                 for( j in 1:nCoef ){
-                    XW[j,1:n] <-  Xd[1:n,j]*wpre[1:n]
+                    XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
                     b[j] <- sum(Xd[1:n,j] * kpre[1:n]) + sum(Q[j,] * mu[j])
                 }
                 Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
@@ -2617,7 +2615,7 @@ sampler_polyagamma <- nimbleFunction(
                 Xd2 <- X[probNonZero,]
                 kpre2 <- k[probNonZero]
                 for( j in 1:nCoef ){
-                    XW2[j,] <-  Xd2[,j]*w
+                    XW2[j,] <-  Xd2[,j]*w[1:n]
                     b[j] <- sum(Xd2[,j] * kpre2) + sum(Q[j,] * mu[j])
                 }
                 Q1 <- XW2 %*% Xd2 + Q
@@ -2625,7 +2623,7 @@ sampler_polyagamma <- nimbleFunction(
         } else {
             t5 <<- t5 + run.time({
             for( j in 1:nCoef ){
-                XW[j,] <-  X[,j]*w
+                XW[j,] <<-  X[,j]*w
                 b[j] <- sum(X[,j] * k) + sum(Q[j,] * mu[j])
             }
             Q1 <- XW %*% X + Q
@@ -2660,8 +2658,9 @@ sampler_polyagamma <- nimbleFunction(
                     bTemp[j] <<- 1
                     values(model, targetAsScalar) <<- bTemp
                     model$calculate(copyNodesDeterm)
+                    ## With zero inflation accounted for above, we update every element of a given column.
                     for(i in 1:N) {
-                        X[i, j] <- logit(model$getParam(yNodes[i], 'prob'))
+                        X[i, j] <<- logit(model$getParam(yNodes[i], 'prob'))
                     }
                     bTemp[j] <<- 0
                 }
@@ -2685,6 +2684,9 @@ sampler_polyagamma <- nimbleFunction(
             initializeSize <<- FALSE
         },
         getProbParam = function() {
+            ## Note that zero size cases are handled directly in PG sampling;
+            ## assumption is that these will be rare so not worth finding them
+            ## here and treating as part of zero inflation.
             if(zeroInflated) {
                 for(i in 1:N) {
                     n <<- 0
@@ -2695,17 +2697,11 @@ sampler_polyagamma <- nimbleFunction(
                         psi[i] <<- logit(probi)
                     }
                 }
-            } else {  ## Avoid unneeded checking for efficiency.
+            } else {  ## Avoid unneeded steps above for efficiency.
                 for(i in 1:N) 
                     psi[i] <<- logit(model$getParam(yNodes[i], 'prob'))
             }
-            if(stochSize) {
-                for(i in 1:nSize0) {
-                    prob0[size0[i]] <<- 1   ## Add to subset with zero inflation.
-                    psi[size0[i]] <<- -Inf  ## If size = 0, this shouldn't contribute.
-                }
-            }
-        }
+        },
         reset = function() { }
     )
 )
