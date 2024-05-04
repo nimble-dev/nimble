@@ -2717,7 +2717,6 @@ sampler_polyagamma <- nimbleFunction(
         nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
-        nimPrint("times: ", t0, " ", t1, " ", t2, " ", t3, " ", t4, " ", t5)
     },
     methods = list(
         setDesignMatrix = function() {
