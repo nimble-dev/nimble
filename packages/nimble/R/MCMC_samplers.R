@@ -2257,18 +2257,31 @@ samplePolyaGamma <- nimbleFunction(
     },
     run = function(){},
     methods = list(
-        rpolyagamma = function(size = integer(1), y = double(1)) {
+        rpolyagamma = function(size = double(1), y = double(1)) {
             m <- length(size)
             n <- length(y)
             sample <- numeric(value = 0, length = n)
             thisSize <- size[1]
-            for(i in 1:n) {
-                if(m > 1) thisSize <- size[i]
-                if((abs(y[i]) < Inf) & (thisSize > 0)) {  ## Default zero if y = Inf or -Inf or if size = 0.
-                    ## Note: check on y[i] not strictly needed if we only call this for non-zero-inflated cases, which is now the situation.
-                    for (j in 1:thisSize)
-                        sample[i] <- sample[i] + rpolyagammaOne(y[i])
-                }  
+
+            if(m > 1) {
+                for(i in 1:n) {
+                    thisSize <- size[i]
+                    if((abs(y[i]) < Inf) & (thisSize > 0)) {  ## Default zero if y = Inf or -Inf or if size = 0.
+                        ## Note: check on y[i] not strictly needed if we only call this for non-zero-inflated cases, which is now the situation.
+                        for (j in 1:thisSize)
+                            sample[i] <- sample[i] + rpolyagammaOne(y[i])
+                    }
+                }
+            } else {
+                if(thisSize > 0) {
+                    for(i in 1:n) {
+                        if(abs(y[i]) < Inf) {  ## Default zero if y = Inf or -Inf
+                            ## Note: check on y[i] not strictly needed if we only call this for non-zero-inflated cases, which is now the situation.
+                            for (j in 1:thisSize)
+                                sample[i] <- sample[i] + rpolyagammaOne(y[i])
+                        }
+                    }
+                }
             }
             returnType(double(1))
             return(sample)	
@@ -2370,6 +2383,80 @@ samplePolyaGamma <- nimbleFunction(
     )
 )
 
+
+## Tooling for dealing with allowing both dnorm and dmnorm nodes.
+## Copied from INLA work; eventually consider handling as general tool.
+
+getParam_BASE <- nimbleFunctionVirtual(
+  run = function() {},
+  methods = list(
+      getMean = function(index = integer()){returnType(double(1))},
+      getPrecision = function(index = integer()){returnType(double(2))}
+  )
+)
+
+## A place holder to not take up much memory.
+emptyParam <- nimbleFunction(
+    contains = getParam_BASE,
+    setup = function() {},
+    run = function() {},
+    methods = list(
+        getPrecision = function(index = integer()){
+            returnType(double(2))
+            return(matrix(1, nrow = 1, ncol = 1))
+        },
+        getMean = function(index = integer()){
+            returnType(double(1))
+            return(numeric(1, length = 1))
+        }
+    )
+)
+
+## Need at least one dnorm to use this.
+## NodeNames relate to node names in the model that are dnorm distributed
+## gNodes indicates a 1 if dnorm, 0 o/w. 
+## This makes it easy to get the correct indices when pass in the node index in a loop.
+gaussParam <- nimbleFunction(
+    contains = getParam_BASE,
+    setup = function(model, nodeNames, gNodes) {
+        indexConvert <- cumsum(gNodes)
+    },
+    run = function() {},
+    methods = list(
+        getPrecision = function(index = integer()){
+            i <- indexConvert[index]
+            return(matrix(model$getParam(nodeNames[i], "tau"), nrow = 1, ncol = 1))
+            returnType(double(2))
+        },
+        getMean = function(index = integer()){
+            i <- indexConvert[index]
+            return(numeric(model$getParam(nodeNames[i], "mean"), length = 1))
+            returnType(double(1))
+        }
+    )
+)
+
+## Need at least one dmnorm to use this.
+multiGaussParam <- nimbleFunction(
+    contains = getParam_BASE,
+    setup = function(model, nodeNames, gNodes) {
+        indexConvert <- cumsum(gNodes)
+    },
+    run = function(){},
+    methods = list(
+        getPrecision = function(index = integer()){
+            i <- indexConvert[index]
+            return(model$getParam(nodeNames[i], "prec"))
+            returnType(double(2))
+        },
+        getMean = function(index = integer()){
+            i <- indexConvert[index]
+            return(model$getParam(nodeNames[i], "mean"))
+            returnType(double(1))
+        }
+    )
+)
+
 ####################################################################
 ### Polya-Gamma Data Augmentation ##################################
 ####################################################################
@@ -2394,7 +2481,7 @@ sampler_polyagamma <- nimbleFunction(
         nCoef <- length(targetAsScalar)
         if(nCoef == 1)
             stop("polyagamma sampler not set up to handle a scalar target node")
-        nodeLengths <- sapply(target, function(x) model$expandNodeNames(x, returnScalarComponents = TRUE))
+        nodeLengths <- sapply(target, function(x) length(model$expandNodeNames(x, returnScalarComponents = TRUE)))
         
         
         if(is.null(control$response)) {
@@ -2431,6 +2518,7 @@ sampler_polyagamma <- nimbleFunction(
         if(length(inflationStochNodesOne)) {
             zeroInflated <- TRUE
             inflationNodes <- setdiff(model$getParents(probNodes, stochOnly = TRUE), depNodes)
+            ones <- rep(1, length(model$expandNodeNames(inflationNodes, returnScalarComponents = TRUE)))
             inflationNodesDeps <- model$getDependencies(inflationNodes, determOnly = TRUE, self = FALSE)
             dists <- model$getDistribution(inflationStochNodesOne)
             if(!all(dists %in% c("dbern", "dbin")))
@@ -2452,13 +2540,15 @@ sampler_polyagamma <- nimbleFunction(
                 if(check && cc_linkCheck(linearityCheck, 'multiplicative') != 'multiplicative')
                     stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
             }
-            linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodesNonInflated[1])
+            linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodes[1])
             if(check && cc_linkCheck(linearityCheck, 'multiplicative') != 'multiplicative')
                 stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
         } else {
-            inflationNodes <- ""
-            inflationNodesDeps <- ""
-            probNodesInflated <- ""
+            ## Placeholders to allow compilation.
+            ones <- rep(1, 2)
+            inflationNodes <- probNodes[1]
+            inflationNodesDeps <- probNodes[1]
+            probNodesInflated <- probNodes[1]
         }
         
 
@@ -2482,7 +2572,26 @@ sampler_polyagamma <- nimbleFunction(
             stochSize <- TRUE
 
         singleSize <- FALSE
-       
+
+        dists <- model$getDistribution(target)
+        dnormNodes <- dists == "dnorm"
+        dmnormNodes <- dists == "dmnorm"
+        n_dnorm <- sum(dnormNodes)
+        n_dmnorm <- sum(dmnormNodes)
+        
+        ## Build nimble function list for each case of normal.
+        getParam_nfl <- nimbleFunctionList(getParam_BASE)
+        if(n_dnorm > 0) {
+            getParam_nfl[[1]] <- gaussParam(model, target[dnormNodes], dnormNodes)
+        } else {
+            getParam_nfl[[1]] <- emptyParam()
+        }
+        if(n_dmnorm > 0) {
+            getParam_nfl[[2]] <- multiGaussParam(model, target[dmnormNodes], dmnormNodes)
+        } else{ 
+            getParam_nfl[[2]] <- emptyParam()
+        }
+        normTypes <- dnormNodes + 2 * dmnormNodes   # vector of values in {1,2} indicating dnorm or dmnorm
         
         ## Build design matrix, which account for all effects (fixed and random) in target.
         if(is.null(control$designMatrix)) {
@@ -2521,116 +2630,87 @@ sampler_polyagamma <- nimbleFunction(
 
         Q <- matrix(0, nrow = nCoef, ncol = nCoef)
         mu <- numeric(nCoef)				
+        b <- rep(0, nCoef)
         bTemp <- rep(0, nCoef)
         probNonZero <- rep(0, N)  ## Track ids where prob == 0 (zero inflated).
         n <- N  ## Number of active (non-zero-inflated) obs.
         
         psi <- numeric(N)
+        psiContig <- numeric(N)
         size <- numeric(N)  
+        sizeContig <- numeric(N)  
         
         ## Preallocate storage for sampling. Not clear how much some or all of this helps.
-        UQ1 <- matrix(0, nrow = nCoef, ncol = nCoef)
-        M <-  numeric(nCoef)
         XW <- matrix(0, nrow = nCoef, ncol = N)
         Xd <- matrix(0, nrow = N, ncol = nCoef)
         kpre <- numeric(N)
         w <- numeric(N)
-
-        t0 <- 0
-        t1 <- 0
-        t2 <- 0
-        t3 <- 0
-        t4 <- 0
-        t5 <- 0
     },
     run = function() {
         if(initializeSize | stochSize)
-            getSizeParam() 
+            getSize() 
     
         ## Get current values.
-        b <- values(model, target)
         y <- values(model, yNodes)
-        k <- y - size*0.5
+        if(singleSize) {
+            k <- y - size[1]*0.5
+        } else k <- y - size*0.5
 
-        ## Construct prior mean and precision over the target nodes.
-        ## Discuss with Paul in light of MVN construction in INLA work.
-        ## See buildDerivs function for flexible options here. Minor pain.
         start <- 1
         for( i in 1:nTarget ) {
-            if(nodeLengths[i] == 1) {
-                Q[start,start] <<- model$getParam(target[i], "tau")	
-                mu[start] <<- model$getParam(target[i], "mean")
-                start <- start + 1
-            } else {
-                end <- start + nodeLengths[i] - 1
-                Q[start:end,start:end] <<- model$getParam(target[i], "prec")	
-                mu[start:end] <<- model$getParam(target[i], "mean")
-                start <- end + 1
-            }
+            end <- start + nodeLengths[i] - 1
+            Q[start:end,start:end] <<- getParam_nfl[[normTypes[i]]]$getPrecision(i)
+            mu[start:end] <<- getParam_nfl[[normTypes[i]]]$getMean(i)
+            start <- end + 1
         }
         
         ## Build design matrix.
-        t0 <<- t0 + run.time({
-            if(initializeX | !fixed)
-                setDesignMatrix()
-        })
+        if(initializeX | !fixed)
+            setDesignMatrix()
 
         ## Determine logit(probs) and which obs are active (in zero-inflated case).
-        t1 <<- t1 + run.time({getProbParam()})
+        getProbParam()
 
-        t2 <<- t2 + run.time({
         if(zeroInflated) {
+            ## Remove this comment before release: (/CJP) 
+            ## psiContig[1:n] <<- psi[probNonZero[1:n]]  # otherwise:
+            ## Error: LHS indexing for a multivariate random draw can only use sequential blocks (via ':').
+            ## This occurred for: psi[probNonZero[1:n]]
+            ## This was part of the call:  passByMap(psi[probNonZero[1:n]])
+ 
             if(singleSize) {
-                w[1:n] <<- pgSampler$rpolyagamma(size, psi[probNonZero])
-            } else w[1:n] <<- pgSampler$rpolyagamma(size[probNonZero], psi[probNonZero])
-        } else w[1:n] <<- pgSampler$rpolyagamma(size, psi)  ## w|beta ~ pg(n, x %*% beta)
-        })
+                w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
+            } else {
+                sizeContig[1:n] <<- size[probNonZero[1:n]] 
+                w[1:n] <<- pgSampler$rpolyagamma(sizeContig, psi[1:n])
+            }
+        } else {
+            if(singleSize) {
+                w[1:N] <<- pgSampler$rpolyagamma(c(size[1]), psi)
+            } else w[1:N] <<- pgSampler$rpolyagamma(size, psi)  ## w|beta ~ pg(n, x %*% beta)
+        }
         
         ## Note that the calculations below involving X don't take advantage of sparsity, including with random intercepts or
         ## spatial processes. For the latter case, one would often have the relevant columns of X be the identity matrix.
         ## We could ask user for this information or detect it and then fill in blocks of XtWX matrix, avoiding
         ## matrix manipulations below for components of X.
         if(zeroInflated){
-            t3 <<- t3+run.time({
-                Xd[1:n,] <<- X[probNonZero,]         
-                for( j in 1:nCoef ){
-                    XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
-                    b[j] <- sum(Xd[1:n,j] * k[probNonZero]) + sum(Q[j,] * mu[j])
-                }
-                Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
-            })
-            t4 <<- t4 + run.time({
-                Xd[1:n,] <<- X[probNonZero,]
-                kpre[1:n] <<- k[probNonZero]
-                for( j in 1:nCoef ){
-                    XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
-                    b[j] <- sum(Xd[1:n,j] * kpre[1:n]) + sum(Q[j,] * mu[j])
-                }
-                Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
-                
-            })
-            
-            t5 <<- t5 + run.time({
-                XW2 <- matrix(0, nCoef, n, init = FALSE)
-                Xd2 <- X[probNonZero,]
-                kpre2 <- k[probNonZero]
-                for( j in 1:nCoef ){
-                    XW2[j,] <-  Xd2[,j]*w[1:n]
-                    b[j] <- sum(Xd2[,j] * kpre2) + sum(Q[j,] * mu[j])
-                }
-                Q1 <- XW2 %*% Xd2 + Q
-            })
+            Xd[1:n,] <<- X[probNonZero[1:n],]
+            kpre[1:n] <<- k[probNonZero[1:n]]
+            for( j in 1:nCoef ){
+                XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
+                b[j] <<- sum(Xd[1:n,j] * kpre[1:n]) + sum(Q[j,] * mu)
+            }
+            Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
         } else {
-            t5 <<- t5 + run.time({
             for( j in 1:nCoef ){
                 XW[j,] <<-  X[,j]*w
-                b[j] <- sum(X[,j] * k) + sum(Q[j,] * mu[j])
+                b[j] <<- sum(X[,j] * k) + sum(Q[j,] * mu)
             }
             Q1 <- XW %*% X + Q
-            })
         }
-        UQ1 <<- chol(Q1)
-        M <<- backsolve( UQ1, forwardsolve(t(UQ1), b) )
+        UQ1 <- chol(Q1)
+        M <- backsolve( UQ1, forwardsolve(t(UQ1), b) )
 	
         values(model, targetAsScalar) <<- rmnorm_chol(n = 1, mean = M, cholesky = UQ1, prec_param = TRUE)
         model$calculate(calcNodes)
@@ -2647,8 +2727,8 @@ sampler_polyagamma <- nimbleFunction(
                 ## zero inflation not initialized all at values of one.
                 inflationValuesSaved <- values(model, inflationNodes)
                 inflationDepsValuesSaved <- values(model, inflationNodesDeps)
-                values(model, inflationNodes) <<- 1
-                model$calculate(inflationDepsValuesSaved)
+                values(model, inflationNodes) <<- ones
+                model$calculate(inflationNodesDeps)
                 ## Check for cases like `dbern(z[i]*3*p[i])`
                 if(any(values(model, probNodes) != values(model, probNodesInflated)))
                     stop("Zero inflation not specified as multiplying by one or more Bernoulli variables")
@@ -2675,11 +2755,11 @@ sampler_polyagamma <- nimbleFunction(
         },
         getSize = function() {
             for(i in 1:N) {
-                size[i] <<- model$getParam(nodeYasScalar[i], 'size')
+                size[i] <<- model$getParam(yNodes[i], 'size')
             }
+            ## Not clear it's worth checking for single size versus just using the full vector in `run`.
             if(all(size == size[1])) {
                 singleSize <<- TRUE
-                size <<- c(size[1])
             }
             initializeSize <<- FALSE
         },
@@ -2688,16 +2768,16 @@ sampler_polyagamma <- nimbleFunction(
             ## assumption is that these will be rare so not worth finding them
             ## here and treating as part of zero inflation.
             if(zeroInflated) {
+                n <<- 0
                 for(i in 1:N) {
-                    n <<- 0
                     probi <- model$getParam(yNodes[i], 'prob')
                     if(probi > 0 ) {
                         n <<- n + 1
                         probNonZero[n] <<- i
-                        psi[i] <<- logit(probi)
+                        psi[n] <<- logit(probi)
                     }
                 }
-            } else {  ## Avoid unneeded steps above for efficiency.
+            } else {  ## Avoid unneeded if condition evaluation above for efficiency.
                 for(i in 1:N) 
                     psi[i] <<- logit(model$getParam(yNodes[i], 'prob'))
             }
