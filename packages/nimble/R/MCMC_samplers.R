@@ -2266,7 +2266,7 @@ samplePolyaGamma <- nimbleFunction(
             if(m > 1) {
                 for(i in 1:n) {
                     thisSize <- size[i]
-                    if((abs(y[i]) < Inf) & (thisSize > 0)) {  ## Default zero if y = Inf or -Inf or if size = 0.
+                    if(abs(y[i]) < Inf & thisSize > 0) {  ## Default zero if y = Inf or -Inf or if size = 0.
                         ## Note: check on y[i] not strictly needed if we only call this for non-zero-inflated cases, which is now the situation.
                         for (j in 1:thisSize)
                             sample[i] <- sample[i] + rpolyagammaOne(y[i])
@@ -2316,13 +2316,13 @@ samplePolyaGamma <- nimbleFunction(
                 while(!done2) {
                     Sn <- Sn + asgn * aterm(i, sample)
                     ## if odd
-                    if((even < 0) & (U <= Sn)) {
+                    if(even < 0 & U <= Sn) {
                         sample <- sample * 0.25
                         done2 <- TRUE
                         done1 <- TRUE
                     }
                     ## if even
-                    if((even > 0) & (U > Sn))
+                    if(even > 0 & U > Sn)
                         done2 <- TRUE
                     even <- -even
                     asgn <- -asgn
@@ -2473,13 +2473,13 @@ sampler_polyagamma <- nimbleFunction(
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        ccList <- nimble:::mcmc_determineCalcAndCopyNodes(model, target)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf;
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
 
         nTarget <- length(target)
         nCoef <- length(targetAsScalar)
-        if(nCoef == 1)
+        if(nCoef == 1)  ## We could/should relax this, though not clear how common it would be.
             stop("polyagamma sampler not set up to handle a scalar target node")
         nodeLengths <- sapply(target, function(x) length(model$expandNodeNames(x, returnScalarComponents = TRUE)))
         
@@ -2506,13 +2506,13 @@ sampler_polyagamma <- nimbleFunction(
             
         probAndSizeNodes <- model$getParents(yNodes, immediateOnly = TRUE)
         depNodes <- model$getDependencies(target, self = TRUE)
-        probNodes <- intersect(probAndSizeNodes, depNodes)  # may be inflated
+        probNodes <- intersect(probAndSizeNodes, depNodes)  # These nodes may reflect zero-inflated probabilities.
         sizeNodes <- setdiff(probAndSizeNodes, probNodes)
 
         zeroInflated <- FALSE
         
-        ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed),
-        ## that zero-inflation variable multiplies the baseline probability and that baseline probability uses logit link.
+        ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
+        ## and that zero-inflation variable multiplies the baseline probability.
         ## (Conjugacy checking part 2)
         inflationStochNodesOne <- model$getParents(probNodes[1], omit = target, stochOnly = TRUE, self = FALSE, includeData = FALSE)
         if(length(inflationStochNodesOne)) {
@@ -2560,16 +2560,16 @@ sampler_polyagamma <- nimbleFunction(
                 stop("polyagamma sampler: target must be related to response via logit link as an additive function of the target nodes. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
             linearityCheckExprRaw <- model$getValueExpr(probNodes[1])[[2]]
             for(node in targetAsScalar) {
-                linearityCheckExpr <- nimble:::cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
-                linearityCheck  <- nimble:::cc_checkLinearity(linearityCheckExpr, node)
+                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
+                linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
                 if(!cc_linkCheck(linearityCheck, "linear") %in% c('identity', 'additive', 'multiplicative', 'linear'))
-                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                    stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
             }
         }
       
         stochSize <- FALSE
-        if(length(sizeNodes) && length(model$getParents(sizeNodes, stochOnly = TRUE, self = TRUE)))
-            stochSize <- TRUE
+        if(length(sizeNodes) && length(model$getParents(sizeNodes, stochOnly = TRUE, self = TRUE)))  
+            stochSize <- TRUE  ## This assumes any RHSonly nodes will not change.
 
         singleSize <- FALSE
 
@@ -2579,7 +2579,7 @@ sampler_polyagamma <- nimbleFunction(
         n_dnorm <- sum(dnormNodes)
         n_dmnorm <- sum(dmnormNodes)
         
-        ## Build nimble function list for each case of normal.
+        ## Build nimble function list allowing for both dnorm and dmnorm, as required for compilation to work.
         getParam_nfl <- nimbleFunctionList(getParam_BASE)
         if(n_dnorm > 0) {
             getParam_nfl[[1]] <- gaussParam(model, target[dnormNodes], dnormNodes)
@@ -2669,7 +2669,7 @@ sampler_polyagamma <- nimbleFunction(
             setDesignMatrix()
 
         ## Determine logit(probs) and which obs are active (in zero-inflated case).
-        getProbParam()
+        setProbParam()
 
         if(zeroInflated) {
             ## Remove this comment before release: (/CJP) 
@@ -2677,7 +2677,8 @@ sampler_polyagamma <- nimbleFunction(
             ## Error: LHS indexing for a multivariate random draw can only use sequential blocks (via ':').
             ## This occurred for: psi[probNonZero[1:n]]
             ## This was part of the call:  passByMap(psi[probNonZero[1:n]])
- 
+
+            ## `psi` already has non-zero-prob values in first n elements based on `getProbParam`.
             if(singleSize) {
                 w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
             } else {
@@ -2757,8 +2758,13 @@ sampler_polyagamma <- nimbleFunction(
                 size[i] <<- model$getParam(yNodes[i], 'size')
             }
             ## Not clear it's worth checking for single size versus just using the full vector in `run`.
-            if(all(size == size[1])) {
-                singleSize <<- TRUE
+            singleSize <<- TRUE
+            i <- 1
+            while(i <= N & singleSize) {
+                if(size[i] != size[1]) {
+                    singleSize <<- FALSE
+                }
+                i <- i+1
             }
             initializeSize <<- FALSE
         },
@@ -2776,7 +2782,7 @@ sampler_polyagamma <- nimbleFunction(
                         psi[n] <<- logit(probi)
                     }
                 }
-            } else {  ## Avoid unneeded if condition evaluation above for efficiency.
+            } else {  ## Avoid unneeded `if` condition evaluation above for efficiency.
                 for(i in 1:N) 
                     psi[i] <<- logit(model$getParam(yNodes[i], 'prob'))
             }
