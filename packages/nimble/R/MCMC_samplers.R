@@ -2648,7 +2648,7 @@ sampler_polyagamma <- nimbleFunction(
     },
     run = function() {
         if(initializeSize | stochSize)
-            getSize() 
+            setSize() 
     
         ## Get current values.
         y <- values(model, yNodes)
@@ -2678,7 +2678,7 @@ sampler_polyagamma <- nimbleFunction(
             ## This occurred for: psi[probNonZero[1:n]]
             ## This was part of the call:  passByMap(psi[probNonZero[1:n]])
 
-            ## `psi` already has non-zero-prob values in first n elements based on `getProbParam`.
+            ## `psi` already has non-zero-prob values in first n elements based on `setProbParam`.
             if(singleSize) {
                 w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
             } else {
@@ -2753,7 +2753,7 @@ sampler_polyagamma <- nimbleFunction(
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             initializeX <<- FALSE
         },
-        getSize = function() {
+        setSize = function() {
             for(i in 1:N) {
                 size[i] <<- model$getParam(yNodes[i], 'size')
             }
@@ -2768,7 +2768,7 @@ sampler_polyagamma <- nimbleFunction(
             }
             initializeSize <<- FALSE
         },
-        getProbParam = function() {
+        setProbParam = function() {
             ## Note that zero size cases are handled directly in PG sampling;
             ## assumption is that these will be rare so not worth finding them
             ## here and treating as part of zero inflation.
