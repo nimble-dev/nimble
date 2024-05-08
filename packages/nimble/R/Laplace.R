@@ -43,8 +43,8 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
 		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
 		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
     check_convergence = function(){returnType(double())},
-    update_nQuad = function(nQUpdate = integer()){},
-    update_transformation = function(transformation = character()){}
+    set_nQuad = function(nQUpdate = integer()){},
+    set_transformation = function(transformation = character()){}
   )
 )
 
@@ -709,11 +709,11 @@ buildOneAGHQuad_DeleteMeLater_1D <- nimbleFunction(
       max_outer_logLik <<- -Inf
     },
     ## Allow the user to explore using different sized quadrature grids.
-    update_nQuad = function(nQUpdate = integer()){
-      aghq_grid$resetGrid(nQUpdate = nQUpdate)
+    set_nQuad = function(nQUpdate = integer()){
+      aghq_grid$setSize(nQUpdate = nQUpdate)
       nQuad <<- nQUpdate
     },
-    update_transformation = function(transformation = character()){}
+    set_transformation = function(transformation = character()){}
   ),
   buildDerivs = list(inner_logLik                            = list(),
                      joint_logLik                            = list(),
@@ -1372,11 +1372,11 @@ buildOneAGHQuad_DeleteMeLater_ <- nimbleFunction(
     reset_outer_logLik = function(){
       max_outer_logLik <<- -Inf
     },
-    update_nQuad = function(nQUpdate = integer()){
-      aghq_grid$resetGrid(nQUpdate = nQUpdate)
+    set_nQuad = function(nQUpdate = integer()){
+      aghq_grid$setSize(nQUpdate = nQUpdate)
       nQuad <<- nQUpdate
     },
-    update_transformation = function(transformation = character()){
+    set_transformation = function(transformation = character()){
       transMethod <<- transformation
     }
   ),
@@ -2167,12 +2167,12 @@ buildAGHQuad_DeleteMeLater <- nimbleFunction(
           nQuad <<- nQuad0
           stop("You have exceeded the maximum quadrature grid of 50,000 points.")
         }
-        AGHQuad_nfl[[i]]$update_nQuad(nQuad)
+        AGHQuad_nfl[[i]]$set_nQuad(nQuad)
       }
     },
     setAGHQTransformation = function(method = character()){
       if(method != "spectral" & method != "cholesky") stop("Choose either cholesky or spectral.")
-      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$update_transformation(transformation = method)
+      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$set_transformation(transformation = method)
     },
     one_time_fixes = function() {
       if(one_time_fixes_done) return()

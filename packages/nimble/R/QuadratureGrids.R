@@ -150,7 +150,7 @@ buildAGHQGrid <- nimbleFunction(
       return(ans)
     },
 		## Reset the sizes of the storage to change the grid if the user wants more/less AGHQ.
-		resetGrid = function(nQUpdate = integer()){
+		setSize = function(nQUpdate = integer()){
 			one_time_fixes()
       if(nQuad != nQUpdate){
         nQ <<- nQUpdate^d
