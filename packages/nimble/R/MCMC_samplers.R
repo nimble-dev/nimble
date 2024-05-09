@@ -2651,7 +2651,7 @@ sampler_polyagamma <- nimbleFunction(
     },
     run = function() {
         if(initializeSize | stochSize)
-            setSize() 
+            setSizeParam() 
     
         ## Get current values.
         y <- values(model, yNodes)
@@ -2756,7 +2756,7 @@ sampler_polyagamma <- nimbleFunction(
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             initializeX <<- FALSE
         },
-        setSize = function() {
+        setSizeParam = function() {
             for(i in 1:N) {
                 size[i] <<- model$getParam(yNodes[i], 'size')
             }
