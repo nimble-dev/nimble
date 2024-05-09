@@ -2758,13 +2758,17 @@ sampler_polyagamma <- nimbleFunction(
                 size[i] <<- model$getParam(yNodes[i], 'size')
             }
             ## Not clear it's worth checking for single size versus just using the full vector in `run`.
-            singleSize <<- TRUE
-            i <- 1
-            while(i <= N & singleSize) {
-                if(size[i] != size[1]) {
-                    singleSize <<- FALSE
+            ## PVDB: I think this check should only happen if N is not stochastic. In that case, singleSize <<- FALSE.
+            singleSize <<- FALSE
+            if(!stochSize & initializeSize) {
+                singleSize <<- TRUE
+                i <- 1
+                while(i <= N & singleSize) {
+                    if(size[i] != size[1]) {
+                        singleSize <<- FALSE
+                    }
+                    i <- i+1
                 }
-                i <- i+1
             }
             initializeSize <<- FALSE
         },
