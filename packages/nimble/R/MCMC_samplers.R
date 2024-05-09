@@ -2672,7 +2672,7 @@ sampler_polyagamma <- nimbleFunction(
             setDesignMatrix()
 
         ## Determine logit(probs) and which obs are active (in zero-inflated case).
-        getProbParam()
+        setProbParam()
 
         if(zeroInflated) {
             ## Remove this comment before release: (/CJP) 
