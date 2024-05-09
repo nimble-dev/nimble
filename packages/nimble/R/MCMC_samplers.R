@@ -2651,7 +2651,7 @@ if(exists('paciorek')) browser()
     },
     run = function() {
         if(initializeSize | stochSize)
-            getSize() 
+            setSize() 
     
         ## Get current values.
         y <- values(model, yNodes)
@@ -2681,7 +2681,7 @@ if(exists('paciorek')) browser()
             ## This occurred for: psi[probNonZero[1:n]]
             ## This was part of the call:  passByMap(psi[probNonZero[1:n]])
 
-            ## `psi` already has non-zero-prob values in first n elements based on `getProbParam`.
+            ## `psi` already has non-zero-prob values in first n elements based on `setProbParam`.
             if(singleSize) {
                 w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
             } else {
@@ -2756,22 +2756,26 @@ if(exists('paciorek')) browser()
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             initializeX <<- FALSE
         },
-        getSize = function() {
+        setSize = function() {
             for(i in 1:N) {
                 size[i] <<- model$getParam(yNodes[i], 'size')
             }
             ## Not clear it's worth checking for single size versus just using the full vector in `run`.
-            singleSize <<- TRUE
-            i <- 1
-            while(i <= N & singleSize) {
-                if(size[i] != size[1]) {
-                    singleSize <<- FALSE
+            ## PVDB: I think this check should only happen if N is not stochastic. In that case, singleSize <<- FALSE.
+            singleSize <<- FALSE
+            if(!stochSize & initializeSize) {
+                singleSize <<- TRUE
+                i <- 1
+                while(i <= N & singleSize) {
+                    if(size[i] != size[1]) {
+                        singleSize <<- FALSE
+                    }
+                    i <- i+1
                 }
-                i <- i+1
             }
             initializeSize <<- FALSE
         },
-        getProbParam = function() {
+        setProbParam = function() {
             ## Note that zero size cases are handled directly in PG sampling;
             ## assumption is that these will be rare so not worth finding them
             ## here and treating as part of zero inflation.
