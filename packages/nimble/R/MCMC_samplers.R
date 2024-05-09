@@ -2760,8 +2760,8 @@ if(exists('paciorek')) browser()
             for(i in 1:N) {
                 size[i] <<- model$getParam(yNodes[i], 'size')
             }
-            ## Not clear it's worth checking for single size versus just using the full vector in `run`.
-            ## PVDB: I think this check should only happen if N is not stochastic. In that case, singleSize <<- FALSE.
+            ## Not worth checking singleSize if it is stochastic and varies by observation. Perhaps worth considering if
+            ## size is constant across observations but stochastic. Not sure if there is a use case of that.
             singleSize <<- FALSE
             if(!stochSize & initializeSize) {
                 singleSize <<- TRUE
