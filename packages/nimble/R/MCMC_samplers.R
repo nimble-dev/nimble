@@ -2514,13 +2514,16 @@ sampler_polyagamma <- nimbleFunction(
         ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
         ## and that zero-inflation variable multiplies the baseline probability.
         ## (Conjugacy checking part 2)
-        inflationStochNodesOne <- model$getParents(probNodes[1], omit = target, stochOnly = TRUE, self = FALSE, includeData = FALSE)
+        inflationStochNodesOne <- model$getParents(probNodes[1], omit = target, stochOnly = TRUE, self = FALSE)
         if(length(inflationStochNodesOne)) {
             zeroInflated <- TRUE
             inflationNodes <- setdiff(model$getParents(probNodes, stochOnly = TRUE), depNodes)
             ones <- rep(1, length(model$expandNodeNames(inflationNodes, returnScalarComponents = TRUE)))
             inflationNodesDeps <- model$getDependencies(inflationNodes, determOnly = TRUE, self = FALSE)
             dists <- model$getDistribution(inflationStochNodesOne)
+            ## This could fail if target doesn't include all params in the linear combination producing the probability.
+            ## Or be misleading if such a missing target is somehow distributed dbern/dbin.
+            
             if(!all(dists %in% c("dbern", "dbin")))
                 stop("polyagamma sampler: Invalid stochastic nodes found as parents of response. Any such nodes other than the target must specify zero inflation")
             binomDists <- dists == 'dbin'
@@ -2553,7 +2556,7 @@ sampler_polyagamma <- nimbleFunction(
         
 
         ## At this point, `probNodes` has the nodes for the non-inflated probabilities.
-
+if(exists('paciorek')) browser()
         ## Conjugacy checking part 3: Check linearity of target nodes in logit link.
         if(check) {
             if(model$getValueExpr(probNodes[1])[[1]] != 'expit')
@@ -2669,7 +2672,7 @@ sampler_polyagamma <- nimbleFunction(
             setDesignMatrix()
 
         ## Determine logit(probs) and which obs are active (in zero-inflated case).
-        setProbParam()
+        getProbParam()
 
         if(zeroInflated) {
             ## Remove this comment before release: (/CJP) 
