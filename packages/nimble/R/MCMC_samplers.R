@@ -2556,7 +2556,7 @@ sampler_polyagamma <- nimbleFunction(
         
 
         ## At this point, `probNodes` has the nodes for the non-inflated probabilities.
-if(exists('paciorek')) browser()
+
         ## Conjugacy checking part 3: Check linearity of target nodes in logit link.
         if(check) {
             if(model$getValueExpr(probNodes[1])[[1]] != 'expit')
