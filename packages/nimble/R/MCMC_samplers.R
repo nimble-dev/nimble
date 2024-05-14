@@ -2237,14 +2237,10 @@ sampler_CAR_proper <- nimbleFunction(
 ### polyagamma conjugate sampler for parameters appearing additively in logistic regression linear predictor ###
 ################################################################################################################
 
-## TODO: add cite of     Jesse Bennett Windle
+## nimbleFunction implementation of Algorithm 6 in PhD thesis of Jesse Bennett Windle, 2013.
 ##   Forecasting High-Dimensional, Time-Varying Variance-Covariance Matrices
 ##   with High-Frequency Data and Sampling Polya-Gamma Random Variates for
 ##   Posterior Distributions Derived from Logistic Likelihoods  
-##   PhD Thesis, 2013
-## or of Polson et al. article
-
-## nimbleFunction implementation of Algorithm 6 in PhD thesis of Jesse Bennett Windle, 2013.
 ## Adapted from C++ code in R package `pgdraw`.
 samplePolyaGamma <- nimbleFunction(
     setup = function(){
@@ -2273,7 +2269,7 @@ samplePolyaGamma <- nimbleFunction(
                     }
                 }
             } else {
-                if(thisSize > 0) {
+                if(thisSize > 0) {  ## Avoid check of size inside loop.
                     for(i in 1:n) {
                         if(abs(y[i]) < Inf) {  ## Default zero if y = Inf or -Inf
                             ## Note: check on y[i] not strictly needed if we only call this for non-zero-inflated cases, which is now the situation.
@@ -2460,7 +2456,7 @@ multiGaussParam <- nimbleFunction(
 ####################################################################
 ### Polya-Gamma Data Augmentation ##################################
 ####################################################################
-## Assume at this point just univariate normal fixed and random effects.
+
 sampler_polyagamma <- nimbleFunction(
     name = 'sampler_polyagamma',
     contains = sampler_BASE,
@@ -2468,7 +2464,7 @@ sampler_polyagamma <- nimbleFunction(
         ## control list extraction
         
         ## This allows user to override error trapping for unusual model structures.
-        check <- extractControlElement(control, 'check',            TRUE)   
+        check <- extractControlElement(control, 'check', TRUE)   
 
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -2511,9 +2507,9 @@ sampler_polyagamma <- nimbleFunction(
 
         zeroInflated <- FALSE
         
+        ## Conjugacy checking, part 2.
         ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
         ## and that zero-inflation variable multiplies the baseline probability.
-        ## (Conjugacy checking part 2)
         inflationStochNodesOne <- model$getParents(probNodes[1], omit = target, stochOnly = TRUE, self = FALSE)
         if(length(inflationStochNodesOne)) {
             zeroInflated <- TRUE
@@ -2557,7 +2553,7 @@ sampler_polyagamma <- nimbleFunction(
 
         ## At this point, `probNodes` has the nodes for the non-inflated probabilities.
 
-        ## Conjugacy checking part 3: Check linearity of target nodes in logit link.
+        ## Conjugacy checking, part 3: Check linearity of target nodes in logit link.
         if(check) {
             if(model$getValueExpr(probNodes[1])[[1]] != 'expit')
                 stop("polyagamma sampler: target must be related to response via logit link as an additive function of the target nodes. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
@@ -2675,12 +2671,6 @@ sampler_polyagamma <- nimbleFunction(
         setProbParam()
 
         if(zeroInflated) {
-            ## Remove this comment before release: (/CJP) 
-            ## psiContig[1:n] <<- psi[probNonZero[1:n]]  # otherwise:
-            ## Error: LHS indexing for a multivariate random draw can only use sequential blocks (via ':').
-            ## This occurred for: psi[probNonZero[1:n]]
-            ## This was part of the call:  passByMap(psi[probNonZero[1:n]])
-
             ## `psi` already has non-zero-prob values in first n elements based on `setProbParam`.
             if(singleSize) {
                 w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
@@ -3009,6 +2999,29 @@ sampler_polyagamma <- nimbleFunction(
 #' }
 #'
 #' Note that this sampler is likely run much more slowly than the blocked sampler for the LKJ distribution, as updating each single element will generally incur the full cost of updating all dependencies of the entire matrix. 
+#'
+#' @section polyagamma sampler:
+#'
+#' The polyagamma sampler uses Pólya-gamma data augmentation to do conjugate sampling for the nodes involved in the linear predictor of logistic regression modeling specifications (Polson et al., 2013), analogous to the familiar Albert-Chib data augmentation for probit regression. The linear predictor must be a linear function (technically an affine function) of the target nodes, which themselves must have `dnorm` or `dmnorm` priors. The stochastic dependencies of the target nodes must have `dbin` or `dbern` distributions with the logit transformation of their probability parameter equal to the linear predictor (zero inflation to account for structural zeroes is allowed as discussed below). These dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the Pólya-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
+#'
+#' Importantly, note that because the Pólya-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all nodes involved in the linear predictor of the logistic regression specification for the responses (or more generally to all the nodes involved in the linear predictor for each set of conditionally independent response values) to avoid duplicative draws of the latent values.
+#'
+#' Sampling involves use of the design matrix (i.e., the matrix that when multiplied by the target node values produces the linear predictor). The design matrix includes columns corresponding to any regression covariates as well as columnar blocks corresponding to any random effects. For random effects, including temporal or spatial processes, the columnar blocks will often be sparse and will often contain only zeroes and ones. Often the design matrix is fixed in advance, but in some cases elements of the matrix may be stochastic and sampled during the MCMC. That would be the case if there are missing values (e.g., missing covariate values) or stochastic indexing (e.g., unknown assignment of responses to clusters).
+#'
+#' Note that recalculating the elements of the design matrix at every iteration is costly and will likely greatly slow the sampler. To alleviate this, users can specify which columns of the design matrix are fixed (non-stochastic) using the `fixedDesignColumns` control argument. If all columns are fixed, which will often be the case, this argument can be specified simply as `TRUE`. Note that the sampler does not determine if any or all columns are fixed, so users wishing to take advantage of the large speed gains from having fixed columns should provide this control argument.
+#'
+#' By default, NIMBLE will calculate the design matrix (and as discussed above will do so repeatedly at each iteration for any columns not indicating as being fixed). If the matrix has no stochastic elements, users can provide the matrix via the `designMatrix` control argument. This will save time in computing the matrix initially but likely will have limited benefit relative to the cost of running many iterations of MCMC and therefore can be omitted in most cases.
+#'
+#' The sampler allows for binomial responses with stochastic sizes.
+#'
+#' The sampler allows for zero inflation of the response probability in that the probability determined by the inverse logit transformation of the linear predictor can be multipled by one or more binary scalar nodes to produce the response probability. These binary nodes must be specified via the `dbern` distribution or the `dbin` distribution with size equal to one. This functionality is intended for use in cases where another part of the model introduces structural zeroes, such as in determining occupancy in ecological occupancy models. 
+#'
+#' The polyagamma sampler accepts the following control list elements:
+#' \itemize{
+#' \item fixedDesignColumns. Either a single logical value indicating if the design matrix is fixed (non-stochastic) or a logical vector indicating which columns are fixed. In the latter case, the columns must be ordered exactly as the ordering of target node elements given by \code{expandNodeNames} with \code{returnScalarComponents = TRUE}. (default = FALSE)
+#' \item designMatrix. The full design matrix with rows corresponding to the ordering of the responses and columns ordered exactly as the ordering of target node elements given by \code{expandNodeNames} with \code{returnScalarComponents = TRUE}. If provided, all columns are assumed to be fixed, ignoring the `fixedDesignColumns` control element.
+#' \item check. A logical value indicating whether NIMBLE should check various conditions required for validity of the sampler. This is provided for rare cases where the checking may be overly conservative and a user is sure that the sampler is valid and wants to override the checking. (default = TRUE)
+
 #' 
 #' @section CAR_normal sampler:
 #'
@@ -3148,6 +3161,8 @@ sampler_polyagamma <- nimbleFunction(
 #' Neal, R. M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
 #'
 #' Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
+#'
+#' Polson, N.G., Scott, J.G., and J. Windle. (2013). Bayesian inference for logistic models using Pólya-gamma latent variables. Journal of the American Statistical Association, 108(504), 1339–1349. https://doi.org/10.1080/01621459.2013.829001
 #'
 #' Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
 #'
