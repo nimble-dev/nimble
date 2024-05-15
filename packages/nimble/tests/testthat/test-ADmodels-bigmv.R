@@ -15,8 +15,6 @@ relTol[4] <- 1e-4
 
 verbose <- FALSE
 
-context("Testing of derivatives for calculate() for nimbleModel with various mv distributions")
-
 code <- nimbleCode({
     Sigma1[1:n,1:n] <- exp(-dist[1:n,1:n]/rho)
 

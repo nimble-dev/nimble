@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of nimbleFunction interfaces")
-
 ## goals here:
 ##   passing every kind of argument
 ##   populating every kind of member data upon instantiation

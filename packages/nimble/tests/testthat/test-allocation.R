@@ -7,8 +7,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context('Testing of numeric, integer, logical, matrix and array allocation')
-
 numericTests <- list(
     list(name = 'numeric: length',
          expr = quote(out <- numeric(5)),

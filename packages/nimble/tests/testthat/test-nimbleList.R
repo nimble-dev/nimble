@@ -15,8 +15,6 @@ nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
 
-context('Testing nimbleLists')
-
 ########
 ## Test of creating new nimbleList in run code and specifying initial values for that list
 ## Here, the nlDef is created in the global environment, outside of setup code

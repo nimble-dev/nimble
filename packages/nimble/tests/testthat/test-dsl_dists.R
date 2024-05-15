@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of keyword processing for distribution functions in nimbleFunctions")
-
 test_that("Test that keyword processing for qbeta works", {
     nf <- nimbleFunction(
         run = function(p = double(0)) {

@@ -9,7 +9,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context('Benchmarking model and MCMC building and compiling steps')
 cat('\n')
 
 timeSteps <- function(code, data = list(), constants = list(), inits = list()) {

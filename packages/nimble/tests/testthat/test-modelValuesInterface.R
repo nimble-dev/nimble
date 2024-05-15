@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of modelValues interfaces")
-
 test_that("copying of argument passing in nimbleFunctionInterface", {
     mvc <- modelValuesConf(vars = c('d1'),
                            types = c('double'),
