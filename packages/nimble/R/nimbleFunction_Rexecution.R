@@ -1256,10 +1256,11 @@ nimRound <- round
 #' cOptimizer <- compileNimble(optimizer)
 #' cOptimizer(method = 'BFGS', fnscale = -1)
 #' }
-nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
+nimOptim <- function(par, fn, gr = "NULL", he = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
                      control = nimOptimDefaultControl(), hessian = FALSE) {
     ## Tweak parameters.
     if(identical(gr, "NULL")) gr <- NULL
+    if(identical(he, "NULL")) he <- NULL
     defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
     ## Only enter non-default values into Rcontrol.
@@ -1271,8 +1272,32 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
             Rcontrol[[name]] <- control[[name]]
         }
     }
-    result <- optim(par, fn, gr = gr, ..., method = method,
-                    lower = lower, upper = upper, control = Rcontrol, hessian = hessian)
+    if(method %in% c("Nelder-Mead", "CG", "BFGS", "L-BFGS-B")) {
+      result <- optim(par, fn, gr = gr, ..., method = method,
+                      lower = lower, upper = upper, control = Rcontrol, hessian = hessian)
+    } else {
+      Rcontrol$type <- NULL
+      optimr_methods <- optimx::ctrldefault(4) # imitated optimx::checkallsolvers
+      avail_in_optimr <- suppressWarnings(
+        optimx::checksolver(method, optimr_methods$allmeth, optimr_methods$allpkg)
+      )
+      if(!is.null(avail_in_optimr)) {
+        resultRaw <- try(optimx::optimr(par, fn, gr = gr, he = he, method = method, lower = lower,
+                                        upper = upper, hessian=hessian))
+      } else {
+        optimizer <- nimOptimMethod(method)
+        if(is.null(optimizer)) stop("optimizer ", method, " not found. See help(nimOptimMethod).")
+        resultRaw <- try(optimizer(par, fn, gr = gr, he = he, lower = lower,
+                                        upper = upper, control = Rcontrol, hessian=hessian))
+      }
+      if(inherits(resultRaw, "try-error")) stop("problem with optimizer ", method)
+
+      result <- list()
+      for(name in c("par", "value", "convergence", "counts", "message")) {
+        result[[name]] <- resultRaw[[name]]
+        attributes(result[[name]]) <- NULL
+      }
+    }
     nimResult <- do.call(optimResultNimbleList$new, result)
     # Tweak result value to exactly match C++ behavior.
     nimResult$counts <- unname(nimResult$counts)
@@ -1283,6 +1308,48 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
         nimResult$hessian <- matrix(nrow = 0, ncol = 0)
     }
     return(nimResult)
+}
+
+# nimble_custom_optim_ function is called only from C++
+custom_optim <- function(method, par, lower, upper, control,
+                         hessian, use_gr, use_he, extptr,...) {
+  fnsym <- getNativeSymbolInfo("CALL_NimOptimProblem_fn")
+  fn <- \(p) .Call(fnsym, p, extptr)
+  if(use_gr) {
+    grsym <- getNativeSymbolInfo("CALL_NimOptimProblem_gr")
+    gr <- \(p) .Call(grsym, p, extptr)
+  } else gr <- NULL
+  if(use_he) {
+    hesym <- getNativeSymbolInfo("CALL_NimOptimProblem_he")
+    he <- \(p) .Call(hesym, p, extptr)
+  } else he <- NULL
+  # To do:
+  # make the call go into package namespace?
+  # check for valid methods or allow new method to be registered
+  # separately: need test of parscale + AD gradient
+  # uncompiled R execution
+  # the control list here will have been packed up like this from the optimControlNimbleList:
+  # list(parscale = control$parscale, fnscale = control$fnscale, maxit = control$maxit,
+  #      trace = control$trace, abstol = control$abstol, reltol = control$reltol)
+  optimr_methods <- optimx::ctrldefault(4) # imitated optimx::checkallsolvers
+  avail_in_optimr <- suppressWarnings(
+    optimx::checksolver(method, optimr_methods$allmeth, optimr_methods$allpkg)
+  )
+  if(!is.null(avail_in_optimr)) {
+    resultRaw <- try(optimx::optimr(par, fn, gr = gr, he = he, method = method, lower = lower,
+                                    upper = upper, hessian=hessian))
+  } else {
+    optimizer <- nimOptimMethod(method)
+    if(is.null(optimizer)) stop("optimizer ", method, " not found. See help(nimOptimMethod).")
+    resultRaw <- try(optimizer(par, fn, gr = gr, he = he, lower = lower,
+                               upper = upper, control = control, hessian=hessian))
+  }
+  if(inherits(resultRaw, "try-error")) stop("problem with optimizer ", method)
+
+  result <- list()
+  for(name in c("par", "value", "convergence", "counts", "message", "hessian"))
+    result[[name]] <- resultRaw[[name]]
+  result
 }
 
 #' Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).

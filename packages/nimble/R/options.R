@@ -3,6 +3,18 @@
 nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL)) 
 # new.env() here fails with: Error in as.environment(pos) : using 'as.environment(NULL)' is defunct when testing package loading during INSTALL
 
+nimbleUserNamespace$.optimizers <- as.environment(list())
+
+#' Set or get an optimization function to be used by nimOptim
+#'
+#' @export
+nimOptimMethod <- function(name, value) {
+  if(missing(value))
+    nimbleUserNamespace$.optimizers[[name]]
+  else
+    nimbleUserNamespace$.optimizers[[name]] <- value
+}
+
 # options used for NIMBLE package
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(

@@ -1472,6 +1472,24 @@ sizeOptim <- function(code, symTab, typeEnv) {
         stop(paste0('unsupported gr argument in optim(par, gr = ', grCode$name, '); try an RCfunction or nfMethod instead'))
     }
 
+    heCode <- code$args$he
+    if (identical(heCode, "NULL")) {
+        # We simply emit "NULL".
+    } else if (heCode$name == 'nfMethod') {
+        # This is handled in cppOutputNFmethod.
+    } else if(identical(heCode$type, 'Ronly') & identical(class(heCode$sizeExprs)[1], 'symbolMemberFunction')) {
+        heCode$name <- heCode$sizeExprs$RCfunProc$name
+        newCode <- substitute(nfMethod(this, FUN), list(FUN = heCode$name))
+        newExpr <- RparseTree2ExprClasses(newCode)
+        newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
+        setArg(code, 3, newExpr)
+    } else if(exists(heCode$name) && is.rcf(get(heCode$name))) {
+        # Handle he arguments that are RCfunctions.
+        heCode$name <- environment(get(heCode$name))$nfMethodRCobject$uniqueName
+    } else {
+        stop(paste0('unsupported he argument in optim(par, he = ', heCode$name, '); try an RCfunction or nfMethod instead'))
+    }
+
     for(arg in c(code$args$lower, code$args$upper)) {
         if(inherits(arg, 'exprClass') && arg$toEigenize=='yes') {
             asserts <- c(asserts, sizeInsertIntermediate(code, arg$callerArgID, symTab, typeEnv))
