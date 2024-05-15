@@ -336,9 +336,9 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
 
 void NimOptimProblem::calc_hessian(NimArr<1, double> par,
                                    NimArr<2, double> &hessian) {
-    Rprintf("entering calc_hessian\n");
-    for(int i = 0; i < par.size(); ++i) std::cout<<par[i]<<" ";
-    std::cout<<std::endl;
+//    Rprintf("entering calc_hessian\n");
+//    for(int i = 0; i < par.size(); ++i) std::cout<<par[i]<<" ";
+//    std::cout<<std::endl;
     // Notice par is copied but hessian is by reference.
     double *ndeps = working_ndeps.getPtr();
     double *parscale = working_parscale.getPtr();
@@ -354,11 +354,11 @@ void NimOptimProblem::calc_hessian(NimArr<1, double> par,
   hessian.setSize(n, n, false, false);
   int i, j;
   for(i = 0; i < n; ++i) {
-    std::cout<<"i = "<<i<<std::endl;
+  //  std::cout<<"i = "<<i<<std::endl;
       // It is strange to divide ndeps by parscale, but that's
       // exactly what R's C code for optimhess does
       epsilon = ndeps[i] / parscale[i];
-    std::cout<<"epsilon = "<<epsilon<<std::endl;
+  //  std::cout<<"epsilon = "<<epsilon<<std::endl;
     dpar[i] += epsilon;
     gr(n, dpar, ansUpper.getPtr(), ex);
     dpar[i] -= 2*epsilon;
@@ -366,7 +366,7 @@ void NimOptimProblem::calc_hessian(NimArr<1, double> par,
     for(j = 0; j < n; ++j) {
       // Following R's optimhess, we want to multiply by fnscale here to return answer to original scale.
       hessian(i, j) = control_->fnscale * (ansUpper[j] - ansLower[j]) / (2.*epsilon*parscale[i]*parscale[j]);
-      std::cout<<ansUpper[j]<<" "<<ansLower[j]<<" "<<parscale[i]<<" "<<parscale[j]<<" "<<hessian(i,j)<<std::endl;
+    //  std::cout<<ansUpper[j]<<" "<<ansLower[j]<<" "<<parscale[i]<<" "<<parscale[j]<<" "<<hessian(i,j)<<std::endl;
     }
     dpar[i] += epsilon;
   }
@@ -375,9 +375,9 @@ void NimOptimProblem::calc_hessian(NimArr<1, double> par,
     for(j = 0; j < i; ++j) {
       double tmp = 0.5* (hessian(i,j) + hessian(j,i));
       hessian(i, j) = hessian(j, i) = tmp;
-      std::cout<<hessian(i,j)<<" ";
+   //   std::cout<<hessian(i,j)<<" ";
     }
-    std::cout<<std::endl;
+  //  std::cout<<std::endl;
   }
 }
 
