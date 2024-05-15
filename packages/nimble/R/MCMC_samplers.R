@@ -2239,7 +2239,7 @@ sampler_CAR_proper <- nimbleFunction(
 
 ## nimbleFunction implementation of Algorithm 6 in PhD thesis of Jesse Bennett Windle, 2013.
 ##   Forecasting High-Dimensional, Time-Varying Variance-Covariance Matrices
-##   with High-Frequency Data and Sampling Polya-Gamma Random Variates for
+##   with High-Frequency Data and Sampling Pólya-Gamma Random Variates for
 ##   Posterior Distributions Derived from Logistic Likelihoods  
 ## Adapted from C++ code in R package `pgdraw`.
 samplePolyaGamma <- nimbleFunction(
@@ -2497,7 +2497,7 @@ sampler_polyagamma <- nimbleFunction(
         if(check) { 
            nodeIDs <- model$expandNodeNames(yNodes, returnType = 'ids')
             if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)
-                stop("polyagamma sampler: response nodes should all be part of the same declaration. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                stop("polyagamma sampler: response nodes should all be part of the same declaration. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
         }
             
         probAndSizeNodes <- model$getParents(yNodes, immediateOnly = TRUE)
@@ -2511,6 +2511,8 @@ sampler_polyagamma <- nimbleFunction(
         ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
         ## and that zero-inflation variable multiplies the baseline probability.
         inflationStochNodesOne <- model$getParents(probNodes[1], omit = target, stochOnly = TRUE, self = FALSE)
+        ## We ask user to provide non-target nodes in the linear predictor as otherwise hard to distinguish from zero-inflation nodes.
+        inflationStochNodesOne <- setdiff(inflationStochNodesOne, model$expandNodeNames(control$nonTargetNodes))
         if(length(inflationStochNodesOne)) {
             zeroInflated <- TRUE
             inflationNodes <- setdiff(model$getParents(probNodes, stochOnly = TRUE), depNodes)
@@ -2521,7 +2523,7 @@ sampler_polyagamma <- nimbleFunction(
             ## Or be misleading if such a missing target is somehow distributed dbern/dbin.
             
             if(!all(dists %in% c("dbern", "dbin")))
-                stop("polyagamma sampler: Invalid stochastic nodes found as parents of response. Any such nodes other than the target must specify zero inflation")
+                stop("polyagamma sampler: Invalid stochastic nodes found as parents of response. Any such nodes other than the target must specify zero inflation, and any non-target nodes in the linear predictor must be included in `control$nonTargetNodes`")
             binomDists <- dists == 'dbin'
             if(any(binomDists)) {
                 if(!all(sapply(inflationStochNodesOne[binomDists], function(x) model$getParamExpr(x, 'size') == 1)))
@@ -2536,12 +2538,14 @@ sampler_polyagamma <- nimbleFunction(
             for(node in inflationStochNodesOne) {
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
                 linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
-                if(check && cc_linkCheck(linearityCheck, 'multiplicative') != 'multiplicative')
-                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
+                if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
+                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
             }
             linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodes[1])
-            if(check && cc_linkCheck(linearityCheck, 'multiplicative') != 'multiplicative')
-                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+            linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
+            if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
+                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
         } else {
             ## Placeholders to allow compilation.
             ones <- rep(1, 2)
@@ -2556,13 +2560,14 @@ sampler_polyagamma <- nimbleFunction(
         ## Conjugacy checking, part 3: Check linearity of target nodes in logit link.
         if(check) {
             if(model$getValueExpr(probNodes[1])[[1]] != 'expit')
-                stop("polyagamma sampler: target must be related to response via logit link as an additive function of the target nodes. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                stop("polyagamma sampler: target must be related to response via logit link. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`. Also note that zero inflation cannot be specified directly in the declaration for the linear predictor")   ## `z[i]*expit(b0+b1*x[i])` would be harder to check for validity.
             linearityCheckExprRaw <- model$getValueExpr(probNodes[1])[[2]]
             for(node in targetAsScalar) {
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
                 linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
-                if(!cc_linkCheck(linearityCheck, "linear") %in% c('identity', 'additive', 'multiplicative', 'linear'))
-                    stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. If your model is in a non-standard form and you are sure the Polya Gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                linkCheck <- cc_linkCheck(linearityCheck, "linear")
+                if(is.null(linkCheck) || !linkCheck %in% c('identity', 'additive', 'multiplicative', 'linear'))
+                    stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
             }
         }
       
@@ -2635,7 +2640,6 @@ sampler_polyagamma <- nimbleFunction(
         n <- N  ## Number of active (non-zero-inflated) obs.
         
         psi <- numeric(N)
-        psiContig <- numeric(N)
         size <- numeric(N)  
         sizeContig <- numeric(N)  
         
@@ -2672,11 +2676,13 @@ sampler_polyagamma <- nimbleFunction(
 
         if(zeroInflated) {
             ## `psi` already has non-zero-prob values in first n elements based on `setProbParam`.
-            if(singleSize) {
-                w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
-            } else {
-                sizeContig[1:n] <<- size[probNonZero[1:n]] 
-                w[1:n] <<- pgSampler$rpolyagamma(sizeContig, psi[1:n])
+            if(n > 0) {
+                if(singleSize) {
+                    w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
+                } else {
+                    sizeContig[1:n] <<- size[probNonZero[1:n]] 
+                    w[1:n] <<- pgSampler$rpolyagamma(sizeContig, psi[1:n])
+                }
             }
         } else {
             if(singleSize) {
@@ -2689,13 +2695,19 @@ sampler_polyagamma <- nimbleFunction(
         ## We could ask user for this information or detect it and then fill in blocks of XtWX matrix, avoiding
         ## matrix manipulations below for components of X.
         if(zeroInflated){
-            Xd[1:n,] <<- X[probNonZero[1:n],]
-            kpre[1:n] <<- k[probNonZero[1:n]]
-            for( j in 1:nCoef ){
-                XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
-                b[j] <<- sum(Xd[1:n,j] * kpre[1:n]) + sum(Q[j,] * mu)
+            if(n > 0) {
+                Xd[1:n,] <<- X[probNonZero[1:n],]
+                kpre[1:n] <<- k[probNonZero[1:n]]
+                for( j in 1:nCoef ) {
+                    XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
+                    b[j] <<- sum(Xd[1:n,j] * kpre[1:n]) + sum(Q[j,] * mu)
+                }
+                Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
+            } else {  ## No relevant observations, so drawing from prior.
+                for( j in 1:nCoef ) 
+                    b[j] <<- sum(Q[j,]*mu)
+                Q1 <- Q
             }
-            Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
         } else {
             for( j in 1:nCoef ){
                 XW[j,] <<-  X[,j]*w
@@ -3004,7 +3016,7 @@ sampler_polyagamma <- nimbleFunction(
 #'
 #' The polyagamma sampler uses Pólya-gamma data augmentation to do conjugate sampling for the nodes involved in the linear predictor of logistic regression modeling specifications (Polson et al., 2013), analogous to the familiar Albert-Chib data augmentation for probit regression. The linear predictor must be a linear function (technically an affine function) of the target nodes, which themselves must have `dnorm` or `dmnorm` priors. The stochastic dependencies of the target nodes must have `dbin` or `dbern` distributions with the logit transformation of their probability parameter equal to the linear predictor (zero inflation to account for structural zeroes is allowed as discussed below). These dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the Pólya-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
 #'
-#' Importantly, note that because the Pólya-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all nodes involved in the linear predictor of the logistic regression specification for the responses (or more generally to all the nodes involved in the linear predictor for each set of conditionally independent response values) to avoid duplicative draws of the latent values.
+#' Importantly, note that because the Pólya-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all nodes (apart from any nodes denoting stochastic indexing) involved in the linear predictor of the logistic regression specification for the responses (or more generally to all the nodes involved in the linear predictor for each set of conditionally independent response values) to avoid duplicative draws of the latent values.
 #'
 #' Sampling involves use of the design matrix (i.e., the matrix that when multiplied by the target node values produces the linear predictor). The design matrix includes columns corresponding to any regression covariates as well as columnar blocks corresponding to any random effects. For random effects, including temporal or spatial processes, the columnar blocks will often be sparse and will often contain only zeroes and ones. Often the design matrix is fixed in advance, but in some cases elements of the matrix may be stochastic and sampled during the MCMC. That would be the case if there are missing values (e.g., missing covariate values) or stochastic indexing (e.g., unknown assignment of responses to clusters).
 #'
@@ -3020,6 +3032,7 @@ sampler_polyagamma <- nimbleFunction(
 #' \itemize{
 #' \item fixedDesignColumns. Either a single logical value indicating if the design matrix is fixed (non-stochastic) or a logical vector indicating which columns are fixed. In the latter case, the columns must be ordered exactly as the ordering of target node elements given by \code{expandNodeNames} with \code{returnScalarComponents = TRUE}. (default = FALSE)
 #' \item designMatrix. The full design matrix with rows corresponding to the ordering of the responses and columns ordered exactly as the ordering of target node elements given by \code{expandNodeNames} with \code{returnScalarComponents = TRUE}. If provided, all columns are assumed to be fixed, ignoring the `fixedDesignColumns` control element.
+#' \item nonTargetNodes. Additional stochastic nodes involved in the linear predictor that are not sampled as part of the sampler, such as nodes one does not desire to sample (generally not recommended as discussed above) and any nodes specifying stochastic indexes. This is required when any such nodes are not part of the target nodes in order to allow NIMBLE to check for the presence of zero inflation.  
 #' \item check. A logical value indicating whether NIMBLE should check various conditions required for validity of the sampler. This is provided for rare cases where the checking may be overly conservative and a user is sure that the sampler is valid and wants to override the checking. (default = TRUE)
 
 #' 
