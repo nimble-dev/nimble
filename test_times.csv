@@ -41,7 +41,7 @@ time	filename
 205.3	test-numericTypes.R
 220.0	test-ADbasics.R
 234.87	test-nimbleList.R
-300.0   test-polyagamma.R
+300.87	test-polyagamma.R
 415.45	test-getParam.R
 460.0	test-waic.R
 500.0	test-ADmatMult.R
