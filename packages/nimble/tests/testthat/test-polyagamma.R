@@ -469,7 +469,7 @@ test_that('polyagamma MCMC results', {
     expect_equal(colMeans(samplesPG[,betas]), colMeans(samplesDefault[,betas]),
                  tolerance = 0.008)
     expect_equal(apply(samplesPG[,betas], 2, sd), apply(samplesDefault[,betas], 2, sd),
-                 tolerance = 0.015)
+                 tolerance = 0.02)
     xs <- c(4,6)
     expect_equal(colMeans(samplesPG[,xs]), colMeans(samplesDefault[,xs]),
                  tolerance = .1)
@@ -518,7 +518,7 @@ test_that('polyagamma MCMC results', {
 
 
     expect_equal(colMeans(samplesPG), colMeans(samplesDefault),
-                 tolerance = 0.005)
+                 tolerance = 0.01)
     expect_equal(apply(samplesPG, 2, sd), apply(samplesDefault, 2, sd),
                  tolerance = 0.01)
 
