@@ -248,7 +248,7 @@ sampler_noncentered <- nimbleFunction(
         type <- extractControlElement(control, 'samplerType', 'RW')
         param <- extractControlElement(control, 'samplerParam', NULL)
         if(is.null(param) || !param %in% c("location", "scale")) {
-            stop("`sampleParam` control element for noncentered sampler must be either 'location' or 'scale'")
+            stop("noncentered sampler: `sampleParam` control element must be either 'location' or 'scale'")
         }
 
         if(param == "location") param <- 0
@@ -256,15 +256,17 @@ sampler_noncentered <- nimbleFunction(
 
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         if(length(targetAsScalar) > 1)
-            stop("target for noncentered sampler must be a scalar node")
-        effects <- model$getDependencies(target, stochOnly = TRUE, self = FALSE) 
+            stop("sampler noncentered: target for noncentered sampler must be a scalar node")
+        effects <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
+        if(!length(effects))
+            stop("sampler noncentered: no stochastic dependencies of target")
 
         if(samplerType == "RW") {
             samplerFunction <- sampler_RW
         } else {
             if(samplerType == "slice") {
                 samplerFunction <- sampler_slice
-            } else stop("`samplerType` control element for noncentered sampler must be either 'RW' or 'slice'")
+            } else stop("noncentered sampler: `samplerType` control element must be either 'RW' or 'slice'")
         }
 
         ## Pass along control elements to RW or slice sampler, with info on the effects to be sampled.
@@ -309,10 +311,12 @@ sampler_RW <- nimbleFunction(
 
         ## sampler_RW may be used by sampler_noncentered to do joint, noncentered sampling of
         ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
-        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', NULL)
-        noncenteredParam <- extractControlElement(control, 'noncenteredParam', NULL)
-        if(is.null(noncenteredEffects))
-            sampleNoncentered <- FALSE else sampleNoncentered <- TRUE
+        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
+        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
+        if(noncenteredEffects == "") {
+            sampleNoncentered <- FALSE 
+            noncenteredEffects <- target[1]  # placeholder
+        } else sampleNoncentered <- TRUE
         
         if(sampleNoncentered) {
             noncenteredLen <- length(model$expandNodeNames(noncenteredEffects, returnScalarComponents = FALSE))
@@ -400,6 +404,7 @@ sampler_RW <- nimbleFunction(
                 values(model, noncenteredEffects) <<- noncenteredMean + (newValue/oldValue) * (values(model, noncenteredEffects) - noncenteredMean)
                 return(noncenteredLen * (log(newValue) - log(oldValue)))  # log determinant of Jacobian; accounts for fact we are computing prior for effects, which one doesn't in ASIS re-parameterized formulation. 
             }
+            returnType(double())
         },
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
@@ -720,9 +725,9 @@ sampler_slice <- nimbleFunction(
 
         ## sampler_slice may be used by sampler_noncentered to do joint, noncentered sampling of
         ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
-        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', NULL)
-        noncenteredParam <- extractControlElement(control, 'noncenteredParam', NULL)
-        if(is.null(noncenteredEffects))
+        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
+        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
+        if(noncenteredEffects == "")
             sampleNoncentered <- FALSE else sampleNoncentered <- TRUE
         
         if(sampleNoncentered) {
@@ -761,7 +766,7 @@ sampler_slice <- nimbleFunction(
         u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
         x0 <<- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
         if(sampleNoncentered)
-            nonCenteredEffects0 <<- values(model, noncenteredEffects)
+            noncenteredEffects0 <<- values(model, noncenteredEffects)
         L <- x0 - runif(1, 0, 1) * width
         R <- L + width
         maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
@@ -834,6 +839,7 @@ sampler_slice <- nimbleFunction(
                 values(model, noncenteredEffects) <<- noncenteredMean + (newValue/x0) * (noncenteredEffects0 - noncenteredMean)
                 return(noncenteredLen * (log(newValue) - log(x0)))  # log determinant of Jacobian; accounts for fact we are computing prior for effects, which one doesn't do in ASIS re-parameterized formulation. 
             }
+            returnType(double())
         },
         adaptiveProcedure = function(jumpDist = double()) {
             timesRan <<- timesRan + 1
@@ -2593,7 +2599,13 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
 #'
-#' Note that this sampler is likely run much more slowly than the blocked sampler for the LKJ distribution, as updating each single element will generally incur the full cost of updating all dependencies of the entire matrix. 
+#' Note that this sampler is likely run much more slowly than the blocked sampler for the LKJ distribution, as updating each single element will generally incur the full cost of updating all dependencies of the entire matrix.
+#'
+#' @section noncentered sampler:
+#'
+#' The noncentered sampler jointly samples the (scalar) target node and a set of dependent nodes (e.g., random effects), deterministically shifting or scaling the dependent node values to be consistent with the proposed value of the target such that the effect is to sample in a noncentered parameterization (Yu and Meng 2011). The target node should generally be either the mean or standard deviation of the dependent nodes. When sampling the mean, the dependent nodes are deterministically set to be their previous values plus the difference between the proposed value for the target and the previous value for the target. When sampling the standard deviation, the dependent nodes are deterministically set to be their previous values minus their mean, multiplied by the ratio of the proposed value for the target and the previous value for the target, then finally adding their mean back on.
+#'
+#' 
 #' 
 #' @section CAR_normal sampler:
 #'
@@ -2716,15 +2728,11 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' Hoffman, Matthew D., and Gelman, Andrew (2014). The No-U-Turn Sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. \emph{Journal of Machine Learning Research}, 15(1): 1593-1623.
 #'
-#' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
-#'
 #' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
 #'
 #' Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
 #'
 #' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
-#'
-#' Neal, Radford M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 #'
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
 #'
@@ -2732,7 +2740,9 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' Neal, R. M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
 #'
-#' Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
+#' Neal, R. M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
+#'
+#' Pitt, M. K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 #'
 #' Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
 #'
@@ -2743,6 +2753,8 @@ sampler_CAR_proper <- nimbleFunction(
 #' Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
 #'
 #' van Dyk, D.A. and T. Park. (2008). Partially collapsed Gibbs Samplers. \emph{Journal of the American Statistical Association}, 103(482), 790-796.
+#'
+#' Yu, Y. and Meng, X. L. (2011). To center or not to center: That is not the question - An ancillarity-sufficiency interweaving strategy (ASIS) for boosting MCMC efficiency. Journal of Computational and Graphical Statistics, 20(3), 531–570. https://doi.org/10.1198/jcgs.2011.203main
 #' 
 NULL
 
