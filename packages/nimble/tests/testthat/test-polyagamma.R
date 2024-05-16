@@ -354,6 +354,74 @@ test_that('polyagamma validity checks', {
 
 test_that('polyagamma MCMC results', {
     ## Compare to non-PG.
+
+    ## fixed and random effects
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b0+b1*x[i,1]+b2*x[i,2] + u[k[i]])
+            y0[i] ~ dbern(p0[i])
+        }
+        for(i in 1:p)
+            u[i] ~ dnorm(0, sd = sigma)
+        sigma ~ dunif(0, 20)
+        b0~dnorm(0, sd=10)
+        b1~dnorm(0, sd=10)
+        b2~dnorm(0, sd=10)
+    })
+
+    set.seed(1)
+    n <- 1000
+    b0 <- 0.3
+    b1 <- -0.5
+    b2 <- 1
+    p <- 5
+    u <- rnorm(p)
+    x = matrix(runif(n*2), n)
+    inits <- list(b0 = 0, b1 = 0, b2 = 0)
+    constants <- list(n=n, p=p, k = sample(1:p, n, replace = TRUE))
+    linpred <- b0 + b1*x[,1]+b2*x[,2] + u[constants$k]
+    data <- list(y0 = rbinom(n, size = 1, prob = expit(linpred)), x = x)
+
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = c('sigma'),sliceOnly = TRUE, monitors = c('b0','b1','b2','u','sigma'))
+    conf$addSampler(type='polyagamma', target=c('b0','u','b1','b2'),
+                    control = list(fixedDesignColumns = TRUE))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesPG <- runMCMC(cmcmc, niter=26000, nburnin=1000)
+
+    ## Need centered parameterization for reasonable mixing.
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b1*x[i,1]+b2*x[i,2] + u[k[i]])
+            y0[i] ~ dbern(p0[i])
+        }
+        for(i in 1:p)
+            u[i] ~ dnorm(b0, sd = sigma)
+        sigma ~ dunif(0, 20)
+        b0~dnorm(0, sd=10)
+        b1~dnorm(0, sd=10)
+        b2~dnorm(0, sd=10)
+    })
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, sliceOnly = TRUE, monitors = c('b0','b1','b2','u','sigma'))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesDefault <- runMCMC(cmcmc, niter=26000, nburnin=1000)
+    samplesDefault[,5:9] <- samplesDefault[,5:9]-samplesDefault[,1] # reverse the reparameterization
+    
+    expect_equal(colMeans(samplesPG)[-4], colMeans(samplesDefault)[-4],
+                 tolerance = 0.01)
+    expect_equal(mean(samplesPG[,4]),mean(samplesDefault[,4]), tolerance = .02)
+    expect_equal(apply(samplesPG, 2, sd)[-4], apply(samplesDefault,2,sd)[-4],
+                 tolerance = 0.02)
+    expect_equal(sd(samplesPG[,4]), sd(samplesDefault[,4]),
+                 tolerance = 0.1)
+
+
+    ## Missing covariate values.
     code <- nimbleCode({
         for(i in 1:n) {
             p0[i] <- expit(b0+b1*x[i,1]+b2*x[i,2])
@@ -369,12 +437,12 @@ test_that('polyagamma MCMC results', {
     set.seed(1)
     n <- 1000
     b0 <- 0.3
-    b1 <- 0.5
-    b2 <- -0.2
+    b1 <- -0.5
+    b2 <- 1
     x = matrix(runif(n*2), n)
     inits <- list(b0 = 0, b1 = 0, b2 = 0)
     constants <- list(n=n)
-    linpred <- b0 + b1*x[,1]+x[,2]
+    linpred <- b0 + b1*x[,1]+b2*x[,2]
     x[1,1] <- NA
     x[3,1] <- NA
     data <- list(y0 = rbinom(n, size = 1, prob = expit(linpred)), x = x)
@@ -388,27 +456,123 @@ test_that('polyagamma MCMC results', {
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
-    outPG <- runMCMC(cmcmc, niter=10000)
+    samplesPG <- runMCMC(cmcmc, niter=11000, nburnin=1000)
 
     m <- nimbleModel(code, constants = constants, data = data, inits = inits)
     conf <- configureMCMC(m, sliceOnly = TRUE)
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
-    outDefault <- runMCMC(cmcmc, niter=10000)
+    samplesDefault <- runMCMC(cmcmc, niter=11000, nburnin=1000)
 
     betas <- 1:3
-    expect_equal(colMeans(outPG[1001:10000,betas]), colMeans(outDefault[1001:10000,betas]),
-                 tolerance = 0.003)
-    expect_equal(apply(outPG[1001:10000,betas], 2, sd), apply(outDefault[1001:10000,betas], 2, sd),
-                 tolerance = 0.003)
+    expect_equal(colMeans(samplesPG[,betas]), colMeans(samplesDefault[,betas]),
+                 tolerance = 0.008)
+    expect_equal(apply(samplesPG[,betas], 2, sd), apply(samplesDefault[,betas], 2, sd),
+                 tolerance = 0.015)
     xs <- c(4,6)
-    expect_equal(colMeans(outPG[1001:10000,xs]), colMeans(outDefault[1001:10000,xs]),
-                 tolerance = .2)
-    expect_equal(apply(outPG[1001:10000,xs], 2, sd), apply(outDefault[1001:10000,xs], 2, sd),
-                 tolerance = .2)
+    expect_equal(colMeans(samplesPG[,xs]), colMeans(samplesDefault[,xs]),
+                 tolerance = .1)
+    expect_equal(apply(samplesPG[,xs], 2, sd), apply(samplesDefault[,xs], 2, sd),
+                 tolerance = .1)
+
+
+    ## binomial case
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b0+b1[1]*x[i,1]+b1[2]*x[i,2])
+            y0[i] ~ dbin(p0[i], ns[i])
+        }
+        b0~dnorm(0, sd=10)
+        b1[1:2] ~ dmnorm(z[1:2], pr[1:2,1:2])
+    })
+
+    set.seed(1)
+    n <- 1000
+    b0 <- 0.3
+    b1 <- c(-0.5, 1)
+    ns <- rpois(n, 3) + 1
     
+    x = matrix(runif(n*2), n)
+    inits <- list(b0 = 0, b1 = c(0,0))
+    constants <- list(x = x, n=n, ns=ns, z  = rep(0,2), pr = diag(c(.001,.001)))
+    linpred <- b0 + b1[1]*x[,1]+b1[2]*x[,2]
+    data <- list(y0 = rbinom(n, size = ns, prob = expit(linpred)))
+
+    set.seed(1)
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler(type='polyagamma', target=c('b0','b1'),
+                    control = list(fixedDesignColumns = TRUE))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesPG <- runMCMC(cmcmc, niter=11000, nburnin=1000)
+
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, sliceOnly = TRUE)
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesDefault <- runMCMC(cmcmc, niter=11000, nburnin=1000)
+
+
+    expect_equal(colMeans(samplesPG), colMeans(samplesDefault),
+                 tolerance = 0.005)
+    expect_equal(apply(samplesPG, 2, sd), apply(samplesDefault, 2, sd),
+                 tolerance = 0.01)
+
+    ## stochastic size N-mixture model
+    set.seed(1)
+    lambda <- 6
+    beta0 <- 0.5
+    beta1 <- 0.15
+    J <- 20
+    K <- 10
+    type <- rep(0:1, each = J/2)
+    N <- rpois(n = K, lambda = lambda)
+    y <- matrix(NA, nrow = K, ncol = J)
+    for(i in 1:K){
+        y[i,] <- rbinom(n = J, size = N[i], prob = expit(beta0 + beta1*type[i]))
+    }
+    code <- nimbleCode({
+        beta0 ~ dnorm(0, sd = 10000)
+        beta1 ~ dnorm(0, sd = 10)
+        lambda ~ dgamma(1,1)
+        for (k in 1:K) {
+            p[k] <- expit(beta0 + beta1*type[k])
+            N[k] ~ dpois(lambda)
+            for(j in 1:J) y[k,j] ~ dbinom(size = N[k], prob = p[k])
+        }
+    })
+    mod <- nimbleModel(code = code, constants = list(J=J, K=K, type=type), 
+                       data = list(y = y, N = rep(NA, K)), inits = list(beta0=0, beta1=0, lambda=10, N=apply(y,1,max)+5))
+    conf <- configureMCMC(mod, monitors = c('beta0', 'beta1', 'lambda'))
+    Rmcmc <- buildMCMC(conf)
+    Cmod <- compileNimble(mod)
+    Cmcmc <- compileNimble(Rmcmc, project = mod)
+    
+    samplesDefault <- runMCMC(Cmcmc, niter=101000, nburnin=1000)
+    
+    mod <- nimbleModel(code = code, constants = list(J=J, K=K, type=type), 
+                       data = list(y = y, N = rep(NA, K)), inits = list(beta0=0, beta1=0, lambda=10, N=apply(y,1,max)+5))
+    conf <- configureMCMC( mod, nodes = c('lambda', 'N'), monitors = c('beta0', 'beta1', 'lambda') )
+    conf$addSampler( type = "sampler_polyagamma", target = c("beta0", "beta1"), control = list(fixedDesignColumns = TRUE) )
+    Rmcmc <- buildMCMC(conf)
+    Cmod <- compileNimble(mod)
+    Cmcmc <- compileNimble(Rmcmc, project = mod)
+    
+    samplesPG <- runMCMC(Cmcmc, niter=11000, nburnin=1000)
+
+    expect_equal(mean(samplesPG[,1]), mean(samplesDefault[,1]), tolerance = .01)
+    expect_equal(mean(samplesPG[,2]), mean(samplesDefault[,2]), tolerance = .1)
+    expect_equal(mean(samplesPG[,3]), mean(samplesDefault[,3]), tolerance = .01)
+    
+    expect_equal(sd(samplesPG[,1]), sd(samplesDefault[,1]), tolerance = .001)
+    expect_equal(sd(samplesPG[,2]), sd(samplesDefault[,2]), tolerance = .1)
+    expect_equal(sd(samplesPG[,3]), sd(samplesDefault[,3]), tolerance = .01)
+    
+
 })
 
-# check Paul examples
-# dbin case?
+
