@@ -260,17 +260,21 @@ sampler_noncentered <- nimbleFunction(
         if(!length(effects))
             stop("sampler noncentered: no stochastic dependencies of target")
 
-        if(samplerType == "RW") {
-            samplerFunction <- sampler_RW
+        dists <- model$getDistribution(effects)
+        if(!all(dists %in% c('dnorm','dbeta','dgamma','dinvgamma','dunif')))
+            stop("sampler noncentered: dependent nodes must be scalars whose distribution has a function for calculating its mean in nimble")
+        
+        if(type == "RW") {
+            samplerFunction <- sampler_RW_noncentered
         } else {
-            if(samplerType == "slice") {
-                samplerFunction <- sampler_slice
+            if(type == "slice") {
+                samplerFunction <- sampler_slice_noncentered
             } else stop("noncentered sampler: `samplerType` control element must be either 'RW' or 'slice'")
         }
 
-        ## Pass along control elements to RW or slice sampler, with info on the effects to be sampled.
+        ## Pass along control elements to (variant of) RW or slice sampler, with info on the effects to be sampled.
         if(is.list(control)) {
-            control[['noncenteredEeffects']] <- effects
+            control[['noncenteredEffects']] <- effects
             control[['noncenteredParam']] <- param
         } else {
             control <- list('noncenteredEffects' = effects, 'noncenteredParam' = param)
@@ -307,27 +311,10 @@ sampler_RW <- nimbleFunction(
         adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
         adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
         scale               <- extractControlElement(control, 'scale',               1)
-
-        ## sampler_RW may be used by sampler_noncentered to do joint, noncentered sampling of
-        ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
-        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
-        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
-        if(noncenteredEffects == "") {
-            sampleNoncentered <- FALSE 
-            noncenteredEffects <- target[1]  # placeholder
-        } else sampleNoncentered <- TRUE
-        
-        if(sampleNoncentered) {
-            noncenteredLen <- length(model$expandNodeNames(noncenteredEffects, returnScalarComponents = FALSE))
-            noncenteredMean <- rep(0, noncenteredLen)
-            ccList <- mcmc_determineCalcAndCopyNodes(model, c(target, noncenteredEffects))
-        } else {
-            noncenteredLen <- 0
-            noncenteredMean <- c(0,0)
-            ccList <- mcmc_determineCalcAndCopyNodes(model, target)
-        }
         
         ## node list generation
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
 
         calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodes
@@ -369,8 +356,6 @@ sampler_RW <- nimbleFunction(
             jump <- FALSE
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
-            if(sampleNoncentered)  # Shift effects and add log-determinant of Jacobian of transformation. 
-                logMHR <- logMHR + updateNoncentered(propValue, currentValue)
             logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
@@ -378,15 +363,174 @@ sampler_RW <- nimbleFunction(
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
-                if(sampleNoncentered) {  
-                    nimCopy(from = model, to = mvSaved, row = 1, nodes = noncenteredEffects, logProb = TRUE)
-                }
             } else {
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
-                if(sampleNoncentered)
-                    nimCopy(from = mvSaved, to = model, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+            }
+        }
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    methods = list(
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(scaleHistory, timesAdapted)                 ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale                ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
+                    acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
+                }
+                gamma1 <<- 1/((timesAdapted + 3)^adaptFactorExponent)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                ## If there are upper and lower bounds, enforce a maximum scale of
+                ## 0.5 * (upper-lower).  This is arbitrary but reasonable.
+                ## Otherwise, for a poorly-informed posterior,
+                ## the scale could grow without bound to try to reduce
+                ## acceptance probability.  This creates enormous cost of
+                ## reflections.
+                if(reflective) {
+                    lower <- model$getBound(target, 'lower')
+                    upper <- model$getBound(target, 'upper')
+                    if(scale >= 0.5*(upper-lower)) {
+                        scale <<- 0.5*(upper-lower)
+                    }
+                }
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+        },
+        getScaleHistory = function() {       ## scaleHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(scaleHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
+                return(numeric(1, 0))
+            }
+        },          
+        getAcceptanceHistory = function() {  ## scaleHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(acceptanceHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
+                return(numeric(1, 0))
+            }
+        },
+        ##getScaleHistoryExpanded = function() {                                                 ## scaleHistory
+        ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)            ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                         ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                      ## scaleHistory
+        ##            scaleHistoryExpanded[(iTA-1)*adaptInterval+j] <- scaleHistory[iTA]         ## scaleHistory
+        ##    returnType(double(1)); return(scaleHistoryExpanded) },                             ## scaleHistory
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            if(saveMCMChistory) {
+                scaleHistory  <<- c(0, 0)    ## scaleHistory
+                acceptanceHistory  <<- c(0, 0)
+            }
+            gamma1 <<- 0
+        }
+    )
+)
+
+## version for use with noncentered sampler
+
+#' @rdname samplers
+#' @export
+sampler_RW_noncentered <- nimbleFunction(
+    name = 'sampler_RW_noncentered',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        logScale            <- extractControlElement(control, 'log',                 FALSE)
+        reflective          <- extractControlElement(control, 'reflective',          FALSE)
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
+
+        ## sampler_RW_noncentered is used by sampler_noncentered to do joint, noncentered sampling of
+        ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
+        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
+        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
+        
+        noncenteredLen <- length(model$expandNodeNames(noncenteredEffects))
+        noncenteredMean <- rep(0, noncenteredLen)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, c(target, noncenteredEffects))
+        
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+
+        calcNodesNoSelf <- c(ccList$calcNodesNoSelf, noncenteredEffects)
+        copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodes
+
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        scaleHistory      <- c(0, 0)   ## scaleHistory
+        acceptanceHistory <- c(0, 0)   ## scaleHistory
+        saveMCMChistory <- getNimbleOption('MCMCsaveHistory')
+        optimalAR     <- 0.44
+        gamma1        <- 0
+        ## checks
+        if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
+        if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
+        if(logScale & reflective)        stop('cannot use reflective RW sampler on a log scale (i.e. with options log=TRUE and reflective=TRUE')
+        if(adaptFactorExponent < 0)      stop('cannot use RW sampler with adaptFactorExponent control parameter less than 0')
+        if(scale < 0)                    stop('cannot use RW sampler with scale control parameter less than 0')
+    },
+    run = function() {
+        currentValue <- model[[target]]
+        propLogScale <- 0
+        if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
+                       propValue <- currentValue * exp(propLogScale)
+        } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
+        if(reflective) {
+            lower <- model$getBound(target, 'lower')
+            upper <- model$getBound(target, 'upper')
+            while(propValue < lower | propValue > upper) {
+                if(propValue < lower) propValue <- 2*lower - propValue
+                if(propValue > upper) propValue <- 2*upper - propValue
+            }
+        }
+        model[[target]] <<- propValue
+
+        logMHR <- model$calculateDiff(target)
+        if(logMHR == -Inf) {
+            jump <- FALSE
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+        } else {
+            ## Shift effects and add log-determinant of Jacobian of transformation. 
+            logMHR <- logMHR + updateNoncentered(propValue, currentValue)
+            logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
+            jump <- decide(logMHR)
+            if(jump) {
+                ##model$calculate(calcNodesPPomitted)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+            } else {
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = noncenteredEffects, logProb = TRUE)
             }
         }
         if(adaptive)     adaptiveProcedure(jump)
@@ -479,7 +623,6 @@ sampler_RW <- nimbleFunction(
         }
     )
 )
-
 
 ########################################################################
 ### block RW sampler with multi-variate normal proposal distribution ###
@@ -722,26 +865,9 @@ sampler_slice <- nimbleFunction(
         maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
         eps <- 1e-15
 
-        ## sampler_slice may be used by sampler_noncentered to do joint, noncentered sampling of
-        ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
-        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
-        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
-        if(noncenteredEffects == "")
-            sampleNoncentered <- FALSE else sampleNoncentered <- TRUE
-        
-        if(sampleNoncentered) {
-            noncenteredLen <- length(model$expandNodeNames(noncenteredEffects, returnScalarComponents = FALSE))
-            noncenteredMean <- rep(0, noncenteredLen)
-            noncenteredEffects0 <- rep(0, noncenteredLen)
-            ccList <- mcmc_determineCalcAndCopyNodes(model, c(target, noncenteredEffects))
-        } else {
-            noncenteredLen <- 0
-            noncenteredMean <- c(0,0)
-            noncenteredEffects0 <- c(0,0)
-            ccList <- mcmc_determineCalcAndCopyNodes(model, target)
-        }
-
         ## node list generation
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
@@ -764,8 +890,6 @@ sampler_slice <- nimbleFunction(
     run = function() {
         u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
         x0 <<- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
-        if(sampleNoncentered)
-            noncenteredEffects0 <<- values(model, noncenteredEffects)
         L <- x0 - runif(1, 0, 1) * width
         R <- L + width
         maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
@@ -801,28 +925,167 @@ sampler_slice <- nimbleFunction(
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
-            if(sampleNoncentered)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = noncenteredEffects, logProb = TRUE)
         } else {
             ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
-            if(sampleNoncentered)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = noncenteredEffects, logProb = TRUE)
             jumpDist <- abs(x1 - x0)
             if(adaptive)     adaptiveProcedure(jumpDist)
         }
     },
     methods = list(
         setAndCalculateTarget = function(value = double()) {
-            originalValue <- model[[target]]
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
             lp <- model$calculate(target)
             if(lp == -Inf) return(-Inf)
-            if(sampleNoncentered) 
-                lp <- lp + updateNoncentered(value)
+            lp <- lp + model$calculate(calcNodesNoSelf)
+            returnType(double())
+            return(lp)
+        },
+        adaptiveProcedure = function(jumpDist = double()) {
+            timesRan <<- timesRan + 1
+            sumJumps <<- sumJumps + jumpDist   # cumulative (absolute) distance between consecutive values
+            if(timesRan %% adaptInterval == 0) {
+                adaptFactor <- (3/4) ^ timesAdapted
+                meanJump <- sumJumps / timesRan
+                width <<- width + (2*meanJump - width) * adaptFactor   # exponentially decaying adaptation of 'width' -> 2 * (avg. jump distance)
+                timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(widthHistory, timesAdapted)                 ## widthHistory
+                    widthHistory[timesAdapted] <<- width                ## widthHistory
+                }
+                timesRan <<- 0
+                sumJumps <<- 0
+            }
+        },
+        getWidthHistory = function() {       ## widthHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(widthHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
+                return(numeric(1, 0))
+            }
+        },
+        reset = function() {
+            width        <<- widthOriginal
+            timesRan     <<- 0
+            timesAdapted <<- 0
+            sumJumps     <<- 0
+            if(saveMCMChistory) {
+                widthHistory  <<- c(0, 0)    ## widthHistory
+            }
+        }
+    )
+)
+
+
+## version for use with noncentered sampler
+
+#' @rdname samplers
+#' @export
+sampler_slice_noncentered <- nimbleFunction(
+    name = 'sampler_slice_noncentered',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive               <- extractControlElement(control, 'adaptive',               TRUE)
+        adaptInterval          <- extractControlElement(control, 'adaptInterval',          200)
+        width                  <- extractControlElement(control, 'sliceWidth',             1)
+        maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
+        maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
+        maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
+        eps <- 1e-15
+
+        ## sampler_slice_noncentered is used by sampler_noncentered to do joint, noncentered sampling of
+        ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
+        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
+        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
+
+        noncenteredLen <- length(model$expandNodeNames(noncenteredEffects))
+        noncenteredMean <- rep(0, noncenteredLen)
+        noncenteredEffects0 <- rep(0, noncenteredLen)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, c(target, noncenteredEffects))
+
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- c(ccList$calcNodesNoSelf, noncenteredEffects); copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
+        ## numeric value generation
+        widthOriginal <- width
+        timesRan      <- 0
+        timesAdapted  <- 0
+        sumJumps      <- 0
+        widthHistory  <- c(0, 0)   ## widthHistory
+        if(getNimbleOption('MCMCsaveHistory')) {
+            saveMCMChistory <- TRUE
+        } else saveMCMChistory <- FALSE
+        discrete      <- model$isDiscrete(target)
+
+        x0 <- 0
+
+        ## checks
+        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
+    },
+    run = function() {
+        u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+        x0 <<- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
+        noncenteredEffects0 <<- values(model, noncenteredEffects)
+        L <- x0 - runif(1, 0, 1) * width
+        R <- L + width
+        maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+        maxStepsR <- maxSteps - 1 - maxStepsL
+        lp <- setAndCalculateTarget(L)
+        while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+            L <- L - width
+            lp <- setAndCalculateTarget(L)
+            maxStepsL <- maxStepsL - 1
+        }
+        lp <- setAndCalculateTarget(R)
+        while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+            R <- R + width
+            lp <- setAndCalculateTarget(R)
+            maxStepsR <- maxStepsR - 1
+        }
+        x1 <- L + runif(1, 0, 1) * (R - L)
+        lp <- setAndCalculateTarget(x1)
+        numContractions <- 0
+        while((is.nan(lp) | lp < u) & (R-L)/(abs(R)+abs(L)+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
+            ## The checks for R-L small and max number of contractions are for cases where model is in
+            ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
+            ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
+            if(x1 < x0) { L <- x1
+                      } else      { R <- x1 }
+            x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
+            lp <- setAndCalculateTarget(x1)
+            numContractions <- numContractions + 1
+        }
+        if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
+            if(maxContractionsWarning)
+                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+        } else {
+            ##model$calculate(calcNodesPPomitted)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+            jumpDist <- abs(x1 - x0)
+            if(adaptive)     adaptiveProcedure(jumpDist)
+        }
+    },
+    methods = list(
+        setAndCalculateTarget = function(value = double()) {
+            if(discrete)     value <- floor(value)
+            model[[target]] <<- value
+            lp <- model$calculate(target)
+            if(lp == -Inf) return(-Inf)
+            lp <- lp + updateNoncentered(value)
             lp <- lp + model$calculate(calcNodesNoSelf)
             returnType(double())
             return(lp)
@@ -876,7 +1139,6 @@ sampler_slice <- nimbleFunction(
         }
     )
 )
-
 
 
 ####################################################################
