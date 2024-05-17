@@ -3118,7 +3118,6 @@ test_that('noncentered sampler works', {
     expect_equal(colMeans(resultsDefault), colMeans(resultsNoncWeirdSlice), tolerance = .01)
     expect_equal(colSDs(resultsDefault), colSDs(resultsNoncWeirdSlice), tolerance = .015)
 
-## something broken
     
     ## nonstandard model (non-normal effects)
     code <- nimbleCode({
@@ -3129,7 +3128,7 @@ test_that('noncentered sampler works', {
             }
             b[j] ~ dgamma(mean = b0, sd = sigma)
         }
-        b0 ~ dunif(0, 1000)
+        b0 ~ dhalfflat()
         sigma ~ dunif(0, 50)
     })
 
@@ -3162,39 +3161,29 @@ test_that('noncentered sampler works', {
 
     m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
                      inits = list(b0 = 1, sigma = 1))
-    conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    resultsDefault <- runMCMC(cmcmc, 101000, nburnin = 1000)
-
-    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
-                     inits = list(b0 = 1, sigma = 1))
     conf <- configureMCMC(m, 'b', monitors = c('b0','b','sigma'))
-    conf$addSampler('b0','slice')
+    conf$addSampler('b0','slice')  # better mixing than default
     conf$addSampler('sigma','slice')
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
-    resultsSlice <- runMCMC(cmcmc, 26000, nburnin = 1000)
+    resultsSlice <- runMCMC(cmcmc, 101000, nburnin = 1000)
 
-    m1 <- colMeans(resultsDefault)
+    m1 <- colMeans(resultsSlice)
     m2 <- colMeans(resultsNoncLog)
-    s1 <- colSDs(resultsDefault)
+    s1 <- colSDs(resultsSlice)
     s2 <- colSDs(resultsNoncLog)
     expect_equal(m1[1:g], m2[1:g], tolerance = .01)
-    expect_equal(m1[(g+1):(g+3)], m2[(g+1):(g+3)], tolerance = .3)
+    expect_equal(m1[(g+1):(g+3)], m2[(g+1):(g+3)], tolerance = .05)
     expect_equal(s1[1:g], s2[1:g], tolerance = .01)
-    expect_equal(s1[(g+1):(g+3)], s2[(g+1):(g+3)], tolerance = .6)
+    expect_equal(s1[(g+1):(g+3)], s2[(g+1):(g+3)], tolerance = .25)
 
-    m1 <- colMeans(resultsDefault)
     m2 <- colMeans(resultsNoncSlice)
-    s1 <- colSDs(resultsDefault)
     s2 <- colSDs(resultsNoncSlice)
     expect_equal(m1[1:g], m2[1:g], tolerance = .01)
-    expect_equal(m1[(g+1):(g+3)], m2[(g+1):(g+3)], tolerance = .3)
+    expect_equal(m1[(g+1):(g+3)], m2[(g+1):(g+3)], tolerance = .05)
     expect_equal(s1[1:g], s2[1:g], tolerance = .01)
-    expect_equal(s1[(g+1):(g+3)], s2[(g+1):(g+3)], tolerance = .6)
+    expect_equal(s1[(g+1):(g+3)], s2[(g+1):(g+3)], tolerance = .25)
 })
 
 sink(NULL)
@@ -3212,43 +3201,3 @@ options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
 
-
-
-    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
-                     inits = list(b0 = 0, sigma = 1))
-    conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
-    conf$addSampler('b0', 'noncentered', control = list(samplerType = 'RW'))
-    conf$addSampler('sigma', 'noncentered', control=list(samplerType = 'RW', samplerParam = 'scale'))
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    resultsNonc1 <- runMCMC(cmcmc, 260000, nburnin=1000)
-
-m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
-                     inits = list(b0 = 0, sigma = 1))
-    conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
-    conf$addSampler('b0', 'noncentered', control = list(samplerType = 'slice'))
-    conf$addSampler('sigma', 'noncentered', control=list(samplerType = 'slice', samplerParam = 'scale'))
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    resultsNonc2 <- runMCMC(cmcmc, 260000, nburnin=1000)
-
-m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
-                     inits = list(b0 = 0, sigma = 1))
-    conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    resultsDefault <- runMCMC(cmcmc, 260000, nburnin = 1000)
-
-> colSDs(resultsNoncLog)
-      b[1]       b[2]       b[3]       b[4]       b[5]       b[6]       b[7] 
-0.17477808 0.05415322 0.23215595 0.10073704 0.04721361 0.14484162 0.15317538 
-      b[8]       b[9]      b[10]         b0      sigma 
-0.15179228 0.12015278 0.10795117 0.39581434 0.34981341 
-> colSDs(resultsNoncSlice)
-     b[1]      b[2]      b[3]      b[4]      b[5]      b[6]      b[7]      b[8] 
-0.2968557 0.1486050 0.3800960 0.1718917 0.1497793 0.2453935 0.2585815 0.2588277 
-     b[9]     b[10]        b0     sigma 
-0.2024861 0.1841276 0.4385354 0.4146173 

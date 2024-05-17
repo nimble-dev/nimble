@@ -311,12 +311,9 @@ sampler_RW <- nimbleFunction(
         adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
         adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
         scale               <- extractControlElement(control, 'scale',               1)
-        
         ## node list generation
-        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
-        
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodes
         ## numeric value generation
         scaleOriginal <- scale
@@ -350,7 +347,6 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
-
         logMHR <- model$calculateDiff(target)
         if(logMHR == -Inf) {
             jump <- FALSE
@@ -864,12 +860,9 @@ sampler_slice <- nimbleFunction(
         maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
         maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
         eps <- 1e-15
-
         ## node list generation
-        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
-
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
         widthOriginal <- width
@@ -881,15 +874,12 @@ sampler_slice <- nimbleFunction(
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
         discrete      <- model$isDiscrete(target)
-
-        x0 <- 0
-
         ## checks
         if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
     },
     run = function() {
         u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
-        x0 <<- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
+        x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
         L <- x0 - runif(1, 0, 1) * width
         R <- L + width
         maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
@@ -939,7 +929,7 @@ sampler_slice <- nimbleFunction(
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
             lp <- model$calculate(target)
-            if(lp == -Inf) return(-Inf)
+            if(lp == -Inf) return(-Inf) 
             lp <- lp + model$calculate(calcNodesNoSelf)
             returnType(double())
             return(lp)
@@ -980,7 +970,6 @@ sampler_slice <- nimbleFunction(
         }
     )
 )
-
 
 ## version for use with noncentered sampler
 
