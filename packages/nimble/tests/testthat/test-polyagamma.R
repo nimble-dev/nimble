@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of Polya-gamma sampler")
-
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
