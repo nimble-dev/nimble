@@ -115,12 +115,12 @@ fi
 
 if test -n "CPPAD_DIR" && ! test "${CPPAD_DIR}" = "" ; then
    echo "Setting CPPFLAGS to find CppAD"
-   export CPPFLAGS="-I${CPPAD_DIR}"
+   CPPFLAGS_CPPAD="-I${CPPAD_DIR}"
 fi
 
 if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    echo "Setting CPPFLAGS to find Eigen"
-   export CPPFLAGS="-I${EIGEN_DIR}"
+   CPPFLAGS_EIGEN="-I${EIGEN_DIR}"
 fi
 
 dnl Next set of lines from https://cran.r-project.org/doc/manuals/r-release/R-exts.html in light of new CRAN policy to not hard code CXX11
@@ -130,6 +130,8 @@ if test -z "$CXX"; then
 fi
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
+
+CPPFLAGS="${CPPFLAGS} ${CPPFLAGS_EIGEN} ${CPPFLAGS_CPPAD}"
 
 dnl Next 5 lines are from from https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Using-C_002b_002b11-code, but with CXX11 modified to CXX1X per output of R CMD config
 dnl 2018-07-25: now modified to CXX11 as that seems to be standard on more recent R versions
@@ -154,7 +156,7 @@ AC_CHECK_HEADERS([Eigen/Dense],
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
 		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar."
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_1.1.1.tar.gz or something similar."
 		  else
 		   echo "Not installing Eigen with NIMBLE"
 		   rm -r inst/include/Eigen
@@ -164,15 +166,15 @@ dnl                rm -rf inst/Eigen_local
 		  EIGEN_DIR=""
                   ])
 
-dnl Somewhat confused if this is redundant with the CPPFLAGS entry above
-if test -n "$CPPAD_DIR" ; then
+
+if test -n "${CPPAD_DIR}" ; then
 echo "Using CppAD directory ${CPPAD_DIR}"
-CPPAD_INC="-I$CPPAD_DIR"
+CPPAD_INC="-I${CPPAD_DIR}"
 fi
 
-if test -n "$EIGEN_DIR" ; then
+if test -n "${EIGEN_DIR}" ; then
 echo "Using Eigen directory ${EIGEN_DIR}"
-EIGEN_INC="-I$EIGEN_DIR"
+EIGEN_INC="-I${EIGEN_DIR}"
 fi
 
 dnl AC_SUBST(CXXPICFLAGS)
@@ -235,7 +237,7 @@ dnl AC_SUBST(PKG_LIBS)
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)
 
-AC_CONFIG_FILES([inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars])
+AC_CONFIG_FILES([inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/Makevars])
 AC_OUTPUT
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
