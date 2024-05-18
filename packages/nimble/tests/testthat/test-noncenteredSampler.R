@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of default MCMC")
-
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
