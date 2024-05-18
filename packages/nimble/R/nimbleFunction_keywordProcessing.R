@@ -2031,7 +2031,7 @@ makeOutputNodes <- function(model,
   ## and that this next step would not introduce any additional components.  
   calcNodes <- model$expandNodeNames(calcNodes)
   logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodes)
-  isDetermCalcNodes <- model$isDeterm(calcNodes)
+  isDetermCalcNodes <- model$isDeterm(calcNodes, nodesAlreadyExpanded = TRUE)
   modelOutputNodes <- c(model$expandNodeNames(calcNodes[isDetermCalcNodes], returnScalarComponents = TRUE),
                         logProbCalcNodeNames)
   modelOutputNodes
@@ -2172,7 +2172,8 @@ makeModelDerivsInfo_impl <- function(model,
   ## operate on node components because `wrt` is in terms of components not nodes.
   nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)  # Node components here, since `calcNodes`, `wrtNodes` are as components upon input.
   nonWrtCalcActualNodes <- model$expandNodeNames(nonWrtCalcNodes)  # Nodes here. Can be costly for large multivar nodes (say 3 sec. for a 1m-element node).
-  nonWrtStochCalcNodes <- nonWrtCalcActualNodes[ model$isStoch(nonWrtCalcActualNodes) ] # Run `isStoch` on nodes not components (issue #1431). 
+  nonWrtStochCalcNodes <- nonWrtCalcActualNodes[ model$isStoch(nonWrtCalcActualNodes,
+                               nodesAlreadyExpanded = TRUE) ] # Run `isStoch` on nodes not components (issue #1431). 
 
   parentNodes <- getImmediateParentNodes(calcNodes, model)
   parentNodes <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
