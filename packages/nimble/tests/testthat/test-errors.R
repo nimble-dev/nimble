@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of error handling.")
-
 test_that("Testing of stopping on run-time size errors", {
   # First construct a nimbleFunction.
   current_option <- getNimbleOption("stopOnSizeErrors")

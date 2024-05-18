@@ -8,8 +8,6 @@ nimbleOptions(verbose = FALSE)
 nimbleOptions(enableModelMacros = TRUE)
 nimbleOptions(enableMacroComments = FALSE)
 
-context("Testing model macros")
-
 test_that('Macro expansion 1',
 {
     ## This converts a ~ testMacro(b)

@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = TRUE)
 
-context("Testing of NIMBLE model building and operation")
-
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
 ## To record a new gold file, nimbleOptions('generateGoldFileForMCMCtesting') should contain the path to the directory where you want to put it

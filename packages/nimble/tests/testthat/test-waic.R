@@ -5,8 +5,6 @@ nimbleOptions(verbose = FALSE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
-context("Testing of WAIC")
-
 ###  BUGS models from Chapter 5 of Gelman and Hill
 ###  Below WAIC values from Gelman '13 "Understanding predictive 
 ###  information criteria for Bayesian models"

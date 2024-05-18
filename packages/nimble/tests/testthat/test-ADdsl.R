@@ -7,8 +7,6 @@ nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
 nimbleOptions(useClearCompiledInADTesting = FALSE)
 
-context("Testing of derivatives for distributions and dsl functions")
-
 # tested:
 # 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
 # 'dbinom' (works as long as wrt = prob and not x or size),

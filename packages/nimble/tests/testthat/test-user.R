@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of user-supplied distributions and functions in BUGS code")
-
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = TRUE)
 
