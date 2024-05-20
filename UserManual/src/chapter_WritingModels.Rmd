@@ -318,14 +318,14 @@ code <- nimbleCode({
 ```
 
 Note that we need to take the upper triangular Cholesky factor (`Ustar`) of the correlation matrix
-and convert it to the upper triangular Cholesky factor of a covariance matrix (`U`), based on a vector of
+and convert it to the upper triangular Cholesky factor (`U`) of a covariance matrix, based on a vector of
 standard deviations (`sds`), and use that in the parameterization of
 `dmnorm` that directly (and therefore efficiently) uses the Cholesky of the covariance.
 
 Other approaches are possible, but unless care is taken they are likely to be less
 computationally efficient than the template above.
 
-The template uses a user-defined nimbleFunction to efficiently combine the
+The template above uses a user-defined nimbleFunction to efficiently combine the
 Cholesky of the correlation matrix with a vector of standard deviations to produce the
 Cholesky of the covariance matrix. That function is given here:
 
@@ -339,6 +339,19 @@ uppertri_mult_diag <- nimbleFunction(
             out[ , i] <- mat[ , i] * vec[i]
         return(out)
     })
+```
+
+Note that NIMBLE ignores the lower triangle of the Cholesky factor of the correlation matrix;
+the values are taken to be zero. It also ignores the `[1,1]` element, which is taken to be one.
+Any initial values for these elements will be ignored and simply repeated in the MCMC samples.
+
+Assuming the `[1,1]` element is one and the lower triangle is filled with zeroes in the MCMC samples, one can
+reconstruct a sample, here for the `s`th sample, of the correlation matrix as follows using the matrix of MCMC samples:
+
+```{r, lkj-corr, eval=FALSE}
+cols <- grep("^Ustar",colnames(samples))
+Ustar_sample <- matrix(samples[s, cols], p, p)
+corrMatrix_sample <- crossprod(Ustar_sample)  ## i.e., t(Ustar_sample) %*% Ustar_sample
 ```
 
 #### Alternative parameterizations for distributions {#subsec:alternative-params}
