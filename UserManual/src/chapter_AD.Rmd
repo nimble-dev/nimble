@@ -137,7 +137,7 @@ Finally, let's confirm that it worked by comparing to results from package `glmm
 
 ```{r eval=eval}
 library(glmmTMB)
-y <- as.numeric(model$y) # Re-arrage inputs for call to glmmTMB
+y <- as.numeric(model$y) # Re-arrange inputs for call to glmmTMB
 X <- as.numeric(X)
 group <- rep(1:10, 5)
 data <- as.data.frame(cbind(X,y,group))
