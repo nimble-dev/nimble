@@ -168,12 +168,18 @@ sampler_categorical <- nimbleFunction(
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
-        k <- length(model$getParam(target, 'prob'))
+        
+        tryResult <- try(k <- length(model$getParam(target, 'prob')), silent = TRUE)
+        if(inherits(tryResult, 'try-error'))
+            stop('categorical sampler can only be used on a target node with a `dcat` distribution or an analogous user-defined distribution')
+        if(model$getDistribution(target) != 'dcat')
+            messageIfVerbose("  [Note] Categorical sampler assigned to a node with a user-defined distribution with a `prob` parameter. This assumes the node represents a categorical random variable, with probabilities given by the `prob` parameter.")
+        
         probs <- numeric(k)
         logProbs <- numeric(k)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
-        if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
+        
     },
     run = function() {
         currentValue <- model[[target]]
