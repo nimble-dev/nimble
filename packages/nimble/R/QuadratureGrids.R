@@ -93,7 +93,7 @@ buildAGHQGrid <- nimbleFunction(
 			if( nQuad == 1 ){
 				## Laplace Approximation:
 				zVals <<- matrix(0, nrow = 1, ncol = d)
-				wgt <<- numeric(value = exp(0.5 * d * log(2*pi)), length = nQ) 
+				wgt <<- numeric(value = exp(0.5 * d * log(2*pi)), length = nQ)
 				modeIndex <<- 1
 			}else{
         nodes <- buildAGHQOne(nQuad)
@@ -150,8 +150,9 @@ buildAGHQGrid <- nimbleFunction(
       return(ans)
     },
 		## Reset the sizes of the storage to change the grid if the user wants more/less AGHQ.
-		setSize = function(nQUpdate = integer()){
+		setGridSize = function(nQUpdate = integer()){
 			one_time_fixes()
+      
       if(nQuad != nQUpdate){
         nQ <<- nQUpdate^d
         nQuad <<- nQUpdate
@@ -223,55 +224,8 @@ buildAGHQGrid <- nimbleFunction(
       return(modeIndex)
     },
     getGridSize = function(){
-      returnType(integer())
+      returnType(double())
       return(nQ)
     }
 	)
 )
-
-# test <- buildAGHQGrid(d = 25, nQuad = 1)
-# testc <- compileNimble(test)
-# testc$buildGrid()
-
-# testc$resetGrid(nQUpdate = 5)
-# testc$getNodesTransformed(1)
-
-# testc$transformGrid1D(negHess = matrix(negHess), inner_mode = c(mu))
-# testc$getAllNodesTransformed()
-
-# testc$buildAGHQ()
-
-# for( i in 1:5 ){
-  # exp(testc$getLogDensity(i) - testc$getLogDensity(-1))*testc$getWeights(i)
-# }
-
-# testc$getNodes(1)
-# testc$getNodes(2)
-# testc$getNodes(3)
-# testc$getNodes(4)
-# testc$getNodes(5)
-
-# testc$getNodesTransformed(1)
-
-# testc$saveLogDens(0, log(0.5))
-# testc$quadSum()
-# log(0.5) - 0.5 * -2*log(0.1) + 0.5 * 1 * log(2*pi)
-
-# testc$transformGrid(cholNegHess, method = "cholesky", inner_mode = c(2,1))
-# grd <- testc$getAllNodesTransformed()
-
-# grd2 <- matrix(0, 5^2,2)
-# for( i in 1:(5^2)) grd2[i,] <- testc$getNodesTransformed(i)
-# plot(grd)
-# points(grd2, col = 'red', pch = 4)
-# z <- NULL
-# for( i in 1:(2^5)) z <- rbind(z, testc$getNodes(i))
-# plot(grd)
-# plot(z)
-# x = seq(0, 5, length = 100)
-# y = seq(0, 4, length = 100)
-# f <- function(x, y){ apply(cbind(x,y), 1, 
-  # FUN = function(z){ dmnorm_chol(z, mean = c(2,1), cholesky = cholNegHess, prec=TRUE)} )}
-# fz <- outer(x, y, f)
-# contour(x,y,fz)
-# points(grd)
