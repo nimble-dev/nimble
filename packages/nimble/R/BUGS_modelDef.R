@@ -464,10 +464,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
             lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber, userEnv = userEnv)
         }
-        checkLine <- safeDeparse(code[[i]][[1]], warn = TRUE)
-        # Added as.character() here to allow "comments" in the form of lines containing only a character string to pass through
-        if(! (is.character(checkLine) | checkLine %in% c('~', '<-', 'for', '{'))) 
-            stop("Error: ", safeDeparse(code[[i]][[1]]), " not allowed in BUGS code in ", safeDeparse(code[[i]]))
+        deparsedCode <- safeDeparse(code[[i]][[1]], warn = TRUE)
+        ## Added is.character() check to allow macro "comments" in the form of lines containing only a character string to pass through
+        if(!(is.character(code[[i]][[1]]) || deparsedCode %in% c('~', '<-', 'for', '{')))
+            stop("invalid model code: ", safeDeparse(code[[i]]))
     }
     lineNumber
 })
