@@ -1569,7 +1569,9 @@ cc_checkStickbreaking <- function(expr, targetNode) {
     expr <- expr[[2]]
     if(!is.call(expr) || expr[[1]] != 'structureExpr')
         return(NULL)
-    offset <- which(targetNode == cc_getNodesInExpr(expr))
+    ##  offset <- which(targetNode == cc_getNodesInExpr(expr))  # Issue 1409.
+    ## Need that target is the the entirety of one element of the structureExpr.
+    offset <- which(sapply(expr[2:length(expr)], function(x) x == targetNode))
     if(length(offset) != 1) return(NULL) else return(list(offset = offset, scale = 1))
 }
 
