@@ -1087,7 +1087,7 @@ genReplacementsAndCodeRecurse <- function(code,
             (
                 (funName %in% functionsThatShouldNeverBeReplacedInBUGScode) ||
                 (exists(funName, envir) && is.rcf(get(funName, envir))) ||
-                (isTRUE(getNimbleOption('allowNFinModel')) && grepl('\\$', funName))
+                (isTRUE(getNimbleOption('allowNFobjInModel')) && grepl('\\$', funName))
             )
         }
         )

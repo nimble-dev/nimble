@@ -509,7 +509,7 @@ replaceDistributionAliases <- function(code) {
         stop("Invalid model declaration: ", safeDeparse(code), " must call a density function.")
 
     dist_code <- code[[3]][[1]]
-    if(isTRUE(getNimbleOption('allowNFinModel'))) {
+    if(isTRUE(getNimbleOption('allowNFobjInModel'))) {
       NFinModel <- length(dist_code) > 1 # deparsed dist not needed
     } else {
       NFinModel <- FALSE

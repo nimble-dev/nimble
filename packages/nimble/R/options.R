@@ -7,7 +7,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
-        allowNFinModel = TRUE, # If TRUE, allow use of nimbleFunctions with setup code as model dist or fxn.
+        allowNFobjInModel = TRUE, # If TRUE, allow use of nimbleFunctions with setup code as model dist or fxn.
         useCppADoptimize = TRUE,
         useADcholAtomic = TRUE, # If TRUE, use nimble's CppAD atomic for cholesky decomposition
         useADsolveAtomic = TRUE, # If TRUE, use nimble's CppAD atomic for matrix inverse

@@ -130,7 +130,7 @@ nndf_createSetupFunction <- function(buildDerivs = FALSE, RHS) {
         }
     }
 
-    if(isTRUE(getNimbleOption('allowNFinModel'))) {
+    if(isTRUE(getNimbleOption('allowNFobjInModel'))) {
       # We will find things like a$foo and insert a line of setup code
       # so that a is created in setup code and thus will be identified by the
       # nimble compiler as a setup output, which later makes it a class member variable in C++.
