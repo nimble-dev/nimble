@@ -575,8 +575,8 @@ buildOneAGHQuad1D <- nimbleFunction(
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik(p)
       }
-      saved_inner_negHess <<- negHess(p, reTransform)
       reTransform <- max_inner_logLik_saved_par
+      saved_inner_negHess <<- negHess(p, reTransform)
       negHessian <- saved_inner_negHess[1, 1]
 
       # invNegHessian <- inverse(negHessian)
@@ -609,8 +609,8 @@ buildOneAGHQuad1D <- nimbleFunction(
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
         update_max_inner_logLik_internal(p)
       }
-      saved_inner_negHess <<- negHess_internal(p, reTransform)
       reTransform <- max_inner_logLik_saved_par
+      saved_inner_negHess <<- negHess_internal(p, reTransform)
       negHessian <- saved_inner_negHess[1, 1]
       
       ## invNegHessian <- inverse(negHessian)
