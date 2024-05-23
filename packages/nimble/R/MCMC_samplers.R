@@ -163,23 +163,25 @@ sampler_categorical <- nimbleFunction(
     name = 'sampler_categorical',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        length <- extractControlElement(control, 'length', 'prob')
+        anyDistributionOK <- extractControlElement(control, 'anyDistributionOK', FALSE)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
-        
-        tryResult <- try(k <- length(model$getParam(target, 'prob')), silent = TRUE)
-        if(inherits(tryResult, 'try-error'))
-            stop('categorical sampler can only be used on a target node with a `dcat` distribution or an analogous user-defined distribution')
-        if(model$getDistribution(target) != 'dcat')
-            messageIfVerbose("  [Note] Categorical sampler assigned to a node with a user-defined distribution with a `prob` parameter. This assumes the node represents a categorical random variable, with probabilities given by the `prob` parameter.")
-        
+        if(is.character(length)) {
+            k <- length(model$getParam(target, length))
+        } else if(is.numeric(length)) {
+            k <- length
+        } else stop('Invalid \'length\' control parameter provided for categorical sampler.\nSee help(samplers) for details of the categorical sampler.')
         probs <- numeric(k)
         logProbs <- numeric(k)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
-        
+        if(!anyDistributionOK && length == 'prob' && model$getDistribution(target) != 'dcat') stop('Can only use categorical sampler on node with dcat distribution.\nUse control argument \'anyDistributionOK = TRUE\' to allow use on other distributions.')
+        if(!is.numeric(k) || k <= 0 || k != round(k))   stop('Invalid \'length\' control parameter provided for categorical sampler.\nSee help(samplers) for details of the categorical sampler.')
     },
     run = function() {
         currentValue <- model[[target]]
@@ -2270,10 +2272,14 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section categorical sampler:
 #'
-#' The categorical sampler performs Gibbs sampling for a single node, which must follow a categorical (\code{dcat}) distribution.
+#' The categorical sampler performs Gibbs sampling for a single node, which generally would follow a categorical (\code{dcat}) distribution.  The categorical sampler can be assigned to other distributions as well, in which case the number of possible outcomes (1, 2, 3, ..., k) of the distribution must be specified using the 'length' control argument.
 #'
-#' The categorical sampler accepts no control list arguments.
-#'
+#' The categorical sampler accepts the following control list elements:
+#' \itemize{
+#' \item length. A character string or a numeric argument.  When a character string, this should be the name of a parameter of the distribution of the target node being sampled.  The length of this distribution parameter (considered as a 1-dimensional vector) will be used to determine the number of possible outcomes of the target node's distribution.  When a numeric value, this value will be used as the number of possible outcomes of the target node's distribution.  (default = "prob")
+#' \item anyDistributionOK. A logical argument.  When TRUE, this circumvents a check for a 'dcat' prior distribution for the target node being sampled. (default = FALSE)
+#' }
+#' 
 #' @section RW sampler:
 #'
 #' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale.
