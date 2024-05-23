@@ -45,7 +45,8 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
     check_convergence = function(){returnType(double())},
     set_nQuad = function(nQUpdate = integer()){},
     set_transformation = function(transformation = character()){},
-    set_warning = function(warn = logical()){}
+    set_warning = function(warn = logical()){},
+    set_reInitMethod = function(method = double()){}
   )
 )
 
@@ -100,6 +101,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       startID <- 3
       optStart <- as.numeric(c(optimStart, -1))
     }
+    user_saved_re_value <- numeric(2)
     
     ## Update and constant nodes for obtaining derivatives using AD
     inner_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
@@ -172,9 +174,13 @@ buildOneAGHQuad1D <- nimbleFunction(
       max_inner_logLik_saved_par <<- reInitTrans
     },
     get_reInitTrans = function() {
-      if(startID == 1) ans <- max_inner_logLik_saved_par
-      else if(startID == 2) ans <- max_logLik_saved_re_value
-      else ans <- reTrans$transform(optStart)
+      if(startID == 1) ans <- max_inner_logLik_saved_par                ## Last Max
+      else if(startID == 2) ans <- max_logLik_saved_re_value            ## Global Max
+      else if(startID == 4) ans <- user_saved_re_value                  ## User provided value
+      else if(startID == 5){                                            ## Random start.
+        model$simulate(randomEffectsNodes)
+        ans <- reTrans$transform(values(model, randomEffectsNodes))      
+      }else ans <- reTrans$transform(optStart)                           ## User provided values or model values at initialization.
       return(ans)
       returnType(double(1))
     },
@@ -186,6 +192,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       max_inner_logLik_saved_par <<- fix_one_vec(max_inner_logLik_saved_par)
       outer_mode_max_inner_logLik_saved_par <<-  fix_one_vec(outer_mode_max_inner_logLik_saved_par)
       max_logLik_saved_re_value <<- fix_one_vec(max_logLik_saved_re_value)
+      user_saved_re_value <<- fix_one_vec(user_saved_re_value)
       if(startID == 3) optStart <<- fix_one_vec(optStart)
       if(npar == 1) {
         p_indices <<- fix_one_vec(p_indices)
@@ -723,6 +730,23 @@ buildOneAGHQuad1D <- nimbleFunction(
     set_transformation = function(transformation = character()){}, ## Not applicable to 1 Dimension.
     set_warning = function(warn = logical()){
       warn_optim <<- warn
+    },
+    ## Internal option to change initial values.
+    set_reInitMethod = function(method = double()) {
+      if(method == 1) startID <<- 1
+      if(method == 2) startID <<- 2
+      if(method == 3) startID <<- 3
+      if(method == 4) {
+        startID <<- 4
+        user_saved_re_value <<- numeric(value = 0, length = nre)
+      }
+      if( method == 5 ){
+        startID <<- 4
+        user_saved_re_value <<- values(model, randomEffectsNodes)
+      }
+      if( method == 6 ){
+        startID <<- 5
+      }
     }
   ),
   buildDerivs = list(inner_logLik                            = list(),
@@ -782,7 +806,7 @@ buildOneAGHQuad <- nimbleFunction(
     else reTrans_indices_inner <- as.numeric(c(1, -1))
     p_and_reTrans_indices <- as.numeric(1:(npar + nreTrans))
     
-    ## Set up start values for the inner optimization of Laplace approximation
+    ## Set up start values for the inner optimization of Laplace approximation    
     if(identical(optimStart, "last")) {
       startID <- 1
       optStart <- numeric(nre)
@@ -795,6 +819,9 @@ buildOneAGHQuad <- nimbleFunction(
       startID <- 3
       optStart <- optimStart
     }
+    
+    user_saved_re_value <- numeric(nre) ## User can set this one manually in code.
+    
     ## Update and constant nodes info for obtaining derivatives using AD
     inner_derivsInfo    <- makeModelDerivsInfo(model = model, wrtNodes = randomEffectsNodes, calcNodes = innerCalcNodes)
     inner_updateNodes   <- inner_derivsInfo$updateNodes
@@ -864,9 +891,13 @@ buildOneAGHQuad <- nimbleFunction(
       max_inner_logLik_saved_par <<- reInitTrans
     },
     get_reInitTrans = function() {
-      if(startID == 1) ans <- max_inner_logLik_saved_par
-      else if(startID == 2) ans <- max_logLik_saved_re_value
-      else ans <- reTrans$transform(optStart)
+      if(startID == 1) ans <- max_inner_logLik_saved_par                ## Last Max
+      else if(startID == 2) ans <- max_logLik_saved_re_value            ## Global Max
+      else if(startID == 4) ans <- user_saved_re_value                  ## User provided value
+      else if(startID == 5){                                            ## Random start.
+        model$simulate(randomEffectsNodes)
+        ans <- reTrans$transform(values(model, randomEffectsNodes))
+      }else ans <- reTrans$transform(optStart)                           ## User provided values or model values at initialization.
       return(ans)
       returnType(double(1))
     },
@@ -889,6 +920,7 @@ buildOneAGHQuad <- nimbleFunction(
         reTrans_indices_inner <<- fix_one_vec(reTrans_indices_inner)
         max_inner_logLik_saved_par <<- fix_one_vec(max_inner_logLik_saved_par)
         max_logLik_saved_re_value <<- fix_one_vec(max_logLik_saved_re_value)
+        user_saved_re_value <<- fix_one_vec(max_logLik_saved_re_value)
         outer_mode_max_inner_logLik_saved_par <<- fix_one_vec(outer_mode_max_inner_logLik_saved_par)
       }
       if(npar == 1) {
@@ -1387,11 +1419,28 @@ buildOneAGHQuad <- nimbleFunction(
       aghq_grid$setGridSize(nQUpdate = nQUpdate)
       nQuad <<- nQUpdate
     },
+    ## Choose spectral vs cholesky.
     set_transformation = function(transformation = character()){
       transMethod <<- transformation
     },
     set_warning = function(warn = logical()){
       warn_optim <<- warn
+    },
+    set_reInitMethod = function(method = double()) {
+      if(method == 1) startID <<- 1
+      if(method == 2) startID <<- 2
+      if(method == 3) startID <<- 3
+      if(method == 4) {
+        startID <<- 4
+        user_saved_re_value <<- numeric(value = 0, length = nre)
+      }
+      if( method == 5 ){
+        startID <<- 4
+        user_saved_re_value <<- values(model, randomEffectsNodes)
+      }
+      if( method == 6 ){
+        startID <<- 5
+      }
     }
   ),
   buildDerivs = list(inner_logLik                            = list(),
@@ -2188,6 +2237,16 @@ buildAGHQuad <- nimbleFunction(
       if(method != "spectral" & method != "cholesky") stop("Choose either cholesky or spectral.")
       for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$set_transformation(transformation = method)
     },
+    setInternalOptimInits = function(method = character(0)){
+      if(method == "last") startMethod <- 1
+      else if(method == "last.best") startMethod <- 2
+      else if(method == "zero") startMethod <- 4    ## Inits at all zero.
+      else if(method == "model") startMethod <- 5   ## Grabs current model values one time.
+      else if(method == "random") startMethod <- 6  ## Random
+      else startMethod <- 3 ## Following internal logic. PVDB Discuss with PdV and CP.
+      
+      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$set_reInitMethod(startMethod)
+    },
     one_time_fixes = function() {
       if(one_time_fixes_done) return()
       if(pTransform_length == 1){
@@ -2209,7 +2268,7 @@ buildAGHQuad <- nimbleFunction(
         conCheck <- AGHQuad_nfl[[i]]$check_convergence()
         if(conCheck != 0) {
           converged <- 1
-          print("  [Warning] Inner optimzation did not converge for conditionally independent set ", i, " with code ", conCheck, ".")
+          if(message) print("  [Warning] Inner optimzation did not converge for conditionally independent set ", i, " with code ", conCheck, ".")
         }
       }
       returnType(double())
@@ -2505,7 +2564,7 @@ buildAGHQuad <- nimbleFunction(
       for(i in seq_along(AGHQuad_nfl)){
         AGHQuad_nfl[[i]]$set_warning(warn)
       }
-    },
+    }, 
     ## Grab the inner Cholesky from the cached last values.
     cache_outer_logLik = function(logLikVal = double()){
       for(i in seq_along(AGHQuad_nfl)){
