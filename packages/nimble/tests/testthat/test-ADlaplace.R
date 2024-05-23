@@ -1,3 +1,8 @@
+library(testthat)
+library(nimble)
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/QuadratureGrids.R")
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/Laplace.R")
+
 # Tests of Laplace approximation
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'testthat', 'AD_test_utils.R'), package = 'nimble'))
@@ -343,7 +348,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
 
-  expect_output(opt <- cmLaplace$findMLE(), "optim does not converge for the inner optimization")
+  expect_output(opt <- cmLaplace$findMLE(), "Warning: inner optimzation had a non-zero convergence code\\. Use checkInnerConvergence\\(TRUE\\) to see details\\.")
   expect_equal(opt$par, 40, tol = 1e-4) # 40 = 4 * (1/.2) * (1/.5)
   # V[a] = 9
   # V[y] = 0.2^2 * 9 + 4 = 4.36
@@ -354,6 +359,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
   # Jacobian of ahat wrt mu is 4*0.5/(4+9*0.2^2) = 0.4587156
   # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
   # Hessian of marginal loglik wrt param mu is -(0.2*0.5)^2/4.36 = -0.002293578
+  cmLaplace$setInnerOptimWarning(TRUE)
   expect_output(summ <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE,
                                           jointCovariance = TRUE),
                 "optim does not converge for the inner optimization")

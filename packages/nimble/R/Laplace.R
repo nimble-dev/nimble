@@ -408,10 +408,7 @@ buildOneAGHQuad1D <- nimbleFunction(
                                  model = model, updateNodes = joint_updateNodes, constantNodes = joint_constantNodes)
       negHessValue <- -joint_logLik_res$hessian[npar + 1, npar + 1, 1]
       logdetNegHessAns <- log(negHessValue)
-      hess_wrt_p_wrt_re <- matrix(init = FALSE, nrow = npar, ncol = nre)
-      for(i in 1:npar){
-        hess_wrt_p_wrt_re[i, 1] <- joint_logLik_res$hessian[i, npar + 1, 1]
-      }
+      hess_wrt_p_wrt_re <- joint_logLik_res$hessian[1:npar, npar + 1, 1]      
       ans <- c(joint_logLik_res$jacobian[1, 1:npar], logdetNegHessAns, negHessValue, hess_wrt_p_wrt_re)
       ## If cholNegHess is considered, indices to components are:
       ## gr_joint_logLik_wrt_p = (1:npar)                    [size = npar]
@@ -1168,19 +1165,10 @@ buildOneAGHQuad <- nimbleFunction(
       joint_logLik_res <- derivs(joint_logLik(p, reTransform), wrt = p_and_reTrans_indices, order = c(1, 2),
                                  model = model, updateNodes = joint_updateNodes, constantNodes = joint_constantNodes)
       negHessUpper <- matrix(init = FALSE, nrow = nre, ncol = nreTrans)
-      for(i in 1:nreTrans){
-        for(j in i:nreTrans){
-          negHessUpper[i,j] <- -joint_logLik_res$hessian[npar + i, npar + j, 1]
-        }
-      }
+      for(i in 1:nreTrans) negHessUpper[i,i:nreTrans] <- -joint_logLik_res$hessian[npar + i, npar + i:nreTrans, 1]
       cholNegHess <- chol(negHessUpper)
       logdetNegHessAns <- 2 * sum(log(diag(cholNegHess)))
-      hess_wrt_p_wrt_re <- matrix(init = FALSE, nrow = npar, ncol = nre)
-      for(i in 1:npar){
-        for(j in 1:nreTrans){
-          hess_wrt_p_wrt_re[i, j] <- joint_logLik_res$hessian[i, npar + j, 1]
-        }
-      }
+      hess_wrt_p_wrt_re <- joint_logLik_res$hessian[1:npar, npar + (1:nreTrans), 1]
       ans <- c(joint_logLik_res$jacobian[1, 1:npar], logdetNegHessAns, cholNegHess, hess_wrt_p_wrt_re)
       ## Indices to components of this are:
       ## gr_joint_logLik_wrt_p = (1:npar)                    [size = npar]
@@ -2197,6 +2185,7 @@ buildAGHQuad <- nimbleFunction(
   run = function(){},
   methods = list(
     getNodeNamesVec = function(returnParams = logical(0, default = TRUE)) {
+      one_time_fixes()
       returnType(character(1))
       if(returnParams) return(paramNodesAsScalars_vec)
       else return(reNodesAsScalars_vec)
@@ -2217,7 +2206,7 @@ buildAGHQuad <- nimbleFunction(
     },
     ## Let the user experiment with different quadrature grids:
     setQuadSize = function(nQUpdate = integer()){
-      nQuad0 <- nQuad 
+      nQuad0 <- nQuad
       if(nQUpdate < 1) stop("Choose a positive number of grid points.")
       if(nQUpdate %% 2 == 0){
         print("Currently only allowing odd numbers of quadrature points: Adding one more")
@@ -2234,7 +2223,7 @@ buildAGHQuad <- nimbleFunction(
       }
     },
     setAGHQTransformation = function(method = character()){
-      if(method != "spectral" & method != "cholesky") stop("Choose either cholesky or spectral.")
+      if(method != "spectral" & method != "cholesky") stop("Must choose either cholesky or spectral.")
       for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$set_transformation(transformation = method)
     },
     setInternalOptimInits = function(method = character(0)){
@@ -2523,6 +2512,7 @@ buildAGHQuad <- nimbleFunction(
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE),
                        MAP = logical(0, default = FALSE)) {
+      if(!one_time_fixes_done) one_time_fixes() ## Otherwise summary will look bad.
       if(multiSetsCheck & nQuad > 1) stop("Currently only Laplace is supported for Maximization. Use setNodeSize(1) to change.")
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
       if(length(pStart) != npar) {
@@ -3077,13 +3067,17 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #' \itemize{
 #'
-#' \item \code{calcLogLik(p, trans)}. Calculate the Laplace approximation to
+#' \item \code{calcLogLik(p, trans)}. Calculate the approximation to
 #'       the marginal log-likelihood function at parameter value \code{p}, which
 #'       (if \code{trans} is FALSE, which is the default) should match the order
 #'       of \code{paramNodes}. For any non-scalar nodes in \code{paramNodes},
 #'       the order within the node is column-major (which can be seen for R
 #'       objects using \code{as.numeric}). Return value is the scalar
-#'       (approximate, marginal) log likelihood.
+#'       (approximate, marginal) log likelihood. Generally defaults to a Laplace
+#'       approximation, but may also compute the adaptive Gauss Hermite Quadrature
+#'       approximation for lower dimension problems. \code{setQuadSize} can be used
+#'       to change the number of quadrature points. AGHQ is intended to check the 
+#'       Laplace approximation in low dimension problems.
 #'
 #'       If \code{trans} is TRUE, then \code{p} is the vector of parameters on
 #'       the transformed scale, if any, described above. In this case, the
@@ -3094,7 +3088,8 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'       non-scalar parameters result in fewer free transformed parameters than
 #'       original parameters).
 #'
-#' \item \code{calcLaplace(p, trans)}. This is the same as \code{calcLogLik}.
+#' \item \code{calcLaplace(p, trans)}. This is the same as \code{calcLogLik} but 
+#'        explicitly uses Laplace.
 #'
 #' \item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
 #'         estimates of parameters using the Laplace-approximated marginal 
@@ -3187,6 +3182,27 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #'   \item \code{getMethod()}. Return the current method ID for Laplace.
 #'
+#'   \item \code{setInternalOptimInits(method)}. The user can change the default behaviour
+#'   of starting values for inner optimzation of random effects in Laplace/AGHQ.
+#'   Default is to use the original starting values from the buildAGHQQuad function.  
+#'   Options are: 
+#'      \itemize{
+#'          \item \code{method = "last.best"}. The best run of the inner optim random effect values,
+#'          \item \code{method = "last"}. The last run of the inner optim random effect values,
+#'          \item \code{method = "zero"}. All random effect values are started at zero. 
+#'          \item \code{method = "model"}. Uses values for random effects stored in the model. 
+#'          User may specify them here first before calling this function.
+#'          \item \code{method = "random"}. Randomly draw new starting values from the model.
+#'   }
+#'
+#'   \item \code{checkInnerConvergence(message)}. Checks whether all internal optimizers converged.
+#'   Returns a zero if everything converged and one otherwise. If \code{message = TRUE}, it will print
+#'   more details about convergence for each conditionally independent set.
+#'
+#'   \item \code{setInnerOptimWarning(warn)}. Ask for the inner optimization to print warning statements directly.
+#'   These warnings will print with every call to the inner optimization which may or may not reflect issues in
+#'   the outer optimzation. Use \code{checkInnerConvergence(message=TRUE)} for details on convergence for the final call.
+#'
 #'   \item \code{gr_logLik(p, trans)}. Gradient of the Laplace-approximated
 #'   marginal log-likelihood at parameter value \code{p}. Argument \code{trans} 
 #'   is similar to that in \code{calcLaplace}. If there are multiple parameters,
@@ -3206,6 +3222,20 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #' }
 #'
+#' Methods to control the adaptive Gauss Hermite quadrature include:
+#' \itemize{
+#'  
+#'   \item \code{setAGHQTransformation} Transforming a multivariate quadrature grid
+#'   can be done with either a default cholesky transformation \code{method = "cholesky"}, 
+#'   or spectral transformation \code{method = "spectral"}.
+#'   
+#'   \item \code{setQuadSize} Change the number of quadrature points for AGHQ. When
+#'   \code{nQUpdate = 1} Laplace is used. If some conditionally independent sets of
+#'   random effects are of high dimension (d), then a dense grid of nQUpdate^d points
+#'   may be infeasiable.
+#' 
+#' }
+#' 
 #' Finally, methods that are primarily for internal use by other methods include:
 #'
 #' \itemize{
@@ -3262,6 +3292,19 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'   derivatives with respect to each parameter) of \code{otherLogLik(p)}.
 #'   This is obtained using automatic differentiation (AD) with single-taping.
 #'   First call will always be slower than later calls.
+#'
+#'   \item \code{cache_outer_logLik(logLikVal)}. Save the marginal log likelihood value 
+#'   to the inner Laplace mariginlization functions to track the outer maximum internally.
+#'
+#'   \item \code{reset_outer_inner_logLik()}. Reset the internal saved maximum marginal log likelihood.
+#'
+#'   \item \code{get_inner_cholesky(atOuterMode = integer(0, default = 0))}. Returns the cholesky
+#'   of the negative Hessian with respect to the random effects. If \code{atOuterMode = 1} then returns
+#'   the value at the overall best marginal likelihood value, otherwise \code{atOuterMode = 0} returns the last.
+#' 
+#'   \item \code{get_inner_mode(atOuterMode = integer(0, default = 0))}. Returns the mode of the random effects
+#'   for either the last call to the innner quadrature functions (\code{atOuterMode = 0} ), or the last best
+#'   value for the marginal log likelihood, \code{atOuterMode = 1}.
 #'
 #' }
 #'
