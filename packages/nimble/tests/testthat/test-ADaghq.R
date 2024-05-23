@@ -1,3 +1,8 @@
+library(testthat)
+library(nimble)
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/QuadratureGrids.R")
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/Laplace.R")
+
 # Tests of AGH Quadrature approximation
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 source(system.file(file.path('tests', 'testthat', 'AD_test_utils.R'), package = 'nimble'))
@@ -6,11 +11,6 @@ BMDopt <- nimbleOptions("buildModelDerivs")
 nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
-
-library(nimble)
-
-## Temp for Paul's unbuilt testing:
-# library(testthat)
 
 test_that("AGH Quadrature Normal-Normal 1D works", {
 set.seed(123)
@@ -144,6 +144,17 @@ test_that("AGH Quadrature 1D Poisson-Gamma for checking nQuad", {
   m.nb$calculate()
   logLikTru <- m.nb$calculate("y")
   expect_equal(logLik20, logLikTru, tol = 1e-10)	## Should be very similar.
+
+  cmQuad$setQuadSize(20)
+  logLik20 <- cmQuad$calcLogLik(test.val1)
+  cmQuad$setQuadSize(40)
+  logLik40 <- cmQuad$calcLogLik(test.val1)
+  cmQuad$setQuadSize(60)
+  logLik60 <- cmQuad$calcLogLik(test.val1)
+  cmQuad$setQuadSize(80) 
+  logLik80 <- cmQuad$calcLogLik(test.val1)  ## BLOWS UP... Fix tomorrow.
+  cmQuad$setQuadSize(81) 
+  logLik81 <- cmQuad$calcLogLik(test.val1)  ## BLOWS UP... Fix tomorrow.
 
   ## Check Marginalization
   logLik20.2 <- cmQuad$calcLogLik(test.val2)

@@ -562,11 +562,12 @@ buildOneAGHQuad1D <- nimbleFunction(
     calcLogLik_AGHQ = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
       aghq_grid$buildGrid()
+      nQ <- aghq_grid$getGridSize()
       aghq_grid$transformGrid1D(negHess = saved_inner_negHess, inner_mode = max_inner_logLik_saved_par)
-      modeIndex <- aghq_grid$getModeIndex()
-      for(i in 1:nQuad) {
-        if(i == modeIndex) aghq_grid$saveLogDens(i, max_inner_logLik_saved_value )
-        else aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
+      modeIndex <- aghq_grid$getModeIndex() ## if even, this is -1
+      aghq_grid$saveLogDens( -1, max_inner_logLik_saved_value ) ## Cache this value regardless of even or odd.
+      for(i in 1:nQ) {
+        if(i != modeIndex) aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
       }
 
       ## Given all the saved values, weights and log density, do quadrature sum.
@@ -614,7 +615,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         update_max_inner_logLik_internal(p)
       }
       reTransform <- max_inner_logLik_saved_par
-      saved_inner_negHess <<- negHess_internal(p, reTransform)
+      saved_inner_negHess <<- negHess_internal(p, reTransform)  ## repeated comp. pvdb.
       negHessian <- saved_inner_negHess[1, 1]
       
       ## invNegHessian <- inverse(negHessian)
@@ -652,13 +653,13 @@ buildOneAGHQuad1D <- nimbleFunction(
  
       ## Method 2 implies double taping.
       modeIndex <- aghq_grid$getModeIndex()
-
+      nQ <- aghq_grid$getGridSize()
       gr_margLogLik_wrt_p <- numeric(value = 0, length = dim(p)[1])
-      wgts_lik <- numeric(value = 0, length = nQuad)
-      for(i in 1:nQuad) {
+      wgts_lik <- numeric(value = 0, length = nQ)
+      for(i in 1:nQ) {
         z_node_i <- aghq_grid$getNodes(i)[1]
         reTrans_i <- aghq_grid$getNodesTransformed(i)
-        wgts_lik[i] <- exp(aghq_grid$getLogDensity(i) - aghq_grid$getLogDensity(modeIndex))*aghq_grid$getWeights(i)
+        wgts_lik[i] <- exp(aghq_grid$getLogDensity(i) - max_inner_logLik_saved_value)*aghq_grid$getWeights(i)
         
         ## At the mode (z = 0, don't have additional z*sigma_hat gr complication).
 	      if( modeIndex == i ){
@@ -682,7 +683,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         }
       }
       
-      return(gr_margLogLik_wrt_p / sum(wgts_lik[1:nQuad]))
+      return(gr_margLogLik_wrt_p / sum(wgts_lik[1:nQ]))
       returnType(double(1))
     },
 		get_inner_mode = function(atOuterMode = integer(0, default = 0)){
@@ -1327,9 +1328,9 @@ buildOneAGHQuad <- nimbleFunction(
                                     inner_mode = max_inner_logLik_saved_par, method = transMethod)
       modeIndex <- aghq_grid$getModeIndex()
       nQ <- aghq_grid$getGridSize()
+      aghq_grid$saveLogDens(-1, max_inner_logLik_saved_value )
       for(i in 1:nQ) {
-        if(i == modeIndex) aghq_grid$saveLogDens(i, max_inner_logLik_saved_value )
-        else aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
+        if(i != modeIndex) aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
       }
       ## Given all the saved values, weights and log density, do quadrature sum.
       logLik_saved_value <<- aghq_grid$quadSum()
@@ -2207,13 +2208,8 @@ buildAGHQuad <- nimbleFunction(
     ## Let the user experiment with different quadrature grids:
     setQuadSize = function(nQUpdate = integer()){
       nQuad0 <- nQuad
-      if(nQUpdate < 1) stop("Choose a positive number of grid points.")
-      if(nQUpdate %% 2 == 0){
-        print("Currently only allowing odd numbers of quadrature points: Adding one more")
-        nQuad <<- nQUpdate + 1
-      }else{
-        nQuad <<- nQUpdate
-      }
+      if(nQUpdate < 1) stop("Choose a positive number of grid points.")      
+      nQuad <<- nQUpdate
       for(i in seq_along(AGHQuad_nfl)) {
         if( lenInternalRENodeSets[i]^nQuad > 50000 ){
           nQuad <<- nQuad0
