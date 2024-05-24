@@ -2488,16 +2488,17 @@ sampler_polyagamma <- nimbleFunction(
         }
         N <- length(yNodes)
 
+        checkMessage <- "If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`."
 
         ## Conjugacy checking, part 1.
-        if(!all(model$getDistribution(target) %in% c("dnorm", "dmnorm")))
-            stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors")
-        if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin")) ) 
-            stop("polyagamma sampler: response nodes must be distributed `dbern` or `dbin`")
-        if(check) { 
-           nodeIDs <- model$expandNodeNames(yNodes, returnType = 'ids')
+        if(check) {
+            if(!all(model$getDistribution(target) %in% c("dnorm", "dmnorm")))
+                stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors. ", checkMessage)
+            if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin")) ) 
+                stop("polyagamma sampler: response nodes must be distributed `dbern` or `dbin`. ", checkMessage)
+            nodeIDs <- model$expandNodeNames(yNodes, returnType = 'ids')
             if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)
-                stop("polyagamma sampler: response nodes should all be part of the same declaration. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                stop("polyagamma sampler: response nodes should all be part of the same declaration. ", checkMessage)
         }
             
         probAndSizeNodes <- model$getParents(yNodes, immediateOnly = TRUE)
@@ -2521,13 +2522,15 @@ sampler_polyagamma <- nimbleFunction(
             dists <- model$getDistribution(inflationStochNodesOne)
             ## This could fail if target doesn't include all params in the linear combination producing the probability.
             ## Or be misleading if such a missing target is somehow distributed dbern/dbin.
-            
-            if(!all(dists %in% c("dbern", "dbin")))
-                stop("polyagamma sampler: Invalid stochastic nodes found as parents of response. Any such nodes other than the target must specify zero inflation, and any non-target nodes in the linear predictor must be included in `control$nonTargetNodes`")
-            binomDists <- dists == 'dbin'
-            if(any(binomDists)) {
-                if(!all(sapply(inflationStochNodesOne[binomDists], function(x) model$getParamExpr(x, 'size') == 1)))
-                    stop("polyagamma sampler: Zero inflation nodes must be `dbern` or `dbin` with `size=1`")
+
+            if(check) {
+                if(!all(dists %in% c("dbern", "dbin")))
+                    stop("polyagamma sampler: Invalid stochastic nodes found as parents of response. Any such nodes other than the target must specify zero inflation, and any non-target nodes in the linear predictor must be included in `control$nonTargetNodes`. ", checkMessage)
+                binomDists <- dists == 'dbin'
+                if(any(binomDists)) {
+                    if(!all(sapply(inflationStochNodesOne[binomDists], function(x) model$getParamExpr(x, 'size') == 1)))
+                        stop("polyagamma sampler: Zero inflation nodes must be `dbern` or `dbin` with `size=1`. ", checkMessage)
+                }
             }
 
             probNodesInflated <- probNodes
@@ -2540,12 +2543,12 @@ sampler_polyagamma <- nimbleFunction(
                 linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
                 linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
                 if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
-                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. ", checkMessage)
             }
             linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodes[1])
             linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
             if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
-                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. ", checkMessage)
         } else {
             ## Placeholders to allow compilation.
             ones <- rep(1, 2)
@@ -2560,14 +2563,14 @@ sampler_polyagamma <- nimbleFunction(
         ## Conjugacy checking, part 3: Check linearity of target nodes in logit link.
         if(check) {
             if(model$getValueExpr(probNodes[1])[[1]] != 'expit')
-                stop("polyagamma sampler: target must be related to response via logit link. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`. Also note that zero inflation cannot be specified directly in the declaration for the linear predictor")   ## `z[i]*expit(b0+b1*x[i])` would be harder to check for validity.
+                stop("polyagamma sampler: target must be related to response via logit link. Also note that zero inflation cannot be specified directly in the declaration for the linear predictor. ", checkMessage)   ## `z[i]*expit(b0+b1*x[i])` would be harder to check for validity.
             linearityCheckExprRaw <- model$getValueExpr(probNodes[1])[[2]]
             for(node in targetAsScalar) {
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
                 linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
                 linkCheck <- cc_linkCheck(linearityCheck, "linear")
                 if(is.null(linkCheck) || !linkCheck %in% c('identity', 'additive', 'multiplicative', 'linear'))
-                    stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`")
+                    stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. ", checkMessage)
             }
         }
       
