@@ -1995,6 +1995,8 @@ buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcN
 }
 
 ## Main function for Adaptive Gauss-Hermite Quadrature
+#' @rdname AGHQuad
+#' @export
 buildAGHQuad <- nimbleFunction(
   name = 'AGHQuad',
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
@@ -2005,6 +2007,10 @@ buildAGHQuad <- nimbleFunction(
     #if(is.null(control$allowNonPriors)) allowNonPriors <- FALSE else  allowNonPriors <- control$allowNonPriors
     allowNonPriors <- FALSE
 
+    if(nQuad > 35) {
+      print("  Warning: Currently only a maximum of 35 quadrature points are allowed, setting nQuad to 35.")
+      nQuad <- 35
+    }
     MargNodes <- NULL
     if(!missing(paramNodes)) {
       if(is.list(paramNodes)) {
@@ -2208,7 +2214,8 @@ buildAGHQuad <- nimbleFunction(
     ## Let the user experiment with different quadrature grids:
     setQuadSize = function(nQUpdate = integer()){
       nQuad0 <- nQuad
-      if(nQUpdate < 1) stop("Choose a positive number of grid points.")      
+      if(nQUpdate < 1) stop("Choose a positive number of grid points.") 
+      if(nQUpdate > 35) stop("Currently only a maximum of 35 quadrature points are allowed.")
       nQuad <<- nQUpdate
       for(i in seq_along(AGHQuad_nfl)) {
         if( lenInternalRENodeSets[i]^nQuad > 50000 ){
@@ -2538,7 +2545,7 @@ buildAGHQuad <- nimbleFunction(
       
       ## Print out warning about inner convergence.
       if( checkInnerConvergence(FALSE) != 0 )
-        print("Warning: inner optimzation had a non-zero convergence code. Use checkInnerConvergence(TRUE) to see details.")
+        print("  Warning: inner optimzation had a non-zero convergence code. Use checkInnerConvergence(TRUE) to see details.")
       
       ## Back transform results to original scale
       optRes$par <- paramsTransform$inverseTransform(optRes$par)

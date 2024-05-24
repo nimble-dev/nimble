@@ -5,6 +5,33 @@
 # method - Grid method to use, either CCD, AGHQ, or Custom (which will require the user to input the grid in future iterations)
 # nre - Number of fixed and random effects.
 # require(nimble)
+
+## Do we need references? 
+## References
+## Golub, G. H. and Welsch, J. H. (1969). Calculation of Gauss Quadrature Rules. Mathematics of Computation 23 (106): 221-230.
+## Liu, Q. and Pierce, D. A. (1994). A Note on Gauss-Hermite Quadrature. Biometrika, 81(3) 624-629.
+library(nimble)
+Rget_AGHQ_nodes <- function(n = double()) {
+	## If n=1 or is miswritten, do Laplace.
+	if(n <= 1){
+		z <- c(0,-1)	## For one time fixes
+		w_star <- c(sqrt(2*pi), -1)
+	}else{
+		## Gauss-Hermite Nodes
+		gh_nodes <- pracma::gaussHermite(n)
+		## Convert to z = sqrt(2)*z, and wgt = exp(x^2)*sqrt(2)
+		z <- as.numeric(sqrt(2) * gh_nodes$x)
+		w_star <- as.numeric(exp(gh_nodes$x^2 + log(gh_nodes$w)) * sqrt(2))
+	}
+	return(cbind(z, w_star))
+}
+
+
+quadRule <- nimbleRcall(function(n = double()){},
+  Rfun = "Rget_AGHQ_nodes",
+  returnType = double(2)
+)
+
 buildAGHQGrid <- nimbleFunction(
 	# contains = GRID_BASE,
 	setup = function(d, nQuad){
@@ -12,9 +39,9 @@ buildAGHQGrid <- nimbleFunction(
 		odd <- TRUE
     if(nQuad %% 2 == 0) odd <- FALSE
       
-		if(nQuad > 121) {
-			print("We don't currently support more than 121 quadrature nodes per dimension. Setting nQuad to 121")
-      nQuad <- 121
+		if(nQuad > 35) {
+			print("We don't currently support more than 35 quadrature nodes per dimension. Setting nQuad to 35")
+      nQuad <- 35
 		}
 
 		## nQ will be total number of quadrature points.
@@ -23,7 +50,8 @@ buildAGHQGrid <- nimbleFunction(
     nodeVals <- matrix(0, nrow = nQ, ncol = d)
 
 		## Need to do a reverse for Eigen Vectors:
-		reverse <- 121:1
+    inner_max <- 121
+		reverse <- inner_max:1
 
 		## One time fixes if we run into some scalar issues for compilation.
 		## This is exclusively if the user requests Laplace (nQ = 1 AGHQ).
@@ -72,7 +100,7 @@ buildAGHQGrid <- nimbleFunction(
 				E <- eigen(y, symmetric = TRUE)
 				L <- E$values	# Always biggest to smallest.
 				V <- E$vectors
-				inds <- reverse[(121-nQ1+1):121]	## Hard coded to maximum 120.
+				inds <- reverse[(inner_max-nQ1+1):inner_max]	## Hard coded to maximum 120.
 				x <- L[inds]
 				## Make mode hard zero. We know nQ is odd and > 1.
 				if(odd) x[ceiling(nQ1 / 2 ) ] <- 0
@@ -208,6 +236,10 @@ buildAGHQGrid <- nimbleFunction(
       if(i == -1 & odd)  return(wgt[modeIndex])
       return(wgt[i])
     },
+		getAllWeights = function(){
+      returnType(double(1))
+      return(wgt)
+    },    
 		getNodesTransformed = function(i=integer()){
       if(i == -1 & odd) return(nodeVals[modeIndex,])
       returnType(double(1)); 
@@ -222,6 +254,10 @@ buildAGHQGrid <- nimbleFunction(
       returnType(double(1)); 
       return(zVals[i,])
     },
+    getAllNodes = function(){
+      returnType(double(2)); 
+      return(zVals)
+    },    
 		getLogDensity = function(i=integer()){
       returnType(double())
       if(i == -1 & odd) return(logDensity[modeIndex])
@@ -237,27 +273,3 @@ buildAGHQGrid <- nimbleFunction(
     }
 	)
 )
-
-# test <- buildAGHQGrid(d = 1, nQuad = 20)
-# testc <- compileNimble(test)
-# testc$buildAGHQ()
-
-
-# testc$getNodes(1)
-# testc$getNodes(2)
-# testc$getNodes(3)
-# testc$getNodes(4)
-# testc$getNodes(5)
-# testc$getNodesTransformed(1)
-# testc$saveLogDens(0, log(0.5))
-# testc$quadSum()
-# log(0.5) - 0.5 * -2*log(0.1) + 0.5 * 1 * log(2*pi)
-# testc$transformGrid(cholNegHess, method = "cholesky", inner_mode = c(2,1))
-# grd <- testc$getAllNodesTransformed()
-# grd2 <- matrix(0, 5^2,2)
-# for( i in 1:(5^2)) grd2[i,] <- testc$getNodesTransformed(i)
-# plot(grd)
-# points(grd2, col = 'red', pch = 4)
-# z <- NULL
-# for( i in 1:(2^5)) z <- rbind(z, testc$getNodes(i))
-# plot(grd)
