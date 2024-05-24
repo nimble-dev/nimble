@@ -249,7 +249,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
             SET_VECTOR_ELT(Scontrol, 0, PROTECT(double_2_SEXP(control_->abstol)));
             SET_VECTOR_ELT(Scontrol, 1, PROTECT(double_2_SEXP(control_->reltol)));
             SET_VECTOR_ELT(Scontrol, 2, PROTECT(int_2_SEXP(control_->maxit)));
-            SET_VECTOR_ELT(Scontrol, 3, PROTECT(NimArr_2_SEXP<1>(control_->parscale)));
+            SET_VECTOR_ELT(Scontrol, 3, PROTECT(NimArr_2_SEXP<1>(working_parscale)));
             SET_VECTOR_ELT(Scontrol, 4, PROTECT(double_2_SEXP(control_->fnscale)));
             SET_VECTOR_ELT(Scontrol, 5, PROTECT(int_2_SEXP(control_->trace)));
             vector<string> newNames(6);

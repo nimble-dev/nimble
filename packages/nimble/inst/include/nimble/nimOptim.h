@@ -181,7 +181,8 @@ void NimOptimProblem_Fun<Fn>::gradient() {
             par_h[i] = par_[i] - h;
             const double neg = fn_(par_h);
             //par_h[i] = par_[i];
-            ans_[i] = (pos - neg) / (2 * working_ndeps[i]);
+            ans_[i] = (pos - neg) / (2 * working_ndeps[i]); // this is implicitly multiplied by parscale[i]
+            // because instead of dividing by h we are dividing by working_ndeps[i] = h/parscale[i]
         }
     }
     // dividing the answer by fnscale is done by the calling
