@@ -50,7 +50,7 @@ model_code <- nimbleCode({
   # priors 
   intercept ~ dnorm(0, sd = 100)
   beta ~ dnorm(0, sd = 100)
-  sigma ~ dunif(0, 10)
+  sigma ~ dhalfflat()
   # random effects and data  
   for(i in 1:10) {
     # random effects
@@ -62,6 +62,8 @@ model_code <- nimbleCode({
   }
 })
 ```
+
+Note that we changed the prior on `sigma` to avoid having an upper bound. Prior distributions are not included in maximum likelihood using the Laplace approximation but do indicate the range of valid values. We recommend caution in using priors for variance  component parameters (standard deviations, variances, precisions) that have a finite upper bound (e.g., \code{sigma ~ dunif(0, 100)}), because the probit transformation applied in that case may result in poor optimization performance.
 
 We'll simulate some values for `X`.
 ```{r eval=TRUE}
@@ -137,7 +139,7 @@ Finally, let's confirm that it worked by comparing to results from package `glmm
 
 ```{r eval=eval}
 library(glmmTMB)
-y <- as.numeric(model$y) # Re-arrage inputs for call to glmmTMB
+y <- as.numeric(model$y) # Re-arrange inputs for call to glmmTMB
 X <- as.numeric(X)
 group <- rep(1:10, 5)
 data <- as.data.frame(cbind(X,y,group))
