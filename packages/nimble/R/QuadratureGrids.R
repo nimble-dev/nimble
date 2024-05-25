@@ -1,40 +1,7 @@
-## Added in dimensions here so it can be updated to different grid sizes.
-## Use an index to pass which is which. Added one time fixes if they want to
-## do Laplace or some sort of Empirical Bayes method.
-# nQ - Number of quadrature points for AGHQ or custom
-# method - Grid method to use, either CCD, AGHQ, or Custom (which will require the user to input the grid in future iterations)
-# nre - Number of fixed and random effects.
-# require(nimble)
-
-## Do we need references? 
-## References
-## Golub, G. H. and Welsch, J. H. (1969). Calculation of Gauss Quadrature Rules. Mathematics of Computation 23 (106): 221-230.
-## Liu, Q. and Pierce, D. A. (1994). A Note on Gauss-Hermite Quadrature. Biometrika, 81(3) 624-629.
-library(nimble)
-Rget_AGHQ_nodes <- function(n = double()) {
-	## If n=1 or is miswritten, do Laplace.
-	if(n <= 1){
-		z <- c(0,-1)	## For one time fixes
-		w_star <- c(sqrt(2*pi), -1)
-	}else{
-		## Gauss-Hermite Nodes
-		gh_nodes <- pracma::gaussHermite(n)
-		## Convert to z = sqrt(2)*z, and wgt = exp(x^2)*sqrt(2)
-		z <- as.numeric(sqrt(2) * gh_nodes$x)
-		w_star <- as.numeric(exp(gh_nodes$x^2 + log(gh_nodes$w)) * sqrt(2))
-	}
-	return(cbind(z, w_star))
-}
-
-
-quadRule <- nimbleRcall(function(n = double()){},
-  Rfun = "Rget_AGHQ_nodes",
-  returnType = double(2)
-)
+## Choosing not to export this right now but did write documentation just in case but very basic (PVDB).
 
 buildAGHQGrid <- nimbleFunction(
-	# contains = GRID_BASE,
-	setup = function(d, nQuad){
+	setup = function(d = 1, nQuad = 3){
     
 		odd <- TRUE
     if(nQuad %% 2 == 0) odd <- FALSE
@@ -44,7 +11,7 @@ buildAGHQGrid <- nimbleFunction(
       nQuad <- 35
 		}
 
-		## nQ will be total number of quadrature points.
+		## nQ will be total number of quadrature nodes.
 		nQ <- nQuad^d	## Maybe dimension reduced if we prune.
 		zVals <- matrix(0, nrow = nQ, ncol = d)
     nodeVals <- matrix(0, nrow = nQ, ncol = d)
@@ -272,4 +239,104 @@ buildAGHQGrid <- nimbleFunction(
       return(nQ)
     }
 	)
-)
+)## End of buildAGHQGrid
+
+#' Build Adaptive Gauss-Hermite Quadrature Grid
+#'
+#' Create quadrature grid for use in AGHQuad methods in Nimble.
+#'
+#' @param d Dimension of quadrature grid being requested.
+#'
+#' @param nQuad Number of quadrature nodes requested on build.
+#'
+#' @details
+#'
+#' This function is used by used by \code{buildOneAGHQuad1D}
+#' and \code{buildOneAGHQuad} create the quadrature grid using
+#' adaptive Gauss-Hermite quadrature. Handles single or multiple dimension 
+#' grids and computes both grid locations and weights. Additionally, acts
+#' as a cache system to do transformations, and return marginalized log density.
+#'
+#' Any of the input node vectors, when provided, will be processed using
+#'   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
+#'   \code{paramNodes}, \code{randomEffectsNodes}, and so on. This step allows
+#'   any of the inputs to include node-name-like syntax that might contain
+#'   multiple nodes. For example, \code{paramNodes = 'beta[1:10]'} can be
+#'   provided if there are actually 10 scalar parameters, 'beta[1]' through
+#'   'beta[10]'. The actual node names in the model will be determined by the
+#'   \code{exapndNodeNames} step.
+#'
+#' Available methods include
+#' 
+#' \itemize{
+#'
+#'   \item \code{buildAGHQ}. Builds a adaptive Gauss-Hermite quadrature grid in d dimensions.
+#'   Calls \code{buildAGHQOne} to build the one dimensional grid and then expands in each dimension.
+#'   Some numerical issues occur in Eigen decomposition making the grid weights only accurate up to 
+#'   35 quadrature nodes.
+#'
+#'   \item Options to get internally cached values are \code{getGridSize},
+#'   \code{getModeIndex} for when there are an odd number of quadrature nodes,
+#'   \code{getLogDensity} for the cached values, \code{getAllNodes} for the 
+#'   quadrature grids, \code{getNodes} for getting a single indexed nodes,
+#'   \code{getAllNodesTransformed} for nodes transformed to the parameter scale,
+#'   \code{getNodesTransformed} for a single transformed node, \code{getAllWeights} 
+#'   to get all quadrature weights, \code{getWeights} single indexed weight.
+#'
+#'   \item \code{transformGrid(cholNegHess, inner_mode, method)} transforms 
+#'   the grid using either cholesky trasnformations,
+#'   as default, or spectral that makes use of the Eigen decomposition. For a single
+#'   dimension \code{transformGrid1D} is used.
+#'
+#'   \item As the log density is evaluated externally, it is saved via \code{saveLogDens},
+#'   which then is summed via \code{quadSum}.
+#'
+#'   \item \code{buildGrid} builds the grid the initial time and is only run once in code. After,
+#'   the user must choose to \code{setGridSize} to update the grid size.
+#'
+#'
+#'   \item \code{check}. If TRUE (default), a warning is issued if
+#'         \code{paramNodes}, \code{randomEffectsNodes} and/or \code{calcNodes}
+#'         are provided but seek to have missing elements or unnecessary
+#'         elements based on some default inspection of the model. If
+#'         unnecessary warnings are emitted, simply set \code{check=FALSE}.
+#'
+#'   \item \code{innerOptimControl}. A list of control parameters for the inner 
+#'         optimization of Laplace approximation using \code{optim}. See 
+#'         'Details' of \code{\link{optim}} for further information.
+#'
+#'   \item \code{innerOptimMethod}. Optimization method to be used in 
+#'         \code{optim} for the inner optimization. See 'Details' of 
+#'         \code{\link{optim}}. Currently \code{optim} in NIMBLE supports: 
+#'         "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", and 
+#'         "\code{L-BFGS-B}". By default, method "\code{CG}" is used when 
+#'         marginalizing over a single (scalar) random effect, and "\code{BFGS}" 
+#'         is used for multiple random effects being jointly marginalized over.
+#'
+#'   \item \code{innerOptimStart}. Choice of starting values for the inner 
+#'         optimization. This could be \code{"last"}, \code{"last.best"}, or a 
+#'         vector of user provided values. \code{"last"} means the most recent 
+#'         random effects values left in the model will be used. When finding 
+#'         the MLE, the most recent values will be the result of the most recent 
+#'         inner optimization for Laplace. \code{"last.best"} means the random 
+#'         effects values corresponding to the largest Laplace likelihood (from 
+#'         any call to the \code{calcLaplace} or \code{calcLogLik} method, 
+#'         including during an MLE search) will be used (even if it was not the 
+#'         most recent Laplace likelihood). By default, the initial random 
+#'         effects values will be used for inner optimization.
+#'
+#'   \item \code{outOptimControl}. A list of control parameters for maximizing
+#'         the Laplace log-likelihood using \code{optim}. See 'Details' of
+#'         \code{\link{optim}} for further information.
+#' }
+#'
+#' @references
+#'
+#' Golub, G. H. and Welsch, J. H. (1969). Calculation of Gauss Quadrature Rules. 
+#' Mathematics of Computation 23 (106): 221-230.
+#'
+#' Liu, Q. and Pierce, D. A. (1994). A Note on Gauss-Hermite Quadrature. Biometrika, 81(3) 624-629.
+#'
+#' Jackel, P. (2005). A note on multivariate Gauss-Hermite quadrature. London: ABN-Amro. Re.
+#'
+NULL

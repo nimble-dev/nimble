@@ -1,5 +1,5 @@
 ## NIMBLE Laplace approximation
-## Laplace base class
+## AGHQuad/Laplace base class
 AGHQuad_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
@@ -38,11 +38,21 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
     },
     reset_outer_logLik = function(){},
     save_outer_logLik = function(logLikVal = double()){},
-    get_param_value = function(atOuterMode = integer(0, default = 0)){returnType(double(1))},
-		get_inner_mode = function(atOuterMode = integer(0, default = 0)){ returnType(double(1))},
-		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
-		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){returnType(double(2))},
-    check_convergence = function(){returnType(double())},
+    get_param_value = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(1))
+    },
+		get_inner_mode = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(1))
+    },
+		get_inner_negHessian = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(2))
+    },
+		get_inner_negHessian_chol = function(atOuterMode = integer(0, default = 0)){
+      returnType(double(2))
+    },
+    check_convergence = function(){
+      returnType(double())
+    },
     set_nQuad = function(nQUpdate = integer()){},
     set_transformation = function(transformation = character()){},
     set_warning = function(warn = logical()){},
@@ -1594,7 +1604,7 @@ buildOneAGHQuad <- nimbleFunction(
 #'   "data nodes" when determining ancestors of data nodes. And it uses item
 #'   (ii) instead of (iii) in the list above.)
 #'
-#' @author Wei Zhang, Perry de Valpine
+#' @author Wei Zhang, Perry de Valpine, Paul van Dam-Bates
 #' @return
 #'
 #' A list is returned with elements:
@@ -2419,34 +2429,37 @@ buildAGHQuad <- nimbleFunction(
     },
     ## Prior contribution to the posterior
 		calcPrior_p = function(p = double(1)){
-			values(model, paramNodes) <<- p
-			ans <- model$calculate(paramNodes)	## Add updates to deterministic nodes!
+      ## Prior log likelihood:
+      values(model, paramNodes) <<- p
+			ans <- ans + model$calculate(paramNodes)
 			return(ans)
 			returnType(double())
 		},
     ## Prior contribution to the posterior on the transformed scale.
 		calcPrior_pTransformed = function(pTransform = double(1)) {
-			p <- paramsTransform$inverseTransform(pTransform)
-			values(model, paramNodes) <<- p
-			ans <- model$calculate(paramNodes)
+      p <- paramsTransform$inverseTransform(p)
+			ans <- calcPrior_p(pTransform) + logDetJacobian(pTransform)
 			return(ans)
 			returnType(double())
 		},
     ## Calculate posterior density at p log likelihood + log prior.
-		calcPostLogProb = function(p = double(1), trans = logical(0, default = FALSE)) {
-			if(trans){
-				pstar <- paramsTransform$inverseTransform(p)
-			}else{
-				pstar <- p
-			}
-			ans <- calcLogLik(pstar) + calcPrior_p(pstar)
+		calcPostLogDens = function(p = double(1), trans = logical(0, default = FALSE)) {
+      ans <- 0
+      if(trans) {
+        pstar <- paramsTransform$inverseTransform(p)  ## Just want to do this once.
+        ans <- ans + logDetJacobian(p)  ## p is transformed, add Jacobian here.
+      }else{
+        pstar <- p
+      }
+      ## Error checking when calling calcLogLik.
+			ans <- ans + calcLogLik(pstar, FALSE) + calcPrior_p(pstar)
 			returnType(double())
 			return(ans)
 		},
     ## Calculate posterior density at p transformed, log likelihood + log prior (transformed).
-		calcPostLogProb_pTransformed = function(pTransform = double(1)) {
-
-      ans <- calcPostLogProb(pTransform, trans = TRUE) + logDetJacobian(pTransform)
+		calcPostLogDens_pTransformed = function(pTransform = double(1)) {
+      
+      ans <- calcPostLogDens(pTransfrom, TRUE)
       cache_outer_logLik(ans) ## Update internal cache w/ prior.
 
       if(is.nan(ans) | is.na(ans)) ans <- -Inf			
@@ -2468,9 +2481,8 @@ buildAGHQuad <- nimbleFunction(
 			returnType(double(1))
 		},
     ## Gradient of posterior density on the transformed scale.
-		gr_postLogProb_pTransformed = function(pTransform = double(1))
+		gr_postLogDens_pTransformed = function(pTransform = double(1))
 		{
-			## *** Repeated gradients and inverse.
 			pDerivs <- derivs_pInverseTransform(pTransform, c(0, 1))
 			grLogDetJacobian <- gr_logDetJacobian(pTransform)
 			grLogLikTrans <- gr_logLik(pTransform, TRUE)
@@ -2483,6 +2495,7 @@ buildAGHQuad <- nimbleFunction(
 			return(ans)
 			returnType(double(1))
 		},
+    ## For internal purposes of building the gradient
 		logDetJacobian = function(pTransform = double(1)){
 			ans <- paramsTransform$logDetJacobian(pTransform)
 			return(ans)
@@ -2492,29 +2505,19 @@ buildAGHQuad <- nimbleFunction(
     findMLE = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE) ){
-      mleRes <- findMaximum(pStart  = pStart,
+      mleRes <- optimize(pStart  = pStart,
                        method  = method,
-                       hessian = hessian,
-                       MAP = FALSE)
+                       hessian = hessian)
+      ## Back transform results to original scale
+      mleRes$par <- paramsTransform$inverseTransform(mleRes$par)
+                 
       return(mleRes)
       returnType(optimResultNimbleList())
     },
-    ## Calculate MAP of parameters
-    findMAP = function(pStart  = double(1, default = Inf),
+    ## General Maximization Function (Name check: optimize? @perry or Chris?)
+    optimize = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
-                       hessian = logical(0, default = TRUE) ){
-      mapRes <- findMaximum(pStart  = pStart,
-                       method  = method,
-                       hessian = hessian,
-                       MAP = TRUE)
-      return(mapRes)
-      returnType(optimResultNimbleList())
-    },
-    ## General Maximization Function
-    findMaximum = function(pStart  = double(1, default = Inf),
-                       method  = character(0, default = "BFGS"),
-                       hessian = logical(0, default = TRUE),
-                       MAP = logical(0, default = FALSE)) {
+                       hessian = logical(0, default = TRUE)) {
       if(!one_time_fixes_done) one_time_fixes() ## Otherwise summary will look bad.
       if(multiSetsCheck & nQuad > 1) stop("Currently only Laplace is supported for Maximization. Use setNodeSize(1) to change.")
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
@@ -2524,7 +2527,7 @@ buildAGHQuad <- nimbleFunction(
         return(ans)
       # stop("Wrong length for pStart in findMLE.")
       }
-      ## Reset log likelihood internally.
+      ## Reset log likelihood internally for cache.
       reset_outer_inner_logLik()
             
       ## In case parameter nodes are not properly initialized
@@ -2532,12 +2535,9 @@ buildAGHQuad <- nimbleFunction(
       else pStartTransform <- paramsTransform$transform(pStart)
       ## In case bad start values are provided
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
-      if(MAP) {
-        optRes <- optim(pStartTransform, calcPostLogProb_pTransformed, gr_postLogProb_pTransformed, method = method, 
-          control = outOptControl, hessian = hessian)
-      }else{
-        optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outOptControl, hessian = hessian)
-      }
+     
+      optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outOptControl, hessian = hessian)
+      
       if(optRes$convergence != 0) 
         print("Warning: optim has a non-zero convergence code: ", optRes$convergence, ".\n",
               "The control parameters of optim can be adjusted in the control argument of\n",
@@ -2547,8 +2547,7 @@ buildAGHQuad <- nimbleFunction(
       if( checkInnerConvergence(FALSE) != 0 )
         print("  Warning: inner optimzation had a non-zero convergence code. Use checkInnerConvergence(TRUE) to see details.")
       
-      ## Back transform results to original scale
-      optRes$par <- paramsTransform$inverseTransform(optRes$par)
+      ## Returns on transformed scale just like optim.
       return(optRes)
       returnType(optimResultNimbleList())
     },
@@ -3239,6 +3238,24 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' 
 #' }
 #' 
+#' Methods to find the marginal log posterior density by including the prior distribution to 
+#' \code{calcLogLik} for external use, such as finding the maximum a posteriori probability (MAP) estimate.
+#' \itemize{
+#'
+#'   \item \code{calcPrior_p(p)}. Log density of prior distribution.
+#'
+#'   \item \code{calcPrior_pTransformed(pTransform)}. Log density of prior distribution on transformed scale, includes the Jacobian.
+#'
+#'   \item \code{calcPostLogDens(p)}. Marginal log posterior density in terms of the parameter p.
+#'
+#'   \item \code{calcPostLogDens_pTransformed (pTransform)}. Marginal log posterior density in terms of the transformed
+#'   parameter, which includes the Jacobian transformation.
+#'
+#'   \item \code{gr_postLogDens_pTransformed(pTransform)}. Graident of marginal log posterior density on the transformed scale. 
+#'   Other available options that are used in the derivative for more flexible include \code{logDetJacobian(pTransform)} and
+#'   \code{gr_logDeJacobian(pTransform)}, as well as \code{gr_prior(p)}.
+#' }
+#' 
 #' Finally, methods that are primarily for internal use by other methods include:
 #'
 #' \itemize{
@@ -3374,7 +3391,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' can easily turn to other optimizers (say \code{\link{nlminb}}) in R for
 #' optimization (2); see the example below. 
 #'
-#' @author Wei Zhang, Perry de Valpine
+#' @author Wei Zhang, Perry de Valpine, Paul van Dam-Bates
 #' 
 #' @name laplace
 #' 
@@ -3421,8 +3438,12 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' models). \emph{Journal of the American Statistical Association}, 84(407),
 #' 717-726.
 #' 
+#' Liu, Q. and Pierce, D. A. (1994). A Note on Gauss-Hermite Quadrature. \emph{Biometrika}, 81(3) 624-629.
+#'
+#' Jackel, P. (2005). A note on multivariate Gauss-Hermite quadrature. London: \emph{ABN-Amro. Re.}
+#'
 #' Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal
 #' likelihood in non-Gaussian hierarchical models. \emph{Computational
 #' Statistics & Data Analysis}, 56, 699-709.
-#' 
+#'
 NULL
