@@ -186,7 +186,7 @@ test_that("AGH Quadrature 1D Binomial-Beta check 3 methods", {
     b ~ dgamma(1,1)
     for(i in 1:n){
       p[i] ~ dbeta(a, b)
-      y[i] ~ dbinom(p[i], N)
+      y[i] ~ dbinom(prob = p[i], size = N)
     }
   }), data = list(y = rbinom(n, N, rbeta(n, 10, 2))), 
     constants = list(N = N, n=n), inits = list(a = 10, b = 2), 
@@ -257,27 +257,26 @@ test_that("AGH Quadrature 1D Binomial-Beta check 3 methods", {
   }
   
   cmQuad$setMethod(2)
-  ## Check against 'exact' 5 nodes.
-  expect_equal(ll.21, ll.betabin(param.val), tol = 0.1)	## Accuracy is very poor
-  expect_equal(gr.21, gr.betabin(param.val), tol = 2)	  ## Very bad.
+  ## Check Laplace against RTMB here:
+  cmQuad$setQuadSize(1)
+  expect_equal(cmQuad$calcLogLik(param.val), -57.1448725555934729, 1e-06)
+  
+  ## Check against manual RTMB version 5 nodes.
+  cmQuad$setQuadSize(5)
+  expect_equal(cmQuad$calcLogLik(param.val), -54.7682946631443244, tol = 1e-06)	## Pretty close:
 
   ## Crank up the nodes to check accuracy. 15 nodes
   cmQuad$setQuadSize(15)
-  ll.15 <- cmQuad$calcLogLik(param.val)
-  gr.15 <- cmQuad$gr_logLik(param.val)
-
-  expect_equal(ll.15, ll.betabin(param.val), tol = 1e-02)	## Accuracy is only slightly better.
-  expect_equal(gr.15, gr.betabin(param.val), tol = 1e-01)	
+  expect_equal(cmQuad$calcLogLik(param.val), ll.betabin(param.val), tol = 1e-02)	## Accuracy is only slightly better.
+  expect_equal(cmQuad$gr_logLik(param.val), gr.betabin(param.val), tol = 1e-01)	
   
   ## Lots of nodes. 35 nodes (our current max).
   cmQuad$setQuadSize(35)
-  ll.35 <- cmQuad$calcLogLik(param.val)
-  gr.35 <- cmQuad$gr_logLik(param.val)
-
-  expect_equal(ll.35, ll.betabin(param.val), tol = 1e-5)	## Accuracy should not amazing but certainly better.
-  expect_equal(gr.35, gr.betabin(param.val), tol = 1e-03) ## Actually a case when we need a lot of quad points.
+  expect_equal(cmQuad$calcLogLik(param.val), ll.betabin(param.val), tol = 1e-5)	## Accuracy should not amazing but certainly better.
+  expect_equal(cmQuad$gr_logLik(param.val), gr.betabin(param.val), tol = 1e-03) ## Actually a case when we need a lot of quad points.
 
   ## Quick check on Laplace here as they are sooo bad.
+  # library(RTMB)
   # dat <- list(y = m$y, N = N)
   # pars <- list(loga = 0, logb = 0, logitp = rep(0, n))  
   # func <- function(pars){
@@ -287,10 +286,10 @@ test_that("AGH Quadrature 1D Binomial-Beta check 3 methods", {
     # p <- 1/(1+exp(-logitp))
     # negll <- -sum(dbeta(p, a, b, log = TRUE))
     # negll <- negll - sum(dbinom(y, size = N, p = p, log = TRUE))
-    # negll - sum(log(exp(-logitp)/(1+exp(-logitp))))
+    # negll - sum(log(exp(-logitp)/(1+exp(-logitp))^2))
   # }
   # obj <- MakeADFun(func, pars, random = "logitp")
-  # obj$fn(log(param.val))
+  # obj$fn(log(param.val))  
 })
 
 test_that("AGH Quadrature 1D Check MLE.", {
@@ -351,10 +350,10 @@ test_that("AGH Quadrature 1D Check MLE.", {
   expect_equal(mle.quad$par, mle.par, tol = 1e-02)
   expect_equal(mle.quad$value, mle.tru$value, tol = 1e-03)
   
-  ## Check with 51 quad points.
-  mQuad <- buildAGHQuad(model = m, nQuad = 51)
+  ## Check with 35 quad points.
+  mQuad <- buildAGHQuad(model = m, nQuad = 35)
   cmQuad <- compileNimble(mQuad, project = m)
-  mle.quad51 <- cmQuad$findMLE(pStart = c(10,2))
+  mle.quad35 <- cmQuad$findMLE(pStart = c(10,2))
   expect_equal(mle.quad51$par, mle.par, tol = 1e-04)
   expect_equal(mle.quad51$value, mle.tru$value, tol = 1e-08)
 })
