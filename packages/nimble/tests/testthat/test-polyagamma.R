@@ -46,7 +46,7 @@ test_that('polyagamma validity checks', {
     data <- list(y0 = ys, y1 = ys, y2 = ys, y3 = ys)
     
     m <- nimbleModel(code, constants = constants, data = data)
-    conf <- configureMCMC(m, nodes = NULL)
+    conf <- configureMCMC(m, nodes = 'm')
     expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1')))
     expect_silent(conf$addSampler(type='polyagamma', target=c('a0','a1')))
     expect_silent(conf$addSampler(type='polyagamma', target=c('b2')))
@@ -187,6 +187,8 @@ test_that('polyagamma validity checks', {
     
     
     ## Various invalid models.
+
+    ## This construction not allowed for efficiency of validity checking.
     code <- nimbleCode({
         for(i in 1:n) {
             p0[i] <- z2[i]*expit(b0+b1*x[i])
@@ -208,7 +210,7 @@ test_that('polyagamma validity checks', {
     m <- nimbleModel(code, constants = constants, data = data, inits = inits)
     conf <- configureMCMC(m, nodes = c('z1','z2'))
     expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1'), control = list(fixedDesignColumns = TRUE)))
-    expect_error(mcmc <- buildMCMC(conf), "zero inflation cannot be specified directly")
+    expect_error(mcmc <- buildMCMC(conf), "should be specified directly")
 
     code <- nimbleCode({
         for(i in 1:n) {
@@ -325,6 +327,7 @@ test_that('polyagamma validity checks', {
     expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1'), control = list(fixedDesignColumns = TRUE)))
     expect_error(mcmc <- buildMCMC(conf), "must be distributed `dbern`")
 
+    ## Responses not all part of same declation; not allowed for efficiency of validity checking.
     code <- nimbleCode({
         for(i in 1:n) {
             p0[i] <- expit(b0+b1*x[i])
@@ -346,7 +349,56 @@ test_that('polyagamma validity checks', {
     m <- nimbleModel(code, constants = constants, data = data, inits = inits)
     conf <- configureMCMC(m, nodes = c('z1','z2'))
     expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1'), control = list(fixedDesignColumns = TRUE)))
-    expect_error(mcmc <- buildMCMC(conf), "should all be part of the same declaration")
+    expect_error(mcmc <- buildMCMC(conf), "response nodes should all be part of the same declaration")
+
+    ## Inflation probabilities not specified directly; not allowed for efficiency of validity checking.
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b0+b1*x[i])
+            y0[i] ~ dbern(tmp[i]*p0[i])
+            tmp[i] <- z[i]
+            z[i] ~ dbern(q)
+        }
+        
+        b0~dnorm(0, sd=10)
+        b1~dnorm(0, sd=10)
+    })
+
+    n <- 10
+    constants <- list(n=n, x = runif(n), q = .75)
+    data <- list(y0 = c(1,0,1,0,1,0,1,0,1,0))
+    inits <- list(z1 = c(1,1,1,1,1,0,1,0,1,0), z2 = c(1,0,1,0,1,0,1,0,1,1))
+
+    set.seed(1)
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = c('z1','z2'))
+    expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1'), control = list(fixedDesignColumns = TRUE)))
+    expect_error(mcmc <- buildMCMC(conf), "should be specified directly")
+
+    ## Multiple linear predictor declarations; not allowed for efficiency of validity checking.
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p[i] <- expit(tmp[i])
+            y0[i] ~ dbern(p[i])
+        }
+        tmp[1] <- b0 + b1*x[1]
+        for(i in 2:n)
+            tmp[i] <- b0 + b1*x[i]
+        b0~dnorm(0, sd=10)
+        b1~dnorm(0, sd=10)
+    })
+
+    n <- 10
+    constants <- list(n=n, x = runif(n), q = .75)
+    data <- list(y0 = c(1,0,1,0,1,0,1,0,1,0))
+    inits <- list(z1 = c(1,1,1,1,1,0,1,0,1,0), z2 = c(1,0,1,0,1,0,1,0,1,1))
+
+    set.seed(1)
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = c('z1','z2'))
+    expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1'), control = list(fixedDesignColumns = TRUE)))
+    expect_error(mcmc <- buildMCMC(conf), "should all be constructed in the same declaration")
+
 })
 
 
