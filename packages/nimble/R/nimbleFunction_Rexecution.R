@@ -1207,15 +1207,17 @@ declare <- function(name, def){
 #' @export
 any_na <- function(x) any(is.na(x))
 
-## Retained for backwards compatibility
-is.na.vec <- function(x) any(is.na(x))
+## Deprecated as of v. 1.1.0
+is.na.vec <- function(x)
+    stop("`is.na.vec` has been removed from NIMBLE; please use `any_na`")
 
 #' @rdname any_na
 #' @export
 any_nan <- function(x) any(is.nan(x))
 
-## Retained for backwards compatibility
-is.nan.vec <- function(x) any(is.nan(x))
+## Deprecated as of v. 1.1.0
+is.nan.vec <- function(x)
+    stop("`is.nan.vec` has been removed from NIMBLE; please use `any_nan`")
 
 #' @export
 nimRound <- round

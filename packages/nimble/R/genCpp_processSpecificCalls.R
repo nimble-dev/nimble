@@ -13,7 +13,6 @@ specificCallReplacements <- list(
     length = 'size',
     is.nan = 'nimIsNaN',
     any_nan = 'nimAnyNaN',
-    is.nan.vec = "nimAnyNaN", ## retained for backward compatibility use in nimbleHMC
     is.na = 'nimIsNA',
     any_na = 'nimAnyNA',
     lgamma = 'lgammafn',
