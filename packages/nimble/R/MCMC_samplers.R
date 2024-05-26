@@ -165,7 +165,7 @@ sampler_categorical <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
         length <- extractControlElement(control, 'length', 'prob')
-        anyDistributionOK <- extractControlElement(control, 'anyDistributionOK', FALSE)
+        check <- extractControlElement(control, 'check', TRUE)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
@@ -180,7 +180,7 @@ sampler_categorical <- nimbleFunction(
         logProbs <- numeric(k)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
-        if(!anyDistributionOK && length == 'prob' && model$getDistribution(target) != 'dcat') stop('Can only use categorical sampler on node with dcat distribution.\nUse control argument \'anyDistributionOK = TRUE\' to allow use on other distributions.')
+        if(check && length == 'prob' && model$getDistribution(target) != 'dcat') stop('Can only use categorical sampler on node with dcat distribution.\nUse control argument \'check = FALSE\' to allow use on other distributions.')
         if(!is.numeric(k) || k <= 0 || k != round(k))   stop('Invalid \'length\' control parameter provided for categorical sampler.\nSee help(samplers) for details of the categorical sampler.')
     },
     run = function() {
@@ -2277,7 +2277,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' The categorical sampler accepts the following control list elements:
 #' \itemize{
 #' \item length. A character string or a numeric argument.  When a character string, this should be the name of a parameter of the distribution of the target node being sampled.  The length of this distribution parameter (considered as a 1-dimensional vector) will be used to determine the number of possible outcomes of the target node's distribution.  When a numeric value, this value will be used as the number of possible outcomes of the target node's distribution.  (default = "prob")
-#' \item anyDistributionOK. A logical argument.  When TRUE, this circumvents a check for a 'dcat' prior distribution for the target node being sampled. (default = FALSE)
+#' \item check. A logical argument.  When FALSE, no check for a 'dcat' prior distribution for the target node takes place. (default = TRUE)
 #' }
 #' 
 #' @section RW sampler:
