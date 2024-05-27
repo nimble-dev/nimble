@@ -16,6 +16,8 @@ echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"
 
 sed -e "s!@NIMBLE_HOME@!${R_PACKAGE_DIR}!" inst/make/Makevars.win.in > inst/make/Makevars.win
 
+sed -e "s!@EIGEN_INC@!!" inst/CppCode/Makevars.in > inst/CppCode/Makevars
+
 sed -e 's!@NEED_MAKEVARS_FILE@!TRUE!' R/config.R.in |
  sed -e 's|@R_ENABLE_LIB@|FALSE|' |
  sed -e 's|@EIGEN_INC@||' |
