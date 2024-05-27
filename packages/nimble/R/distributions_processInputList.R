@@ -269,8 +269,8 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
             nofun <- TRUE
         } else if(environment(rcf)$nfMethodRCobject$returnType != quote(double()) &&
                   environment(rcf)$nfMethodRCobject$returnType != quote(double(0)))
-              stop(paste0("checkDistributionFunctions: density function for ", densityName,
-                          " has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()')."))
+              stop(paste0("checkDistributionFunctions: density function for '", densityName,
+                          "' has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()')."))
     } else nofun <- TRUE
     if(nofun) {
         if(densityName %in% c('+','-','*','/','%%','%*%','[','[[','$','^','|','||','&','&&',':','<','<=','>','>=','!=','==')) {
@@ -291,8 +291,8 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         stop("checkDistributionFunctions: `x` argument is not allowed to have a default value.")
     
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
-        messageIfVerbose("  [Warning] Random generation function for ", densityName,
-                    " is not available. NIMBLE is generating a placeholder function, ", simulateName, ", that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.")
+        messageIfVerbose("  [Warning] Random generation function for '", densityName,
+                    "' is not available. NIMBLE is generating a placeholder function, '", simulateName, "', that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.")
         rargInfo <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo
         returnType <- deparse(unlist(rargInfo[[1]]))
         returnDim <- 0
@@ -588,11 +588,11 @@ deregisterDistributions <- function(distributionsNames, userEnv = parent.frame()
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) {
         distsMatched <- paste0(distributionsNames[matched], collapse = ', ')
-        messageIfVerbose("Deregistering ", distsMatched, " from user-registered distributions.")
+        messageIfVerbose("Deregistering '", distsMatched, "' from user-registered distributions.")
     }
     if(sum(!matched))
         for(nm in distributionsNames[!matched]) {
-            warning("Cannot deregister ", nm, " as it is not registered as a user-defined distribution.")
+            warning("Cannot deregister '", nm, "' as it is not registered as a user-defined distribution.")
         }
     
     distributionsNames <- distributionsNames[matched]

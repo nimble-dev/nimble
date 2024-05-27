@@ -1319,6 +1319,7 @@ isNameInExpr <- function(target, code) {
 
 nm_seq_noDecrease <- function(a, b) {
     if(a > b) {
+        messageIfVerbose("  [Warning] Detected backwards indexing in `", a, ":",b, "`. This is likely unintended and will likely not produce valid model code.")
         numeric(0)
     } else {
         a:b
