@@ -657,13 +657,13 @@ test_that("user-defined dists with setup code with d only",{
   })
 
   m <- nimbleModel(mc, data = list(y = 3), inits = list(x = .5))
-  temporarilyAssignInGlobalEnv(rmynorm_myDist1_dummy)
+  temporarilyAssignInGlobalEnv(rmynorm_myDist1)
   cm <- compileNimble(m)
   expect_equal(m$calculate(), cm$calculate())
   expect_silent(stuff <- getDistributionInfo("myDist1$dmynorm"))
-  expect_true(exists("rmynorm_myDist1_dummy", inherits=FALSE))
+  expect_true(exists("rmynorm_myDist1", inherits=FALSE))
   deregisterDistributions('myDist1$dmynorm')
-  expect_false(exists("rmynorm_myDist1_dummy", inherits=FALSE))
+  expect_false(exists("rmynorm_myDist1", inherits=FALSE))
   expect_error(stuff <- getDistributionInfo("myDist1$dmynorm"))
 })
 
@@ -749,7 +749,7 @@ test_that("user-defined dists with setup code with d and r",{
   m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
   set.seed(1)
   m$simulate()
-  expect_false(exists("rmynorm_myDistDEF1_dummy", inherits=FALSE))
+  expect_false(exists("rmynorm_myDistDEF1", inherits=FALSE))
 
   cm <- compileNimble(m)
   set.seed(1)
@@ -778,7 +778,7 @@ test_that("user-defined dists with setup code: trap error of simulating with dum
   })
 
   m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
-  temporarilyAssignInGlobalEnv(rmynorm_myDistGHI1_dummy)
+  temporarilyAssignInGlobalEnv(rmynorm_myDistGHI1)
   expect_error(m$simulate(), "provided without random generation")
 
   cm <- compileNimble(m)
@@ -808,11 +808,11 @@ test_that("deregister user-defined dists with setup code",{
 
   m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
 
-  expect_true(exists("rmynorm_myDistJKL1_dummy", inherits = FALSE))
+  expect_true(exists("rmynorm_myDistJKL1", inherits = FALSE))
   expect_silent(stuff <- getDistributionInfo("myDistJKL1$dmynorm"))
   deregisterDistributions('myDistJKL1$dmynorm')
   expect_error(stuff <- getDistributionInfo("myDistJKL1$dmynorm"))
-  expect_false(exists("rmynorm_myDistJKL1_dummy", inherits = FALSE))
+  expect_false(exists("rmynorm_myDistJKL1", inherits = FALSE))
 })
 
 test_that("user-defined dists with setup code with reduced name",{
@@ -833,7 +833,7 @@ test_that("user-defined dists with setup code with reduced name",{
   })
 
   m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5))
-  temporarilyAssignInGlobalEnv(r_myDistMNO1_dummy)
+  temporarilyAssignInGlobalEnv(r_myDistMNO1)
 
   cm <- compileNimble(m)
   expect_equal(m$calculate(), cm$calculate())
@@ -869,7 +869,7 @@ test_that("user-defined dists with setup code with r and multiple dists",{
   })
 
   m <- nimbleModel(mc, debug = FALSE, data = list(y = 3), inits = list(x = .5, y = 2))
-  temporarilyAssignInGlobalEnv(r2_myDistPQR1_dummy)
+  temporarilyAssignInGlobalEnv(r2_myDistPQR1)
 
   cm <- compileNimble(m)
   expect_equal(m$calculate(), cm$calculate())
@@ -913,7 +913,7 @@ test_that("user-defined functions with setup code and dist in same NF",{
   })
 
   m <- nimbleModel(mc, debug = FALSE, data = list(y = c(1.5, 2.5)), inits = list(z = c(.5, .7)))
-  temporarilyAssignInGlobalEnv(rbar_fooXYZ1_dummy)
+  temporarilyAssignInGlobalEnv(rbar_fooXYZ1)
 
   cm <- compileNimble(m)
   expect_equal(m$calculate(), cm$calculate())
@@ -1032,7 +1032,7 @@ test_that("user-defined in NF object example from User Manual works", {
   model <- nimbleModel(code2, constants = list(n = 10),
                        data = list(y = y),
                        inits = list(beta0=3.1,beta1=0.4,sigma=0.3))
-  temporarilyAssignInGlobalEnv(rcalc_my_linear_reg_dummy)
+  temporarilyAssignInGlobalEnv(rcalc_my_linear_reg)
   llh2 <- model$calculate()
   expect_equal(llh1, llh2)
   deregisterDistributions("my_linear_reg$dcalc")

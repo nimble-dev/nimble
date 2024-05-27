@@ -297,7 +297,7 @@ addDefaultDistributionInfo <- function(distributionInput, userEnv, check=TRUE) {
     ans$simulateName <- sub('^d', 'r', ans$densityName)
     ans$cdfName <- sub('^d', 'p', ans$densityName)
     ans$quantileName <- sub('^d', 'q', ans$densityName)
-    ans$dummy_simulateName <- if(isPlain) ans$simulateName else paste0(ans$simulateName, "_", ans$objectName, "_dummy")
+    ans$dummy_simulateName <- if(isPlain) ans$simulateName else paste0(ans$simulateName, "_", ans$objectName) #, "_dummy")
     ans$inputString <- name
     ans
   }
