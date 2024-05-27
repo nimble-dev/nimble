@@ -1176,10 +1176,22 @@ buildOneAGHQuad <- nimbleFunction(
       joint_logLik_res <- derivs(joint_logLik(p, reTransform), wrt = p_and_reTrans_indices, order = c(1, 2),
                                  model = model, updateNodes = joint_updateNodes, constantNodes = joint_constantNodes)
       negHessUpper <- matrix(init = FALSE, nrow = nre, ncol = nreTrans)
-      for(i in 1:nreTrans) negHessUpper[i,i:nreTrans] <- -joint_logLik_res$hessian[npar + i, npar + i:nreTrans, 1]
+      for(i in 1:nreTrans){
+        for(j in i:nreTrans){
+          negHessUpper[i,j] <- -joint_logLik_res$hessian[npar + i, npar + j, 1]
+        }
+      }      
+      # for(i in 1:nreTrans) negHessUpper[i,i:nreTrans] <- -joint_logLik_res$hessian[npar + i, npar + i:nreTrans, 1]
       cholNegHess <- chol(negHessUpper)
       logdetNegHessAns <- 2 * sum(log(diag(cholNegHess)))
-      hess_wrt_p_wrt_re <- joint_logLik_res$hessian[1:npar, npar + (1:nreTrans), 1]
+      hess_wrt_p_wrt_re <- matrix(init = FALSE, nrow = npar, ncol = nre)
+      for(i in 1:npar){
+        for(j in 1:nreTrans){
+          hess_wrt_p_wrt_re[i, j] <- joint_logLik_res$hessian[i, npar + j, 1]
+        }
+      }
+      # hess_wrt_p_wrt_re <- joint_logLik_res$hessian[1:npar, npar + (1:nreTrans), 1] # Wasn't working.
+      
       ans <- c(joint_logLik_res$jacobian[1, 1:npar], logdetNegHessAns, cholNegHess, hess_wrt_p_wrt_re)
       ## Indices to components of this are:
       ## gr_joint_logLik_wrt_p = (1:npar)                    [size = npar]

@@ -50,8 +50,8 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-7)
       tryResult <- try({
-          expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
-          expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
+          expect_wrapper(summ_orig_alt <- cL$summary(opt_alt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE, recompute = TRUE))
+          expect_wrapper(summ_trans_alt <- cL$summary(opt_alt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE, recompute = TRUE))
       })
       if(inherits(tryResult, 'try-error')) {
           print("cL$summary failing.")
@@ -362,7 +362,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
   cmLaplace$setInnerOptimWarning(TRUE)
   expect_output(summ <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE,
                                           jointCovariance = TRUE),
-                "optim does not converge for the inner optimization")
+                "optim did not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix 
   vcov <- matrix(c(0, 0, 0, 1/(0.2^2/4+1/9)), nrow = 2) + matrix(c(1, 0.4587156), ncol = 1) %*% (1/0.002293578) %*% t(matrix(c(1, 0.4587156), ncol = 1))
@@ -375,10 +375,10 @@ test_that("Laplace 1D with deterministic intermediates works", {
   expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(), "Warning: inner optimzation had a non-zero convergence code\\. Use checkInnerConvergence\\(TRUE\\) to see details\\.")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  cmLaplace$setInnerOptimWarning(TRUE)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = "optim does not converge for the inner optimization")
-  cmLaplace$setInnerOptimWarning(TRUE)
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = "optim does not converge for the inner optimization")
+  cmLaplace$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = "optim did not converge for the inner optimization")
+  cmLaplaceNoSplit$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = "optim did not converge for the inner optimization")
 })
 
 test_that("Laplace 1D with a constrained parameter and deterministic intermediates works", {
@@ -398,7 +398,8 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   cmLaplace <- cL$mLaplace
   cmLaplaceNoSplit <- cL$mLaplaceNoSplit
   
-  expect_output(opt <- cmLaplace$findMLE(), "optim does not converge for the inner optimization")
+  expect_output(opt <- cmLaplace$findMLE(), "Warning: inner optimzation had a non-zero convergence code\\. Use checkInnerConvergence\\(TRUE\\) to see details\\.")
+  
   # V[a] = 9
   # V[y] = 0.2^2 * 9 + 4 = 4.36
   # y ~ N(0.2*0.5*mu, 4.36)
@@ -412,33 +413,45 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(opt$hessian[1,1], -3.669725, tol = 1e-3)
   expect_equal(opt$value, dnorm(0.1*40, 0.1*40, sd = sqrt(4.36), log = TRUE))
 
+  cmLaplace$setInnerOptimWarning(TRUE)
   expect_output(summ <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE,
-                                          jointCovariance = TRUE),
-                "optim does not converge for the inner optimization")
+                                          jointCovariance = TRUE, recompute = TRUE),
+                "optim did not converge for the inner optimization")
   expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(0, 0, 0, 1/(0.2^2/4+1/9)), nrow = 2) + matrix(c(1, 18.34862), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(1, 18.34862), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-3)
   expect_output(summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE,
-                                           jointCovariance = TRUE),
-                "optim does not converge for the inner optimization")
+                                           jointCovariance = TRUE, recompute = TRUE),
+                "optim did not converge for the inner optimization")
   # Covariance matrix on original scale
   vcov <- diag(c(40,1)) %*% vcov_transform %*% diag(c(40,1))
   expect_equal(vcov, summ2$vcov, tol = 1e-3)
+
+  # Check summary based on not recomputing random effects and hessian.
+  summ.orig <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE, recompute = FALSE)
   # Check covariance matrix for params only
-  expect_output(summ3 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE),
-                "optim does not converge for the inner optimization")
+  expect_output(summ3 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE, recompute = TRUE),
+                "optim did not converge for the inner optimization")
+
+  # Make sure that the recompute didn't change the values of the random effects or standard errors.
+  expect_equal(summ.orig$randomEffects[["estimates"]], summ3$randomEffects[["estimates"]], tol = 1e-12)
+  expect_equal(summ.orig$randomEffects[["stdErrors"]], summ3$randomEffects[["stdErrors"]], tol = 1e-12)
+
   expect_equal(summ3$vcov, vcov[1,1,drop=FALSE], tol=1e-3)
-  expect_output(summ4 <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = FALSE),
-                "optim does not converge for the inner optimization")
+  expect_output(summ4 <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = FALSE, recompute = TRUE),
+                "optim did not converge for the inner optimization")
   expect_equal(summ4$vcov, vcov_transform[1,1,drop=FALSE], tol=1e-4)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(),  "optim does not converge for the inner optimization")
+  cmLaplaceNoSplit$setInnerOptimWarning(TRUE)
+  expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(),  "optim did not converge for the inner optimization")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = "optim does not converge for the inner optimization")
-  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = "optim does not converge for the inner optimization")
+  cmLaplace$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = "optim did not converge for the inner optimization")
+  cmLaplaceNoSplit$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = "optim did not converge for the inner optimization")
 })
 
 test_that("Laplace 1D with deterministic intermediates and multiple data works", {
@@ -770,6 +783,9 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   # Check covariance matrix for params only
   summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
   expect_equal(summ2$vcov, tmbvcov[1,1,drop=FALSE], tol=1e-7)
+
+  summ2_recomp <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE, recompute = TRUE)
+  expect_equal(summ2$vcov, summ2_recomp$vcov, tol=1e-10)
 
   summL <- summaryLaplace(cmLaplace, opt, jointCovariance = TRUE)
   expect_equal(nrow(summL$randomEffects), 2)
@@ -1740,7 +1756,7 @@ test_that("Laplace with nested random effects works", {
   cmLaplace <- compileNimble(mLaplace, project = m)
   ## It seems that default start values (0, 1, 1, 1) for this example do not work well 
   ## for optimisation; use c(2, 2, 2, 2) instead
-  expect_output(opt <- cmLaplace$findMLE(pStart = c(2,2,2,2)), "optim does not converge for the inner optimization")
+  expect_output(opt <- cmLaplace$findMLE(pStart = c(2,2,2,2)), "optim did not converge for the inner optimization")
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
   
   expect_equal(nimres$params$estimates[1], lme4res$coefficients[,"Estimate"], tol = 1e-5)
