@@ -2431,14 +2431,14 @@ buildAGHQuad <- nimbleFunction(
 		calcPrior_p = function(p = double(1)){
       ## Prior log likelihood:
       values(model, paramNodes) <<- p
-			ans <- ans + model$calculate(paramNodes)
-			return(ans)
-			returnType(double())
+      ans <- model$calculate(paramNodes)
+      return(ans)
+      returnType(double())
 		},
     ## Prior contribution to the posterior on the transformed scale.
 		calcPrior_pTransformed = function(pTransform = double(1)) {
-      p <- paramsTransform$inverseTransform(p)
-			ans <- calcPrior_p(pTransform) + logDetJacobian(pTransform)
+      p <- paramsTransform$inverseTransform(pTransform)
+			ans <- calcPrior_p(p) + logDetJacobian(pTransform)
 			return(ans)
 			returnType(double())
 		},
@@ -2459,7 +2459,7 @@ buildAGHQuad <- nimbleFunction(
     ## Calculate posterior density at p transformed, log likelihood + log prior (transformed).
 		calcPostLogDens_pTransformed = function(pTransform = double(1)) {
       
-      ans <- calcPostLogDens(pTransfrom, TRUE)
+      ans <- calcPostLogDens(pTransform, TRUE)
       cache_outer_logLik(ans) ## Update internal cache w/ prior.
 
       if(is.nan(ans) | is.na(ans)) ans <- -Inf			
