@@ -35,10 +35,10 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
     expect_wrapper(opt <- cL$findMLE())
   }
   if(missing(summ_orig)){
-    expect_wrapper(summ_orig <- cL$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
+    expect_wrapper(summ_orig <- cL$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE, recompute = TRUE))
   }
   if(missing(summ_trans)){
-    expect_wrapper(summ_trans <- cL$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
+    expect_wrapper(summ_trans <- cL$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE, recompute = TRUE))
   }
   ref_method <- cL$getMethod()
   for(method in methods) {
@@ -372,10 +372,12 @@ test_that("Laplace 1D with deterministic intermediates works", {
   expect_equal(summ2$vcov, vcov[1,1,drop=FALSE], tol=1e-4)
 
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(), "optim does not converge for the inner optimization")
+  expect_output(optNoSplit <- cmLaplaceNoSplit$findMLE(), "Warning: inner optimzation had a non-zero convergence code\\. Use checkInnerConvergence\\(TRUE\\) to see details\\.")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
+  cmLaplace$setInnerOptimWarning(TRUE)
   check_laplace_alternative_methods(cmLaplace, cm, m, opt, expected_warning = "optim does not converge for the inner optimization")
+  cmLaplace$setInnerOptimWarning(TRUE)
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit, expected_warning = "optim does not converge for the inner optimization")
 })
 

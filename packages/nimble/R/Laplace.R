@@ -257,7 +257,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod, control = optimControl)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -283,7 +283,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod, control = optimControl)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -1008,7 +1008,7 @@ buildOneAGHQuad <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod, control = optimControl)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -1027,7 +1027,7 @@ buildOneAGHQuad <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod, control = optimControl)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim does not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -2596,7 +2596,7 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(1))
     },    
     ## Optimized random effects given transformed parameter values
-    optimRandomEffects = function(pTransform = double(1)){
+    optimRandomEffects = function(pTransform = double(1), recompute = logical(0, default = FALSE)){
       if(nre == 0) stop("No random effects in the model")
       p <- pInverseTransform(pTransform)
       raneff <- numeric(nre)
@@ -2605,17 +2605,20 @@ buildAGHQuad <- nimbleFunction(
 
       pMLE <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 1)
       pLast <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 0)
-      
-      negHessMethod <- -1
-      if(all(p == pMLE)) negHessMethod <- 1
-      else if(all(p == pLast)) negHessMethod <- 0
+
+      ## Allow the user to force recompute the inner random effects optimzation.
+      computeMethod <- -1
+      if(!recompute){
+        if(all(p == pMLE)) computeMethod <- 1
+        else if(all(p == pLast)) computeMethod <- 0
+      }
 
       for(i in seq_along(AGHQuad_nfl)){
-        if(negHessMethod == -1 ){
+        if(computeMethod == -1 ){
           if(methodID == 1) tmp <- AGHQuad_nfl[[i]]$update_max_inner_logLik_internal(p)
           else tmp <- AGHQuad_nfl[[i]]$update_max_inner_logLik(p)
         }else{
-          tmp <- AGHQuad_nfl[[i]]$get_inner_mode(atOuterMode = negHessMethod)
+          tmp <- AGHQuad_nfl[[i]]$get_inner_mode(atOuterMode = computeMethod)
         }
         numre <- dim(tmp)[1]
         raneff[(tot+1):(tot+numre)] <- tmp
@@ -2625,7 +2628,7 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(1))
     },
     ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects
-    inverse_negHess = function(p = double(1), reTransform = double(1)){
+    inverse_negHess = function(p = double(1), reTransform = double(1), recompute = logical(0, default = FALSE)){
       if(nre == 0) stop("No random effects in the model")
       invHess <- matrix(value = 0, nrow = nre, ncol = nre)
       tot <- 0
@@ -2633,16 +2636,19 @@ buildAGHQuad <- nimbleFunction(
       pMLE <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 1)
       pLast <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 0)
       
-      negHessMethod <- -1
-      if(all(p == pMLE)) negHessMethod <- 1 ## Will this have any numerical error?
-      else if(all(p == pLast)) negHessMethod <- 0
+      ## Allow the user to force recompute the inner random effects optimzation.
+      computeMethod <- -1
+      if(!recompute){
+        if(all(p == pMLE)) computeMethod <- 1
+        else if(all(p == pLast)) computeMethod <- 0
+      }
 
       for(i in seq_along(AGHQuad_nfl)){
         numre <- lenInternalRENodeSets[i]
-        if(negHessMethod == -1){
+        if(computeMethod == -1){
           tmp <- AGHQuad_nfl[[i]]$negHess(p, reTransform[(tot+1):(tot+numre)])
         }else{
-          U <- AGHQuad_nfl[[i]]$get_inner_negHessian_chol(atOuterMode = negHessMethod)
+          U <- AGHQuad_nfl[[i]]$get_inner_negHessian_chol(atOuterMode = computeMethod)
           tmp <- t(U) %*% U
         }
         invHess[(tot+1):(tot+numre), (tot+1):(tot+numre)] <- inverse(tmp)
@@ -2670,7 +2676,8 @@ buildAGHQuad <- nimbleFunction(
     summary = function(MLEoutput                 = optimResultNimbleList(),
                        originalScale             = logical(0, default = TRUE),
                        randomEffectsStdError = logical(0, default = FALSE),
-                       jointCovariance       = logical(0, default = FALSE)){
+                       jointCovariance       = logical(0, default = FALSE),
+                       recompute             = logical(0, default = FALSE)){
       if(dim(MLEoutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace or AGHQuad MLE")
       ## Output lists
       ans <- AGHQuad_summary$new()
@@ -2712,12 +2719,12 @@ buildAGHQuad <- nimbleFunction(
       }
       else{
         ## Random effects
-        optreTransform <- optimRandomEffects(pTransform)  ## *** Replace this with cached inner modes.
+        optreTransform <- optimRandomEffects(pTransform, recompute)  ## *** Replace this with cached inner modes.
         optre <- reInverseTransform(optreTransform)
         ntot <- npar + nre
         if(jointCovariance) {
           ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects at MLEs
-          inv_negHess <- inverse_negHess(p, optreTransform)   ## *** Replace this with cached inner modes.
+          inv_negHess <- inverse_negHess(p, optreTransform, recompute)   ## *** Replace this with cached inner modes.
           jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
           #jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
           jointInvNegHessZero[(npar+1):ntot, (npar+1):ntot] <- inv_negHess
@@ -2777,7 +2784,7 @@ buildAGHQuad <- nimbleFunction(
             ranres$estimates <- optre
             if(randomEffectsStdError){
               ## Joint covariance matrix on transform scale
-              inv_negHess <- inverse_negHess(p, optreTransform)
+              inv_negHess <- inverse_negHess(p, optreTransform, recompute)
               # jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
               # jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
               ## Hessian of log-likelihood wrt to params and transformed random effects
@@ -2834,7 +2841,7 @@ buildAGHQuad <- nimbleFunction(
             ranres$estimates <- optreTransform
             ans$vcov <- vcov_pTransform
             if(randomEffectsStdError){
-              inv_negHess <- inverse_negHess(p, optreTransform)
+              inv_negHess <- inverse_negHess(p, optreTransform, recompute)
               jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
               jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
               ## Hessian of log-likelihood wrt to params and transformed random effects
@@ -3280,17 +3287,19 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'    respect to transformed random effects at \code{reTrans}. Derivative order
 #'    is given by \code{order} (any of 0, 1, and/or 2).
 #'
-#'    \item \code{optimRandomEffects(pTransform)}. Calculate the optimized
+#'    \item \code{optimRandomEffects(pTransform, recompute)}. Calculate the optimized
 #'    random effects given transformed parameter value \code{pTransform}. The
 #'    optimized random effects are the mode of the conditional distribution of
 #'    random effects given data at parameters \code{pTransform}, i.e. the
-#'    calculation of \code{calcNodes}.
+#'    calculation of \code{calcNodes}. Force the function to recompute the
+#'    inner optimzation with \code{recompute = TRUE}.
 #'
-#'    \item \code{inverse_negHess(p, reTransform)}. Calculate the inverse of the
+#'    \item \code{inverse_negHess(p, reTransform, recompute)}. Calculate the inverse of the
 #'    negative Hessian matrix of the joint (parameters and random effects)
 #'    log-likelihood with respect to transformed random effects, evaluated at
 #'    parameter value \code{p} and transformed random effects
-#'    \code{reTransform}.
+#'    \code{reTransform}. Force the function to recompute the
+#'    inner optimzation with \code{recompute = TRUE}.
 #'
 #'    \item \code{hess_logLik_wrt_p_wrt_re(p, reTransform)}. Calculate the
 #'    Hessian matrix of the joint log-likelihood with respect to parameters and
