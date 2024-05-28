@@ -69,7 +69,10 @@ possible in this case to pass a macro without using a \code{~} or
 z[1:10], arg2 = "hello"))}.
 
 If \code{use3pieces = FALSE} and \code{unpackArgs = TRUE}, it
-won't make sense to anticipate a declaration using \code{~} or \code{<-}.  Ins#' tead, arguments from an arbitrary call will be passed as separate arguments.  #' For example, the line \code{macro1(arg1 = z[1:10], arg2 = "hello")} will be pa#' ssed to \code{fun} as \code{fun(arg1 = z[1:10], arg2 = "hello")}.
+won't make sense to anticipate a declaration using \code{~} or \code{<-}.
+Instead, arguments from an arbitrary call will be passed as separate arguments.
+For example, the line \code{macro1(arg1 = z[1:10], arg2 = "hello")} will be
+passed to \code{fun} as \code{fun(arg1 = z[1:10], arg2 = "hello")}.
 
 In addition, the final two arguments of \code{fun} must be called \code{modelInfo}
 and \code{.env} respectively. 
