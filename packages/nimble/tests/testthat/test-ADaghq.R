@@ -1,7 +1,3 @@
-library(testthat)
-library(nimble)
-source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/QuadratureGrids.R")
-source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/Laplace.R")
 
 # Tests of AGH Quadrature approximation
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
