@@ -1,7 +1,7 @@
-# library(testthat)
-# library(nimble)
-# source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/QuadratureGrids.R")
-# source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/Laplace.R")
+library(testthat)
+library(nimble)
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/QuadratureGrids.R")
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/Laplace.R")
 
 # Tests of Laplace approximation
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
@@ -1939,6 +1939,46 @@ test_that("Laplace with N(0,1) random effects works", {
   # Check covariance matrix for params only
   summ2 <- cmLaplace$summary(res, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
   expect_equal(summ2$vcov, TMB_vcov[6:8,6:8], tol=1e-5)
+})
+
+test_that("Setting Different Initial Values for Inner Optim", {
+  m <- nimbleModel(
+    nimbleCode({
+      y ~ dnorm(0.2 * a, sd = 2)
+      a ~ dnorm(0.5 * mu, sd = 3)
+      mu ~ dnorm(0, sd = 5)
+    }), data = list(y = 4), inits = list(a = -1, mu = 0),
+    buildDerivs = TRUE
+  )
+
+  mLaplace <- buildLaplace(model = m)
+  cm <- compileNimble(m)
+  cL <- compileNimble(mLaplace, project = m)
+
+  cL$setInnerOptimWarning(TRUE)
+
+  ## Test different starting values:
+  cL$setInternalOptimInits("zero")
+  expect_output(cL$calcLogLik(37), "Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
+  
+  cL$setInternalOptimInits("last.best")
+  expect_output(cL$calcLogLik(37.1), NA)  # Small change to actually recalculate. No warning.
+  
+  set.seed(21)
+  cL$setInternalOptimInits("random")
+  expect_output(cL$calcLogLik(37.2), NA)  # Shouldn't warn.
+
+  values(cm, "a") <- 0  ## Bad init.
+  cL$setInternalOptimInits("model")
+  expect_output(cL$calcLogLik(37.01), "Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
+
+  values(cm, "a") <- 18  
+  cL$setInternalOptimInits("model")
+  expect_output(cL$calcLogLik(37.0001), NA) ## Good init.
+
+  cL$setInternalOptimInits("last")  ## Last isn't great for this new value.
+  expect_output(cL$calcLogLik(15.0001), "Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
+
 })
 
 nimbleOptions(enableDerivs = EDopt)

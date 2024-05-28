@@ -1,7 +1,7 @@
-# library(testthat)
-# library(nimble)
-# source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/QuadratureGrids.R")
-# source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/Laplace.R")
+library(testthat)
+library(nimble)
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/QuadratureGrids.R")
+source("C:/Users/vandambatesp/Documents/GitHub/nimble/packages/nimble/R/Laplace.R")
 
 # Tests of AGH Quadrature approximation
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
@@ -317,29 +317,23 @@ test_that("AGH Quadrature 1D Check MLE.", {
     a <- exp(pars[1])
     b <- exp(pars[2])
     ll <- 0
-    for( i in seq_along(m$y))
-    {
-      ll <- ll - lbeta(a,b) + lchoose(N, m$y[i]) + lbeta(a + m$y[i], b + N-m$y[i])
-    }
+    for( i in seq_along(m$y)) ll <- ll - lbeta(a,b) + lchoose(N, m$y[i]) + lbeta(a + m$y[i], b + N-m$y[i])
     ll
   }
 
   dibeta <- function(a,b)
   {
     da <-  digamma(a) - digamma(a+b) 
-	db <-  digamma(b) - digamma(a+b)
-	c(da, db)
+    db <-  digamma(b) - digamma(a+b)
+    c(da, db)
   }
 
   gr.betabin <- function(pars){
-	a <- exp(pars[1])
-	b <- exp(pars[2])
-	dll <- 0
-	for( i in seq_along(m$y))
-	{
-      dll <- dll - dibeta(a,b) + dibeta(a + m$y[i], b + N-m$y[i])
-	}
-	return(dll)
+    a <- exp(pars[1])
+    b <- exp(pars[2])
+    dll <- 0
+    for( i in seq_along(m$y)) dll <- dll - dibeta(a,b) + dibeta(a + m$y[i], b + N-m$y[i])
+    return(dll)
   }
   
   mle.tru <- optim(log(c(10,2)), ll.betabin, gr.betabin, control = list(fnscale = -1))
@@ -351,11 +345,10 @@ test_that("AGH Quadrature 1D Check MLE.", {
   expect_equal(mle.quad$value, mle.tru$value, tol = 1e-03)
   
   ## Check with 35 quad points.
-  mQuad <- buildAGHQuad(model = m, nQuad = 35)
-  cmQuad <- compileNimble(mQuad, project = m)
+  cmQuad$setQuadSize(35)
   mle.quad35 <- cmQuad$findMLE(pStart = c(10,2))
-  expect_equal(mle.quad51$par, mle.par, tol = 1e-04)
-  expect_equal(mle.quad51$value, mle.tru$value, tol = 1e-08)
+  expect_equal(mle.quad35$par, mle.par, tol = 1e-04)
+  expect_equal(mle.quad35$value, mle.tru$value, tol = 1e-08)
 })
 
 test_that("AGH Quadrature Comparison to LME4 1 RE", {
@@ -392,7 +385,7 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
  
  
     # mod.lme4 <- lme4::lmer(m$y ~ 1 + (1|grp), REML = FALSE, 
-	# control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
+    # control = lmerControl(optimizer= "optimx", optCtrl  = list(method="L-BFGS-B")))
     # sprintf("%.16f",   summary(mod.lme4)$sigma)
     # sprintf("%.16f",   lme4::fixef(mod.lme4))
     # sprintf("%.16f",   attr(unclass(lme4::VarCorr(mod.lme4))[[1]], 'stddev'))  
@@ -488,3 +481,6 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   expect_equal(mleLaplace, mleLaplace2, tol = 1e-6) 
   expect_equal(mleQuad, mleQuad2, tol = 1e-8)
 })
+
+nimbleOptions(enableDerivs = EDopt)
+nimbleOptions(buildModelDerivs = BMDopt)
