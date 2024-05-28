@@ -56,7 +56,9 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
     set_nQuad = function(nQUpdate = integer()){},
     set_transformation = function(transformation = character()){},
     set_warning = function(warn = logical()){},
-    set_reInitMethod = function(method = double()){}
+    set_reInitMethod = function(method = double()){},
+    set_randomeffect_values = function(p = double(1)){},
+    set_inner_cache = function(cache = logical(0, default = TRUE)){}
   )
 )
 
@@ -189,8 +191,8 @@ buildOneAGHQuad1D <- nimbleFunction(
       else if(startID == 4) ans <- user_saved_re_value                  ## User provided value
       else if(startID == 5){                                            ## Random start.
         model$simulate(randomEffectsNodes)
-        ans <- reTrans$transform(values(model, randomEffectsNodes))      
-      }else ans <- reTrans$transform(optStart)                           ## User provided values or model values at initialization.
+        ans <- reTrans$transform(values(model, randomEffectsNodes))     ## From prior:    
+      }else ans <- reTrans$transform(optStart)                          ## User provided values or model values at initialization.
       return(ans)
       returnType(double(1))
     },
@@ -723,6 +725,8 @@ buildOneAGHQuad1D <- nimbleFunction(
     },
     get_param_value = function(atOuterMode = integer(0, default = 0)){
       returnType(double(1))
+      ## Ensures that the inner value will not match and cached values will not be used.
+      if(!cache_inner_max) return(numeric(Inf, npar)) 
       if(atOuterMode) return(outer_param_max)
       return(max_inner_logLik_previous_p)
     },
@@ -755,6 +759,33 @@ buildOneAGHQuad1D <- nimbleFunction(
       if( method == 6 ){
         startID <<- 5
       }
+    },
+    set_randomeffect_values = function(p = double(1)){
+      foundIt <- FALSE
+      ## Last value called:
+      if(all(p == max_inner_logLik_previous_p)) {
+        re <- reTrans$inverseTransform(max_inner_logLik_saved_par)
+        foundIt <- TRUE
+      }
+      ## Best value called:
+      if(all(p == outer_param_max)) {
+        re <- reTrans$inverseTransform(outer_mode_max_inner_logLik_saved_par)
+        foundIt <- TRUE
+      }
+      if(foundIt){
+        values(model, paramNodes) <<- p
+        model$calculate(paramDeps)
+      }else{
+        print("  [Warning] Have not cached the inner optimzation. Running optimzation now.")
+        update_max_inner_logLik(p)
+        re <- reTrans$inverseTransform(max_inner_logLik_saved_par)
+      }
+      ## Ensure the model is up to date for all nodes.
+      values(model, randomEffectsNodes) <<- re
+      model$calculate(innerCalcNodes)
+    },
+    set_inner_cache = function(cache = logical(0, default = TRUE)){
+      cache_inner_max <<- cache
     }
   ),
   buildDerivs = list(inner_logLik                            = list(),
@@ -1419,6 +1450,8 @@ buildOneAGHQuad <- nimbleFunction(
     },
     get_param_value = function(atOuterMode = integer(0, default = 0)){
       returnType(double(1))
+      ## Ensures that the inner value will not match and cached values will not be used.
+      if(!cache_inner_max) return(numeric(Inf, npar))
       if(atOuterMode) return(outer_param_max)
       return(max_inner_logLik_previous_p)
     },    
@@ -1452,7 +1485,34 @@ buildOneAGHQuad <- nimbleFunction(
       if( method == 6 ){
         startID <<- 5
       }
-    }
+    },
+    set_randomeffect_values = function(p = double(1)){
+      foundIt <- FALSE
+      ## Last value called:
+      if(all(p == max_inner_logLik_previous_p)) {
+        re <- reTrans$inverseTransform(max_inner_logLik_saved_par)
+        foundIt <- TRUE
+      }
+      ## Best value called:
+      if(all(p == outer_param_max)) {
+        re <- reTrans$inverseTransform(outer_mode_max_inner_logLik_saved_par)
+        foundIt <- TRUE
+      }
+      if(foundIt){
+        values(model, paramNodes) <<- p
+        ans <- model$calculate(paramDeps)
+      }else{
+        print("  [Warning] Have not cached the inner optimization. Running inner optimization now.")
+        update_max_inner_logLik(p)
+        re <- reTrans$inverseTransform(max_inner_logLik_saved_par)
+      }
+      ## Ensure the model is up to date for all nodes.
+      values(model, randomEffectsNodes) <<- re
+      model$calculate(innerCalcNodes)
+    },
+    set_inner_cache = function(cache = logical(0, default = TRUE)){
+      cache_inner_max <<- cache
+    }    
   ),
   buildDerivs = list(inner_logLik                            = list(),
                      joint_logLik                            = list(),
@@ -2066,16 +2126,16 @@ buildAGHQuad <- nimbleFunction(
       otherLogLik_constantNodes <- character(0)
     }
     ## Out and inner optimization settings
-    outOptControl   <- nimOptimDefaultControl()
+    outerOptimControl   <- nimOptimDefaultControl()
     innerOptControl <- nimOptimDefaultControl()
     optimControlArgNames <- c("trace", "fnscale", "parscale", "ndeps", "maxit", "abstol", "reltol", "alpha", 
                               "beta", "gamma", "REPORT", "type", "lmm", "factr", "pgtol", "temp", "tmax")
-    if(!is.null(control$outOptimControl)){
-      validNames <- intersect(names(control$outOptimControl), optimControlArgNames)
+    if(!is.null(control$outerOptimControl)){
+      validNames <- intersect(names(control$outerOptimControl), optimControlArgNames)
       numValidNames <- length(validNames)
       if(numValidNames > 0){
         for(i in 1:numValidNames){
-          outOptControl[[validNames[i]]] <- control$outOptimControl[[validNames[i]]]
+          outerOptimControl[[validNames[i]]] <- control$outerOptimControl[[validNames[i]]]
         }   
       }
     }
@@ -2087,7 +2147,7 @@ buildAGHQuad <- nimbleFunction(
           innerOptControl[[validNames_inner[i]]] <- control$innerOptimControl[[validNames_inner[i]]]   
       }
     }
-    outOptControl$fnscale <- -1 
+    outerOptimControl$fnscale <- -1 
     innerOptControl$fnscale <- -1 
     if(!is.null(control$innerOptimMethod) && (control$innerOptimMethod %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B"))){
       innerOptMethod <- control$innerOptimMethod
@@ -2207,7 +2267,9 @@ buildAGHQuad <- nimbleFunction(
     one_time_fixes_done <- FALSE
     ## Default calculation method for AGHQuad
     methodID <- 2
-        
+    
+    innerCache = TRUE ## Is the inner cache system being used.
+    
     ## The nimbleList definitions AGHQuad_params and AGHQuad_summary
     ## have moved to predefined nimbleLists.
   },## End of setup
@@ -2251,7 +2313,7 @@ buildAGHQuad <- nimbleFunction(
       if(method != "spectral" & method != "cholesky") stop("Must choose either cholesky or spectral.")
       for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$set_transformation(transformation = method)
     },
-    setInternalOptimInits = function(method = character(0)){
+    setInnerOptimInits = function(method = character(0)){
       if(method == "last") startMethod <- 1
       else if(method == "last.best") startMethod <- 2
       else if(method == "zero") startMethod <- 4    ## Inits at all zero.
@@ -2519,17 +2581,16 @@ buildAGHQuad <- nimbleFunction(
                        hessian = logical(0, default = TRUE) ){
       mleRes <- optimize(pStart  = pStart,
                        method  = method,
-                       hessian = hessian)
-      ## Back transform results to original scale
-      mleRes$par <- paramsTransform$inverseTransform(mleRes$par)
-                 
+                       hessian = hessian,
+                       parscale = "real") 
       return(mleRes)
       returnType(optimResultNimbleList())
     },
     ## General Maximization Function (Name check: optimize? @perry or Chris?)
     optimize = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
-                       hessian = logical(0, default = TRUE)) {
+                       hessian = logical(0, default = TRUE),
+                       parscale = character(0, default = "transformed")) {
       if(!one_time_fixes_done) one_time_fixes() ## Otherwise summary will look bad.
       if(multiSetsCheck & nQuad > 1) stop("Currently only Laplace is supported for Maximization. Use setNodeSize(1) to change.")
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
@@ -2548,17 +2609,22 @@ buildAGHQuad <- nimbleFunction(
       ## In case bad start values are provided
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
      
-      optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outOptControl, hessian = hessian)
+      optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outerOptimControl, hessian = hessian)
       
       if(optRes$convergence != 0) 
         print("Warning: optim has a non-zero convergence code: ", optRes$convergence, ".\n",
               "The control parameters of optim can be adjusted in the control argument of\n",
-              "buildLaplace or buildAGHQuad via list(outOptimControl = list()).")
+              "buildLaplace or buildAGHQuad via list(outerOptimControl = list()).")
       
       ## Print out warning about inner convergence.
       if( checkInnerConvergence(FALSE) != 0 )
         print("  Warning: inner optimzation had a non-zero convergence code. Use checkInnerConvergence(TRUE) to see details.")
-      
+
+      ## Back transform results to original scale if requested.
+      p <- paramsTransform$inverseTransform(optRes$par)
+      if(parscale == "real") optRes$par <- p
+      setModelValues(p) ## Make sure the model object contains all the updated parameter values.
+ 
       ## Returns on transformed scale just like optim.
       return(optRes)
       returnType(optimResultNimbleList())
@@ -2608,19 +2674,18 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(1))
     },    
     ## Optimized random effects given transformed parameter values
-    optimRandomEffects = function(pTransform = double(1), recompute = logical(0, default = FALSE)){
+    optimRandomEffects = function(pTransform = double(1)){
       if(nre == 0) stop("No random effects in the model")
       p <- pInverseTransform(pTransform)
       raneff <- numeric(nre)
       tmp <- numeric(nre) ## Not sure this is needed. 
       tot <- 0
 
-      pMLE <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 1)
-      pLast <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 0)
-
-      ## Allow the user to force recompute the inner random effects optimzation.
       computeMethod <- -1
-      if(!recompute){
+      if(innerCache){
+        pMLE <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 1)
+        pLast <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 0)
+        ## Cache check for either last value or MLE
         if(all(p == pMLE)) computeMethod <- 1
         else if(all(p == pLast)) computeMethod <- 0
       }
@@ -2640,17 +2705,16 @@ buildAGHQuad <- nimbleFunction(
       returnType(double(1))
     },
     ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects
-    inverse_negHess = function(p = double(1), reTransform = double(1), recompute = logical(0, default = FALSE)){
+    inverse_negHess = function(p = double(1), reTransform = double(1)){
       if(nre == 0) stop("No random effects in the model")
       invHess <- matrix(value = 0, nrow = nre, ncol = nre)
       tot <- 0
 
-      pMLE <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 1)
-      pLast <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 0)
-      
-      ## Allow the user to force recompute the inner random effects optimzation.
       computeMethod <- -1
-      if(!recompute){
+      if(innerCache){
+        pMLE <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 1)
+        pLast <- AGHQuad_nfl[[1]]$get_param_value(atOuterMode = 0)
+        ## Cache check for either last value or MLE
         if(all(p == pMLE)) computeMethod <- 1
         else if(all(p == pLast)) computeMethod <- 0
       }
@@ -2684,12 +2748,22 @@ buildAGHQuad <- nimbleFunction(
       return(ans)
       returnType(double(2))
     },
+    ## Gives the user control to start fresh by removing internally saved values.
+    setInnerCache = function(useCache = logical(0, default = TRUE)){
+      innerCache <<- useCache
+      for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$set_inner_cache(useCache)
+    },
+    ## Set all model values after finding the MLE. Function will repeat inner optimization if the inner cached values
+    ## the inner cached values don't match p.
+    setModelValues = function(p = double(1)){
+      for(i in seq_along(AGHQuad_nfl))
+         AGHQuad_nfl[[i]]$set_randomeffect_values(p)
+    },
     ## Summarise AGHQuad MLE results
     summary = function(MLEoutput                 = optimResultNimbleList(),
                        originalScale             = logical(0, default = TRUE),
                        randomEffectsStdError = logical(0, default = FALSE),
-                       jointCovariance       = logical(0, default = FALSE),
-                       recompute             = logical(0, default = FALSE)){
+                       jointCovariance       = logical(0, default = FALSE)){
       if(dim(MLEoutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace or AGHQuad MLE")
       ## Output lists
       ans <- AGHQuad_summary$new()
@@ -2731,12 +2805,12 @@ buildAGHQuad <- nimbleFunction(
       }
       else{
         ## Random effects
-        optreTransform <- optimRandomEffects(pTransform, recompute)  ## *** Replace this with cached inner modes.
+        optreTransform <- optimRandomEffects(pTransform)  ## *** Replace this with cached inner modes.
         optre <- reInverseTransform(optreTransform)
         ntot <- npar + nre
         if(jointCovariance) {
           ## Inverse of the negative Hessian of log-likelihood wrt transformed random effects at MLEs
-          inv_negHess <- inverse_negHess(p, optreTransform, recompute)   ## *** Replace this with cached inner modes.
+          inv_negHess <- inverse_negHess(p, optreTransform)   ## *** Replace this with cached inner modes.
           jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
           #jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
           jointInvNegHessZero[(npar+1):ntot, (npar+1):ntot] <- inv_negHess
@@ -2796,7 +2870,7 @@ buildAGHQuad <- nimbleFunction(
             ranres$estimates <- optre
             if(randomEffectsStdError){
               ## Joint covariance matrix on transform scale
-              inv_negHess <- inverse_negHess(p, optreTransform, recompute)
+              inv_negHess <- inverse_negHess(p, optreTransform)
               # jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
               # jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
               ## Hessian of log-likelihood wrt to params and transformed random effects
@@ -2853,7 +2927,7 @@ buildAGHQuad <- nimbleFunction(
             ranres$estimates <- optreTransform
             ans$vcov <- vcov_pTransform
             if(randomEffectsStdError){
-              inv_negHess <- inverse_negHess(p, optreTransform, recompute)
+              inv_negHess <- inverse_negHess(p, optreTransform)
               jointInvNegHessZero <- matrix(0, nrow = ntot, ncol = ntot)
               jointInvNegHessZero[1:nre, 1:nre] <- inv_negHess
               ## Hessian of log-likelihood wrt to params and transformed random effects
@@ -3203,7 +3277,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #'   \item \code{getMethod()}. Return the current method ID for Laplace.
 #'
-#'   \item \code{setInternalOptimInits(method)}. The user can change the default behaviour
+#'   \item \code{setInnerOptimInits(method)}. The user can change the default behaviour
 #'   of starting values for inner optimzation of random effects in Laplace/AGHQ.
 #'   Default is to use the original starting values from the buildAGHQQuad function.  
 #'   Options are: 
@@ -3299,19 +3373,17 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'    respect to transformed random effects at \code{reTrans}. Derivative order
 #'    is given by \code{order} (any of 0, 1, and/or 2).
 #'
-#'    \item \code{optimRandomEffects(pTransform, recompute)}. Calculate the optimized
+#'    \item \code{optimRandomEffects(pTransform)}. Calculate the optimized
 #'    random effects given transformed parameter value \code{pTransform}. The
 #'    optimized random effects are the mode of the conditional distribution of
 #'    random effects given data at parameters \code{pTransform}, i.e. the
-#'    calculation of \code{calcNodes}. Force the function to recompute the
-#'    inner optimzation with \code{recompute = TRUE}.
+#'    calculation of \code{calcNodes}.
 #'
-#'    \item \code{inverse_negHess(p, reTransform, recompute)}. Calculate the inverse of the
+#'    \item \code{inverse_negHess(p, reTransform)}. Calculate the inverse of the
 #'    negative Hessian matrix of the joint (parameters and random effects)
 #'    log-likelihood with respect to transformed random effects, evaluated at
 #'    parameter value \code{p} and transformed random effects
-#'    \code{reTransform}. Force the function to recompute the
-#'    inner optimzation with \code{recompute = TRUE}.
+#'    \code{reTransform}.
 #'
 #'    \item \code{hess_logLik_wrt_p_wrt_re(p, reTransform)}. Calculate the
 #'    Hessian matrix of the joint log-likelihood with respect to parameters and
@@ -3396,7 +3468,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'         most recent Laplace likelihood). By default, the initial random 
 #'         effects values will be used for inner optimization.
 #'
-#'   \item \code{outOptimControl}. A list of control parameters for maximizing
+#'   \item \code{outerOptimControl}. A list of control parameters for maximizing
 #'         the Laplace log-likelihood using \code{optim}. See 'Details' of
 #'         \code{\link{optim}} for further information.
 #' }
