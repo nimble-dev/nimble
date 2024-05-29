@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of model initializaion using initializeModel")
-
 
 test_that('initializeModel works', {
     code <- nimbleCode({

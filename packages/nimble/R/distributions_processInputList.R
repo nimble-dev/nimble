@@ -637,27 +637,13 @@ checkAndPrepareDistributionInfo <- function(DI, userEnv) {
 #'
 #' Format of the component lists when \code{distributionsInput} is a list of lists:
 #' \itemize{
-#' \item{\code{BUGSdist}} {
-#' a character string in the form of the density name (starting with 'd') followed by the names of the parameters in parentheses. When alternative parameterizations are given in \code{Rdist}, this should be an exhaustive list of the unique parameter names from all possible parameterizations, with the default parameters specified first.
-#' }
-#' \item{\code{Rdist}} {
-#' an optional character vector with one or more alternative specifications of the density; each alternative specification can be an alternative name for the density, a different ordering of the parameters, different parameter name(s), or an alternative parameterization. In the latter case, the character string in parentheses should provide a given reparameterization as comma-separated name = value pairs, one for each default parameter, where name is the name of the default parameter and value is a mathematical expression relating the default parameter to the alternative parameters or other default parameters. The default parameters should correspond to the input arguments of the nimbleFunctions provided as the density and random generation functions. The mathematical expression can use any of the math functions allowed in NIMBLE (see the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}) as well as user-supplied nimbleFunctions (which must have no setup code). The names of your nimbleFunctions for the distribution functions must match the function name in the \code{Rdist} entry (or if missing, the function name in the \code{BUGSdist} entry
-#' }
-#' \item{\code{discrete}} {
-#' a optional logical indicating if the distribution is that of a discrete random variable. If not supplied, distribution is assumed to be for a continuous random variable.
-#' }
-#' \item{\code{pqAvail}} {
-#' an optional logical indicating if distribution (CDF) and quantile (inverse CDF) functions are provided as nimbleFunctions. These are required for one to be able to use truncated versions of the distribution. Only applicable for univariate distributions. If not supplied, assumed to be FALSE.
-#' }
-#' \item{\code{altParams}} {
-#' a character vector of comma-separated 'name = value' pairs that provide the mathematical expressions relating non-canonical parameters to canonical parameters (canonical parameters are those passed as arguments to your distribution functions). These inverse functions are used for MCMC conjugacy calculations when a conjugate relationship is expressed in terms of non-default parameters (such as the precision for normal-normal conjugacy). If not supplied, the system will still function but with a possible loss of efficiency in certain algorithms.
-#' }
-#' \item{\code{types}} {
-#' a character vector of comma-separated 'name = input' pairs indicating the type and dimension of the random variable and parameters (including default and alternative parameters). 'input' should take the form 'double(d)' or 'integer(d)', where 'd' is 0 for scalars, 1 for vectors, 2 for matrices. Note that since NIMBLE uses doubles for numerical calculations and the default type  is \code{double(0)}, one should generally use 'double' and one need only specify the type for non-scalars. 'name' should be either 'value' to indicate the random variable itself or the parameter name to indicate a given parameter.  
-#' }
-#' \item{\code{range}} {
-#' a vector of two values giving the range of the distribution for possible use in future algorithms (not used currently). When the lower or upper limit involves a strict inequality (e.g., $x>0$), you should simply treat it as a non-strict inequality ($x>=0$, and set the lower value to 0). Also we do not handle ranges that are functions of parameters, so simply use the smallest/largest possible values given the possible parameter values. If not supplied this is taken to be \code{(-Inf, Inf)}.
-#' }
+#' \item \code{BUGSdist}. A character string in the form of the density name (starting with 'd') followed by the names of the parameters in parentheses. When alternative parameterizations are given in \code{Rdist}, this should be an exhaustive list of the unique parameter names from all possible parameterizations, with the default parameters specified first.
+#' \item \code{Rdist}. An optional character vector with one or more alternative specifications of the density; each alternative specification can be an alternative name for the density, a different ordering of the parameters, different parameter name(s), or an alternative parameterization. In the latter case, the character string in parentheses should provide a given reparameterization as comma-separated name = value pairs, one for each default parameter, where name is the name of the default parameter and value is a mathematical expression relating the default parameter to the alternative parameters or other default parameters. The default parameters should correspond to the input arguments of the nimbleFunctions provided as the density and random generation functions. The mathematical expression can use any of the math functions allowed in NIMBLE (see the \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}) as well as user-supplied nimbleFunctions (which must have no setup code). The names of your nimbleFunctions for the distribution functions must match the function name in the \code{Rdist} entry (or if missing, the function name in the \code{BUGSdist} entry.
+#' \item \code{discrete}. An optional logical indicating if the distribution is that of a discrete random variable. If not supplied, distribution is assumed to be for a continuous random variable.
+#' \item \code{pqAvail}. An optional logical indicating if distribution (CDF) and quantile (inverse CDF) functions are provided as nimbleFunctions. These are required for one to be able to use truncated versions of the distribution. Only applicable for univariate distributions. If not supplied, assumed to be FALSE.
+#' \item \code{altParams}. A character vector of comma-separated 'name = value' pairs that provide the mathematical expressions relating non-canonical parameters to canonical parameters (canonical parameters are those passed as arguments to your distribution functions). These inverse functions are used for MCMC conjugacy calculations when a conjugate relationship is expressed in terms of non-default parameters (such as the precision for normal-normal conjugacy). If not supplied, the system will still function but with a possible loss of efficiency in certain algorithms.
+#' \item \code{types}. A character vector of comma-separated 'name = input' pairs indicating the type and dimension of the random variable and parameters (including default and alternative parameters). 'input' should take the form 'double(d)' or 'integer(d)', where 'd' is 0 for scalars, 1 for vectors, 2 for matrices. Note that since NIMBLE uses doubles for numerical calculations and the default type  is \code{double(0)}, one should generally use 'double' and one need only specify the type for non-scalars. 'name' should be either 'value' to indicate the random variable itself or the parameter name to indicate a given parameter.  
+#' \item \code{range}. A vector of two values giving the range of the distribution for possible use in future algorithms (not used currently). When the lower or upper limit involves a strict inequality (e.g., $x>0$), you should simply treat it as a non-strict inequality ($x>=0$, and set the lower value to 0). Also we do not handle ranges that are functions of parameters, so simply use the smallest/largest possible values given the possible parameter values. If not supplied this is taken to be \code{(-Inf, Inf)}.
 #' }
 #' @examples
 #' dmyexp <- nimbleFunction(
@@ -786,11 +772,11 @@ deregisterDistributions <- function(distributionsNames, userEnv = parent.frame()
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) {
         distsMatched <- paste0(distributionsNames[matched], collapse = ', ')
-        messageIfVerbose("Deregistering ", distsMatched, " from user-registered distributions.")
+        messageIfVerbose("Deregistering '", distsMatched, "' from user-registered distributions.")
     }
     if(sum(!matched))
         for(nm in distributionsNames[!matched]) {
-            warning("Cannot deregister ", nm, " as it is not registered as a user-defined distribution.")
+            warning("Cannot deregister '", nm, "' as it is not registered as a user-defined distribution.")
         }
     
     distributionsNames <- distributionsNames[matched]

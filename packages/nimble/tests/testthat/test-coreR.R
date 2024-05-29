@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of core R functions in NIMBLE code")
-
 ## fix result_type in nimbleEigen.h
 
 cTests <- list(
@@ -427,7 +425,7 @@ seqTests <- list(
     list(name = "seq(1, arg1, by = arg2)", expr = quote(out <- seq(1, arg1, by = arg2)), args = list(arg1 = quote(integer()), arg2 = quote(integer())),
          setArgVals = quote({arg1 <- 8; arg2 <- 2}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11)", expr = quote(out <- seq(.1, 10, length.out = 11)), args = list(),
-         setArgVals = quote({}), outputType = quote(double(1))),
+         setArgVals = quote({}), outputType = quote(double(1)), checkEqual = TRUE), # N.B. Update to Eigen 3.4.0 created trivial numerical non-identicalness, so check only equality
     list(name = "seq(.1, by = 10, length.out = 11)", expr = quote(out <- seq(.1, by = 10, length.out = 11)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11) in expression", expr = quote(out <- log(seq(.1, 10, length.out = 11)) + 2 + rep(1, 11)), args = list(),

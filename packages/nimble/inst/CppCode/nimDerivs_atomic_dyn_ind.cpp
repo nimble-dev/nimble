@@ -50,10 +50,10 @@ bool atomic_dyn_ind_get_class::forward(
   int index = static_cast<int>(taylor_x[0 + i_index*nrow]);
   if(order_low == 0)
     taylor_y[0] = taylor_x[0 + index * nrow];
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) & (order_up >= 1)) {
     taylor_y[1] = taylor_x[1 + index * nrow];
   }
-  if(order_low <= 2 & order_up >= 2) {
+  if((order_low <= 2) & (order_up >= 2)) {
     taylor_y[2] = taylor_x[2 + index * nrow];
   }
   //std::cout<<index<<" "<<taylor_y[0]<<std::endl;
@@ -78,10 +78,10 @@ bool atomic_dyn_ind_get_class::forward(
   if(order_low == 0) {
     taylor_y[0] = dyn_ind_get(taylor_x, index, 0, nrow, nx);
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) & (order_up >= 1)) {
     taylor_y[1] = dyn_ind_get(taylor_x, index, 1, nrow, nx);
   }
-  if(order_low <= 1 & order_up >= 1) {
+  if((order_low <= 1) & (order_up >= 1)) {
     taylor_y[2] = dyn_ind_get(taylor_x, index, 2, nrow, nx);
   }
   return true;

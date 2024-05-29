@@ -965,10 +965,10 @@ The samplers provided in `nimbleHMC` can be used in `nimble`'s general MCMC syst
 
 As of version 1.1.0, we now support the following new functionality for AD in models:
 
-- Dynamic indexing is supported, although of course one cannot have derivatives taken with respect to (and hence not do HMC sampling for) the actual index values, since they are discrete.
+- Dynamic indexing is supported, although of course one cannot take derivatives with respect to the actual index values, since they are discrete. This means the index values cannot be sampled by HMC.
 - One can take derivatives with respect to nodes assigned CAR priors, so HMC sampling can be performed on variables assigned a CAR prior(i.e., `dcar_normal` and `dcar_proper`).
-- One can take derivatives with respect to the parameters/arguments of `dcat`, `dconstraint`, and `dinterval`. Hence HMC sampling is supported for nodes that have `dcat`, `dconstraint`, and `dinterval` dependencies (derivatives of the discrete random variables themselves of course cannot be taken).
-- Truncated distributions can be used, but one cannot take derivatives of nodes that have truncated nodes as dependencies and hence HMC sampling **cannot** be performed on nodes that have truncated nodes as dependencies.
+- One can take derivatives with respect to the parameters of `dcat`, `dconstraint`, and `dinterval`. Hence HMC sampling is supported for *parameters* of nodes that have `dcat`, `dconstraint`, and `dinterval` dependencies. (However, the nodes that follow one of these distributions are discrete, so derivatives with respect to those nodes themselves are not supported, and HMC cannot sample those nodes.)
+- Truncated distributions can be used, but one cannot take derivatives with respect to their parameters or the nodes themselves. This means that HMC sampling **cannot** be performed on nodes that have truncated nodes as dependencies.
 
 More information is available from the help pages, e.g. `help(nimbleHMC)`, `help(buildHMC)`, `help(configureHMC)`, or `help(addHMC)`.
 
@@ -1039,14 +1039,14 @@ We will not investigate results in detail, but here is a summary to see that rea
 summary(coda::as.mcmc(samples))
 ```
 
-### Particle filter samplers
-
-The `nimbleSMC` package provides samplers that perform particle MCMC, primarily intended for state-space or hidden Markov models of time-series data.
-     
 #### Automatic parameter transformation
 
 In the example above, `sigma` is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE's HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section \@ref(sec:parameter-transform).
 
+### Particle filter samplers
+
+The `nimbleSMC` package provides samplers that perform particle MCMC, primarily intended for sampling top-level parameters in state-space or hidden Markov models of time-series data. This sampler is described in Section \@ref(sec:particle-mcmc).
+     
 ### Customized log-likelihood evaluations: *RW_llFunction sampler*
  
 Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm [@Andrieu_Doucet_Holenstein_2010].  The `RW_llFunction` sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
@@ -1091,10 +1091,6 @@ Note that we need to return `ll[1]` and not just `ll` because there are no scala
 <!---  ### Terminal node `posterior_predictive sampler` 
 % The `posterior_predictive` sampler is only appropriate for use on terminal stochastic nodes (that is, those having no stochastic dependencies).  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->
-
-
-### Particle MCMC sampler
-For state space models, a particle MCMC (PMCMC) sampler can be specified for top-level parameters.  This sampler is described in Section \@ref(sec:particle-mcmc).
 
 ## Detailed MCMC example: *litters* {#sec:mcmc-example-litters}
 

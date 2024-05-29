@@ -149,14 +149,10 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
               control_->gamma, control_->trace, fncount, working_maxit);
     } else if (method_ == "BFGS") {
         std::vector<int> mask(n, 1);
-	/* Shouldn't dpar be copied to X and X passed to the function? */
-	/* It looks like this method replaces X with the arg max result.*/
-	/* Oh, I see that instead, after vmmin, we have result->par = par,*/
-	/* This will place the last evaluated parameters in the result.*/
-        vmmin(n, dpar, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
+        for(size_t iii = 0; iii < n; ++iii) X[iii] = dpar[iii];
+        vmmin(n, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
               working_maxit, control_->trace, mask.data(), control_->abstol,
               control_->reltol, working_REPORT, ex, fncount, grcount, fail);
-        result->par = par;
     } else if (method_ == "CG") {
         cgmin(n, dpar, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
               control_->abstol, control_->reltol, ex, control_->type,

@@ -10,8 +10,8 @@ requirements <- c(
     'ggplot2',  ## needed for test-compareMCMCs.R
     'covr',     ## needed for code coverage reports
     'pracma',   ## for AD
-    'numDeriv',  ## for AD
-    'lme4'     ## for test-ADlaplace.R
+    'numDeriv'  ## for AD
+    # 'lme4'     ## for test-ADlaplace.R
     )     
 
 for (package in requirements) {
@@ -21,3 +21,6 @@ for (package in requirements) {
     }
 }
 
+## Apparently a bug in Matrix (as of early 2024) is causing an issue (https://bioconductor.org/packages/devel/bioc/vignettes/dreamlet/inst/doc/errors.html) that is causing test-ADlaplace.R failures when fitting a model with lmer.
+
+install.packages("lme4", type = "source")

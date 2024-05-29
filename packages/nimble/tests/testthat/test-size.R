@@ -14,8 +14,6 @@ nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
 
-context("Testing of size/dimension checks in NIMBLE code")
-
 goldFileName <- 'sizeTestLog_Correct.Rout'
 tempFileName <- 'sizeTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForSizeTesting'))

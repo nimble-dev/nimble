@@ -163,17 +163,25 @@ sampler_categorical <- nimbleFunction(
     name = 'sampler_categorical',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        length <- extractControlElement(control, 'length', 'prob')
+        check <- extractControlElement(control, 'check', TRUE)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
-        k <- length(model$getParam(target, 'prob'))
+        if(is.character(length)) {
+            k <- length(model$getParam(target, length))
+        } else if(is.numeric(length)) {
+            k <- length
+        } else stop('Invalid \'length\' control parameter provided for categorical sampler.\nSee help(samplers) for details of the categorical sampler.')
         probs <- numeric(k)
         logProbs <- numeric(k)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
-        if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
+        if(check && length == 'prob' && model$getDistribution(target) != 'dcat') stop('Can only use categorical sampler on node with dcat distribution.\nUse control argument \'check = FALSE\' to allow use on other distributions.')
+        if(!is.numeric(k) || k <= 0 || k != round(k))   stop('Invalid \'length\' control parameter provided for categorical sampler.\nSee help(samplers) for details of the categorical sampler.')
     },
     run = function() {
         currentValue <- model[[target]]
@@ -416,6 +424,7 @@ sampler_RW_block <- nimbleFunction(
         targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
+        if(any(model$isDiscrete(target)))       stop('cannot use RW_block sampler on discrete-valued target')
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')
@@ -1215,8 +1224,8 @@ sampler_RW_llFunction_block <- nimbleFunction(
 ##### RW_multinomial sampler for multinomial distributions ##############################
 #########################################################################################
 ##
-###' @rdname samplers
-###' @export
+## @rdname samplers
+## @export
 ##sampler_RW_multinomial <- nimbleFunction(
 ##    name = 'sampler_RW_multinomial',
 ##    contains = sampler_BASE,
@@ -2263,10 +2272,14 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section categorical sampler:
 #'
-#' The categorical sampler performs Gibbs sampling for a single node, which must follow a categorical (\code{dcat}) distribution.
+#' The categorical sampler performs Gibbs sampling for a single node, which generally would follow a categorical (\code{dcat}) distribution.  The categorical sampler can be assigned to other distributions as well, in which case the number of possible outcomes (1, 2, 3, ..., k) of the distribution must be specified using the 'length' control argument.
 #'
-#' The categorical sampler accepts no control list arguments.
-#'
+#' The categorical sampler accepts the following control list elements:
+#' \itemize{
+#' \item length. A character string or a numeric argument.  When a character string, this should be the name of a parameter of the distribution of the target node being sampled.  The length of this distribution parameter (considered as a 1-dimensional vector) will be used to determine the number of possible outcomes of the target node's distribution.  When a numeric value, this value will be used as the number of possible outcomes of the target node's distribution.  (default = "prob")
+#' \item check. A logical argument.  When FALSE, no check for a 'dcat' prior distribution for the target node takes place. (default = TRUE)
+#' }
+#' 
 #' @section RW sampler:
 #'
 #' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale.
@@ -2403,7 +2416,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section RW_wishart sampler:
 #'
-#' This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covaraiance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
+#' This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covariance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
 #'
 #' The \code{RW_wishart} sampler accepts the following control list elements:
 #' \itemize{

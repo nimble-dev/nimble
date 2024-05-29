@@ -87,6 +87,7 @@ MCMCconf <- setRefClass(
         controlDefaults     = 'ANY',
         unsampledNodes      = 'ANY',
         postPredSamplerDownstreamNodes = 'ANY',
+        allowData_global    = 'ANY',
         ##namedSamplerLabelMaker = 'ANY',  ## usage long since deprecated (Dec 2020)
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
@@ -189,9 +190,10 @@ print: A logical argument specifying whether to print the montiors and samplers.
             if(missing(nodes)) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
-            } else {
-                if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
-            }
+            } else if(is.null(nodes) || length(nodes)==0) {
+                nodes <- character(0)
+            } else   nodes <- filterOutDataNodes(nodes)   ## configureMCMC *never* assigns samplers to data nodes
+            allowData_global <<- FALSE
             
             addDefaultSampler(nodes = nodes,
                               useConjugacy = useConjugacy,
@@ -564,6 +566,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                               useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                               onlyRW = FALSE,
                               onlySlice = FALSE,
+                              allowData = FALSE,
                               ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
@@ -580,9 +583,9 @@ print: Logical argument, specifying whether to print the details of newly added 
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
-targetByNode: Logical argument, with default FALSE.  This arguments controls whether separate instances of the specified sampler \'type\' should be assigned to each node contained in \'target\'.  When FALSE, a single instance of sampler \'type\' is assigned to operate on \'target\'.  When TRUE, potentially multiple instances of sampler \'type\' will be added to the MCMC configuration, operating on the distinct nodes which compose \'target\'.  For example, if \'target\' is a vector of distinct node names, then a separate sampler will be assigned to each node in this vector.  If \'target\' is a model variable which itself is comprised of multiple distinct nodes, then a separate sampler is assigned to each node composing the \'target\' variable.  Functionally, when \'targetByNode\' is TRUE, the \'target\' argument is passed through the \'expandNodeNames\' method of the model object, which results in a vector of node names; a separate sampler is assigned to each element of this vector.  Additional control of the handing of multivariate nodes is provided using the \'multivariateNodesAsScalars\' argument.
+targetByNode: Logical argument, with default FALSE.  This arguments controls whether separate instances of the specified sampler \'type\' should be assigned to each node contained in \'target\'.  When FALSE, a single instance of sampler \'type\' is assigned to operate on \'target\'.  When TRUE, potentially multiple instances of sampler \'type\' will be added to the MCMC configuration, operating on the distinct nodes which compose \'target\'.  For example, if \'target\' is a vector of distinct node names, then a separate sampler will be assigned to each node in this vector.  If \'target\' is a model variable which itself is comprised of multiple distinct nodes, then a separate sampler is assigned to each node composing the \'target\' variable. Additional control of the handling of multivariate nodes is provided using the \'multivariateNodesAsScalars\' argument.
 
-multivariateNodesAsScalars: Logical argument, with default value FALSE.  This argument is used in two ways.  Functionally, both uses result in separate instances of samplers being added to the scalar components which compose multivariate nodes.  The first usage occurs when \'targetByNode\' is TRUE and therefore separate instances of sampler \'type\' are assigned to each node which compose \'target\'.  In this first usage, this argument controls how multivariate nodes (those included in the \'target\') are handled.  If FALSE, any multivariate nodes in \'target\' have a single instance of sampler \'type\' assigned.  If TRUE, any multivariate nodes appearing in \'target\' are themselves decomposed into their scalar elements, and a separate instance of sampler \'type\' is assigned to operate on each scalar element.  The second usage occurs when \'default\' is TRUE, and therefore samplers are assigned according to the default logic of configureMCMC, which is further controlled by the arguments \'useConjugacy\', \'onlyRW\', \'onlySlice\' and \'multivariateNodesAsScalars\'.  In this second usage, if \'multivariateNodesAsScalars\' is TRUE, then multivariate nodes will be decomposed into their scalar components, and separate samplers assigned to each scalar element.  Note, however, that multivariate nodes appearing in conjugate relationships will still be assigned the corresponding conjugate sampler (provided \'useConjugacy\' is TRUE), regardless of the value of this argument.  If \'multivariateNodesAsScalars\' is FALSE, then a single multivarate sampler will be assigned to update each multivariate node.  The default value of this argument can be controlled using the nimble option \'MCMCmultivariateNodesAsScalars\'.
+multivariateNodesAsScalars: Logical argument, with default value FALSE.  This argument is used in two ways.  Functionally, both uses result in separate instances of samplers being added to the scalar components which compose multivariate nodes. See details below.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
@@ -594,17 +597,26 @@ onlyRW: Logical argument, with default value FALSE.  If specified as TRUE, then 
 
 onlySlice: Logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.  This argument is only used when the \'default\' argument is TRUE.
 
+allowData: Logical argument, with default value FALSE.  When FALSE, samplers will not be assigned to operate on data nodes, even if data nodes are included in \'target\'.  When TRUE, samplers will be assigned to \'target\' without regard to whether nodes are designated as data.
+
 ...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details:
 
-Samplers are added added to the end of the list of samplers for this MCMCconf object, and do not replace any exisiting samplers.  Samplers are removed using the removeSamplers method.
+Samplers are added to the end of the list of samplers for this MCMCconf object, and do not replace any existing samplers.  Samplers are removed using the removeSamplers method.
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
+
+\'multivariateNodesAsScalars\' has two usages. The first usage occurs when \'targetByNode\' is TRUE and therefore separate instances of sampler \'type\' are assigned to each node which compose \'target\'.  In this first usage, this argument controls how multivariate nodes (those included in the \'target\') are handled.  If FALSE, any multivariate nodes in \'target\' have a single instance of sampler \'type\' assigned.  If TRUE, any multivariate nodes appearing in \'target\' are themselves decomposed into their scalar elements, and a separate instance of sampler \'type\' is assigned to operate on each scalar element.
+
+The second usage of \'multivariateNodesAsScalars\' occurs when \'default\' is TRUE, and therefore samplers are assigned according to the default logic of configureMCMC, which is further controlled by the arguments \'useConjugacy\', \'onlyRW\', \'onlySlice\' and \'multivariateNodesAsScalars\'.  In this second usage, if \'multivariateNodesAsScalars\' is TRUE, then multivariate nodes will be decomposed into their scalar components, and separate samplers assigned to each scalar element.  Note, however, that multivariate nodes appearing in conjugate relationships will still be assigned the corresponding conjugate sampler (provided \'useConjugacy\' is TRUE), regardless of the value of this argument.  If \'multivariateNodesAsScalars\' is FALSE, then a single multivarate sampler will be assigned to update each multivariate node.  The default value of this argument can be controlled using the nimble option \'MCMCmultivariateNodesAsScalars\'.
 '
             if(length(target) == 0)   return(invisible(samplerConfs))
 
+            if(!(isTRUE(allowData) || isFALSE(allowData)))   stop('allowData argument can only be TRUE or FALSE', call. = FALSE)
+
             if(default) {
+                allowData_global <<- allowData
                 addDefaultSampler(nodes = target,
                                   control = control,
                                   useConjugacy = useConjugacy,
@@ -613,6 +625,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                                   multivariateNodesAsScalars = multivariateNodesAsScalars,
                                   print = if(is.null(print)) TRUE else print,   ## default of print is TRUE when adding default sampler
                                   ...)
+                allowData_global <<- FALSE
                 return(invisible(samplerConfs))
             }
 
@@ -687,28 +700,37 @@ Invisibly returns a list of the current sampler configurations, which are sample
             if(!targetByNode) {
                 ## when targetByNode = FALSE,
                 ## no node expansion takes place
-                addSamplerOne(thisSamplerName, samplerFunction, target, thisControlList, print)
+                addOneSampler(thisSamplerName, samplerFunction, target, thisControlList, allowData, print)
             } else {
                 ## when targetByNode = TRUE,
                 ## assign sampler type to each component of target after expanding node names,
                 ## also using multivariateNodesAsScalars argument here, to control the node expansion
                 targetExpanded <- model$expandNodeNames(target, returnScalarComponents = multivariateNodesAsScalars, sort = TRUE)
                 for(i in seq_along(targetExpanded)) {
-                    addSamplerOne(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, print)
+                    addOneSampler(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, allowData, print)
                 }
             }
             
             return(invisible(samplerConfs))
         },
 
-        addSamplerOne = function(thisSamplerName, samplerFunction, targetOne, thisControlList, print) {
+        addOneSampler = function(thisSamplerName, samplerFunction, targetOne, thisControlList, allowData, print) {
             '
 For internal use only
 '
+            if(!allowData && !allowData_global) {
+                if(all(model$isData(targetOne)))   return()
+                if(any(model$isData(targetOne)))   targetOne <- filterOutDataNodes(targetOne)
+            }
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
             samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
             if(print) printSamplers(newSamplerInd)
+        },
+
+        filterOutDataNodes = function(nodes) {
+            nodes <- model$expandNodeNames(nodes)
+            return(nodes[!model$isData(nodes)])
         },
         
         removeSamplers = function(..., ind, print = FALSE) {
@@ -1031,7 +1053,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             
             if(isMvSamplesReady(ind)){
@@ -1070,7 +1094,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             addMonitors(..., ind = 2, print = print)
         },
@@ -1085,7 +1111,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             if(ind == 1)   monitors  <<- character()
             if(ind == 2)   monitors2 <<- character()
@@ -1102,7 +1130,9 @@ Arguments:
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             setMonitors(..., ind = 2, print = print)
         },
@@ -1111,7 +1141,9 @@ Details: See the initialize() function
             '
 Resets the current monitors and monitors2 lists to nothing.
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             monitors  <<- character()
             monitors2 <<- character()
@@ -1130,7 +1162,9 @@ Details: See the initialize() function
             '
 Prints all current monitors and monitors2
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             if(length(monitors)  > 0)   cat(paste0('thin = ',  thin,  ': ', paste0(monitors,  collapse = ', '), '\n'))
             if(length(monitors2) > 0)   cat(paste0('thin2 = ', thin2, ': ', paste0(monitors2, collapse = ', '), '\n'))
@@ -1140,7 +1174,9 @@ Details: See the initialize() function
             '
 Returns a character vector of the current monitors
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             return(monitors)
         },
@@ -1149,7 +1185,9 @@ Details: See the initialize() function
             '
 Returns a character vector of the current monitors2
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             return(monitors2)
         },
@@ -1164,7 +1202,9 @@ thin: The new value for the thinning interval \'thin\'.
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             if(thin < 1)              stop('cannot use thin < 1', call. = FALSE)
             if(thin != floor(thin))   stop('cannot use non-integer thin', call. = FALSE)
@@ -1183,7 +1223,9 @@ thin2: The new value for the thinning interval \'thin2\'.
 
 print: A logical argument specifying whether to print all current monitors (default TRUE).
 
-Details: See the initialize() function
+Details:
+
+See the initialize() function
             '
             setThin(thin = thin2, print = print, ind = 2)
         },

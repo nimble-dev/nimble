@@ -464,10 +464,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
             lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber, userEnv = userEnv)
         }
-        checkLine <- safeDeparse(code[[i]][[1]], warn = TRUE)
-        # Added as.character() here to allow "comments" in the form of lines containing only a character string to pass through
-        if(! (is.character(checkLine) | checkLine %in% c('~', '<-', 'for', '{'))) 
-            stop("Error: ", safeDeparse(code[[i]][[1]]), " not allowed in BUGS code in ", safeDeparse(code[[i]]))
+        deparsedCode <- safeDeparse(code[[i]][[1]], warn = TRUE)
+        ## Added is.character() check to allow macro "comments" in the form of lines containing only a character string to pass through
+        if(!(is.character(code[[i]][[1]]) || deparsedCode %in% c('~', '<-', 'for', '{')))
+            stop("invalid model code: ", safeDeparse(code[[i]]))
     }
     lineNumber
 })
@@ -1329,6 +1329,7 @@ isNameInExpr <- function(target, code) {
 
 nm_seq_noDecrease <- function(a, b) {
     if(a > b) {
+        messageIfVerbose("  [Warning] Detected backwards indexing in `", a, ":",b, "`. This is likely unintended and will likely not produce valid model code.")
         numeric(0)
     } else {
         a:b
@@ -2364,15 +2365,15 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ## 10. Build the graph for topological sorting
 #    if(debug) browser()
     graph <<- graph.empty()
-    graph <<- add.vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
+    graph <<- add_vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
     allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
-    graph <<- add.edges(graph, allEdges)                                         ## add all edges at once
+    graph <<- add_edges(graph, allEdges)                                         ## add all edges at once
 
     ## 11. Topologically sort and re-index all objects with vertex IDs
 #    if(debug) browser()
-    newGraphID_2_oldGraphID <- as.numeric(topological.sort(graph, mode = 'out'))
+    newGraphID_2_oldGraphID <- as.numeric(topo_sort(graph, mode = 'out'))
     oldGraphID_2_newGraphID <- sort(newGraphID_2_oldGraphID, index = TRUE)$ix
-    graph <<- permute.vertices(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
+    graph <<- permute(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
 
     ## 11b. make new maps that use the sorted IDS
 #    if(debug) browser()

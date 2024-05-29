@@ -2427,21 +2427,24 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' If \code{setupMargNodes} is emitting an unnecessary warning, simply use
 #'   \code{control=list(check=FALSE)}.
 #'
+#' For default determination of parameters, all parameters must have a prior
+#'   distribution. Prior distributions are not included in maximum likelihood
+#'   estimation but do indicate the range of valid values. 
+#'   For example, if \code{sigma} is a standard deviation, you can declare it with a
+#'   prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
+#'   greater than 0. Note that we recommend caution in using priors for variance
+#'   component parameters (standard deviations, variances, precisions) that
+#'   have a finite upper bound (e.g., \code{sigma ~ dunif(0, 100)}), because the probit
+#'   transformation applied in that case may result in poor optimization performance.
+#'   For a param \code{mu} that has no constraint, a simple choice is \code{mu ~ dflat()}.
+#'
 #' If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
 #'   effects / latent states) have constraints on the range of valid values
 #'   (because of the distribution they follow), they will be used on a
 #'   transformed scale determined by \code{parameterTransform}. This means the
 #'   Laplace approximation itself will be done on the transformed scale for
 #'   random effects and finding the MLE will be done on the transformed scale
-#'   for parameters. For parameters, prior distributions are not included in
-#'   calculations, but they are used to determine valid parameter ranges. For
-#'   example, if \code{sigma} is a standard deviation, you can declare it with a
-#'   prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
-#'   greater than 0.
-#'
-#' For default determination of parameters, all parameters must have a prior
-#'   distribution simply to indicate the range of valid values. For a param
-#'   \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
+#'   for parameters. 
 #'
 #' The object returned by \code{buildLaplace} is a nimbleFunction object with
 #' numerous methods (functions). The most useful ones are:
@@ -2581,8 +2584,8 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #' \itemize{
 #'
-#'    \item \code{p_transformed_gr_Laplace(pTransform)}. Gradient of the Laplace
-#'     approximation (\code{p_transformed_Laplace(pTransform)}) at transformed 
+#'    \item \code{gr_logLik_pTransformed}. Gradient of the Laplace
+#'     approximation (\code{calcLogLik_pTransformed(pTransform)}) at transformed 
 #'     (unconstrained) parameter value \code{pTransform}.
 #'
 #'    \item \code{pInverseTransform(pTransform)}. Back-transform the transformed
@@ -2622,7 +2625,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'   when necessary internally to fix dimensionality issues if there is only
 #'   one parameter in the model.
 #'
-#'   \item \code{p_transformed_Laplace(pTransform)}. Laplace approximation at
+#'   \item \code{calcLogLik_pTransformed(pTransform)}. Laplace approximation at
 #'         transformed (unconstrained) parameter value \code{pTransform}. To
 #'         make maximizing the Laplace likelihood unconstrained, an automated
 #'         transformation via \code{\link{parameterTransform}} is performed on
@@ -2659,17 +2662,45 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'         elements based on some default inspection of the model. If
 #'         unnecessary warnings are emitted, simply set \code{check=FALSE}.
 #'
-#'   \item \code{innerOptimControl}. See \code{optimControl}.
+#'   \item \code{innerOptimControl}. A list of control parameters for the inner 
+#'         optimization of Laplace approximation using \code{optim}. See 
+#'         'Details' of \code{\link{optim}} for further information.
 #'
-#'   \item \code{innerOptimMethod}. See \code{optimMethod}.
+#'   \item \code{innerOptimMethod}. Optimization method to be used in 
+#'         \code{optim} for the inner optimization. See 'Details' of 
+#'         \code{\link{optim}}. Currently \code{optim} in NIMBLE supports: 
+#'         "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", and 
+#'         "\code{L-BFGS-B}". By default, method "\code{CG}" is used when 
+#'         marginalizing over a single (scalar) random effect, and "\code{BFGS}" 
+#'         is used for multiple random effects being jointly marginalized over.
 #'
-#'   \item \code{innerOptimStart}. see \code{optimStart}.
+#'   \item \code{innerOptimStart}. Choice of starting values for the inner 
+#'         optimization. This could be \code{"last"}, \code{"last.best"}, or a 
+#'         vector of user provided values. \code{"last"} means the most recent 
+#'         random effects values left in the model will be used. When finding 
+#'         the MLE, the most recent values will be the result of the most recent 
+#'         inner optimization for Laplace. \code{"last.best"} means the random 
+#'         effects values corresponding to the largest Laplace likelihood (from 
+#'         any call to the \code{calcLaplace} or \code{calcLogLik} method, 
+#'         including during an MLE search) will be used (even if it was not the 
+#'         most recent Laplace likelihood). By default, the initial random 
+#'         effects values will be used for inner optimization.
 #'
 #'   \item \code{outOptimControl}. A list of control parameters for maximizing
 #'         the Laplace log-likelihood using \code{optim}. See 'Details' of
 #'         \code{\link{optim}} for further information.
-#'
 #' }
+#' 
+#' Note that there are two numerical optimizations in the Laplace approximation 
+#' algorithm: (1) maximizing the joint log-likelihood of random effects and data 
+#' given a parameter value to construct the Laplace approximation to the marginal 
+#' log-likelihood at the given parameter value; (2) maximizing the Laplace 
+#' approximation to the marginal log-likelihood (i.e. \code{calcLaplace}) to find
+#' the MLEs of model parameters. In the \code{control} list above, the prefix
+#' 'inner' refers to optimization (1) and 'out' refers to optimization (2).
+#' Currently both optimizations use the optimizer \code{optim}. However, one
+#' can easily turn to other optimizers (say \code{\link{nlminb}}) in R for
+#' optimization (2); see the example below. 
 #'
 #' @author Wei Zhang, Perry de Valpine
 #' 
@@ -2704,6 +2735,11 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' MLEres <- CpumpLaplace$findMLE()
 #' # Calculate estimates and standard errors for parameters and random effects on original scale
 #' allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
+#' 
+#' # Use nlminb to find MLEs
+#' MLEres.nlminb <- nlminb(c(0.1, 0.1), 
+#'                         function(x) -CpumpLaplace$calcLaplace(x),
+#'                         function(x) -CpumpLaplace$gr_Laplace(x))
 #' }
 #'
 #' @references
@@ -2711,10 +2747,10 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' Kass, R. and Steffey, D. (1989). Approximate Bayesian inference in
 #' conditionally independent hierarchical models (parametric empirical Bayes
 #' models). \emph{Journal of the American Statistical Association}, 84(407),
-#' 717–726.
+#' 717-726.
 #' 
 #' Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal
 #' likelihood in non-Gaussian hierarchical models. \emph{Computational
-#' Statistics & Data Analysis}, 56, 699–709.
+#' Statistics & Data Analysis}, 56, 699-709.
 #' 
 NULL

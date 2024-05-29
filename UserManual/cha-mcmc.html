@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 7 MCMC | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 7 MCMC | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -159,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.0.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.1.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -275,8 +275,8 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="7.11.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.11.1</b> Conjugate (‘Gibbs’) samplers</a></li>
 <li class="chapter" data-level="7.11.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#subsec:HMC"><i class="fa fa-check"></i><b>7.11.2</b> Hamiltonian Monte Carlo (HMC)</a></li>
-<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.3</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
-<li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Particle MCMC sampler</a></li>
+<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-filter-samplers"><i class="fa fa-check"></i><b>7.11.3</b> Particle filter samplers</a></li>
+<li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
 </ul></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
@@ -348,7 +348,8 @@ div.csl-indent {
 <li class="chapter" data-level="11.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>11.2.6</b> <em>print</em> and <em>cat</em></a></li>
 <li class="chapter" data-level="11.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>11.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
 <li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
-<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
+<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#integration-integrate-and-nimintegrate"><i class="fa fa-check"></i><b>11.2.9</b> Integration: <em>integrate</em> and <em>nimIntegrate</em></a></li>
+<li class="chapter" data-level="11.2.10" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.10</b> ‘nim’ synonyms for some functions</a></li>
 </ul></li>
 <li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
 <ul>
@@ -445,13 +446,13 @@ div.csl-indent {
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
 <li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#how-to-use-laplace-approximation"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation</a></li>
-<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#how-to-support-derivatives-in-user-defined-functions-and-distributions"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
+<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
 <li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
 <li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#holding-some-local-variables-out-of-derivative-tracking"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
-<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#using-ad-with-multiple-nimblefunctions"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
+<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
 <li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#understanding-more-about-how-ad-works-taping-of-operations"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
 <li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
 <li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
@@ -826,37 +827,45 @@ Named elements in the <code>control</code> argument will be used for all default
 <span id="cb155-7"><a href="cha-mcmc.html#cb155-7" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(Cmcmc<span class="sc">$</span>mvSamples)</span></code></pre></div>
 <p>The <code>samples</code> matrix will contain both MCMC samples and model log-probabilities.</p>
 </div>
+<div id="using-numeric-samples-to-define-a-prior-distribution" class="section level4 hasAnchor" number="7.2.2.10">
+<h4><span class="header-section-number">7.2.2.10</span> Using numeric samples to define a prior distribution<a href="cha-mcmc.html#using-numeric-samples-to-define-a-prior-distribution" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>A set of numeric samples, perhaps generated from another MCMC algorithm, can be used to define the prior distribution of model nodes. This is accomplished using the <code>prior_samples</code> MCMC sampler. When assigning the <code>prior_samples</code> sampler to a <code>target</code> node, you must also provide a vector of numeric values (when <code>target</code> is a scalar node), or a matrix of values in the multidimenional case. A new value (or rows of values) is selected either sequentially (or randomly) from this numeric vector/matrix, and assigned into the <code>target</code> node on each MCMC iteration. See <code>help(prior_samples)</code> for more details:</p>
+<div class="sourceCode" id="cb156"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb156-1"><a href="cha-mcmc.html#cb156-1" aria-hidden="true" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel)</span>
+<span id="cb156-2"><a href="cha-mcmc.html#cb156-2" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&#39;theta&#39;</span>, <span class="at">type =</span> <span class="st">&#39;prior_samples&#39;</span>, <span class="at">samples =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>))</span></code></pre></div>
+</div>
 </div>
 </div>
 <div id="sec:build-compile-mcmc" class="section level2 hasAnchor" number="7.3">
 <h2><span class="header-section-number">7.3</span> Building and compiling the MCMC<a href="cha-mcmc.html#sec:build-compile-mcmc" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Once the MCMC configuration object has been created, and customized to one’s liking, it may be used to build an MCMC function:</p>
-<div class="sourceCode" id="cb156"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb156-1"><a href="cha-mcmc.html#cb156-1" aria-hidden="true" tabindex="-1"></a>Rmcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span></code></pre></div>
+<div class="sourceCode" id="cb157"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb157-1"><a href="cha-mcmc.html#cb157-1" aria-hidden="true" tabindex="-1"></a>Rmcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span></code></pre></div>
 <p><code>buildMCMC</code> is a nimbleFunction. The returned object <code>Rmcmc</code> is an instance of the nimbleFunction specific to configuration <code>mcmcConf</code> (and of course its associated model).</p>
 <p>Note that if you would like to be able to calculate the WAIC of the model, you should usually set <code>enableWAIC = TRUE</code> as an argument to<code>configureMCMC</code> (or to <code>buildMCMC</code> if not using <code>configureMCMC</code>), or set <code>nimbleOptions(MCMCenableWAIC = TRUE)</code>, which will enable WAIC calculations for all subsequently built MCMC functions. For more information on WAIC calculations, including situations in which you can calculate WAIC without having set <code>enableWAIC = TRUE</code> see Section <a href="cha-mcmc.html#sec:WAIC">7.8</a> or <code>help(waic)</code> in R.</p>
 <p>When no customization is needed, one can skip <code>configureMCMC</code> and simply provide a model object to <code>buildMCMC</code>. The following two MCMC functions will be identical:</p>
-<div class="sourceCode" id="cb157"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb157-1"><a href="cha-mcmc.html#cb157-1" aria-hidden="true" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel)   <span class="co"># default MCMC configuration</span></span>
-<span id="cb157-2"><a href="cha-mcmc.html#cb157-2" aria-hidden="true" tabindex="-1"></a>Rmcmc1 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span>
-<span id="cb157-3"><a href="cha-mcmc.html#cb157-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb157-4"><a href="cha-mcmc.html#cb157-4" aria-hidden="true" tabindex="-1"></a>Rmcmc2 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(Rmodel)   <span class="co"># uses the default configuration for Rmodel</span></span></code></pre></div>
+<div class="sourceCode" id="cb158"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb158-1"><a href="cha-mcmc.html#cb158-1" aria-hidden="true" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel)   <span class="co"># default MCMC configuration</span></span>
+<span id="cb158-2"><a href="cha-mcmc.html#cb158-2" aria-hidden="true" tabindex="-1"></a>Rmcmc1 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span>
+<span id="cb158-3"><a href="cha-mcmc.html#cb158-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb158-4"><a href="cha-mcmc.html#cb158-4" aria-hidden="true" tabindex="-1"></a>Rmcmc2 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(Rmodel)   <span class="co"># uses the default configuration for Rmodel</span></span></code></pre></div>
 <p>For speed of execution, we usually want to compile the MCMC function to C++ (as is the case for other NIMBLE functions). To do so, we use <code>compileNimble</code>. If the model has already been compiled, it should be provided as the <code>project</code> argument so the MCMC will be part of the same compiled project. A typical compilation call looks like:</p>
-<div class="sourceCode" id="cb158"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb158-1"><a href="cha-mcmc.html#cb158-1" aria-hidden="true" tabindex="-1"></a>Cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmcmc, <span class="at">project =</span> Rmodel)</span></code></pre></div>
+<div class="sourceCode" id="cb159"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb159-1"><a href="cha-mcmc.html#cb159-1" aria-hidden="true" tabindex="-1"></a>Cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmcmc, <span class="at">project =</span> Rmodel)</span></code></pre></div>
 <p>Alternatively, if the model has not already been compiled, they can be compiled together in one line:</p>
-<div class="sourceCode" id="cb159"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb159-1"><a href="cha-mcmc.html#cb159-1" aria-hidden="true" tabindex="-1"></a>Cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmodel, Rmcmc)</span></code></pre></div>
+<div class="sourceCode" id="cb160"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb160-1"><a href="cha-mcmc.html#cb160-1" aria-hidden="true" tabindex="-1"></a>Cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmodel, Rmcmc)</span></code></pre></div>
 <p>Note that if you compile the MCMC with another object (the model in this case), you’ll need to explicitly refer to the MCMC component of the resulting object to be able to run the MCMC:</p>
-<div class="sourceCode" id="cb160"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb160-1"><a href="cha-mcmc.html#cb160-1" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>Rmcmc<span class="sc">$</span><span class="fu">run</span>(<span class="at">niter =</span> <span class="dv">1000</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb161"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb161-1"><a href="cha-mcmc.html#cb161-1" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>Rmcmc<span class="sc">$</span><span class="fu">run</span>(<span class="at">niter =</span> <span class="dv">1000</span>)</span></code></pre></div>
 </div>
 <div id="sec:initMCMC" class="section level2 hasAnchor" number="7.4">
 <h2><span class="header-section-number">7.4</span> Initializing MCMC<a href="cha-mcmc.html#sec:initMCMC" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>To see how to provide initial values, see <code>help(runMCMC)</code>, <code>help(nimbleMCMC)</code>, or <code>help(nimbleModel)</code>.</p>
 <p>It is often important to provide valid and reasonable initial values to an MCMC, either as fixed values or via an initialization function.</p>
 <p>Not doing so can cause slow convergence or even failure of an MCMC algorithm (e.g., if the values the model is initialized with are not valid). When starting an MCMC, when NIMBLE encounters a missing parameter value, it simulates from the prior distribution. NIMBLE can be more sensitive to missing or bad starting values than some MCMC packages.</p>
-<p>The following cases are particularly important to consider when initializing:
-- In a model with flat priors (i.e., using <code>x~dflat()</code> or <code>x~dhalfflat()</code>), NIMBLE cannot generate initial values from those priors.
-- In a model with diffuse priors, initializing from the prior can give unreasonable/extreme initial values.
-- In a model with stochastic indices (e.g., <code>x[idx[i]]</code> with <code>idx[i]</code> unknown), those indices should have (valid) initial values.
-- In a model with constraints (via <code>dconstraint</code>), the model should be initialized such that the constraints are satisfied.
-- In a model with censoring (via <code>dinterval</code>), the initial value(s) of <code>t</code> in <code>dinterval</code> for the censored node(s) should be consistent with the censoring that is specified.</p>
+<p>The following cases are particularly important to consider when initializing:</p>
+<ul>
+<li>In a model with flat priors (i.e., using <code>x~dflat()</code> or <code>x~dhalfflat()</code>), NIMBLE cannot generate initial values from those priors.</li>
+<li>In a model with diffuse priors, initializing from the prior can give unreasonable/extreme initial values.</li>
+<li>In a model with stochastic indices (e.g., <code>x[idx[i]]</code> with <code>idx[i]</code> unknown), those indices should have (valid) initial values.</li>
+<li>In a model with constraints (via <code>dconstraint</code>), the model should be initialized such that the constraints are satisfied.</li>
+<li>In a model with censoring (via <code>dinterval</code>), the initial value(s) of <code>t</code> in <code>dinterval</code> for the censored node(s) should be consistent with the censoring that is specified.</li>
+</ul>
 <p>That said, some MCMC algorithms (such a conjugate samplers) don’t use the initial values, so flat or diffuse priors on nodes assigned such samplers will not be a problem with regard to initialization.</p>
 <p>Many user questions and problems end up being related to missing or bad initial values. Some suggestions for diagnosing initialization problems include:</p>
 <ul>
@@ -888,31 +897,31 @@ Named elements in the <code>control</code> argument will be used for all default
 <!---  Other features of the MCMC can still be customized when using `runMCMC`, which is done using the MCMC configuration object.  This includes setting monitors, or customizing samplers (see Section \@ref(sec:customizing-mcmc-conf)).  The MCMC configuration object is then used to create an MCMC algorithm, which is compiled and passed as an argument to `runMCMC`. -->
 <!---  When running a single chain, `runMCMC` returns a matrix of MCMC samples (as described in Section \@ref(sec:extracting-samples)).  When running multiple chains, a list of sample matrices is returned.  Using the argument `samplesAsCodaMCMC=TRUE`, a `coda` `mcmc` object, or in the case of multiple chains, a `coda` `mcmc.list` object is returned instead. -->
 <p>The following examples demonstrate some uses of <code>runMCMC</code>, and assume the existence of <code>Cmcmc</code>, a compiled MCMC algorithm.</p>
-<div class="sourceCode" id="cb161"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb161-1"><a href="cha-mcmc.html#cb161-1" aria-hidden="true" tabindex="-1"></a><span class="co"># run a single chain, and return a matrix of samples</span></span>
-<span id="cb161-2"><a href="cha-mcmc.html#cb161-2" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc)</span>
-<span id="cb161-3"><a href="cha-mcmc.html#cb161-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb161-4"><a href="cha-mcmc.html#cb161-4" aria-hidden="true" tabindex="-1"></a><span class="co"># run three chains of 10000 samples, discard initial burn-in of 1000,</span></span>
-<span id="cb161-5"><a href="cha-mcmc.html#cb161-5" aria-hidden="true" tabindex="-1"></a><span class="co"># record samples thereafter using a thinning interval of 10,</span></span>
-<span id="cb161-6"><a href="cha-mcmc.html#cb161-6" aria-hidden="true" tabindex="-1"></a><span class="co"># and return of list of sample matrices</span></span>
-<span id="cb161-7"><a href="cha-mcmc.html#cb161-7" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">niter=</span><span class="dv">10000</span>, <span class="at">nburnin=</span><span class="dv">1000</span>, <span class="at">thin=</span><span class="dv">10</span>, <span class="at">nchains=</span><span class="dv">3</span>)</span>
-<span id="cb161-8"><a href="cha-mcmc.html#cb161-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb161-9"><a href="cha-mcmc.html#cb161-9" aria-hidden="true" tabindex="-1"></a><span class="co"># run three chains, returning posterior samples, summary statistics,</span></span>
-<span id="cb161-10"><a href="cha-mcmc.html#cb161-10" aria-hidden="true" tabindex="-1"></a><span class="co"># and the WAIC value</span></span>
-<span id="cb161-11"><a href="cha-mcmc.html#cb161-11" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">nchains =</span> <span class="dv">3</span>, <span class="at">summary =</span> <span class="cn">TRUE</span>, <span class="at">WAIC =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb161-12"><a href="cha-mcmc.html#cb161-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb161-13"><a href="cha-mcmc.html#cb161-13" aria-hidden="true" tabindex="-1"></a><span class="co"># run two chains, and specify the initial values for each</span></span>
-<span id="cb161-14"><a href="cha-mcmc.html#cb161-14" aria-hidden="true" tabindex="-1"></a>initsList <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">1</span>, <span class="at">sigma =</span> <span class="dv">1</span>),</span>
-<span id="cb161-15"><a href="cha-mcmc.html#cb161-15" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">2</span>, <span class="at">sigma =</span> <span class="dv">10</span>))</span>
-<span id="cb161-16"><a href="cha-mcmc.html#cb161-16" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">inits =</span> initsList)</span>
-<span id="cb161-17"><a href="cha-mcmc.html#cb161-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb161-18"><a href="cha-mcmc.html#cb161-18" aria-hidden="true" tabindex="-1"></a><span class="co"># run ten chains of 100,000 iterations each, using a function to </span></span>
-<span id="cb161-19"><a href="cha-mcmc.html#cb161-19" aria-hidden="true" tabindex="-1"></a><span class="co"># generate initial values and a fixed random number seed for each chain.</span></span>
-<span id="cb161-20"><a href="cha-mcmc.html#cb161-20" aria-hidden="true" tabindex="-1"></a><span class="co"># only return summary statistics from each chain; not all the samples.</span></span>
-<span id="cb161-21"><a href="cha-mcmc.html#cb161-21" aria-hidden="true" tabindex="-1"></a>initsFunction <span class="ot">&lt;-</span> <span class="cf">function</span>()</span>
-<span id="cb161-22"><a href="cha-mcmc.html#cb161-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">sigma =</span> <span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">100</span>))</span>
-<span id="cb161-23"><a href="cha-mcmc.html#cb161-23" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">niter =</span> <span class="dv">100000</span>, <span class="at">nchains =</span> <span class="dv">10</span>,</span>
-<span id="cb161-24"><a href="cha-mcmc.html#cb161-24" aria-hidden="true" tabindex="-1"></a>                    <span class="at">inits =</span> initsFunction, <span class="at">setSeed =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb161-25"><a href="cha-mcmc.html#cb161-25" aria-hidden="true" tabindex="-1"></a>                    <span class="at">samples =</span> <span class="cn">FALSE</span>, <span class="at">summary =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb162"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb162-1"><a href="cha-mcmc.html#cb162-1" aria-hidden="true" tabindex="-1"></a><span class="co"># run a single chain, and return a matrix of samples</span></span>
+<span id="cb162-2"><a href="cha-mcmc.html#cb162-2" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc)</span>
+<span id="cb162-3"><a href="cha-mcmc.html#cb162-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb162-4"><a href="cha-mcmc.html#cb162-4" aria-hidden="true" tabindex="-1"></a><span class="co"># run three chains of 10000 samples, discard initial burn-in of 1000,</span></span>
+<span id="cb162-5"><a href="cha-mcmc.html#cb162-5" aria-hidden="true" tabindex="-1"></a><span class="co"># record samples thereafter using a thinning interval of 10,</span></span>
+<span id="cb162-6"><a href="cha-mcmc.html#cb162-6" aria-hidden="true" tabindex="-1"></a><span class="co"># and return of list of sample matrices</span></span>
+<span id="cb162-7"><a href="cha-mcmc.html#cb162-7" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">niter=</span><span class="dv">10000</span>, <span class="at">nburnin=</span><span class="dv">1000</span>, <span class="at">thin=</span><span class="dv">10</span>, <span class="at">nchains=</span><span class="dv">3</span>)</span>
+<span id="cb162-8"><a href="cha-mcmc.html#cb162-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb162-9"><a href="cha-mcmc.html#cb162-9" aria-hidden="true" tabindex="-1"></a><span class="co"># run three chains, returning posterior samples, summary statistics,</span></span>
+<span id="cb162-10"><a href="cha-mcmc.html#cb162-10" aria-hidden="true" tabindex="-1"></a><span class="co"># and the WAIC value</span></span>
+<span id="cb162-11"><a href="cha-mcmc.html#cb162-11" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">nchains =</span> <span class="dv">3</span>, <span class="at">summary =</span> <span class="cn">TRUE</span>, <span class="at">WAIC =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb162-12"><a href="cha-mcmc.html#cb162-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb162-13"><a href="cha-mcmc.html#cb162-13" aria-hidden="true" tabindex="-1"></a><span class="co"># run two chains, and specify the initial values for each</span></span>
+<span id="cb162-14"><a href="cha-mcmc.html#cb162-14" aria-hidden="true" tabindex="-1"></a>initsList <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">1</span>, <span class="at">sigma =</span> <span class="dv">1</span>),</span>
+<span id="cb162-15"><a href="cha-mcmc.html#cb162-15" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">2</span>, <span class="at">sigma =</span> <span class="dv">10</span>))</span>
+<span id="cb162-16"><a href="cha-mcmc.html#cb162-16" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">inits =</span> initsList)</span>
+<span id="cb162-17"><a href="cha-mcmc.html#cb162-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb162-18"><a href="cha-mcmc.html#cb162-18" aria-hidden="true" tabindex="-1"></a><span class="co"># run ten chains of 100,000 iterations each, using a function to </span></span>
+<span id="cb162-19"><a href="cha-mcmc.html#cb162-19" aria-hidden="true" tabindex="-1"></a><span class="co"># generate initial values and a fixed random number seed for each chain.</span></span>
+<span id="cb162-20"><a href="cha-mcmc.html#cb162-20" aria-hidden="true" tabindex="-1"></a><span class="co"># only return summary statistics from each chain; not all the samples.</span></span>
+<span id="cb162-21"><a href="cha-mcmc.html#cb162-21" aria-hidden="true" tabindex="-1"></a>initsFunction <span class="ot">&lt;-</span> <span class="cf">function</span>()</span>
+<span id="cb162-22"><a href="cha-mcmc.html#cb162-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">mu =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>), <span class="at">sigma =</span> <span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">100</span>))</span>
+<span id="cb162-23"><a href="cha-mcmc.html#cb162-23" aria-hidden="true" tabindex="-1"></a>mcmc.out <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">niter =</span> <span class="dv">100000</span>, <span class="at">nchains =</span> <span class="dv">10</span>,</span>
+<span id="cb162-24"><a href="cha-mcmc.html#cb162-24" aria-hidden="true" tabindex="-1"></a>                    <span class="at">inits =</span> initsFunction, <span class="at">setSeed =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb162-25"><a href="cha-mcmc.html#cb162-25" aria-hidden="true" tabindex="-1"></a>                    <span class="at">samples =</span> <span class="cn">FALSE</span>, <span class="at">summary =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <p>See <code>help(runMCMC)</code> for further details.</p>
 </div>
 <div id="sec:executing-the-mcmc-algorithm" class="section level2 hasAnchor" number="7.6">
@@ -934,8 +943,8 @@ Named elements in the <code>control</code> argument will be used for all default
 <div id="sec:sampler-time" class="section level3 hasAnchor" number="7.6.2">
 <h3><span class="header-section-number">7.6.2</span> Measuring sampler computation times: <em>getTimes</em><a href="cha-mcmc.html#sec:sampler-time" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>If you want to obtain the computation time spent in each sampler, you can set <code>time=TRUE</code> as a run-time argument and then use the method <code>getTimes()</code> obtain the times. For example,</p>
-<div class="sourceCode" id="cb162"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb162-1"><a href="cha-mcmc.html#cb162-1" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span><span class="fu">run</span>(niter, <span class="at">time =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb162-2"><a href="cha-mcmc.html#cb162-2" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span><span class="fu">getTimes</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb163"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb163-1"><a href="cha-mcmc.html#cb163-1" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span><span class="fu">run</span>(niter, <span class="at">time =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb163-2"><a href="cha-mcmc.html#cb163-2" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span><span class="fu">getTimes</span>()</span></code></pre></div>
 <p>will return a vector of the total time spent in each sampler, measured in seconds.
 <!---  
 %### Modifying the order of sampler execution: `samplerExecutionOrder` \label{sec:runtime-sampler-execution-order}
@@ -948,14 +957,14 @@ Named elements in the <code>control</code> argument will be used for all default
 <div id="assessing-the-adaption-process-of-rw-and-rw_block-samplers" class="section level3 hasAnchor" number="7.6.3">
 <h3><span class="header-section-number">7.6.3</span> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers<a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>If you’d like to see the evolution (over the iterations) of the acceptance proportion and proposal scale information, you can use some internal methods provided by NIMBLE, after setting two options to make the history accessible. Here we assume that <code>cMCMC</code> is the compiled MCMC object and <code>idx</code> is the numeric index of the sampler function you want to access from amongst the list of sampler functions that are part of the MCMC.</p>
-<div class="sourceCode" id="cb163"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb163-1"><a href="cha-mcmc.html#cb163-1" aria-hidden="true" tabindex="-1"></a><span class="do">## set options to make history accessible</span></span>
-<span id="cb163-2"><a href="cha-mcmc.html#cb163-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">buildInterfacesForCompiledNestedNimbleFunctions =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb163-3"><a href="cha-mcmc.html#cb163-3" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">MCMCsaveHistory =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb163-4"><a href="cha-mcmc.html#cb163-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Next, set up and run your MCMC.</span></span>
-<span id="cb163-5"><a href="cha-mcmc.html#cb163-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Now access the history information:</span></span>
-<span id="cb163-6"><a href="cha-mcmc.html#cb163-6" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>samplerFunctions[[idx]]<span class="sc">$</span><span class="fu">getScaleHistory</span>()</span>
-<span id="cb163-7"><a href="cha-mcmc.html#cb163-7" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>samplerFunctions[[idx]]<span class="sc">$</span><span class="fu">getAcceptanceHistory</span>()</span>
-<span id="cb163-8"><a href="cha-mcmc.html#cb163-8" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>samplerFunctions[[idx]]<span class="sc">$</span><span class="fu">getPropCovHistory</span>()   <span class="do">## only for RW_block</span></span></code></pre></div>
+<div class="sourceCode" id="cb164"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb164-1"><a href="cha-mcmc.html#cb164-1" aria-hidden="true" tabindex="-1"></a><span class="do">## set options to make history accessible</span></span>
+<span id="cb164-2"><a href="cha-mcmc.html#cb164-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">buildInterfacesForCompiledNestedNimbleFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb164-3"><a href="cha-mcmc.html#cb164-3" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">MCMCsaveHistory =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb164-4"><a href="cha-mcmc.html#cb164-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Next, set up and run your MCMC.</span></span>
+<span id="cb164-5"><a href="cha-mcmc.html#cb164-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Now access the history information:</span></span>
+<span id="cb164-6"><a href="cha-mcmc.html#cb164-6" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>samplerFunctions[[idx]]<span class="sc">$</span><span class="fu">getScaleHistory</span>()</span>
+<span id="cb164-7"><a href="cha-mcmc.html#cb164-7" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>samplerFunctions[[idx]]<span class="sc">$</span><span class="fu">getAcceptanceHistory</span>()</span>
+<span id="cb164-8"><a href="cha-mcmc.html#cb164-8" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span>samplerFunctions[[idx]]<span class="sc">$</span><span class="fu">getPropCovHistory</span>()   <span class="do">## only for RW_block</span></span></code></pre></div>
 <p>Note that modifying elements of the control list may greatly
 affect the performance of the <code>RW_block</code> sampler. In particular, the sampler
 can take a long time to find a good proposal covariance when the
@@ -971,15 +980,15 @@ greatly improved performance in some cases.</p>
 <div id="sec:extracting-samples" class="section level2 hasAnchor" number="7.7">
 <h2><span class="header-section-number">7.7</span> Extracting MCMC samples<a href="cha-mcmc.html#sec:extracting-samples" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>After executing the MCMC, the output samples can be extracted as follows:</p>
-<div class="sourceCode" id="cb164"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb164-1"><a href="cha-mcmc.html#cb164-1" aria-hidden="true" tabindex="-1"></a>mvSamples <span class="ot">&lt;-</span> mcmc<span class="sc">$</span>mvSamples</span>
-<span id="cb164-2"><a href="cha-mcmc.html#cb164-2" aria-hidden="true" tabindex="-1"></a>mvSamples2 <span class="ot">&lt;-</span> mcmc<span class="sc">$</span>mvSamples2</span></code></pre></div>
+<div class="sourceCode" id="cb165"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb165-1"><a href="cha-mcmc.html#cb165-1" aria-hidden="true" tabindex="-1"></a>mvSamples <span class="ot">&lt;-</span> mcmc<span class="sc">$</span>mvSamples</span>
+<span id="cb165-2"><a href="cha-mcmc.html#cb165-2" aria-hidden="true" tabindex="-1"></a>mvSamples2 <span class="ot">&lt;-</span> mcmc<span class="sc">$</span>mvSamples2</span></code></pre></div>
 <p>These <em>modelValues</em> objects can be converted into matrices using <code>as.matrix</code> or lists using <code>as.list</code>:</p>
-<div class="sourceCode" id="cb165"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb165-1"><a href="cha-mcmc.html#cb165-1" aria-hidden="true" tabindex="-1"></a>samplesMatrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mvSamples)</span>
-<span id="cb165-2"><a href="cha-mcmc.html#cb165-2" aria-hidden="true" tabindex="-1"></a>samplesList <span class="ot">&lt;-</span> <span class="fu">as.list</span>(mvSamples)</span>
-<span id="cb165-3"><a href="cha-mcmc.html#cb165-3" aria-hidden="true" tabindex="-1"></a>samplesMatrix2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mvSamples2)</span>
-<span id="cb165-4"><a href="cha-mcmc.html#cb165-4" aria-hidden="true" tabindex="-1"></a>samplesList2 <span class="ot">&lt;-</span> <span class="fu">as.list</span>(mvSamples2)</span></code></pre></div>
+<div class="sourceCode" id="cb166"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb166-1"><a href="cha-mcmc.html#cb166-1" aria-hidden="true" tabindex="-1"></a>samplesMatrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mvSamples)</span>
+<span id="cb166-2"><a href="cha-mcmc.html#cb166-2" aria-hidden="true" tabindex="-1"></a>samplesList <span class="ot">&lt;-</span> <span class="fu">as.list</span>(mvSamples)</span>
+<span id="cb166-3"><a href="cha-mcmc.html#cb166-3" aria-hidden="true" tabindex="-1"></a>samplesMatrix2 <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(mvSamples2)</span>
+<span id="cb166-4"><a href="cha-mcmc.html#cb166-4" aria-hidden="true" tabindex="-1"></a>samplesList2 <span class="ot">&lt;-</span> <span class="fu">as.list</span>(mvSamples2)</span></code></pre></div>
 <p>The column names of the matrices will be the node names of nodes in the monitored variables. Then, for example, the mean of the samples for node <code>x[2]</code> could be calculated as:</p>
-<div class="sourceCode" id="cb166"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb166-1"><a href="cha-mcmc.html#cb166-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(samplesMatrix[, <span class="st">&quot;x[2]&quot;</span>])</span></code></pre></div>
+<div class="sourceCode" id="cb167"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb167-1"><a href="cha-mcmc.html#cb167-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(samplesMatrix[, <span class="st">&quot;x[2]&quot;</span>])</span></code></pre></div>
 <p>The list version will contain an element for each variable that will be the size and shape of the variable with an additional index for MCMC iteration. By default MCMC iteration will be the first index, but including <code>iterationAsLastIndex = TRUE</code> will make it the last index.</p>
 <p>Obtaining samples as matrices or lists is most common, but see Section <a href="cha-data-structures.html#sec:modelValues-struct">14.1</a> for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.</p>
 </div>
@@ -999,13 +1008,13 @@ user control over how WAIC is calculated in two ways.</p>
 <p>Marginal WAIC requires using Monte Carlo simulation at each iteration of the MCMC to average over draws for the latent variables. To assess the stability of the marginal WAIC to the number of Monte Carlo iterations, one can examine how the WAIC changes with increasing iterations (up to the full number of iterations specified via the <code>nItsMarginal</code> element of the <code>waicControl</code> list) based on the <code>WAIC_partialMC</code>, <code>lppd_partialMC</code>, and <code>pWAIC_partialMC</code> elements of the detailed WAIC output.</p>
 <p>For comparing WAIC between two models, <span class="citation">Vehtari, Gelman, and Gabry (<a href="references.html#ref-Vehtari_etal_2017" role="doc-biblioref">2017</a>)</span> discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the <code>WAIC_elements</code>, <code>lppd_elements</code>, and <code>pWAIC_elements</code> components of the detailed WAIC output.</p>
 <p>The second overall approach to WAIC available in NIMBLE allows one to calculate WAIC post hoc after MCMC sampling using an MCMC object or matrix (or dataframe) containing posterior samples. Simply set up the MCMC and run it without enabling WAIC (but making sure to include in the monitors all stochastic parent nodes of the data nodes) and then use the function <code>calculateWAIC</code>, as shown in this example:</p>
-<div class="sourceCode" id="cb167"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb167-1"><a href="cha-mcmc.html#cb167-1" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">niter =</span> <span class="dv">10000</span>, <span class="at">nburnin =</span> <span class="dv">1000</span>)</span>
-<span id="cb167-2"><a href="cha-mcmc.html#cb167-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Using calculateWAIC with an MCMC object</span></span>
-<span id="cb167-3"><a href="cha-mcmc.html#cb167-3" aria-hidden="true" tabindex="-1"></a><span class="fu">calculateWAIC</span>(Cmcmc)</span>
-<span id="cb167-4"><a href="cha-mcmc.html#cb167-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Using calculateWAIC with a matrix of samples</span></span>
-<span id="cb167-5"><a href="cha-mcmc.html#cb167-5" aria-hidden="true" tabindex="-1"></a><span class="fu">calculateWAIC</span>(samples, model)</span>
-<span id="cb167-6"><a href="cha-mcmc.html#cb167-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Specifying additional burnin, so only last 5000 (1000+4000) iterations used</span></span>
-<span id="cb167-7"><a href="cha-mcmc.html#cb167-7" aria-hidden="true" tabindex="-1"></a><span class="fu">calculateWAIC</span>(Cmcmc, <span class="at">burnin =</span> <span class="dv">4000</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb168"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb168-1"><a href="cha-mcmc.html#cb168-1" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">niter =</span> <span class="dv">10000</span>, <span class="at">nburnin =</span> <span class="dv">1000</span>)</span>
+<span id="cb168-2"><a href="cha-mcmc.html#cb168-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Using calculateWAIC with an MCMC object</span></span>
+<span id="cb168-3"><a href="cha-mcmc.html#cb168-3" aria-hidden="true" tabindex="-1"></a><span class="fu">calculateWAIC</span>(Cmcmc)</span>
+<span id="cb168-4"><a href="cha-mcmc.html#cb168-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Using calculateWAIC with a matrix of samples</span></span>
+<span id="cb168-5"><a href="cha-mcmc.html#cb168-5" aria-hidden="true" tabindex="-1"></a><span class="fu">calculateWAIC</span>(samples, model)</span>
+<span id="cb168-6"><a href="cha-mcmc.html#cb168-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Specifying additional burnin, so only last 5000 (1000+4000) iterations used</span></span>
+<span id="cb168-7"><a href="cha-mcmc.html#cb168-7" aria-hidden="true" tabindex="-1"></a><span class="fu">calculateWAIC</span>(Cmcmc, <span class="at">burnin =</span> <span class="dv">4000</span>)</span></code></pre></div>
 <p>This approach only provides conditional WAIC without any grouping of data nodes (though one can achieve grouping by grouping data nodes into multivariate nodes).</p>
 </div>
 <div id="k-fold-cross-validation" class="section level2 hasAnchor" number="7.9">
@@ -1035,39 +1044,39 @@ are in bijection, <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbo
 <div id="sec:rjmcmc-indicator" class="section level3 hasAnchor" number="7.10.1">
 <h3><span class="header-section-number">7.10.1</span> Using indicator variables<a href="cha-mcmc.html#sec:rjmcmc-indicator" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Here we consider a normal linear regression in which two covariates <code>x1</code> and <code>x2</code> are candidates to be included in the model. The two corresponding coefficients are <code>beta1</code> and <code>beta2</code>. The indicator variables are <code>z1</code> and <code>z2</code>, and their inclusion probability is <code>psi</code>. As described below, one can also use vectors for a set of coefficients and corresponding indicator variables.</p>
-<div class="sourceCode" id="cb168"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb168-1"><a href="cha-mcmc.html#cb168-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Linear regression with intercept and two covariates</span></span>
-<span id="cb168-2"><a href="cha-mcmc.html#cb168-2" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb168-3"><a href="cha-mcmc.html#cb168-3" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb168-4"><a href="cha-mcmc.html#cb168-4" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb168-5"><a href="cha-mcmc.html#cb168-5" aria-hidden="true" tabindex="-1"></a>  beta2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb168-6"><a href="cha-mcmc.html#cb168-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>) </span>
-<span id="cb168-7"><a href="cha-mcmc.html#cb168-7" aria-hidden="true" tabindex="-1"></a>  z1 <span class="sc">~</span> <span class="fu">dbern</span>(psi)  <span class="do">## indicator variable associated with beta1</span></span>
-<span id="cb168-8"><a href="cha-mcmc.html#cb168-8" aria-hidden="true" tabindex="-1"></a>  z2 <span class="sc">~</span> <span class="fu">dbern</span>(psi)  <span class="do">## indicator variable associated with beta2</span></span>
-<span id="cb168-9"><a href="cha-mcmc.html#cb168-9" aria-hidden="true" tabindex="-1"></a>  psi <span class="sc">~</span> <span class="fu">dbeta</span>(<span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## hyperprior on inclusion probability</span></span>
-<span id="cb168-10"><a href="cha-mcmc.html#cb168-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb168-11"><a href="cha-mcmc.html#cb168-11" aria-hidden="true" tabindex="-1"></a>    Ypred[i] <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> z1 <span class="sc">*</span> x1[i] <span class="sc">+</span> beta2 <span class="sc">*</span> z2 <span class="sc">*</span> x2[i]</span>
-<span id="cb168-12"><a href="cha-mcmc.html#cb168-12" aria-hidden="true" tabindex="-1"></a>    Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(Ypred[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb168-13"><a href="cha-mcmc.html#cb168-13" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb168-14"><a href="cha-mcmc.html#cb168-14" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb168-15"><a href="cha-mcmc.html#cb168-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb168-16"><a href="cha-mcmc.html#cb168-16" aria-hidden="true" tabindex="-1"></a><span class="do">## simulate some data</span></span>
-<span id="cb168-17"><a href="cha-mcmc.html#cb168-17" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb168-18"><a href="cha-mcmc.html#cb168-18" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb168-19"><a href="cha-mcmc.html#cb168-19" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">runif</span>(N, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb168-20"><a href="cha-mcmc.html#cb168-20" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">runif</span>(N, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## this covariate is not included</span></span>
-<span id="cb168-21"><a href="cha-mcmc.html#cb168-21" aria-hidden="true" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="fl">1.5</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> x1, <span class="at">sd =</span> <span class="dv">1</span>)</span>
-<span id="cb168-22"><a href="cha-mcmc.html#cb168-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb168-23"><a href="cha-mcmc.html#cb168-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb168-24"><a href="cha-mcmc.html#cb168-24" aria-hidden="true" tabindex="-1"></a><span class="do">## build the model and configure default MCMC</span></span>
-<span id="cb168-25"><a href="cha-mcmc.html#cb168-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb168-26"><a href="cha-mcmc.html#cb168-26" aria-hidden="true" tabindex="-1"></a>RJexampleModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> N),</span>
-<span id="cb168-27"><a href="cha-mcmc.html#cb168-27" aria-hidden="true" tabindex="-1"></a>                              <span class="at">data =</span> <span class="fu">list</span>(<span class="at">Y =</span> Y, <span class="at">x1 =</span> x1, <span class="at">x2 =</span> x2), </span>
-<span id="cb168-28"><a href="cha-mcmc.html#cb168-28" aria-hidden="true" tabindex="-1"></a>                              <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>, <span class="at">beta2 =</span> <span class="dv">0</span>,</span>
-<span id="cb168-29"><a href="cha-mcmc.html#cb168-29" aria-hidden="true" tabindex="-1"></a>                              <span class="at">sigma =</span> <span class="fu">sd</span>(Y), <span class="at">z2 =</span> <span class="dv">1</span>, <span class="at">z1 =</span> <span class="dv">1</span>, <span class="at">psi =</span> <span class="fl">0.5</span>))</span>
-<span id="cb168-30"><a href="cha-mcmc.html#cb168-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb168-31"><a href="cha-mcmc.html#cb168-31" aria-hidden="true" tabindex="-1"></a>RJexampleConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(RJexampleModel)</span></code></pre></div>
-<div class="sourceCode" id="cb169"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb169-1"><a href="cha-mcmc.html#cb169-1" aria-hidden="true" tabindex="-1"></a><span class="do">## For illustration, look at the default sampler assignments</span></span>
-<span id="cb169-2"><a href="cha-mcmc.html#cb169-2" aria-hidden="true" tabindex="-1"></a>RJexampleConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb169"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb169-1"><a href="cha-mcmc.html#cb169-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Linear regression with intercept and two covariates</span></span>
+<span id="cb169-2"><a href="cha-mcmc.html#cb169-2" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb169-3"><a href="cha-mcmc.html#cb169-3" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb169-4"><a href="cha-mcmc.html#cb169-4" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb169-5"><a href="cha-mcmc.html#cb169-5" aria-hidden="true" tabindex="-1"></a>  beta2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb169-6"><a href="cha-mcmc.html#cb169-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>) </span>
+<span id="cb169-7"><a href="cha-mcmc.html#cb169-7" aria-hidden="true" tabindex="-1"></a>  z1 <span class="sc">~</span> <span class="fu">dbern</span>(psi)  <span class="do">## indicator variable associated with beta1</span></span>
+<span id="cb169-8"><a href="cha-mcmc.html#cb169-8" aria-hidden="true" tabindex="-1"></a>  z2 <span class="sc">~</span> <span class="fu">dbern</span>(psi)  <span class="do">## indicator variable associated with beta2</span></span>
+<span id="cb169-9"><a href="cha-mcmc.html#cb169-9" aria-hidden="true" tabindex="-1"></a>  psi <span class="sc">~</span> <span class="fu">dbeta</span>(<span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## hyperprior on inclusion probability</span></span>
+<span id="cb169-10"><a href="cha-mcmc.html#cb169-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb169-11"><a href="cha-mcmc.html#cb169-11" aria-hidden="true" tabindex="-1"></a>    Ypred[i] <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> z1 <span class="sc">*</span> x1[i] <span class="sc">+</span> beta2 <span class="sc">*</span> z2 <span class="sc">*</span> x2[i]</span>
+<span id="cb169-12"><a href="cha-mcmc.html#cb169-12" aria-hidden="true" tabindex="-1"></a>    Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(Ypred[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb169-13"><a href="cha-mcmc.html#cb169-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb169-14"><a href="cha-mcmc.html#cb169-14" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb169-15"><a href="cha-mcmc.html#cb169-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-16"><a href="cha-mcmc.html#cb169-16" aria-hidden="true" tabindex="-1"></a><span class="do">## simulate some data</span></span>
+<span id="cb169-17"><a href="cha-mcmc.html#cb169-17" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb169-18"><a href="cha-mcmc.html#cb169-18" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb169-19"><a href="cha-mcmc.html#cb169-19" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">runif</span>(N, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb169-20"><a href="cha-mcmc.html#cb169-20" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">runif</span>(N, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## this covariate is not included</span></span>
+<span id="cb169-21"><a href="cha-mcmc.html#cb169-21" aria-hidden="true" tabindex="-1"></a>Y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="fl">1.5</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> x1, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb169-22"><a href="cha-mcmc.html#cb169-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-23"><a href="cha-mcmc.html#cb169-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-24"><a href="cha-mcmc.html#cb169-24" aria-hidden="true" tabindex="-1"></a><span class="do">## build the model and configure default MCMC</span></span>
+<span id="cb169-25"><a href="cha-mcmc.html#cb169-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-26"><a href="cha-mcmc.html#cb169-26" aria-hidden="true" tabindex="-1"></a>RJexampleModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> N),</span>
+<span id="cb169-27"><a href="cha-mcmc.html#cb169-27" aria-hidden="true" tabindex="-1"></a>                              <span class="at">data =</span> <span class="fu">list</span>(<span class="at">Y =</span> Y, <span class="at">x1 =</span> x1, <span class="at">x2 =</span> x2), </span>
+<span id="cb169-28"><a href="cha-mcmc.html#cb169-28" aria-hidden="true" tabindex="-1"></a>                              <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>, <span class="at">beta2 =</span> <span class="dv">0</span>,</span>
+<span id="cb169-29"><a href="cha-mcmc.html#cb169-29" aria-hidden="true" tabindex="-1"></a>                              <span class="at">sigma =</span> <span class="fu">sd</span>(Y), <span class="at">z2 =</span> <span class="dv">1</span>, <span class="at">z1 =</span> <span class="dv">1</span>, <span class="at">psi =</span> <span class="fl">0.5</span>))</span>
+<span id="cb169-30"><a href="cha-mcmc.html#cb169-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb169-31"><a href="cha-mcmc.html#cb169-31" aria-hidden="true" tabindex="-1"></a>RJexampleConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(RJexampleModel)</span></code></pre></div>
+<div class="sourceCode" id="cb170"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb170-1"><a href="cha-mcmc.html#cb170-1" aria-hidden="true" tabindex="-1"></a><span class="do">## For illustration, look at the default sampler assignments</span></span>
+<span id="cb170-2"><a href="cha-mcmc.html#cb170-2" aria-hidden="true" tabindex="-1"></a>RJexampleConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm_additive sampler: beta0
 ## [2] conjugate_dnorm_dnorm_linear sampler: beta1
 ## [3] conjugate_dnorm_dnorm_linear sampler: beta2
@@ -1076,15 +1085,15 @@ are in bijection, <span class="math inline">\((\boldsymbol{\theta_2}, \boldsymbo
 ## [6] binary sampler: z1
 ## [7] binary sampler: z2</code></pre>
 <p>At this point we can modify the MCMC configuration object, <code>RJexampleConf</code>, to use reversible jump samplers for selection on <code>beta1</code> and <code>beta2</code>.</p>
-<div class="sourceCode" id="cb171"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb171-1"><a href="cha-mcmc.html#cb171-1" aria-hidden="true" tabindex="-1"></a><span class="fu">configureRJ</span>(<span class="at">conf =</span> RJexampleConf,     </span>
-<span id="cb171-2"><a href="cha-mcmc.html#cb171-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">targetNodes =</span> <span class="fu">c</span>(<span class="st">&quot;beta1&quot;</span>, <span class="st">&quot;beta2&quot;</span>),</span>
-<span id="cb171-3"><a href="cha-mcmc.html#cb171-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">indicatorNodes =</span> <span class="fu">c</span>(<span class="st">&#39;z1&#39;</span>, <span class="st">&#39;z2&#39;</span>),</span>
-<span id="cb171-4"><a href="cha-mcmc.html#cb171-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">control =</span> <span class="fu">list</span>(<span class="at">mean =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="at">scale =</span> <span class="dv">2</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb172"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb172-1"><a href="cha-mcmc.html#cb172-1" aria-hidden="true" tabindex="-1"></a><span class="fu">configureRJ</span>(<span class="at">conf =</span> RJexampleConf,     </span>
+<span id="cb172-2"><a href="cha-mcmc.html#cb172-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">targetNodes =</span> <span class="fu">c</span>(<span class="st">&quot;beta1&quot;</span>, <span class="st">&quot;beta2&quot;</span>),</span>
+<span id="cb172-3"><a href="cha-mcmc.html#cb172-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">indicatorNodes =</span> <span class="fu">c</span>(<span class="st">&#39;z1&#39;</span>, <span class="st">&#39;z2&#39;</span>),</span>
+<span id="cb172-4"><a href="cha-mcmc.html#cb172-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">control =</span> <span class="fu">list</span>(<span class="at">mean =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="at">scale =</span> <span class="dv">2</span>))</span></code></pre></div>
 <p>The <code>targetNodes</code> argument gives the coefficients (nodes) for which we want to do variable selection. The <code>indicatorNodes</code> gives the corresponding indicator nodes, ordered to match <code>targetNodes</code>. The <code>control</code> list gives the means and scale (standard deviation) for normal reversible jump proposals for <code>targetNodes</code>. The means will typically be 0 (by default <code>mean = 0</code> and <code>scale = 1</code>), but they could be anything. An optional <code>control</code> element called <code>fixedValue</code> can be provided in the non-indicator setting; this gives the value taken by nodes in <code>targetNodes</code> when they are out of the model (by default, <code>fixedValue</code> is 0).
 All <code>control</code> elements can be scalars or vectors. A scalar values will be used for all <code>targetNodes</code>. A vector value must be of equal length as <code>targetNodes</code> and will be used in order.</p>
 <p>To use RJMCMC on a vector of coefficients with a corresponding vector of indicator variables, simply provide the variable names for <code>targetNodes</code> and <code>indicatorNodes</code>. For example, <code>targetNodes = "beta"</code> is equivalent to <code>targetNodes = c("beta[1]", "beta[2]")</code> and <code>indicatorNodes = "z"</code> is equivalent to <code>indicatorNodes = c("z[1]", "z[2]")</code>. Expansion of variable names into a vector of node names will occur as described in Section <a href="cha-using-models.html#sec:arbitr-coll-nodes">13.3.1.1</a>. When using this method, <em>both</em> arguments must be provided as variable names to be expanded.</p>
 <p>Next we can see the result of <code>configureRJ</code> by printing the modified list of samplers:</p>
-<div class="sourceCode" id="cb172"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb172-1"><a href="cha-mcmc.html#cb172-1" aria-hidden="true" tabindex="-1"></a>RJexampleConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb173"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb173-1"><a href="cha-mcmc.html#cb173-1" aria-hidden="true" tabindex="-1"></a>RJexampleConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm_additive sampler: beta0
 ## [2] RW sampler: sigma
 ## [3] conjugate_dbeta_dbern_identity sampler: psi
@@ -1099,38 +1108,38 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 <div id="sec:rjmcmc-no-indicator" class="section level3 hasAnchor" number="7.10.2">
 <h3><span class="header-section-number">7.10.2</span> Without indicator variables<a href="cha-mcmc.html#sec:rjmcmc-no-indicator" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>We consider the same regression setting, but without the use of indicator variables and with fixed probabilities of including each coefficient in the model.</p>
-<div class="sourceCode" id="cb174"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb174-1"><a href="cha-mcmc.html#cb174-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Linear regression with intercept and two covariates</span></span>
-<span id="cb174-2"><a href="cha-mcmc.html#cb174-2" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb174-3"><a href="cha-mcmc.html#cb174-3" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb174-4"><a href="cha-mcmc.html#cb174-4" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb174-5"><a href="cha-mcmc.html#cb174-5" aria-hidden="true" tabindex="-1"></a>  beta2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb174-6"><a href="cha-mcmc.html#cb174-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
-<span id="cb174-7"><a href="cha-mcmc.html#cb174-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb174-8"><a href="cha-mcmc.html#cb174-8" aria-hidden="true" tabindex="-1"></a>    Ypred[i] <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> x1[i] <span class="sc">+</span> beta2 <span class="sc">*</span> x2[i]</span>
-<span id="cb174-9"><a href="cha-mcmc.html#cb174-9" aria-hidden="true" tabindex="-1"></a>    Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(Ypred[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb174-10"><a href="cha-mcmc.html#cb174-10" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb174-11"><a href="cha-mcmc.html#cb174-11" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb174-12"><a href="cha-mcmc.html#cb174-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb174-13"><a href="cha-mcmc.html#cb174-13" aria-hidden="true" tabindex="-1"></a><span class="do">## build the model</span></span>
-<span id="cb174-14"><a href="cha-mcmc.html#cb174-14" aria-hidden="true" tabindex="-1"></a>RJexampleModel2 <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> N),</span>
-<span id="cb174-15"><a href="cha-mcmc.html#cb174-15" aria-hidden="true" tabindex="-1"></a>                               <span class="at">data =</span> <span class="fu">list</span>(<span class="at">Y =</span> Y, <span class="at">x1 =</span> x1, <span class="at">x2 =</span> x2), </span>
-<span id="cb174-16"><a href="cha-mcmc.html#cb174-16" aria-hidden="true" tabindex="-1"></a>                               <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>, <span class="at">beta2 =</span> <span class="dv">0</span>,</span>
-<span id="cb174-17"><a href="cha-mcmc.html#cb174-17" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">sigma =</span> <span class="fu">sd</span>(Y)))</span>
-<span id="cb174-18"><a href="cha-mcmc.html#cb174-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb174-19"><a href="cha-mcmc.html#cb174-19" aria-hidden="true" tabindex="-1"></a>RJexampleConf2 <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(RJexampleModel2)</span></code></pre></div>
-<div class="sourceCode" id="cb175"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb175-1"><a href="cha-mcmc.html#cb175-1" aria-hidden="true" tabindex="-1"></a><span class="do">## print NIMBLE default samplers</span></span>
-<span id="cb175-2"><a href="cha-mcmc.html#cb175-2" aria-hidden="true" tabindex="-1"></a>RJexampleConf2<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb175"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb175-1"><a href="cha-mcmc.html#cb175-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Linear regression with intercept and two covariates</span></span>
+<span id="cb175-2"><a href="cha-mcmc.html#cb175-2" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb175-3"><a href="cha-mcmc.html#cb175-3" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb175-4"><a href="cha-mcmc.html#cb175-4" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb175-5"><a href="cha-mcmc.html#cb175-5" aria-hidden="true" tabindex="-1"></a>  beta2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb175-6"><a href="cha-mcmc.html#cb175-6" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb175-7"><a href="cha-mcmc.html#cb175-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb175-8"><a href="cha-mcmc.html#cb175-8" aria-hidden="true" tabindex="-1"></a>    Ypred[i] <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> beta1 <span class="sc">*</span> x1[i] <span class="sc">+</span> beta2 <span class="sc">*</span> x2[i]</span>
+<span id="cb175-9"><a href="cha-mcmc.html#cb175-9" aria-hidden="true" tabindex="-1"></a>    Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(Ypred[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb175-10"><a href="cha-mcmc.html#cb175-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb175-11"><a href="cha-mcmc.html#cb175-11" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb175-12"><a href="cha-mcmc.html#cb175-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb175-13"><a href="cha-mcmc.html#cb175-13" aria-hidden="true" tabindex="-1"></a><span class="do">## build the model</span></span>
+<span id="cb175-14"><a href="cha-mcmc.html#cb175-14" aria-hidden="true" tabindex="-1"></a>RJexampleModel2 <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> N),</span>
+<span id="cb175-15"><a href="cha-mcmc.html#cb175-15" aria-hidden="true" tabindex="-1"></a>                               <span class="at">data =</span> <span class="fu">list</span>(<span class="at">Y =</span> Y, <span class="at">x1 =</span> x1, <span class="at">x2 =</span> x2), </span>
+<span id="cb175-16"><a href="cha-mcmc.html#cb175-16" aria-hidden="true" tabindex="-1"></a>                               <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0 =</span> <span class="dv">0</span>, <span class="at">beta1 =</span> <span class="dv">0</span>, <span class="at">beta2 =</span> <span class="dv">0</span>,</span>
+<span id="cb175-17"><a href="cha-mcmc.html#cb175-17" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">sigma =</span> <span class="fu">sd</span>(Y)))</span>
+<span id="cb175-18"><a href="cha-mcmc.html#cb175-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb175-19"><a href="cha-mcmc.html#cb175-19" aria-hidden="true" tabindex="-1"></a>RJexampleConf2 <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(RJexampleModel2)</span></code></pre></div>
+<div class="sourceCode" id="cb176"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb176-1"><a href="cha-mcmc.html#cb176-1" aria-hidden="true" tabindex="-1"></a><span class="do">## print NIMBLE default samplers</span></span>
+<span id="cb176-2"><a href="cha-mcmc.html#cb176-2" aria-hidden="true" tabindex="-1"></a>RJexampleConf2<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm_additive sampler: beta0
 ## [2] conjugate_dnorm_dnorm_linear sampler: beta1
 ## [3] conjugate_dnorm_dnorm_linear sampler: beta2
 ## [4] RW sampler: sigma</code></pre>
 <p>In this case, since there are no indicator variables, we need to pass to <code>configureRJ</code> the prior inclusion probabilities for each node in <code>targetNodes</code>, by specifying either one common value or a vector of values for the argument <code>priorProb</code>. This case does not allow for a stochastic prior.</p>
-<div class="sourceCode" id="cb177"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb177-1"><a href="cha-mcmc.html#cb177-1" aria-hidden="true" tabindex="-1"></a><span class="fu">configureRJ</span>(<span class="at">conf =</span> RJexampleConf2,     </span>
-<span id="cb177-2"><a href="cha-mcmc.html#cb177-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">targetNodes =</span> <span class="fu">c</span>(<span class="st">&quot;beta1&quot;</span>, <span class="st">&quot;beta2&quot;</span>),</span>
-<span id="cb177-3"><a href="cha-mcmc.html#cb177-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">priorProb =</span> <span class="fl">0.5</span>,</span>
-<span id="cb177-4"><a href="cha-mcmc.html#cb177-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">control =</span> <span class="fu">list</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">scale =</span> <span class="dv">2</span>, <span class="at">fixedValue =</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="dv">0</span>)))</span></code></pre></div>
-<div class="sourceCode" id="cb178"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb178-1"><a href="cha-mcmc.html#cb178-1" aria-hidden="true" tabindex="-1"></a><span class="do">## print samplers after configureRJ</span></span>
-<span id="cb178-2"><a href="cha-mcmc.html#cb178-2" aria-hidden="true" tabindex="-1"></a>RJexampleConf2<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb178"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb178-1"><a href="cha-mcmc.html#cb178-1" aria-hidden="true" tabindex="-1"></a><span class="fu">configureRJ</span>(<span class="at">conf =</span> RJexampleConf2,     </span>
+<span id="cb178-2"><a href="cha-mcmc.html#cb178-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">targetNodes =</span> <span class="fu">c</span>(<span class="st">&quot;beta1&quot;</span>, <span class="st">&quot;beta2&quot;</span>),</span>
+<span id="cb178-3"><a href="cha-mcmc.html#cb178-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">priorProb =</span> <span class="fl">0.5</span>,</span>
+<span id="cb178-4"><a href="cha-mcmc.html#cb178-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">control =</span> <span class="fu">list</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">scale =</span> <span class="dv">2</span>, <span class="at">fixedValue =</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="dv">0</span>)))</span></code></pre></div>
+<div class="sourceCode" id="cb179"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb179-1"><a href="cha-mcmc.html#cb179-1" aria-hidden="true" tabindex="-1"></a><span class="do">## print samplers after configureRJ</span></span>
+<span id="cb179-2"><a href="cha-mcmc.html#cb179-2" aria-hidden="true" tabindex="-1"></a>RJexampleConf2<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
 <pre><code>## [1] conjugate_dnorm_dnorm_additive sampler: beta0
 ## [2] RW sampler: sigma
 ## [3] RJ_fixed_prior sampler: beta1,  priorProb: 0.5,  mean: 0,  scale: 2,  fixedValue: 1.5
@@ -1139,11 +1148,11 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 ## [6] RJ_toggled sampler: beta2,  samplerType: conjugate_dnorm_dnorm_linear,  fixedValue: 0</code></pre>
 <p>Since there are no indicator variables, the <code>RJ_fixed_prior</code> sampler is assigned directly to each of <code>beta[1]</code> and <code>beta[2]</code> along with the <code>RJ_toggled</code> sampler. The former sets a coefficient to its <code>fixedValue</code> when it is out of the model. The latter invokes the regular sampler for the coefficient only if it is in the model at a given iteration.</p>
 <p>If <code>fixedValue</code> is given when using <code>indicatorNodes</code> the values provided in <code>fixedValue</code> are ignored. However the same behavior can be obtained in this situation, using a different model specification. For example, the model in <a href="cha-mcmc.html#sec:rjmcmc-indicator">7.10.1</a> can be modified to have <code>beta1</code> equal to <span class="math inline">\(1.5\)</span> when not in the model as follows:</p>
-<div class="sourceCode" id="cb180"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb180-1"><a href="cha-mcmc.html#cb180-1" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb180-2"><a href="cha-mcmc.html#cb180-2" aria-hidden="true" tabindex="-1"></a>    Ypred[i] <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> z1) <span class="sc">*</span> <span class="fl">1.5</span> <span class="sc">*</span> beta1 <span class="sc">*</span> x1[i] <span class="sc">+</span></span>
-<span id="cb180-3"><a href="cha-mcmc.html#cb180-3" aria-hidden="true" tabindex="-1"></a>                z1 <span class="sc">*</span> beta1 <span class="sc">*</span> x1[i] <span class="sc">+</span> beta2 <span class="sc">*</span> z2 <span class="sc">*</span> x2[i]</span>
-<span id="cb180-4"><a href="cha-mcmc.html#cb180-4" aria-hidden="true" tabindex="-1"></a>    Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(Ypred[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb180-5"><a href="cha-mcmc.html#cb180-5" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
+<div class="sourceCode" id="cb181"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb181-1"><a href="cha-mcmc.html#cb181-1" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb181-2"><a href="cha-mcmc.html#cb181-2" aria-hidden="true" tabindex="-1"></a>    Ypred[i] <span class="ot">&lt;-</span> beta0 <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> z1) <span class="sc">*</span> <span class="fl">1.5</span> <span class="sc">*</span> beta1 <span class="sc">*</span> x1[i] <span class="sc">+</span></span>
+<span id="cb181-3"><a href="cha-mcmc.html#cb181-3" aria-hidden="true" tabindex="-1"></a>                z1 <span class="sc">*</span> beta1 <span class="sc">*</span> x1[i] <span class="sc">+</span> beta2 <span class="sc">*</span> z2 <span class="sc">*</span> x2[i]</span>
+<span id="cb181-4"><a href="cha-mcmc.html#cb181-4" aria-hidden="true" tabindex="-1"></a>    Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(Ypred[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb181-5"><a href="cha-mcmc.html#cb181-5" aria-hidden="true" tabindex="-1"></a>  }</span></code></pre></div>
 </div>
 </div>
 <div id="sec:samplers-provided" class="section level2 hasAnchor" number="7.11">
@@ -1336,67 +1345,77 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 </div>
 <div id="subsec:HMC" class="section level3 hasAnchor" number="7.11.2">
 <h3><span class="header-section-number">7.11.2</span> Hamiltonian Monte Carlo (HMC)<a href="cha-mcmc.html#subsec:HMC" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>As of version 1.0.0, NIMBLE provides support for automatic differentiation (AD), as described in Chapter <a href="cha-AD.html#cha-AD">16</a>. AD is needed for Hamiltonian Monte Carlo (HMC). The HMC algorithm is provided through the <code>nimbleHMC</code> package, which requires version 1.0.0 of the <code>nimble</code> package.</p>
-<p>The HMC sampler in package <code>nimbleHMC</code> implements the NUTS version of HMC. HMC is an MCMC method that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. Within <code>nimble</code>, HMC is more flexible than in some implementations because HMC can be used on some parts of a model while other samplers are used on (the same or) other parts of the same model. Indeed, <span class="citation">R. M. Neal (<a href="references.html#ref-neal-11" role="doc-biblioref">2011</a>)</span> discussed using it in this way.</p>
-<p>At its core, HMC in NIMBLE is just another MCMC sampler that can be used in NIMBLE’s general MCMC system, possibly along with other samplers. For convenience, <code>nimbleHMC</code> provides different ways to set up and run HMC that allow different degrees of control:</p>
+<p>As of version 1.0.0, NIMBLE provides support for automatic differentiation (AD), as described in Chapter <a href="cha-AD.html#cha-AD">16</a>. AD is needed for Hamiltonian Monte Carlo (HMC) sampling. The HMC algorithm is provided through the <code>nimbleHMC</code> package, which requires version 1.0.0 (or higher) of the <code>nimble</code> package.</p>
+<p>HMC is an MCMC sampling algorithm that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. HMC sampling can operate on any continuous-valued model dimensions, including multiple dimensions simultaneously. HMC sampling is more flexibly applicable using <code>nimbleHMC</code> than in other implementations, since HMC can be applied to some parts of a model while other samplers are used on other (potentially overlapping) parts of the same model. Indeed, <span class="citation">R. M. Neal (<a href="references.html#ref-neal-11" role="doc-biblioref">2011</a>)</span> discusses this mixed application of HMC with other sampling methods.</p>
+<p>The <code>nimbleHMC</code> package provides two distinct HMC samplers, which implement two versions of No-U-Turn (NUTS) HMC sampling. HMC-NUTS sampling is a self-tuning version of standard HMC, which self-tunes the step-size and the number of integration steps used in the numeric integrator’s exploration of parameter space. The <code>NUTS_classic</code> sampler in <code>nimbleHMC</code> implements the original (“classic”) HMC-NUTS algorithm developed in <span class="citation">Hoffman and Gelman (<a href="references.html#ref-hoffman2014no" role="doc-biblioref">2014</a>)</span>, which was the seminal version of HMC-NUTS. The <code>NUTS</code> sampler in <code>nimbleHMC</code> is a modern version of HMC-NUTS sampling with improved adaptation routines and convergence criteria, which matches the HMC sampler available in version 2.32.2 of Stan <span class="citation">(<a href="references.html#ref-stan2023stan" role="doc-biblioref">Stan Development Team 2023</a>)</span>.</p>
+<p>The samplers provided in <code>nimbleHMC</code> can be used in <code>nimble</code>’s general MCMC system, and may be used in combination with other samplers provided with <code>nimble</code> operating on different (or overlapping) parts of the model. For convenience, <code>nimbleHMC</code> provides several different ways to set up and run HMC which allow different degrees of control:</p>
 <ul>
-<li><code>nimbleHMC</code> is analogous to <code>nimbleMCMC</code>: It takes model <code>code</code>, <code>data</code>, <code>inits</code> and <code>constants</code> and does all steps from building the model to running one or more MCMC chains. Use this if you want one call to get default HMC samples of the entire model.</li>
-<li><code>configureHMC</code> is analogous to <code>configureMCMC</code>: It sets up a default MCMC configuration that comprises one HMC sampler for all model nodes (or nodes you choose). You can then use <code>addSampler</code> and other methods of the configuration to fully customize it before building and using the MCMC. Use <code>configureHMC</code> if you want to do MCMC with both HMC and other samplers and you find it easier to start with HMC in the configuration first.</li>
-<li><code>buildHMC</code> is analogous to <code>buildMCMC</code>: It builds a configuration that, if not provided, will be created by <code>configureHMC</code>. Use this if you want to manage MCMC runs through <code>runMCMC</code> instead of <code>nimbleHMC</code> and you don’t need to customize the configuration by doing <code>configureHMC</code> yourself.</li>
-<li><code>addHMC</code>: This manages use of <code>addSampler</code> for an MCMC configuration to add specifically an HMC sampler for a chosen set of nodes. It optionally removes other samplers for those nodes first. Use this if you want to do MCMC with both HMC and other samplers and you find it easier to start with the other sampler in the configuration, i.e. from the result of <code>configureMCMC</code>.</li>
-<li>For the most fine-grained control, you can call <code>configureMCMC</code> and then use the <code>addSampler</code> with <code>type="HMC"</code> to add HMC sampler(s).</li>
+<li><code>nimbleHMC</code> is analogous to <code>nimbleMCMC</code>: It accpets model <code>code</code>, <code>data</code>, <code>inits</code> and <code>constants</code> arguments, and performs all steps from building the model to running one or more MCMC chains. Use the <code>nimbleHMC</code> function if you want one call to apply <code>NUTS</code> sampling to all continuous-valued model dimensions, and <code>nimble</code>’s default samplers for all discrete-valued dimensions.</li>
+<li><code>buildHMC</code> is analogous to <code>buildMCMC</code>: It accepts a model object as an argument, and builds an MCMC algorithm which applies <code>NUTS</code> sampling to all continuous-valued model dimensions, and <code>nimble</code>’s default samplers for all discrete-valued dimensions. Use <code>buildHMC</code> if you have created a model object, and want to automatically build the default HMC algorithm for your model.</li>
+<li><code>configureHMC</code> is analogous to <code>configureMCMC</code>: It accepts a model object as an argument, and sets up a default MCMC configuration containing one <code>NUTS</code> sampler operating on all continuous-valued model dimensions, and <code>nimble</code>’s default samplers for all discrete-valued dimensions. You can also specify which <code>nodes</code> should have samplers assigned. You can then modify the MCMC configuration (use <code>addSampler</code> and other methods) to further customize it before building and running the MCMC. Use <code>configureHMC</code> if you are familiar with MCMC configuration objects, and may want to further customize your MCMC using HMC or other samplers or monitors before building the MCMC.</li>
+<li><code>addHMC</code> manages use of <code>addSampler</code> to specifically add an HMC sampler for a chosen set of nodes to an exisiting MCMC configuration. It optionally removes other samplers operating on the specified nodes. Use <code>addHMC</code> to add an HMC sampler operating one or more target nodes to an exisiting MCMC configuration object.</li>
+<li>For the most fine-grained control, you can use the <code>addSampler</code> method speciying the the argument <code>type="NUTS"</code> or <code>type="NUTS_classic"</code> to add HMC sampler(s) to an MCMC configuration object.</li>
 </ul>
-<p>More information on these is available from the help pages, e.g. <code>help(configureHMC)</code>.</p>
+<p>As of version 1.1.0, we now support the following new functionality for AD in models:</p>
+<ul>
+<li>Dynamic indexing is supported, although of course one cannot take derivatives with respect to the actual index values, since they are discrete. This means the index values cannot be sampled by HMC.</li>
+<li>One can take derivatives with respect to nodes assigned CAR priors, so HMC sampling can be performed on variables assigned a CAR prior(i.e., <code>dcar_normal</code> and <code>dcar_proper</code>).</li>
+<li>One can take derivatives with respect to the parameters of <code>dcat</code>, <code>dconstraint</code>, and <code>dinterval</code>. Hence HMC sampling is supported for <em>parameters</em> of nodes that have <code>dcat</code>, <code>dconstraint</code>, and <code>dinterval</code> dependencies. (However, the nodes that follow one of these distributions are discrete, so derivatives with respect to those nodes themselves are not supported, and HMC cannot sample those nodes.)</li>
+<li>Truncated distributions can be used, but one cannot take derivatives with respect to their parameters or the nodes themselves. This means that HMC sampling <strong>cannot</strong> be performed on nodes that have truncated nodes as dependencies.</li>
+</ul>
+<p>More information is available from the help pages, e.g. <code>help(nimbleHMC)</code>, <code>help(buildHMC)</code>, <code>help(configureHMC)</code>, or <code>help(addHMC)</code>.</p>
 <div id="subsec:HMC-example" class="section level4 hasAnchor" number="7.11.2.1">
 <h4><span class="header-section-number">7.11.2.1</span> HMC example<a href="cha-mcmc.html#subsec:HMC-example" class="anchor-section" aria-label="Anchor link to header"></a></h4>
-<p>Here we will configure and build an MCMC to use HMC on a GLMM example. In this case we’ll use HMC for the whole model, i.e., all parameters and latent states.</p>
+<p>Here we will configure and build an MCMC to use the <code>NUTS</code> HMC sampler on a GLMM example. In this case we’ll use HMC sampling for the whole model, i.e., all parameters and latent states.</p>
 <p>We’ll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC (and also for Laplace approximation in <a href="cha-AD.html#sec:use-derivs">16.1</a>). There will be 10 groups (indexed by <code>i</code>) of 5 observations (indexed by <code>j</code>) each. Each observation has a covariate, <code>X</code>, and each group has a random effect <code>ran_eff</code>. Here is the model code:</p>
-<div class="sourceCode" id="cb181"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb181-1"><a href="cha-mcmc.html#cb181-1" aria-hidden="true" tabindex="-1"></a>model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb181-2"><a href="cha-mcmc.html#cb181-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># priors </span></span>
-<span id="cb181-3"><a href="cha-mcmc.html#cb181-3" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb181-4"><a href="cha-mcmc.html#cb181-4" aria-hidden="true" tabindex="-1"></a>  beta <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb181-5"><a href="cha-mcmc.html#cb181-5" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">10</span>)</span>
-<span id="cb181-6"><a href="cha-mcmc.html#cb181-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># random effects and data  </span></span>
-<span id="cb181-7"><a href="cha-mcmc.html#cb181-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
-<span id="cb181-8"><a href="cha-mcmc.html#cb181-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># random effects</span></span>
-<span id="cb181-9"><a href="cha-mcmc.html#cb181-9" aria-hidden="true" tabindex="-1"></a>    ran_eff[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma)</span>
-<span id="cb181-10"><a href="cha-mcmc.html#cb181-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>) {</span>
-<span id="cb181-11"><a href="cha-mcmc.html#cb181-11" aria-hidden="true" tabindex="-1"></a>      <span class="co"># data</span></span>
-<span id="cb181-12"><a href="cha-mcmc.html#cb181-12" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dpois</span>(<span class="fu">exp</span>(intercept <span class="sc">+</span> beta<span class="sc">*</span>X[i,j] <span class="sc">+</span> ran_eff[i]))</span>
-<span id="cb181-13"><a href="cha-mcmc.html#cb181-13" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb181-14"><a href="cha-mcmc.html#cb181-14" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb181-15"><a href="cha-mcmc.html#cb181-15" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb182"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb182-1"><a href="cha-mcmc.html#cb182-1" aria-hidden="true" tabindex="-1"></a>model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb182-2"><a href="cha-mcmc.html#cb182-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># priors </span></span>
+<span id="cb182-3"><a href="cha-mcmc.html#cb182-3" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb182-4"><a href="cha-mcmc.html#cb182-4" aria-hidden="true" tabindex="-1"></a>  beta <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb182-5"><a href="cha-mcmc.html#cb182-5" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">10</span>)</span>
+<span id="cb182-6"><a href="cha-mcmc.html#cb182-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># random effects and data  </span></span>
+<span id="cb182-7"><a href="cha-mcmc.html#cb182-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb182-8"><a href="cha-mcmc.html#cb182-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># random effects</span></span>
+<span id="cb182-9"><a href="cha-mcmc.html#cb182-9" aria-hidden="true" tabindex="-1"></a>    ran_eff[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma)</span>
+<span id="cb182-10"><a href="cha-mcmc.html#cb182-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>) {</span>
+<span id="cb182-11"><a href="cha-mcmc.html#cb182-11" aria-hidden="true" tabindex="-1"></a>      <span class="co"># data</span></span>
+<span id="cb182-12"><a href="cha-mcmc.html#cb182-12" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dpois</span>(<span class="fu">exp</span>(intercept <span class="sc">+</span> beta<span class="sc">*</span>X[i,j] <span class="sc">+</span> ran_eff[i]))</span>
+<span id="cb182-13"><a href="cha-mcmc.html#cb182-13" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb182-14"><a href="cha-mcmc.html#cb182-14" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb182-15"><a href="cha-mcmc.html#cb182-15" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
 <p>We’ll simulate some values for <code>X</code>.</p>
-<div class="sourceCode" id="cb182"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb182-1"><a href="cha-mcmc.html#cb182-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb182-2"><a href="cha-mcmc.html#cb182-2" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">50</span>), <span class="at">nrow =</span> <span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb183"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb183-1"><a href="cha-mcmc.html#cb183-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb183-2"><a href="cha-mcmc.html#cb183-2" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">50</span>), <span class="at">nrow =</span> <span class="dv">10</span>)</span></code></pre></div>
 <p>In order to allow an algorithm to use AD for a specific model, that model must be created with <code>buildDerivs = TRUE</code>. (Note that if you use the one-step method <code>nimbleHMC</code> described above, then you do not need to build the model yourself and so you do not need to provide this <code>buildDerivs</code> option.)</p>
-<div class="sourceCode" id="cb183"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb183-1"><a href="cha-mcmc.html#cb183-1" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">intercept =</span> <span class="dv">0</span>, <span class="at">beta =</span> <span class="fl">0.2</span>, <span class="at">sigma =</span> <span class="fl">0.5</span>)</span>
-<span id="cb183-2"><a href="cha-mcmc.html#cb183-2" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(model_code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">X =</span> X), <span class="at">inits =</span> inits,</span>
-<span id="cb183-3"><a href="cha-mcmc.html#cb183-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">calculate =</span> <span class="cn">FALSE</span>, <span class="at">buildDerivs =</span> <span class="cn">TRUE</span>) <span class="co"># Here is the argument needed for AD.</span></span></code></pre></div>
+<div class="sourceCode" id="cb184"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb184-1"><a href="cha-mcmc.html#cb184-1" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">intercept =</span> <span class="dv">0</span>, <span class="at">beta =</span> <span class="fl">0.2</span>, <span class="at">sigma =</span> <span class="fl">0.5</span>)</span>
+<span id="cb184-2"><a href="cha-mcmc.html#cb184-2" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(model_code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">X =</span> X), <span class="at">inits =</span> inits,</span>
+<span id="cb184-3"><a href="cha-mcmc.html#cb184-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">calculate =</span> <span class="cn">FALSE</span>, <span class="at">buildDerivs =</span> <span class="cn">TRUE</span>) <span class="co"># Here is the argument needed for AD.</span></span></code></pre></div>
 <p>To finish setting up the example we need to put data values into the model. We could have provided data in the call to <code>nimbleModel</code>, but instead we will simulate them using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.</p>
-<div class="sourceCode" id="cb184"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb184-1"><a href="cha-mcmc.html#cb184-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">calculate</span>() <span class="co"># This will return NA because the model is not fully initialized.</span></span></code></pre></div>
+<div class="sourceCode" id="cb185"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb185-1"><a href="cha-mcmc.html#cb185-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">calculate</span>() <span class="co"># This will return NA because the model is not fully initialized.</span></span></code></pre></div>
 <pre><code>## [1] NA</code></pre>
-<div class="sourceCode" id="cb186"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb186-1"><a href="cha-mcmc.html#cb186-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">simulate</span>(model<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="st">&#39;ran_eff&#39;</span>))</span>
-<span id="cb186-2"><a href="cha-mcmc.html#cb186-2" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">calculate</span>() <span class="co"># Now the model is fully initialized: all nodes have valid values.</span></span></code></pre></div>
+<div class="sourceCode" id="cb187"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb187-1"><a href="cha-mcmc.html#cb187-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">simulate</span>(model<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="st">&#39;ran_eff&#39;</span>))</span>
+<span id="cb187-2"><a href="cha-mcmc.html#cb187-2" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">calculate</span>() <span class="co"># Now the model is fully initialized: all nodes have valid values.</span></span></code></pre></div>
 <pre><code>## [1] -80.74344</code></pre>
-<div class="sourceCode" id="cb188"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb188-1"><a href="cha-mcmc.html#cb188-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">setData</span>(<span class="st">&#39;y&#39;</span>) <span class="co"># Now the model has y marked as data, with values from simulation.</span></span></code></pre></div>
+<div class="sourceCode" id="cb189"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb189-1"><a href="cha-mcmc.html#cb189-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">setData</span>(<span class="st">&#39;y&#39;</span>) <span class="co"># Now the model has y marked as data, with values from simulation.</span></span></code></pre></div>
 <p>Finally, we will make a compiled version of the model.</p>
-<div class="sourceCode" id="cb189"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb189-1"><a href="cha-mcmc.html#cb189-1" aria-hidden="true" tabindex="-1"></a>Cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span></code></pre></div>
+<div class="sourceCode" id="cb190"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb190-1"><a href="cha-mcmc.html#cb190-1" aria-hidden="true" tabindex="-1"></a>Cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span></code></pre></div>
 <p>Now we will build an HMC algorithm for the parameters and random effects in the model.</p>
-<div class="sourceCode" id="cb190"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb190-1"><a href="cha-mcmc.html#cb190-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nimbleHMC)</span>
-<span id="cb190-2"><a href="cha-mcmc.html#cb190-2" aria-hidden="true" tabindex="-1"></a>HMC <span class="ot">&lt;-</span> <span class="fu">buildHMC</span>(model)</span></code></pre></div>
+<div class="sourceCode" id="cb191"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb191-1"><a href="cha-mcmc.html#cb191-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nimbleHMC)</span>
+<span id="cb191-2"><a href="cha-mcmc.html#cb191-2" aria-hidden="true" tabindex="-1"></a>HMC <span class="ot">&lt;-</span> <span class="fu">buildHMC</span>(model)</span></code></pre></div>
 <pre><code>## ===== Monitors =====
 ## thin = 1: beta, intercept, sigma
 ## ===== Samplers =====
-## HMC sampler (1)
+## NUTS sampler (1)
 ##   - intercept, beta, sigma, ran_eff[1], ran_eff[2], ran_eff[3], ran_eff[4], ran_eff[5], ran_eff[6], ran_eff[7], ran_eff[8], ran_eff[9], ran_eff[10]</code></pre>
-<div class="sourceCode" id="cb192"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb192-1"><a href="cha-mcmc.html#cb192-1" aria-hidden="true" tabindex="-1"></a>CHMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(HMC, <span class="at">project =</span> model)</span>
-<span id="cb192-2"><a href="cha-mcmc.html#cb192-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The compiled HMC will use the compiled model.</span></span>
-<span id="cb192-3"><a href="cha-mcmc.html#cb192-3" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(CHMC, <span class="at">niter =</span> <span class="dv">1000</span>, <span class="at">nburnin =</span> <span class="dv">500</span>) <span class="co"># short run for illustration</span></span></code></pre></div>
-<pre><code>##   [Note] HMC sampler (nodes: intercept, beta, sigma, ran_eff[1], ran_eff[2], ran_eff[3], ran_eff[4], ran_eff[5], ran_eff[6], r...) is using 500 warmup iterations.
-##   [Note] HMC sampler (nodes: intercept, beta, sigma, ran_eff[1], ran_eff[2], ran_eff[3], ran_eff[4], ran_eff[5], ran_eff[6], r...) encountered 8 divergent paths.</code></pre>
+<div class="sourceCode" id="cb193"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb193-1"><a href="cha-mcmc.html#cb193-1" aria-hidden="true" tabindex="-1"></a>CHMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(HMC, <span class="at">project =</span> model)</span>
+<span id="cb193-2"><a href="cha-mcmc.html#cb193-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The compiled HMC will use the compiled model.</span></span>
+<span id="cb193-3"><a href="cha-mcmc.html#cb193-3" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(CHMC, <span class="at">niter =</span> <span class="dv">1000</span>, <span class="at">nburnin =</span> <span class="dv">500</span>) <span class="co"># short run for illustration</span></span></code></pre></div>
+<pre><code>##   [Note] NUTS sampler (nodes: intercept, beta, sigma, ran_eff[1], ran_eff[2], ran_eff[3], ran_eff[4], ran_eff[5], ran_eff[6], r...) is using 500 warmup iterations.
+##          Since `warmupMode` is &#39;default&#39; and `nburnin` &gt; 0,
+##          the number of warmup iterations is equal to `nburnin`.
+##          The burnin samples will be discarded, and all samples returned will be post-warmup.</code></pre>
 <p>We will not investigate results in detail, but here is a summary to see that reasonable results were generated.</p>
-<div class="sourceCode" id="cb194"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb194-1"><a href="cha-mcmc.html#cb194-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(coda<span class="sc">::</span><span class="fu">as.mcmc</span>(samples))</span></code></pre></div>
+<div class="sourceCode" id="cb195"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb195-1"><a href="cha-mcmc.html#cb195-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(coda<span class="sc">::</span><span class="fu">as.mcmc</span>(samples))</span></code></pre></div>
 <pre><code>## 
 ## Iterations = 1:500
 ## Thinning interval = 1 
@@ -1407,184 +1426,184 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 ##    plus standard error of the mean:
 ## 
 ##              Mean     SD Naive SE Time-series SE
-## beta       0.1901 0.1422 0.006358       0.006358
-## intercept -0.1865 0.2983 0.013341       0.026606
-## sigma      0.7460 0.2691 0.012036       0.020029
+## beta       0.1790 0.1438 0.006432       0.008174
+## intercept -0.2524 0.4463 0.019960       0.056677
+## sigma      0.7912 0.4091 0.018296       0.051351
 ## 
 ## 2. Quantiles for each variable:
 ## 
-##               2.5%      25%     50%     75%  97.5%
-## beta      -0.08399  0.08895  0.1893 0.30176 0.4595
-## intercept -0.79899 -0.38862 -0.1843 0.01333 0.3963
-## sigma      0.31865  0.55724  0.7078 0.88552 1.3849</code></pre>
+##              2.5%      25%     50%       75%  97.5%
+## beta      -0.1299  0.08311  0.1873  0.280133 0.4415
+## intercept -1.6013 -0.42914 -0.1681 -0.002989 0.3520
+## sigma      0.2935  0.53669  0.6886  0.943581 2.0846</code></pre>
 </div>
 <div id="automatic-parameter-transformation" class="section level4 hasAnchor" number="7.11.2.2">
 <h4><span class="header-section-number">7.11.2.2</span> Automatic parameter transformation<a href="cha-mcmc.html#automatic-parameter-transformation" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>In the example above, <code>sigma</code> is a parameter that must be non-negative. HMC works only on unconstrained parameter spaces. NIMBLE’s HMC functionality automatically transforms any constrained parameters to be in an unconstrained parameter space, runs the MCMC, and back-transforms to the original space before providing the MCMC samples. The details of the parameter transformation system can be found in Section <a href="cha-AD.html#sec:parameter-transform">16.8</a>.</p>
 </div>
 </div>
-<div id="customized-log-likelihood-evaluations-rw_llfunction-sampler" class="section level3 hasAnchor" number="7.11.3">
-<h3><span class="header-section-number">7.11.3</span> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="particle-filter-samplers" class="section level3 hasAnchor" number="7.11.3">
+<h3><span class="header-section-number">7.11.3</span> Particle filter samplers<a href="cha-mcmc.html#particle-filter-samplers" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>The <code>nimbleSMC</code> package provides samplers that perform particle MCMC, primarily intended for sampling top-level parameters in state-space or hidden Markov models of time-series data. This sampler is described in Section <a href="cha-algos-provided.html#sec:particle-mcmc">8.1.2</a>.</p>
+</div>
+<div id="customized-log-likelihood-evaluations-rw_llfunction-sampler" class="section level3 hasAnchor" number="7.11.4">
+<h3><span class="header-section-number">7.11.4</span> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model. For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes. Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm <span class="citation">(<a href="references.html#ref-Andrieu_Doucet_Holenstein_2010" role="doc-biblioref">Andrieu, Doucet, and Holenstein 2010</a>)</span>. The <code>RW_llFunction</code> sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function. To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction. The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).</p>
 <p>The <code>RW_llFunction</code> sampler can be customized using the <code>control</code> list argument to set the initial proposal distribution scale and the adaptive properties for the Metropolis-Hastings sampling. In addition, the <code>control</code> list argument must contain a named <code>llFunction</code> element. This is the specialized nimbleFunction that calculates the log-likelihood; it must accept no arguments and return a scalar double number. The return value must be the total log-likelihood of all stochastic dependents of the <code>target</code> nodes – and, if <code>includesTarget = TRUE</code>, of the target node(s) themselves – or whatever surrogate is being used for the total log-likelihood. This is a required <code>control</code> list element with no default. See <code>help(samplers)</code> for details.</p>
 <p>Here is a complete example:</p>
-<div class="sourceCode" id="cb196"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb196-1"><a href="cha-mcmc.html#cb196-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb196-2"><a href="cha-mcmc.html#cb196-2" aria-hidden="true" tabindex="-1"></a>    p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb196-3"><a href="cha-mcmc.html#cb196-3" aria-hidden="true" tabindex="-1"></a>    y <span class="sc">~</span> <span class="fu">dbin</span>(p, n)</span>
-<span id="cb196-4"><a href="cha-mcmc.html#cb196-4" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb196-5"><a href="cha-mcmc.html#cb196-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb196-6"><a href="cha-mcmc.html#cb196-6" aria-hidden="true" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y=</span><span class="dv">3</span>), <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">p=</span><span class="fl">0.5</span>, <span class="at">n=</span><span class="dv">10</span>))</span>
-<span id="cb196-7"><a href="cha-mcmc.html#cb196-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb196-8"><a href="cha-mcmc.html#cb196-8" aria-hidden="true" tabindex="-1"></a>llFun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb196-9"><a href="cha-mcmc.html#cb196-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model) { },</span>
-<span id="cb196-10"><a href="cha-mcmc.html#cb196-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>() {</span>
-<span id="cb196-11"><a href="cha-mcmc.html#cb196-11" aria-hidden="true" tabindex="-1"></a>        y <span class="ot">&lt;-</span> model<span class="sc">$</span>y</span>
-<span id="cb196-12"><a href="cha-mcmc.html#cb196-12" aria-hidden="true" tabindex="-1"></a>        p <span class="ot">&lt;-</span> model<span class="sc">$</span>p</span>
-<span id="cb196-13"><a href="cha-mcmc.html#cb196-13" aria-hidden="true" tabindex="-1"></a>        n <span class="ot">&lt;-</span> model<span class="sc">$</span>n</span>
-<span id="cb196-14"><a href="cha-mcmc.html#cb196-14" aria-hidden="true" tabindex="-1"></a>        ll <span class="ot">&lt;-</span> <span class="fu">lfactorial</span>(n) <span class="sc">-</span> <span class="fu">lfactorial</span>(y) <span class="sc">-</span> <span class="fu">lfactorial</span>(n<span class="sc">-</span>y) <span class="sc">+</span></span>
-<span id="cb196-15"><a href="cha-mcmc.html#cb196-15" aria-hidden="true" tabindex="-1"></a>              y <span class="sc">*</span> <span class="fu">log</span>(p) <span class="sc">+</span> (n<span class="sc">-</span>y) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span><span class="sc">-</span>p)</span>
-<span id="cb196-16"><a href="cha-mcmc.html#cb196-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb196-17"><a href="cha-mcmc.html#cb196-17" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(ll[<span class="dv">1</span>])</span>
-<span id="cb196-18"><a href="cha-mcmc.html#cb196-18" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb196-19"><a href="cha-mcmc.html#cb196-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb196-20"><a href="cha-mcmc.html#cb196-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb196-21"><a href="cha-mcmc.html#cb196-21" aria-hidden="true" tabindex="-1"></a>RllFun <span class="ot">&lt;-</span> <span class="fu">llFun</span>(Rmodel)</span>
-<span id="cb196-22"><a href="cha-mcmc.html#cb196-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb196-23"><a href="cha-mcmc.html#cb196-23" aria-hidden="true" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel, <span class="at">nodes =</span> <span class="cn">NULL</span>)</span>
-<span id="cb196-24"><a href="cha-mcmc.html#cb196-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb196-25"><a href="cha-mcmc.html#cb196-25" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&quot;p&quot;</span>, <span class="at">type =</span> <span class="st">&quot;RW_llFunction&quot;</span>,</span>
-<span id="cb196-26"><a href="cha-mcmc.html#cb196-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">control =</span> <span class="fu">list</span>(<span class="at">llFunction =</span> RllFun, <span class="at">includesTarget =</span> <span class="cn">FALSE</span>))</span>
-<span id="cb196-27"><a href="cha-mcmc.html#cb196-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb196-28"><a href="cha-mcmc.html#cb196-28" aria-hidden="true" tabindex="-1"></a>Rmcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span></code></pre></div>
+<div class="sourceCode" id="cb197"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb197-1"><a href="cha-mcmc.html#cb197-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb197-2"><a href="cha-mcmc.html#cb197-2" aria-hidden="true" tabindex="-1"></a>    p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb197-3"><a href="cha-mcmc.html#cb197-3" aria-hidden="true" tabindex="-1"></a>    y <span class="sc">~</span> <span class="fu">dbin</span>(p, n)</span>
+<span id="cb197-4"><a href="cha-mcmc.html#cb197-4" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb197-5"><a href="cha-mcmc.html#cb197-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb197-6"><a href="cha-mcmc.html#cb197-6" aria-hidden="true" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y=</span><span class="dv">3</span>), <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">p=</span><span class="fl">0.5</span>, <span class="at">n=</span><span class="dv">10</span>))</span>
+<span id="cb197-7"><a href="cha-mcmc.html#cb197-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb197-8"><a href="cha-mcmc.html#cb197-8" aria-hidden="true" tabindex="-1"></a>llFun <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb197-9"><a href="cha-mcmc.html#cb197-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model) { },</span>
+<span id="cb197-10"><a href="cha-mcmc.html#cb197-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>() {</span>
+<span id="cb197-11"><a href="cha-mcmc.html#cb197-11" aria-hidden="true" tabindex="-1"></a>        y <span class="ot">&lt;-</span> model<span class="sc">$</span>y</span>
+<span id="cb197-12"><a href="cha-mcmc.html#cb197-12" aria-hidden="true" tabindex="-1"></a>        p <span class="ot">&lt;-</span> model<span class="sc">$</span>p</span>
+<span id="cb197-13"><a href="cha-mcmc.html#cb197-13" aria-hidden="true" tabindex="-1"></a>        n <span class="ot">&lt;-</span> model<span class="sc">$</span>n</span>
+<span id="cb197-14"><a href="cha-mcmc.html#cb197-14" aria-hidden="true" tabindex="-1"></a>        ll <span class="ot">&lt;-</span> <span class="fu">lfactorial</span>(n) <span class="sc">-</span> <span class="fu">lfactorial</span>(y) <span class="sc">-</span> <span class="fu">lfactorial</span>(n<span class="sc">-</span>y) <span class="sc">+</span></span>
+<span id="cb197-15"><a href="cha-mcmc.html#cb197-15" aria-hidden="true" tabindex="-1"></a>              y <span class="sc">*</span> <span class="fu">log</span>(p) <span class="sc">+</span> (n<span class="sc">-</span>y) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span><span class="sc">-</span>p)</span>
+<span id="cb197-16"><a href="cha-mcmc.html#cb197-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb197-17"><a href="cha-mcmc.html#cb197-17" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(ll[<span class="dv">1</span>])</span>
+<span id="cb197-18"><a href="cha-mcmc.html#cb197-18" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb197-19"><a href="cha-mcmc.html#cb197-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb197-20"><a href="cha-mcmc.html#cb197-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb197-21"><a href="cha-mcmc.html#cb197-21" aria-hidden="true" tabindex="-1"></a>RllFun <span class="ot">&lt;-</span> <span class="fu">llFun</span>(Rmodel)</span>
+<span id="cb197-22"><a href="cha-mcmc.html#cb197-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb197-23"><a href="cha-mcmc.html#cb197-23" aria-hidden="true" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel, <span class="at">nodes =</span> <span class="cn">NULL</span>)</span>
+<span id="cb197-24"><a href="cha-mcmc.html#cb197-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb197-25"><a href="cha-mcmc.html#cb197-25" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&quot;p&quot;</span>, <span class="at">type =</span> <span class="st">&quot;RW_llFunction&quot;</span>,</span>
+<span id="cb197-26"><a href="cha-mcmc.html#cb197-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">control =</span> <span class="fu">list</span>(<span class="at">llFunction =</span> RllFun, <span class="at">includesTarget =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb197-27"><a href="cha-mcmc.html#cb197-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb197-28"><a href="cha-mcmc.html#cb197-28" aria-hidden="true" tabindex="-1"></a>Rmcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span></code></pre></div>
 <p>Note that we need to return <code>ll[1]</code> and not just <code>ll</code> because there are no scalar variables in compiled models. Hence <code>y</code> and other variables, and therefore <code>ll</code>, are of dimension 1 (i.e., vectors / one-dimensional arrays), so we need to specify the first element in order to have the return type be a scalar.</p>
 <!---  ### Terminal node `posterior_predictive sampler` 
 % The `posterior_predictive` sampler is only appropriate for use on terminal stochastic nodes (that is, those having no stochastic dependencies).  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->
 </div>
-<div id="particle-mcmc-sampler" class="section level3 hasAnchor" number="7.11.4">
-<h3><span class="header-section-number">7.11.4</span> Particle MCMC sampler<a href="cha-mcmc.html#particle-mcmc-sampler" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>For state space models, a particle MCMC (PMCMC) sampler can be specified for top-level parameters. This sampler is described in Section <a href="cha-algos-provided.html#sec:particle-mcmc">8.1.2</a>.</p>
-</div>
 </div>
 <div id="sec:mcmc-example-litters" class="section level2 hasAnchor" number="7.12">
 <h2><span class="header-section-number">7.12</span> Detailed MCMC example: <em>litters</em><a href="cha-mcmc.html#sec:mcmc-example-litters" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Here is a detailed example of specifying, building, compiling, and running two MCMC algorithms. We use the <code>litters</code> example from the BUGS examples.</p>
-<div class="sourceCode" id="cb197"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb197-1"><a href="cha-mcmc.html#cb197-1" aria-hidden="true" tabindex="-1"></a><span class="do">###############################</span></span>
-<span id="cb197-2"><a href="cha-mcmc.html#cb197-2" aria-hidden="true" tabindex="-1"></a><span class="do">##### model configuration #####</span></span>
-<span id="cb197-3"><a href="cha-mcmc.html#cb197-3" aria-hidden="true" tabindex="-1"></a><span class="do">###############################</span></span>
-<span id="cb197-4"><a href="cha-mcmc.html#cb197-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-5"><a href="cha-mcmc.html#cb197-5" aria-hidden="true" tabindex="-1"></a><span class="co"># define our model using BUGS syntax</span></span>
-<span id="cb197-6"><a href="cha-mcmc.html#cb197-6" aria-hidden="true" tabindex="-1"></a>litters_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb197-7"><a href="cha-mcmc.html#cb197-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>G) {</span>
-<span id="cb197-8"><a href="cha-mcmc.html#cb197-8" aria-hidden="true" tabindex="-1"></a>        a[i] <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="dv">1</span>, .<span class="dv">001</span>)</span>
-<span id="cb197-9"><a href="cha-mcmc.html#cb197-9" aria-hidden="true" tabindex="-1"></a>        b[i] <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="dv">1</span>, .<span class="dv">001</span>)</span>
-<span id="cb197-10"><a href="cha-mcmc.html#cb197-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb197-11"><a href="cha-mcmc.html#cb197-11" aria-hidden="true" tabindex="-1"></a>            r[i,j] <span class="sc">~</span> <span class="fu">dbin</span>(p[i,j], n[i,j])</span>
-<span id="cb197-12"><a href="cha-mcmc.html#cb197-12" aria-hidden="true" tabindex="-1"></a>            p[i,j] <span class="sc">~</span> <span class="fu">dbeta</span>(a[i], b[i]) </span>
-<span id="cb197-13"><a href="cha-mcmc.html#cb197-13" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb197-14"><a href="cha-mcmc.html#cb197-14" aria-hidden="true" tabindex="-1"></a>        mu[i] <span class="ot">&lt;-</span> a[i] <span class="sc">/</span> (a[i] <span class="sc">+</span> b[i])</span>
-<span id="cb197-15"><a href="cha-mcmc.html#cb197-15" aria-hidden="true" tabindex="-1"></a>        theta[i] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (a[i] <span class="sc">+</span> b[i])</span>
-<span id="cb197-16"><a href="cha-mcmc.html#cb197-16" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb197-17"><a href="cha-mcmc.html#cb197-17" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb197-18"><a href="cha-mcmc.html#cb197-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-19"><a href="cha-mcmc.html#cb197-19" aria-hidden="true" tabindex="-1"></a><span class="co"># list of fixed constants</span></span>
-<span id="cb197-20"><a href="cha-mcmc.html#cb197-20" aria-hidden="true" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">G =</span> <span class="dv">2</span>,</span>
-<span id="cb197-21"><a href="cha-mcmc.html#cb197-21" aria-hidden="true" tabindex="-1"></a>                  <span class="at">N =</span> <span class="dv">16</span>,</span>
-<span id="cb197-22"><a href="cha-mcmc.html#cb197-22" aria-hidden="true" tabindex="-1"></a>                  <span class="at">n =</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">13</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="dv">11</span>, <span class="dv">9</span>, <span class="dv">10</span>, <span class="dv">9</span>,  <span class="dv">9</span>, <span class="dv">8</span>, <span class="dv">11</span>, <span class="dv">8</span>, <span class="dv">10</span>, <span class="dv">13</span>,</span>
-<span id="cb197-23"><a href="cha-mcmc.html#cb197-23" aria-hidden="true" tabindex="-1"></a>                      <span class="dv">10</span>, <span class="dv">12</span>, <span class="dv">9</span>, <span class="dv">10</span>,  <span class="dv">9</span>, <span class="dv">10</span>, <span class="dv">5</span>,  <span class="dv">9</span>,  <span class="dv">9</span>, <span class="dv">13</span>, <span class="dv">7</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">7</span>,  <span class="dv">6</span>, </span>
-<span id="cb197-24"><a href="cha-mcmc.html#cb197-24" aria-hidden="true" tabindex="-1"></a>                      <span class="dv">10</span>, <span class="dv">10</span>, <span class="dv">10</span>, <span class="dv">7</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
-<span id="cb197-25"><a href="cha-mcmc.html#cb197-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-26"><a href="cha-mcmc.html#cb197-26" aria-hidden="true" tabindex="-1"></a><span class="co"># list specifying model data</span></span>
-<span id="cb197-27"><a href="cha-mcmc.html#cb197-27" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">r =</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">13</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="dv">11</span>, <span class="dv">9</span>, <span class="dv">10</span>,  <span class="dv">9</span>, <span class="dv">9</span>, <span class="dv">8</span>, <span class="dv">10</span>, <span class="dv">8</span>, <span class="dv">9</span>, <span class="dv">12</span>, <span class="dv">9</span>,</span>
-<span id="cb197-28"><a href="cha-mcmc.html#cb197-28" aria-hidden="true" tabindex="-1"></a>                 <span class="dv">11</span>, <span class="dv">8</span>, <span class="dv">9</span>,  <span class="dv">8</span>,  <span class="dv">9</span>,  <span class="dv">4</span>, <span class="dv">8</span>,  <span class="dv">7</span>, <span class="dv">11</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">5</span> , <span class="dv">5</span>, <span class="dv">3</span>,  <span class="dv">7</span>, <span class="dv">3</span>, </span>
-<span id="cb197-29"><a href="cha-mcmc.html#cb197-29" aria-hidden="true" tabindex="-1"></a>                 <span class="dv">7</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
-<span id="cb197-30"><a href="cha-mcmc.html#cb197-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-31"><a href="cha-mcmc.html#cb197-31" aria-hidden="true" tabindex="-1"></a><span class="co"># list specifying initial values</span></span>
-<span id="cb197-32"><a href="cha-mcmc.html#cb197-32" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">a =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),</span>
-<span id="cb197-33"><a href="cha-mcmc.html#cb197-33" aria-hidden="true" tabindex="-1"></a>              <span class="at">b =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),</span>
-<span id="cb197-34"><a href="cha-mcmc.html#cb197-34" aria-hidden="true" tabindex="-1"></a>              <span class="at">p =</span> <span class="fu">matrix</span>(<span class="fl">0.5</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">16</span>),</span>
-<span id="cb197-35"><a href="cha-mcmc.html#cb197-35" aria-hidden="true" tabindex="-1"></a>              <span class="at">mu    =</span> <span class="fu">c</span>(.<span class="dv">5</span>, .<span class="dv">5</span>),</span>
-<span id="cb197-36"><a href="cha-mcmc.html#cb197-36" aria-hidden="true" tabindex="-1"></a>              <span class="at">theta =</span> <span class="fu">c</span>(.<span class="dv">5</span>, .<span class="dv">5</span>))</span>
-<span id="cb197-37"><a href="cha-mcmc.html#cb197-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-38"><a href="cha-mcmc.html#cb197-38" aria-hidden="true" tabindex="-1"></a><span class="co"># build the R model object</span></span>
-<span id="cb197-39"><a href="cha-mcmc.html#cb197-39" aria-hidden="true" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(litters_code,</span>
-<span id="cb197-40"><a href="cha-mcmc.html#cb197-40" aria-hidden="true" tabindex="-1"></a>                      <span class="at">constants =</span> constants,</span>
-<span id="cb197-41"><a href="cha-mcmc.html#cb197-41" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data      =</span> data,</span>
-<span id="cb197-42"><a href="cha-mcmc.html#cb197-42" aria-hidden="true" tabindex="-1"></a>                      <span class="at">inits     =</span> inits)</span>
-<span id="cb197-43"><a href="cha-mcmc.html#cb197-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-44"><a href="cha-mcmc.html#cb197-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-45"><a href="cha-mcmc.html#cb197-45" aria-hidden="true" tabindex="-1"></a><span class="do">###########################################</span></span>
-<span id="cb197-46"><a href="cha-mcmc.html#cb197-46" aria-hidden="true" tabindex="-1"></a><span class="do">##### MCMC configuration and building #####</span></span>
-<span id="cb197-47"><a href="cha-mcmc.html#cb197-47" aria-hidden="true" tabindex="-1"></a><span class="do">###########################################</span></span>
-<span id="cb197-48"><a href="cha-mcmc.html#cb197-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-49"><a href="cha-mcmc.html#cb197-49" aria-hidden="true" tabindex="-1"></a><span class="co"># generate the default MCMC configuration;</span></span>
-<span id="cb197-50"><a href="cha-mcmc.html#cb197-50" aria-hidden="true" tabindex="-1"></a><span class="co"># only wish to monitor the derived quantity &quot;mu&quot;</span></span>
-<span id="cb197-51"><a href="cha-mcmc.html#cb197-51" aria-hidden="true" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel, <span class="at">monitors =</span> <span class="st">&quot;mu&quot;</span>)</span>
-<span id="cb197-52"><a href="cha-mcmc.html#cb197-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-53"><a href="cha-mcmc.html#cb197-53" aria-hidden="true" tabindex="-1"></a><span class="co"># check the samplers assigned by default MCMC configuration</span></span>
-<span id="cb197-54"><a href="cha-mcmc.html#cb197-54" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
-<span id="cb197-55"><a href="cha-mcmc.html#cb197-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-56"><a href="cha-mcmc.html#cb197-56" aria-hidden="true" tabindex="-1"></a><span class="co"># double-check our monitors, and thinning interval</span></span>
-<span id="cb197-57"><a href="cha-mcmc.html#cb197-57" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">printMonitors</span>()</span>
-<span id="cb197-58"><a href="cha-mcmc.html#cb197-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-59"><a href="cha-mcmc.html#cb197-59" aria-hidden="true" tabindex="-1"></a><span class="co"># build the executable R MCMC function</span></span>
-<span id="cb197-60"><a href="cha-mcmc.html#cb197-60" aria-hidden="true" tabindex="-1"></a>mcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span>
-<span id="cb197-61"><a href="cha-mcmc.html#cb197-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-62"><a href="cha-mcmc.html#cb197-62" aria-hidden="true" tabindex="-1"></a><span class="co"># let&#39;s try another MCMC, as well,</span></span>
-<span id="cb197-63"><a href="cha-mcmc.html#cb197-63" aria-hidden="true" tabindex="-1"></a><span class="co"># this time using the crossLevel sampler for top-level nodes</span></span>
-<span id="cb197-64"><a href="cha-mcmc.html#cb197-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-65"><a href="cha-mcmc.html#cb197-65" aria-hidden="true" tabindex="-1"></a><span class="co"># generate an empty MCMC configuration</span></span>
-<span id="cb197-66"><a href="cha-mcmc.html#cb197-66" aria-hidden="true" tabindex="-1"></a><span class="co"># we need a new copy of the model to avoid compilation errors</span></span>
-<span id="cb197-67"><a href="cha-mcmc.html#cb197-67" aria-hidden="true" tabindex="-1"></a>Rmodel2 <span class="ot">&lt;-</span> Rmodel<span class="sc">$</span><span class="fu">newModel</span>()</span>
-<span id="cb197-68"><a href="cha-mcmc.html#cb197-68" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel2, <span class="at">nodes =</span> <span class="cn">NULL</span>, <span class="at">monitors =</span> <span class="st">&quot;mu&quot;</span>)</span>
-<span id="cb197-69"><a href="cha-mcmc.html#cb197-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-70"><a href="cha-mcmc.html#cb197-70" aria-hidden="true" tabindex="-1"></a><span class="co"># add two crossLevel samplers</span></span>
-<span id="cb197-71"><a href="cha-mcmc.html#cb197-71" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">&quot;a[1]&quot;</span>, <span class="st">&quot;b[1]&quot;</span>), <span class="at">type =</span> <span class="st">&quot;crossLevel&quot;</span>)</span>
-<span id="cb197-72"><a href="cha-mcmc.html#cb197-72" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">&quot;a[2]&quot;</span>, <span class="st">&quot;b[2]&quot;</span>), <span class="at">type =</span> <span class="st">&quot;crossLevel&quot;</span>)</span>
-<span id="cb197-73"><a href="cha-mcmc.html#cb197-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-74"><a href="cha-mcmc.html#cb197-74" aria-hidden="true" tabindex="-1"></a><span class="co"># let&#39;s check the samplers</span></span>
-<span id="cb197-75"><a href="cha-mcmc.html#cb197-75" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
-<span id="cb197-76"><a href="cha-mcmc.html#cb197-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-77"><a href="cha-mcmc.html#cb197-77" aria-hidden="true" tabindex="-1"></a><span class="co"># build this second executable R MCMC function</span></span>
-<span id="cb197-78"><a href="cha-mcmc.html#cb197-78" aria-hidden="true" tabindex="-1"></a>mcmc_CL <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf_CL)</span>
-<span id="cb197-79"><a href="cha-mcmc.html#cb197-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-80"><a href="cha-mcmc.html#cb197-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-81"><a href="cha-mcmc.html#cb197-81" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
-<span id="cb197-82"><a href="cha-mcmc.html#cb197-82" aria-hidden="true" tabindex="-1"></a><span class="do">##### compile to C++, and run #####</span></span>
-<span id="cb197-83"><a href="cha-mcmc.html#cb197-83" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
-<span id="cb197-84"><a href="cha-mcmc.html#cb197-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-85"><a href="cha-mcmc.html#cb197-85" aria-hidden="true" tabindex="-1"></a><span class="co"># compile the two copies of the model</span></span>
-<span id="cb197-86"><a href="cha-mcmc.html#cb197-86" aria-hidden="true" tabindex="-1"></a>Cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmodel)</span>
-<span id="cb197-87"><a href="cha-mcmc.html#cb197-87" aria-hidden="true" tabindex="-1"></a>Cmodel2 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmodel2)</span>
-<span id="cb197-88"><a href="cha-mcmc.html#cb197-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-89"><a href="cha-mcmc.html#cb197-89" aria-hidden="true" tabindex="-1"></a><span class="co"># compile both MCMC algorithms, in the same</span></span>
-<span id="cb197-90"><a href="cha-mcmc.html#cb197-90" aria-hidden="true" tabindex="-1"></a><span class="co"># project as the R model object</span></span>
-<span id="cb197-91"><a href="cha-mcmc.html#cb197-91" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: at this time, we recommend compiling ALL</span></span>
-<span id="cb197-92"><a href="cha-mcmc.html#cb197-92" aria-hidden="true" tabindex="-1"></a><span class="co"># executable MCMC functions together</span></span>
-<span id="cb197-93"><a href="cha-mcmc.html#cb197-93" aria-hidden="true" tabindex="-1"></a>Cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc, <span class="at">project =</span> Rmodel)</span>
-<span id="cb197-94"><a href="cha-mcmc.html#cb197-94" aria-hidden="true" tabindex="-1"></a>Cmcmc_CL <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc_CL, <span class="at">project =</span> Rmodel2)</span>
-<span id="cb197-95"><a href="cha-mcmc.html#cb197-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-96"><a href="cha-mcmc.html#cb197-96" aria-hidden="true" tabindex="-1"></a><span class="co"># run the default MCMC function,</span></span>
-<span id="cb197-97"><a href="cha-mcmc.html#cb197-97" aria-hidden="true" tabindex="-1"></a><span class="co"># and example the mean of mu[1]</span></span>
-<span id="cb197-98"><a href="cha-mcmc.html#cb197-98" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1000</span>)</span>
-<span id="cb197-99"><a href="cha-mcmc.html#cb197-99" aria-hidden="true" tabindex="-1"></a>cSamplesMatrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(Cmcmc<span class="sc">$</span>mvSamples) <span class="co"># alternative: as.list</span></span>
-<span id="cb197-100"><a href="cha-mcmc.html#cb197-100" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(cSamplesMatrix[, <span class="st">&quot;mu[1]&quot;</span>])</span>
-<span id="cb197-101"><a href="cha-mcmc.html#cb197-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-102"><a href="cha-mcmc.html#cb197-102" aria-hidden="true" tabindex="-1"></a><span class="co"># run the crossLevel MCMC function,</span></span>
-<span id="cb197-103"><a href="cha-mcmc.html#cb197-103" aria-hidden="true" tabindex="-1"></a><span class="co"># and examine the mean of mu[1]</span></span>
-<span id="cb197-104"><a href="cha-mcmc.html#cb197-104" aria-hidden="true" tabindex="-1"></a>Cmcmc_CL<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1000</span>)</span>
-<span id="cb197-105"><a href="cha-mcmc.html#cb197-105" aria-hidden="true" tabindex="-1"></a>cSamplesMatrix_CL <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(Cmcmc_CL<span class="sc">$</span>mvSamples)</span>
-<span id="cb197-106"><a href="cha-mcmc.html#cb197-106" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(cSamplesMatrix_CL[, <span class="st">&quot;mu[1]&quot;</span>])</span>
-<span id="cb197-107"><a href="cha-mcmc.html#cb197-107" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-108"><a href="cha-mcmc.html#cb197-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-109"><a href="cha-mcmc.html#cb197-109" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
-<span id="cb197-110"><a href="cha-mcmc.html#cb197-110" aria-hidden="true" tabindex="-1"></a><span class="do">#### run multiple MCMC chains #####</span></span>
-<span id="cb197-111"><a href="cha-mcmc.html#cb197-111" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
-<span id="cb197-112"><a href="cha-mcmc.html#cb197-112" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-113"><a href="cha-mcmc.html#cb197-113" aria-hidden="true" tabindex="-1"></a><span class="co"># run 3 chains of the crossLevel MCMC</span></span>
-<span id="cb197-114"><a href="cha-mcmc.html#cb197-114" aria-hidden="true" tabindex="-1"></a>samplesList <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc_CL, <span class="at">niter=</span><span class="dv">1000</span>, <span class="at">nchains=</span><span class="dv">3</span>)</span>
-<span id="cb197-115"><a href="cha-mcmc.html#cb197-115" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb197-116"><a href="cha-mcmc.html#cb197-116" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(samplesList, dim)</span></code></pre></div>
+<div class="sourceCode" id="cb198"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb198-1"><a href="cha-mcmc.html#cb198-1" aria-hidden="true" tabindex="-1"></a><span class="do">###############################</span></span>
+<span id="cb198-2"><a href="cha-mcmc.html#cb198-2" aria-hidden="true" tabindex="-1"></a><span class="do">##### model configuration #####</span></span>
+<span id="cb198-3"><a href="cha-mcmc.html#cb198-3" aria-hidden="true" tabindex="-1"></a><span class="do">###############################</span></span>
+<span id="cb198-4"><a href="cha-mcmc.html#cb198-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-5"><a href="cha-mcmc.html#cb198-5" aria-hidden="true" tabindex="-1"></a><span class="co"># define our model using BUGS syntax</span></span>
+<span id="cb198-6"><a href="cha-mcmc.html#cb198-6" aria-hidden="true" tabindex="-1"></a>litters_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb198-7"><a href="cha-mcmc.html#cb198-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>G) {</span>
+<span id="cb198-8"><a href="cha-mcmc.html#cb198-8" aria-hidden="true" tabindex="-1"></a>        a[i] <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="dv">1</span>, .<span class="dv">001</span>)</span>
+<span id="cb198-9"><a href="cha-mcmc.html#cb198-9" aria-hidden="true" tabindex="-1"></a>        b[i] <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="dv">1</span>, .<span class="dv">001</span>)</span>
+<span id="cb198-10"><a href="cha-mcmc.html#cb198-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb198-11"><a href="cha-mcmc.html#cb198-11" aria-hidden="true" tabindex="-1"></a>            r[i,j] <span class="sc">~</span> <span class="fu">dbin</span>(p[i,j], n[i,j])</span>
+<span id="cb198-12"><a href="cha-mcmc.html#cb198-12" aria-hidden="true" tabindex="-1"></a>            p[i,j] <span class="sc">~</span> <span class="fu">dbeta</span>(a[i], b[i]) </span>
+<span id="cb198-13"><a href="cha-mcmc.html#cb198-13" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb198-14"><a href="cha-mcmc.html#cb198-14" aria-hidden="true" tabindex="-1"></a>        mu[i] <span class="ot">&lt;-</span> a[i] <span class="sc">/</span> (a[i] <span class="sc">+</span> b[i])</span>
+<span id="cb198-15"><a href="cha-mcmc.html#cb198-15" aria-hidden="true" tabindex="-1"></a>        theta[i] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (a[i] <span class="sc">+</span> b[i])</span>
+<span id="cb198-16"><a href="cha-mcmc.html#cb198-16" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb198-17"><a href="cha-mcmc.html#cb198-17" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb198-18"><a href="cha-mcmc.html#cb198-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-19"><a href="cha-mcmc.html#cb198-19" aria-hidden="true" tabindex="-1"></a><span class="co"># list of fixed constants</span></span>
+<span id="cb198-20"><a href="cha-mcmc.html#cb198-20" aria-hidden="true" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">G =</span> <span class="dv">2</span>,</span>
+<span id="cb198-21"><a href="cha-mcmc.html#cb198-21" aria-hidden="true" tabindex="-1"></a>                  <span class="at">N =</span> <span class="dv">16</span>,</span>
+<span id="cb198-22"><a href="cha-mcmc.html#cb198-22" aria-hidden="true" tabindex="-1"></a>                  <span class="at">n =</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">13</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="dv">11</span>, <span class="dv">9</span>, <span class="dv">10</span>, <span class="dv">9</span>,  <span class="dv">9</span>, <span class="dv">8</span>, <span class="dv">11</span>, <span class="dv">8</span>, <span class="dv">10</span>, <span class="dv">13</span>,</span>
+<span id="cb198-23"><a href="cha-mcmc.html#cb198-23" aria-hidden="true" tabindex="-1"></a>                      <span class="dv">10</span>, <span class="dv">12</span>, <span class="dv">9</span>, <span class="dv">10</span>,  <span class="dv">9</span>, <span class="dv">10</span>, <span class="dv">5</span>,  <span class="dv">9</span>,  <span class="dv">9</span>, <span class="dv">13</span>, <span class="dv">7</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">7</span>,  <span class="dv">6</span>, </span>
+<span id="cb198-24"><a href="cha-mcmc.html#cb198-24" aria-hidden="true" tabindex="-1"></a>                      <span class="dv">10</span>, <span class="dv">10</span>, <span class="dv">10</span>, <span class="dv">7</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
+<span id="cb198-25"><a href="cha-mcmc.html#cb198-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-26"><a href="cha-mcmc.html#cb198-26" aria-hidden="true" tabindex="-1"></a><span class="co"># list specifying model data</span></span>
+<span id="cb198-27"><a href="cha-mcmc.html#cb198-27" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">r =</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">13</span>, <span class="dv">12</span>, <span class="dv">12</span>, <span class="dv">11</span>, <span class="dv">9</span>, <span class="dv">10</span>,  <span class="dv">9</span>, <span class="dv">9</span>, <span class="dv">8</span>, <span class="dv">10</span>, <span class="dv">8</span>, <span class="dv">9</span>, <span class="dv">12</span>, <span class="dv">9</span>,</span>
+<span id="cb198-28"><a href="cha-mcmc.html#cb198-28" aria-hidden="true" tabindex="-1"></a>                 <span class="dv">11</span>, <span class="dv">8</span>, <span class="dv">9</span>,  <span class="dv">8</span>,  <span class="dv">9</span>,  <span class="dv">4</span>, <span class="dv">8</span>,  <span class="dv">7</span>, <span class="dv">11</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">5</span> , <span class="dv">5</span>, <span class="dv">3</span>,  <span class="dv">7</span>, <span class="dv">3</span>, </span>
+<span id="cb198-29"><a href="cha-mcmc.html#cb198-29" aria-hidden="true" tabindex="-1"></a>                 <span class="dv">7</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
+<span id="cb198-30"><a href="cha-mcmc.html#cb198-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-31"><a href="cha-mcmc.html#cb198-31" aria-hidden="true" tabindex="-1"></a><span class="co"># list specifying initial values</span></span>
+<span id="cb198-32"><a href="cha-mcmc.html#cb198-32" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">a =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb198-33"><a href="cha-mcmc.html#cb198-33" aria-hidden="true" tabindex="-1"></a>              <span class="at">b =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb198-34"><a href="cha-mcmc.html#cb198-34" aria-hidden="true" tabindex="-1"></a>              <span class="at">p =</span> <span class="fu">matrix</span>(<span class="fl">0.5</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">16</span>),</span>
+<span id="cb198-35"><a href="cha-mcmc.html#cb198-35" aria-hidden="true" tabindex="-1"></a>              <span class="at">mu    =</span> <span class="fu">c</span>(.<span class="dv">5</span>, .<span class="dv">5</span>),</span>
+<span id="cb198-36"><a href="cha-mcmc.html#cb198-36" aria-hidden="true" tabindex="-1"></a>              <span class="at">theta =</span> <span class="fu">c</span>(.<span class="dv">5</span>, .<span class="dv">5</span>))</span>
+<span id="cb198-37"><a href="cha-mcmc.html#cb198-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-38"><a href="cha-mcmc.html#cb198-38" aria-hidden="true" tabindex="-1"></a><span class="co"># build the R model object</span></span>
+<span id="cb198-39"><a href="cha-mcmc.html#cb198-39" aria-hidden="true" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(litters_code,</span>
+<span id="cb198-40"><a href="cha-mcmc.html#cb198-40" aria-hidden="true" tabindex="-1"></a>                      <span class="at">constants =</span> constants,</span>
+<span id="cb198-41"><a href="cha-mcmc.html#cb198-41" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data      =</span> data,</span>
+<span id="cb198-42"><a href="cha-mcmc.html#cb198-42" aria-hidden="true" tabindex="-1"></a>                      <span class="at">inits     =</span> inits)</span>
+<span id="cb198-43"><a href="cha-mcmc.html#cb198-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-44"><a href="cha-mcmc.html#cb198-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-45"><a href="cha-mcmc.html#cb198-45" aria-hidden="true" tabindex="-1"></a><span class="do">###########################################</span></span>
+<span id="cb198-46"><a href="cha-mcmc.html#cb198-46" aria-hidden="true" tabindex="-1"></a><span class="do">##### MCMC configuration and building #####</span></span>
+<span id="cb198-47"><a href="cha-mcmc.html#cb198-47" aria-hidden="true" tabindex="-1"></a><span class="do">###########################################</span></span>
+<span id="cb198-48"><a href="cha-mcmc.html#cb198-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-49"><a href="cha-mcmc.html#cb198-49" aria-hidden="true" tabindex="-1"></a><span class="co"># generate the default MCMC configuration;</span></span>
+<span id="cb198-50"><a href="cha-mcmc.html#cb198-50" aria-hidden="true" tabindex="-1"></a><span class="co"># only wish to monitor the derived quantity &quot;mu&quot;</span></span>
+<span id="cb198-51"><a href="cha-mcmc.html#cb198-51" aria-hidden="true" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel, <span class="at">monitors =</span> <span class="st">&quot;mu&quot;</span>)</span>
+<span id="cb198-52"><a href="cha-mcmc.html#cb198-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-53"><a href="cha-mcmc.html#cb198-53" aria-hidden="true" tabindex="-1"></a><span class="co"># check the samplers assigned by default MCMC configuration</span></span>
+<span id="cb198-54"><a href="cha-mcmc.html#cb198-54" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
+<span id="cb198-55"><a href="cha-mcmc.html#cb198-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-56"><a href="cha-mcmc.html#cb198-56" aria-hidden="true" tabindex="-1"></a><span class="co"># double-check our monitors, and thinning interval</span></span>
+<span id="cb198-57"><a href="cha-mcmc.html#cb198-57" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">printMonitors</span>()</span>
+<span id="cb198-58"><a href="cha-mcmc.html#cb198-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-59"><a href="cha-mcmc.html#cb198-59" aria-hidden="true" tabindex="-1"></a><span class="co"># build the executable R MCMC function</span></span>
+<span id="cb198-60"><a href="cha-mcmc.html#cb198-60" aria-hidden="true" tabindex="-1"></a>mcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span>
+<span id="cb198-61"><a href="cha-mcmc.html#cb198-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-62"><a href="cha-mcmc.html#cb198-62" aria-hidden="true" tabindex="-1"></a><span class="co"># let&#39;s try another MCMC, as well,</span></span>
+<span id="cb198-63"><a href="cha-mcmc.html#cb198-63" aria-hidden="true" tabindex="-1"></a><span class="co"># this time using the crossLevel sampler for top-level nodes</span></span>
+<span id="cb198-64"><a href="cha-mcmc.html#cb198-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-65"><a href="cha-mcmc.html#cb198-65" aria-hidden="true" tabindex="-1"></a><span class="co"># generate an empty MCMC configuration</span></span>
+<span id="cb198-66"><a href="cha-mcmc.html#cb198-66" aria-hidden="true" tabindex="-1"></a><span class="co"># we need a new copy of the model to avoid compilation errors</span></span>
+<span id="cb198-67"><a href="cha-mcmc.html#cb198-67" aria-hidden="true" tabindex="-1"></a>Rmodel2 <span class="ot">&lt;-</span> Rmodel<span class="sc">$</span><span class="fu">newModel</span>()</span>
+<span id="cb198-68"><a href="cha-mcmc.html#cb198-68" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel2, <span class="at">nodes =</span> <span class="cn">NULL</span>, <span class="at">monitors =</span> <span class="st">&quot;mu&quot;</span>)</span>
+<span id="cb198-69"><a href="cha-mcmc.html#cb198-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-70"><a href="cha-mcmc.html#cb198-70" aria-hidden="true" tabindex="-1"></a><span class="co"># add two crossLevel samplers</span></span>
+<span id="cb198-71"><a href="cha-mcmc.html#cb198-71" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">&quot;a[1]&quot;</span>, <span class="st">&quot;b[1]&quot;</span>), <span class="at">type =</span> <span class="st">&quot;crossLevel&quot;</span>)</span>
+<span id="cb198-72"><a href="cha-mcmc.html#cb198-72" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">&quot;a[2]&quot;</span>, <span class="st">&quot;b[2]&quot;</span>), <span class="at">type =</span> <span class="st">&quot;crossLevel&quot;</span>)</span>
+<span id="cb198-73"><a href="cha-mcmc.html#cb198-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-74"><a href="cha-mcmc.html#cb198-74" aria-hidden="true" tabindex="-1"></a><span class="co"># let&#39;s check the samplers</span></span>
+<span id="cb198-75"><a href="cha-mcmc.html#cb198-75" aria-hidden="true" tabindex="-1"></a>mcmcConf_CL<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
+<span id="cb198-76"><a href="cha-mcmc.html#cb198-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-77"><a href="cha-mcmc.html#cb198-77" aria-hidden="true" tabindex="-1"></a><span class="co"># build this second executable R MCMC function</span></span>
+<span id="cb198-78"><a href="cha-mcmc.html#cb198-78" aria-hidden="true" tabindex="-1"></a>mcmc_CL <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf_CL)</span>
+<span id="cb198-79"><a href="cha-mcmc.html#cb198-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-80"><a href="cha-mcmc.html#cb198-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-81"><a href="cha-mcmc.html#cb198-81" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
+<span id="cb198-82"><a href="cha-mcmc.html#cb198-82" aria-hidden="true" tabindex="-1"></a><span class="do">##### compile to C++, and run #####</span></span>
+<span id="cb198-83"><a href="cha-mcmc.html#cb198-83" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
+<span id="cb198-84"><a href="cha-mcmc.html#cb198-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-85"><a href="cha-mcmc.html#cb198-85" aria-hidden="true" tabindex="-1"></a><span class="co"># compile the two copies of the model</span></span>
+<span id="cb198-86"><a href="cha-mcmc.html#cb198-86" aria-hidden="true" tabindex="-1"></a>Cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmodel)</span>
+<span id="cb198-87"><a href="cha-mcmc.html#cb198-87" aria-hidden="true" tabindex="-1"></a>Cmodel2 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rmodel2)</span>
+<span id="cb198-88"><a href="cha-mcmc.html#cb198-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-89"><a href="cha-mcmc.html#cb198-89" aria-hidden="true" tabindex="-1"></a><span class="co"># compile both MCMC algorithms, in the same</span></span>
+<span id="cb198-90"><a href="cha-mcmc.html#cb198-90" aria-hidden="true" tabindex="-1"></a><span class="co"># project as the R model object</span></span>
+<span id="cb198-91"><a href="cha-mcmc.html#cb198-91" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: at this time, we recommend compiling ALL</span></span>
+<span id="cb198-92"><a href="cha-mcmc.html#cb198-92" aria-hidden="true" tabindex="-1"></a><span class="co"># executable MCMC functions together</span></span>
+<span id="cb198-93"><a href="cha-mcmc.html#cb198-93" aria-hidden="true" tabindex="-1"></a>Cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc, <span class="at">project =</span> Rmodel)</span>
+<span id="cb198-94"><a href="cha-mcmc.html#cb198-94" aria-hidden="true" tabindex="-1"></a>Cmcmc_CL <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc_CL, <span class="at">project =</span> Rmodel2)</span>
+<span id="cb198-95"><a href="cha-mcmc.html#cb198-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-96"><a href="cha-mcmc.html#cb198-96" aria-hidden="true" tabindex="-1"></a><span class="co"># run the default MCMC function,</span></span>
+<span id="cb198-97"><a href="cha-mcmc.html#cb198-97" aria-hidden="true" tabindex="-1"></a><span class="co"># and example the mean of mu[1]</span></span>
+<span id="cb198-98"><a href="cha-mcmc.html#cb198-98" aria-hidden="true" tabindex="-1"></a>Cmcmc<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1000</span>)</span>
+<span id="cb198-99"><a href="cha-mcmc.html#cb198-99" aria-hidden="true" tabindex="-1"></a>cSamplesMatrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(Cmcmc<span class="sc">$</span>mvSamples) <span class="co"># alternative: as.list</span></span>
+<span id="cb198-100"><a href="cha-mcmc.html#cb198-100" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(cSamplesMatrix[, <span class="st">&quot;mu[1]&quot;</span>])</span>
+<span id="cb198-101"><a href="cha-mcmc.html#cb198-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-102"><a href="cha-mcmc.html#cb198-102" aria-hidden="true" tabindex="-1"></a><span class="co"># run the crossLevel MCMC function,</span></span>
+<span id="cb198-103"><a href="cha-mcmc.html#cb198-103" aria-hidden="true" tabindex="-1"></a><span class="co"># and examine the mean of mu[1]</span></span>
+<span id="cb198-104"><a href="cha-mcmc.html#cb198-104" aria-hidden="true" tabindex="-1"></a>Cmcmc_CL<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1000</span>)</span>
+<span id="cb198-105"><a href="cha-mcmc.html#cb198-105" aria-hidden="true" tabindex="-1"></a>cSamplesMatrix_CL <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(Cmcmc_CL<span class="sc">$</span>mvSamples)</span>
+<span id="cb198-106"><a href="cha-mcmc.html#cb198-106" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(cSamplesMatrix_CL[, <span class="st">&quot;mu[1]&quot;</span>])</span>
+<span id="cb198-107"><a href="cha-mcmc.html#cb198-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-108"><a href="cha-mcmc.html#cb198-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-109"><a href="cha-mcmc.html#cb198-109" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
+<span id="cb198-110"><a href="cha-mcmc.html#cb198-110" aria-hidden="true" tabindex="-1"></a><span class="do">#### run multiple MCMC chains #####</span></span>
+<span id="cb198-111"><a href="cha-mcmc.html#cb198-111" aria-hidden="true" tabindex="-1"></a><span class="do">###################################</span></span>
+<span id="cb198-112"><a href="cha-mcmc.html#cb198-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-113"><a href="cha-mcmc.html#cb198-113" aria-hidden="true" tabindex="-1"></a><span class="co"># run 3 chains of the crossLevel MCMC</span></span>
+<span id="cb198-114"><a href="cha-mcmc.html#cb198-114" aria-hidden="true" tabindex="-1"></a>samplesList <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc_CL, <span class="at">niter=</span><span class="dv">1000</span>, <span class="at">nchains=</span><span class="dv">3</span>)</span>
+<span id="cb198-115"><a href="cha-mcmc.html#cb198-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb198-116"><a href="cha-mcmc.html#cb198-116" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(samplesList, dim)</span></code></pre></div>
 </div>
 <div id="mcmc-suite-compare-mcmcs" class="section level2 hasAnchor" number="7.13">
 <h2><span class="header-section-number">7.13</span> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs" class="anchor-section" aria-label="Anchor link to header"></a></h2>

@@ -1238,13 +1238,13 @@ copierVector_setupCodeTemplate <- setupCodeTemplateClass(
     
 
 modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
-	#Note to programmer: required fields of argList are model, nodes and logProb
+	#Note to programmer: required fields of argList are modelValues, nodes and logProb
 
-    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), 'LPO', deparse(argList$logProbOnly), deparse(argList$row), sep = '_'))},
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList[['modelValues']]), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), 'LPO', deparse(argList$logProbOnly), deparse(argList$row), sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB, logProbOnly = LOGPROBONLY) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
-             MODEL = argList$model,
+             MODEL = argList[['modelValues']],
              NODES = argList$nodes,
              LOGPROB = argList$logProb,
              LOGPROBONLY = argList$logProbOnly)
@@ -2025,10 +2025,14 @@ nimDerivsInfoClass_init_impl <- function(.self
 
 makeOutputNodes <- function(model,
                             calcNodes) {
-  calcNodeNames <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
-  logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
-  isDetermCalcNodes <- model$isDeterm(calcNodeNames)
-  modelOutputNodes <- c(calcNodeNames[isDetermCalcNodes],
+  ## Need to do `isDeterm` on nodes, not node components (issue 1431).
+  ## Presuming (and based on a simple test) that by now,
+  ## input `calcNodes` would include all encompassing nodes
+  ## and that this next step would not introduce any additional components.  
+  calcNodes <- model$expandNodeNames(calcNodes)
+  logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodes)
+  isDetermCalcNodes <- model$isDeterm(calcNodes, nodesAlreadyExpanded = TRUE)
+  modelOutputNodes <- c(model$expandNodeNames(calcNodes[isDetermCalcNodes], returnScalarComponents = TRUE),
                         logProbCalcNodeNames)
   modelOutputNodes
 }
@@ -2134,7 +2138,7 @@ makeModelDerivsInfo <- function(model,
                            calcNodes,
                            dataAsConstantNodes = TRUE) {
   wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
-  # This ensures that elements of a non-scalar node become the entire non-scalare node
+  # This ensures that elements of a non-scalar node become the entire non-scalar node.
   calcNodes <- model$expandNodeNames(calcNodes)
   # And then this splits into scalar components.
   # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
@@ -2161,25 +2165,34 @@ getImmediateParentNodes <- function(nodes, model) {
 }
 
 makeModelDerivsInfo_impl <- function(model,
-                                wrtNodes,
-                                 calcNodes,
-                                dataAsConstantNodes = TRUE) {
-  nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
-  nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes, returnScalarComponents = TRUE)
-  nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]  
-  ## Some duplication of work in expandNodeNames
+                                     wrtNodes,
+                                     calcNodes,
+                                     dataAsConstantNodes = TRUE) {
+  ## Gymnastics to convert to actual nodes for computational efficiency are needed because `setdiff` needs to
+  ## operate on node components because `wrt` is in terms of components not nodes.
+  nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)  # Node components here, since `calcNodes`, `wrtNodes` are as components upon input.
+  nonWrtCalcActualNodes <- model$expandNodeNames(nonWrtCalcNodes)  # Nodes here. Can be costly for large multivar nodes (say 3 sec. for a 1m-element node).
+  nonWrtStochCalcNodes <- nonWrtCalcActualNodes[ model$isStoch(nonWrtCalcActualNodes,
+                               nodesAlreadyExpanded = TRUE) ] # Run `isStoch` on nodes not components (issue #1431). 
+
   parentNodes <- getImmediateParentNodes(calcNodes, model)
   parentNodes <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
-  neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodeNames))
+  neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodes)) 
+    
   extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
-                                             nonWrtStochCalcNodeNames),
-                                           returnScalarComponents = TRUE,
-                                           sort = TRUE)
+                                             nonWrtStochCalcNodes)) # Need as nodes so `isData` below run on nodes for efficiency.
   constantNodes <- character()
   if(dataAsConstantNodes) {
     boolData <- model$isData(extraInputNodes)
-    constantNodes <- extraInputNodes[boolData]
-    extraInputNodes <- extraInputNodes[!boolData]
+    constantNodes <- model$expandNodeNames(extraInputNodes[boolData], returnScalarComponents = TRUE, sort = TRUE) 
+    extraInputNodes <- model$expandNodeNames(extraInputNodes[!boolData], returnScalarComponents = TRUE, sort = TRUE)
+    ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
+    extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
+    constantNodes <- setdiff(constantNodes, wrtNodes)  
+  } else {
+      extraInputNodes <- model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE)
+      ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
+      extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
   }
   list(updateNodes = extraInputNodes,
        constantNodes = constantNodes)

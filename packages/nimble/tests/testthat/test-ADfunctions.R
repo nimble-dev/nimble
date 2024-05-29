@@ -8,8 +8,6 @@ nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
 
-context("Testing of derivatives for nimbleFunctions.")
-
 test_that('Derivatives of dnorm function correctly.',
   {
     ADfun1 <- nimbleFunction(

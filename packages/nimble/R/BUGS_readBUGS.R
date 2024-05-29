@@ -270,7 +270,10 @@ processNonParseableCode <- function(text) {
 #'
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'. See \code{\link{nimbleOptions}} for details.
 #'
-#' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
+#' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.
+#'
+#' @param buildDerivs logical indicating whether to build derivative capabilities for the model.
+
 #'
 #' @author Christopher Paciorek
 #'
@@ -301,7 +304,7 @@ processNonParseableCode <- function(text) {
 #' pumpModel$getVarNames()
 #' pumpModel$x
 #' 
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE, buildDerivs = getNimbleOption('buildModelDerivs')) {
 
   # helper function
   doEval <- function(vec, env) {
@@ -473,7 +476,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # create R model
   # 'data' will have constants and data, but BUGSmodel is written to be ok with this
   # we can't separate them before building model as we don't know names of nodes in model
-  Rmodel <- nimbleModel(code = model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug, check = check, calculate = calculate)
+  Rmodel <- nimbleModel(code = model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug, check = check, calculate = calculate, buildDerivs = buildDerivs)
 
   # now provide values for data nodes from 'data' list
   if(FALSE) { # now handled within nimbleModel

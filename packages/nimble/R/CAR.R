@@ -258,7 +258,7 @@ CAR_calcNumIslands <- nimbleFunction(
                         nextInd <- indToVisit[l]
                         if(visited[nextInd] == 0) {
                             visited[nextInd] <- 1
-                            newNneighbors <- num[nextInd]
+                            newNneighbors <- num_int[nextInd]
                             if(newNneighbors > 0) {
                                 newIndToVisit <- numeric(newNneighbors)
                                 adjStartInd <- 1L

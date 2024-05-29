@@ -1212,7 +1212,7 @@ makeCopyFromRobjectDef <- function(cppCopyTypes,
                             c(list('{'),
                               list(cppLiteral("SETUP_S_xData;")),
                               copyCalls,
-                              list(cppLiteral(paste0("UNPROTECT(",unprotectCount,");")))),
+                              list(cppLiteral(paste0("UNPROTECT(",unprotectCount,"+1);")))),
                             quote = TRUE
                             )
     }

@@ -7,8 +7,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = TRUE)
 
-context('Testing distributions API')
-
 # tests of distribution functions applied to distribution name
 
 test_that("Test that requesting unknown distribution returns error",

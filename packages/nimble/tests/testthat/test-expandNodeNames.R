@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of expandNodeNames")
-
 test_that("expandNodeNames works for various cases, including going beyond extent of variable", {
     
    code <- nimbleCode({

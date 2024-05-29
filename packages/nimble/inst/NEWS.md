@@ -1,38 +1,148 @@
-#                            CHANGES IN VERSION 1.1.0 (December 2023) 
+#                            CHANGES IN VERSION 1.1.0 (January 2024) 
 
 ## USER LEVEL CHANGES
+
+- Enhance use of AD in models:
+
+    -- Allow use of stochastic indexing in models with AD (PR #1389).
+
+    -- Allow use of AD with CAR models, which enables use of HMC on nodes specified
+    to have `dcar_normal` or `dcar_proper` distributions (PR #1390).
+    
+    -- Allow distributions and functions (whether user-defined or built-in) that 
+    lack AD support to be used and compiled in AD-enabled models, including
+    truncated distributions, `dcat`, `dinterval`, and `dconstraint` (PR #1389).
+    
+- Add `nimIntegrate`, providing functionality analogous to R's `integrate`,
+  to the NIMBLE language, providing one-dimensional numerical integration via
+  adaptive quadrature (PR #1357).
 
 - Add `prior_samples` MCMC sampler, which uses an existing set of
   numerical samples to define the prior distribution of model node(s).
 
+- `configureMCMC` will no longer assign samplers to data nodes, even if
+  the `nodes` argument includes data nodes (PR #1407).
+  
+- Add new argument `allowData` to the `addSampler` method of MCMC
+  configuration objects, with default value `FALSE`.  When `TRUE`,
+  samplers can be assigned to operate on data nodes (PR #1407).
+  
+- Handle predictive node dependencies of `dCRP` cluster indicators
+  by erroring out, but letting users know that setting 
+  `MCMCusePredictiveDependenciesInCalculations` to `TRUE` will make MCMC 
+  possible (PR #1402).
+    
+- Rename `expandTarget` and `returnScalarComponents` arguments of `addSampler`
+  to be `targetByNode` and `multivariateNodesAsScalars`, respectively, to 
+  improve clarity. Also clarify help info for `addSampler` (PR #1375).
+  
+- Stop instead of warning when encountering run-time size errors, to avoid
+  the possibility of incorrect results (PR #1401).
+  
+- Add a warning to MCMC sampling of `CAR_normal` nodes when `zero_mean=1`
+  and the on-the-fly centering causes an invalid model state (PR #1400).
+  
+- Cleanly error out when a variable name in a model would conflict with 
+  C++ keywords (PR #1382).
+  
+- Warn if indexing in model code uses variables from the user environment
+  rather than from `constants` (PR #1380).
+  
+- Error out rather than warning when there is a missing variable in a 
+  nimbleFunction (PR #1379).
+  
+- Allow users to provide list of lists for `inits` in `nimbleModel` (PR #1376).
+ 
+- Add new control list option, `maxDimCovHistory` to `RW_block` sampler to 
+  specify maximum dimension for saving proposal covariance history.
+  
 - Change argument of `besselK` in manual table to be `x` not `k`.
 
 - Do not allow elements of a `nimbleList` to be named `name`, `predefined`,
-or `where` (issue #1306).
+  or `where` (PR #1384).
 
-- Add new control list option, `maxDimCovHistory` to `RW_block` sampler 
-  specify maximum dimension for saving proposal covariance history.
+- Better notify users when automatically generated `r` function for a user-
+  defined distribution has been removed (PR #1374).
+
+- Error out if there is a default first (`x`) argument in a user-defined
+  distribution (PR #1371).
   
-- Change names of two arguments of the `addSampler` method of MCMC
-  configuration object.  The `expandTarget` argument is renamed to
-  `targetByNode`, and the `scalarComponents` is renamed to
-  `multivariateNodesAsScalars`.
+- Improve error trapping related to arguments of `getParam` (PR #1370). 
+
+- Add information in `nimbleSMC` and `nimbleHMC` samplers to roxygen and manual.
+
+- Improve documentation of omitting variables from AD derivative tracking.
+
+- Update installation guidance in manual.
 
 ## DEVELOPER LEVEL CHANGES
 
-- Fix error with name mangling affecting packages that use nimble
-  and have dot(s) in the package name (issue #1332)
-  
+- Update to Eigen 3.4.0 but comment out various pragmas in
+  `DisableStupidWarnings.h` preventing CRAN checks from passing (PR #1406).
+
+- Improve efficiency of `mcmc_determineCalcAndCopyNodes` by avoiding repeated
+  calls (PR #1333).
+
+- Inline various C++ functions to improve efficiency (PR #1349).
+
+- Add some functionality to support model macros (PR #1361).
+
 - Make change to `nimble-package` documentation to use `"_PACKAGE"`
   instead of `@docType` per CRAN request (issue #1359).
+  
+- Clean up C++ warnings related to unused variables and typedefs (PR #1408).
+
+- Use `--pre-clean` when invoking `R CMD SHLIB` to do C++ compilation to avoid
+  sporadic test failures in WAIC tests, seemingly caused by strange timestamp-
+  related behavior of `make` (PR #1393).
+  
+- Fix case of `||` used instead of `|` causing compilation error on M2 Mac 
+  (PR #1392). 
+  
+- Fix some C++ warnings flagged by CRAN (PR #1386).
+
+- Systematically use `getNimbleOption` in NIMBLE code base.
+
+- Update versions of GitHub Actions canned actions.
 
 ## BUG FIXES
 
-- Removed the RW_multinomial MCMC sampler, which was found to generate incorrect
+- Fix `is.na` and `is.nan` in the NIMBLE DSL to behave in a vectorized fashion
+  and ensure they mimic behavior in R apart from logical or integer inputs to
+  `is.na` (PR #1394).
+
+- Remove the `RW_multinomial` MCMC sampler, which was found to generate incorrect
   posterior results.  A corrected version of this sampler may be
   re-introduced into the package, depending on user interest.
+  
+- Fix a bug in conjugacy checking in a case of subsets of multivariate nodes
+  (PR #1331).
+  
+- Fix a recycling rule bug involving `pow_int` with a matrix input (PR #1396).
 
-
+- Fix name-mangling problem that prevented use of periods in names of packages
+  using nimble (PR #1383).
+  
+- Fix handling of `NULL` in `getNimbleOption`. 
+  
+- Avoid using wrapped sampler on cluster node parameters when using `dCRP`
+  and assigning a joint sampler (e.g., HMC) to the parameters of the cluster 
+  nodes (PR #1404).
+  
+- Avoid spurious warning about missing nimbleFunction when using `nimOptim`
+  (PR #1378).
+  
+- Cleanly error out when an undefined function is used in the `return` statement
+  of a nimbleFunction (in particular, nested nimbleFunctions) (PR #1381).
+  
+- Fix handling of deregistered distribution by removing auto-generated 'r'
+  function (PR #1377).
+  
+- Correct a corner case of reading from a BUGS file (PR #1369).
+  
+- Fix incorrect eigenization code related to `besselk` that did not actually 
+  seem to affect behavior (PR #1385).
+  
 #                            CHANGES IN VERSION 1.0.1 (June 2023) 
 
 ## USER LEVEL CHANGES

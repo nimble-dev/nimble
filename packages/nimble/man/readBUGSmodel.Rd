@@ -13,7 +13,8 @@ readBUGSmodel(
   debug = FALSE,
   returnComponents = FALSE,
   check = getNimbleOption("checkModel"),
-  calculate = TRUE
+  calculate = TRUE,
+  buildDerivs = getNimbleOption("buildModelDerivs")
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ readBUGSmodel(
 \item{check}{logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel'. See \code{\link{nimbleOptions}} for details.}
 
 \item{calculate}{logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}.}
+
+\item{buildDerivs}{logical indicating whether to build derivative capabilities for the model.}
 }
 \value{
 returns a NIMBLE BUGS R model
