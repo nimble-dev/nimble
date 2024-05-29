@@ -21,7 +21,6 @@ sed -e "s!@EIGEN_INC@!!" inst/CppCode/Makevars.in > inst/CppCode/Makevars
 sed -e 's!@NEED_MAKEVARS_FILE@!TRUE!' R/config.R.in |
  sed -e 's|@R_ENABLE_LIB@|FALSE|' |
  sed -e 's|@EIGEN_INC@||' |
- sed -e 's|@CPPAD_INC@||' |
  sed -e "s|@R_PACKAGE_DIR@|${R_PACKAGE_DIR}|" |
  sed -e 's|@RPATH@||' |
  sed -e 's|@USE_REGISTRATION@|.NimbleUseRegistration = TRUE|' > R/config.R

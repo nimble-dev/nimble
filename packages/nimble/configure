@@ -656,7 +656,6 @@ NIMBLE_DIR
 R_PACKAGE_DIR
 NEED_MAKEVARS_FILE
 EIGEN_INC
-CPPAD_INC
 OBJEXT
 EXEEXT
 ac_ct_CXX
@@ -708,7 +707,6 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_eigen
-with_cppad
 enable_dylib
 enable_debugging
 '
@@ -1344,7 +1342,6 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-eigen            path for the directory containing Eigen/ directory with all of the #include files
-  --with-cppad            path for the directory containing cppad/ directory
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2115,14 +2112,6 @@ then :
 fi
 
 
-
-# Check whether --with-cppad was given.
-if test ${with_cppad+y}
-then :
-  withval=$with_cppad; CPPAD_DIR="${withval}"
-fi
-
-
 # Check whether --enable-dylib was given.
 if test ${enable_dylib+y}
 then :
@@ -2185,28 +2174,6 @@ if test -n "$EIGEN_DIR" ; then
   fi
 fi
 
-if test -n "$CPPAD_DIR" ; then
-  echo "Checking cppad directory CPPAD_DIR"
-  if ! test -d "$CPPAD_DIR" ; then
-     echo "$CPPAD_DIR is not a directory"
-  fi
-
-  if ! test -d "$CPPAD_DIR/cppad" ; then
-     echo "$CPPAD_DIR does not contain the directory cppad"
-     exit 1;
-  fi
-
-  if ! test -f "$CPPAD_DIR/cppad/configure.hpp" ; then
-     echo "$CPPAD_DIR/cppad does not contain the file configure.hpp"
-     exit 1;
-  fi
-fi
-
-if test -n "CPPAD_DIR" && ! test "${CPPAD_DIR}" = "" ; then
-   echo "Setting CPPFLAGS to find CppAD"
-   CPPFLAGS_CPPAD="-I${CPPAD_DIR}"
-fi
-
 if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    echo "Setting CPPFLAGS to find Eigen"
    CPPFLAGS_EIGEN="-I${EIGEN_DIR}"
@@ -2219,7 +2186,8 @@ fi
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
-CPPFLAGS="${CPPFLAGS} ${CPPFLAGS_EIGEN} ${CPPFLAGS_CPPAD}"
+CPPFLAGS="${CPPFLAGS}"
+
 
 
 ac_ext=cpp
@@ -2915,16 +2883,10 @@ fi
 done
 
 
-if test -n "${CPPAD_DIR}" ; then
-echo "Using CppAD directory ${CPPAD_DIR}"
-CPPAD_INC="-I${CPPAD_DIR}"
-fi
-
 if test -n "${EIGEN_DIR}" ; then
 echo "Using Eigen directory ${EIGEN_DIR}"
 EIGEN_INC="-I${EIGEN_DIR}"
 fi
-
 
 
 

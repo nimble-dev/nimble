@@ -36,11 +36,6 @@ dnl    --configure-args='--with-eigen=/home/bob/local'
 dnl or by setting the environment variable EIGEN_DIR
 AC_ARG_WITH(eigen, [  --with-eigen            path for the directory containing Eigen/ directory with all of the #include files], EIGEN_DIR="${withval}")
 
-dnl Similarly, caller can specify their CppAD directory via
-dnl    --configure-args='--with-cppad=/home/bob/local/cppad'
-dnl or by setting the environment variable CPPAD_DIR
-AC_ARG_WITH(cppad, [  --with-cppad            path for the directory containing cppad/ directory], CPPAD_DIR="${withval}")
-
 AC_ARG_ENABLE(dylib, [  --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
                          ENABLE_LIB=${enableval},
 if ! test `uname` = "Linux" ; then
@@ -96,28 +91,6 @@ if test -n "$EIGEN_DIR" ; then
   fi
 fi
 
-if test -n "$CPPAD_DIR" ; then
-  echo "Checking cppad directory CPPAD_DIR"
-  if ! test -d "$CPPAD_DIR" ; then
-     echo "$CPPAD_DIR is not a directory"
-  fi
-
-  if ! test -d "$CPPAD_DIR/cppad" ; then
-     echo "$CPPAD_DIR does not contain the directory cppad"
-     exit 1;
-  fi
-
-  if ! test -f "$CPPAD_DIR/cppad/configure.hpp" ; then
-     echo "$CPPAD_DIR/cppad does not contain the file configure.hpp"
-     exit 1;
-  fi
-fi
-
-if test -n "CPPAD_DIR" && ! test "${CPPAD_DIR}" = "" ; then
-   echo "Setting CPPFLAGS to find CppAD"
-   CPPFLAGS_CPPAD="-I${CPPAD_DIR}"
-fi
-
 if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    echo "Setting CPPFLAGS to find Eigen"
    CPPFLAGS_EIGEN="-I${EIGEN_DIR}"
@@ -131,7 +104,9 @@ fi
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
-CPPFLAGS="${CPPFLAGS} ${CPPFLAGS_EIGEN} ${CPPFLAGS_CPPAD}"
+CPPFLAGS="${CPPFLAGS}"
+
+dnl  ${CPPFLAGS_EIGEN}" 
 
 dnl Next 5 lines are from from https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Using-C_002b_002b11-code, but with CXX11 modified to CXX1X per output of R CMD config
 dnl 2018-07-25: now modified to CXX11 as that seems to be standard on more recent R versions
@@ -167,18 +142,12 @@ dnl                rm -rf inst/Eigen_local
                   ])
 
 
-if test -n "${CPPAD_DIR}" ; then
-echo "Using CppAD directory ${CPPAD_DIR}"
-CPPAD_INC="-I${CPPAD_DIR}"
-fi
-
 if test -n "${EIGEN_DIR}" ; then
 echo "Using Eigen directory ${EIGEN_DIR}"
 EIGEN_INC="-I${EIGEN_DIR}"
 fi
 
 dnl AC_SUBST(CXXPICFLAGS)
-AC_SUBST(CPPAD_INC)
 AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
 AC_SUBST(R_PACKAGE_DIR)
