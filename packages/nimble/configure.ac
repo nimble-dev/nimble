@@ -104,9 +104,7 @@ fi
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
-CPPFLAGS="${CPPFLAGS}"
-
-dnl  ${CPPFLAGS_EIGEN}" 
+CPPFLAGS="${CPPFLAGS} ${CPPFLAGS_EIGEN}" 
 
 dnl Next 5 lines are from from https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Using-C_002b_002b11-code, but with CXX11 modified to CXX1X per output of R CMD config
 dnl 2018-07-25: now modified to CXX11 as that seems to be standard on more recent R versions

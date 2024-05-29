@@ -2186,8 +2186,7 @@ fi
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 
-CPPFLAGS="${CPPFLAGS}"
-
+CPPFLAGS="${CPPFLAGS} ${CPPFLAGS_EIGEN}"
 
 
 ac_ext=cpp
