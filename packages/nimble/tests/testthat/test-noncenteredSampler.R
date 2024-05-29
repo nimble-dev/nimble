@@ -171,7 +171,7 @@ test_that('noncentered sampler works', {
             b[j] ~ dgamma(mean = b0, sd = sigma)
         }
         b0 ~ dhalfflat()
-        sigma ~ dunif(0, 50)
+        sigma ~ T(dnorm(0, sd = 10), 0, Inf) # dunif(0, 50)
     })
 
     set.seed(5)
@@ -212,20 +212,20 @@ test_that('noncentered sampler works', {
     resultsSlice <- runMCMC(cmcmc, 101000, nburnin = 1000)
 
     m1 <- colMeans(resultsSlice)
-    m2 <- colMeans(resultsNoncLog)
     s1 <- colSDs(resultsSlice)
+    m2 <- colMeans(resultsNoncLog)
     s2 <- colSDs(resultsNoncLog)
     expect_equal(m1[1:g], m2[1:g], tolerance = .01)
-    expect_equal(m1[(g+1):(g+3)], m2[(g+1):(g+3)], tolerance = .05)
+    expect_equal(m1[(g+1):(g+2)], m2[(g+1):(g+2)], tolerance = .05)
     expect_equal(s1[1:g], s2[1:g], tolerance = .01)
-    expect_equal(s1[(g+1):(g+3)], s2[(g+1):(g+3)], tolerance = .25)
+    expect_equal(s1[(g+1):(g+2)], s2[(g+1):(g+2)], tolerance = .1)
 
-    m2 <- colMeans(resultsNoncSlice)
-    s2 <- colSDs(resultsNoncSlice)
-    expect_equal(m1[1:g], m2[1:g], tolerance = .01)
-    expect_equal(m1[(g+1):(g+3)], m2[(g+1):(g+3)], tolerance = .05)
-    expect_equal(s1[1:g], s2[1:g], tolerance = .01)
-    expect_equal(s1[(g+1):(g+3)], s2[(g+1):(g+3)], tolerance = .25)
+    m3 <- colMeans(resultsNoncSlice)
+    s3 <- colSDs(resultsNoncSlice)
+    expect_equal(m1[1:g], m3[1:g], tolerance = .01)
+    expect_equal(m1[(g+1):(g+2)], m3[(g+1):(g+2)], tolerance = .05)
+    expect_equal(s1[1:g], s3[1:g], tolerance = .01)
+    expect_equal(s1[(g+1):(g+2)], s3[(g+1):(g+2)], tolerance = .1)
 })
 
 options(warn = RwarnLevel)
