@@ -24,6 +24,64 @@ nimbleUsePredictiveDependenciesSetting <- nimbleOptions('MCMCusePredictiveDepend
 nimbleWarnUnsampledNodesSetting <- nimbleOptions('MCMCwarnUnsampledStochasticNodes')
 
 test_that('noncentered sampler works', {
+
+    ## error-trapping
+    code <- nimbleCode({
+        for(j in 1:g) {
+            for(i in 1:n) {
+                y[i,j] ~ dpois(exp(lambda[i,j]))
+                lambda[i,j] <- b[j]
+            }
+            b[j] ~ dnorm(b0, sd = sigma)
+        }
+        d[1:2] ~ dmnorm(b0v[1:2], pr[1:2,1:2])
+        for(i in 1:2)
+            b0v[i] <- b0
+        b0 ~ dflat()
+        sigma ~ dunif(0, 50)
+    })
+
+    set.seed(5)
+    n <- 30
+    g <- 10
+    b <- rnorm(g) + 1
+    lambda <- matrix(rep(b, each = n), n, g)
+    y <- matrix(rpois(n*g, exp(lambda)), n, g)
+
+    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
+                     inits = list(b0 = 0, sigma = 1, pr = diag(2)))
+    conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
+    conf$addSampler('b0', 'noncentered')
+    expect_error(mcmc <- buildMCMC(conf), "all dependent nodes must be univariate")
+
+    code <- nimbleCode({
+        for(j in 1:g) {
+            for(i in 1:n) {
+                y[i,j] ~ dpois(exp(lambda[i,j]))
+                lambda[i,j] <- b[j]
+            }
+            b[j] ~ dnorm(b0, sd = sigma)
+        }
+        d ~ dunif(b0, 1)
+        for(i in 1:2)
+            b0v[i] <- b0
+        b0 ~ dflat()
+        sigma ~ dunif(0, 50)
+    })
+
+    set.seed(5)
+    n <- 30
+    g <- 10
+    b <- rnorm(g) + 1
+    lambda <- matrix(rep(b, each = n), n, g)
+    y <- matrix(rpois(n*g, exp(lambda)), n, g)
+
+    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
+                     inits = list(b0 = 0, sigma = 1, pr = diag(2)))
+    conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
+    conf$addSampler('b0', 'noncentered')
+    expect_error(mcmc <- buildMCMC(conf), "the distribution `dunif` does not have")
+    
     colSDs <- function(x) apply(x,2,sd)
     
     code <- nimbleCode({

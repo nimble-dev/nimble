@@ -245,8 +245,8 @@ sampler_noncentered <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        type <- extractControlElement(control, 'samplerType', 'RW')
-        param <- extractControlElement(control, 'samplerParam', 'location')
+        type <- extractControlElement(control, 'sampler', 'RW')
+        param <- extractControlElement(control, 'param', 'location')
         if(!param %in% c("location", "scale")) 
             stop("noncentered sampler: `sampleParam` control element must be either 'location' or 'scale'")
 
@@ -258,9 +258,18 @@ sampler_noncentered <- nimbleFunction(
             stop("sampler noncentered: target for noncentered sampler must be a scalar node")
         effects <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
         if(!length(effects))
-            stop("sampler noncentered: no stochastic dependencies of target")
-
+            stop("sampler noncentered: there are no stochastic dependencies of target")
+        if(any(model$isMultivariate(effects)))
+            stop("sampler noncentered: all dependent nodes must be univariate")
+        
         dists <- model$getDistribution(effects)
+        uniqueDists <- which(!duplicated(dists))
+        for(idx in uniqueDists) {
+            result <- try(model$getParam(effects[idx], 'mean'), silent = TRUE)
+            if(inherits(result, 'try-error'))
+                stop("sampler noncentered: the distribution `", dists[idx], "` does not have a `mean` function, which is required for all dependent nodes")
+        }
+        
         if(!all(dists %in% c('dnorm','dbeta','dgamma','dinvgamma','dunif')))
             stop("sampler noncentered: dependent nodes must be scalars whose distribution has a function for calculating its mean in nimble")
         
@@ -269,7 +278,7 @@ sampler_noncentered <- nimbleFunction(
         } else {
             if(type == "slice") {
                 samplerFunction <- sampler_slice_noncentered
-            } else stop("noncentered sampler: `samplerType` control element must be either 'RW' or 'slice'")
+            } else stop("noncentered sampler: `sampler` control element must be either 'RW' or 'slice'")
         }
 
         ## Pass along control elements to (variant of) RW or slice sampler, with info on the effects to be sampled.
@@ -2853,18 +2862,53 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section noncentered sampler:
 #'
-#' The noncentered sampler jointly samples the (scalar) target node and a set of dependent nodes (e.g., random effects), deterministically shifting or scaling the dependent node values to be consistent with the proposed value of the target such that the effect is to sample in a noncentered parameterization (Yu and Meng 2011), via an on-the-fly reparameterization. This can improve mixing by updating the target node based on information in the model nodes whose parent nodes are the dependent nodes of the target (i.e,. the "grandchild" nodes of the target; these will often be data nodes). This comes at the extra computational cost of calculating the logProbability of the "grandchild" nodes. 
+#' The noncentered sampler is designed to sample the mean or standard deviation of a set of centered random effects while also moving the random effects values to possibly allow better mixing. The noncentered sampler deterministically shifts or scales the dependent node values to be consistent with the proposed value of the target (the mean or the standard deviation) such that the effect is to sample in a noncentered parameterization (Yu and Meng 2011), via an on-the-fly reparameterization. This can improve mixing by updating the target node based on information in the model nodes whose parent nodes are the dependent nodes of the target (i.e,. the "grandchild" nodes of the target; these will often be data nodes). This comes at the extra computational cost of calculating the logProbability of the "grandchild" nodes.
 #'
-#' The target node should generally be either the mean (location) or standard deviation (scale) of the dependent nodes. When sampling the mean, the dependent nodes are deterministically set to be their previous values plus the difference between the proposed value for the target and the previous value for the target. When sampling the standard deviation, the dependent nodes are deterministically set to be their previous values (minus their mean), multiplied by the ratio of the proposed value for the target and the previous value for the target (and finally adding their mean back on). The deterministic transformation used is determined from the \code{samplerParam} element of the control list.
+#' It is still necessary to have other samplers on the random effects values.
+#' 
+#' Mathematically, the noncentered sampler operates in one dimension of a transformed parameter space. When sampling a mean, all random effects will be shifted by the same amount as the mean. When sampling a standard deviation, all random effects (relative to their means) will be scaled by the same factor as the standard deviation.
+
+#' Consider a model that includes the following code:
+#' \preformatted{ for(i in 1:n)
+#'   y[i] ~ dnorm(beta1*x[i] + u[group[i]], sd = sigma_obs)
+#' for(j in 1:num_groups)
+#'   u[j] ~ dnorm(beta0, sd = sigma_group)
+#' }
+#' where \code{u[j]} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation. This model has centered random effects, the \code{u[j]}, because these have the intercept \code{beta0} as their mean. In basic univariate sampling, updates to \code{beta0} or to \code{sigma_group} do not change \code{u[j]}, making only small moves possible if \code{num_groups} is large. When the noncentered sampler considers a new value for \code{beta0}, it will shift all the \code{u[j]} so that (in this case) their prior probabilities do not change. If the noncentered sampler considers a new value for \code{sigma_group}, it will rescale all the \code{u[j]} accordingly.
 #'
-#' When using this sampler, the expectation is that the dependent nodes (e.g., random effects) will be parameterized using a centered parameterization (e.g., \code{b[i] ~ dnorm(mu, sd = sigma)}) and with samplers already assigned to all nodes. Adding the noncentered sampler (on either the mean or standard deviation or both) results in an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. Note that the (implicit) noncentered parameterization corresponding to the example centered parameterization above is  \code{bstar[i] ~ dnorm(0, 1)}, with \code{mu + sigma*bstar[i]} replacing \code{b[i]} elsewhere in the model (often this would be in a linear predictor expression in the likelihood).
+#' The effect of such a sampling strategy is to update \code{beta0} and \code{sigma_group} as if the model had been written in a different (noncentered) way. For updating \code{beta0}, it would be:
+#' \preformatted{ for(i in 1:n)
+#'   y[i] ~ dnorm(beta0 + beta1*x[i] + u[group[i]], sd = sigma_obs)
+#' for(j in 1:num_groups)
+#'   u[j] ~ dnorm(0, sd = sigma_group)
+#' }
+#' For updating \code{sigma_group}, it would be:
+#' \preformatted{ for(i in 1:n)
+#'   y[i] ~ dnorm(beta1*x[i] + u[group[i]] * sigma_group, sd = sigma_obs)
+#' for(j in 1:num_groups)
+#'   u[j] ~ dnorm(beta0, sd = 1)
+#' }
 #'
-#' The sampling algorithm for the target node can either be Metropolis random walk (which uses NIMBLE's `RW` sampler) or slice sampling (which uses NIMBLE's `slice` sampler), determined from the \code{samplerType} element of the control list. In either case, the underlying sampling accounts for the Jacobian of the deterministic shifting or scaling of the dependent nodes (in the case of shifting, the Jacobian is equal to 1 and has no impact). When the target is the standard deviation of normally-distributed dependent nodes, the Jacobian cancels with the prior distribution for the dependent nodes, and the update is based only on the prior for the target and the distribution of the "grandchild" nodes. 
+#' Whether centered or noncentered parameterizations result in better sampling can depend on the model and the data. Therefore Yu and Meng (2011) recommended an "interweaving" strategy of using both kinds of samplers. Adding the noncentered sampler (on either the mean or standard deviation or both) to an existing MCMC configuration for a model specified using the centered parameterization in an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. 
+#'
+#' There is a higher computational cost to the noncentered sampler (or to writing the model directly in one of the equivalent ways shown). The cost is that when updating \code{beta0} or \code{sigma_group}, the relevant log probabilities calculations will include (in this case) all the of \code{y[i]}, i.e. the "grandchild" nodes of \code{beta0} or \code{sigma_group}.
+#'
+#' The noncentered sampler is not assigned by default by \code{configureMCMC} but must be manually added. For example:
+#' \preformatted{ MCMCconf <- configureMCMC(model)
+#' MCMCconf$addSampler(target = "beta0", type = "noncentered",
+#'   control = list(param = "location", sampler = "RW"))
+#' MCMCconf$addSampler(target = "sigma_group", type = "noncentered",
+#'   control = list(param = "scale", sampler = "RW"))
+#' }
+#'
+#' While the target node will generally be either the mean (location) or standard deviation (scale) of a set of other nodes (e.g., random effects), it could in theory be used in other contexts and one can choose whether the transformation is a shift or a scale operation. In a shift operation (e.g., when the sampling target is a mean), the dependent nodes are set to their previous values plus the difference between the proposed value and previous value for the target. In a scale operation (e.g., when the sampling target is the standard deviation), the dependent nodes minus their means are multiplied by the ratio of the proposed value to the previous value for the target and the previous value for the target. Whether to shift or scale is determined from the \code{param} element of the control list.
+#'
+#' The sampling algorithm for the target node can either be adaptive Metropolis random walk (which uses NIMBLE's \code{RW} sampler) or slice sampling (which uses NIMBLE's \code{slice} sampler), determined from the \code{sampler} element of the control list. In either case, the underlying sampling accounts for the Jacobian of the deterministic shifting or scaling of the dependent nodes (in the case of shifting, the Jacobian is equal to 1 and has no impact). When the target is the standard deviation of normally-distributed dependent nodes, the Jacobian cancels with the prior distribution for the dependent nodes, and the update is in effect based only on the prior for the target and the distribution of the "grandchild" nodes. 
 #'
 #' The \code{noncentered} sampler accepts the following control list elements:
 #' \itemize{
-#' \item samplerType. A character string, either \code{"RW"} or \code{"slice"} specifying the type of sampler to be used for the target node. (default = \code{"RW"})
-#' \item samplerParam. A character string, either \code{"location"} or \code{"scale"} specifying whether sampling is done as shifting or scaling the dependent nodes. (default = \code{"location"})
+#' \item sampler. A character string, either \code{"RW"} or \code{"slice"} specifying the type of sampler to be used for the target node. (default = \code{"RW"})
+#' \item param. A character string, either \code{"location"} or \code{"scale"} specifying whether sampling is done as shifting or scaling the dependent nodes. (default = \code{"location"})
 #' 
 #' @section CAR_normal sampler:
 #'
