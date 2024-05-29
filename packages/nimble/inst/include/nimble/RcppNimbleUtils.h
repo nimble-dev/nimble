@@ -31,7 +31,7 @@
   SEXP S_string_xData; \
   SEXP S_xData; \
   PROTECT(S_string_xData = Rf_allocVector(STRSXP, 1)); \
-  SET_STRING_ELT(S_string_xData, 0, Rf_mkChar(".xData")); \
+  SET_STRING_ELT(S_string_xData, 0, PROTECT(Rf_mkChar(".xData"))); \
   PROTECT(S_xData = GET_SLOT(Robject, S_string_xData));
 
 #define COPY_NUMERIC_VECTOR_FROM_R_OBJECT(varName) \
@@ -231,9 +231,9 @@ template<int ndim>
 SEXP NimArr_2_SEXP(const NimArr<ndim, int> &val);
 
 template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans); 
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans);
 template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans); 
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans);
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {

@@ -32,7 +32,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
     "SEXP_2_NimArr<1, double> called for SEXP that is not a numeric or logical: actual type %s\n",
     Rf_type2char(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
+//  NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(Rf_isReal(Sn)) {
      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
@@ -54,7 +54,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
     "SEXP_2_NimArr<1, int> called for SEXP that is not a numeric or logical: actual type %s\n",
     Rf_type2char(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
+//  NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(Rf_isReal(Sn)) {
      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());

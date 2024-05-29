@@ -3,6 +3,48 @@
 nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL)) 
 # new.env() here fails with: Error in as.environment(pos) : using 'as.environment(NULL)' is defunct when testing package loading during INSTALL
 
+nimbleUserNamespace$.optimizers <- as.environment(list())
+
+#' Set or get an optimization function to be used by nimOptim
+#'
+#' @export
+nimOptimMethod <- function(name, value) {
+  if(missing(value))
+    nimbleUserNamespace$.optimizers[[name]]
+  else
+    nimbleUserNamespace$.optimizers[[name]] <- value
+}
+
+nimOptimMethod("nlminb",
+               function(par, fn, gr, he, lower, upper, control, hessian) {
+                 control_nlminb <- list(
+                   abs.tol = control$abstol,
+                   rel.tol = control$reltol,
+                   iter.max = control$maxit,
+                   trace = control$trace
+                 )
+                 invalid <- \(x) is.null(x) || is.na(x) || is.infinite(x)
+                 if(invalid(control_nlminb$abs.tol)) control_nlminb$abs.tol <- 0
+                 if(invalid(control_nlminb$rel.tol)) control_nlminb$rel.tol <- 1e-10
+                 if(invalid(control_nlminb$iter.max)) control_nlminb$iter.max <- 150
+                 if(invalid(control_nlminb$trace)) control_nlminb$trace <- 0
+                 # NB: control$parscale and control$fnscale are applied internally
+                 result <- nlminb(par, objective=fn, gradient=gr, hessian=he,
+                                  lower = lower, upper = upper, control=control_nlminb)
+                 result$value <- result$objective
+                 result$objective <- NULL
+                 result$counts <- result$evaluations
+                 result$evaluations <- NULL
+                 # We could do hessian here like this, but we will do it in C++
+                 # if not returned from here, so we ignore it here.
+                 ## if(isTRUE(hessian)) {
+                 ##   # do we need to worry if control has a parscale element?
+                 ##   hessian_result <- optimHess(result$par, fn=fn, gr=gr, control=control)
+                 ## }
+                 result
+               }
+               )
+
 # options used for NIMBLE package
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(

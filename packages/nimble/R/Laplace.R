@@ -2149,10 +2149,12 @@ buildAGHQuad <- nimbleFunction(
     }
     outerOptimControl$fnscale <- -1 
     innerOptControl$fnscale <- -1 
-    if(!is.null(control$innerOptimMethod) && (control$innerOptimMethod %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B"))){
+    if(!is.null(control$innerOptimMethod) &&
+       ((control$innerOptimMethod %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")) ||
+        control$innerOptimMethod %in% ls(nimbleUserNamespace$.optimizers))){
       innerOptMethod <- control$innerOptimMethod
     }
-    else innerOptMethod <- "BFGS"
+    else innerOptMethod <- "nlminb"
     
     ## Create an AGHQuad (Adaptive Gauss-Hermite Quadrature) nimbleFunctionList
     AGHQuad_nfl <- nimbleFunctionList(AGHQuad_BASE)
@@ -2183,7 +2185,7 @@ buildAGHQuad <- nimbleFunction(
         if(nre > 1) {
           AGHQuad_nfl[[1]] <- buildOneAGHQuad(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
           multiSetsCheck <- TRUE
-        } else AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, "CG", innerOptStart)
+        } else AGHQuad_nfl[[1]] <- buildOneAGHQuad1D(model, nQuad = nQuad, paramNodes, randomEffectsNodes, calcNodes, innerOptControl, innerOptMethod, innerOptStart)
       }
       else {## Split randomEffectsNodes into conditionally independent sets
         reSets <- MargNodes$randomEffectsSets
@@ -2577,7 +2579,7 @@ buildAGHQuad <- nimbleFunction(
 		},
     ## Calculate MLE of parameters    
     findMLE = function(pStart  = double(1, default = Inf),
-                       method  = character(0, default = "BFGS"),
+                       method  = character(0, default = "nlminb"),
                        hessian = logical(0, default = TRUE) ){
       mleRes <- optimize(pStart  = pStart,
                        method  = method,
@@ -2588,7 +2590,7 @@ buildAGHQuad <- nimbleFunction(
     },
     ## General Maximization Function (Name check: optimize? @perry or Chris?)
     optimize = function(pStart  = double(1, default = Inf),
-                       method  = character(0, default = "BFGS"),
+                       method  = character(0, default = "nlminb"),
                        hessian = logical(0, default = TRUE),
                        parscale = character(0, default = "transformed")) {
       if(!one_time_fixes_done) one_time_fixes() ## Otherwise summary will look bad.
@@ -3191,7 +3193,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'         likelihood. Arguments include \code{pStart}: initial parameter values 
 #'         (defaults to parameter values currently in the model); 
 #'         \code{method}: (outer) optimization method to use in \code{optim} 
-#'         (defaults to "BFGS"); and
+#'         (defaults to "nlminb"); and
 #'         \code{hessian}: whether to calculate and return the Hessian matrix
 #'         (defaults to \code{TRUE}). Second derivatives in the Hessian are
 #'         determined by finite differences of the gradients obtained by
@@ -3448,13 +3450,13 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'         optimization of Laplace approximation using \code{optim}. See 
 #'         'Details' of \code{\link{optim}} for further information.
 #'
-#'   \item \code{innerOptimMethod}. Optimization method to be used in 
-#'         \code{optim} for the inner optimization. See 'Details' of 
-#'         \code{\link{optim}}. Currently \code{optim} in NIMBLE supports: 
-#'         "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", and 
-#'         "\code{L-BFGS-B}". By default, method "\code{CG}" is used when 
-#'         marginalizing over a single (scalar) random effect, and "\code{BFGS}" 
-#'         is used for multiple random effects being jointly marginalized over.
+#'   \item \code{innerOptimMethod}. Optimization method to be used in
+#'         \code{optim} for the inner optimization. See 'Details' of
+#'         \code{\link{optim}}. Currently \code{optim} in NIMBLE supports:
+#'         "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}",
+#'         "\code{nlminb}", and user-provided optimizers. By default, method
+#'         "\code{nlminb}" is used when marginalizing over either a single (scalar) random
+#'         effect or multiple random effects being
 #'
 #'   \item \code{innerOptimStart}. Choice of starting values for the inner 
 #'         optimization. This could be \code{"last"}, \code{"last.best"}, or a 
@@ -3540,3 +3542,326 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' Statistics & Data Analysis}, 56, 699-709.
 #'
 NULL
+
+# The following code takes as input a compiled Laplace approximation and returns
+# a list of functions sharing an environment that provide access to the pieces
+# of Laplace approximation. The main trick is to build callable interfaces to
+# the AGHQuad_nfl elemensts (conditionally independent Laplace approx's), which
+# are nested and so not interfaced by default. The original purpose was to
+# experiment with inner (and outer) optimization methods. This is very useful
+# but is not a package feature, so I am leaving the source code on display here
+# but commenting it out.
+## laplaceRpieces <- function(cLaplace) {
+##   # limited to methodID==2
+##   # uses -logLik as the working sign, so
+##   # optimization will be minimization instead of maximization
+##   cLaplace$one_time_fixes()
+##   RLaplace <- cLaplace$Robject
+##   cModel <- RLaplace$model$CobjectInterface
+##   paramNodes <- RLaplace$paramNodes
+##   param_values <- function(v) {
+##     if(missing(v)) return(values(cModel, paramNodes))
+##     else values(cModel, paramNodes) <- v
+##   }
+##   promoteCallable <- function(RoneLaplace, modify=TRUE) {
+##     # This function is modified from the cppDef for nimbleFunctions
+##     # where it is very rarely used (see comment there).
+##     # There is a bug there because the indexing of existingExtPtrs is not set up
+##     # so I modify here to fix that. In future, we could fix this small bug,
+##     # either in promoteCallable or in the multi interface getExtPtrs method
+##     # N.B. By default this modifies its argument by updating
+##     # its .CobjectInterface
+##     RCobj <- nimble:::nf_getRefClassObject(RoneLaplace)
+##     oldCobjectInterface <- RCobj$.CobjectInterface
+##     if(!is.list(oldCobjectInterface)) return(oldCobjectInterface)
+##     extPtrs <- oldCobjectInterface[[1]]$getExtPtrs(oldCobjectInterface[[2]])
+##     extPtrTypeIndex <- oldCobjectInterface[[1]]$extPtrTypeIndex
+##     existingExtPtrs <- vector('list', length(extPtrTypeIndex))
+##     existingExtPtrs[[1]] <- extPtrs[[1]]
+##     existingExtPtrs[[ extPtrTypeIndex['NamedObjects']  ]] <- extPtrs[[2]]
+##     thisDll <- oldCobjectInterface[[1]]$dll
+##     nimbleProject <- oldCobjectInterface[[1]]$compiledNodeFun$nimbleProject
+##     Rgenerator <- oldCobjectInterface[[1]]$compiledNodeFun$Rgenerator
+##     newCobjectInterface <- Rgenerator(RoneLaplace, thisDll,
+##                                       project = nimbleProject, existingExtPtrs = existingExtPtrs)
+##     RCobj$.CobjectInterface <- newCobjectInterface
+##     newCobjectInterface
+##   }
+##   # make sure all AGHQs (conditionally independent) are promoted
+##   # to having a fully callable interface object
+##   AGHQ_list_ <- RLaplace$AGHQuad_nfl$contentsList |> lapply(promoteCallable)
+##   AGHQ_list_ |> lapply(\(x) x$one_time_fixes())
+##   # Also make sure the parameter transformation is fully callable
+##   outerParamsTransform <- promoteCallable(RLaplace$paramsTransform)
+##   # reTrans refers to random effects in transformed (unconstrained) coordinates
+##   # Set up some object to manage information for inner
+##   # optimizations.
+##   num_condIndSets <- length(AGHQ_list_)
+##   # list of last optimizer results
+##   last_inner_opt_list <- vector('list', num_condIndSets)
+##   # list of last *best* value of inner optima
+##   best_inner_opt_list <- seq_along(AGHQ_list_) |> lapply(\(x) list(value = Inf))
+##   # list of constant values for reTrans to use for initializing
+##   #  inner optimizations with default option and mode "constant"
+##   constant_reTrans_list <- AGHQ_list_ |> lapply(
+##     \(x) {
+##       startID <- x$startID
+##       x$startID <- 3
+##       ans <- x$get_reInitTrans()
+##       x$startID <- startID
+##       ans
+##     })
+##   # list of minimum (last best) negative inner logLik value,
+##   # which correspond to last_best_reTrans_list
+##   best_inner_p_list <- constant_reTrans_list |>
+##     lapply(\(x) rep(Inf, length(x)))
+##   last_inner_p_list <- best_inner_p_list
+##   reset_last_best <- function(i) {
+##     if(missing(i)) i <- seq_along(AGHQ_list_)
+##     for(ii in i) {
+##       best_inner_opt_list[[ii]] <- list(value = Inf)
+##       last_inner_opt_list[[ii]] <- list()
+##       best_inner_p_list[[ii]] <- rep(Inf, length(best_inner_p_list[[ii]]))
+##       last_inner_p_list[[ii]] <- best_inner_p_list[[ii]]
+##     }
+##   }
+##   # current value of outer params
+##   current_params <- numeric()
+##   # current index of conditionally independent set being used
+##   current_condIndSet <- 1
+##   # default inner optimizer
+##   default_inner_opt_fn <- \(re, fn, gr, he) {
+##     nimOptim(re, fn, gr, method = "nlminb")
+##   }
+##   inner_opt_fn_ <- default_inner_opt_fn
+##   inner_opt_fn <- function(f) {
+##     if(missing(f)) return(inner_opt_fn_)
+##     inner_opt_fn_ <<- f
+##     f
+##   }
+##   # outer optimizer
+##   default_outer_opt_fn <- \(p, fn, gr) {
+##     optim(p, fn, gr, method = "BFGS")
+##   }
+##   outer_opt_fn_ <- default_outer_opt_fn
+##   outer_opt_fn <- function(f) {
+##     if(missing(f)) return(outer_opt_fn_)
+##     outer_opt_fn_ <<- f
+##     f
+##   }
+##   # access the list of conditionally independent AGHQs
+##   AGHQ_list <- function() AGHQ_list_
+##   # Objects for controlling initialization of inner optimization:
+##   # Three modes are available in the default method.
+##   reInitTrans_mode_ <- "constant" # or "last" or "last.best"
+##   # function to set these
+##   reInitTrans_mode <- function(mode) {
+##     if(missing(mode)) return(reInitTrans_mode_)
+##     reInitTrans_mode_ <<- mode
+##   }
+##   default_reInitTrans_fn <- function(AGHQobj, i) {
+##     optStart <- switch(reInitTrans_mode_,
+##                        last = last_inner_opt_list[[i]]$par,
+##                        last.best = best_inner_opt_list[[i]],
+##                        constant = constant_reTrans_list[[i]])
+##     optStart
+##   }
+##   reInitTrans_fn_ <- default_reInitTrans_fn
+##   reInitTrans_fn <- function(f) {
+##     if(missing(f)) return(reInitTrans_fn_)
+##     reInitTrans_fn_ <<- f
+##     return(f)
+##   }
+##   # neg inner logLik for one conditionally independent set
+##   inner_negLogLik <- function(reTrans, i = current_CondIndSet) {
+##     -AGHQ_list_[[i]]$inner_logLik(reTrans)
+##   }
+##   # neg gradient of inner logLik for one conditionally independent set
+##   gr_inner_negLogLik <- function(reTrans, i = current_CondIndSet) {
+##     -AGHQ_list_[[i]]$gr_inner_logLik(reTrans)
+##   }
+##   # neg Hessian of inner logLik for one conditionally independent set
+##   he_inner_negLogLik <- function(reTrans, i = current_CondIndSet, p = current_params) {
+##     AGHQ_list_[[i]]$negHess(p, reTrans)
+##   }
+##   closure <- environment()
+##   # minimize neg inner logLik
+##   update_min_inner_negLogLik <- function(p,
+##                                          reInitTrans,
+##                                          i = current_CondIndSet,
+##                                          inner_opt_fn,
+##                                          reInitTrans_fn) {
+##     optRes <- min_inner_negLogLik(p, reInitTrans, i, inner_opt_fn, reInitTrans_fn)
+##     last_inner_opt_list[[i]] <- optRes
+##     best_inner_p_list[[i]] <- p
+##     optRes
+##   }
+##   min_inner_negLogLik <- function(p, reInitTrans, i = current_CondIndSet,
+##                                   inner_opt_fn,
+##                                   reInitTrans_fn) {
+##     if(missing(inner_opt_fn)) inner_opt_fn <- get("inner_opt_fn", envir = closure)()
+##     if(missing(reInitTrans_fn)) reInitTrans_fn <- get("reInitTrans_fn", envir = closure)()
+##     innerObj <- AGHQ_list_[[i]]
+##     if(missing(reInitTrans)) reInitTrans <- reInitTrans_fn(innerObj, i)
+##     # The 1D vs nD versions different in set_params method.
+##     if(length(reInitTrans) > 1) {
+##       innerObj$set_params(p)
+##     } else {
+##       param_values(p)
+##       paramDeps <- RLaplace$AGHQuad_nfl[[i]]$paramDeps
+##       cModel$calculate(paramDeps)
+##     }
+##     fn_init <- inner_negLogLik(reInitTrans, i)
+##     current_params <<- p
+##     current_CondIndSet <<- i
+##     if(is.nan(fn_init) || is.na(fn_init) || fn_init == Inf || fn_init == -Inf) {
+##       ans <- list(par = reInitTrans, value = Inf, convergence = -1)
+##       return(ans)
+##     }
+##     if(length(reInitTrans) > 1) {
+##       if(innerObj$gr_inner_logLik_first) {
+##         innerObj$gr_inner_logLik_force_update <- TRUE
+##         innerObj$gr_inner_logLik(reInitTrans)
+##         innerObj$gr_inner_logLik_first <- FALSE
+##         innerObj$gr_inner_logLik_force_update <- FALSE
+##       }
+##     }
+##     optRes <- inner_opt_fn(reInitTrans, fn = inner_negLogLik,
+##                            gr = gr_inner_negLogLik, he = he_inner_negLogLik)
+##     optRes
+##   }
+##   # get inner opt result
+##   last_inner_opt <- function(i = current_CondIndSet) {
+##     last_inner_opt_list[[i]]
+##   }
+##   # do one conditionally independent Laplace approx
+##   one_negLaplace <- function(p, reInitTrans, i = current_CondIndset,
+##                              inner_opt_fn,
+##                              reInitTrans_fn,
+##                              opt) {
+##     if(missing(opt))
+##       if(any(p!=last_inner_p_list[[i]])) {
+##         if(missing(inner_opt_fn)) inner_opt_fn <- get("inner_opt_fn", envir = closure)()
+##         if(missing(reInitTrans_fn)) reInitTrans_fn <- get("reInitTrans_fn", envir = closure)()
+##         opt <- update_min_inner_negLogLik(p, reInitTrans, i,
+##                                           inner_opt_fn, reInitTrans_fn)
+##       } else {
+##         opt <- last_inner_opt_list[[i]]
+##       }
+##     reTransform <- opt$par
+##     logdetNegHessian <- AGHQ_list_[[i]]$logdetNegHess(p, reTransform)
+##     nreTrans <- length(reTransform)
+##     ans <- opt$value + 0.5 * logdetNegHessian - 0.5 * nreTrans * log(2*pi)
+##     if(ans < best_inner_opt_list[[i]]$value) {
+##       best_inner_opt_list[[i]] <- ans
+##       best_inner_p_list[[i]] <- p
+##     }
+##     ans
+##   }
+##   one_gr_negLaplace <- function(p, reInitTrans, i = current_CondIndset,
+##                                 inner_opt_fn,
+##                                 reInitTrans_fn,
+##                                 opt) {
+##     if(missing(opt))
+##       if(any(p!=last_inner_p_list[[i]])) {
+##         if(missing(inner_opt_fn)) inner_opt_fn <- get("inner_opt_fn", envir = closure)()
+##         if(missing(reInitTrans_fn)) reInitTrans_fn <- get("reInitTrans_fn", envir = closure)()
+##         opt <- update_min_inner_negLogLik(p, reInitTrans, i,
+##                                           inner_opt_fn, reInitTrans_fn)
+##       } else {
+##         opt <- last_inner_opt_list[[i]]
+##       }
+##     innerObj <- AGHQ_list_[[i]]
+##     reTransform <- opt$par
+##     negHessian <- innerObj$negHess(p, reTransform)
+##     invNegHessian <- inverse(negHessian)
+##     grlogdetNegHesswrtp <- innerObj$gr_logdetNegHess_wrt_p_internal(p, reTransform)
+##     grlogdetNegHesswrtre <- innerObj$gr_logdetNegHess_wrt_re_internal(p, reTransform)
+##     hesslogLikwrtpre <- innerObj$hess_joint_logLik_wrt_p_wrt_re_internal(p, reTransform)
+##     ans <- -innerObj$gr_joint_logLik_wrt_p_internal(p, reTransform) +
+##       0.5 * (grlogdetNegHesswrtp + (grlogdetNegHesswrtre %*% invNegHessian) %*% t(hesslogLikwrtpre))
+##     ans[1,]
+##   }
+##   negLaplace <- function(p, trans = FALSE,
+##                          reInitTrans,
+##                          inner_opt_fn,
+##                          reInitTrans_fn) {
+##     if(missing(inner_opt_fn)) inner_opt_fn <- get("inner_opt_fn", envir = closure)()
+##     if(missing(reInitTrans_fn)) reInitTrans_fn <- get("reInitTrans_fn", envir = closure)()
+##     if(trans)
+##       p <- outerParamsTransform$inverseTransform(p)
+##     ans <- 0
+##     if(cLaplace$num_calcNodesOther > 0) ans <- -cLaplace$otherLogLik(p)
+##     missing_reInitTrans <- missing(reInitTrans)
+##     for(i in seq_along(AGHQ_list_)) {
+##       if(missing_reInitTrans) reIT <- reInitTrans_fn(AGHQlist[[i]], i)
+##       else reIT <- reInitTrans[[i]]
+##       one_ans <- one_negLaplace(p, reIT, i, inner_opt_fn, reInitTrans_fn)
+##       ans <- ans + one_ans
+##     }
+##     if(is.nan(ans) || is.na(ans)) ans <- -Inf
+##     ans
+##   }
+##   gr_negLaplace <- function(p, trans = FALSE,
+##                          reInitTrans,
+##                          inner_opt_fn,
+##                          reInitTrans_fn,
+##                          reset = reset_last_best) {
+##     if(missing(inner_opt_fn)) inner_opt_fn <- get("inner_opt_fn", envir = closure)()
+##     if(missing(reInitTrans_fn)) reInitTrans_fn <- get("reInitTrans_fn", envir = closure)()
+##     if(trans) {
+##       pDerivs <- cLaplace$derivs_pInverseTransform(p, 0:1)
+##       p <- outerParamsTransform$inverseTransform(pDerivs$value)
+##     }
+##     if(cLaplace$num_calcNodesOther > 0) ans <- -cLaplace$gr_otherLogLik(p)
+##     else ans <- rep(0, length(p))
+##     missing_reInitTrans <- missing(reInitTrans)
+##     for(i in seq_along(AGHQ_list_)) {
+##       if(missing_reInitTrans) reIT <- reInitTrans_fn(AGHQlist[[i]], i)
+##       else reIT <- reInitTrans[[i]]
+##       one_ans <- one_gr_negLaplace(p, reIT, i, inner_opt_fn, reInitTrans_fn)
+##       ans <- ans + one_ans
+##     }
+##     if(trans) {
+##       ans <- (ans %*% pDerivs$jacobian)[1,]
+##     }
+##     ans
+##   }
+##   findMLE <- function(pStart,
+##                       outer_opt_fn,
+##                       inner_opt_fn,
+##                       reInitTrans_fn,
+##                       reset = reset_last_best) {
+##     if(missing(outer_opt_fn)) outer_opt_fn <- get("outer_opt_fn", envir = closure)()
+##     if(!missing(inner_opt_fn)) get("inner_opt_fn", envir = closure)(inner_opt_fun)
+##     if(!missing(reInitTrans_fn)) get("reInitTrans_fn", envir = closure)(reInitTrans_fn)
+##     if(is.function(reset)) reset()
+##     if(missing(pStart))
+##       pStart <- param_values()
+##     pStartTransform <- outerParamsTransform$transform(pStart)
+##     optRes <- outer_opt_fn(pStartTransform, \(p) negLaplace(p, TRUE), \(p) gr_negLaplace(p, TRUE))
+##     if(optRes$convergence != 0)
+##       warning("Warning: Bad outer convergence")
+##     optRes$par <- outerParamsTransform$inverseTransform(optRes$par)
+##     return(optRes)
+##   }
+##   list(promoteCallable = promoteCallable,
+##        param_values = param_values,
+##        inner_opt_fn = inner_opt_fn,
+##        outer_opt_fn = outer_opt_fn,
+##        AGHQ_list = AGHQ_list,
+##        reInitTrans_mode = reInitTrans_mode,
+##        reInitTrans_fn = reInitTrans_fn,
+##        inner_negLogLik = inner_negLogLik,
+##        gr_inner_negLogLik = gr_inner_negLogLik,
+##        he_inner_negLogLik = he_inner_negLogLik,
+##        min_inner_negLogLik = min_inner_negLogLik,
+##        last_inner_opt = last_inner_opt,
+##        one_negLaplace = one_negLaplace,
+##        one_gr_negLaplace = one_gr_negLaplace,
+##        negLaplace = negLaplace,
+##        gr_negLaplace = gr_negLaplace,
+##        outerParamsTransform = outerParamsTransform,
+##        findMLE = findMLE
+##        )
+## }
