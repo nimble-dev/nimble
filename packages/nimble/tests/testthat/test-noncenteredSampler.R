@@ -48,7 +48,7 @@ test_that('noncentered sampler works', {
     lambda <- matrix(rep(b, each = n), n, g)
     y <- matrix(rpois(n*g, exp(lambda)), n, g)
 
-    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
+    m <- nimbleModel(code, data = list(y = y, d = rnorm(2)), constants = list(n = n, g = g),
                      inits = list(b0 = 0, sigma = 1, pr = diag(2)))
     conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
     conf$addSampler('b0', 'noncentered')
@@ -60,13 +60,9 @@ test_that('noncentered sampler works', {
                 y[i,j] ~ dpois(exp(lambda[i,j]))
                 lambda[i,j] <- b[j]
             }
-            b[j] ~ dnorm(b0, sd = sigma)
+            b[j] ~ dexp(b0)
         }
-        d ~ dunif(b0, 1)
-        for(i in 1:2)
-            b0v[i] <- b0
         b0 ~ dflat()
-        sigma ~ dunif(0, 50)
     })
 
     set.seed(5)
@@ -78,9 +74,9 @@ test_that('noncentered sampler works', {
 
     m <- nimbleModel(code, data = list(y = y), constants = list(n = n, g = g),
                      inits = list(b0 = 0, sigma = 1, pr = diag(2)))
-    conf <- configureMCMC(m, monitors = c('b0','b','sigma'))
+    conf <- configureMCMC(m, monitors = c('b0','b'))
     conf$addSampler('b0', 'noncentered')
-    expect_error(mcmc <- buildMCMC(conf), "the distribution `dunif` does not have")
+    expect_error(mcmc <- buildMCMC(conf), "the distribution `dexp` does not have")
     
     colSDs <- function(x) apply(x,2,sd)
     
