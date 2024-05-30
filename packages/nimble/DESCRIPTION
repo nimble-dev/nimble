@@ -148,5 +148,6 @@ Collate:
     setNimbleInternalFunctions.R
     registration.R
     nimble-package.r
+    QuadratureGrids.R
     zzz.R
 RoxygenNote: 7.2.3
