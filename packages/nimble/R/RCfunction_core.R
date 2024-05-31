@@ -44,9 +44,7 @@ nimKeyWords <- list(copy = 'nimCopy',
                     max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
-distsNotAllowedInAD <- c(
-  paste0('d', c('interval', 'constraint'))
-)
+# distsNotAllowedInAD is defined near the end of distributions_inputList.R
 
 fxnsNotAllowedInAD <- c(
   '%%',
