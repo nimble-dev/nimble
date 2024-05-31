@@ -55,6 +55,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  graphNodesList = 'ANY',   ## list of graphNode objects, set in genGraphNodesList()
                                  maps = 'ANY',   ## object of mapsClass, set in buildMaps()
                                  numNodeFunctions = 'ANY',  ## FIXME: obsolete as only used in buildNodeFunctions_old()
+                                 userEnv = 'ANY',   ## userEnv argument to nimbleModel call
                                  
                                  modelClass = 'ANY',   ## custom model class
                                  modelValuesClassName = 'ANY',    ## set in setModelValuesClassName()
@@ -110,6 +111,9 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genVarNames                    = function() {},
                                  buildSymbolTable               = function() {},
                                  genGraphNodesList              = function() {},
+                                 setUserEnv                     = function() {},
+                                 getUserEnv                     = function() {},
+                                 checkADsupportForDistribution  = function() {},
                                                                   
                                  newModel                       = function() {},
                                  fixRStudioHanging              = function() {},
@@ -145,6 +149,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     on.exit(options(scipen = scipen))
     if(debug) browser()
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
+    setUserEnv(userEnv = userEnv)                           ## set userEnv field of modelDef object
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(getNimbleOption("enableModelMacros")){
       # Stuff to do if macros are enabled
@@ -409,8 +414,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                 checkUserDefinedDistribution(code[[i]], userEnv)
                 if(isTRUE(getNimbleOption("enableDerivs")))
                     if(isTRUE(getNimbleOption("doADerrorTraps")))
-                        if(buildDerivs)
-                            checkADsupportForDistribution(code[[i]], userEnv)
+                        if(buildDerivs) {
+                            dist <- as.character(code[[i]][[3]][[1]])
+                            checkADsupportForDistribution(dist, verbose = TRUE)
+                        }
             }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
@@ -472,20 +479,23 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     lineNumber
 })
 
-checkADsupportForDistribution <- function(code, userEnv) {
-    dist <- as.character(code[[3]][[1]])
+modelDefClass$methods(checkADsupportForDistribution = function(dist, verbose = FALSE) {
     supported <- TRUE
     if(!dist %in% c(distributions$namesVector, "T", "I")) {
         dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
-        if(!is.rcf(dfun))
-            message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
-        else {
+        if(!is.rcf(dfun)) {
+            if(verbose)   message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
+                supported <- FALSE
+        } else {
             dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
-            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs))
-                message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
+            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs)) {
+                if(verbose)   message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
+                supported <- FALSE
+            }
         }
     }
-}
+    return(supported)
+})
 
 
 # check if distribution is defined and if not, attempt to register it
@@ -3009,6 +3019,14 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){
     output <- output[!is.na(output)]
 
     return(output)
+})
+
+modelDefClass$methods(setUserEnv = function(userEnv) {
+    userEnv <<- userEnv
+})
+
+modelDefClass$methods(getUserEnv = function() {
+    return(userEnv)
 })
 
 parseEvalNumeric <- function(x, env){
