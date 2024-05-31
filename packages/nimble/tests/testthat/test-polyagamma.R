@@ -405,6 +405,81 @@ test_that('polyagamma validity checks', {
 test_that('polyagamma MCMC results', {
     ## Compare to non-PG.
 
+    ## Scalar parameter; mainly for checking building.
+   code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b0)
+            y0[i] ~ dbern(p0[i])
+        }
+        b0~dnorm(0, sd=10)
+    })
+
+    set.seed(1)
+    n <- 1000
+    b0 <- 0.3
+    inits <- list(b0 = 0)
+    constants <- list(n=n)
+    linpred <- b0 
+    data <- list(y0 = rbinom(n, size = 1, prob = expit(linpred)))
+
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler(type='polyagamma', target=c('b0'),
+                    control = list(fixedDesignColumns = TRUE))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesPG <- runMCMC(cmcmc, niter=1000, nburnin=100)
+
+    conf <- configureMCMC(m, onlySlice = TRUE)
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter=1000, nburnin=100)
+
+    expect_equal(mean(samples), mean(samplesPG), tolerance = 0.03)
+    expect_equal(sd(samples), sd(samplesPG), tolerance = 0.003)
+    
+    ## Single multivariate prior
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b[1]+b[2]*x[i,1]+b[3]*x[i,2])
+            y0[i] ~ dbern(p0[i])
+        }
+        b[1:3] ~ dmnorm(z[1:3], pr[1:3,1:3])
+    })
+
+    set.seed(1)
+    n <- 1000
+    b <- c(0.3, -0.5, 1)
+    b1 <- -0.5
+    b2 <- 1
+    x = matrix(runif(n*2), n)
+    inits <- list(b = rep(0,3))
+    constants <- list(n=n, z = rep(0, 3), pr = diag(1/100,3))
+    linpred <- b[1] + b[2]*x[,1]+b[3]*x[,2]
+    data <- list(y0 = rbinom(n, size = 1, prob = expit(linpred)), x = x)
+
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler(type='polyagamma', target=c('b'),
+                    control = list(fixedDesignColumns = TRUE))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesPG <- runMCMC(cmcmc, niter=5000, nburnin=1000)
+
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, onlySlice = TRUE, multivariateNodesAsScalars = TRUE)
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samples <- runMCMC(cmcmc, niter=5000, nburnin=1000)
+    
+    expect_equal(colMeans(samplesPG), colMeans(samples), tolerance = 0.015)
+    expect_equal(apply(samplesPG, 2, sd), apply(samples,2,sd),
+                 tolerance = 0.01)
+
     ## fixed and random effects
     code <- nimbleCode({
         for(i in 1:n) {
@@ -441,6 +516,7 @@ test_that('polyagamma MCMC results', {
     cmcmc <- compileNimble(mcmc, project = m)
     samplesPG <- runMCMC(cmcmc, niter=26000, nburnin=1000)
 
+    
     ## Need centered parameterization for reasonable mixing.
     code <- nimbleCode({
         for(i in 1:n) {

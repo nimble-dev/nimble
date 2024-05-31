@@ -2386,8 +2386,8 @@ samplePolyaGamma <- nimbleFunction(
 getParam_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-      getMean = function(index = integer()){returnType(double(1))},
-      getPrecision = function(index = integer()){returnType(double(2))}
+      getMean = function(index = integer()) { returnType(double(1)) },
+      getPrecision = function(index = integer()) { returnType(double(2)) }
   )
 )
 
@@ -2416,6 +2416,8 @@ gaussParam <- nimbleFunction(
     contains = getParam_BASE,
     setup = function(model, nodeNames, gNodes) {
         indexConvert <- cumsum(gNodes)
+        if(length(indexConvert) == 1)
+            indexConvert <- c(indexConvert, -1)
     },
     run = function() {},
     methods = list(
@@ -2437,6 +2439,8 @@ multiGaussParam <- nimbleFunction(
     contains = getParam_BASE,
     setup = function(model, nodeNames, gNodes) {
         indexConvert <- cumsum(gNodes)
+        if(length(indexConvert) == 1)
+            indexConvert <- c(indexConvert, -1)
     },
     run = function(){},
     methods = list(
@@ -2477,8 +2481,8 @@ sampler_polyagamma <- nimbleFunction(
 
         nTarget <- length(target)
         nCoef <- length(targetAsScalar)
-        if(nCoef == 1)  ## We could/should relax this, though not clear how common it would be.
-            stop("polyagamma sampler not set up to handle a scalar target node")
+     #   if(nCoef == 1)  ## We could/should relax this, though not clear how common it would be.
+     #       stop("polyagamma sampler not set up to handle a scalar target node")
         nodeLengths <- sapply(target, function(x) length(model$expandNodeNames(x, returnScalarComponents = TRUE)))
         
         
@@ -2670,6 +2674,19 @@ sampler_polyagamma <- nimbleFunction(
         mu <- numeric(nCoef)				
         b <- rep(0, nCoef)
         bTemp <- rep(0, nCoef)
+
+        if(nCoef == 1) {
+            mu <- c(mu, -1)
+            b <- c(b, -1)
+            bTemp <- c(bTemp, -1)
+            fixedColumns <- c(fixedColumns, TRUE)
+        }
+        if(nTarget == 1) {
+            normTypes <- c(normTypes, -1)
+            nodeLengths <- c(nodeLengths, -1)
+        }
+        
+        
         probNonZero <- rep(0, N)  ## Track ids where prob == 0 (zero inflated).
         n <- N  ## Number of active (non-zero-inflated) obs.
         
@@ -2682,8 +2699,11 @@ sampler_polyagamma <- nimbleFunction(
         Xd <- matrix(0, nrow = N, ncol = nCoef)
         kpre <- numeric(N)
         w <- numeric(N)
+        one_time_fixes_done <- FALSE
     },
     run = function() {
+        if(!one_time_fixes_done) one_time_fixes()
+        
         if(initializeSize | stochSize)
             setSizeParam() 
     
@@ -2830,7 +2850,25 @@ sampler_polyagamma <- nimbleFunction(
                     psi[i] <<- logit(model$getParam(yNodes[i], 'prob'))
             }
         },
-        reset = function() { }
+        reset = function() { },
+        one_time_fixes = function() {
+            ## Run this once after compiling; remove extraneous -1 if necessary.
+            if(one_time_fixes_done) return()
+            mu <<- fix_one_vec(mu)
+            b <<- fix_one_vec(b)
+            bTemp <<- fix_one_vec(bTemp)
+            one_time_fixes_done <<- TRUE
+        },
+        fix_one_vec = function(x = double(1)) {
+            if(length(x) == 2) {
+                if(x[2] == -1) {
+                    ans <- numeric(length = 1, value = x[1])
+                    return(ans)
+                }
+            }
+            return(x)
+            returnType(double(1))
+        }
     )
 )
 
