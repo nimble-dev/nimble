@@ -283,7 +283,7 @@ BUGSdeclClass$methods(
         valueExpr <<- code[[3]]
 
         if(type == 'stoch')
-            distributionName <<- as.character(valueExpr[[1]])
+            distributionName <<- safeDeparse(valueExpr[[1]])
         else
             distributionName <<- NA
 
@@ -418,7 +418,7 @@ BUGSdeclClass$methods(
         ## targetExprReplaced shouldn't have any link functions at this point.
         valueExprReplaced <<- codeReplaced[[3]]
         if(type == 'stoch')
-            distributionName <<- as.character(valueExprReplaced[[1]])
+            distributionName <<- safeDeparse(valueExprReplaced[[1]])
         else
             distributionName <<- NA
     
@@ -592,7 +592,7 @@ BUGSdeclClass$methods(
                 boundNames <- c('lower_', 'upper_')
                 boundExprs <<- as.list(RHSreplaced[boundNames])
                 if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
-                    distName <- as.character(RHSreplaced[[1]])
+                    distName <- safeDeparse(RHSreplaced[[1]])
                     distRange <- getDistributionInfo(distName)$range
                     if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
@@ -904,8 +904,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 allContentsReplaceable <- TRUE
             }
             ## check if the function can be called only in R, not NIMBLE
-            isRfunction <- !any(code[[1]] == nimbleFunctionNames)
+          ## The purpose of deparsing code[[1]] and then making it a name for checking nimbleFunctionNames
+          ## is that a user-defined distribution in a nimbleFunction object will appear as `NF$dfoo` (i.e. the "$" is just part of the name)
+          ## as a result of being registered that way by registerDistributions
             funName <- safeDeparse(code[[1]], warn = TRUE)
+            code1name <- if(is.name(code[[1]])) code[[1]] else as.name(funName)
+            isRfunction <- !any(code1name == nimbleFunctionNames)
             isRonly <- isRfunction &
                 (!checkNimbleOrRfunctionNames(funName, envir))
             ## if it can be called only in R but not all contents are replaceable, generate error:
@@ -935,10 +939,23 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
 
 checkNimbleOrRfunctionNames <- function(functionName, envir) {
     if(any(functionName == nimbleOrRfunctionNames))
-        return(TRUE)
-    if(exists(functionName, envir) &&
-       is.rcf(get(functionName, envir)))
+      return(TRUE)
+    sdollar <- strsplit(functionName, "\\$")[[1]]
+    if(length(sdollar) == 1) { # It is foo(...), not a$foo(...)
+      if(exists(functionName, envir) &&
+         is.rcf(get(functionName, envir)))
         return(TRUE)  ## Would like to do this by R's scoping rules here and in genCpp_sizeProcessing but that is problematic
+    } else {
+      objectName = sdollar[1]
+      methodName = sdollar[2]
+      if(exists(objectName, envir)) {
+        NFobject <- get(objectName, envir)
+        if(is.nf(NFobject)) {
+          if(methodName %in% names(nf_getMethodList(NFobject)))
+            return(TRUE)
+        }
+      }
+    }
     return(FALSE)
 }
 
@@ -1063,12 +1080,14 @@ genReplacementsAndCodeRecurse <- function(code,
         }
         ## Do not replace if it is from a special set of functions
         ## or is a nimbleFunction (specifically, an RCfunction)
+        ## or if we are allowing full nimbleFunctions and it is one, which would appear as nf$method(params)
         if(
         {
             funName <- safeDeparse(code[[1]], warn = TRUE)
             (
                 (funName %in% functionsThatShouldNeverBeReplacedInBUGScode) ||
-                (exists(funName, envir) && is.rcf(get(funName, envir)))
+                (exists(funName, envir) && is.rcf(get(funName, envir))) ||
+                (isTRUE(getNimbleOption('allowNFobjInModel')) && grepl('\\$', funName))
             )
         }
         )

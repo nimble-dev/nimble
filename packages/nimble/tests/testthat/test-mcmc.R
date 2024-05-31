@@ -3032,6 +3032,8 @@ test_that('assigning samplers to data and allowData argument', {
     expect_true(samps[[4]]$name == 'posterior_predictive')
 })
 
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
@@ -3046,3 +3048,4 @@ if(!generatingGoldFile) {
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+
