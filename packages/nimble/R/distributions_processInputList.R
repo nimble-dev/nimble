@@ -747,8 +747,10 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
             nimbleUserNamespace$distributions$add(distributionsInput)
         } else 
             nimbleUserNamespace$distributions <- distributionsClass(distributionsInput)
-        virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
-        createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
+        if(enableVirtualNodeFunctionDefs) {  ## NCT issue 500. Deprecating and will remove in next release.
+            virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
+            createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
+        }
 
     # note don't use rFunHandler as rUserDist nimbleFunction needs n as first arg so it works on R side, therefore we have n in the C version of the nimbleFunction and don't want to strip it out in Cpp generation
       }
