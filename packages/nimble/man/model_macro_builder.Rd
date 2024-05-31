@@ -2,36 +2,27 @@
 % Please edit documentation in R/BUGS_macros.R
 \name{model_macro_builder}
 \alias{model_macro_builder}
-\title{EXPERIMENTAL: Turn a function into a model macro
-A model macro expands one line of code in a nimbleModel into one or
-more new lines.  This supports compact programming by defining
-re-usable modules.  \code{model_macro_builder} takes as input a
-function that constructs new lines of model code from the original
-line of code.  It returns a function suitable for internal use by
-\code{nimbleModel} that arranges arguments for input function.  Macros
-are an experimental feature and are available only after setting
-\code{nimbleOptions(enableModelMacros = TRUE)}.}
+\title{EXPERIMENTAL: Turn a function into a model macro}
 \usage{
 model_macro_builder(fun, use3pieces = TRUE, unpackArgs = TRUE)
 }
 \arguments{
 \item{fun}{A function written to construct new lines of model code (see below).}
 
-\item{use3pieces}{(TRUE or FALSE) Should the arguments from the input
+\item{use3pieces}{logical indicating whether the arguments from the input
 line be split into pieces for the LHS (left-hand side), RHS
 (right-hand side, possibly further split depending on
-\code{unpackArgs}), and \code{stoch} (TRUE if the line uses a
-\code{~}, FALSE otherwise)?  See details and examples.}
+\code{unpackArgs}), and \code{stoch} (\code{TRUE} if the line uses a
+\code{~} and \code{FALSE} otherwise). (default = \code{TRUE})}
 
-\item{unpackArgs}{(TRUE or FALSE) Should arguments be passed as a list
-(FALSE) or as separate arguments (TRUE)?  See details and examples.}
+\item{unpackArgs}{logical indicating whether arguments be passed as a list
+(\code{FALSE}) or as separate arguments (\code{TRUE}). (default = \code{TRUE})}
 }
 \value{
 A list of class \code{model_macro} with one element called \code{process},
 which contains the macro function suitable for use by \code{nimbleModel}.
 }
 \description{
-EXPERIMENTAL: Turn a function into a model macro
 A model macro expands one line of code in a nimbleModel into one or
 more new lines.  This supports compact programming by defining
 re-usable modules.  \code{model_macro_builder} takes as input a

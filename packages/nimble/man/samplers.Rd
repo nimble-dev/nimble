@@ -8,11 +8,9 @@
 \alias{sampler_categorical}
 \alias{sampler_noncentered}
 \alias{sampler_RW}
-\alias{sampler_RW_noncentered}
 \alias{sampler_RW_block}
 \alias{sampler_RW_llFunction}
 \alias{sampler_slice}
-\alias{sampler_slice_noncentered}
 \alias{sampler_ess}
 \alias{sampler_AF_slice}
 \alias{sampler_crossLevel}
@@ -71,15 +69,11 @@ sampler_noncentered(model, mvSaved, target, control)
 
 sampler_RW(model, mvSaved, target, control)
 
-sampler_RW_noncentered(model, mvSaved, target, control)
-
 sampler_RW_block(model, mvSaved, target, control)
 
 sampler_RW_llFunction(model, mvSaved, target, control)
 
 sampler_slice(model, mvSaved, target, control)
-
-sampler_slice_noncentered(model, mvSaved, target, control)
 
 sampler_ess(model, mvSaved, target, control)
 
@@ -362,6 +356,55 @@ The \code{RW_lkj_corr_cholesky} sampler accepts the following control list eleme
 Note that this sampler is likely run much more slowly than the blocked sampler for the LKJ distribution, as updating each single element will generally incur the full cost of updating all dependencies of the entire matrix.
 }
 
+\section{polyagamma sampler}{
+
+
+The polyagamma sampler uses Pólya-gamma data augmentation to do conjugate sampling for the parameters in the linear predictor of a logistic regression model (Polson et al., 2013), analogous to the Albert-Chib data augmentation scheme for probit regression. This sampler is not assigned as a default sampler by \code{configureMCMC} and so can only be used if manually added to an MCMC configuration.
+
+As an example, consider model code containing:
+\preformatted{for(i in 1:n) {
+  logit(prob[i]) <- beta0 + beta1*x1[i] + beta2*x2[i] + u[group[i]] 
+  y[i] ~ dbinom(prob = prob[i], size = size[i])
+}
+for(j in 1:num_groups)
+  u[j] ~ dnorm(0, sd = sigma_group)
+}
+where \code{beta0}, \code{beta1}, and \code{beta2} are fixed effects with normal priors, \code{u} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation, \code{y[i]}. In this model, the parameters \code{beta0}, \code{beta1}, \code{beta2}, and all the \code{u[j]} can be jointly sampled by the polyagamma sampler, i.e., they will be its target nodes.
+
+After building a model (calling \code{nimbleModel}) containing the above code, one would configure the sampler as follows:
+\preformatted{MCMCconf <- configureMCMC(model)
+logistic_nodes <- c("beta0", "beta1", "beta2", "u")
+# Optionally, remove default samplers.
+MCMCconf$removeSamplers(logistic_nodes) 
+MCMCconf$addSampler(target = logistic_nodes, type = "polyagamma",
+  control = list(fixedDesignColumns=TRUE))
+}
+
+As shown here, the stochastic dependencies (\code{y[i]} here) of the target nodes must follow \code{dbin} or \code{dbern} distributions. The logit transformation of their probability parameter must be a linear function (technically an affine function) of the target nodes, which themselves must have \code{dnorm} or \code{dmnorm} priors. Zero inflation to account for structural zeroes is also supported, allowed as discussed below. The stochastic dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the Pólya-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
+
+Importantly, note that because the Pólya-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all parameter nodes involved in the linear predictor of the logistic regression, to avoid duplicative Pólya-gamma draws of the latent values. If there are stochastic indices (e.g., if \code{group[i]} above is stochastic), the Pólya-gamma sampler can still be used, but the stochastic nodes cannot be sampled by it and must have separate sampler(s). It is also possible in some models that regression parameters can be split into (conditionally independent) groups that can be sampled independently, e.g., if one has distinct logistic regression specifications for different sets of responses in the model.
+
+Sampling involves use of the design matrix. The design matrix includes one column corresponding to each regression covariate as well as one columnar block corresponding to each random effect. In the example above, the columns would include a vector of ones (to multiply \code{beta0}), the vectors \code{x1} and \code{x2}, and a vector of indicators for each \code{u[j]} (with a 1 in row \code{i} if \code{group[i]} is \code{j}), resulting in \code{3+num_groups} columns. Note that the polyagamma sampler can determine the design matrix from the model, even when written as above such that the design matrix is not explicitly in the model code. It is also possible to write model code for the linear prediction using matrix multiplication and an explicit design matrix, but that is not necessary.
+
+Often the design matrix is fixed in advance, but in some cases elements of the matrix may be stochastic and sampled during the MCMC. That would be the case if there are missing values (e.g., missing covariate values (declared as stochastic nodes)) or stochastic indexing (e.g., unknown assignment of responses to clusters, as mentioned above). Note that changes in the values of any of the \code{beta} or \code{u[j]} target nodes in the example above do not change the design matrix.
+
+Recalculating the elements of the design matrix at every iteration is costly and will likely greatly slow the sampler. To alleviate this, users can specify which columns of the design matrix are fixed (non-stochastic) using the \code{fixedDesignColumns} control argument. If all columns are fixed, which will often be the case, this argument can be specified simply as \code{TRUE}. Note that the sampler does not determine if any or all columns are fixed, so users wishing to take advantage of the large speed gains from having fixed columns should provide this control argument. Columns indicated as fixed will be determined (if necessary) when the sampler is first run and retained for subsequent iterations.
+
+By default, NIMBLE will determine the design matrix (and as discussed above will do so repeatedly at each iteration for any columns not indicated as being fixed). If the matrix has no stochastic elements, users may choose to provide the matrix directly to the sampler via the \code{designMatrix} control argument. This will save time in computing the matrix initially but likely will have limited benefit relative to the cost of running many iterations of MCMC and therefore can be omitted in most cases.
+
+The sampler allows for binomial responses with stochastic sizes. This would be the case in the above example if the \code{size[i]} values are themselves declared as unobserved stochastic nodes and thus are sampled by MCMC.
+
+The sampler allows for zero inflation of the response probability in that the probability determined by the inverse logit transformation of the linear predictor can be multipled by one or more binary scalar nodes to produce the response probability. These binary nodes must be specified via the \code{dbern} distribution or the \code{dbin} distribution with size equal to one. This functionality is intended for use in cases where another part of the model introduces structural zeroes, such as in determining occupancy in ecological occupancy models. An example would be if the above were modified by \code{y[i] ~ dbinom(prob = z[i] * p[i], size = size[i])}, where each \code{z[i]} is either 0 or 1.
+
+The polyagamma sampler accepts the following control list elements:
+\itemize{
+\item fixedDesignColumns. Either a single logical value indicating if the design matrix is fixed (non-stochastic) or a logical vector indicating which columns are fixed. In the latter case, the columns must be ordered exactly as the ordering of target node elements given by \code{model$expandNodeNames(target, returnScalarComponents = TRUE)}, where \code{target} is the same as the \code{target} argument to \code{configureMCMC$addSampler} above. (default = FALSE)
+\item designMatrix. The full design matrix with rows corresponding to the ordering of the responses and columns ordered exactly as the ordering of target node elements given by \code{model$expandNodeNames(target, returnScalarComponents = TRUE)}, where \code{target} is the same as the \code{target} argument to \code{configureMCMC$addSampler} above. If provided, all columns are assumed to be fixed, ignoring the \code{fixedDesignColumns} control element.
+\item nonTargetNodes. Additional stochastic nodes involved in the linear predictor that are not to be sampled as part of the sampler. This must include any nodes specifying stochastic indexes (e.g., \code{"group"} if the \code{group[i]} values are stochastic) and any parameters considered known or that for any reason one does not want to sample. Providing \code{nonTargetNodes} is required in order to allow NIMBLE to check for the presence of zero inflation.  
+\item check. A logical value indicating whether NIMBLE should check various conditions required for validity of the sampler. This is provided for rare cases where the checking may be overly conservative and a user is sure that the sampler is valid and wants to override the checking. (default = TRUE)
+}
+}
+
 \section{noncentered sampler}{
 
 
@@ -371,32 +414,32 @@ It is still necessary to have other samplers on the random effects values.
 
 Mathematically, the noncentered sampler operates in one dimension of a transformed parameter space. When sampling a mean, all random effects will be shifted by the same amount as the mean. When sampling a standard deviation, all random effects (relative to their means) will be scaled by the same factor as the standard deviation.
 Consider a model that includes the following code:
-\preformatted{ for(i in 1:n)
-  y[i] ~ dnorm(beta1*x[i] + u[group[i]], sd = sigma_obs)
+\preformatted{for(i in 1:n)
+   y[i] ~ dnorm(beta1*x[i] + u[group[i]], sd = sigma_obs)
 for(j in 1:num_groups)
-  u[j] ~ dnorm(beta0, sd = sigma_group)
+   u[j] ~ dnorm(beta0, sd = sigma_group)
 }
-where \code{u[j]} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation. This model has centered random effects, the \code{u[j]}, because these have the intercept \code{beta0} as their mean. In basic univariate sampling, updates to \code{beta0} or to \code{sigma_group} do not change \code{u[j]}, making only small moves possible if \code{num_groups} is large. When the noncentered sampler considers a new value for \code{beta0}, it will shift all the \code{u[j]} so that (in this case) their prior probabilities do not change. If the noncentered sampler considers a new value for \code{sigma_group}, it will rescale all the \code{u[j]} accordingly.
+where \code{u} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation. This model has a centered random effect, because the \code{u[j]} have the intercept \code{beta0} as their mean. In basic univariate sampling, updates to \code{beta0} or to \code{sigma_group} do not change \code{u[j]}, making only small moves possible if \code{num_groups} is large. When the noncentered sampler considers a new value for \code{beta0}, it will shift all the \code{u[j]} so that (in this case) their prior probabilities do not change. If the noncentered sampler considers a new value for \code{sigma_group}, it will rescale all the \code{u[j]} accordingly.
 
 The effect of such a sampling strategy is to update \code{beta0} and \code{sigma_group} as if the model had been written in a different (noncentered) way. For updating \code{beta0}, it would be:
-\preformatted{ for(i in 1:n)
-  y[i] ~ dnorm(beta0 + beta1*x[i] + u[group[i]], sd = sigma_obs)
+\preformatted{for(i in 1:n)
+   y[i] ~ dnorm(beta0 + beta1*x[i] + u[group[i]], sd = sigma_obs)
 for(j in 1:num_groups)
-  u[j] ~ dnorm(0, sd = sigma_group)
+   u[j] ~ dnorm(0, sd = sigma_group)
 }
 For updating \code{sigma_group}, it would be:
-\preformatted{ for(i in 1:n)
-  y[i] ~ dnorm(beta1*x[i] + u[group[i]] * sigma_group, sd = sigma_obs)
+\preformatted{for(i in 1:n)
+   y[i] ~ dnorm(beta1*x[i] + u[group[i]] * sigma_group, sd = sigma_obs)
 for(j in 1:num_groups)
-  u[j] ~ dnorm(beta0, sd = 1)
+   u[j] ~ dnorm(beta0, sd = 1)
 }
 
-Whether centered or noncentered parameterizations result in better sampling can depend on the model and the data. Therefore Yu and Meng (2011) recommended an "interweaving" strategy of using both kinds of samplers. Adding the noncentered sampler (on either the mean or standard deviation or both) to an existing MCMC configuration for a model specified using the centered parameterization (and with an sampler already assigned to the target node) produces an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. 
+Whether centered or noncentered parameterizations result in better sampling can depend on the model and the data. Therefore Yu and Meng (2011) recommended an "interweaving" strategy of using both kinds of samplers. Adding the noncentered sampler (on either the mean or standard deviation or both) to an existing MCMC configuration for a model specified using the centered parameterization (and with a sampler already assigned to the target node) produces an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. 
 
 There is a higher computational cost to the noncentered sampler (or to writing the model directly in one of the equivalent ways shown). The cost is that when updating \code{beta0} or \code{sigma_group}, the relevant log probabilities calculations will include (in this case) all the of \code{y[i]}, i.e. the "grandchild" nodes of \code{beta0} or \code{sigma_group}.
 
 The noncentered sampler is not assigned by default by \code{configureMCMC} but must be manually added. For example:
-\preformatted{ MCMCconf <- configureMCMC(model)
+\preformatted{MCMCconf <- configureMCMC(model)
 MCMCconf$addSampler(target = "beta0", type = "noncentered",
   control = list(param = "location", sampler = "RW"))
 MCMCconf$addSampler(target = "sigma_group", type = "noncentered",
@@ -559,6 +602,8 @@ Neal, R. M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-
 Neal, R. M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 
 Pitt, M. K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
+
+Polson, N.G., Scott, J.G., and J. Windle. (2013). Bayesian inference for logistic models using Pólya-gamma latent variables. Journal of the American Statistical Association, 108(504), 1339–1349. https://doi.org/10.1080/01621459.2013.829001
 
 Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
 
