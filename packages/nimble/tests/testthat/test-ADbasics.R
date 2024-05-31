@@ -465,7 +465,7 @@ test_that('AD works with model$calulate in a method', {
     }),
     buildDerivs = TRUE
   )
-  temporarilyAssignInGlobalEnv(m)
+#  temporarilyAssignInGlobalEnv(m)
   
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
@@ -482,7 +482,7 @@ test_that('AD works with model$calulate in a method', {
     methods = list(
       derivsRun = function(x = double(1)) {
         ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2,
-                         model = m, updateNodes = updateNodes)
+                         model = model, updateNodes = updateNodes)
         return(ans)
         returnType(ADNimbleList())
       }),
@@ -549,7 +549,7 @@ test_that('AD works with a model compiled in one call', {
     }),
     buildDerivs = TRUE
   )
-  temporarilyAssignInGlobalEnv(m)
+  # temporarilyAssignInGlobalEnv(m)
   
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
@@ -566,7 +566,7 @@ test_that('AD works with a model compiled in one call', {
     methods = list(
       derivsRun = function(x = double(1)) {
         ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2,
-                         model = m, updateNodes = updateNodes)
+                         model = model, updateNodes = updateNodes)
         return(ans)
         returnType(ADNimbleList())
       }),
@@ -622,7 +622,7 @@ test_that('AD works with a model calling a user-defined distribution and user-de
     inits = list(a = c(.1, .2, .3), x = c(.2, .3, .4)),
     buildDerivs = TRUE
   )
-  temporarilyAssignInGlobalEnv(m)
+  # temporarilyAssignInGlobalEnv(m)
   
   adfun <- nimbleFunction(
     setup = function(model, wrt, calc) {
@@ -639,7 +639,7 @@ test_that('AD works with a model calling a user-defined distribution and user-de
     methods = list(
       derivsRun = function(x = double(1)) {
         ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2,
-                         model = m, updateNodes = updateNodes, constantNodes = constantNodes)
+                         model = model, updateNodes = updateNodes, constantNodes = constantNodes)
         return(ans)
         returnType(ADNimbleList())
       }),
@@ -661,7 +661,6 @@ test_that('AD works with a model calling a user-defined distribution and user-de
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
   deregisterDistributions("dmynorm")
 })
-
 
 test_that('AD works with a model calling a user-defined distribution and user-defined function in a nimbleFunction object', {
   stuff <- nimbleFunction(
@@ -685,15 +684,13 @@ test_that('AD works with a model calling a user-defined distribution and user-de
     nimbleCode({
       for(i in 1:3) {
         a[i] ~ dbeta(2, 2)
-        temp <- stuff1$foo(a[i])
-        x[i] ~ stuff1$d(mu = temp)
-        #x[i] ~ stuff1$d(mu = stuff1$foo(a[i]))
+        x[i] ~ stuff1$d(mu = stuff1$foo(a[i]))
       }
     }),
     inits = list(a = c(.1, .2, .3), x = c(.2, .3, .4)),
     buildDerivs = TRUE
   )
-  temporarilyAssignInGlobalEnv(m)
+  # temporarilyAssignInGlobalEnv(m)
   temporarilyAssignInGlobalEnv(r_stuff1)
 
   adfun <- nimbleFunction(
@@ -711,7 +708,7 @@ test_that('AD works with a model calling a user-defined distribution and user-de
     methods = list(
       derivsRun = function(x = double(1)) {
         ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2,
-                         model = m, updateNodes = updateNodes, constantNodes = constantNodes)
+                         model = model, updateNodes = updateNodes, constantNodes = constantNodes)
         return(ans)
         returnType(ADNimbleList())
       }),
@@ -731,7 +728,82 @@ test_that('AD works with a model calling a user-defined distribution and user-de
   nim_expect_equal(Rans$value, Cans$value, RCrelTol0)
   nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
-  deregisterDistributions("dmynorm")
+  deregisterDistributions("stuff1$d")
+})
+
+test_that('AD works with a model calling a user-defined distribution and user-defined function in a nimbleFunction object with double taping', {
+  stuffA <- nimbleFunction(
+    setup=TRUE,
+    methods = list(
+      foo = function(x = double()) {
+        return(exp(x))
+        returnType(double())
+      },
+      derivs_foo = function(x = double()) {
+        ans <- nimDerivs(foo(x), wrt = 1, order = 1)
+        res <- ans$jacobian[1,1]
+        return(res)
+        returnType(double())
+      },
+      d = function(x = double(), mu = double(), log = double(0, default = 0)) {
+        return(dnorm(x, mu, 1, log = log))
+        returnType(double())
+      }
+    ),
+    buildDerivs = c("foo", "d", "derivs_foo")
+  )
+  stuffA1 <- stuffA()
+  temporarilyAssignInGlobalEnv(stuffA1)
+
+  mA <- nimbleModel(
+    nimbleCode({
+      for(i in 1:3) {
+        a[i] ~ dbeta(2, 2)
+        x[i] ~ stuffA1$d(mu = stuffA1$foo(a[i]))
+      }
+    }),
+    inits = list(a = c(.1, .2, .3), x = c(.2, .3, .4)),
+    buildDerivs = TRUE
+  )
+  temporarilyAssignInGlobalEnv(mA)
+  temporarilyAssignInGlobalEnv(r_stuffA1)
+
+  adfunA <- nimbleFunction(
+    setup = function(model, wrt, calc) {
+      infoNodes <- makeModelDerivsInfo(model, wrtNodes = wrt, calcNodes = calc)
+      updateNodes <- infoNodes$updateNodes
+      constantNodes <- infoNodes$constantNodes
+    },
+    run = function(x = double(1)) {
+      values(model, wrt) <<- x
+      ans <- model$calculate(calc)
+      return(ans)
+      returnType(double())
+    },
+    methods = list(
+      derivsRun = function(x = double(1)) {
+        ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2,
+                         model = model, updateNodes = updateNodes, constantNodes = constantNodes)
+        return(ans)
+        returnType(ADNimbleList())
+      }),
+    buildDerivs = 'run'
+  )
+  temporarilyAssignInGlobalEnv(adfunA)
+
+  wrt <- 'a[1:3]'
+  RadfunA1 <- adfunA(mA, wrt, mA$getDependencies(wrt))
+  CmA <- compileNimble(mA)
+  CadfunA1 <- compileNimble(RadfunA1, project = mA)
+  xRec <- c(.3, .6, .9)
+  xTest <- c(.8, .1, .4)
+  Rans <- RadfunA1$derivsRun(xTest)
+  CadfunA1$derivsRun(xRec)
+  Cans <- CadfunA1$derivsRun(xTest)
+  nim_expect_equal(Rans$value, Cans$value, RCrelTol0)
+  nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
+  nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
+  deregisterDistributions("stuffA1$d")
 })
 
 test_that('AD works with reset', {
@@ -820,7 +892,7 @@ test_that('AD works with a model with do_update', {
     }),
     buildDerivs = TRUE
   )
-  temporarilyAssignInGlobalEnv(m)
+  # temporarilyAssignInGlobalEnv(m)
 
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
@@ -840,7 +912,7 @@ test_that('AD works with a model with do_update', {
                            reset = logical(0, default = FALSE)) {
         ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2,
                          do_update = do_update, reset = reset,
-                         model = m, updateNodes = updateNodes)
+                         model = model, updateNodes = updateNodes)
         return(ans)
         returnType(ADNimbleList())
       }),
@@ -885,7 +957,7 @@ test_that('AD works with a model with do_update', {
     }),
     buildDerivs = TRUE
   )
-  temporarilyAssignInGlobalEnv(m)
+  # temporarilyAssignInGlobalEnv(m)
 
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
@@ -905,7 +977,7 @@ test_that('AD works with a model with do_update', {
                            reset = logical(0, default = FALSE)) {
         ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2,
                          do_update = do_update, reset = reset,
-                         model = m, updateNodes = updateNodes)
+                         model = model, updateNodes = updateNodes)
         return(ans)
         returnType(ADNimbleList())
       }),
@@ -952,7 +1024,7 @@ test_that('AD works with a model with do_update in double-taping', {
     }),
     buildDerivs = TRUE
   )
-  temporarilyAssignInGlobalEnv(m)
+  # temporarilyAssignInGlobalEnv(m)
 
   adfun <- nimbleFunction(
     setup = function(model, nodes) {
@@ -972,7 +1044,7 @@ test_that('AD works with a model with do_update in double-taping', {
                            reset = logical(0, default = FALSE)) {
         ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0,
                          do_update = do_update, reset = reset,
-                         model = m, updateNodes = updateNodes)
+                         model = model, updateNodes = updateNodes)
         return(ans$value[1])
         returnType(double())
       },
@@ -984,7 +1056,7 @@ test_that('AD works with a model with do_update in double-taping', {
         ans <- nimDerivs(valueRun(x, inner_do_update, inner_reset),
                          wrt = 1:length(x),
                          do_update = do_update, reset = reset,
-                         model = m, updateNodes = updateNodes)
+                         model = model, updateNodes = updateNodes)
         return(ans)
         returnType(ADNimbleList())
       }
