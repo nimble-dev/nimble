@@ -382,7 +382,7 @@ ndf_createSingleMethod <- function(type, nDim) {
     eval(methodDef)
 }
 
-if(enableVirtualNodeFunctionDefs) {  ## NCT issue 500. Deprecating and will remove in next release.
+if(getNimbleOption('enableVirtualNodeFunctionDefs')) {  ## NCT issue 500. Deprecating and will remove in next release.
     
     ndf_createVirtualNodeFunctionDefinition <- function(types = list()) {
         methodsList <- lapply(types, function(singleType) ndf_createSingleMethod(type=singleType$type, nDim=singleType$nDim))

@@ -747,7 +747,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
             nimbleUserNamespace$distributions$add(distributionsInput)
         } else 
             nimbleUserNamespace$distributions <- distributionsClass(distributionsInput)
-        if(enableVirtualNodeFunctionDefs) {  ## NCT issue 500. Deprecating and will remove in next release.
+        if(getNimbleOption('enableVirtualNodeFunctionDefs')) {  ## NCT issue 500. Deprecating and will remove in next release.
             virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
             createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
         }
