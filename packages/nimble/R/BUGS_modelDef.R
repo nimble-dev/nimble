@@ -55,6 +55,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  graphNodesList = 'ANY',   ## list of graphNode objects, set in genGraphNodesList()
                                  maps = 'ANY',   ## object of mapsClass, set in buildMaps()
                                  numNodeFunctions = 'ANY',  ## FIXME: obsolete as only used in buildNodeFunctions_old()
+                                 userEnv = 'ANY',   ## userEnv argument to nimbleModel call
                                  
                                  modelClass = 'ANY',   ## custom model class
                                  modelValuesClassName = 'ANY',    ## set in setModelValuesClassName()
@@ -110,6 +111,9 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genVarNames                    = function() {},
                                  buildSymbolTable               = function() {},
                                  genGraphNodesList              = function() {},
+                                 setUserEnv                     = function() {},
+                                 getUserEnv                     = function() {},
+                                 checkADsupportForDistribution  = function() {},
                                                                   
                                  newModel                       = function() {},
                                  fixRStudioHanging              = function() {},
@@ -145,6 +149,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     on.exit(options(scipen = scipen))
     if(debug) browser()
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
+    setUserEnv(userEnv = userEnv)                           ## set userEnv field of modelDef object
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(getNimbleOption("enableModelMacros")){
       # Stuff to do if macros are enabled
@@ -409,8 +414,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                 checkUserDefinedDistribution(code[[i]], userEnv)
                 if(isTRUE(getNimbleOption("enableDerivs")))
                     if(isTRUE(getNimbleOption("doADerrorTraps")))
-                        if(buildDerivs)
-                            checkADsupportForDistribution(code[[i]], userEnv)
+                        if(buildDerivs) {
+                            dist <- as.character(code[[i]][[3]][[1]])
+                            checkADsupportForDistribution(dist, verbose = TRUE)
+                        }
             }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
@@ -464,35 +471,39 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
             lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber, userEnv = userEnv)
         }
-        checkLine <- safeDeparse(code[[i]][[1]], warn = TRUE)
-        # Added as.character() here to allow "comments" in the form of lines containing only a character string to pass through
-        if(! (is.character(checkLine) | checkLine %in% c('~', '<-', 'for', '{'))) 
-            stop("Error: ", safeDeparse(code[[i]][[1]]), " not allowed in BUGS code in ", safeDeparse(code[[i]]))
+        deparsedCode <- safeDeparse(code[[i]][[1]], warn = TRUE)
+        ## Added is.character() check to allow macro "comments" in the form of lines containing only a character string to pass through
+        if(!(is.character(code[[i]][[1]]) || deparsedCode %in% c('~', '<-', 'for', '{')))
+            stop("invalid model code: ", safeDeparse(code[[i]]))
     }
     lineNumber
 })
 
-checkADsupportForDistribution <- function(code, userEnv) {
-    dist <- as.character(code[[3]][[1]])
+modelDefClass$methods(checkADsupportForDistribution = function(dist, verbose = FALSE) {
     supported <- TRUE
     if(!dist %in% c(distributions$namesVector, "T", "I")) {
         dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
-        if(!is.rcf(dfun))
-            message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
-        else {
+        if(!is.rcf(dfun)) {
+            if(verbose)   message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
+                supported <- FALSE
+        } else {
             dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
-            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs))
-                message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
+            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs)) {
+                if(verbose)   message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
+                supported <- FALSE
+            }
         }
     }
-}
+    return(supported)
+})
 
 
 # check if distribution is defined and if not, attempt to register it
 checkUserDefinedDistribution <- function(code, userEnv) {
-    dist <- as.character(code[[3]][[1]])
+ #   dist_code <- code[[3]][[1]]
+    dist <- safeDeparse(code[[3]][[1]])
     if(dist %in% c("T", "I")) 
-        dist <- as.character(code[[3]][[2]][[1]])
+        dist <- safeDeparse(code[[3]][[2]][[1]])
     if(!dist %in% distributions$namesVector)
         if(!exists('distributions', nimbleUserNamespace, inherits = FALSE) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
             messageIfVerbose("  [Note] Registering '", dist, "' as a distribution based on its use in BUGS code. If you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.")
@@ -506,17 +517,27 @@ replaceDistributionAliases <- function(code) {
         stop("Invalid model declaration: ", safeDeparse(code), ".")
     if(!is.call(code[[3]]))
         stop("Invalid model declaration: ", safeDeparse(code), " must call a density function.")
-    dist <- as.character(code[[3]][[1]])
-    trunc <- FALSE
-    if(dist %in% c("T", "I")) {
-        dist <- as.character(code[[3]][[2]][[1]])
-        trunc <- TRUE
+
+    dist_code <- code[[3]][[1]]
+    if(isTRUE(getNimbleOption('allowNFobjInModel'))) {
+      NFinModel <- length(dist_code) > 1 # deparsed dist not needed
+    } else {
+      NFinModel <- FALSE
     }
-    if(dist %in% names(distributionAliases)) {
+
+    if(!NFinModel) { # original behavior
+      dist <- safeDeparse(dist_code)
+      trunc <- FALSE
+      if(dist %in% c("T", "I")) {
+        dist <- safeDeparse(code[[3]][[2]][[1]])
+        trunc <- TRUE
+      }
+      if(dist %in% names(distributionAliases)) {
         dist <- as.name(distributionAliases[dist])
         if(trunc) code[[3]][[2]][[1]] <- dist else code[[3]][[1]] <- dist
+      }
     }
-    return(code)
+    code
 }
 
 checkForDeterministicDorR <- function(code) {
@@ -526,7 +547,7 @@ checkForDeterministicDorR <- function(code) {
             dFunsUser <- get('namesVector', nimbleUserNamespace$distributions)
             drFuns <- c(drFuns, dFunsUser, paste0("r", stripPrefix(dFunsUser)))
         }
-        if(as.character(code[[3]][[1]]) %in% c(drFuns, "T", "I"))
+        if(deparse(code[[3]][[1]]) %in% c(drFuns, "T", "I"))
             message("  [Warning] Model includes deterministic assignment using '<-' of the result of a density ('d') or simulation ('r') calculation. This is likely not what you intended in: ", safeDeparse(code), ".")
     }
     return(NULL)
@@ -672,13 +693,12 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
             newCode <- BUGSdecl$code
             newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
 
-            distName <- as.character(newCode[[3]][[1]])
+            distName <- safeDeparse(newCode[[3]][[1]])
             if(!getAllDistributionsInfo('pqAvail')[distName]) 
                 stop("Cannot implement truncation for ", distName, "; 'p' and 'q' functions not available.")
 
             distRange <- getDistributionInfo(distName)$range
             boundExprs <- distRange
-
         
             if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") 
                 boundExprs$lower <- BUGSdecl$valueExpr[[3]]
@@ -705,7 +725,7 @@ modelDefClass$methods(expandDistributions = function() {
         if(BUGSdecl$type != 'stoch') next
         
         newCode <- BUGSdecl$code
-        newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$valueExpr)
+        newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$distributionName, BUGSdecl$valueExpr)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
         BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs, userEnv = BUGSdecl$envir)
@@ -801,12 +821,12 @@ modelDefClass$methods(reparameterizeDists = function() {
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         code <- BUGSdecl$code   ## grab the original code
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
-        distName <- as.character(valueExpr[[1]])
+        distName <- BUGSdecl$distributionName #as.character(valueExpr[[1]])
         if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
         distRule <- getDistributionInfo(distName)
         numArgs <- length(distRule$reqdArgs)
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
-        newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
+        newValueExpr[[1]] <- BUGSdecl$valueExpr[[1]] #as.name(distName)     ## add in the distribution name
         if(numArgs==0) { ## for dflat, or a user-defined distribution might have 0 arguments
           nonReqdArgExprs <- NULL
           boundExprs <- BUGSdecl$boundExprs
@@ -890,7 +910,7 @@ modelDefClass$methods(addRemainingDotParams = function() {
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         newValueExpr <- valueExpr
-        defaultParamExprs <- getDistributionInfo(as.character(newValueExpr[[1]]))$altParams
+        defaultParamExprs <- getDistributionInfo(BUGSdecl$distributionName)$altParams
         if(length(defaultParamExprs) == 0)   next   ## skip if there are no altParams defined in distributions
         
         defaultParamNames <- names(defaultParamExprs)
@@ -979,7 +999,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
         }
         ## call that is not '['
         if(cLength > 1) {
-            if(as.character(code[[1]]) %in% c('<-', '~')) {
+            if(safeDeparse(code[[1]]) %in% c('<-', '~')) {
                 replacements <- c(list(replaceConstantsRecurse(code[[2]], constEnv, constNames, FALSE)),
                                   lapply(code[-c(1,2)], function(x) replaceConstantsRecurse(x, constEnv, constNames) ) )
                 replacements[[1]]$replaceable <- FALSE
@@ -995,8 +1015,8 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             allReplaceable <- TRUE
         }
         if(allReplaceable) {
-            if(!any(code[[1]] == getAllDistributionsInfo('namesVector'))) {
-                callChar <- as.character(code[[1]])
+          callChar <- safeDeparse(code[[1]])
+          if(!any(callChar == getAllDistributionsInfo('namesVector'))) {
                 if(exists(callChar, constEnv)) {
                     # if(callChar != ':') {
                     if(!is.vectorized(code)) {
@@ -1319,6 +1339,7 @@ isNameInExpr <- function(target, code) {
 
 nm_seq_noDecrease <- function(a, b) {
     if(a > b) {
+        messageIfVerbose("  [Warning] Detected backwards indexing in `", a, ":",b, "`. This is likely unintended and will likely not produce valid model code.")
         numeric(0)
     } else {
         a:b
@@ -2354,15 +2375,15 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ## 10. Build the graph for topological sorting
 #    if(debug) browser()
     graph <<- graph.empty()
-    graph <<- add.vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
+    graph <<- add_vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
     allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
-    graph <<- add.edges(graph, allEdges)                                         ## add all edges at once
+    graph <<- add_edges(graph, allEdges)                                         ## add all edges at once
 
     ## 11. Topologically sort and re-index all objects with vertex IDs
 #    if(debug) browser()
-    newGraphID_2_oldGraphID <- as.numeric(topological.sort(graph, mode = 'out'))
+    newGraphID_2_oldGraphID <- as.numeric(topo_sort(graph, mode = 'out'))
     oldGraphID_2_newGraphID <- sort(newGraphID_2_oldGraphID, index = TRUE)$ix
-    graph <<- permute.vertices(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
+    graph <<- permute(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
 
     ## 11b. make new maps that use the sorted IDS
 #    if(debug) browser()
@@ -2998,6 +3019,14 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){
     output <- output[!is.na(output)]
 
     return(output)
+})
+
+modelDefClass$methods(setUserEnv = function(userEnv) {
+    userEnv <<- userEnv
+})
+
+modelDefClass$methods(getUserEnv = function() {
+    return(userEnv)
 })
 
 parseEvalNumeric <- function(x, env){

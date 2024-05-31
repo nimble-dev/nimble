@@ -8,11 +8,11 @@ require(nimbleSMC, quietly = TRUE, warn.conflicts = FALSE)
 
 # Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM {#cha-algos-provided}
 
-The NIMBLE algorithm library is growing and currently includes a suite of sequential Monte Carlo (particle filtering) algorithms, particle MCMC for combining particle filters with MCMC, iterated filtering version 2 and Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, and k-fold cross-validation. 
+The NIMBLE algorithm library includes a suite of sequential Monte Carlo (particle filtering) algorithms, particle MCMC for combining particle filters with MCMC, iterated filtering version 2 and Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, and k-fold cross-validation. 
  
 ## Particle filters / sequential Monte Carlo and iterated filtering
 
-As of Version 0.10.0 of NIMBLE, all of NIMBLE's sequential Monte Carlo/particle filtering functionality lives in the `nimbleSMC` package. Please load this package before trying to use these algorithms.
+As of Version 0.10.0 of NIMBLE, all of NIMBLE's sequential Monte Carlo/particle filtering functionality lives in the `nimbleSMC` package, described in @Michaud_etal_2021. Please load this package before trying to use these algorithms.
 
 ### Filtering algorithms
 

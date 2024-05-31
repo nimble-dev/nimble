@@ -2431,21 +2431,24 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' If \code{setupMargNodes} is emitting an unnecessary warning, simply use
 #'   \code{control=list(check=FALSE)}.
 #'
+#' For default determination of parameters, all parameters must have a prior
+#'   distribution. Prior distributions are not included in maximum likelihood
+#'   estimation but do indicate the range of valid values. 
+#'   For example, if \code{sigma} is a standard deviation, you can declare it with a
+#'   prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
+#'   greater than 0. Note that we recommend caution in using priors for variance
+#'   component parameters (standard deviations, variances, precisions) that
+#'   have a finite upper bound (e.g., \code{sigma ~ dunif(0, 100)}), because the probit
+#'   transformation applied in that case may result in poor optimization performance.
+#'   For a param \code{mu} that has no constraint, a simple choice is \code{mu ~ dflat()}.
+#'
 #' If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
 #'   effects / latent states) have constraints on the range of valid values
 #'   (because of the distribution they follow), they will be used on a
 #'   transformed scale determined by \code{parameterTransform}. This means the
 #'   Laplace approximation itself will be done on the transformed scale for
 #'   random effects and finding the MLE will be done on the transformed scale
-#'   for parameters. For parameters, prior distributions are not included in
-#'   calculations, but they are used to determine valid parameter ranges. For
-#'   example, if \code{sigma} is a standard deviation, you can declare it with a
-#'   prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
-#'   greater than 0.
-#'
-#' For default determination of parameters, all parameters must have a prior
-#'   distribution simply to indicate the range of valid values. For a param
-#'   \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
+#'   for parameters. 
 #'
 #' The object returned by \code{buildLaplace} is a nimbleFunction object with
 #' numerous methods (functions). The most useful ones are:

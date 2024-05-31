@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of core R functions in NIMBLE code")
-
 ## fix result_type in nimbleEigen.h
 
 cTests <- list(

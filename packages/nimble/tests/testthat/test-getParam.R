@@ -9,8 +9,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of getParam")
-
 
 test_getParam(quote(dbern(prob = 0.2)))
 test_getParam(quote(dbin(prob = 0.2, size = 3)))
