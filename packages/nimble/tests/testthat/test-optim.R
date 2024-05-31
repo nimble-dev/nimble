@@ -5,9 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-
-context("Testing of the optim() function in NIMBLE code")
-
 # The methods "SANN" and "Brent" are not supported.
 methodsAllowingGradient <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")
 methodsAllowingBounds <- c("L-BFGS-B")

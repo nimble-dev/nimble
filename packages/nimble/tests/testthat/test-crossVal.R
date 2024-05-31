@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of cross-validation")
-
 ###  BUGS model from Chapter 5 of Gelman and Hill
 ###  Below LOO-CV value from Gelman '13 "Understanding predictive 
 ###  information criteria for Bayesian models"

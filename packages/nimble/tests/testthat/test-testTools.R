@@ -4,8 +4,6 @@ RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
 
-context("Testing of testing tools")
-
 ## new way to force anything compiled to be clear-compiled
 ## (note, no check for windows is done [yet?])
 test_that('testing withTempProject',

@@ -226,8 +226,8 @@ lkj_test_log <- make_AD_test2(
     opParam = list(name = "dlkj_corr_cholesky manual"),
     expr = quote({
       # correlation matrix inverse transform 
-      z <- nimMatrix(nrow = 5, ncol = 5, init=FALSE)
-      u <- nimMatrix(nrow = 5, ncol = 5, init=FALSE)
+      z <- nimMatrix(nrow = 5, ncol = 5)
+      u <- nimMatrix(nrow = 5, ncol = 5)
         
       j <- 1L
       i <- 1L
@@ -241,8 +241,9 @@ lkj_test_log <- make_AD_test2(
       u[2,3:5] <- z[2,3:5]*sqrt(1-u[1,3:5]^2)
       u[3,4:5] <- z[3,4:5]*sqrt(1-u[1,4:5]^2-u[2,4:5]^2)
       u[4,5] <- z[4,5]*sqrt(1-u[1,5]^2-u[2,5]^2-u[3,5]^2)
-      for(j in 1:5)
-          u[j,j] <- sqrt(1-sum(u[1:5,j]^2))
+      u[1,1] <- 1
+      for(j in 2:5)
+          u[j,j] <- sqrt(1-sum(u[1:(j-1),j]^2))
       out <- dlkj_corr_cholesky(x = u, eta = eta, p = 5, log = log)
     }),
     args = list(

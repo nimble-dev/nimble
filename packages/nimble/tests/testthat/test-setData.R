@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = TRUE)
 
-context("Testing setData")
-
 model <- nimbleModel(
     nimbleCode({
         for(i in 1:5) {

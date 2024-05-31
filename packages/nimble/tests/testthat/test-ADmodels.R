@@ -15,7 +15,6 @@ relTol[4] <- 1e-4
 
 verbose <- FALSE
 
-context("Testing of derivatives for calculate() for nimbleModels")
 
 test_that('pow and pow_int work', {  ## 28 sec.
 

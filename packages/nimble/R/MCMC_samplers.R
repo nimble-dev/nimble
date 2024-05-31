@@ -46,9 +46,9 @@ sampler_prior_samples <- nimbleFunction(
         nSamples <- dim(samples)[1]
         ind <- 0
         ## checks
-        if(length(dim(samples)) != 2)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument must be a 2-dimensional array, but value provided was a ', length(dim(samples)), '-dimensional array'), call. = FALSE)
-        if(!(storage.mode(samples) %in% c('integer', 'double')))   stop('  [Error] prior_samples sampler \'samples\' control argument must be numeric or integer type', call. = FALSE)
-        if(dim(samples)[2] != k)   stop(paste0('  [Error] prior_samples sampler \'samples\' control argument had ', dim(samples)[2], ' columns, but target nodes have ', k, ' scalar elements.  These numbers must be equal.'), call. = FALSE)
+        if(length(dim(samples)) != 2)   stop('prior_samples sampler \'samples\' control argument must be a 2-dimensional array, but value provided was a ', length(dim(samples)), '-dimensional array')
+        if(!(storage.mode(samples) %in% c('integer', 'double')))   stop('prior_samples sampler \'samples\' control argument must be numeric or integer type')
+        if(dim(samples)[2] != k)   stop('prior_samples sampler \'samples\' control argument had ', dim(samples)[2], ' columns, but target nodes have ', k, ' scalar elements. These numbers must be equal.')
         if(any(model$getNodeType(target) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
     },
     run = function() {
@@ -163,17 +163,25 @@ sampler_categorical <- nimbleFunction(
     name = 'sampler_categorical',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        length <- extractControlElement(control, 'length', 'prob')
+        check <- extractControlElement(control, 'check', TRUE)
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
-        k <- length(model$getParam(target, 'prob'))
+        if(is.character(length)) {
+            k <- length(model$getParam(target, length))
+        } else if(is.numeric(length)) {
+            k <- length
+        } else stop('Invalid \'length\' control parameter provided for categorical sampler.\nSee help(samplers) for details of the categorical sampler.')
         probs <- numeric(k)
         logProbs <- numeric(k)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
-        if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
+        if(check && length == 'prob' && model$getDistribution(target) != 'dcat') stop('Can only use categorical sampler on node with dcat distribution.\nUse control argument \'check = FALSE\' to allow use on other distributions.')
+        if(!is.numeric(k) || k <= 0 || k != round(k))   stop('Invalid \'length\' control parameter provided for categorical sampler.\nSee help(samplers) for details of the categorical sampler.')
     },
     run = function() {
         currentValue <- model[[target]]
@@ -218,6 +226,90 @@ sampler_categorical <- nimbleFunction(
 )
 
 
+####################################################################
+### noncentered joint sampler on location or scale hyperparameter ##
+### and associated set of (random) effects                        ##
+####################################################################
+
+## This provides a sampler for the location or scale hyperparameter
+## for a set of random effects, where the random effects are then
+## shifted or scaled based on the proposed hyperparameter as if
+## a noncentered parameterization were used. When added to a model
+## parameterized with a centered parameterization, i.e.,
+## b[i] ~ dnorm(mu, sd = sigma)`, this is a variation on the ASIS/
+## interweaving sampling scheme of Yu and Meng 2011.
+
+## The hyperparameter sampling can either use RW or slice.
+## An adjustment to the acceptance probability based on the
+## Jacobian of the transformation in the case of sampling
+## the scale is included. For normal random effects, this
+## adjustment cancels with the density of the random
+## effects.
+
+#' @rdname samplers
+#' @export
+sampler_noncentered <- nimbleFunction(
+    name = 'sampler_noncentered',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        type <- extractControlElement(control, 'sampler', 'RW')
+        param <- extractControlElement(control, 'param', 'location')
+        if(!param %in% c("location", "scale")) 
+            stop("noncentered sampler: `sampleParam` control element must be either 'location' or 'scale'")
+
+        if(param == "location") param <- 0
+        if(param == "scale") param <- 1
+
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)
+            stop("sampler noncentered: target for noncentered sampler must be a scalar node")
+        effects <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
+        if(!length(effects))
+            stop("sampler noncentered: there are no stochastic dependencies of target")
+        if(any(model$isMultivariate(effects)))
+            stop("sampler noncentered: all dependent nodes must be univariate")
+        
+        dists <- model$getDistribution(effects)
+        uniqueDists <- which(!duplicated(dists))
+        for(idx in uniqueDists) {
+            result <- try(model$getParam(effects[idx], 'mean'), silent = TRUE)
+            if(inherits(result, 'try-error'))
+                stop("sampler noncentered: the distribution `", dists[idx], "` does not have a `mean` function, which is required for all dependent nodes")
+        }
+        
+        if(!all(dists %in% c('dnorm','dbeta','dgamma','dinvgamma','dunif')))
+            stop("sampler noncentered: dependent nodes must be scalars whose distribution has a function for calculating its mean in nimble")
+        
+        if(type == "RW") {
+            samplerFunction <- sampler_RW_noncentered
+        } else {
+            if(type == "slice") {
+                samplerFunction <- sampler_slice_noncentered
+            } else stop("noncentered sampler: `sampler` control element must be either 'RW' or 'slice'")
+        }
+
+        ## Pass along control elements to (variant of) RW or slice sampler, with info on the effects to be sampled.
+        if(is.list(control)) {
+            control[['noncenteredEffects']] <- effects
+            control[['noncenteredParam']] <- param
+        } else {
+            control <- list('noncenteredEffects' = effects, 'noncenteredParam' = param)
+        }
+        
+        samplerList <- nimbleFunctionList(sampler_BASE)
+        samplerList[[1]] <- samplerFunction(model = model, mvSaved = mvSaved, target=target, control=control)
+    },
+    run = function() {
+        samplerList[[1]]$run()
+    },
+    methods = list(
+        reset = function() {
+            samplerList[[1]]$reset()
+        }
+    )
+)
+        
 
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############
@@ -368,7 +460,182 @@ sampler_RW <- nimbleFunction(
     )
 )
 
+## version for use with noncentered sampler
 
+#' @rdname samplers
+#' @export
+sampler_RW_noncentered <- nimbleFunction(
+    name = 'sampler_RW_noncentered',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        logScale            <- extractControlElement(control, 'log',                 FALSE)
+        reflective          <- extractControlElement(control, 'reflective',          FALSE)
+        adaptive            <- extractControlElement(control, 'adaptive',            TRUE)
+        adaptInterval       <- extractControlElement(control, 'adaptInterval',       200)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.8)
+        scale               <- extractControlElement(control, 'scale',               1)
+
+        ## sampler_RW_noncentered is used by sampler_noncentered to do joint, noncentered sampling of
+        ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
+        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
+        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
+        
+        noncenteredLen <- length(model$expandNodeNames(noncenteredEffects))
+        noncenteredMean <- rep(0, noncenteredLen)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, c(target, noncenteredEffects))
+        
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+
+        calcNodesNoSelf <- c(ccList$calcNodesNoSelf, noncenteredEffects)
+        copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch   # not used: calcNodes
+
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        scaleHistory      <- c(0, 0)   ## scaleHistory
+        acceptanceHistory <- c(0, 0)   ## scaleHistory
+        saveMCMChistory <- getNimbleOption('MCMCsaveHistory')
+        optimalAR     <- 0.44
+        gamma1        <- 0
+        ## checks
+        if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
+        if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
+        if(logScale & reflective)        stop('cannot use reflective RW sampler on a log scale (i.e. with options log=TRUE and reflective=TRUE')
+        if(adaptFactorExponent < 0)      stop('cannot use RW sampler with adaptFactorExponent control parameter less than 0')
+        if(scale < 0)                    stop('cannot use RW sampler with scale control parameter less than 0')
+    },
+    run = function() {
+        currentValue <- model[[target]]
+        propLogScale <- 0
+        if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
+                       propValue <- currentValue * exp(propLogScale)
+        } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
+        if(reflective) {
+            lower <- model$getBound(target, 'lower')
+            upper <- model$getBound(target, 'upper')
+            while(propValue < lower | propValue > upper) {
+                if(propValue < lower) propValue <- 2*lower - propValue
+                if(propValue > upper) propValue <- 2*upper - propValue
+            }
+        }
+        model[[target]] <<- propValue
+
+        logMHR <- model$calculateDiff(target)
+        if(logMHR == -Inf) {
+            jump <- FALSE
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+        } else {
+            ## Shift effects and add log-determinant of Jacobian of transformation. 
+            logMHR <- logMHR + updateNoncentered(propValue, currentValue)
+            logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
+            jump <- decide(logMHR)
+            if(jump) {
+                ##model$calculate(calcNodesPPomitted)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+            } else {
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+            }
+        }
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    methods = list(
+        updateNoncentered = function(newValue = double(), oldValue = double()) {
+            if(noncenteredParam == 0) {
+                values(model, noncenteredEffects) <<- values(model, noncenteredEffects) - oldValue + newValue
+                return(0)
+            } else {
+                ## Mean will often be scalar; should we try to determine if this is the case to avoid work of `getParam` calls?
+                for(i in 1:noncenteredLen) 
+                    noncenteredMean[i] <<- model$getParam(noncenteredEffects[i], 'mean') 
+                values(model, noncenteredEffects) <<- noncenteredMean + (newValue/oldValue) * (values(model, noncenteredEffects) - noncenteredMean)
+                return(noncenteredLen * (log(newValue) - log(oldValue)))  # log determinant of Jacobian; accounts for fact we are computing prior for effects, which one doesn't in ASIS re-parameterized formulation. 
+            }
+            returnType(double())
+        },
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(scaleHistory, timesAdapted)                 ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale                ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
+                    acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
+                }
+                gamma1 <<- 1/((timesAdapted + 3)^adaptFactorExponent)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                ## If there are upper and lower bounds, enforce a maximum scale of
+                ## 0.5 * (upper-lower).  This is arbitrary but reasonable.
+                ## Otherwise, for a poorly-informed posterior,
+                ## the scale could grow without bound to try to reduce
+                ## acceptance probability.  This creates enormous cost of
+                ## reflections.
+                if(reflective) {
+                    lower <- model$getBound(target, 'lower')
+                    upper <- model$getBound(target, 'upper')
+                    if(scale >= 0.5*(upper-lower)) {
+                        scale <<- 0.5*(upper-lower)
+                    }
+                }
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+        },
+        getScaleHistory = function() {       ## scaleHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(scaleHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
+                return(numeric(1, 0))
+            }
+        },          
+        getAcceptanceHistory = function() {  ## scaleHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(acceptanceHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
+                return(numeric(1, 0))
+            }
+        },
+        ##getScaleHistoryExpanded = function() {                                                 ## scaleHistory
+        ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)            ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                         ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                      ## scaleHistory
+        ##            scaleHistoryExpanded[(iTA-1)*adaptInterval+j] <- scaleHistory[iTA]         ## scaleHistory
+        ##    returnType(double(1)); return(scaleHistoryExpanded) },                             ## scaleHistory
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            if(saveMCMChistory) {
+                scaleHistory  <<- c(0, 0)    ## scaleHistory
+                acceptanceHistory  <<- c(0, 0)
+            }
+            gamma1 <<- 0
+        }
+    )
+)
 
 ########################################################################
 ### block RW sampler with multi-variate normal proposal distribution ###
@@ -721,6 +988,163 @@ sampler_slice <- nimbleFunction(
     )
 )
 
+## version for use with noncentered sampler
+
+#' @rdname samplers
+#' @export
+sampler_slice_noncentered <- nimbleFunction(
+    name = 'sampler_slice_noncentered',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive               <- extractControlElement(control, 'adaptive',               TRUE)
+        adaptInterval          <- extractControlElement(control, 'adaptInterval',          200)
+        width                  <- extractControlElement(control, 'sliceWidth',             1)
+        maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
+        maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
+        maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
+        eps <- 1e-15
+
+        ## sampler_slice_noncentered is used by sampler_noncentered to do joint, noncentered sampling of
+        ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
+        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
+        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
+
+        noncenteredLen <- length(model$expandNodeNames(noncenteredEffects))
+        noncenteredMean <- rep(0, noncenteredLen)
+        noncenteredEffects0 <- rep(0, noncenteredLen)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, c(target, noncenteredEffects))
+
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- c(ccList$calcNodesNoSelf, noncenteredEffects); copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
+        ## numeric value generation
+        widthOriginal <- width
+        timesRan      <- 0
+        timesAdapted  <- 0
+        sumJumps      <- 0
+        widthHistory  <- c(0, 0)   ## widthHistory
+        if(getNimbleOption('MCMCsaveHistory')) {
+            saveMCMChistory <- TRUE
+        } else saveMCMChistory <- FALSE
+        discrete      <- model$isDiscrete(target)
+
+        x0 <- 0
+
+        ## checks
+        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
+    },
+    run = function() {
+        u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+        x0 <<- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
+        noncenteredEffects0 <<- values(model, noncenteredEffects)
+        L <- x0 - runif(1, 0, 1) * width
+        R <- L + width
+        maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+        maxStepsR <- maxSteps - 1 - maxStepsL
+        lp <- setAndCalculateTarget(L)
+        while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+            L <- L - width
+            lp <- setAndCalculateTarget(L)
+            maxStepsL <- maxStepsL - 1
+        }
+        lp <- setAndCalculateTarget(R)
+        while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+            R <- R + width
+            lp <- setAndCalculateTarget(R)
+            maxStepsR <- maxStepsR - 1
+        }
+        x1 <- L + runif(1, 0, 1) * (R - L)
+        lp <- setAndCalculateTarget(x1)
+        numContractions <- 0
+        while((is.nan(lp) | lp < u) & (R-L)/(abs(R)+abs(L)+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
+            ## The checks for R-L small and max number of contractions are for cases where model is in
+            ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
+            ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
+            if(x1 < x0) { L <- x1
+                      } else      { R <- x1 }
+            x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
+            lp <- setAndCalculateTarget(x1)
+            numContractions <- numContractions + 1
+        }
+        if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
+            if(maxContractionsWarning)
+                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+        } else {
+            ##model$calculate(calcNodesPPomitted)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = noncenteredEffects, logProb = TRUE)
+            jumpDist <- abs(x1 - x0)
+            if(adaptive)     adaptiveProcedure(jumpDist)
+        }
+    },
+    methods = list(
+        setAndCalculateTarget = function(value = double()) {
+            if(discrete)     value <- floor(value)
+            model[[target]] <<- value
+            lp <- model$calculate(target)
+            if(lp == -Inf) return(-Inf)
+            lp <- lp + updateNoncentered(value)
+            lp <- lp + model$calculate(calcNodesNoSelf)
+            returnType(double())
+            return(lp)
+        },
+        updateNoncentered = function(newValue = double()) {
+            if(noncenteredParam == 0) {
+                values(model, noncenteredEffects) <<- noncenteredEffects0 - x0 + newValue
+                return(0)
+            } else {
+                ## Mean will often be scalar; should we try to determine if this is the case to avoid work of `getParam` calls?
+                for(i in 1:noncenteredLen) 
+                    noncenteredMean[i] <<- model$getParam(noncenteredEffects[i], 'mean') 
+                values(model, noncenteredEffects) <<- noncenteredMean + (newValue/x0) * (noncenteredEffects0 - noncenteredMean)
+                return(noncenteredLen * (log(newValue) - log(x0)))  # log determinant of Jacobian; accounts for fact we are computing prior for effects, which one doesn't do in ASIS re-parameterized formulation. 
+            }
+            returnType(double())
+        },
+        adaptiveProcedure = function(jumpDist = double()) {
+            timesRan <<- timesRan + 1
+            sumJumps <<- sumJumps + jumpDist   # cumulative (absolute) distance between consecutive values
+            if(timesRan %% adaptInterval == 0) {
+                adaptFactor <- (3/4) ^ timesAdapted
+                meanJump <- sumJumps / timesRan
+                width <<- width + (2*meanJump - width) * adaptFactor   # exponentially decaying adaptation of 'width' -> 2 * (avg. jump distance)
+                timesAdapted <<- timesAdapted + 1
+                if(saveMCMChistory) {
+                    setSize(widthHistory, timesAdapted)                 ## widthHistory
+                    widthHistory[timesAdapted] <<- width                ## widthHistory
+                }
+                timesRan <<- 0
+                sumJumps <<- 0
+            }
+        },
+        getWidthHistory = function() {       ## widthHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(widthHistory)
+            } else {
+                print("Please set 'nimbleOptions(MCMCsaveHistory = TRUE)' before building the MCMC.")
+                return(numeric(1, 0))
+            }
+        },
+        reset = function() {
+            width        <<- widthOriginal
+            timesRan     <<- 0
+            timesAdapted <<- 0
+            sumJumps     <<- 0
+            if(saveMCMChistory) {
+                widthHistory  <<- c(0, 0)    ## widthHistory
+            }
+        }
+    )
+)
 
 
 ####################################################################
@@ -2904,10 +3328,14 @@ sampler_polyagamma <- nimbleFunction(
 #'
 #' @section categorical sampler:
 #'
-#' The categorical sampler performs Gibbs sampling for a single node, which must follow a categorical (\code{dcat}) distribution.
+#' The categorical sampler performs Gibbs sampling for a single node, which generally would follow a categorical (\code{dcat}) distribution.  The categorical sampler can be assigned to other distributions as well, in which case the number of possible outcomes (1, 2, 3, ..., k) of the distribution must be specified using the 'length' control argument.
 #'
-#' The categorical sampler accepts no control list arguments.
-#'
+#' The categorical sampler accepts the following control list elements:
+#' \itemize{
+#' \item length. A character string or a numeric argument.  When a character string, this should be the name of a parameter of the distribution of the target node being sampled.  The length of this distribution parameter (considered as a 1-dimensional vector) will be used to determine the number of possible outcomes of the target node's distribution.  When a numeric value, this value will be used as the number of possible outcomes of the target node's distribution.  (default = "prob")
+#' \item check. A logical argument.  When FALSE, no check for a 'dcat' prior distribution for the target node takes place. (default = TRUE)
+#' }
+#' 
 #' @section RW sampler:
 #'
 #' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale.
@@ -3044,7 +3472,7 @@ sampler_polyagamma <- nimbleFunction(
 #'
 #' @section RW_wishart sampler:
 #'
-#' This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covaraiance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
+#' This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covariance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
 #'
 #' The \code{RW_wishart} sampler accepts the following control list elements:
 #' \itemize{
@@ -3127,7 +3555,56 @@ sampler_polyagamma <- nimbleFunction(
 #' \item designMatrix. The full design matrix with rows corresponding to the ordering of the responses and columns ordered exactly as the ordering of target node elements given by \code{model$expandNodeNames(target, returnScalarComponents = TRUE)}, where \code{target} is the same as the \code{target} argument to \code{configureMCMC$addSampler} above. If provided, all columns are assumed to be fixed, ignoring the \code{fixedDesignColumns} control element.
 #' \item nonTargetNodes. Additional stochastic nodes involved in the linear predictor that are not to be sampled as part of the sampler. This must include any nodes specifying stochastic indexes (e.g., \code{"group"} if the \code{group[i]} values are stochastic) and any parameters considered known or that for any reason one does not want to sample. Providing \code{nonTargetNodes} is required in order to allow NIMBLE to check for the presence of zero inflation.  
 #' \item check. A logical value indicating whether NIMBLE should check various conditions required for validity of the sampler. This is provided for rare cases where the checking may be overly conservative and a user is sure that the sampler is valid and wants to override the checking. (default = TRUE)
+#'
+#' @section noncentered sampler:
+#'
+#' The noncentered sampler is designed to sample the mean or standard deviation of a set of centered random effects while also moving the random effects values to possibly allow better mixing. The noncentered sampler deterministically shifts or scales the dependent node values to be consistent with the proposed value of the target (the mean or the standard deviation) such that the effect is to sample in a noncentered parameterization (Yu and Meng 2011), via an on-the-fly reparameterization. This can improve mixing by updating the target node based on information in the model nodes whose parent nodes are the dependent nodes of the target (i.e,. the "grandchild" nodes of the target; these will often be data nodes). This comes at the extra computational cost of calculating the logProbability of the "grandchild" nodes.
+#'
+#' It is still necessary to have other samplers on the random effects values.
+#' 
+#' Mathematically, the noncentered sampler operates in one dimension of a transformed parameter space. When sampling a mean, all random effects will be shifted by the same amount as the mean. When sampling a standard deviation, all random effects (relative to their means) will be scaled by the same factor as the standard deviation.
 
+#' Consider a model that includes the following code:
+#' \preformatted{ for(i in 1:n)
+#'   y[i] ~ dnorm(beta1*x[i] + u[group[i]], sd = sigma_obs)
+#' for(j in 1:num_groups)
+#'   u[j] ~ dnorm(beta0, sd = sigma_group)
+#' }
+#' where \code{u[j]} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation. This model has centered random effects, the \code{u[j]}, because these have the intercept \code{beta0} as their mean. In basic univariate sampling, updates to \code{beta0} or to \code{sigma_group} do not change \code{u[j]}, making only small moves possible if \code{num_groups} is large. When the noncentered sampler considers a new value for \code{beta0}, it will shift all the \code{u[j]} so that (in this case) their prior probabilities do not change. If the noncentered sampler considers a new value for \code{sigma_group}, it will rescale all the \code{u[j]} accordingly.
+#'
+#' The effect of such a sampling strategy is to update \code{beta0} and \code{sigma_group} as if the model had been written in a different (noncentered) way. For updating \code{beta0}, it would be:
+#' \preformatted{ for(i in 1:n)
+#'   y[i] ~ dnorm(beta0 + beta1*x[i] + u[group[i]], sd = sigma_obs)
+#' for(j in 1:num_groups)
+#'   u[j] ~ dnorm(0, sd = sigma_group)
+#' }
+#' For updating \code{sigma_group}, it would be:
+#' \preformatted{ for(i in 1:n)
+#'   y[i] ~ dnorm(beta1*x[i] + u[group[i]] * sigma_group, sd = sigma_obs)
+#' for(j in 1:num_groups)
+#'   u[j] ~ dnorm(beta0, sd = 1)
+#' }
+#'
+#' Whether centered or noncentered parameterizations result in better sampling can depend on the model and the data. Therefore Yu and Meng (2011) recommended an "interweaving" strategy of using both kinds of samplers. Adding the noncentered sampler (on either the mean or standard deviation or both) to an existing MCMC configuration for a model specified using the centered parameterization (and with an sampler already assigned to the target node) produces an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. 
+#'
+#' There is a higher computational cost to the noncentered sampler (or to writing the model directly in one of the equivalent ways shown). The cost is that when updating \code{beta0} or \code{sigma_group}, the relevant log probabilities calculations will include (in this case) all the of \code{y[i]}, i.e. the "grandchild" nodes of \code{beta0} or \code{sigma_group}.
+#'
+#' The noncentered sampler is not assigned by default by \code{configureMCMC} but must be manually added. For example:
+#' \preformatted{ MCMCconf <- configureMCMC(model)
+#' MCMCconf$addSampler(target = "beta0", type = "noncentered",
+#'   control = list(param = "location", sampler = "RW"))
+#' MCMCconf$addSampler(target = "sigma_group", type = "noncentered",
+#'   control = list(param = "scale", sampler = "RW"))
+#' }
+#'
+#' While the target node will generally be either the mean (location) or standard deviation (scale) of a set of other nodes (e.g., random effects), it could in theory be used in other contexts and one can choose whether the transformation is a shift or a scale operation. In a shift operation (e.g., when the sampling target is a mean), the dependent nodes are set to their previous values plus the difference between the proposed value and previous value for the target. In a scale operation (e.g., when the sampling target is the standard deviation), the dependent nodes minus their means are multiplied by the ratio of the proposed value to the previous value for the target and the previous value for the target. Whether to shift or scale is determined from the \code{param} element of the control list.
+#'
+#' The sampling algorithm for the target node can either be adaptive Metropolis random walk (which uses NIMBLE's \code{RW} sampler) or slice sampling (which uses NIMBLE's \code{slice} sampler), determined from the \code{sampler} element of the control list. In either case, the underlying sampling accounts for the Jacobian of the deterministic shifting or scaling of the dependent nodes (in the case of shifting, the Jacobian is equal to 1 and has no impact). When the target is the standard deviation of normally-distributed dependent nodes, the Jacobian cancels with the prior distribution for the dependent nodes, and the update is in effect based only on the prior for the target and the distribution of the "grandchild" nodes. 
+#'
+#' The \code{noncentered} sampler accepts the following control list elements:
+#' \itemize{
+#' \item sampler. A character string, either \code{"RW"} or \code{"slice"} specifying the type of sampler to be used for the target node. (default = \code{"RW"})
+#' \item param. A character string, either \code{"location"} or \code{"scale"} specifying whether sampling is done as shifting or scaling the dependent nodes. (default = \code{"location"})
 #' 
 #' @section CAR_normal sampler:
 #'
@@ -3250,15 +3727,11 @@ sampler_polyagamma <- nimbleFunction(
 #'
 #' Hoffman, Matthew D., and Gelman, Andrew (2014). The No-U-Turn Sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. \emph{Journal of Machine Learning Research}, 15(1): 1593-1623.
 #'
-#' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
-#'
 #' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
 #'
 #' Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
 #'
 #' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
-#'
-#' Neal, Radford M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 #'
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
 #'
@@ -3266,7 +3739,9 @@ sampler_polyagamma <- nimbleFunction(
 #' 
 #' Neal, R. M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
 #'
-#' Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
+#' Neal, R. M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
+#'
+#' Pitt, M. K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 #'
 #' Polson, N.G., Scott, J.G., and J. Windle. (2013). Bayesian inference for logistic models using Pólya-gamma latent variables. Journal of the American Statistical Association, 108(504), 1339–1349. https://doi.org/10.1080/01621459.2013.829001
 #'
@@ -3279,6 +3754,8 @@ sampler_polyagamma <- nimbleFunction(
 #' Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
 #'
 #' van Dyk, D.A. and T. Park. (2008). Partially collapsed Gibbs Samplers. \emph{Journal of the American Statistical Association}, 103(482), 790-796.
+#'
+#' Yu, Y. and Meng, X. L. (2011). To center or not to center: That is not the question - An ancillarity-sufficiency interweaving strategy (ASIS) for boosting MCMC efficiency. Journal of Computational and Graphical Statistics, 20(3), 531–570. https://doi.org/10.1198/jcgs.2011.203main
 #' 
 NULL
 

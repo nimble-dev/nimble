@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of getBound")
-
 test_that("building of model with initial value issues in bounds", {
     code <- nimbleCode({
         y1 ~ T(dnorm(mu, sd = sig),b,d)  # non-constant trunc bounds

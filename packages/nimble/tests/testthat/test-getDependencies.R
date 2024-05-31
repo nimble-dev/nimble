@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of getDependencies")
-
 ## note this testing is not intended to blur into general model processing testing.
 ## It assumes the model processing is ok and really tests traversal of the graph to get dependencies
 

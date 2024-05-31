@@ -1,26 +1,3 @@
-#' Placeholder for compareMCMCs
-#'
-#' This function has been moved to the `compareMCMCs` package.
-#'
-#' @param ... arguments
-#'
-#' @export
-#'
-compareMCMCs <- function(...)
-    cat("This function now resides in the `compareMCMCs` package, available on CRAN. See also https://github.com/nimble-dev/compareMCMCs.\n")
-
-#' Placeholder for MCMCsuite
-#'
-#' This function has been moved to a separate package.
-#'
-#' @param ... arguments
-#'
-#' @export
-#'
-MCMCsuite <- function(...)
-    cat("This function now resides in a separate package. Please see https://github.com/nimble-dev/compareMCMCs.\n")
-
-
 #' Placeholder for buildAuxiliaryFilter
 #'
 #' This function has been moved to the `nimbleSMC` package.
