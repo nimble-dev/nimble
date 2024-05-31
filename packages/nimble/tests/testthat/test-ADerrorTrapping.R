@@ -106,6 +106,13 @@ test_that("Warning messages work for checking if a user-defined distribution sup
       }
     })
 #  temporarilyAssignInGlobalEnv(rmyexp, replace = TRUE)
+  code1 <- nimbleCode({
+    for(i in 1:3) {
+      y1[i] ~ dmyexp(rate = r1)
+    }
+    r1 <- 1 / s1
+    s1 ~ dunif(0, 100)
+  })
 
   msgs <- capture_messages(
     m <- nimbleModel(code1, buildDerivs = TRUE)
@@ -136,6 +143,14 @@ test_that("Warning messages work for checking if a user-defined distribution sup
       }
     }, buildDerivs = FALSE)
 #  temporarilyAssignInGlobalEnv(rmyexp, replace = TRUE)
+  code1 <- nimbleCode({
+    for(i in 1:3) {
+      y1[i] ~ dmyexp(rate = r1)
+    }
+    r1 <- 1 / s1
+    s1 ~ dunif(0, 100)
+  })
+
   msgs <- capture_messages(
     m <- nimbleModel(code1, buildDerivs = TRUE)
   )
@@ -164,12 +179,27 @@ test_that("Warning messages work for checking if a user-defined distribution sup
       }
     }, buildDerivs = list())
 #  temporarilyAssignInGlobalEnv(rmyexp, replace = TRUE)
+  code1 <- nimbleCode({
+    for(i in 1:3) {
+      y1[i] ~ dmyexp(rate = r1)
+    }
+    r1 <- 1 / s1
+    s1 ~ dunif(0, 100)
+  })
+
   msgs <- capture_messages(
     m <- nimbleModel(code1, buildDerivs = TRUE)
   )
   expect_true(any(grepl("Distribution dmyexp", msgs) &
                     grepl("derivatives", msgs)))
   # Follow-on case where model does not need derivatives so no message is needed.
+  code1 <- nimbleCode({
+    for(i in 1:3) {
+      y1[i] ~ dmyexp(rate = r1)
+    }
+    r1 <- 1 / s1
+    s1 ~ dunif(0, 100)
+  })
   msgs <- capture_messages(
     m <- nimbleModel(code1, buildDerivs = FALSE)
   )
