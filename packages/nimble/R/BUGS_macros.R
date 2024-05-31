@@ -233,144 +233,159 @@ model_macro_builder <- function(fun,
 ## Called "internal" because there's a similarly-named wrapper function below that
 ## calls this function but also does other things not in the recursion
 processMacrosInternal <- function(code,
-                                   modelInfo,
-                                   env = parent.frame(),
-                                   recursionLabels = character()) {
-    expandRecursionLabels <- function(possibleMacroName,
-                                      labels = character()) {
-        paste0(possibleMacroName,
-               if(length(labels) > 0)
-                   paste0('(expanded from ',
-                          paste(labels, collapse = '-->'),
-                          ')')
-               else
-                   character()
-               )
-    }
-    codeLength <- length(code)
-    ## First check if this is the start of a curly-bracketed block
-    if(code[[1]] == '{') {
-        if(codeLength > 1)
-            ## Recurse on each line
-            for(i in 2:codeLength){
-              macroOutput <- processMacrosInternal(code = code[[i]],
-                                                    modelInfo = modelInfo,
-                                                    env = env,
-                                                    recursionLabels
-                                                    )
-              code[[i]] <- macroOutput$code
-              modelInfo <- macroOutput$modelInfo
-            }
-        return(list(code=code, modelInfo=modelInfo))
-    }
-    ## If this is a for loop, recurse on the body of the loop
-    if(code[[1]] == 'for') {
-      macroOutput <- processMacrosInternal(code[[4]],
-                                            modelInfo = modelInfo,
-                                            env = env,
-                                            recursionLabels
-                                           )
-      code[[4]] <- macroOutput$code
-      return(list(code=code, modelInfo=macroOutput$modelInfo))
-    }
-    ## Check if this line invokes a submodel.
-    ## This can be done in two ways:
-    ## (i) node1 [<- | ~] <macro name>(...)
-    ## or
-    ## (ii) <macro name>(args)
-    ##
-    ## The first version is more BUGS-like.
-    ## The second version allows more full control.
+                                  modelInfo,
+                                  env = parent.frame(),
+                                  recursionLabels = character()) {
+  expandRecursionLabels <- function(possibleMacroName,
+                                    labels = character()) {
+    paste0(possibleMacroName,
+           if(length(labels) > 0)
+             paste0('(expanded from ',
+                    paste(labels, collapse = '-->'),
+                    ')')
+           else
+             character()
+           )
+  }
+  codeLength <- length(code)
+  ## First check if this is the start of a curly-bracketed block
+  if(code[[1]] == '{') {
+    if(codeLength > 1)
+      ## Recurse on each line
+      for(i in 2:codeLength){
+        macroOutput <- processMacrosInternal(code = code[[i]],
+                                             modelInfo = modelInfo,
+                                             env = env,
+                                             recursionLabels
+                                             )
+        code[[i]] <- macroOutput$code
+        modelInfo <- macroOutput$modelInfo
+      }
+    return(list(code=code, modelInfo=modelInfo))
+  }
+  ## If this is a for loop, recurse on the body of the loop
+  if(code[[1]] == 'for') {
+    macroOutput <- processMacrosInternal(code[[4]],
+                                         modelInfo = modelInfo,
+                                         env = env,
+                                         recursionLabels
+                                         )
+    code[[4]] <- macroOutput$code
+    return(list(code=code, modelInfo=macroOutput$modelInfo))
+  }
+  ## Check if this line invokes a submodel.
+  ## This can be done in two ways:
+  ## (i) node1 [<- | ~] <macro name>(...)
+  ## or
+  ## (ii) <macro name>(args)
+  ##
+  ## The first version is more BUGS-like.
+  ## The second version allows more full control.
 
-    ## Initialize possibleMacroName assuming version (ii):
-    possibleMacroName <- safeDeparse(code[[1]], warn = TRUE)
-    ## If it is really version (i), possibleMacroName will be
-    ## ~ or <- and should be updated to the call on the right-hand side:
-    if(possibleMacroName %in% c('<-', '~') && !is.name(code[[3]])) {
-        possibleMacroName <- safeDeparse(code[[3]][[1]], warn = TRUE)
-    }
+  ## Initialize possibleMacroName assuming version (ii):
+  possibleMacroCode <- code[[1]]
+  possibleMacroName <- safeDeparse(possibleMacroCode, warn = TRUE)
+  ## If it is really version (i), possibleMacroName will be
+  ## ~ or <- and should be updated to the call on the right-hand side:
+  if(possibleMacroName %in% c('<-', '~') && !is.name(code[[3]])) {
+    possibleMacroCode <- code[[3]][[1]]
+    possibleMacroName <- safeDeparse(possibleMacroCode, warn = TRUE)
+  }
+  macroFound <- FALSE
+  possibleMacro <- NULL
+  if(is.name(possibleMacroCode)) {
     if(exists(possibleMacroName, envir = env)) { ## may need to provide an envir argument
-        possibleMacro <- get(possibleMacroName, envir = env) ## ditto
-        if(inherits(possibleMacro, "model_macro")) {
-            expandedInfo <- try(possibleMacro$process(code, 
-                                                      modelInfo=modelInfo,
-                                                      .env = env
-                                                      ))
-            if(inherits(expandedInfo, 'try-error'))
-                stop(paste0("Model macro ",
-                            expandRecursionLabels(
-                                possibleMacroName,
-                                recursionLabels
-                            ),
-                            " failed."),
-                     call. = FALSE)
-            if(!is.list(expandedInfo))
-                stop(paste0("Model macro ",
-                            expandRecursionLabels(
-                                possibleMacroName,
-                                recursionLabels
-                            ),
-                            " should return a list with an element named ",
-                            "'code'.  It did not return a list."),
-                     call. = FALSE)
-            if(!is.call(expandedInfo[['code']]))
-                stop(paste0("Model macro ",
-                            expandRecursionLabels(
-                                possibleMacroName,
-                                recursionLabels
-                            ),
-                            " should return a list with an element named ",
-                            "'code' that is a call."),
-                     call. = FALSE)
-            
-            # Check for newly created parameters from macros and put them in a list element
-            newPars <- list(newMacroPars(code, expandedInfo$code))
-            # Name the list element after the source macro
-            names(newPars) <- possibleMacroName
+      possibleMacro <- get(possibleMacroName, envir = env)
+    }
+  } else {
+    possibleMacro <- try(eval(possibleMacroCode, envir = env))
+    if(inherits(possibleMacro, "try-error")) {
+      possibleMacro <- NULL
+    }
+  }
+  if(!is.null(possibleMacro)) {
+                                        #    if(exists(possibleMacroName, envir = env)) {
+                                        #        possibleMacro <- get(possibleMacroName, envir = env)
+    if(inherits(possibleMacro, "model_macro")) {
+      expandedInfo <- try(possibleMacro$process(code,
+                                                modelInfo=modelInfo,
+                                                .env = env
+                                                ))
+      if(inherits(expandedInfo, 'try-error'))
+        stop(paste0("Model macro ",
+                    expandRecursionLabels(
+                      possibleMacroName,
+                      recursionLabels
+                    ),
+                    " failed."),
+             call. = FALSE)
+      if(!is.list(expandedInfo))
+        stop(paste0("Model macro ",
+                    expandRecursionLabels(
+                      possibleMacroName,
+                      recursionLabels
+                    ),
+                    " should return a list with an element named ",
+                    "'code'.  It did not return a list."),
+             call. = FALSE)
+      if(!is.call(expandedInfo[['code']]))
+        stop(paste0("Model macro ",
+                    expandRecursionLabels(
+                      possibleMacroName,
+                      recursionLabels
+                    ),
+                    " should return a list with an element named ",
+                    "'code' that is a call."),
+             call. = FALSE)
 
-            # Add automatic comments showing code added by macros
-            # Includes one line indicating the start of the code generated (macroComment)
-            # by a particular macro, and one line showing the end (macroEnd)
-            # Comments are simply character strings
-            if(getNimbleOption("enableMacroComments")){
-              # If this option is also set, then print the entire original
-               # line of code with the macro in the comments instead of just the macro name
-              if(getNimbleOption("codeInMacroComments")){
-                codeOrName <- safeDeparse(code, warn = TRUE)
-              } else {
-                codeOrName <- possibleMacroName
-              }
-              spacer <- ""
-              hashes <- "#"
-              if(length(recursionLabels > 0)){
-                spacer <- paste(rep("  ", length(recursionLabels)), collapse="")
-                hashes <- paste(rep("#", length(recursionLabels)+1), collapse="")
-              }
-              macroComment <- paste0(spacer, hashes, " ", codeOrName)
-              macroEnd <- paste0(spacer, hashes, " ----")
+                                        # Check for newly created parameters from macros and put them in a list element
+      newPars <- list(newMacroPars(code, expandedInfo$code))
+                                        # Name the list element after the source macro
+      names(newPars) <- possibleMacroName
 
-              # Add the starting and ending comments to the code
-              macroStartLine <- substitute(MACRO, list(MACRO = macroComment))
-              macroEndLine <- substitute(END, list(END = macroEnd))
-              expandedInfo$code <- as.call(c(list(quote(`{`)), list(macroStartLine, expandedInfo$code, macroEndLine)))
-            }
-            
-            # Add the new macro parameters to modelInfo
-            curPars <- modelInfo$parameters
-            expandedInfo$modelInfo$parameters <- c(curPars, newPars)
+                                        # Add automatic comments showing code added by macros
+                                        # Includes one line indicating the start of the code generated (macroComment)
+                                        # by a particular macro, and one line showing the end (macroEnd)
+                                        # Comments are simply character strings
+      if(getNimbleOption("enableMacroComments")){
+                                        # If this option is also set, then print the entire original
+                                        # line of code with the macro in the comments instead of just the macro name
+        if(getNimbleOption("codeInMacroComments")){
+          codeOrName <- safeDeparse(code, warn = TRUE)
+        } else {
+          codeOrName <- possibleMacroName
+        }
+        spacer <- ""
+        hashes <- "#"
+        if(length(recursionLabels > 0)){
+          spacer <- paste(rep("  ", length(recursionLabels)), collapse="")
+          hashes <- paste(rep("#", length(recursionLabels)+1), collapse="")
+        }
+        macroComment <- paste0(spacer, hashes, " ", codeOrName)
+        macroEnd <- paste0(spacer, hashes, " ----")
 
-            ## Return object is a list so we can possibly extract other
-            ## content in the future.  We recurse on the returned code
-            ## to expand macros that it might contain.
-            macroOutput <- processMacrosInternal(expandedInfo$code,
+                                        # Add the starting and ending comments to the code
+        macroStartLine <- substitute(MACRO, list(MACRO = macroComment))
+        macroEndLine <- substitute(END, list(END = macroEnd))
+        expandedInfo$code <- as.call(c(list(quote(`{`)), list(macroStartLine, expandedInfo$code, macroEndLine)))
+      }
+
+                                        # Add the new macro parameters to modelInfo
+      curPars <- modelInfo$parameters
+      expandedInfo$modelInfo$parameters <- c(curPars, newPars)
+
+      ## Return object is a list so we can possibly extract other
+      ## content in the future.  We recurse on the returned code
+      ## to expand macros that it might contain.
+      macroOutput <- processMacrosInternal(expandedInfo$code,
                                            modelInfo = expandedInfo$modelInfo,
                                            env = env,
                                            recursionLabels = c(recursionLabels, possibleMacroName)
                                            )
-            return(list(code=macroOutput$code, modelInfo=macroOutput$modelInfo))
-        }
+      return(list(code=macroOutput$code, modelInfo=macroOutput$modelInfo))
     }
-    list(code=code, modelInfo=modelInfo)
+  }
+  list(code=code, modelInfo=modelInfo)
 }
 
 # Create index generator for all macros to use
