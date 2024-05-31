@@ -461,9 +461,6 @@ sampler_RW <- nimbleFunction(
 )
 
 ## version for use with noncentered sampler
-
-#' @rdname samplers
-#' @export
 sampler_RW_noncentered <- nimbleFunction(
     name = 'sampler_RW_noncentered',
     contains = sampler_BASE,
@@ -989,9 +986,6 @@ sampler_slice <- nimbleFunction(
 )
 
 ## version for use with noncentered sampler
-
-#' @rdname samplers
-#' @export
 sampler_slice_noncentered <- nimbleFunction(
     name = 'sampler_slice_noncentered',
     contains = sampler_BASE,
@@ -2881,32 +2875,32 @@ sampler_CAR_proper <- nimbleFunction(
 #' Mathematically, the noncentered sampler operates in one dimension of a transformed parameter space. When sampling a mean, all random effects will be shifted by the same amount as the mean. When sampling a standard deviation, all random effects (relative to their means) will be scaled by the same factor as the standard deviation.
 
 #' Consider a model that includes the following code:
-#' \preformatted{ for(i in 1:n)
-#'   y[i] ~ dnorm(beta1*x[i] + u[group[i]], sd = sigma_obs)
+#' \preformatted{for(i in 1:n)
+#'    y[i] ~ dnorm(beta1*x[i] + u[group[i]], sd = sigma_obs)
 #' for(j in 1:num_groups)
-#'   u[j] ~ dnorm(beta0, sd = sigma_group)
+#'    u[j] ~ dnorm(beta0, sd = sigma_group)
 #' }
-#' where \code{u[j]} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation. This model has centered random effects, the \code{u[j]}, because these have the intercept \code{beta0} as their mean. In basic univariate sampling, updates to \code{beta0} or to \code{sigma_group} do not change \code{u[j]}, making only small moves possible if \code{num_groups} is large. When the noncentered sampler considers a new value for \code{beta0}, it will shift all the \code{u[j]} so that (in this case) their prior probabilities do not change. If the noncentered sampler considers a new value for \code{sigma_group}, it will rescale all the \code{u[j]} accordingly.
+#' where \code{u} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation. This model has a centered random effect, because the \code{u[j]} have the intercept \code{beta0} as their mean. In basic univariate sampling, updates to \code{beta0} or to \code{sigma_group} do not change \code{u[j]}, making only small moves possible if \code{num_groups} is large. When the noncentered sampler considers a new value for \code{beta0}, it will shift all the \code{u[j]} so that (in this case) their prior probabilities do not change. If the noncentered sampler considers a new value for \code{sigma_group}, it will rescale all the \code{u[j]} accordingly.
 #'
 #' The effect of such a sampling strategy is to update \code{beta0} and \code{sigma_group} as if the model had been written in a different (noncentered) way. For updating \code{beta0}, it would be:
-#' \preformatted{ for(i in 1:n)
-#'   y[i] ~ dnorm(beta0 + beta1*x[i] + u[group[i]], sd = sigma_obs)
+#' \preformatted{for(i in 1:n)
+#'    y[i] ~ dnorm(beta0 + beta1*x[i] + u[group[i]], sd = sigma_obs)
 #' for(j in 1:num_groups)
-#'   u[j] ~ dnorm(0, sd = sigma_group)
+#'    u[j] ~ dnorm(0, sd = sigma_group)
 #' }
 #' For updating \code{sigma_group}, it would be:
-#' \preformatted{ for(i in 1:n)
-#'   y[i] ~ dnorm(beta1*x[i] + u[group[i]] * sigma_group, sd = sigma_obs)
+#' \preformatted{for(i in 1:n)
+#'    y[i] ~ dnorm(beta1*x[i] + u[group[i]] * sigma_group, sd = sigma_obs)
 #' for(j in 1:num_groups)
-#'   u[j] ~ dnorm(beta0, sd = 1)
+#'    u[j] ~ dnorm(beta0, sd = 1)
 #' }
 #'
-#' Whether centered or noncentered parameterizations result in better sampling can depend on the model and the data. Therefore Yu and Meng (2011) recommended an "interweaving" strategy of using both kinds of samplers. Adding the noncentered sampler (on either the mean or standard deviation or both) to an existing MCMC configuration for a model specified using the centered parameterization (and with an sampler already assigned to the target node) produces an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. 
+#' Whether centered or noncentered parameterizations result in better sampling can depend on the model and the data. Therefore Yu and Meng (2011) recommended an "interweaving" strategy of using both kinds of samplers. Adding the noncentered sampler (on either the mean or standard deviation or both) to an existing MCMC configuration for a model specified using the centered parameterization (and with a sampler already assigned to the target node) produces an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. 
 #'
 #' There is a higher computational cost to the noncentered sampler (or to writing the model directly in one of the equivalent ways shown). The cost is that when updating \code{beta0} or \code{sigma_group}, the relevant log probabilities calculations will include (in this case) all the of \code{y[i]}, i.e. the "grandchild" nodes of \code{beta0} or \code{sigma_group}.
 #'
 #' The noncentered sampler is not assigned by default by \code{configureMCMC} but must be manually added. For example:
-#' \preformatted{ MCMCconf <- configureMCMC(model)
+#' \preformatted{MCMCconf <- configureMCMC(model)
 #' MCMCconf$addSampler(target = "beta0", type = "noncentered",
 #'   control = list(param = "location", sampler = "RW"))
 #' MCMCconf$addSampler(target = "sigma_group", type = "noncentered",
@@ -2921,6 +2915,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' \itemize{
 #' \item sampler. A character string, either \code{"RW"} or \code{"slice"} specifying the type of sampler to be used for the target node. (default = \code{"RW"})
 #' \item param. A character string, either \code{"location"} or \code{"scale"} specifying whether sampling is done as shifting or scaling the dependent nodes. (default = \code{"location"})
+#' }
 #' 
 #' @section CAR_normal sampler:
 #'

@@ -21,6 +21,8 @@ When an uncompiled nimbleFunction is executed, R's \code{cat} is used.  In a com
 In nimbleFunction run-time code, \code{cat} is identical to \code{print} except the latter appends a newline at the end.
 
 \code{nimCat} is the same as \code{cat}, and the latter is converted to the former when a nimbleFunction is defined.
+
+For numeric values, the number of digits printed is controlled by the system option \code{nimbleOptions('digits')}.
 }
 \examples{
 ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code

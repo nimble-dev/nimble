@@ -6,10 +6,13 @@
 \alias{sampler_posterior_predictive}
 \alias{sampler_binary}
 \alias{sampler_categorical}
+\alias{sampler_noncentered}
 \alias{sampler_RW}
+\alias{sampler_RW_noncentered}
 \alias{sampler_RW_block}
 \alias{sampler_RW_llFunction}
 \alias{sampler_slice}
+\alias{sampler_slice_noncentered}
 \alias{sampler_ess}
 \alias{sampler_AF_slice}
 \alias{sampler_crossLevel}
@@ -64,13 +67,19 @@ sampler_binary(model, mvSaved, target, control)
 
 sampler_categorical(model, mvSaved, target, control)
 
+sampler_noncentered(model, mvSaved, target, control)
+
 sampler_RW(model, mvSaved, target, control)
+
+sampler_RW_noncentered(model, mvSaved, target, control)
 
 sampler_RW_block(model, mvSaved, target, control)
 
 sampler_RW_llFunction(model, mvSaved, target, control)
 
 sampler_slice(model, mvSaved, target, control)
+
+sampler_slice_noncentered(model, mvSaved, target, control)
 
 sampler_ess(model, mvSaved, target, control)
 
@@ -145,9 +154,13 @@ The binary sampler accepts no control list arguments.
 \section{categorical sampler}{
 
 
-The categorical sampler performs Gibbs sampling for a single node, which must follow a categorical (\code{dcat}) distribution.
+The categorical sampler performs Gibbs sampling for a single node, which generally would follow a categorical (\code{dcat}) distribution.  The categorical sampler can be assigned to other distributions as well, in which case the number of possible outcomes (1, 2, 3, ..., k) of the distribution must be specified using the 'length' control argument.
 
-The categorical sampler accepts no control list arguments.
+The categorical sampler accepts the following control list elements:
+\itemize{
+\item length. A character string or a numeric argument.  When a character string, this should be the name of a parameter of the distribution of the target node being sampled.  The length of this distribution parameter (considered as a 1-dimensional vector) will be used to determine the number of possible outcomes of the target node's distribution.  When a numeric value, this value will be used as the number of possible outcomes of the target node's distribution.  (default = "prob")
+\item check. A logical argument.  When FALSE, no check for a 'dcat' prior distribution for the target node takes place. (default = TRUE)
+}
 }
 
 \section{RW sampler}{
@@ -304,7 +317,7 @@ The \code{RW_dirichlet} sampler accepts the following control list elements:
 \section{RW_wishart sampler}{
 
 
-This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covaraiance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
+This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covariance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
 
 The \code{RW_wishart} sampler accepts the following control list elements:
 \itemize{
@@ -347,6 +360,58 @@ The \code{RW_lkj_corr_cholesky} sampler accepts the following control list eleme
 }
 
 Note that this sampler is likely run much more slowly than the blocked sampler for the LKJ distribution, as updating each single element will generally incur the full cost of updating all dependencies of the entire matrix.
+}
+
+\section{noncentered sampler}{
+
+
+The noncentered sampler is designed to sample the mean or standard deviation of a set of centered random effects while also moving the random effects values to possibly allow better mixing. The noncentered sampler deterministically shifts or scales the dependent node values to be consistent with the proposed value of the target (the mean or the standard deviation) such that the effect is to sample in a noncentered parameterization (Yu and Meng 2011), via an on-the-fly reparameterization. This can improve mixing by updating the target node based on information in the model nodes whose parent nodes are the dependent nodes of the target (i.e,. the "grandchild" nodes of the target; these will often be data nodes). This comes at the extra computational cost of calculating the logProbability of the "grandchild" nodes.
+
+It is still necessary to have other samplers on the random effects values.
+
+Mathematically, the noncentered sampler operates in one dimension of a transformed parameter space. When sampling a mean, all random effects will be shifted by the same amount as the mean. When sampling a standard deviation, all random effects (relative to their means) will be scaled by the same factor as the standard deviation.
+Consider a model that includes the following code:
+\preformatted{ for(i in 1:n)
+  y[i] ~ dnorm(beta1*x[i] + u[group[i]], sd = sigma_obs)
+for(j in 1:num_groups)
+  u[j] ~ dnorm(beta0, sd = sigma_group)
+}
+where \code{u[j]} is a random effect associated with groups of data, and \code{group[i]} gives the group index of the i-th observation. This model has centered random effects, the \code{u[j]}, because these have the intercept \code{beta0} as their mean. In basic univariate sampling, updates to \code{beta0} or to \code{sigma_group} do not change \code{u[j]}, making only small moves possible if \code{num_groups} is large. When the noncentered sampler considers a new value for \code{beta0}, it will shift all the \code{u[j]} so that (in this case) their prior probabilities do not change. If the noncentered sampler considers a new value for \code{sigma_group}, it will rescale all the \code{u[j]} accordingly.
+
+The effect of such a sampling strategy is to update \code{beta0} and \code{sigma_group} as if the model had been written in a different (noncentered) way. For updating \code{beta0}, it would be:
+\preformatted{ for(i in 1:n)
+  y[i] ~ dnorm(beta0 + beta1*x[i] + u[group[i]], sd = sigma_obs)
+for(j in 1:num_groups)
+  u[j] ~ dnorm(0, sd = sigma_group)
+}
+For updating \code{sigma_group}, it would be:
+\preformatted{ for(i in 1:n)
+  y[i] ~ dnorm(beta1*x[i] + u[group[i]] * sigma_group, sd = sigma_obs)
+for(j in 1:num_groups)
+  u[j] ~ dnorm(beta0, sd = 1)
+}
+
+Whether centered or noncentered parameterizations result in better sampling can depend on the model and the data. Therefore Yu and Meng (2011) recommended an "interweaving" strategy of using both kinds of samplers. Adding the noncentered sampler (on either the mean or standard deviation or both) to an existing MCMC configuration for a model specified using the centered parameterization (and with an sampler already assigned to the target node) produces an overall sampling approach that is a variation on the interweaving strategy of Yu and Meng (2011). This provides the benefits of sampling in both the centered and noncentered parameterizations in a single MCMC. 
+
+There is a higher computational cost to the noncentered sampler (or to writing the model directly in one of the equivalent ways shown). The cost is that when updating \code{beta0} or \code{sigma_group}, the relevant log probabilities calculations will include (in this case) all the of \code{y[i]}, i.e. the "grandchild" nodes of \code{beta0} or \code{sigma_group}.
+
+The noncentered sampler is not assigned by default by \code{configureMCMC} but must be manually added. For example:
+\preformatted{ MCMCconf <- configureMCMC(model)
+MCMCconf$addSampler(target = "beta0", type = "noncentered",
+  control = list(param = "location", sampler = "RW"))
+MCMCconf$addSampler(target = "sigma_group", type = "noncentered",
+  control = list(param = "scale", sampler = "RW"))
+}
+
+While the target node will generally be either the mean (location) or standard deviation (scale) of a set of other nodes (e.g., random effects), it could in theory be used in other contexts and one can choose whether the transformation is a shift or a scale operation. In a shift operation (e.g., when the sampling target is a mean), the dependent nodes are set to their previous values plus the difference between the proposed value and previous value for the target. In a scale operation (e.g., when the sampling target is the standard deviation), the dependent nodes minus their means are multiplied by the ratio of the proposed value to the previous value for the target and the previous value for the target. Whether to shift or scale is determined from the \code{param} element of the control list.
+
+The sampling algorithm for the target node can either be adaptive Metropolis random walk (which uses NIMBLE's \code{RW} sampler) or slice sampling (which uses NIMBLE's \code{slice} sampler), determined from the \code{sampler} element of the control list. In either case, the underlying sampling accounts for the Jacobian of the deterministic shifting or scaling of the dependent nodes (in the case of shifting, the Jacobian is equal to 1 and has no impact). When the target is the standard deviation of normally-distributed dependent nodes, the Jacobian cancels with the prior distribution for the dependent nodes, and the update is in effect based only on the prior for the target and the distribution of the "grandchild" nodes. 
+
+The \code{noncentered} sampler accepts the following control list elements:
+\itemize{
+\item sampler. A character string, either \code{"RW"} or \code{"slice"} specifying the type of sampler to be used for the target node. (default = \code{"RW"})
+\item param. A character string, either \code{"location"} or \code{"scale"} specifying whether sampling is done as shifting or scaling the dependent nodes. (default = \code{"location"})
+}
 }
 
 \section{CAR_normal sampler}{
@@ -479,15 +544,11 @@ Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte 
 
 Hoffman, Matthew D., and Gelman, Andrew (2014). The No-U-Turn Sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. \emph{Journal of Machine Learning Research}, 15(1): 1593-1623.
 
-Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
-
 Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
 
 Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
 
 Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
-
-Neal, Radford M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 
 Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
 
@@ -495,7 +556,9 @@ Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture 
 
 Neal, R. M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
 
-Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
+Neal, R. M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
+
+Pitt, M. K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 
 Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
 
@@ -506,6 +569,8 @@ Stan Development Team (2020). \emph{Stan Language Reference Manual, Version 2.22
 Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
 
 van Dyk, D.A. and T. Park. (2008). Partially collapsed Gibbs Samplers. \emph{Journal of the American Statistical Association}, 103(482), 790-796.
+
+Yu, Y. and Meng, X. L. (2011). To center or not to center: That is not the question - An ancillarity-sufficiency interweaving strategy (ASIS) for boosting MCMC efficiency. Journal of Computational and Graphical Statistics, 20(3), 531–570. https://doi.org/10.1198/jcgs.2011.203main
 }
 \seealso{
 \code{\link{configureMCMC}} \code{\link{addSampler}} \code{\link{buildMCMC}} \code{\link{runMCMC}}

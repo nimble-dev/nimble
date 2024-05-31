@@ -428,7 +428,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       return(logLik3_saved_gr)
       returnType(double(1))
     },
-    ## Laplace approximation 2: double tapping with separate components
+    ## Laplace approximation 2: double taping with separate components
     calcLogLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
@@ -446,7 +446,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       return(ans)
       returnType(double())
     },
-    ## Laplace approximation 1: single tapping with separate components
+    ## Laplace approximation 1: single taping with separate components
     calcLogLik1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
@@ -982,7 +982,7 @@ buildOneAGHQuad <- nimbleFunction(
       return(logLik3_saved_gr)
       returnType(double(1))
     },
-    ## Laplace approximation 2: double tapping with separate components
+    ## Laplace approximation 2: double taping with separate components
     calcLogLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {
@@ -1000,7 +1000,7 @@ buildOneAGHQuad <- nimbleFunction(
       return(ans)
       returnType(double())
     },
-    ## Laplace approximation 1: single tapping with separate components
+    ## Laplace approximation 1: single taping with separate components
     calcLogLik1 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
       if(any(p != max_inner_logLik_previous_p) | !cache_inner_max) {

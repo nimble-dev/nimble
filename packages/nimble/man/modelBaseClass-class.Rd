@@ -330,6 +330,7 @@ Details: The variable or node names specified is expanded into a vector of model
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+
 nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
@@ -363,6 +364,7 @@ Details: The return value is a logical vector with an element for each node indi
 Arguments:
 
 nodes: A character vector specifying one or more node or variable names.
+
 nodesAlreadyExpanded: Boolean argument indicating whether `nodes` should be expanded. Generally intended for internal use. Default is `FALSE`.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}

@@ -1,5 +1,6 @@
 
 #' EXPERIMENTAL: Turn a function into a model macro
+#' 
 #' A model macro expands one line of code in a nimbleModel into one or
 #' more new lines.  This supports compact programming by defining
 #' re-usable modules.  \code{model_macro_builder} takes as input a
@@ -11,14 +12,14 @@
 #'
 #' @param fun A function written to construct new lines of model code (see below).
 #'
-#' @param use3pieces (TRUE or FALSE) Should the arguments from the input
+#' @param use3pieces logical indicating whether the arguments from the input
 #' line be split into pieces for the LHS (left-hand side), RHS
 #' (right-hand side, possibly further split depending on
-#' \code{unpackArgs}), and \code{stoch} (TRUE if the line uses a
-#' \code{~}, FALSE otherwise)?  See details and examples.
+#' \code{unpackArgs}), and \code{stoch} (\code{TRUE} if the line uses a
+#' \code{~} and \code{FALSE} otherwise). (default = \code{TRUE})
 #'
-#' @param unpackArgs (TRUE or FALSE) Should arguments be passed as a list
-#' (FALSE) or as separate arguments (TRUE)?  See details and examples.
+#' @param unpackArgs logical indicating whether arguments be passed as a list
+#' (\code{FALSE}) or as separate arguments (\code{TRUE}). (default = \code{TRUE})
 #'
 #' @details The arguments \code{use3pieces} and \code{unpackArgs}
 #' indicate how \code{fun} expects to have arguments arranged from an
