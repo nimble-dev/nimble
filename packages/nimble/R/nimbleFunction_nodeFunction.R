@@ -80,7 +80,7 @@ ndf_createStochSimulateTrunc <- function(RHS, distInfo, discrete = FALSE) {
     cdf_code <- distInfo$cdf_code
     quantile_code <- distInfo$quantile_code
     if(is.null(cdf_code) || is.null(quantile_code))
-      stop("Could not find probability ('p') and/or quantile ('q') function for ", dist)
+      stop("Could not find probability ('p') and/or quantile ('q') function for ", distInfo$BUGSdistName)
 
     lowerTailName <- 'lower.tail' 
     logpName <- 'log.p' 
@@ -205,7 +205,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 
     cdf_code <- distInfo$cdf_code
     if(is.null(cdf_code))
-      stop("Could not find probability ('p') function for ", dist)
+      stop("Could not find probability ('p') function for ", distInfo$BUGSdistName)
 
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- cdf_code # as.name(paste0("p", dist))
@@ -417,4 +417,4 @@ if(getNimbleOption('enableVirtualNodeFunctionDefs')) {  ## NCT issue 500. Deprec
     virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList()
     createNamedObjectsFromList(virtualNodeFunctionDefinitions)
 
-}
+} else ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {}  # Needed for R CMD check checking of variables.
