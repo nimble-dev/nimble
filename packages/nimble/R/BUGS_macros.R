@@ -1,5 +1,5 @@
 
-#' EXPERIMENTAL: Turn a function into a model macro builder
+#' EXPERIMENTAL: Turn a function into a model macro
 #' A model macro expands one line of code in a nimbleModel into one or
 #' more new lines.  This supports compact programming by defining
 #' re-usable modules.  \code{model_macro_builder} takes as input a
@@ -9,7 +9,7 @@
 #' are an experimental feature and are available only after setting
 #' \code{nimbleOptions(enableModelMacros = TRUE)}.
 #'
-#' @param fun A function written to construct new lines of model code.
+#' @param fun A function written to construct new lines of model code (see below).
 #'
 #' @param use3pieces (TRUE or FALSE) Should the arguments from the input
 #' line be split into pieces for the LHS (left-hand side), RHS
@@ -47,8 +47,31 @@
 #' z[1:10], arg2 = "hello"))}.
 #'
 #' If \code{use3pieces = FALSE} and \code{unpackArgs = TRUE}, it
-#' won't make sense to anticipate a declaration using \code{~} or \code{<-}.  Ins#' tead, arguments from an arbitrary call will be passed as separate arguments.  #' For example, the line \code{macro1(arg1 = z[1:10], arg2 = "hello")} will be pa#' ssed to \code{fun} as \code{fun(arg1 = z[1:10], arg2 = "hello")}.
+#' won't make sense to anticipate a declaration using \code{~} or \code{<-}.
+#' Instead, arguments from an arbitrary call will be passed as separate arguments.
+#' For example, the line \code{macro1(arg1 = z[1:10], arg2 = "hello")} will be
+#' passed to \code{fun} as \code{fun(arg1 = z[1:10], arg2 = "hello")}.
 #'
+#' In addition, the final two arguments of \code{fun} must be called \code{modelInfo}
+#' and \code{.env} respectively. 
+#' 
+#' During macro processing, \code{nimbleModel} passes a named list to the \code{modelInfo} 
+#' argument of \code{fun} containing, among other things, elements called
+#' \code{constants} and \code{dimensions}. Macro developers can modify these
+#' two elements (for example, to add a new constant needed for a macro) and
+#' these changes will be reflected in the final model object. Note that currently
+#' it is not possible for a macro to modify the data. Furthermore, if your macro add a new element to the
+#' constants that \code{nimbleModel} then moves to the data, this new data will not be retained
+#' in the final model object and thus will not be usable. 
+#'
+#' \code{nimbleModel} passes the R environment from which \code{nimbleModel} was
+#' called to the \code{.env} argument.
+#'
+#' The \code{fun} function must return a named list with two elements:
+#' \code{code}, the replacement code, and \code{modelInfo}, the \code{modelInfo} 
+#' list described above. \code{modelInfo} must be in the output even if the macro
+#' does not modify it.
+#' 
 #' It is extremely useful to be familiar with processing R code as an
 #' object to write \code{fun} correctly.  Functions such as
 #' \code{\link{substitute}} and \code{\link{as.name}}
@@ -61,8 +84,8 @@
 #' Macro expansion is done recursively: One macro can return code that
 #' invokes another macro.
 #' 
-#' @return A list with a named element \code{code} that contains the
-#' replacement code.
+#' @return A list of class \code{model_macro} with one element called \code{process},
+#' which contains the macro function suitable for use by \code{nimbleModel}.
 #'
 #' @export
 #' 
@@ -139,6 +162,35 @@
 #' ##    beta ~ dnorm(0, sd = 1000)
 #' ##    gamma ~ dnorm(0, sd = 1000)
 #' ## }
+#'
+#' ## Example 3: Macro that modifies constants
+#' new_constant <- model_macro_builder(
+#'    function(stoch, LHS, RHS, modelInfo, .env) {
+#'      # number of elements
+#'      n <- as.numeric(length(modelInfo$constants[[deparse(LHS)]]))
+#'      code <- substitute({
+#'        for (i in 1:N){
+#'          L[i] ~ dnorm(mu[i], 1)
+#'        }
+#'      }, list(L = LHS, N = n))
+#'
+#'      # Add a new constant mu
+#'      modelInfo$constants$mu <- rnorm(n, 0, 1)
+#'
+#'      list(code = code, modelInfo = modelInfo)
+#'    },
+#'    use3pieces = TRUE,
+#'    unpackArgs = TRUE
+#' )
+#'
+#' const <- list(y = rnorm(10))
+#' code <- nimbleCode({
+#'  y ~ new_constant()
+#' })
+#' 
+#' mod <- nimbleModel(code = code, constants=const)
+#' mod$getCode()
+#' mod$getConstants() # new constant is here
 model_macro_builder <- function(fun,
                                 use3pieces = TRUE,
                                 unpackArgs = TRUE ) {

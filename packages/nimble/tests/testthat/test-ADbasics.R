@@ -557,6 +557,7 @@ test_that('AD works with a model calling a custom dist and custom fun', {
   nim_expect_equal(Rans$value, Cans$value, RCrelTol0)
   nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
+  deregisterDistributions("dmynorm")
 })
 
 test_that('AD works with reset', {
@@ -1009,6 +1010,7 @@ test_that("C++ run-time error if non-supported user-defined call is included in 
   test1 <- test(m, c("a", "z"))
   ctest1 <- compileNimble(test1, project = m)
   expect_error(ans <- ctest1$run(), "a model node is being included in derivatives that does not support them")
+  deregisterDistributions("dfoo3")
 })
 
 test_that("C++ run-time error if non-supported user-defined call is included in model$calculate", {

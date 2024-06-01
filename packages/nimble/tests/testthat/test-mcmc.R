@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of default MCMC")
-
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
@@ -3034,6 +3032,8 @@ test_that('assigning samplers to data and allowData argument', {
     expect_true(samps[[4]]$name == 'posterior_predictive')
 })
 
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
@@ -3048,3 +3048,4 @@ if(!generatingGoldFile) {
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+

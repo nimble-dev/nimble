@@ -1,1 +1,0 @@
-PKG_CPPFLAGS= -DR_NO_REMAP -I"../include"

@@ -7,6 +7,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        allowNFobjInModel = TRUE, # If TRUE, allow use of nimbleFunctions with setup code as model dist or fxn.
         useCppADoptimize = TRUE,
         useADcholAtomic = TRUE, # If TRUE, use nimble's CppAD atomic for cholesky decomposition
         useADsolveAtomic = TRUE, # If TRUE, use nimble's CppAD atomic for matrix inverse
@@ -82,7 +83,9 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         errorIfMissingNFVariable = TRUE,
         stopOnSizeErrors = TRUE,
         useOldcWiseRule = FALSE, # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
-        stripUnusedTypeDefs = TRUE
+        stripUnusedTypeDefs = TRUE,
+        digits = 7,
+        enableVirtualNodeFunctionDefs = FALSE
       )
 )
 

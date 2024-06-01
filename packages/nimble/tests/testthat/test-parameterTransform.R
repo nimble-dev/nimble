@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context('Testing of parameterTransform nimbleFunction')
-
 
 ##
 ## parameterTransform testing code below

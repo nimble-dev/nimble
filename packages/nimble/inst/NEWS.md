@@ -2,6 +2,33 @@
 
 ## USER LEVEL CHANGES
 
+- Error out if the `RW_block` sampler is assigned to any discrete nodes 
+  (PR #1421).
+
+- Improve the speed of MCMC building in certain cases with many simple samplers 
+  by using `inherits` rather than `is` (PR #1413).
+
+## BUG FIXES
+
+- Fix a harmless typo causing partial name matching in R (PR #1422).
+
+## DEVELOPER LEVEL CHANGES
+
+- Ensure parameter transformation system handles cases of zero nodes 
+  (PR #1427).
+
+- Update deprecated `igraph` calls (simply renaming them) (PR #1420).
+
+- Fix compilation failures occurring on Red Hat Linux (PR #1417).
+
+
+
+
+
+#                            CHANGES IN VERSION 1.1.0 (January 2024) 
+
+## USER LEVEL CHANGES
+
 - Enhance use of AD in models:
 
     -- Allow use of stochastic indexing in models with AD (PR #1389).

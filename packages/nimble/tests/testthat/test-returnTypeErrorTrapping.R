@@ -1,5 +1,4 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
-context('Testing return() type error trapping')
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)

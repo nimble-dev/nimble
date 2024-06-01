@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context('Testing nimbleLists in RC functions')
-
 ## All necessary nlDefinitions below:
 test_that("nimbleList RCfun Test 1", {
     testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))

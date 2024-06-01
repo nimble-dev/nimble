@@ -5,8 +5,6 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
-context('Testing of nimbleFunction (DSL) code checking')
-
 test_that("Test of DSL check of valid RCfunction", expect_silent(
 test1 <- nimbleFunction(
     run = function(x = double(0)) {

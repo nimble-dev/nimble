@@ -9,8 +9,6 @@ nimbleOptions(verbose = TRUE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
-context("Testing of MCEM")
-
 goldFileName <- 'mcemTestLog_Correct.Rout'
 tempFileName <- 'mcemTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCEMtesting'))
