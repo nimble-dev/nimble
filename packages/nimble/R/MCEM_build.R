@@ -1,4 +1,3 @@
-#' @export
 build_MCEM_expectation_noAD <- nimbleFunction(
   setup = function(model, mvSamples, burnInDefault, paramNodes,
                    latentNodes, calcNodes, calcNodesOther,
@@ -240,7 +239,6 @@ build_MCEM_expectation_noAD <- nimbleFunction(
   buildDerivs = list(inverseTransform = list())
 )
 
-#' @export
 build_MCEM_expectation <- nimbleFunction(
   setup = function(model, mvSamples, burnInDefault, paramNodes,
                    latentNodes, calcNodes, calcNodesOther,
@@ -402,10 +400,9 @@ build_MCEM_expectation <- nimbleFunction(
   buildDerivs = list(inverseTransform = list())
 )
 
-#' @export
 MCEM_mcse <- function(samples, m) {
   # in practice, samples will be a vector of logLik differences
-  if(!require(mcmcse)) stop("Must install package mcmcse.")
+  if(!requireNamespace('mcmcse')) stop("Must install package mcmcse.")
   ans <- mcse(as.matrix(samples, ncol = 1),
               #size = ceiling(min(1000, (m/20))), ## backward compatible. m here is m-burnin below
               method = "obm",
@@ -414,7 +411,6 @@ MCEM_mcse <- function(samples, m) {
   ans
 }
 
-#' @export
 R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
                            returnType = double(),
                            Rfun = 'MCEM_mcse')
