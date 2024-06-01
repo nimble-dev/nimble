@@ -3555,6 +3555,7 @@ sampler_polyagamma <- nimbleFunction(
 #' \item designMatrix. The full design matrix with rows corresponding to the ordering of the responses and columns ordered exactly as the ordering of target node elements given by \code{model$expandNodeNames(target, returnScalarComponents = TRUE)}, where \code{target} is the same as the \code{target} argument to \code{configureMCMC$addSampler} above. If provided, all columns are assumed to be fixed, ignoring the \code{fixedDesignColumns} control element.
 #' \item nonTargetNodes. Additional stochastic nodes involved in the linear predictor that are not to be sampled as part of the sampler. This must include any nodes specifying stochastic indexes (e.g., \code{"group"} if the \code{group[i]} values are stochastic) and any parameters considered known or that for any reason one does not want to sample. Providing \code{nonTargetNodes} is required in order to allow NIMBLE to check for the presence of zero inflation.  
 #' \item check. A logical value indicating whether NIMBLE should check various conditions required for validity of the sampler. This is provided for rare cases where the checking may be overly conservative and a user is sure that the sampler is valid and wants to override the checking. (default = TRUE)
+#' }
 #'
 #' @section noncentered sampler:
 #'
@@ -3605,6 +3606,7 @@ sampler_polyagamma <- nimbleFunction(
 #' \itemize{
 #' \item sampler. A character string, either \code{"RW"} or \code{"slice"} specifying the type of sampler to be used for the target node. (default = \code{"RW"})
 #' \item param. A character string, either \code{"location"} or \code{"scale"} specifying whether sampling is done as shifting or scaling the dependent nodes. (default = \code{"location"})
+#' }
 #' 
 #' @section CAR_normal sampler:
 #'

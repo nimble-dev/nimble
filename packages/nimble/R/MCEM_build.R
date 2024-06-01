@@ -587,7 +587,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' which calls \code{mcmcse::mcse} with method "obm". Simply provide a different
 #' function with this name in your R session to over-ride NIMBLE's default.
 #'
-#' @section control list details
+#' @section Control list details:
 #'
 #' The control list accepts the following named elements:
 #'
@@ -685,15 +685,16 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'
 #' \item \code{config} Optional function to create the MCMC configuration used
 #' for step 1. If missing, the MCMC configuration is created by
-#'
-#' \code{configureMCMC(model, nodes = latentNodes,
-#'                     monitors = latentNodes, thin = thinDefault,
-#'                     control = mcmcControl, print = FALSE)}.
-#'
+#' \preformatted{configureMCMC(model, nodes = latentNodes,
+#'    monitors = latentNodes, thin = thinDefault,
+#'    control = mcmcControl, print = FALSE)
+#' }
 #' If provided, the MCMC configuration is created by the same call with
 #' \code{config} instead of \code{configureMCMC}.
 #'
-#' \section Methods in the returned algorithm
+#' }
+#'
+#' @section Methods in the returned algorithm:
 #'
 #' The object returned by \code{buildMCEM} is a nimbleFunction object with the following methods
 #'
@@ -701,7 +702,6 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'
 #' \item \code{findMLE} is the main method of interest, launching the MCEM
 #' algorithm. It takes the following arguments:
-#'
 #'   \itemize{
 #'
 #'    \item \code{pStart}. Vector of initial parameter values. If omitted, the
@@ -725,14 +725,12 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'    \code{control} list.
 #'
 #'   }
-#'
 #' \code{findMLE} returns on object of class \code{optimResultNimbleList} with
 #' the results of the final optimization of step 2. The \code{par} element of
 #' this list is the vector of maximum likelihood (MLE) parameters.
 #'
 #' \item \code{vcov} computes the approximate variance-covariance matrix of the MLE using
 #' the method of Louis (1982). It takes the following arguments:
-#'
 #'    \itemize{
 #'
 #'      \item \code{params}. Vector of parameters at which to compute the
@@ -772,7 +770,6 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'      completeness.
 #'
 #'    }
-#'
 #' \code{vcov} returns a matrix that is the inverse of the negative Hessian of
 #' the log likelihood surface, i.e. the usual asymptotic approximation of the
 #' parameter variance-covariance matrix.
@@ -783,7 +780,6 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' for latent states directly. Samples should be retrieved by
 #' \code{as.matrix(MCEM$mvSamples)}, where \code{MCEM} is the (compiled or
 #' uncompiled) MCEM algorithm object. This method takes the following arguments:
-#'
 #'   \itemize{
 #'
 #'     \item \code{M}. MCMC sample size.

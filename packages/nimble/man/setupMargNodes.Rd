@@ -11,7 +11,8 @@ setupMargNodes(
   calcNodes,
   calcNodesOther,
   split = TRUE,
-  check = TRUE
+  check = TRUE,
+  allowDiscreteLatent = FALSE
 )
 }
 \arguments{
