@@ -1108,6 +1108,9 @@ buildOneAGHQuad <- nimbleFunction(
 #'   of badly formed inputs that might be missing important nodes or include
 #'   unnecessary nodes.
 #'
+#' @param allowDiscreteLatent A logical indicating whether to
+#'   allow discrete latent states. (default = \code{FALSE})
+#'
 #' @details
 #'
 #' This function is used by \code{buildLaplace} to organize model nodes into

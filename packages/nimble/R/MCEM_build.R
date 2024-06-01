@@ -403,7 +403,7 @@ build_MCEM_expectation <- nimbleFunction(
 MCEM_mcse <- function(samples, m) {
   # in practice, samples will be a vector of logLik differences
   if(!requireNamespace('mcmcse')) stop("Must install package mcmcse.")
-  ans <- mcse(as.matrix(samples, ncol = 1),
+  ans <- mcmcse::mcse(as.matrix(samples, ncol = 1),
               #size = ceiling(min(1000, (m/20))), ## backward compatible. m here is m-burnin below
               method = "obm",
               # r = 1
@@ -425,6 +425,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' maximized over. The E-step is done with a sample from a nimble MCMC
 #' algorithm. The M-step is done by a call to \code{optim}.
 #'
+#' @param model a NIMBLE model object, either compiled or uncompiled.
 #' @param paramNodes a character vector of names of parameter nodes in the
 #'   model; defaults are provided by \code{\link{setupMargNodes}}.
 #'   Alternatively, \code{paramNodes} can be a list in the format returned by
