@@ -24,7 +24,7 @@ test_that('Macro expansion 1',
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
     )
-    temporarilyAssignInGlobalEnv(testMacro)
+ #   temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
         nimble:::processMacrosInternal(
@@ -71,6 +71,62 @@ test_that('Macro expansion 1',
 })
 
 
+test_that('Macro expansion 1 with expression to get macro',
+{
+    ## This converts a ~ testMacro(b)
+    ## to inputs as (stoch = TRUE, LHS = a, b)
+  my_env <- new.env()
+  testMacro <- nimble:::model_macro_builder(
+        function(stoch, LHS, RHSarg, modelInfo, .env) {
+            ans <- substitute(
+                OP(LHS, dnorm(RHSarg, 1)),
+                list(LHS = LHS, RHSarg = RHSarg,
+                     OP = if(stoch) as.name('~') else as.name('<-'))
+            )
+            list(code = ans, modelInfo=modelInfo)
+        },
+        use3pieces = TRUE, ## default
+        unpackArgs = TRUE  ## default
+        )
+  my_env$testMacro <- testMacro
+  rm(testMacro)
+ #   temporarilyAssignInGlobalEnv(testMacro)
+
+    expect_identical(
+        nimble:::processMacrosInternal(
+            quote(x[1] ~ my_env$testMacro(y[1])),
+        modelInfo = list())$code,
+        quote(x[1] ~ dnorm(y[1], 1))
+    )
+
+    model1 <- nimbleModel(
+        nimbleCode({
+            x[1] ~ my_env$testMacro(y[1])
+        })
+    )
+    expect_identical(
+        model1$getCode()[[2]],
+        quote(x[1] ~ dnorm(y[1], 1))
+    )
+})
+
+
+test_that('Macro expansion 1 with namespace resolution checks but continues',
+{
+  # I don't really have a good way to check namespace resolution, but I will at least code it
+  # and manually go inside and see that it is being evaluated.
+  # The result of not finding a macro should be to return the code unmodified.
+  # nimble::nimbleFunction is just an arbitrary non-macro object in a namescape
+  # so it can be looked up and passed over as a non-macro
+    expect_identical(
+        nimble:::processMacrosInternal(
+            quote(x[1] ~ nimble::nimbleFunction(y[1])),
+            modelInfo = list())$code,
+        quote(x[1] ~ nimble::nimbleFunction(y[1]))
+    )
+})
+
+
 test_that('Macro expansion 2',
 {
     ## Like testMacro above but with unpackArgs = FALSE.
@@ -91,7 +147,7 @@ test_that('Macro expansion 2',
         unpackArgs = FALSE  ## NON-default
     )
     
-    temporarilyAssignInGlobalEnv(testMacro)
+#    temporarilyAssignInGlobalEnv(testMacro)
 
     expect_identical(
         nimble:::processMacrosInternal(
@@ -135,7 +191,7 @@ test_that('Macro expansion 3',
         unpackArgs = TRUE  ## default
     )
 
-    temporarilyAssignInGlobalEnv(testMacro)
+#    temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
         nimble:::processMacrosInternal(
@@ -171,7 +227,7 @@ test_that('Macro expansion 4',
         unpackArgs = FALSE  ## NON-default
     )
 
-    temporarilyAssignInGlobalEnv(testMacro)
+#    temporarilyAssignInGlobalEnv(testMacro)
 
     expect_identical(
         nimble:::processMacrosInternal(
@@ -207,7 +263,7 @@ test_that('Macro expansion 5',
         unpackArgs = TRUE  ## default
     )
 
-    temporarilyAssignInGlobalEnv(testMacro)
+#    temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
         nimble:::processMacrosInternal(
@@ -242,7 +298,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
     )
-    temporarilyAssignInGlobalEnv(testMacroInner)
+#    temporarilyAssignInGlobalEnv(testMacroInner)
     
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
@@ -254,7 +310,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
     )
-    temporarilyAssignInGlobalEnv(testMacroOuter)
+#    temporarilyAssignInGlobalEnv(testMacroOuter)
     
     expect_identical(
         nimble:::processMacrosInternal(
@@ -277,6 +333,59 @@ test_that('Macro expansion 6 (recursive macro expansion)',
     )
 })
 
+
+test_that('Macro expansion 6b (recursive macro expansion with calls to find macros)',
+{
+  inner.env <- new.env()
+  inner.env$testMacroInner <- nimble:::model_macro_builder(
+        function(stoch, LHS, RHSarg, modelInfo, ...) {
+            ans <- substitute(
+                OP(LHS, dnorm(RHSarg, 1)),
+                list(LHS = LHS, RHSarg = RHSarg,
+                     OP = if(stoch) as.name('~') else as.name('<-'))
+            )
+            list(code = ans, modelInfo = modelInfo)
+        },
+        use3pieces = TRUE, ## default
+        unpackArgs = TRUE  ## default
+    )
+#    temporarilyAssignInGlobalEnv(testMacroInner)
+
+    ## a ~ testMacroOuter(b)
+    ## becomes a ~ testMacroInner(b)
+  outer.env <- new.env()
+  outer.env$testMacroOuter <- nimble:::model_macro_builder(
+        function(code, modelInfo, ...) {
+            code[[3]][[1]] <- quote(inner.env$testMacroInner) #as.name('testMacroInner')
+            list(code = code, modelInfo = modelInfo)
+        },
+        use3pieces = FALSE, ## NON-default
+        unpackArgs = FALSE  ## NON-default
+    )
+#    temporarilyAssignInGlobalEnv(testMacroOuter)
+
+    expect_identical(
+        nimble:::processMacrosInternal(
+            quote(x[1] ~ outer.env$testMacroOuter(y[1])),
+            modelInfo = list()
+        )$code,
+        quote(x[1] ~ dnorm(y[1], 1))
+    )
+
+
+    model <- nimbleModel(
+        nimbleCode({
+            x[1] ~ outer.env$testMacroOuter(y[1])
+        })
+    )
+
+    expect_identical(
+        model$getCode()[[2]],
+        quote(x[1] ~ dnorm(y[1], 1))
+    )
+})
+
+
 test_that(paste0('Macro expansion 7 (correct trapping of ',
                  'failure in recursive macro expansion)'),
 {
@@ -297,7 +406,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
     )
-    temporarilyAssignInGlobalEnv(testMacroInner)
+#    temporarilyAssignInGlobalEnv(testMacroInner)
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
     testMacroOuter <- nimble:::model_macro_builder(
@@ -308,7 +417,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
     )
-    temporarilyAssignInGlobalEnv(testMacroOuter)
+#    temporarilyAssignInGlobalEnv(testMacroOuter)
 
     #cat("\nTwo 'unused argument' error messages known to occur here:\n") 
     #cat("\nNot sure why these are supposed to fail:\n")
@@ -373,7 +482,7 @@ test_that('duplicate variables from macro expansion error-trapped correctly',
         use3pieces = FALSE,
         unpackArgs = TRUE
     )
-    temporarilyAssignInGlobalEnv(flat_normal_priors)
+    # temporarilyAssignInGlobalEnv(flat_normal_priors)
     ## Safe use of try due to immediate next test
     expect_error(model <- nimbleModel(
         nimbleCode(
@@ -402,7 +511,7 @@ test_that('duplicate nested indices from macro expansion error-trapped correctly
         use3pieces = TRUE,
         unpackArgs = TRUE 
     )
-    temporarilyAssignInGlobalEnv(all_dnorm)
+#    temporarilyAssignInGlobalEnv(all_dnorm)
     ## Safe use of try due to immediately next test
     expect_error(model <- nimbleModel(
         nimbleCode(
@@ -431,7 +540,7 @@ test_that('constants and env are accessed correctly, even in recursion',
 {
   testEnv <- new.env()
   testEnv$var_in_env <- 5
-  temporarilyAssignInGlobalEnv(testEnv)
+  # temporarilyAssignInGlobalEnv(testEnv)
 
   testMacroInner <- nimble:::model_macro_builder(
     function(stoch, LHS, RHSarg, modelInfo, .env) {
@@ -449,7 +558,7 @@ test_that('constants and env are accessed correctly, even in recursion',
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
         )
-  temporarilyAssignInGlobalEnv(testMacroInner)
+  # temporarilyAssignInGlobalEnv(testMacroInner)
 
 
     ## a ~ testMacroOuter(b)
@@ -462,7 +571,7 @@ test_that('constants and env are accessed correctly, even in recursion',
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
         )
-  temporarilyAssignInGlobalEnv(testMacroOuter)
+#  temporarilyAssignInGlobalEnv(testMacroOuter)
 
     macroOut <- nimble:::processMacrosInternal(
                    quote(x[1] ~ testMacroOuter(y[1])),
@@ -501,7 +610,7 @@ test_that("macros can add constants", {
   )
   class(testMacro) <- "model_macro"
 
-
+  # needed since this test creates macro manually
   temporarilyAssignInGlobalEnv(testMacro)
 
   code <- nimbleCode({
@@ -691,7 +800,7 @@ test_that("nimbleModel creates and stores list of macro-generated parameters", {
   )
   class(testMacro) <- "model_macro"
 
-  temporarilyAssignInGlobalEnv(testMacro)
+  # temporarilyAssignInGlobalEnv(testMacro)
 
   code <- nimbleCode({
     x ~ testMacro()
@@ -718,7 +827,7 @@ test_that("getMacroParameters() can pull out different subsets of parameters", {
   )
   class(testMacro) <- "model_macro"
 
-  temporarilyAssignInGlobalEnv(testMacro)
+  # temporarilyAssignInGlobalEnv(testMacro)
 
   code <- nimbleCode({
     y[1:n] ~ testMacro()
@@ -813,14 +922,14 @@ test_that("comments are added to macro output if enableMacroComments = TRUE",{
     }
   )
   class(testMacro) <- "model_macro"
-  temporarilyAssignInGlobalEnv(testMacro)
+  # temporarilyAssignInGlobalEnv(testMacro)
   
   testMacroInner <- list(process = function(code, modelInfo, .env){
     code[[3]] <- quote(alpha + beta)
     list(code = code, modelInfo = modelInfo)
   })
   class(testMacroInner) <- "model_macro"
-  temporarilyAssignInGlobalEnv(testMacroInner)
+  # temporarilyAssignInGlobalEnv(testMacroInner)
 
   code <- nimbleCode({
     y[1:n] ~ testMacro()
@@ -929,7 +1038,7 @@ test_that("macros can generate inits and these are used by models",{
       }
     )
   class(testMacro) <- "model_macro"
-  temporarilyAssignInGlobalEnv(testMacro)
+  # temporarilyAssignInGlobalEnv(testMacro)
 
   code <- nimbleCode({
     x ~ testMacro()
@@ -951,7 +1060,7 @@ test_that("macros can generate inits and these are used by models",{
       }
     )
   class(testMacroInits) <- "model_macro"
-  temporarilyAssignInGlobalEnv(testMacroInits)
+  # temporarilyAssignInGlobalEnv(testMacroInits)
 
   code <- nimbleCode({
     x ~ testMacroInits()
@@ -978,7 +1087,7 @@ test_that("message given if same parameter is generated by macros multiple times
     }
   )
   class(testMacro) <- "model_macro"
-  temporarilyAssignInGlobalEnv(testMacro)
+  # temporarilyAssignInGlobalEnv(testMacro)
   
   code <- nimbleCode({
     testMacro()
