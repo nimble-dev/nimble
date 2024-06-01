@@ -4,12 +4,12 @@
 \alias{parameterTransform}
 \title{Automated transformations of model nodes to unconstrained scales}
 \usage{
-parameterTransform(model, nodes, control = list())
+parameterTransform(model, nodes = character(0), control = list())
 }
 \arguments{
 \item{model}{A nimble model object.  See details.}
 
-\item{nodes}{A character vector specifying one or more model node names to undergo transformation.  See details.}
+\item{nodes}{A character vector specifying model node names to undergo transformation.  See details.}
 
 \item{control}{An optional list allowing for additional control of the transformation. This currently supports a single element \code{allowDeterm}.}
 }
@@ -18,6 +18,8 @@ Provide general transformations of constrained continuous-valued model nodes (pa
 }
 \details{
 The \code{parameterTransform} nimbleFunction is an unspecialized function.  Calling \code{parameterTransform(model, nodes)} will generate and return a specialized nimbleFunction, which provides transformation functionality for the specified hierarchical model and set of model nodes.  The \code{nodes} argument can represent mutliple model nodes arising from distinct prior distributions, which will be simultaneously transformed according to their respective distributions and constraints.
+
+If the \code{nodes} argument is missing or has length zero, then no nodes will be transformed.  A specialized nimbleFunction is created, but will not transform or operate on any model nodes.
 
 The \code{control} argument is a list that supports one additional setting. If \code{control$allowDeterm=FALSE} (the default), deterministic nodes are not allowed in the \code{nodes} argument.  If \code{control$allowDeterm=TRUE}, deterministic nodes are allowed and assumed to have no constraints on valid values.
 

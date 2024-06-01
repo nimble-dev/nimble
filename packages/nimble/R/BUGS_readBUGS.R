@@ -32,7 +32,7 @@ BUGSmodel <- function(code,
 
 #' Create a NIMBLE model from BUGS code
 #'
-#' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
+#' Processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
 #'
 #' @param code code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{\link{quote}}
 #' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{\link{nimbleModel}} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.

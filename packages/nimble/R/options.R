@@ -84,7 +84,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         stopOnSizeErrors = TRUE,
         useOldcWiseRule = FALSE, # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
         stripUnusedTypeDefs = TRUE,
-        digits = 7
+        digits = 7,
+        enableVirtualNodeFunctionDefs = FALSE
       )
 )
 

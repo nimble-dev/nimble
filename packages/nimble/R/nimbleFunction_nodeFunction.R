@@ -80,7 +80,7 @@ ndf_createStochSimulateTrunc <- function(RHS, distInfo, discrete = FALSE) {
     cdf_code <- distInfo$cdf_code
     quantile_code <- distInfo$quantile_code
     if(is.null(cdf_code) || is.null(quantile_code))
-      stop("Could not find probability ('p') and/or quantile ('q') function for ", dist)
+      stop("Could not find probability ('p') and/or quantile ('q') function for ", distInfo$BUGSdistName)
 
     lowerTailName <- 'lower.tail' 
     logpName <- 'log.p' 
@@ -205,7 +205,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 
     cdf_code <- distInfo$cdf_code
     if(is.null(cdf_code))
-      stop("Could not find probability ('p') function for ", dist)
+      stop("Could not find probability ('p') function for ", distInfo$BUGSdistName)
 
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- cdf_code # as.name(paste0("p", dist))
@@ -382,36 +382,39 @@ ndf_createSingleMethod <- function(type, nDim) {
     eval(methodDef)
 }
 
-ndf_createVirtualNodeFunctionDefinition <- function(types = list()) {
-    methodsList <- lapply(types, function(singleType) ndf_createSingleMethod(type=singleType$type, nDim=singleType$nDim))
-    if(length(methodsList) > 0)     names(methodsList) <- paste0('get_', names(methodsList))
-    virtualFunctionDef <- substitute(
-        nimbleFunctionVirtual(
-            contains = 'nodeFun',
-            methods = METHODS
-        ),
-        list(METHODS = methodsList)
-    )
-    return(virtualFunctionDef)
-}
-
-ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
-    defsList <- list()
-    if(!userAdded) {
-        defsList$node_determ <- ndf_createVirtualNodeFunctionDefinition()
-        for(distName in getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)) {
-            defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
-        }
-    } else {
-        # this deals with user-provided distributions
-        if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
-            for(distName in getAllDistributionsInfo('namesVector', userOnly = TRUE))
-                defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
-        } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserNamespace.")
+if(getNimbleOption('enableVirtualNodeFunctionDefs')) {  ## NCT issue 500. Deprecating and will remove in next release.
+    
+    ndf_createVirtualNodeFunctionDefinition <- function(types = list()) {
+        methodsList <- lapply(types, function(singleType) ndf_createSingleMethod(type=singleType$type, nDim=singleType$nDim))
+        if(length(methodsList) > 0)     names(methodsList) <- paste0('get_', names(methodsList))
+        virtualFunctionDef <- substitute(
+            nimbleFunctionVirtual(
+                contains = 'nodeFun',
+                methods = METHODS
+            ),
+            list(METHODS = methodsList)
+        )
+        return(virtualFunctionDef)
     }
-    return(defsList)
-}
 
-virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList()
-createNamedObjectsFromList(virtualNodeFunctionDefinitions)
+    ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
+        defsList <- list()
+        if(!userAdded) {
+            defsList$node_determ <- ndf_createVirtualNodeFunctionDefinition()
+            for(distName in getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)) {
+                defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
+            }
+        } else {
+                                        # this deals with user-provided distributions
+            if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
+                for(distName in getAllDistributionsInfo('namesVector', userOnly = TRUE))
+                    defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
+            } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserNamespace.")
+        }
+        return(defsList)
+    }
 
+    virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList()
+    createNamedObjectsFromList(virtualNodeFunctionDefinitions)
+
+} else ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {}  # Needed for R CMD check checking of variables.

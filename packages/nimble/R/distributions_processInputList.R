@@ -399,25 +399,25 @@ checkAndPrepareDistributionInfo <- function(DI, userEnv) {
   }
   if(nofun) {
     if(DI$densityName %in% c('+','-','*','/','%%','%*%','[','[[','$','^','|','||','&','&&',':','<','<=','>','>=','!=','==')) {
-      stop(paste0("checkAndPrepareDistributionInfo: expression '", DI$densityName,
-                  "' found where a density function is expected. Did you mistakenly use `~` instead of `<-`?"))
+      stop("checkAndPrepareDistributionInfo: expression '", DI$densityName,
+                  "' found where a density function is expected. Did you mistakenly use `~` instead of `<-`?")
     }
     if(DI$is_nestedNF)
-      stop(paste0("checkAndPrepareDistributionInfo: density function for", DIdensityName, # possibly this case should never be hit due to error-trapping above
-                  " could not be found (or is not valid) in object ", DI$objectName))
-    stop(paste0("checkAndPrepareDistributionInfo: density function for ", DI$densityName,
-                " is not available.  It must be a nimbleFunction."))
+      stop("checkAndPrepareDistributionInfo: density function for", DI$densityName, # possibly this case should never be hit due to error-trapping above
+                  " could not be found (or is not valid) in object ", DI$objectName)
+    stop("checkAndPrepareDistributionInfo: density function for ", DI$densityName,
+                " is not available.  It must be a nimbleFunction.")
   }
   # Check dist return type and args
   if(nfMethodRC_obj$returnType != quote(double()) &&
        nfMethodRC_obj$returnType != quote(double(0)))
-    stop(paste0("checkAndPrepareDistributionInfo: density function for ", DI$densityName,
-                " has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()')."))
+    stop("checkAndPrepareDistributionInfo: density function for ", DI$densityName,
+                " has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()').")
   dargs <- args <- nfMethodRC_obj$argInfo #formals(rcf)
   nArgs <- length(args)
-  if(nArgs < 2) stop(paste0("checkAndPrepareDistributionInfo: expecting at least two arguments ('x', 'log') as arguments for the density function for ", DI$densityName, "."))
-  if(names(args)[1] != "x") stop(paste0("checkAndPrepareDistributionInfo: expecting 'x' as the first argument for the density function for ", DI$densityName, "."))
-  if(names(args)[nArgs] != "log") stop(paste0("checkAndPrepareDistributionInfo: expecting 'log' as the last argument for the density function for ", DI$densityName, "."))
+  if(nArgs < 2) stop("checkAndPrepareDistributionInfo: expecting at least two arguments ('x', 'log') as arguments for the density function for ", DI$densityName, ".")
+  if(names(args)[1] != "x") stop("checkAndPrepareDistributionInfo: expecting 'x' as the first argument for the density function for ", DI$densityName, ".")
+  if(names(args)[nArgs] != "log") stop("checkAndPrepareDistributionInfo: expecting 'log' as the last argument for the density function for ", DI$densityName, ".")
   dargs <- dargs[-c(1,nArgs)]
   dtype <- args[['x']]
   if("default" %in% names(dtype))
@@ -531,12 +531,12 @@ checkAndPrepareDistributionInfo <- function(DI, userEnv) {
   # Check return and arg type consistency with dist function
   rargs <- args <- sim_nfMethodRC_obj$argInfo # formals(get(simulateName, pos = userEnv))
   nArgs <- length(args)
-  if(nArgs < 1) stop(paste0("checkDistributionFunctions: expecting at least one ",
+  if(nArgs < 1) stop("checkDistributionFunctions: expecting at least one ",
                             "argument ('n') as arguments for the simulation function for ",
-                            DI$densityName, "."))
+                            DI$densityName, ".")
   if(names(args)[1] != "n")
-    stop(paste0("checkAndPrepareDistributionInfo: expecting 'n' as the first argument ",
-                "for the simulation function for ", DI$densityName, "."))
+    stop("checkAndPrepareDistributionInfo: expecting 'n' as the first argument ",
+                "for the simulation function for ", DI$densityName, ".")
   rargs <- rargs[-1]
   if(!identical(dargs, rargs))
     messageIfVerbose("  [Warning] checkAndPrepareDistributionInfo: parameter arguments ",
@@ -580,9 +580,9 @@ checkAndPrepareDistributionInfo <- function(DI, userEnv) {
   if(DI$pqAvail) {
     # The user directly indicated they should be available, so error out if they aren't
     if(!pqFound)
-      stop(paste0("checkAndPrepareDistributionInfo: Either distribution (CDF) or quantile (inverse CDF) functions for ", DI$densityName,
+      stop("checkAndPrepareDistributionInfo: Either distribution (CDF) or quantile (inverse CDF) functions for ", DI$densityName,
                   " are not available.  If needed, they must be separate nimbleFunctions (if the 'd' function has no setup code)",
-                  " or methods in the density nimbleFunction (if the 'd' function has setup code)."))
+                  " or methods in the density nimbleFunction (if the 'd' function has setup code).")
   }
   # Update pqAvail, so it is TRUE even if found based on character input
   DI$pqAvail <- pqFound
@@ -591,38 +591,38 @@ checkAndPrepareDistributionInfo <- function(DI, userEnv) {
     # so check their arguments
     pargs <- args <- cdf_nfMethodRC_obj$argInfo #formals(get(cdfName, pos = userEnv))
     nArgs <- length(args)
-    if(nArgs < 3) stop(paste0("checkAndPrepareDistributionInfo: expecting at least three arguments ",
+    if(nArgs < 3) stop("checkAndPrepareDistributionInfo: expecting at least three arguments ",
                               "('q', 'lower.tail', and 'log.p') as arguments for the distribution ",
-                              "function for ", DI$densityName, "."))
-    if(names(args)[1] != "q") stop(paste0("checkDistributionFunctions: expecting 'q' as the first ",
-                                          "argument for the distribution function for ", DI$densityName, "."))
+                              "function for ", DI$densityName, ".")
+    if(names(args)[1] != "q") stop("checkDistributionFunctions: expecting 'q' as the first ",
+                                          "argument for the distribution function for ", DI$densityName, ".")
     if(names(args)[nArgs] != "log.p")
-      stop(paste0("checkAndPrepareDistributionInfo: expecting 'log.p' as the last argument ",
-                  "for the distribution function for ", DI$densityName, "."))
+      stop("checkAndPrepareDistributionInfo: expecting 'log.p' as the last argument ",
+                  "for the distribution function for ", DI$densityName, ".")
     if(names(args)[nArgs-1] != "lower.tail")
-      stop(paste0("checkAndPrepareDistributionInfo: expecting 'lower.tail' as the last ",
-                  "argument for the distribution function for ", DI$densityName, "."))
+      stop("checkAndPrepareDistributionInfo: expecting 'lower.tail' as the last ",
+                  "argument for the distribution function for ", DI$densityName, ".")
     pargs <- pargs[-c(1,nArgs-1,nArgs)]
 
     qargs <- args <- quantile_nfMethodRC_obj$argInfo #formals(get(quantileName, pos = userEnv))
     nArgs <- length(args)
-    if(nArgs < 3) stop(paste0("checkDistributionFunctions: expecting at least three arguments ",
+    if(nArgs < 3) stop("checkDistributionFunctions: expecting at least three arguments ",
                               "('p', 'lower.tail', and 'log.p') as arguments for the quantile function ",
-                              "for ", DI$densityName, "."))
+                              "for ", DI$densityName, ".")
     if(names(args)[1] != "p")
-      stop(paste0("checkAndPrepareDistributionInfo: expecting 'p' as the first argument ",
-                  "for the quantile function for ", DI$densityName, "."))
+      stop("checkAndPrepareDistributionInfo: expecting 'p' as the first argument ",
+                  "for the quantile function for ", DI$densityName, ".")
     if(names(args)[nArgs] != "log.p")
-      stop(paste0("checkAndPrepareDistributionInfo: expecting 'log.p' as the last argument ",
-                  "for the quantile function for ", DI$densityName, "."))
+      stop("checkAndPrepareDistributionInfo: expecting 'log.p' as the last argument ",
+                  "for the quantile function for ", DI$densityName, ".")
     if(names(args)[nArgs-1] != "lower.tail")
-      stop(paste0("checkAndPrepareDistributionInfo: expecting 'lower.tail' as the ",
-                  "last argument for the quantile function for ", DI$densityName, "."))
+      stop("checkAndPrepareDistributionInfo: expecting 'lower.tail' as the ",
+                  "last argument for the quantile function for ", DI$densityName, ".")
     qargs <- qargs[-c(1,nArgs-1,nArgs)]
 
     if(!identical(dargs, pargs) || !identical(dargs, qargs))
-      stop(paste0("checkAndPrepareDistributionInfo: parameter arguments not the same amongst ",
-                  "density, distribution, and quantile functions for ", DI$densityName, "."))
+      stop("checkAndPrepareDistributionInfo: parameter arguments not the same amongst ",
+                  "density, distribution, and quantile functions for ", DI$densityName, ".")
   }
   DI
 }
@@ -755,11 +755,12 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
             nimbleUserNamespace$distributions$add(distributionsInput)
         } else 
             nimbleUserNamespace$distributions <- distributionsClass(distributionsInput)
-        virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
-        createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
-
+        if(getNimbleOption('enableVirtualNodeFunctionDefs')) {  ## NCT issue 500. Deprecating and will remove in next release.
+            virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
+            createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
+        }
     # note don't use rFunHandler as rUserDist nimbleFunction needs n as first arg so it works on R side, therefore we have n in the C version of the nimbleFunction and don't want to strip it out in Cpp generation
-      }
+    }
     invisible(NULL)
 }
 
