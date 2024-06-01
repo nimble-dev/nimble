@@ -1178,6 +1178,10 @@ void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
   // Hand-coding: does this need more lines for params, randomEffects, and scale,
   // or are those handled by direct copying calls from R (for cases not included in the
   // copyFromRobject scheme)?
+  std::string svarName("names");
+  *static_cast< string* >(getObjectPtr(svarName)) =
+    STRSEXP_2_string(PROTECT(Rf_findVarInFrame(S_xData,
+                                               Rf_install("names"))), 0);
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("vcov");
   UNPROTECT(4);
 }

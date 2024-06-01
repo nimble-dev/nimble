@@ -3251,17 +3251,22 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'        explicitly uses Laplace.
 #'
 #' \item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
-#'         estimates of parameters using the Laplace-approximated marginal 
-#'         likelihood. Arguments include \code{pStart}: initial parameter values 
-#'         (defaults to parameter values currently in the model); 
-#'         \code{method}: (outer) optimization method to use in \code{optim} 
-#'         (defaults to "nlminb"); and
-#'         \code{hessian}: whether to calculate and return the Hessian matrix
-#'         (defaults to \code{TRUE}). Second derivatives in the Hessian are
-#'         determined by finite differences of the gradients obtained by
-#'         automatic differentiation (AD). Return value is a nimbleList of type
-#'         \code{optimResultNimbleList}, similar to what is returned by R's
-#'         optim. See \code{help(nimOptim)}.
+#'         estimates of parameters using the Laplace-approximated marginal
+#'         likelihood. Arguments include \code{pStart}: initial parameter values
+#'         (defaults to parameter values currently in the model); \code{method}:
+#'         (outer) optimization method to use in \code{nimOptim} (defaults to
+#'         "nlminb"); and \code{hessian}: whether to calculate and return the
+#'         Hessian matrix (defaults to \code{TRUE}). Second derivatives in the
+#'         Hessian are determined by finite differences of the gradients
+#'         obtained by automatic differentiation (AD). Return value is a
+#'         nimbleList of type \code{optimResultNimbleList}, similar to what is
+#'         returned by R's optim. See \code{help(nimOptim)}. Note that
+#'         parameters (`par`) are returned for the natural parameters, i.e. how
+#'         they are defined in the model. But the `hessian`, if requested, is
+#'         computed for the parameters as transformed for optimization if
+#'         necessary. Hence one must be careful interpreting `hessian` if any
+#'         parameters have constraints, and the safest next step is to use the
+#'         `summary` method or `summaryLaplace` function.
 #'
 #' \item \code{summary(MLEoutput, originalScale, randomEffectsStdError,
 #'        jointCovariance)}. Summarize the maximum likelihood estimation
@@ -3319,7 +3324,8 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'
 #'     }
 #'
-#' Additional methods to access or control more details of the Laplace approximation include:
+#' Additional methods to access or control more details of the Laplace
+#' approximation include:
 #'
 #' \itemize{
 #'
@@ -3517,24 +3523,41 @@ summaryLaplace <- function(laplace, MLEoutput,
 #'         \code{\link{optim}}. Currently \code{optim} in NIMBLE supports:
 #'         "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}",
 #'         "\code{nlminb}", and user-provided optimizers. By default, method
-#'         "\code{nlminb}" is used when marginalizing over either a single (scalar) random
-#'         effect or multiple random effects being
+#'         "\code{nlminb}" is used when marginalizing over either a single
+#'         (scalar) random effect or multiple random effects being. (Note that
+#'         control over the outer optimization method is available as an
+#'         argument to `findMLE`)
 #'
-#'   \item \code{innerOptimStart}. Choice of starting values for the inner 
-#'         optimization. This could be \code{"last"}, \code{"last.best"}, or a 
-#'         vector of user provided values. \code{"last"} means the most recent 
-#'         random effects values left in the model will be used. When finding 
-#'         the MLE, the most recent values will be the result of the most recent 
-#'         inner optimization for Laplace. \code{"last.best"} means the random 
-#'         effects values corresponding to the largest Laplace likelihood (from 
-#'         any call to the \code{calcLaplace} or \code{calcLogLik} method, 
-#'         including during an MLE search) will be used (even if it was not the 
-#'         most recent Laplace likelihood). By default, the initial random 
-#'         effects values will be used for inner optimization.
+#'   \item \code{innerOptimStart}. Method for determining starting values for
+#'         the inner optimization. This could be \code{"last"} (use the result
+#'         of the last inner optimization); \code{"last.best"} (use the result
+#'         of the best inner optimization so far for each conditionally
+#'         independent part of the approximation); \code{"constant"} (always use
+#'         the same values, determined by \code{innerOptimStartValues}); \code
+#'         {"random"} (draw randomly from the prior); \code{"model"} (use the
+#'         values first in the model); or \code{"zero"} (use all zeros). Note
+#'         that \code{"model"} and \code{"zero"} are shorthand for
+#'         \code{"constant"} with particular choices of
+#'         \code{innerOptimStartValues}. Note that \code{"last"} and
+#'         \code{"last.best"} require a choice for very first values, which come
+#'         from \code{innerOptimStartValues}. The default is \code{"zero"} and
+#'         may change in the future.
+#'
+#'   \item \code{innerOptimStartValues}. Values for some of
+#'         \code{innerOptimStart} approaches. If a scalar is provided, that
+#'         value is used for all elements of random effects for each
+#'         conditionally independent set. If a vector is provided, it must be
+#'         the length of *all* random effects. If these are named (by node
+#'         names), the names will be used to split them correctly among each
+#'         part of the approximation. If they are not named, it is not always
+#'         obvious what the order should be because it may depend on the
+#'         conditionally independent groupings of random effects. It should
+#'         match the order of names returned as part of `summaryLaplace`.
 #'
 #'   \item \code{outerOptimControl}. A list of control parameters for maximizing
 #'         the Laplace log-likelihood using \code{optim}. See 'Details' of
 #'         \code{\link{optim}} for further information.
+#'
 #' }
 #' 
 #' Note that there are two numerical optimizations in the Laplace approximation
