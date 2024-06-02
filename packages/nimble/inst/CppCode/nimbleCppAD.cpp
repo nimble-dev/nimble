@@ -986,8 +986,10 @@ CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes,
     recordingInfo.ADinfoPtr()->set_nodeFunPtr(nodeFunInModelDLL);
   }
   
-  for(; iNode != iNodeEnd; iNode++)
+  for(; iNode != iNodeEnd; iNode++) {
+    iNode->nodeFunPtr->recordingInfoPtr() = &recordingInfo;
     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
+  }
   if(includeExtraOutputStep && recordingInfo.recording()) {
     //   std::cout<<"starting extraOutputStep"<<std::endl;
     if(instructions.begin() != iNodeEnd) {

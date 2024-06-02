@@ -156,6 +156,10 @@ class nodeFun : public NamedObjects {
     namedObjects["indexedNodeInfoTable"] = getIndexedNodeInfoTablePtr();
   }
 
+  nimbleCppADrecordingInfoClass *recordingInfoPtr_;
+  nimbleCppADrecordingInfoClass*& recordingInfoPtr() {return recordingInfoPtr_;}
+  nimbleCppADrecordingInfoClass& recordingInfo() const {return *recordingInfoPtr_;}
+
   virtual double calculate(const indexedNodeInfo &iNI) const =0;
   virtual CppAD::AD<double> calculate_ADproxyModel(const indexedNodeInfo &iNI) const {
     printf("Error in C++: Dummy calculate_ADproxyModel is being used\n.");

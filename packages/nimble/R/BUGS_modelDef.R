@@ -415,7 +415,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
                 if(isTRUE(getNimbleOption("enableDerivs")))
                     if(isTRUE(getNimbleOption("doADerrorTraps")))
                         if(buildDerivs) {
-                            dist <- as.character(code[[i]][[3]][[1]])
+                            dist <- safeDeparse(code[[i]][[3]][[1]])
                             checkADsupportForDistribution(dist, verbose = TRUE)
                         }
             }
@@ -480,23 +480,31 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
 })
 
 modelDefClass$methods(checkADsupportForDistribution = function(dist, verbose = FALSE) {
-    supported <- TRUE
-    if(!dist %in% c(distributions$namesVector, "T", "I")) {
-        dfun <- get(dist, pos = userEnv) # same way dist is looked up in prepareDistributionInput
-        if(!is.rcf(dfun)) {
-            if(verbose)   message("   [Warning] Could not find a valid distribution definition while trying to check derivative support for ", dist, ".")
-                supported <- FALSE
-        } else {
-            dfun_buildDerivs <- environment(dfun)$nfMethodRCobject[["buildDerivs"]]
-            if(isFALSE(dfun_buildDerivs) || is.null(dfun_buildDerivs)) {
-                if(verbose)   message("   [Note] Distribution ", dist, " does not appear to support derivatives. Set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support.")
-                supported <- FALSE
-            }
-        }
+  supported <- TRUE
+  if(dist %in% c("T", "I")) {
+    if(verbose) message("   [Note] Derivatives are not supported for T() or I().")
+    supported <- FALSE
+  } else {
+    distInfo <- try(getDistributionInfo(dist), silent=TRUE)
+    if(inherits(distInfo, "try-error")) {
+      if(verbose) message("   [Warning] could not find valid distribution ", dist,
+                          " when checking for AD support. ",
+                          "You can set nimbleOptions(doADerrorTraps=FALSE) to disable this check.")
+      return(FALSE)
+    } else {
+      supported <- !(is.null(distInfo[["buildDerivs"]]) | # Should really never be NULL, but just in case
+                     isFALSE(distInfo[["buildDerivs"]]))
+      if(!supported)
+        if(verbose) message("   [Note] Distribution ", dist, " does not appear to support derivatives. ")
     }
-    return(supported)
+  }
+  if(!supported)
+    if(verbose) message("   [Note] It is fine to have a distribution without derivatives as long as no algorithm ",
+                        "requests derivatives from it. ",
+                        "For a user-defined distribution, set buildDerivs = TRUE (or to a list) in its nimbleFunction to turn on derivative support. ",
+                        "You can set nimbleOptions(doADerrorTraps=FALSE) to disable this check.")
+  supported
 })
-
 
 # check if distribution is defined and if not, attempt to register it
 checkUserDefinedDistribution <- function(code, userEnv) {
