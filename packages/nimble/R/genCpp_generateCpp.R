@@ -236,11 +236,15 @@ cppOutputReturn <- function(code, symTab) {
 }
 
 cppOutputCout <- function(code, symTab) {
-    paste0('_nimble_global_output.precision(', getNimbleOption('digits'), '); _nimble_global_output << fixed << ', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
+    if(is.null(getNimbleOption('digits'))) {
+        paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
+    } else paste0('_nimble_global_output.precision(', getNimbleOption('digits'), '); _nimble_global_output << fixed << ', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
 }
 
 cppOutputCoutNoNewline <- function(code, symTab) {
-    paste0('_nimble_global_output.precision(', getNimbleOption('digits'), '); _nimble_global_output << fixed << ', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '; nimble_print_to_R(_nimble_global_output)')
+    if(is.null(getNimbleOption('digits'))) {
+        paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '; nimble_print_to_R(_nimble_global_output)')
+    } else paste0('_nimble_global_output.precision(', getNimbleOption('digits'), '); _nimble_global_output << fixed << ', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '; nimble_print_to_R(_nimble_global_output)')
 }
 
 cppOutputChainedCall <- function(code, symTab) {

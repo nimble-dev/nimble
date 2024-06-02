@@ -15,9 +15,6 @@ relTol[4] <- 1e-4
 
 verbose <- TRUE
 
-##nimbleOptions(showCompilerOutput = TRUE)
-context("Testing of derivatives for calculate() for nimbleModels")
-
 ## Start of Nick's tests ##
 
 if(FALSE) {
