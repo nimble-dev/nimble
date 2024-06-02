@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = TRUE)
 
-context("Testing of miscellaneous functionality")
-
 ## Regression test for Issue #563.
 test_that("while() works even when an intermediate variable is needed", {
     mynf = nimbleFunction(

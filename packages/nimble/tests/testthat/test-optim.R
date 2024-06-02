@@ -40,6 +40,7 @@ nimOptimMethod("my_nlminb",
                }
                )
 
+
 # The methods "SANN" and "Brent" are not supported.
 methodsAllowingGradient <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "nlminb", "my_nlminb")
 methodsAllowingBounds <- c("L-BFGS-B")

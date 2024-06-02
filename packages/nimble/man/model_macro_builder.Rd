@@ -2,36 +2,27 @@
 % Please edit documentation in R/BUGS_macros.R
 \name{model_macro_builder}
 \alias{model_macro_builder}
-\title{EXPERIMENTAL: Turn a function into a model macro builder
-A model macro expands one line of code in a nimbleModel into one or
-more new lines.  This supports compact programming by defining
-re-usable modules.  \code{model_macro_builder} takes as input a
-function that constructs new lines of model code from the original
-line of code.  It returns a function suitable for internal use by
-\code{nimbleModel} that arranges arguments for input function.  Macros
-are an experimental feature and are available only after setting
-\code{nimbleOptions(enableModelMacros = TRUE)}.}
+\title{EXPERIMENTAL: Turn a function into a model macro}
 \usage{
 model_macro_builder(fun, use3pieces = TRUE, unpackArgs = TRUE)
 }
 \arguments{
-\item{fun}{A function written to construct new lines of model code.}
+\item{fun}{A function written to construct new lines of model code (see below).}
 
-\item{use3pieces}{(TRUE or FALSE) Should the arguments from the input
+\item{use3pieces}{logical indicating whether the arguments from the input
 line be split into pieces for the LHS (left-hand side), RHS
 (right-hand side, possibly further split depending on
-\code{unpackArgs}), and \code{stoch} (TRUE if the line uses a
-\code{~}, FALSE otherwise)?  See details and examples.}
+\code{unpackArgs}), and \code{stoch} (\code{TRUE} if the line uses a
+\code{~} and \code{FALSE} otherwise). (default = \code{TRUE})}
 
-\item{unpackArgs}{(TRUE or FALSE) Should arguments be passed as a list
-(FALSE) or as separate arguments (TRUE)?  See details and examples.}
+\item{unpackArgs}{logical indicating whether arguments be passed as a list
+(\code{FALSE}) or as separate arguments (\code{TRUE}). (default = \code{TRUE})}
 }
 \value{
-A list with a named element \code{code} that contains the
-replacement code.
+A list of class \code{model_macro} with one element called \code{process},
+which contains the macro function suitable for use by \code{nimbleModel}.
 }
 \description{
-EXPERIMENTAL: Turn a function into a model macro builder
 A model macro expands one line of code in a nimbleModel into one or
 more new lines.  This supports compact programming by defining
 re-usable modules.  \code{model_macro_builder} takes as input a
@@ -69,7 +60,30 @@ possible in this case to pass a macro without using a \code{~} or
 z[1:10], arg2 = "hello"))}.
 
 If \code{use3pieces = FALSE} and \code{unpackArgs = TRUE}, it
-won't make sense to anticipate a declaration using \code{~} or \code{<-}.  Ins#' tead, arguments from an arbitrary call will be passed as separate arguments.  #' For example, the line \code{macro1(arg1 = z[1:10], arg2 = "hello")} will be pa#' ssed to \code{fun} as \code{fun(arg1 = z[1:10], arg2 = "hello")}.
+won't make sense to anticipate a declaration using \code{~} or \code{<-}.
+Instead, arguments from an arbitrary call will be passed as separate arguments.
+For example, the line \code{macro1(arg1 = z[1:10], arg2 = "hello")} will be
+passed to \code{fun} as \code{fun(arg1 = z[1:10], arg2 = "hello")}.
+
+In addition, the final two arguments of \code{fun} must be called \code{modelInfo}
+and \code{.env} respectively. 
+
+During macro processing, \code{nimbleModel} passes a named list to the \code{modelInfo} 
+argument of \code{fun} containing, among other things, elements called
+\code{constants} and \code{dimensions}. Macro developers can modify these
+two elements (for example, to add a new constant needed for a macro) and
+these changes will be reflected in the final model object. Note that currently
+it is not possible for a macro to modify the data. Furthermore, if your macro add a new element to the
+constants that \code{nimbleModel} then moves to the data, this new data will not be retained
+in the final model object and thus will not be usable. 
+
+\code{nimbleModel} passes the R environment from which \code{nimbleModel} was
+called to the \code{.env} argument.
+
+The \code{fun} function must return a named list with two elements:
+\code{code}, the replacement code, and \code{modelInfo}, the \code{modelInfo} 
+list described above. \code{modelInfo} must be in the output even if the macro
+does not modify it.
 
 It is extremely useful to be familiar with processing R code as an
 object to write \code{fun} correctly.  Functions such as
@@ -156,4 +170,33 @@ model2$getCode()
 ##    beta ~ dnorm(0, sd = 1000)
 ##    gamma ~ dnorm(0, sd = 1000)
 ## }
+
+## Example 3: Macro that modifies constants
+new_constant <- model_macro_builder(
+   function(stoch, LHS, RHS, modelInfo, .env) {
+     # number of elements
+     n <- as.numeric(length(modelInfo$constants[[deparse(LHS)]]))
+     code <- substitute({
+       for (i in 1:N){
+         L[i] ~ dnorm(mu[i], 1)
+       }
+     }, list(L = LHS, N = n))
+
+     # Add a new constant mu
+     modelInfo$constants$mu <- rnorm(n, 0, 1)
+
+     list(code = code, modelInfo = modelInfo)
+   },
+   use3pieces = TRUE,
+   unpackArgs = TRUE
+)
+
+const <- list(y = rnorm(10))
+code <- nimbleCode({
+ y ~ new_constant()
+})
+
+mod <- nimbleModel(code = code, constants=const)
+mod$getCode()
+mod$getConstants() # new constant is here
 }

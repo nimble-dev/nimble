@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of declare, setSize, numeric, integer, matrix, and array")
-
 ## I. 1D cases
 
 ## I.i 1D declare without sizes, then resize without c()

@@ -185,6 +185,42 @@ test_that('AD works from list with an ignore entry buildDerivs with setup = TRUE
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
 })
 
+test_that('AD works with ADbreak with setup = TRUE', {
+  adfun <- nimbleFunction(
+    setup = TRUE,
+    run = function(x = double(1)) {
+      ans <- 0
+      for(i in 1:length(x))
+        ans <- ans + exp(x[i])
+      ans1 <- ADbreak(ans) # ans1 is CppAD::AD but assigned only value
+      ans2 <- ADbreak(ans) # ans2 is double
+      myint <- 0L
+      myint <- ADbreak(ans) # assignment to integer also requires ADbreak
+      ans <- ans2          # can assign from double to CppAD::AD
+      return(ans)
+      returnType(double())
+    },
+    methods = list(
+      derivsRun = function(x = double(1)) {
+        ans <- nimDerivs(run(x), wrt = 1:length(x), order = 0:2)
+        return(ans)
+        returnType(ADNimbleList())
+      }),
+    buildDerivs = list(run = list(ignore = c('i', 'ans2')))
+  )
+  temporarilyAssignInGlobalEnv(adfun)
+  Radfun1 <- adfun()
+  Cadfun1 <- compileNimble(Radfun1)
+  xRec <- c(.3, -1.2, 2.1)
+  xTest <- c(-.4, 1.9, -0.8)
+  Rans <- Radfun1$derivsRun(xTest) # does not respect ADbreak
+  CansRec <- Cadfun1$derivsRun(xRec) # xRec gets baked in due to ADbreak
+  Cans <- Cadfun1$derivsRun(xTest)
+  nim_expect_equal(CansRec$value, Cans$value, RCrelTol0)
+  nim_expect_equal(Cans$jacobian, matrix(rep(0, 3), ncol = 3), RCrelTol1)
+  nim_expect_equal(Cans$hessian, array(rep(0, 9), dim=c(3,3,1)), RCrelTol2)
+})
+
 test_that('AD works with calls to other methods and RCfunctions', {
   adhelper <- nimbleFunction(
     run = function(x = double(1)) {
@@ -521,6 +557,7 @@ test_that('AD works with a model calling a custom dist and custom fun', {
   nim_expect_equal(Rans$value, Cans$value, RCrelTol0)
   nim_expect_equal(Rans$jacobian, Cans$jacobian, RCrelTol1)
   nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2)
+  deregisterDistributions("dmynorm")
 })
 
 test_that('AD works with reset', {
@@ -973,6 +1010,7 @@ test_that("C++ run-time error if non-supported user-defined call is included in 
   test1 <- test(m, c("a", "z"))
   ctest1 <- compileNimble(test1, project = m)
   expect_error(ans <- ctest1$run(), "a model node is being included in derivatives that does not support them")
+  deregisterDistributions("dfoo3")
 })
 
 test_that("C++ run-time error if non-supported user-defined call is included in model$calculate", {
