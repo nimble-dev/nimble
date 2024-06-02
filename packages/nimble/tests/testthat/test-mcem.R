@@ -1,3 +1,23 @@
+source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
+
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+RdigitsOption <- options('digits')$digits
+options(digits = 6)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = TRUE)
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
+context("Testing of MCEM")
+
+goldFileName <- 'mcemTestLog_Correct.Rout'
+tempFileName <- 'mcemTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCEMtesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForMCEMtesting'), goldFileName) else tempFileName
+
+sink_with_messages(outputFile)
+
 # Set up numerically precise MLE and vcov results
 # for both regular and transformed coordinates
 pumpConsts <- list(N = 10,
@@ -919,3 +939,18 @@ test_that("MCMC for simple LME case works", {
 
   expect_equal(MLE$value, cLaplace$calcLogLik(opt$par), tolerance = 0.04)
 })
+
+sink(NULL)
+
+if(!generatingGoldFile) {
+    test_that("Log file matches gold file", {
+        trialResults <- readLines(tempFileName)
+        correctResults <- readLines(system.file(file.path('tests', 'testthat', goldFileName), package = 'nimble'))
+        compareFilesByLine(trialResults, correctResults)
+    })
+}
+
+options(warn = RwarnLevel)
+options(digits = RdigitsOption)
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
