@@ -30,8 +30,9 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
     reset()
     expect_wrapper(opt <- cL$findMLE())
   }
-  
-  cL$setInnerCache(FALSE) ## Recalculate inner optim to check starting values. Will ensure errors are printed on summary.
+
+  cL$updateSettings(useInnerCache=FALSE)
+  #cL$setInnerCache(FALSE) ## Recalculate inner optim to check starting values. Will ensure errors are printed on summary.
 
   if(missing(summ_orig)){
     expect_wrapper(summ_orig <- cL$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
@@ -39,12 +40,13 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
   if(missing(summ_trans)){
     expect_wrapper(summ_trans <- cL$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE))
   }
-  ref_method <- cL$getMethod()
+  ref_method <- cL$computeMethod_ #cL$getMethod()
   for(method in methods) {
     if(method != ref_method) {
       reset()
-      if(expected_no_re)
-          expect_output(cL$setMethod(method), "no random effects") else cL$setMethod(method)
+      cL$updateSettings(computeMethod=method)
+      ##      if(expected_no_re)
+      ##          expect_output(cL$setMethod(method), "no random effects") else cL$setMethod(method)
       expect_wrapper(opt_alt <- cL$findMLE())
       expect_equal(opt$par, opt_alt$par, tolerance = 0.01)
       expect_equal(opt$value, opt_alt$value, tolerance = 1e-4)
@@ -331,6 +333,10 @@ test_that("Laplace simplest 1D (constrained) with deterministic intermediates an
 })
 
 test_that("Laplace 1D with deterministic intermediates works", {
+  # Note this test has some slop. In old versions there were inner optimization
+  # warnings issued for this case. So we turned on warnings and checked for them.
+  # Now the warnings aren't issued. As a result, we really need a new test to
+  # check that warnings are correctly emitted.
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(0.2 * a, sd = 2)
@@ -360,7 +366,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
   # Jacobian of ahat wrt mu is 4*0.5/(4+9*0.2^2) = 0.4587156
   # Hessian of joint loglik wrt a: -(0.2^2/4 + 1/9)
   # Hessian of marginal loglik wrt param mu is -(0.2*0.5)^2/4.36 = -0.002293578
-  cmLaplace$setInnerOptimWarning(TRUE)
+  cmLaplace$updateSettings(innerOptimWarning=TRUE)
   #expect_output(
     summ <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE,
                               jointCovariance = TRUE)
@@ -381,13 +387,15 @@ test_that("Laplace 1D with deterministic intermediates works", {
   #, "Warning: inner optimzation had a non-zero convergence code\\. Use checkInnerConvergence\\(TRUE\\) to see details\\.")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-  cmLaplace$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  cmLaplace$updateSettings(innerOptimWarning=TRUE) ## Turn warnings on for test.
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)#, expected_warning = "optim did not converge for the inner optimization")
-  cmLaplaceNoSplit$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  cmLaplaceNoSplit$updateSettings(innerOptimWarning=TRUE) ## Turn warnings on for test.
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)#, expected_warning = "optim did not converge for the inner optimization")
 })
 
 test_that("Laplace 1D with a constrained parameter and deterministic intermediates works", {
+  ## Again (see above), the innerOptimWarning and expect_output are
+  ## defunct portions of this test.
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(0.2 * a, sd = 2)
@@ -421,8 +429,9 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(opt$hessian[1,1], -3.669725, tol = 1e-3)
   expect_equal(opt$value, dnorm(0.1*40, 0.1*40, sd = sqrt(4.36), log = TRUE))
 
-  cmLaplace$setInnerOptimWarning(TRUE)
-  cmLaplace$setInnerCache(FALSE)
+  cmLaplace$updateSettings(innerOptimWarning=TRUE, useInnerCache=FALSE)
+  #cmLaplace$setInnerOptimWarning(TRUE)
+  #cmLaplace$setInnerCache(FALSE)
   #expect_output(
     summ <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE,
                               jointCovariance = TRUE)
@@ -457,15 +466,18 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(summ4$vcov, vcov_transform[1,1,drop=FALSE], tol=1e-4)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
-  cmLaplaceNoSplit$setInnerOptimWarning(TRUE)
+  cmLaplace$updateSettings(innerOptimWarning=TRUE)
+#  cmLaplaceNoSplit$setInnerOptimWarning(TRUE)
   #expect_output(
   optNoSplit <- cmLaplaceNoSplit$findMLE()
   #,  "optim did not converge for the inner optimization")
   expect_equal(opt$par, optNoSplit$par, tol = 1e-2)
   expect_equal(opt$value, optNoSplit$value, tol = 1e-7)
-    cmLaplace$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  cmLaplace$updateSettings(innerOptimWarning=TRUE)
+  #cmLaplace$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
   check_laplace_alternative_methods(cmLaplace, cm, m, opt)#, expected_warning = "optim did not converge for the inner optimization")
-  cmLaplaceNoSplit$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
+  cmLaplaceNoSplit$updateSettings(innerOptimWarning=TRUE)
+  #cmLaplaceNoSplit$setInnerOptimWarning(TRUE) ## Turn warnings on for test.
   check_laplace_alternative_methods(cmLaplaceNoSplit, cm, m, optNoSplit)#, expected_warning = "optim did not converge for the inner optimization")
 })
 
@@ -799,7 +811,8 @@ test_that("Laplace with 2x1D random effects needing joint integration works, wit
   summ2 <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
   expect_equal(summ2$vcov, tmbvcov[1,1,drop=FALSE], tol=1e-7)
 
-  cmLaplace$setInnerCache(FALSE)
+  #cmLaplace$setInnerCache(FALSE)
+  cmLaplace$updateSettings(useInnerCache=FALSE)
   summ2_recomp <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
   expect_equal(summ2$vcov, summ2_recomp$vcov, tol=1e-10)
 
@@ -1209,7 +1222,7 @@ test_that("simple LME case works", {
   expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
 })
 
-test_that("simple LME with correlated intercept and slope works", {
+test_that("simple LME with correlated intercept and slope works (and runLaplace works)", {
   set.seed(1)
   g <- rep(1:10, each = 10)
   n <- length(g)
@@ -1246,14 +1259,32 @@ test_that("simple LME with correlated intercept and slope works", {
   mLaplace <- buildLaplace(model = m, control=list(innerOptimStart="last.best"))
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
+
+#  pStart <- values(m, params)
+
   opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
+  nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
+
   lme4res <- summary(manual_fit)
   expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
   sdparams <- nimres$params$estimates[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
   expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
   expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
+
+  # This is not an ideal test because the
+  # inner init mode is "last.best". But it checks that the code runs
+  # without some stupid typo or such. We at least try to make it fresh
+  # by starting from original pStart.
+  CrunLaplaceRes <- runLaplace(cmLaplace, pStart = pStart)
+  expect_equal(opt$par, CrunLaplaceRes$MLE$par, tolerance = 1e-4)
+  expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 2e-3)
+  expect_equal(nimsumm$randomEffects$estimate,
+               CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-3)
+  # NOTE THESE ARE NOT VERY ACCURATE
+  expect_equal(nimsumm$randomEffects$se,
+               CrunLaplaceRes$summary$randomEffects$se, tolerance = 0.1)
 })
 
 test_that("Laplace with non-empty calcNodesOther works", {
