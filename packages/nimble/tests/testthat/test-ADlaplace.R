@@ -1755,6 +1755,7 @@ test_that("Laplace with crossed random effects works", {
   mLaplace <- buildLaplace(model = m)#, control=list(innerOptimStart = "last.best"))
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
+  cmLaplace$updateSettings(innerOptimMethod = "BFGS")
   opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
   
@@ -1763,8 +1764,9 @@ test_that("Laplace with crossed random effects works", {
   
   expect_equal(nimres$params$estimates[1], lme4res$coefficients[,"Estimate"], tol=1e-3)
   expect_equal(nimres$params$estimates[c(3,4,2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-4)
-  # This standard error is not really very close
-  expect_equal(nimres$params$stdErrors[1], lme4res$coefficients[,"Std. Error"], tol=0.2)
+  # Note that with innerOptimMethod "nlminb", the next check is far off, within only about 0.2
+  # on Mac, and getting a NaN on ubuntu CI tests. (Also I don't know why those differ.)
+  expect_equal(nimres$params$stdErrors[1], lme4res$coefficients[,"Std. Error"], tol=2e-3)
   expect_equal(nimres$randomEffects$estimates[25:30], as.vector(t(ranef(lme4_fit)$sample)), tol = 1e-3)
   expect_equal(nimres$randomEffects$estimates[1:24], as.vector(t(ranef(lme4_fit)$plate)), tol = 1e-4)
 })
