@@ -329,21 +329,38 @@ control list entry must satsify the following:
 
 ## Monte Carlo Expectation Maximization (MCEM)
 
-   Suppose we have a model with missing data (or a layer of latent
-  variables that can be treated as missing data), and we would like to
-  maximize the marginal likelihood of the model, integrating over the
-  missing data. A brute-force method for doing this is MCEM. This is
-  an EM algorithm in which the missing data are simulated via Monte
-  Carlo (often MCMC, when the full conditional distributions cannot be
-  directly sampled from) at each iteration.  MCEM can be slow, and
-  there are other methods for maximizing marginal likelihoods that can
-  be implemented in NIMBLE.  The reason we started with MCEM is to
-  explore the flexibility of NIMBLE and illustrate the ability to combine
-  R and NIMBLE to run an algorithm, with R managing the highest-level processing
-  of the algorithm and calling nimbleFunctions for computations.  
+   Suppose we have a model with missing data -- or latent variables or random
+  effects, which can be viewed as missing data -- and we would like to maximize
+  the marginal likelihood of the model, integrating over the missing data. A
+  brute-force method for doing this is MCEM. This is an EM algorithm in which
+  the missing data are simulated via Monte Carlo (often MCMC, when the full
+  conditional distributions cannot be directly sampled from) at each iteration.
+  MCEM can be slow but is also a general workhorse method that is applicable to a wide range of problems.
   
-  NIMBLE provides an ascent-based MCEM algorithm, created using `buildMCEM`, that automatically determines when the algorithm has converged by examining 
-  the size of the changes in the likelihood between each iteration.  Additionally, the MCEM algorithm can provide an estimate of the asymptotic covariance matrix of the parameters.  An example of calculating the asymptotic covariance can be found in Section \@ref(sec:estimate-mcem-cov).
+  `buildMCEM` provides an (optionally) ascent-based MCEM algorithm based on
+  @Caffo_etal_2005. `buildMCEM` was re-written for nimble version 1.2.0 and is
+  not compatible with previous versions. For the E (expectation) step,
+  `buildMCEM` uses an MCMC for the latent states given the data and current
+  parameters. For the M (maximization) step, `buildMCEM` uses `optim`.
+  
+  The ascent-based feature uses an estimate of the standard error of the move in
+  one iteration to determine if that move is clearly uphill or is swamped by
+  noise due to using a Monte Carlo (MCMC) sample. In the latter case, the MCMC
+  sample size is increased until there is a clear uphill move. In a similar
+  manner, convergence is determined based on whether the uphill move is
+  confidently less than a tolerance level taken to indicate that the algorithm
+  is at the MLE. The associated tuning parameters, along with details on control
+  over each step, are described at `help(buildMCEM)`
+  
+  The maximization part of each MCEM iteration will use gradients from automatic
+  differentiation if they are supported for the model and `buildDerivs=TRUE`
+  when `nimbleModel` was called to create the model. If any parameters have
+  constraints on valid values (e.g. greater than 0), by default a parameter
+  transformation will be set up (see `help(parameterTransform)`) and
+  optimization will be done in the transformed (unconstrained) space.
+
+  Additionally, the MCEM algorithm can provide an estimate of the asymptotic
+  covariance matrix of the parameters. See \@ref(sec:estimate-mcem-cov).
   
   We will revisit the *pump* example to illustrate the use of
   NIMBLE's MCEM algorithm.
@@ -372,75 +389,49 @@ pumpInits <- list(alpha = 1, beta = 1,
 ```{r, build-MCEM, results = "hide", eval = runMCEMs}
 
 pump <- nimbleModel(code = pumpCode, name = "pump", constants = pumpConsts,
-                       data = pumpData, inits = pumpInits, check = FALSE)
+                    data = pumpData, inits = pumpInits, check = FALSE,
+                    buildDerivs=TRUE)
 
-compileNimble(pump)
+Cpump <- compileNimble(pump)
 
 # build an MCEM algorithm with ascent-based convergence criterion
 pumpMCEM <- buildMCEM(model = pump,
-                      latentNodes = "theta", burnIn = 300,
-                      mcmcControl = list(adaptInterval = 100),
-                      boxConstraints = list( list( c("alpha", "beta"), 
-                                                  limits = c(0, Inf) ) ), 
-                      buffer = 1e-6)
-
+                      latentNodes = "theta")
+# The latentNodes="theta" would be determined by default but is shown for clarity.
+CpumpMCEM <- compileNimble(pumpMCEM, project=pump)
 ```
 
-  The first argument `buildMCEM`, `model`, is a NIMBLE model, which can be
-  either the uncompiled or compiled version. At the moment, the model provided cannot be part of another MCMC sampler.  
-
-Initial values for the parameters are taken to be the values in the model at the time `buildMCEM` is called, unless the values in the compiled model are changed before running the MCEM.
-
-The ascent-based MCEM algorithm has a number of control options:
- 
- 
-  The `latentNodes` argument should indicate the nodes that will be
-  integrated over (sampled via MCMC), rather than
-  maximized.  These
-  nodes must be stochastic, not deterministic! `latentNodes` will
-  be expanded as described in Section \@ref(sec:arbitr-coll-nodes). I.e.,
-  either `latentNodes = "x"` or `latentNodes = c("x[1]", "x[2]")`
-  will treat `x[1]` and `x[2]` as latent nodes if
-  `x` is a vector of two values. All other non-data nodes will be
-  maximized over. Note that `latentNodes` can include discrete nodes,
-  but the nodes to be maximized cannot.  
-
- The `burnIn` argument indicates the number of samples from the MCMC for the E-step that should be discarded when computing the expected likelihood in the M-step. Note that `burnIn` can be set to values lower than in standard MCMC computations, as each iteration will start where the last left off. 
-  
-The  `mcmcControl` argument will be passed to `configureMCMC` to define the MCMC to be used.
-
- The MCEM algorithm automatically detects box constraints for the nodes that will
- be optimized, using NIMBLE's `getBounds` function.  It is also possible for a user to manually specify constraints via the `boxConstraints` argument.
- Each constraint given should be a list
- in which the first element is the names of the nodes or variables
- that the constraint will be applied to and the second element is a
- vector of length two, in which the first value is the lower limit and
- the second is the upper limit.  Values of `Inf` and `-Inf` are allowed. If a node is not listed, its constraints will be automatically determined by NIMBLE. These constraint arguments are passed as the `lower` and `upper` arguments to R's `optim` function, using `method = "L-BFGS-B"`.  Note that NIMBLE will give a warning if a user-provided constraint is more extreme than the constraint determined by NIMBLE.   
-
- The value of the  `buffer` argument shrinks the
- `boxConstraints` by this amount.  This can help protect against
- non-finite values occurring when a parameter is on the boundary.
-  
-  In addition, the MCEM has some extra control options that can be used to further tune the convergence criterion.  See `help(buildMCEM)` for more information.  
-  
-The `buildMCEM` function returns a list with two elements.  The first element is a function called `run`, which will use the MCEM algorithm to estimate the MLEs.  The second function is called `estimateCov`, and is described in Section \@ref(sec:estimate-mcem-cov).  The `run` function can be run as follows. There is only one run-time argument, `initM`, which is the number of MCMC iterations to use when the algorithm is initialized.
+The first argument to `buildMCEM`, `model`, is a NIMBLE model. At the moment, the
+model provided cannot be part of another MCMC sampler.
 
 ```{r, run-MCEM, eval = runMCEMs}
-pumpMLE <- pumpMCEM$run(initM = 1000)
-pumpMLE
+pumpMLE <- CpumpMCEM$findMLE(initM = 1000)
+pumpMLE$par
 ``` 
 
-Direct maximization after analytically integrating over the latent nodes (possible for this model but often not feasible) gives estimates of $\hat\alpha=0.823$ and $\hat\beta = 1.261$, so the MCEM seems to do pretty well, though tightening the convergence criteria may be warranted in actual usage. 
+For this model, we can check the result by analytically integrating over the
+latent nodes (possible for this model but often not feasible), which gives
+maximum likelihood estimates of $\hat\alpha=0.823$ and $\hat\beta = 1.261$. Thus
+the MCEM seems to do pretty well, though tightening the convergence criteria may
+be warranted in actual usage.
+
+For more complicated models, it is worth exploring the tuning parameters (see
+`help(buildMCEM)`). MCEM inherits from the EM algorithm the difficulty that the
+convergence path can be slow, depending on the model. This can depend on the
+parameterization, such as whether random effects are centered or uncentered, so
+it can also be worth exploring different ways to write a model.
 
 ### Estimating the asymptotic covariance From MCEM {#sec:estimate-mcem-cov}
 
-The second element of the list returned by a call to `buildMCEM` is a function called `estimateCov`, which estimates the asymptotic covariance of the parameters at their MLE values.  If the `run` function has been called previously, the `estimateCov` function will automatically use the MLE values produced by the `run` function to estimate the covariance.  Alternatively, a user can supply their own MLE values using the `MLEs` argument, which allows the covariance to be estimated without having called the `run` function. More details about the `estimateCov` function can be found by calling `help(buildMCEM)`.  Below is an example of using the `estimateCov` function.
+The `vcov` method of an MCEM nimbleFunction calculates a Monte Carlo estimate of
+the asymptotic covariance of the parameters based on the Hessian matrix at the
+MLE, using the method of @Louis_82. Arguments to this method allow control over
+whether to generate a new MCMC sample for this purpose and other details.
+
+Continuing the above example, here is the covariance matrix:
 
 ```{r, run-MCEM-cov, eval = runMCEMs}
-pumpCov <- pumpMCEM$estimateCov()
+pumpCov <- CpumpMCEM$vcov(pumpMLE$par)
 pumpCov
-
-# Alternatively, you can manually specify the MLE values as a named vector.
-pumpCov <- pumpMCEM$estimateCov(MLEs = c(alpha = 0.823, beta = 1.261))
 ``` 
 

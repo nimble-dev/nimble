@@ -1108,6 +1108,9 @@ buildOneAGHQuad <- nimbleFunction(
 #'   of badly formed inputs that might be missing important nodes or include
 #'   unnecessary nodes.
 #'
+#' @param allowDiscreteLatent A logical indicating whether to
+#'   allow discrete latent states. (default = \code{FALSE})
+#'
 #' @details
 #'
 #' This function is used by \code{buildLaplace} to organize model nodes into
@@ -1247,7 +1250,8 @@ buildOneAGHQuad <- nimbleFunction(
 setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                            calcNodesOther,
                            split = TRUE,
-                           check = TRUE) {
+                           check = TRUE,
+                           allowDiscreteLatent = FALSE) {
   paramProvided     <- !missing(paramNodes)
   reProvided        <- !missing(randomEffectsNodes)
   calcProvided      <- !missing(calcNodes)
@@ -1263,7 +1267,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(calcOtherProvided) calcNodesOther <- normalizeNodes(calcNodesOther, sort = TRUE)
 
   if(reProvided) {
-    if(check)
+    if(check && !allowDiscreteLatent)
       if(any(model$isDiscrete(randomEffectsNodes)))
         warning("Some randomEffectsNodes follow discrete distributions. That is likely to cause problems.")
   }
@@ -1279,7 +1283,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   paramStochDeps  <- character(0)
   paramDetermDepsCalculated <- FALSE
   paramStochDepsCalculated  <- FALSE
-  
+
   # 1. Default parameters are stochastic top-level nodes. (We previously
   #    considered an argument allowNonPriors, defaulting to FALSE. If TRUE, the
   #    default params would be all top-level stochastic nodes with no RHSonly
@@ -1316,13 +1320,15 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if((!reProvided) || check) {
     latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE,
                                       includeData = FALSE, includePredictive = FALSE)
-    latentDiscrete <- model$isDiscrete(latentNodes)
-    if(any(latentDiscrete)) {
-      if((!reProvided) && check) {
-        warning("In trying to determine default randomEffectsNodes, there are some nodes\n",
-                "that follow discrete distributions. These will be omitted.")
+    if(!allowDiscreteLatent) {
+      latentDiscrete <- model$isDiscrete(latentNodes)
+      if(any(latentDiscrete)) {
+        if((!reProvided) && check) {
+          warning("In trying to determine default randomEffectsNodes, there are some nodes\n",
+                  "that follow discrete distributions. These will be omitted.")
+        }
+        latentNodes <- latentNodes[!latentDiscrete]
       }
-      latentNodes <- latentNodes[!latentDiscrete]
     }
     if(paramsHandled) {
       paramDownstream <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE,
@@ -1439,8 +1445,8 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "to buildLaplace or as an argument to setupMargNodes."))
     }
     # Second check is for calcNodes that look unnecessary
-    # If some determ nodes between paramNodes and randomEffectsNodes are provided in calcNodes 
-    # then that's ok and we should not throw a warning message. 
+    # If some determ nodes between paramNodes and randomEffectsNodes are provided in calcNodes
+    # then that's ok and we should not throw a warning message.
     calcCheck <- setdiff(calcNodes, calcNodesDefault)
     errorNodes <- calcCheck[model$getNodeType(calcCheck)=="stoch"]
     # N.B. I commented out this checking of deterministic nodes for now.
@@ -1604,6 +1610,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
        randomEffectsSets = reSets
        )
 }
+
 
 ## Main function for Laplace approximation
 #' @rdname laplace 
@@ -2374,7 +2381,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' \code{buildLaplace} is the main function for constructing the Laplace
 #'   approximation for a given model or part of a model.
 #'
-#' See method \code{summary} below and the separation function
+#' See method \code{summary} below and the separate function
 #'   \code{\link{summaryLaplace}} for processing maximum likelihood estimates
 #'   obtained by method \code{findMLE} below.
 #'
