@@ -7,6 +7,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        newAssignSizeChecks = TRUE, # If TRUE, do additional checking when [matrix|vector] <- [matrix|vector]. Eventually if successful this option can be removed. It is a failsafe to disable new checks if they give spurious traps.
         allowNFobjInModel = TRUE, # If TRUE, allow use of nimbleFunctions with setup code as model dist or fxn.
         useCppADoptimize = TRUE,
         useADcholAtomic = TRUE, # If TRUE, use nimble's CppAD atomic for cholesky decomposition
