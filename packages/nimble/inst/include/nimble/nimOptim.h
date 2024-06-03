@@ -107,9 +107,11 @@ class NimOptimProblem {
     NimArr<1, double> working_ndeps;
 };
 
-extern "C" SEXP CALL_NimOptimProblem_fn(SEXP Sx, SEXP Sext_ptr);
-extern "C" SEXP CALL_NimOptimProblem_gr(SEXP Sx, SEXP Sext_ptr);
-extern "C" SEXP CALL_NimOptimProblem_he(SEXP Sx, SEXP Sext_ptr);
+extern "C" {
+    SEXP CALL_NimOptimProblem_fn(SEXP Sx, SEXP Sext_ptr);
+    SEXP CALL_NimOptimProblem_gr(SEXP Sx, SEXP Sext_ptr);
+    SEXP CALL_NimOptimProblem_he(SEXP Sx, SEXP Sext_ptr);
+}
 
 template <class Fn>
 class NimOptimProblem_Fun : public NimOptimProblem {

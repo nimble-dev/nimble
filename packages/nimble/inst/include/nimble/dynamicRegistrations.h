@@ -33,6 +33,7 @@
 #include <nimble/dllFinalizer.h>
 #include <nimble/smartPtrs.h>
 #include <nimble/predefinedNimbleLists.h>
+#include <nimble/nimOptim.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -48,6 +49,11 @@ R_CallMethodDef CallEntries[] = {
   FUN(getModelElementPtr, 2),
   FUN(getMVBuildName, 1),
   FUN(derefPtr, 1),
+
+  // nimOptim
+  FUN(CALL_NimOptimProblem_fn, 2),
+  FUN(CALL_NimOptimProblem_gr, 2),
+  FUN(CALL_NimOptimProblem_he, 2),
 
   // accessorClasses
   FUN(manualSetNRows, 2),
