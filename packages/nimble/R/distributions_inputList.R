@@ -7,6 +7,7 @@
 # if R/NIMBLE uses the same parameterization but in a different order, then one should define the reordering as a reparameterization (e.g., dbin())
 
 
+# See end for addition of buildDerivs field
 
 distributionsInputList <- list(
     
@@ -246,5 +247,15 @@ distributionsInputList <- list(
                       types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
 )
 
+distsNotAllowedInAD <- c(
+  paste0('d', c('interval', 'constraint'))
+)
 
-
+# Add buildDerivs=TRUE to all distributions except distsNotAllowedInAD
+distributionsInputList <-
+  seq_along(distributionsInputList) |>
+  lapply(\(i) {
+    this_name <- names(distributionsInputList)[i]
+    buildDerivs <- !(this_name %in% distsNotAllowedInAD)
+    c(distributionsInputList[[i]], list(buildDerivs=buildDerivs))
+  }) |> setNames(names(distributionsInputList))

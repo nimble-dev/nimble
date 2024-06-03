@@ -2,90 +2,416 @@
 % Please edit documentation in R/MCEM_build.R
 \name{buildMCEM}
 \alias{buildMCEM}
-\title{Builds an MCEM algorithm from a given NIMBLE model}
+\title{Builds an MCEM algorithm for a given NIMBLE model}
 \usage{
 buildMCEM(
   model,
+  paramNodes,
   latentNodes,
-  burnIn = 500,
-  mcmcControl = list(adaptInterval = 100),
-  boxConstraints = list(),
-  buffer = 10^-6,
-  alpha = 0.25,
-  beta = 0.25,
-  gamma = 0.05,
-  C = 0.001,
-  numReps = 300,
-  forceNoConstraints = FALSE,
-  verbose = TRUE
+  calcNodes,
+  calcNodesOther,
+  control = list(),
+  ...
 )
 }
 \arguments{
-\item{model}{a nimble model}
+\item{paramNodes}{a character vector of names of parameter nodes in the
+model; defaults are provided by \code{\link{setupMargNodes}}.
+Alternatively, \code{paramNodes} can be a list in the format returned by
+\code{setupMargNodes}, in which case \code{latentNodes}, \code{calcNodes},
+and \code{calcNodesOther} are not needed (and will be ignored).}
 
-\item{latentNodes}{character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
-\code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}.}
+\item{latentNodes}{a character vector of names of unobserved (latent) nodes
+to marginalize (sum or integrate) over; defaults are provided by
+\code{\link{setupMargNodes}} (as the \code{randomEffectsNodes} in its
+return list).}
 
-\item{burnIn}{burn-in used for MCMC sampler in E step}
+\item{calcNodes}{a character vector of names of nodes for calculating
+components of the full-data likelihood that involve \code{latentNodes};
+defaults are provided by \code{\link{setupMargNodes}}. There may be
+deterministic nodes between \code{paramNodes} and \code{calcNodes}. These
+will be included in calculations automatically and thus do not need to be
+included in \code{calcNodes} (but there is no problem if they are).}
 
-\item{mcmcControl}{list passed to \code{configureMCMC}, which builds the MCMC sampler. See \code{help(configureMCMC)} for more details}
+\item{calcNodesOther}{a character vector of names of nodes for calculating
+terms in the log-likelihood that do not depend on any \code{latentNodes},
+and thus are not part of the marginalization, but should be included for
+purposes of finding the MLE. This defaults to stochastic nodes that depend
+on \code{paramNodes} but are not part of and do not depend on
+\code{latentNodes}. There may be deterministic nodes between
+\code{paramNodes} and \code{calcNodesOther}. These will be included in
+calculations automatically and thus do not need to be included in
+\code{calcNodesOther} (but there is no problem if they are).}
 
-\item{boxConstraints}{list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.  Any nodes that are not given constrains will have their constraints automatically determined by NIMBLE}
-
-\item{buffer}{A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount.}
-
-\item{alpha}{probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.25.}
-
-\item{beta}{probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.25.}
-
-\item{gamma}{probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.}
-
-\item{C}{determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged. Default is 0.001.}
-
-\item{numReps}{number of bootstrap samples to use for asymptotic variance calculation.}
-
-\item{forceNoConstraints}{avoid any constraints even from parameter bounds implicit in the model structure (e.g., from dunif or dgamma distributions); setting this to TRUE might allow MCEM to run when the bounds of a parameter being maximized over depend on another parameter.}
-
-\item{verbose}{logical indicating whether to print additional logging information.}
-}
-\value{
-an R list with two elements:
-\itemize{
-\item \code{run}. A function that runs the MCEM algorithm. This function takes the arguments listed in \code{run} Arguments below.
-\item \code{estimateCov}. An function that estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
-This function takes the arguments listed in \code{estimateCov} Arguments below.
-}
+\item{control}{a named list for providing additional settings used in MCEM.
+See \code{control} section below.}
 }
 \description{
-Takes a NIMBLE model and builds an MCEM algorithm for it. The user must specify which latent nodes are to be integrated out in the E-Step.
-All other stochastic non-data nodes will be maximized over. If the nodes do not have positive density on the entire real line, then box constraints can be used
-to enforce this. 
-The M-step is done by a nimble MCMC sampler. The E-step is done by a call to R's \code{optim} with \code{method = 'L-BFGS-B'} if the nodes are constrainted, or \code{method = 'BFGS'} if the nodes are unconstrained.
+Takes a NIMBLE model (with some missing data, aka random effects or latent
+state nodes) and builds a Monte Carlo Expectation Maximization (MCEM)
+algorithm for maximum likelihood estimation. The user can specify which
+latent nodes are to be integrated out in the E-Step, or default choices will
+be made based on model structure. All other stochastic non-data nodes will be
+maximized over. The E-step is done with a sample from a nimble MCMC
+algorithm. The M-step is done by a call to \code{optim}.
 }
 \details{
-\code{buildMCEM} calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
-Uses an ascent-based MCEM algorithm, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached.  Constraints for parameter values can be provided.  If constraints are not provided, they will be automatically determined by NIMBLE. Initial values for the parameters are taken to be the values in the model at the time \code{buildMCEM} is called, unless the values in the compiled model are changed before running the MCEM.
+\code{buildMCEM} is a nimbleFunction that creates an MCEM algorithm
+  for a model and choices (perhaps default) of nodes in different roles in
+  the model. The MCEM can then be compiled for fast execution with a compiled model.
+
+Note that \code{buildMCEM} was re-written for nimble version 1.2.0 and is not
+backward-compatible with previous versions.
+
+Denote data by Y, latent states (or missing data) by X, and parameters by T.
+MCEM works by the following steps, starting from some T:
+
+\enumerate{
+
+\item Draw a sample of size M from P(X | Y, T) using MCMC.
+
+\item Update T to be the maximizer of E[log P(X, Y | T)] where the
+expectation is approximated as a Monte Carlo average over the sample from step(1)
+
+\item Repeat until converged.
+
 }
-\section{\code{run} Arguments}{
+
+The default version of MCEM is the ascent-based MCEM of Caffo et al. (2015).
+This attempts to update M when necessary to ensure that step 2 really moves
+uphill given that it is maximizing a Monte Carlo approximation and could
+accidently move downhill on the real surface of interest due to Monte Carlo
+error. The main tuning parameters include \code{alpha}, \code{beta}, \code{gamma},
+\code{Mfactor}, \code{C}, and \code{tol} (tolerance).
+
+If the model supports derivatives via nimble's automatic differentiation (AD)
+(and \code{buildDerivs=TRUE} in \code{nimbleModel}), the maximization step
+can use gradients from AD. You must manually set \code{useDerivs=FALSE} in
+the control list if derivatives aren't supported or if you don't want to use
+them.
+
+In the ascent-based method, after maximization in step 2, the Monte Carlo
+standard error of the uphill movement is estimated. If the standardized
+uphill step is bigger than 0 with Type I error rate \code{alpha}, the
+iteration is accepted and the algorithm continues. Otherwise, it is not
+certain that step 2 really moved uphill due to Monte Carlo error, so the MCMC
+sample size \code{M} is incremented by a fixed factor (e.g. 0.33 or 0.5, called
+\code{Mfactor} in the control list), the additional samples are added by
+continuing step 1, and step 2 is tried again. If the Monte Carlo noise still
+overwhelms the magnitude of uphill movement, the sample size is increased
+again, and so on. \code{alpha} should be between 0 and 0.5. A larger value
+than usually used for inference is recommended so that there is an easy
+threshold to determine uphill movement, which avoids increasing \code{M}
+prematurely. \code{M} will never be increased above \code{maxM}.
+
+Convergence is determined in a similar way. After a definite move uphill, we
+determine if the uphill increment is less than \code{tol}, with Type I error
+rate gamma. (But if \code{M} hits a maximum value, the convergence criterion
+changes. See below.)
+
+beta is used to help set M to a minimal level based on previous iterations.
+This is a desired Type II error rate, assuming an uphill move and standard
+error based on the previous iteration. Set \code{adjustM=FALSE} in the
+control list if you don't want this behavior.
+
+There are some additional controls on convergence for practical purposes. Set
+\code{C} in the control list to be the number of times the convergence
+criterion mut be satisfied in order to actually stop. E.g setting \code{C=2}
+means there will always be a restart after the first convergence.
+
+One problem that can occur with ascent-based MCEM is that the final iteration
+can be very slow if M must become very large to satisfy the convergence
+criterion. Indeed, if the algorithm starts near the MLE, this can occur. Set
+\code{maxM} in the control list to set the MCMC sample size that should never
+be exceeded.
+
+If \code{M==maxM}, a softer convergence criterion is used. This second
+convergence criterion is to stop if we can't be sure we moved uphill using
+Type I error rate delta. This is a soft criterion because for small delta,
+Type II errors will be common (e.g. if we really did move uphill but can't be
+sure from the Monte Carlo sample), allowing the algorithm to terminate. One
+can continue the algorithm from where it stopped, so it is helpful to not
+have it get stuck when having a very hard time with the first (stricter)
+convergence criterion.
+
+All of alpha, beta, delta, and gamma are utilized based on asymptotic
+arguments but in practice must be chosen heuristically. In other words, their
+theoretical basis does not exactly yield practical advice on good choices for
+efficiency and accuracy, so some trial and error will be needed.
+
+It can also be helpful to set a minimum and maximum of allowed iterations (of
+steps 1 and 2 above). Setting \code{minIter>1} in the control list can
+sometimes help avoid a false convergence on the first iteration by forcing at
+least one more iteration. Setting \code{maxIter} provides a failsafe on a
+stuck run.
+
+If you don't want the ascent-based method at all and simply want to run a set
+of iterations, set \code{ascent=FALSE} in the control list. This will use the
+second (softer) convergence criterion.
+
+Parameters to be maximized will by default be handled in an unconstrained
+parameter space, transformed if necessary by a
+\code{\link{parameterTransform}} object. In that case, the default
+\code{\link{optim}} method will be "BFGS" and can can be changed by setting
+\code{optimMehod} in the control list. Set \code{useTransform=FALSE} in the
+control list if you don't want the parameters transformed. In that case the
+default \code{optimMethod} will be "L-BFGS-B" if there are any actual
+constraints, and you can provide a list of \code{boxConstraints} in the
+control list. (Constraints may be determined by priors written in the model
+for parameters, even though their priors play no other role in MLE. E.g.
+\code{sigma ~ halfflat()} indicates \code{sigma > 0}).
+
+Most of the control list elements can be over-ridden when calling the
+\code{findMLE} method. The \code{findMLE} argument \code{continue=TRUE}
+results in attempting to continue the algorithm where the previous call
+finished, including whatever settings were in use.
+
+See \code{\link{setupMargNodes}} (which is called with the given arguments
+for \code{paramNodes}, \code{calcNodes}, and \code{calcNodesOther}; and with
+\code{allowDiscreteLatent=TRUE}, \code{randomEffectsNodes=latentNodes}, and
+\code{check=check}) for more about how the different groups of nodes are
+determined. In general, you can provide none, one, or more of the different
+kinds of nodes and \code{setupMargNodes} will try to determine the others in
+a sensible way. However, note that this cannot work for all ways of writing a
+model. One key example is that if random (latent) nodes are written as
+top-level nodes (e.g. following \code{N(0,1)}), they appear structurally to
+be parameters and you must tell \code{buildMCEM} that they are
+\code{latentNodes}. The various "Nodes" arguments will all be passed through
+\code{model$expandNodeNames}, allowing for example simply "x" to be provided
+when there are many nodes within "x".
+
+Estimating the Monte Carlo standard error of the uphill step is not trivial
+because the sample was obtained by MCMC and so likely is autocorrelated. This
+is done by calling whatever function in R's global environment is called
+"MCEM_mcse", which is required to take two arguments: \code{samples} (which
+will be a vector of the differences in log(P(Y, X | T)) between the new and
+old values of T, across the sample of X) and \code{m}, the sample size. It
+must return an estimate of the standard error of the mean of the sample.
+NIMBLE provides a default version (exported from the package namespace),
+which calls \code{mcmcse::mcse} with method "obm". Simply provide a different
+function with this name in your R session to over-ride NIMBLE's default.
+}
+\section{Control list details}{
+
+
+The control list accepts the following named elements:
 
 \itemize{
-\item \code{initM}. Starting number of iterations for the algorithm.
- }
+
+\item \code{initM} initial MCMC sample size, \code{M}. Default=1000.
+
+\item \code{Mfactor} Factor by which to increase MCMC sample size when step 2
+results in noise overwhelming the uphill movement. The new \code{M} will be
+\code{1+Mfactor)*M} (rounded up). \code{Mfactor} is \code{1/k} of Caffo et
+al. (2015). Default=1/3.
+
+\item \code{maxM} Maximum allowed value of \code{M} (see above). Default=\code{initM*20}.
+
+\item \code{burnin} Number of burn-in iterations for the MCMC in step 1. Note
+that the initial states of one MCMC will be the last states from the previous
+MCMC, so they will often be good initial values after multiple iterations. Default=500.
+
+\item \code{thin} Thinning interval for the MCMC in step 1. Default=1.
+
+\item \code{alpha} Type I error rate for determining when step 2 has moved
+uphill. See above. Default=0.25.
+
+\item \code{beta} Used for determining a minimal value of $M$ based on
+previous iteration, if \code{adjustM} is \code{TRUE}. \code{beta} is a desired Type
+II error rate for determining uphill moves. Default=0.25.
+
+\item \code{delta} Type I error rate for the soft convergence approach
+(second approach above). Default=0.25.
+
+\item \code{gamma} Type I error rate for determining when step 2 has moved
+less than \code{tol} uphill, in which case ascent-based convergence is
+achieved (first approach above). Default=0.05.
+
+\item \code{buffer} A small amount added to lower box constraints and
+substracted from upper box constraints for all parameters, relevant only if
+\code{useTransform=FALSE} and some parameters do have \code{boxConstraints}
+set or have bounds that can be determined from the model. Default=1e-6.
+
+\item \code{tol} Ascent-based convergence tolerance. Default=0.001.
+
+\item \code{ascent} Logical to determine whether to use the ascent-based
+method of Caffo et al. Default=TRUE.
+
+\item \code{C} Number of convergences required to actually stop the
+algorithm. Default = 1.
+
+\item \code{maxIter} Maximum number of MCEM iterations to run.
+
+\item \code{minIter} Minimum number of MCEM iterations to run.
+
+\item \code{adjustM} Logical indicating whether to see if M needs to be
+increased based on statistical power argument in each iteration (using
+\code{beta}). Default=TRUE.
+
+\item \code{verbose} Logical indicating whether verbose output is desired.
+Default=TRUE.
+
+\item \code{MCMCprogressBar} Logical indicating whether MCMC progress bars
+should be shown for every iteration of step 1. This argument is passed to
+\code{configureMCMC}, or to \code{config} if provided. Default=TRUE.
+
+\item \code{derivsDelta} If AD derivatives are not used, then the method
+\code{vcov} must use finite difference derivatives to implement the method of
+Louis (1982). The finite differences will be \code{delta} or \code{delta/2}
+for various steps. This is the same for all dimensions. Default=0.0001.
+
+\item \code{mcmcControl} This is passed to \code{configureMCMC}, or
+\code{config} if provided, as the \code{control} argument. i.e.
+\code{control=mcmcControl}.
+
+\item \code{boxContrainst} List of box constraints for the nodes that will be
+maximized over, only relevant if \code{useTransform=FALSE} and
+\code{forceNoConstraints=FALSE} (and ignored otherwise). Each constraint is a
+list in which the first element is a character vector of node names to which
+the constraint applies and the second element is a vector giving the lower
+and upper limits. Limits of \code{-Inf} or \code{Inf} are allowed. Any nodes
+that are not given constrains will have their constraints automatically
+determined by NIMBLE. See above. Default=list().
+
+\item \code{forceNoConstraints} Logical indicating whether to force ignoring
+constraints even if they might be necessary. Default=FALSE.
+
+\item \code{useTransform} Logical indicating whether to use a parameter
+transformation (see \code{\link{parameterTransform}}) to create an unbounded
+parameter space for the paramNodes. This allows unconstrained maximization
+algorithms to be used. Default=TRUE.
+
+\item \code{check} Logical passed as the \code{check} argument to
+\code{\link{setupMargNodes}}. Default=TRUE.
+
+\item \code{useDerivs} Logical indicating whether to use AD. If TRUE, the
+model must have been build with `buildDerivs=TRUE`. It is not automatically
+determined from the model whether derivatives are supported. Default=TRUE.
+
+\item \code{config} Optional function to create the MCMC configuration used
+for step 1. If missing, the MCMC configuration is created by
+\preformatted{configureMCMC(model, nodes = latentNodes,
+   monitors = latentNodes, thin = thinDefault,
+   control = mcmcControl, print = FALSE)
+}
+If provided, the MCMC configuration is created by the same call with
+\code{config} instead of \code{configureMCMC}.
+
+}
 }
 
-\section{\code{estimateCov} Arguments}{
+\section{Methods in the returned algorithm}{
 
- \itemize{
- \item \code{MLEs}. Named vector of MLE values.  Must have a named MLE value for each stochastic, non-data, non-latent node.  If the \code{run()} method has alread been called,
-   MLEs do not need to be provided.
- \item \code{useExistingSamples}. Logical argument.  If \code{TRUE} and the \code{run()} method has previously been called, the covariance estimation will use MCMC samples from the last step of the MCEM algorithm.
-   Otherwise, an MCMC algorithm will be run for 10,000 iterations, and those samples will be used.  Defaults to \code{FALSE}.
- }
+
+The object returned by \code{buildMCEM} is a nimbleFunction object with the following methods
+
+\itemize{
+
+\item \code{findMLE} is the main method of interest, launching the MCEM
+algorithm. It takes the following arguments:
+  \itemize{
+
+   \item \code{pStart}. Vector of initial parameter values. If omitted, the
+   values currently in the model object are used.
+
+   \item \code{returnTrans}. Logical indicating whether to return parameters
+   in the transformed space, if a parameter transformation is in use. Default=FALSE.
+
+   \item \code{continue}. Logical indicating whether to continue the MCEM
+   from where the last call stopped. In addition, if TRUE, any other control
+   setting provided in the last call will be used again. If FALSE, all
+   control settings are reset to the values provided when \code{buildMCEM}
+   was called. Any control settings provided in the same call as
+   \code{continue=TRUE} will over-ride these behaviors and be used in the
+   continued run.
+
+   \item All run-time control settings available in the \code{control} list
+   for \code{buildMCEM} (except for \code{buffer}, \code{boxConstraints},
+   \code{forceNoConstraints}, \code{useTransform}, and \code{useDerivs}) are
+   accepted as individual arguments to over-ride the values provided in the
+   \code{control} list.
+
+  }
+\code{findMLE} returns on object of class \code{optimResultNimbleList} with
+the results of the final optimization of step 2. The \code{par} element of
+this list is the vector of maximum likelihood (MLE) parameters.
+
+\item \code{vcov} computes the approximate variance-covariance matrix of the MLE using
+the method of Louis (1982). It takes the following arguments:
+   \itemize{
+
+     \item \code{params}. Vector of parameters at which to compute the
+     Hessian matrix used to obtain the \code{vcov} result. Typically this
+     will be \code{MLE$par}, if \code{MLE} is the output of \code{findMLE}.
+
+     \item \code{trans}. Logical indicating whether \code{params} is on the
+     transformed prameter scale, if a parameter transformation is in use.
+     Typically this should be the same as the \code{returnTrans} argument to
+     \code{findMLE}. Default=FALSE.
+
+     \item \code{returnTrans}. Logical indicting whether the \code{vcov}
+     result should be for the transformed parameter space. Default matches
+     \code{trans}.
+
+     \item \code{M}. Number of MCMC samples to obtain if
+     \code{resetSamples=TRUE}. Default is the final value of \code{M} from
+     the last call to \code{findMLE}. It can be helpful to increase \code{M}
+     to obtain a more accurate \code{vcov} result (i.e. with less Monte Carlo
+     noise).
+
+     \item \code{resetSamples}. Logical indicating whether to generate a new
+     MCMC sample from P(X | Y, T), where T is \code{params}. If FALSE, the
+     last sample from \code{findMLE} will be used. If MLE convergence was
+     reasonable, this sample can be used. However, if the last MCEM step made
+     a big move in parameter space (e.g. if convergence was not achieved),
+     the last MCMC sample may not be accurate for obtaining \code{vcov}. Default=FALSE.
+
+     \item \code{atMLE}. Logical indicating whether you believe the
+     \code{params} represents the MLE. If TRUE, one part of the computation
+     will be skipped because it is expected to be 0 at the MLE. If there are
+     parts of the model that are not connected to the latent nodes, i.e. of
+     \code{calcNodesOther} is not empty, then \code{atMLE} will be ignored
+     and set to FALSE. Default=FALSE. It is not really worth using TRUE
+     unless you are confident and the time saving is meaningful, which is not
+     very likely. In other words, this argument is provided for technical
+     completeness.
+
+   }
+\code{vcov} returns a matrix that is the inverse of the negative Hessian of
+the log likelihood surface, i.e. the usual asymptotic approximation of the
+parameter variance-covariance matrix.
+
+\item \code{doMCMC}. This method runs the MCMC to sample from P(X | Y, T).
+One does not need to call this, as it is called via the MCEM algorithm in
+\code{findMLE}. This method is provided for users who want to use the MCMC
+for latent states directly. Samples should be retrieved by
+\code{as.matrix(MCEM$mvSamples)}, where \code{MCEM} is the (compiled or
+uncompiled) MCEM algorithm object. This method takes the following arguments:
+  \itemize{
+
+    \item \code{M}. MCMC sample size.
+
+    \item \code{thin}. MCMC thinning interval.
+
+    \item \code{reset}. Logical indicating whether to reset the MCMC (passed
+    to the MCMC \code{run} method as \code{reset}).
+
+  }
+
+\item \code{transform} and \code{inverseTransform}. Convert a parameter
+vector to an unconstrained parameter space and vice-versa, if
+\code{useTransform=TRUE} in the call to \code{buildDerivs}.
+
+\item \code{resetControls}. Reset all control arguments to the values
+provided in the call to \code{buildMCEM}. The user does not normally need to
+call this.
+
+}
 }
 
 \examples{
 \dontrun{
-pumpCode <- nimbleCode({ 
+pumpCode <- nimbleCode({
  for (i in 1:N){
      theta[i] ~ dgamma(alpha,beta);
      lambda[i] <- theta[i]*t[i];
@@ -104,24 +430,25 @@ pumpData <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
 pumpInits <- list(alpha = 1, beta = 1,
              theta = rep(0.1, pumpConsts$N))
 pumpModel <- nimbleModel(code = pumpCode, name = 'pump', constants = pumpConsts,
-                  data = pumpData, inits = pumpInits)
+                         data = pumpData, inits = pumpInits,
+                         buildDerivs=TRUE)
 
-# Want to maximize alpha and beta (both which must be positive) and integrate over theta
-box = list( list(c('alpha','beta'), c(0, Inf)))
+pumpMCEM <- buildMCEM(model = pumpModel)
 
-pumpMCEM <- buildMCEM(model = pumpModel, latentNodes = 'theta[1:10]',
-                       boxConstraints = box)
-MLEs <- pumpMCEM$run(initM = 1000)
-cov <- pumpMCEM$estimateCov()
+CpumpModel <- compileNimble(pumpModel)
+
+CpumpMCEM <- compileNimble(pumpMCEM, project=pumpModel)
+
+MLE <- CpumpMCEM$findMLE()
+vcov <- CpumpMCEM$vcov(MLE$par)
+
 }
-# Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
-
 }
 \references{
 Caffo, Brian S., Wolfgang Jank, and Galin L. Jones (2005). Ascent-based Monte Carlo expectation-maximization.  \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 67(2), 235-251.
- 
+
  Louis, Thomas A  (1982). Finding the Observed Information Matrix When Using the EM Algorithm. \emph{Journal of the Royal Statistical Society. Series B (Statistical Methodology)}, 44(2), 226-233.
 }
 \author{
-Clifford Anderson-Bergman and Nicholas Michaud
+Perry de Valpine, Clifford Anderson-Bergman and Nicholas Michaud
 }

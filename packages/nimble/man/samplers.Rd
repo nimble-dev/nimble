@@ -8,9 +8,11 @@
 \alias{sampler_categorical}
 \alias{sampler_noncentered}
 \alias{sampler_RW}
+\alias{sampler_RW_noncentered}
 \alias{sampler_RW_block}
 \alias{sampler_RW_llFunction}
 \alias{sampler_slice}
+\alias{sampler_slice_noncentered}
 \alias{sampler_ess}
 \alias{sampler_AF_slice}
 \alias{sampler_crossLevel}
@@ -69,11 +71,15 @@ sampler_noncentered(model, mvSaved, target, control)
 
 sampler_RW(model, mvSaved, target, control)
 
+sampler_RW_noncentered(model, mvSaved, target, control)
+
 sampler_RW_block(model, mvSaved, target, control)
 
 sampler_RW_llFunction(model, mvSaved, target, control)
 
 sampler_slice(model, mvSaved, target, control)
+
+sampler_slice_noncentered(model, mvSaved, target, control)
 
 sampler_ess(model, mvSaved, target, control)
 

@@ -106,7 +106,8 @@ distClass <- setRefClass(
         mixedSizes = 'ANY',     ##   if TRUE, then parameters of this distribution could have varied sizes, and is exempted from this check in model$checkBasics()
         range = 'ANY',          #'numeric',  ## lower and upper limits of distribution domain
         types = 'ANY',		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
-        paramIDs = 'ANY'        #'integer'   ## named vector of unique integer ID for each parameter
+        paramIDs = 'ANY',        #'integer'   ## named vector of unique integer ID for each parameter
+        buildDerivs = 'ANY'     # could be FALSE, TRUE, or a list
 ### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
     ),
     
@@ -135,7 +136,10 @@ distClass <- setRefClass(
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
             mixedSizes <<- if(is.null(distInputList$mixedSizes))    FALSE    else    distInputList$mixedSizes
-
+            if(isTRUE(getNimbleOption("enableDerivs")))
+              buildDerivs <<- if(is.null(distInputList$buildDerivs)) FALSE else distInputList$buildDerivs
+            else
+              buildDerivs <<- FALSE
             init_range(distInputList)
             init_types(distInputList)
             init_paramIDs()
@@ -418,6 +422,10 @@ checkAndPrepareDistributionInfo <- function(DI, userEnv) {
   dtype <- args[['x']]
   if("default" %in% names(dtype))
     stop("checkAndPrepareDistributionInfo: `x` argument is not allowed to have a default value.")
+
+  if(isTRUE(getNimbleOption("enableDerivs"))) {
+    DI$buildDerivs <- nfMethodRC_obj[['buildDerivs']]
+  }
 
   # If input was character (not list), generate BUGSdist and type fields.
   if(DI$input_isCharacter) {

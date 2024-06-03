@@ -15,9 +15,6 @@ relTol[4] <- 1e-4
 
 verbose <- TRUE
 
-##nimbleOptions(showCompilerOutput = TRUE)
-context("Testing of derivatives for calculate() for nimbleModels")
-
 ## Start of Nick's tests ##
 
 if(FALSE) {
@@ -608,6 +605,7 @@ covFunLoop <- nimbleFunction(
 
 
 ## user-defined cov function vectorized
+
 set.seed(1)
 covFunVec <- nimbleFunction(
     run = function(dist = double(2), rho = double(0)) {

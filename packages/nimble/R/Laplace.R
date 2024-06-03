@@ -1773,6 +1773,9 @@ buildOneAGHQuad <- nimbleFunction(
 #'   of badly formed inputs that might be missing important nodes or include
 #'   unnecessary nodes.
 #'
+#' @param allowDiscreteLatent A logical indicating whether to
+#'   allow discrete latent states. (default = \code{FALSE})
+#'
 #' @details
 #'
 #' This function is used by \code{buildLaplace} to organize model nodes into
@@ -1912,7 +1915,8 @@ buildOneAGHQuad <- nimbleFunction(
 setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                            calcNodesOther,
                            split = TRUE,
-                           check = TRUE) {
+                           check = TRUE,
+                           allowDiscreteLatent = FALSE) {
   paramProvided     <- !missing(paramNodes)
   reProvided        <- !missing(randomEffectsNodes)
   calcProvided      <- !missing(calcNodes)
@@ -1928,7 +1932,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(calcOtherProvided) calcNodesOther <- normalizeNodes(calcNodesOther, sort = TRUE)
 
   if(reProvided) {
-    if(check)
+    if(check && !allowDiscreteLatent)
       if(any(model$isDiscrete(randomEffectsNodes)))
         warning("Some randomEffectsNodes follow discrete distributions. That is likely to cause problems.")
   }
@@ -1944,7 +1948,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   paramStochDeps  <- character(0)
   paramDetermDepsCalculated <- FALSE
   paramStochDepsCalculated  <- FALSE
-  
+
   # 1. Default parameters are stochastic top-level nodes. (We previously
   #    considered an argument allowNonPriors, defaulting to FALSE. If TRUE, the
   #    default params would be all top-level stochastic nodes with no RHSonly
@@ -1981,13 +1985,15 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if((!reProvided) || check) {
     latentNodes <- model$getNodeNames(latentOnly = TRUE, stochOnly = TRUE,
                                       includeData = FALSE, includePredictive = FALSE)
-    latentDiscrete <- model$isDiscrete(latentNodes)
-    if(any(latentDiscrete)) {
-      if((!reProvided) && check) {
-        warning("In trying to determine default randomEffectsNodes, there are some nodes\n",
-                "that follow discrete distributions. These will be omitted.")
+    if(!allowDiscreteLatent) {
+      latentDiscrete <- model$isDiscrete(latentNodes)
+      if(any(latentDiscrete)) {
+        if((!reProvided) && check) {
+          warning("In trying to determine default randomEffectsNodes, there are some nodes\n",
+                  "that follow discrete distributions. These will be omitted.")
+        }
+        latentNodes <- latentNodes[!latentDiscrete]
       }
-      latentNodes <- latentNodes[!latentDiscrete]
     }
     if(paramsHandled) {
       paramDownstream <- model$getDependencies(paramNodes, stochOnly = TRUE, self = FALSE,
@@ -2104,8 +2110,8 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "to buildLaplace or as an argument to setupMargNodes."))
     }
     # Second check is for calcNodes that look unnecessary
-    # If some determ nodes between paramNodes and randomEffectsNodes are provided in calcNodes 
-    # then that's ok and we should not throw a warning message. 
+    # If some determ nodes between paramNodes and randomEffectsNodes are provided in calcNodes
+    # then that's ok and we should not throw a warning message.
     calcCheck <- setdiff(calcNodes, calcNodesDefault)
     errorNodes <- calcCheck[model$getNodeType(calcCheck)=="stoch"]
     # N.B. I commented out this checking of deterministic nodes for now.
@@ -2269,6 +2275,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
        randomEffectsSets = reSets
        )
 }
+
 
 ## Main function for Laplace approximation
 #' @rdname laplace 
@@ -3551,10 +3558,10 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #' simply calls `buildAGHQ` with `nQuad=1`.
 #'
 #' Beware that quadrature will use `nQuad^k` quadrature points, where `k` is the
-#' dimension of random effects. Therefore quadrature for `k` greater that 2 or 3
+#' dimension of random effects that require joint integration. Therefore quadrature for `k` greater that 2 or 3
 #' can be slow. Note that `buildAGHQuad` will determine conditionally
 #' independent dimensions of quadrature, so it is fine to have a set of
-#' univariate random effects. Multivariate quadrature is only necessary for
+#' univariate random effects, as these will each have k=1. Multivariate quadrature (k>1) is only necessary for
 #' nested, correlated, or otherwise dependent random effects.
 #'
 #' The recommended way to find the maximum likelihood estimate and associated

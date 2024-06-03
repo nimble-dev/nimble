@@ -60,7 +60,7 @@ Build a Laplace approximation algorithm for a given NIMBLE model.
 \code{buildLaplace} is the main function for constructing the Laplace
   approximation for a given model or part of a model.
 
-See method \code{summary} below and the separation function
+See method \code{summary} below and the separate function
   \code{\link{summaryLaplace}} for processing maximum likelihood estimates
   obtained by method \code{findMLE} below.
 
