@@ -3353,6 +3353,10 @@ buildAGHQuad <- nimbleFunction(
 #' and `originalScale` with the input value of `originalScale` so it is recorded
 #' for later use if wanted.
 #'
+#' @aliases summaryAGHQ
+#'
+#' @name summaryLaplace
+#'
 #' @export
 summaryLaplace <- function(laplace, MLEoutput,
                            originalScale =TRUE,
@@ -3389,6 +3393,14 @@ summaryLaplace <- function(laplace, MLEoutput,
        originalScale = originalScale)
 }
 
+#' @rdname summaryLaplace
+#' @export
+summaryAGQH <- function(AGHQ, MLEoutput,
+                        originalScale =TRUE,
+                        randomEffectsStdError = FALSE,
+                        jointCovariance = FALSE) {
+  summaryLaplace(AGHQ, MLEoutput, originalScale, randomEffectsStdError, jointCovariance)
+}
 #' Combine steps of running Laplace approximation
 #'
 #' Use a Laplace approximation (compiled or uncompiled) returned from
