@@ -16,9 +16,8 @@
 0.8014766
 1.2097391
   [Note] Convergence Criterion: 0.0031414.
-  [Note] Iteration Number: 4.0000    user   system  elapsed 
-1136.855   32.944 1523.976 
-00000.
+  [Note] Iteration Number: 4.0000000.
+  [Note] Current number of MCMC iterations: 1000.0000000.
   [Note] Parameter Estimates: 
 0.8140742
 1.2573701
