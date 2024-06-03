@@ -614,7 +614,6 @@ covFunVec <- nimbleFunction(
         return(out)
     }, buildDerivs = TRUE)
 
-if(F){
 code <- nimbleCode({
     Sigma3[1:n,1:n] <- covFunVec(dist[1:n,1:n], rho)
     y[1:n] ~ dmnorm(mu3[1:n], cov = Sigma3[1:n,1:n])
@@ -642,7 +641,7 @@ relTolTmp[4] <- 1e-2
 test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, checkCompiledValuesIdentical = FALSE,
                       newUpdateNodes = list(dist = newDist, pr = newPr),
                       name = 'dmnorm with user-defined vectorized fxn')
-}
+
 ## 2022-04-23: both cases above
 ## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .
 ##             [,1]        [,2]         [,3]
