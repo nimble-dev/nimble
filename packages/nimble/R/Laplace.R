@@ -3395,7 +3395,7 @@ summaryLaplace <- function(laplace, MLEoutput,
 
 #' @rdname summaryLaplace
 #' @export
-summaryAGQH <- function(AGHQ, MLEoutput,
+summaryAGHQ <- function(AGHQ, MLEoutput,
                         originalScale =TRUE,
                         randomEffectsStdError = FALSE,
                         jointCovariance = FALSE) {
