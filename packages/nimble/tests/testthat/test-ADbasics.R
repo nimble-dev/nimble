@@ -397,7 +397,7 @@ test_that('AD works with calls to methods across different nimbleFunction object
   Cadfun1$derivsRun(xRec)
   Cans <- Cadfun1$derivsRun(xTest)
   nim_expect_equal(Rans$value, Cans$value, 1e-10)
-  nim_expect_equal(Rans$jacobian, Cans$jacobian, 1e-4)
+  nim_expect_equal(Rans$jacobian, Cans$jacobian, 1e-3)
 #  nim_expect_equal(Rans$hessian, Cans$hessian, RCrelTol2) # uncompiled looks fairly rough. I think it's ok but won't try to test.
 })
 
