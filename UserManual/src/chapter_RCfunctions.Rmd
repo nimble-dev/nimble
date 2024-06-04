@@ -297,23 +297,18 @@ NIMBLE provides a `nimIntegrate` function that implement's R's
 quadrature to integrate a function of one variable over a finite
 or infinite interval.
 
-In addition to general use in a nimbleFunction, this can, of course,
-be used in a user-defined function in
-model code, e.g., to implement models that involve
-an integral, such as certain point process and survival models.
+In addition to general use in a nimbleFunction, this can, of course, be used in
+a user-defined function in model code, e.g., to implement models that involve an
+integral, such as certain point process and survival models.
 
-One could also consider using `nimIntegrate` to numerically
-integrate over a parameter in a model, such as to remove
-a parameter that is not mixing well in an MCMC. Note that
-NIMBLE's Laplace approximation is a version of this,
-being equivalent to Gauss-Hermite quadrature with a single
-integration point (aka node). In a future version of NIMBLE, we will
-be making Gauss-Hermite quadrature available more generally
-as an extension of NIMBLE's Laplace approximation.
+One could also consider using `nimIntegrate` to numerically integrate over a
+parameter in a model, such as to remove a parameter that is not mixing well in
+an MCMC. Note that NIMBLE Laplace approximation and adaptive Gauss-Hermite
+quadrature for integrating over continuous parameters such as random effects.
+See section \@ref(sec:AD-laplace) and `help(Laplace)` for more information on those.
 
-See `help(nimIntegrate)` for details, including basic example usage.
-
-Here is an example of using `nimIntegrate` to implement a vectorized von Mises distribution.
+Here is an example of using `nimIntegrate` to implement a vectorized von Mises
+distribution.
 
 ```{r}
 integrand <- nimbleFunction(

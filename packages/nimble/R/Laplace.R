@@ -3519,8 +3519,11 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' @param model a NIMBLE model object, such as returned by \code{nimbleModel}.
 #'   The model must have automatic derivatives (AD) turned on, e.g. by using
 #'   \code{buildDerivs=TRUE} in \code{nimbleModel}.
-#' @param nQuad number of quadrature points for AGHQ. Laplace approximation is
-#'   AGHQ with `nQuad=1`.
+#' @param nQuad number of quadrature points for AGHQ (in one dimension). Laplace approximation is
+#'   AGHQ with `nQuad=1`. Only odd numbers of nodes really
+#'   make sense. Often only a few nodes achieve very high accuracy. A maximum of
+#'   35 nodes is supported. Note that for multivariate quadratures, the number
+#'   of nodes will be (number of dimensions)^nQuad.
 #' @param paramNodes a character vector of names of parameter nodes in the
 #'   model; defaults are provided by \code{\link{setupMargNodes}}.
 #'   Alternatively, \code{paramNodes} can be a list in the format returned by

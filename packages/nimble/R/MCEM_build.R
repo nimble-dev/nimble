@@ -558,7 +558,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' for parameters, even though their priors play no other role in MLE. E.g.
 #' \code{sigma ~ halfflat()} indicates \code{sigma > 0}).
 #'
-#' Most of the control list elements can be over-ridden when calling the
+#' Most of the control list elements can be overridden when calling the
 #' \code{findMLE} method. The \code{findMLE} argument \code{continue=TRUE}
 #' results in attempting to continue the algorithm where the previous call
 #' finished, including whatever settings were in use.
@@ -586,7 +586,7 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' must return an estimate of the standard error of the mean of the sample.
 #' NIMBLE provides a default version (exported from the package namespace),
 #' which calls \code{mcmcse::mcse} with method "obm". Simply provide a different
-#' function with this name in your R session to over-ride NIMBLE's default.
+#' function with this name in your R session to override NIMBLE's default.
 #'
 #' @section Control list details:
 #'
@@ -684,14 +684,14 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' model must have been build with `buildDerivs=TRUE`. It is not automatically
 #' determined from the model whether derivatives are supported. Default=TRUE.
 #'
-#' \item \code{config} Optional function to create the MCMC configuration used
-#' for step 1. If missing, the MCMC configuration is created by
-#' \preformatted{configureMCMC(model, nodes = latentNodes,
-#'    monitors = latentNodes, thin = thinDefault,
-#'    control = mcmcControl, print = FALSE)
-#' }
-#' If provided, the MCMC configuration is created by the same call with
-#' \code{config} instead of \code{configureMCMC}.
+#' \item \code{config} Function to create the MCMC configuration used for step
+#' 1. The MCMC configuration is created by calling
+#'
+#' \preformatted{config(model, nodes = latentNodes, monitors = latentNodes,
+#' thin = thinDefault, control = mcmcControl, print = FALSE) }
+#'
+#' The default for \code{config} (if it is missing) is \code{configureMCMC},
+#' which is nimble's general default MCMC configuration function.
 #'
 #' }
 #'
@@ -953,7 +953,8 @@ buildMCEM <- nimbleFunction(
 
     # optimMethod
     if(!is.null(control$optimMethod) &&
-         (control$optimMethod %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B"))){
+       TRUE # (control$optimMethod %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")) #need to update for new custom_optim cases
+       ){
       optimMethod <- control$optimMethod
     }
     else optimMethod <- "default" # will changed later to BFGS or L-BFGS-B (if there are bounds)

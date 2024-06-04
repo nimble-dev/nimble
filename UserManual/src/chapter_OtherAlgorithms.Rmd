@@ -6,9 +6,9 @@ require(nimble)
 require(nimbleSMC, quietly = TRUE, warn.conflicts = FALSE)
 ``` 
 
-# Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM {#cha-algos-provided}
+# Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature {#cha-algos-provided}
 
-The NIMBLE algorithm library includes a suite of sequential Monte Carlo (particle filtering) algorithms, particle MCMC for combining particle filters with MCMC, iterated filtering version 2 and Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, and k-fold cross-validation. 
+The NIMBLE algorithm library includes a suite of sequential Monte Carlo (particle filtering) algorithms (particle filters, PMCMC, iterated particle filter, and ensemble Kalman filter), Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, Laplace approximation and adaptive Gauss-Hermite quadrature, and k-fold cross-validation. 
  
 ## Particle filters / sequential Monte Carlo and iterated filtering
 
@@ -162,7 +162,7 @@ aEWSamp <- as.matrix(cLWF$mvEWSamples, "a")
 
 #### Iterated filtering 2 (IF2)
 
-The IF2 method accomplishes maximum likelihood estimation using a scheme wherein both latent states and parameters are represented by particles that are weighted and resampled during the iterations.  Iterations include perturbations to the parameter particles following a schedule of decreasing magnitude to yield convergence to the MLE.
+The IF2 method [@Ionides_etal_2015] accomplishes maximum likelihood estimation using a scheme wherein both latent states and parameters are represented by particles that are weighted and resampled during the iterations.  Iterations include perturbations to the parameter particles following a schedule of decreasing magnitude to yield convergence to the MLE.
 
 Here we apply IF2 to Nile River flow data, specifying a changepoint in the year the Aswan Dam was constructed, as the dam altered river flows.
 
@@ -335,7 +335,8 @@ control list entry must satsify the following:
   brute-force method for doing this is MCEM. This is an EM algorithm in which
   the missing data are simulated via Monte Carlo (often MCMC, when the full
   conditional distributions cannot be directly sampled from) at each iteration.
-  MCEM can be slow but is also a general workhorse method that is applicable to a wide range of problems.
+  MCEM can be slow but is also a general workhorse method that is applicable to
+  a wide range of problems.
   
   `buildMCEM` provides an (optionally) ascent-based MCEM algorithm based on
   @Caffo_etal_2005. `buildMCEM` was re-written for nimble version 1.2.0 and is
@@ -350,7 +351,7 @@ control list entry must satsify the following:
   manner, convergence is determined based on whether the uphill move is
   confidently less than a tolerance level taken to indicate that the algorithm
   is at the MLE. The associated tuning parameters, along with details on control
-  over each step, are described at `help(buildMCEM)`
+  over each step, are described at `help(buildMCEM)`.
   
   The maximization part of each MCEM iteration will use gradients from automatic
   differentiation if they are supported for the model and `buildDerivs=TRUE`
@@ -435,3 +436,16 @@ pumpCov <- CpumpMCEM$vcov(pumpMLE$par)
 pumpCov
 ``` 
 
+## Laplace approximation and adaptive Gauss-Hermite quadrature
+
+Many hierarchical models include continuous random effects that must be
+integrated over to obtain the (marginal) likelihood of the parameters given the
+data. Laplace approximation and adaptive Gauss-Hermite quadrature (AGHQ) are
+often accurate and fast approximations for doing so. Laplace is simply AGHQ with
+a single quadrature point (the conditional mode of the random effects).
+
+NIMBLE provides these algorithms via `buildLaplace` and `buildAGHQuad` (the
+former simply calls the latter), which take advantage of the automatic
+differentiation features introduced in version 1.0.0. Laplace approximation is
+introduced in section \@ref(sec:AD-laplace), while details for both can be found
+by `help(buildLaplace)`.

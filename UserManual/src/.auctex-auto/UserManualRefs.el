@@ -35,6 +35,8 @@
     "Stan_Lang_Fun_2021"
     "Lewandowski_etal_2009"
     "hoffman2014no"
-    "stan2023stan"))
+    "stan2023stan"
+    "Michaud_etal_2021"
+    "Ionides_etal_2015"))
  :bibtex)
 
