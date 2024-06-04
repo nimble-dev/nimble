@@ -383,6 +383,8 @@ class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
 #endif
 };
 
+SEXP getListElement(SEXP list, const char *str);
+
 void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to);
 void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to);
 void nimCopy(ManyVariablesMapAccessorBase &from, int rowFrom, ManyVariablesMapAccessorBase &to);

@@ -1227,18 +1227,79 @@ nimRound <- round
 #' NIMBLE wrapper around R's builtin \code{\link{optim}}.
 #'
 #' @param par Initial values for the parameters to be optimized over.
-#' @param fn  A function to be minimized (or maximized), with first argument the
-#'            vector of parameters over which minimization is to take place. It
-#'            should return a scalar result.
-#' @param gr  A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.
+#' @param fn A function to be minimized (or maximized), with first argument the
+#'   vector of parameters over which minimization is to take place. It should
+#'   return a scalar result.
+#' @param gr A function to return the gradient for the "BFGS", "CG" and
+#'   "L-BFGS-B" methods. If not provided, a finite-difference approximation to
+#'   derivatives will be used.
+#' @param he A function to return the Hessian matrix of second derivatives. Used
+#'   (but not required) in "nlminb" or (optionally) user-provided methods.
 #' @param ... IGNORED
-#' @param method The method to be used. See `Details` section of \code{\link{optim}}. One of:
-#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
-#'               Note that the R methods "SANN", "Brent" are not supported.
+#' @param method The method to be used. See `Details` section of
+#'   \code{\link{optim}}. One of: "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", or
+#'   "nlminb". Note that the R methods "SANN", "Brent" are not supported. It is
+#'   also possible to provide a new method; see details.
 #' @param lower Vector or scalar of lower bounds for parameters.
 #' @param upper Vector or scalar of upper bounds for parameters.
-#' @param control A list of control parameters. See \code{Details} section of \code{\link{optim}}.
+#' @param control A list of control parameters. See \code{Details} section of
+#'   \code{\link{optim}}. For code in a nimbleFunction to be compiled, this must
+#'   be an \code{optimControlNimbleList}, which has fields for most elements in
+#'   the control list for R's \code{optim}.
 #' @param hessian Logical. Should a Hessian matrix be returned?
+#'
+#' @details This function for use in nimbleFunctions for compilation by
+#'   \code{compileNimble} provides capabilities similar to R's \code{optim} and
+#'   \code{nlminb}. For the supported methods provided by \code{optim}, a
+#'   compiled nimbleFunction will directly call the C code used by R for these
+#'   methods.
+#'
+#' If \code{optim} appears in a nimbleFunction, it will be converted to
+#' \code{nimOptim}.
+#'
+#' Note that if a gradient function (code{gr}) is not provided, \code{optim}
+#'   provides a finite difference approximation for use by optimization methods
+#'   that need gradients. nimble's compiled version of \code{nimOptim} the same
+#'   thing, although results might not be completely identical.
+#'
+#' For \code{method="nlminb"}, a compiled nimbleFunction will run R's
+#' \code{nlminb} directly in R, with \code{fn}, \code{gr} (if provided) and
+#' \code{he} (if provided) that call back into compiled code.
+#'
+#' An experimental feature is the capability to provide one's own optimization
+#' method in R and register it for use by \code{nimOptim}. One must write a
+#' function that takes arguments \code{par}, \code{fn}, \code{gr}, \code{he},
+#' \code{lower}, \code{upper}, \code{control}, and \code{hessian}. The function
+#' must return a list with elements \code{par}, \code{value},
+#' \code{convergence}, \code{counts}, \code{evaluations}, \code{message}, and
+#' \code{hessian} (which may be NULL). If \code{hessian=TRUE} but the function
+#' does not return a matrix in the \code{hessian} element of its return list,
+#' \code{nimOptim} will fill in that element using finite differences of the
+#' gradient.
+#'
+#' The \code{control} list passed from a nimbleFunction to the
+#' optimization function will include a minimum of options, including
+#' \code{abstol}, \code{reltol}, \code{maxit}, and \code{trace}. Other options
+#' for a specific method may be set within the custom optimization function but
+#' cannot be passed from \code{nimOptim}.
+#'
+#'  The elements \code{parscale} and \code{fnscale} in \code{control} are used in
+#' a special way. They are implemented by \code{nimOptim} such that for *any*
+#' the method is expected to do minimization and \code{nimOptim} will arrange
+#' for it to minimize \code{fn(par)/fnscale} in the parameter space
+#' \code{par/parscale}.
+#'
+#' An optimizer \code{fun} may be registered by
+#' \code{nimOptimMethod("method_name", fun)}, and then "\code{method_name}" can
+#' be used as the \code{method} argument to \code{nimOptim} to use \code{fun}.
+#' An optimizer may be found by \code{nimOptimMethod("method_name")} and may be
+#' removed by \code{nimOptimMethod("method_name", NULL)}.
+#'
+#' Support for \code{method="nlminb"} is provided in this way, and can be
+#' studied as an example via \code{nimOptimMethod("nlminb")}.
+#'
+#' The system for providing one's own optimizer is not considered stable and is
+#' subject to change in future versions.
 #'
 #' @return \code{\link{optimResultNimbleList}}
 #' @seealso \code{\link{optim}}
@@ -1263,10 +1324,13 @@ nimRound <- round
 #' cOptimizer <- compileNimble(optimizer)
 #' cOptimizer(method = 'BFGS', fnscale = -1)
 #' }
-nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
+nimOptim <- function(par, fn, gr = "NULL", he = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
                      control = nimOptimDefaultControl(), hessian = FALSE) {
     ## Tweak parameters.
     if(identical(gr, "NULL")) gr <- NULL
+    if(identical(he, "NULL")) he <- NULL
+  ## We don't handle creation of finite difference versions of gr and he here
+  ## as we do in compiled code. That is a compiled/uncompiled behavior discrepancy.
     defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
     ## Only enter non-default values into Rcontrol.
@@ -1278,8 +1342,64 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
             Rcontrol[[name]] <- control[[name]]
         }
     }
-    result <- optim(par, fn, gr = gr, ..., method = method,
-                    lower = lower, upper = upper, control = Rcontrol, hessian = hessian)
+    if(method %in% c("Nelder-Mead", "CG", "BFGS", "L-BFGS-B")) {
+      result <- optim(par, fn, gr = gr, ..., method = method,
+                      lower = lower, upper = upper, control = Rcontrol, hessian = hessian)
+    } else {
+      # NB: Compiled nimOptim applies parscale and fnscale internally,
+      # so they are applied for all optimizers in the same way.
+      # Hence we have to do that here.
+      fnscale <- control$fnscale
+      if(is.null(fnscale) || is.na(fnscale))
+        fnscale <- 1
+      working_parscale <- control$parscale
+      if(is.null(working_parscale) ||
+           ((length(working_parscale)==1) && is.na(working_parscale[1])))
+        working_parscale <- rep(1, length(par))
+      adj_fn <- \(par, ...) fn(par*working_parscale, ...) / fnscale
+      if(is.function(gr))
+        adj_gr <- \(par, ...) working_parscale * gr(par*working_parscale, ...) / fnscale
+      else adj_gr <- NULL
+      if(hessian || is.function(he))
+        working_parscale_mat <- outer(working_parscale, working_parscale)
+      if(is.function(he)) {
+        adj_he <- \(par, ...) working_parscale_mat * he(par*working_parscale, ...) / fnscale
+      }
+      else adj_he <- NULL
+      init_par <- par / working_parscale
+      result <- custom_optim_inner(method, init_par, adj_fn, adj_gr, adj_he,
+                                   lower, upper, control, hessian)
+      hessian_returned <- is.numeric(result$hessian) && length(result$hessian)
+      if(hessian && !hessian_returned)
+        result$hessian <- optimHess(result$par, adj_fn, adj_gr) # ignore ndeps
+      hessian_returned <- is.numeric(result$hessian) && length(result$hessian)
+
+      result$value <- result$value * fnscale
+      result$par <- result$par * working_parscale
+      if(hessian_returned)
+        result$hessian <- fnscale * result$hessian / working_parscale_mat
+      ## Rcontrol$type <- NULL
+      ## optimr_methods <- optimx::ctrldefault(4) # imitated optimx::checkallsolvers
+      ## avail_in_optimr <- suppressWarnings(
+      ##   optimx::checksolver(method, optimr_methods$allmeth, optimr_methods$allpkg)
+      ## )
+      ## if(!is.null(avail_in_optimr)) {
+      ##   resultRaw <- try(optimx::optimr(par, fn, gr = gr, he = he, method = method, lower = lower,
+      ##                                   upper = upper, hessian=hessian))
+      ## } else {
+      ##   optimizer <- nimOptimMethod(method)
+      ##   if(is.null(optimizer)) stop("optimizer ", method, " not found. See help(nimOptimMethod).")
+      ##   resultRaw <- try(optimizer(par, fn, gr = gr, he = he, lower = lower,
+      ##                                   upper = upper, control = Rcontrol, hessian=hessian))
+      ## }
+      ## if(inherits(resultRaw, "try-error")) stop("problem with optimizer ", method)
+
+      ## result <- list()
+      ## for(name in c("par", "value", "convergence", "counts", "message")) {
+      ##   result[[name]] <- resultRaw[[name]]
+      ##   attributes(result[[name]]) <- NULL
+      ## }
+    }
     nimResult <- do.call(optimResultNimbleList$new, result)
     # Tweak result value to exactly match C++ behavior.
     nimResult$counts <- unname(nimResult$counts)
@@ -1290,6 +1410,53 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
         nimResult$hessian <- matrix(nrow = 0, ncol = 0)
     }
     return(nimResult)
+}
+
+# nimble_custom_optim_ function is called only from C++
+custom_optim <- function(method, par, lower, upper, control,
+                         hessian, use_gr, use_he, extptr,...) {
+  fnsym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_fn # getNativeSymbolInfo("CALL_NimOptimProblem_fn")
+  fn <- \(p) .Call(fnsym, p, extptr)
+  if(use_gr) {
+    grsym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_gr # getNativeSymbolInfo("CALL_NimOptimProblem_gr")
+    gr <- \(p) .Call(grsym, p, extptr)
+  } else gr <- NULL
+  if(use_he) {
+    hesym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_he # getNativeSymbolInfo("CALL_NimOptimProblem_he")
+    he <- \(p) .Call(hesym, p, extptr)
+  } else he <- NULL
+  custom_optim_inner(method, par, fn, gr, he, lower, upper, control, hessian)
+}
+
+custom_optim_inner <- function(method, par, fn, gr, he, lower, upper, control,
+                               hessian) {
+                                        # To do:
+  # uncompiled R execution
+  # the control list here will have been packed up like this from the optimControlNimbleList:
+  # list(parscale = control$parscale, fnscale = control$fnscale, maxit = control$maxit,
+  #      trace = control$trace, abstol = control$abstol, reltol = control$reltol)
+  ## We experimented with giving optimx a priority of call, but we are not doing that for now.
+  ## optimr_methods <- optimx::ctrldefault(4) # imitated optimx::checkallsolvers
+  ## avail_in_optimr <- suppressWarnings(
+  ##   optimx::checksolver(method, optimr_methods$allmeth, optimr_methods$allpkg)
+  ## )
+  ## if(!is.null(avail_in_optimr)) {
+  ##   resultRaw <- try(optimx::optimr(par, fn, gr = gr, he = he, method = method, lower = lower,
+  ##                                   upper = upper, hessian=hessian))
+  ## } else {
+  optimizer <- nimOptimMethod(method)
+  if(is.null(optimizer)) stop("optimizer ", method, " not found. See help(nimOptimMethod).")
+  resultRaw <- try(optimizer(par, fn, gr = gr, he = he, lower = lower,
+                             upper = upper, control = control, hessian=hessian))
+  ##  }
+  if(inherits(resultRaw, "try-error")) stop("problem with optimizer ", method)
+
+  result <- list()
+  for(name in c("par", "value", "convergence", "counts", "message", "hessian")) {
+    result[[name]] <- resultRaw[[name]]
+    attributes(result[[name]]) <- NULL
+  }
+  result
 }
 
 #' Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
