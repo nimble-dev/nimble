@@ -3,10 +3,10 @@
 ## USER LEVEL CHANGES
 
 - Adds a Pólya-gamma sampler for conjugate sampling of linear predictor 
-  parameters in logistic regression specifications, including handling
-  zero inflation and stochastic design matrices(PR #1439).
+  parameters in logistic regression model specifications, including handling
+  zero inflation and stochastic design matrices (PR #1439).
 
-- Adds a new sampler, `sampler_noncentered`, which samples random effect
+- Adds a new `noncentered` sampler which samples random effect
   values in a transformed space, given a proposal for the mean or standard 
   deviation, by deterministically shifting or scaling the values. Sampling is
   performed in the context of an implicit noncentered parameterization,
@@ -16,7 +16,7 @@
 - Completely revamp MCEM algorithm, fixing a bug so that any parts of the model
   not connected to the latent states are included in MLE calculations, giving
   greater control and adding minor extensions to the ascent-based MCEM approach,
-  using AD in the maximization when possible, and converting `buildMCEM` to be
+  using AD in the maximization when possible, and converting `buildMCEM` to
   a nimbleFunction rather than an R function (PR #1428).
   
 - Provide adaptive Gauss-Hermite quadrature (AGHQ) for integrating over latent
@@ -31,7 +31,7 @@
 - Allow the use of nimbleFunctions with setup code in models either for 
   deterministic assignment via `<-` or for specifying user-defined distributions. 
   This supports holding large objects outside of model nodes for use in models
-  (PRs #1348, #1453)
+  (PRs #1348, #1453).
 
 - Error out if the `RW_block` sampler is assigned to any discrete nodes 
   (PR #1421).
@@ -42,7 +42,7 @@
 - Add an argument to `buildMCMC` controlling whether to initialize values in
   the model (PR #1429).
   
-- Improve the efficiency of setting up derivatives information for models
+- Improve the efficiency of setting up derivative information for models
   with multivariate nodes with many elements (PR #1431).
   
 - Provide ability to control number of digits printed in C++ output (PR #1145).
