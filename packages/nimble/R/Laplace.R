@@ -2349,15 +2349,20 @@ summaryLaplace <- function(laplace, MLEoutput,
 #' @param model a NIMBLE model object, such as returned by \code{nimbleModel}.
 #'   The model must have automatic derivatives (AD) turned on, e.g. by using
 #'   \code{buildDerivs=TRUE} in \code{nimbleModel}.
+#' @param nQuad number of quadrature nodes (in one dimension). This is
+#'   automatically 1 for Laplace approximation. Only odd numbers of nodes really
+#'   make sense. Often only a few nodes achieve very high accuracy. A maximum of
+#'   35 nodes is supported. Note that for multivariate quadratures, the number
+#'   of nodes will be (number of dimensions)^nQuad.
 #' @param paramNodes a character vector of names of parameter nodes in the
 #'   model; defaults are provided by \code{\link{setupMargNodes}}.
 #'   Alternatively, \code{paramNodes} can be a list in the format returned by
 #'   \code{setupMargNodes}, in which case \code{randomEffectsNodes},
 #'   \code{calcNodes}, and \code{calcNodesOther} are not needed (and will be
 #'   ignored).
-#' @param randomEffectsNodes a character vector of names of continuous unobserved 
-#'   (latent) nodes to marginalize (integrate) over using Laplace approximation; 
-#'   defaults are provided by \code{\link{setupMargNodes}}.
+#' @param randomEffectsNodes a character vector of names of continuous
+#'   unobserved (latent) nodes to marginalize (integrate) over using Laplace
+#'   approximation; defaults are provided by \code{\link{setupMargNodes}}.
 #' @param calcNodes a character vector of names of nodes for calculating the
 #'   integrand for Laplace approximation; defaults are provided by
 #'   \code{\link{setupMargNodes}}. There may be deterministic nodes between
