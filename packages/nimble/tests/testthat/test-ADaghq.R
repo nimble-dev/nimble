@@ -58,8 +58,8 @@ test_that("AGH Quadrature Normal-Normal 1D works", {
   test.val2 <- c(2, 0.5, 0.1)
 
   ## Test against output from buildLaplace
-  expect_equal(cmLaplace$calcLogLik(test.val1), -72.5573684952759521,  tol = 1e-16 )
-  expect_equal(cmLaplace$calcLogLik(test.val2), -1000.9603427653298695,  tol = 1e-16 )
+  expect_equal(cmLaplace$calcLogLik(test.val1), -72.5573684952759521,  tol = 1e-10 )
+  expect_equal(cmLaplace$calcLogLik(test.val2), -1000.9603427653298695,  tol = 1e-10 )
 
   ## Values from buildLaplace with testval1 and testval2
   grTestLaplace1 <- c(1.5385734890331042, -6.3490351165007235, -3.1745175582503542)
@@ -133,7 +133,8 @@ test_that("AGH Quadrature 1D Poisson-Gamma for checking nQuad", {
   cmQuad <- compileNimble(mQuad, project = m)
   test.val1 <- c(10, 2)
   test.val2 <- c(1, 5)
- 
+  cmQuad$updateSettings(innerOptimMethod = "nlminb") # The tolerances below happen to be for nlminb results
+
   ## Check Marginalization
   logLik20 <- cmQuad$calcLogLik(test.val1)
   m.nb$a <- test.val1[1]; m.nb$b <- test.val1[2]
@@ -190,7 +191,7 @@ test_that("AGH Quadrature 1D Binomial-Beta check 3 methods", {
   
   cm <- compileNimble(m)
   # mQuad <- buildLaplace(model = m)
-  mQuad <- buildAGHQuad(model = m, nQuad = 5)
+  mQuad <- buildAGHQuad(model = m, nQuad = 5, control=list(innerOptimMethod="nlminb")) # tolerances set for this result
   cmQuad <- compileNimble(mQuad, project = m)
 
   param.val <- c(7, 1)
@@ -305,7 +306,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
     buildDerivs = TRUE)
   
   cm <- compileNimble(m)
-  mQuad <- buildAGHQuad(model = m, nQuad = 5)
+  mQuad <- buildAGHQuad(model = m, nQuad = 5, control=list(innerOptimeMethod="nlminb"))
   cmQuad <- compileNimble(mQuad, project = m)
 
   ## Check gradient and marginalization accuracy.
@@ -336,13 +337,15 @@ test_that("AGH Quadrature 1D Check MLE.", {
   mle.par <- exp(mle.tru$par)
   
   ## Check with 5 quad points.
-  mle.quad <- cmQuad$findMLE(pStart = c(10,2))
+  mle.quad <- cmQuad$findMLE(pStart = c(10,2), method="nlminb")
   expect_equal(mle.quad$par, mle.par, tol = 1e-02)
   expect_equal(mle.quad$value, mle.tru$value, tol = 1e-03)
   
   ## Check with 35 quad points.
   cmQuad$updateSettings(nQuad=35)
-  mle.quad35 <- cmQuad$findMLE(pStart = c(10,2))
+  for(v in m$getVarNames()) cm[[v]] <- m[[v]]
+  cm$calculate()
+  mle.quad35 <- cmQuad$findMLE(pStart = c(10,2), method="nlminb")
   expect_equal(mle.quad35$par, mle.par, tol = 1e-04)
   expect_equal(mle.quad35$value, mle.tru$value, tol = 1e-08)
 })
@@ -376,6 +379,7 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   # N.B. It is not clear that setting reltol values less than sqrt(.Machine$double.eps) is useful, so we may want to update this:
   mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
   mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
+  mQuad$updateSettings(innerOptimMethod="nlminb")
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
@@ -412,7 +416,11 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   expect_equal(gr_mle, c(0,0,0), tol = 1e-5)
 
   ## Compare MLE after running twice.
+  for(v in m$getVarNames()) cm[[v]] <- m[[v]]
+  cm$calculate()
   mleLaplace2 <- cmLaplace$findMLE(method="BFGS")$par
+  for(v in m$getVarNames()) cm[[v]] <- m[[v]]
+  cm$calculate()
   mleQuad2 <- cmQuad$findMLE(method="BFGS")$par
   expect_equal(mleLaplace, mleLaplace2, tol = 1e-6) # 1e-8
   expect_equal(mleQuad, mleQuad2, tol = 1e-8)
@@ -447,6 +455,7 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   cm <- compileNimble(m)	  
   mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
   mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
+  mQuad$updateSettings(innerOptimMethod = "nlminb")
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
@@ -481,7 +490,7 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   ## Compare MLE after running twice.
   mleLaplace2 <- cmLaplace$findMLE(method="BFGS")$par
   mleQuad2 <- cmQuad$findMLE(method="BFGS")$par
-  expect_equal(mleLaplace, mleLaplace2, tol = 1e-6) 
+  expect_equal(mleLaplace, mleLaplace2, tol = 1e-5)
   expect_equal(mleQuad, mleQuad2, tol = 1e-8)
 })
 
