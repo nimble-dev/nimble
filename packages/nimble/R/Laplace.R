@@ -840,7 +840,7 @@ buildOneAGHQuad1D <- nimbleFunction(
     ## Update the maximum mode and neg hess based on the log likelihood passed via optim.
     ##  For efficient saving of values for calculating MLE values of random-effects and INLA simulation of them.
     save_outer_logLik = function(logLikVal = double()){
-      if(logLikVal > max_outer_logLik) {
+      if(logLikVal >= max_outer_logLik) {
         max_outer_logLik <<- logLikVal
         outer_mode_inner_negHess <<- saved_inner_negHess
         outer_mode_max_inner_logLik_last_argmax <<- max_inner_logLik_last_argmax
@@ -899,7 +899,9 @@ buildOneAGHQuad1D <- nimbleFunction(
         values(model, paramNodes) <<- p
         model$calculate(paramDeps)
       }else{
-        print("  [Warning] Have not cached the inner optimization. Running optimization now.")
+        # It would be nice to emit a message here, but different optimizers (e.g. BFGS vs nlminb)
+        # behave differently as to whether the previous (last) parameters were always the MLE.
+        # print("  [Warning] Have not cached the inner optimization. Running optimization now.")
         update_max_inner_logLik(p)
         re <- reTrans$inverseTransform(max_inner_logLik_last_argmax)
       }
@@ -1705,7 +1707,9 @@ buildOneAGHQuad <- nimbleFunction(
         values(model, paramNodes) <<- p
         ans <- model$calculate(paramDeps)
       }else{
-        print("  [Warning] Have not cached the inner optimization. Running inner optimization now.")
+        # It would be nice to emit a message here, but different optimizers (e.g. BFGS vs nlminb)
+        # behave differently as to whether the previous (last) parameters were always the MLE.
+        # print("  [Warning] Have not cached the inner optimization. Running optimization now.")
         update_max_inner_logLik(p)
         re <- reTrans$inverseTransform(max_inner_logLik_last_argmax)
       }
@@ -2737,6 +2741,7 @@ buildAGHQuad <- nimbleFunction(
     ## AGHQuad approximation in terms of original parameters
     calcLogLik = function(p = double(1), trans = logical(0, default = FALSE)) {
       if(!one_time_fixes_done) one_time_fixes()
+      checkInterrupt()
       if(trans) {
         if(length(p) != pTransform_length) {
           print("  [Warning] For calcLogLik (or calcLaplace) with trans = TRUE, p should be length ", pTransform_length, " but was provided with length ", length(p),".")
@@ -3324,18 +3329,25 @@ buildAGHQuad <- nimbleFunction(
                      )
 )
 										 
-#' Summarize results from Laplace approximation
+#' Summarize results from Laplace or adaptive Gauss-Hermite quadrature approximation
 #'
-#' Process the results of the `findMLE` method of a nimble Laplace approximation
+#' Process the results of the `findMLE` method of a nimble Laplace or AGHQ approximation
 #' into a more useful format.
 #'
 #' @param laplace The Laplace approximation object, typically the compiled one.
 #'   This would be the result of compiling an object returned from
 #'   `buildLaplace`.
 #'
-#' @param MLEoutput The maximum likelihood estimate using Laplace approximation,
-#'   returned from `laplace$findMLE(...)`. See `help(buildLaplace)` for more
-#'   information.
+#' @param AGHQ Same as \code{laplace}. Note that `buildLaplace` and
+#'   `buildAGHQuad` create the same kind of algorithm object that can be used
+#'   interchangeably. `buildLaplace` simply sets the number of quadrature points
+#'   (`nQuad`) to 1 to achieve Laplace approximation as a special case of AGHQ.
+#'
+#' @param MLEoutput The maximum likelihood estimate using Laplace or AGHQ,
+#'   returned from e.g. `approx$findMLE(...)`, where \code{approx} is the
+#'   algorithm object returned by `buildLaplace` or `buildAGHQuad`, or (more
+#'   typically) the result of compiling that object with `compileNimble`. See
+#'   `help(buildLaplace)` for more information.
 #'
 #' @param originalScale Should results be returned using the original
 #'   parameterization in the model code (TRUE) or the potentially transformed
@@ -3354,8 +3366,7 @@ buildAGHQuad <- nimbleFunction(
 #' @details
 #'
 #' The numbers obtained by this function can be obtained more directly by
-#' `laplace$summary(...)`, which calls a (usually compiled) method of the
-#' `laplace` nimbleFunction. The added benefit of `summaryLaplace` is to arrange
+#' `approx$summary(...)`. The added benefit of `summaryLaplace` is to arrange
 #' the results into data frames (for parameters and random effects), with row
 #' names for the model nodes, and also adding row and column names to the
 #' covariance matrix.
@@ -3416,18 +3427,21 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
                         jointCovariance = FALSE) {
   summaryLaplace(AGHQ, MLEoutput, originalScale, randomEffectsStdError, jointCovariance)
 }
-#' Combine steps of running Laplace approximation
+
+#' Combine steps of running Laplace or adaptive Gauss-Hermite quadrature approximation
 #'
-#' Use a Laplace approximation (compiled or uncompiled) returned from
-#' buildLaplace to find the maximum likelihood estimate and return it
+#' Use an approximation (compiled or uncompiled) returned from
+#' `buildLaplace` or `buildAGHQuad` to find the maximum likelihood estimate and return it
 #' with random effects estimates and/or standard errors.
 #'
 #' @aliases runAGHQ runLaplace
 #'
 #' @param laplace A (compiled or uncompiled) nimble laplace approximation object
-#'   returned from buildLaplace or buildAGHQ
+#'   returned from `buildLaplace` or `buildAGHQuad`. These return the same type of
+#'   approximation algorithm object. `buildLaplace` is simply `buildAGHQuad`
+#'   with `nQuad=1`.
 #'
-#' @param AGHQ Same as \code{laplace}
+#' @param AGHQ Same as \code{laplace}.
 #'
 #' @param pStart Initial values for parameters to begin optimization search for
 #'   the maximum likelihood estimates. If omitted, the values currently in the
@@ -3449,7 +3463,7 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #'
 #' @details
 #'
-#' Adaptive Gauss-Hermite Quadrature is a generalization of Laplace
+#' Adaptive Gauss-Hermite quadrature is a generalization of Laplace
 #' approximation. \code{runLaplace} simply calles \code{runAGHQ} and provides a
 #' convenient name.
 #'
@@ -3458,6 +3472,15 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' `summaryLaplace` function to obtain standard errors, (optionally) random
 #' effects estimates (conditional modes), their standard errors, and the full
 #' parameter-random effects covariance matrix.
+#'
+#' Note that for `nQuad > 1` (see \link{\code{buildAGHQuad}}), i.e., AGHQ with
+#' higher order than Laplace approximation, maximum likelihood estimation is
+#' available only if all random effects integrations are univariate. With
+#' multivariate random effects integrations, one can use `nQuad > 1` only to
+#' calculate marginal log likelihoods at given parameter values. This is useful
+#' for checking the accuracy of the log likelihood at the MLE obtained for
+#' Laplace approximation (`nQuad == 1`). `nQuad` can be changed using the
+#' `updateSettings` method of the approximation object.
 #'
 #' See \link{\code{summaryLaplace}}, which is called for the summary components.
 #'
@@ -3472,10 +3495,11 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' scale as the parameter estimates if a transformation was used to operate in
 #' an unconstrained parameter space.)
 #'
-#' \code{summary} is the result of \code{summaryLaplace}, which contains
-#' parameter estimates and standard errors, and optionally other requested
-#' components. All results in this object will be on the same scale
-#' (parameterization), either original or transformed, as requested.
+#' \code{summary} is the result of \code{summaryLaplace} (or equivalently
+#' \code{summaryAGHQ}), which contains parameter estimates and standard errors,
+#' and optionally other requested components. All results in this object will be
+#' on the same scale (parameterization), either original or transformed, as
+#' requested.
 #'
 #' @export
 runLaplace <- function(laplace, ...) {
@@ -3521,7 +3545,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'   \code{buildDerivs=TRUE} in \code{nimbleModel}.
 #' @param nQuad number of quadrature points for AGHQ (in one dimension). Laplace approximation is
 #'   AGHQ with `nQuad=1`. Only odd numbers of nodes really
-#'   make sense. Often only a few nodes achieve very high accuracy. A maximum of
+#'   make sense. Often only one or a few nodes can achieve high accuracy. A maximum of
 #'   35 nodes is supported. Note that for multivariate quadratures, the number
 #'   of nodes will be (number of dimensions)^nQuad.
 #' @param paramNodes a character vector of names of parameter nodes in the
@@ -3555,25 +3579,37 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' @section \code{buildLaplace}:
 #'
 #' \code{buildLaplace} creates an object that can run Laplace approximation and
-#'   fine the (approximate) maximum likelihood estimate for a given model or
-#'   part of a model.
+#'   for a given model or part of a model. \code{buildAGHQuad} creates an object
+#'   that can run adaptive Gauss-Hermite quadrature (AGHQ, sometimes called
+#'   "adaptive Gaussian quadrature") for a given model or part of a model.
+#'   Laplace approximation is AGHQ with one quadrature point, hence
+#'   `buildLaplace` simply calls `buildAGHQ` with `nQuad=1`. These methods
+#'   approximate the integration over continuous random effects in a
+#'   hierarchical model to calculate the (marginal) likelihood.
 #'
-#' \code{buildAGHQuad} creates an object that can run adaptive Gauss-Hermite
-#' quadrature (AGHQ, sometimes called "adaptive Gaussian quadrature") for a
-#' given model or part of a model. Maximum likelihood estimation is supported if
-#' all quadrature needs are univariate (e.g., a set of univariate random
-#' effects). If there are multivariate integrations (quadratures), these can be
-#' calculated at chosen input parameters but not maximized over parameters.
+#' \code{buildAGHQ} and \code{buildLaplace} will by default (unless changed
+#' manually via `control$split`) determine from the model which random effects
+#' can be integrated over (marginalized) independently. For example, in a GLMM
+#' with a grouping factor and an independent random effect intercept for each
+#' group, the random effects can be marginalized as a set of univariate
+#' approximations rather than one multivariate approximation. On the other hand,
+#' correlated or nested random effects would require multivariate marginalization.
 #'
-#' Laplace approximation is AGHQ with one quadrature point. `buildLaplace`
-#' simply calls `buildAGHQ` with `nQuad=1`.
+#' Maximum likelihood estimation is available for Laplace approximation
+#' (`nQuad=1`) with univariate or multivariate integrations. With `nQuad > 1`,
+#' maximum likelihood estimation is available only if all integrations are
+#' univariate (e.g., a set of univariate random effects). If there are
+#' multivariate integrations, these can be calculated at chosen input parameters
+#' but not maximized over parameters. For example, one can find the MLE based on
+#' Laplace approximation and then increase `nQuad` (using the `updateSettings`
+#' method below) to check on accuracy of the marginal log likelihood at the MLE.
 #'
 #' Beware that quadrature will use `nQuad^k` quadrature points, where `k` is the
-#' dimension of random effects that require joint integration. Therefore quadrature for `k` greater that 2 or 3
-#' can be slow. Note that `buildAGHQuad` will determine conditionally
-#' independent dimensions of quadrature, so it is fine to have a set of
-#' univariate random effects, as these will each have k=1. Multivariate quadrature (k>1) is only necessary for
-#' nested, correlated, or otherwise dependent random effects.
+#' dimension of each integration. Therefore quadrature for `k` greater that 2 or
+#' 3 can be slow. As just noted, `buildAGHQuad` will determine independent
+#' dimensions of quadrature, so it is fine to have a set of univariate random
+#' effects, as these will each have k=1. Multivariate quadrature (k>1) is only
+#' necessary for nested, correlated, or otherwise dependent random effects.
 #'
 #' The recommended way to find the maximum likelihood estimate and associated
 #' outputs is by calling \link{\code{runLaplace}} or \link{\code{runAGHQ}}. The
@@ -3586,6 +3622,9 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'   to call the \code{summary} method and obtain results that include node
 #'   names. These steps are all done within \code{runLaplace} and
 #'   \code{runAGHQ}.
+#'
+#' The NIMBLE User Manual at r-nimble.org also contains an example of Laplace
+#' approximation.
 #'
 #' @section How input nodes are processed
 #'
