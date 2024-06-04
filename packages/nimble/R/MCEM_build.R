@@ -458,7 +458,8 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'   the model. The MCEM can then be compiled for fast execution with a compiled model.
 #'
 #' Note that \code{buildMCEM} was re-written for nimble version 1.2.0 and is not
-#' backward-compatible with previous versions.
+#' backward-compatible with previous versions. The new version is considered to
+#' be in beta testing.
 #'
 #' Denote data by Y, latent states (or missing data) by X, and parameters by T.
 #' MCEM works by the following steps, starting from some T:

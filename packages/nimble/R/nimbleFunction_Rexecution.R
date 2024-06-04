@@ -1224,7 +1224,8 @@ nimRound <- round
 
 #' General-purpose Optimization
 #'
-#' NIMBLE wrapper around R's builtin \code{\link{optim}}.
+#' NIMBLE wrapper around R's builtin \code{\link{optim}}, with flexibility for
+#' additional methods.
 #'
 #' @param par Initial values for the parameters to be optimized over.
 #' @param fn A function to be minimized (or maximized), with first argument the
@@ -1259,8 +1260,8 @@ nimRound <- round
 #'
 #' Note that if a gradient function (code{gr}) is not provided, \code{optim}
 #'   provides a finite difference approximation for use by optimization methods
-#'   that need gradients. nimble's compiled version of \code{nimOptim} the same
-#'   thing, although results might not be completely identical.
+#'   that need gradients. nimble's compiled version of \code{nimOptim} does the
+#'   same thing, although results might not be completely identical.
 #'
 #' For \code{method="nlminb"}, a compiled nimbleFunction will run R's
 #' \code{nlminb} directly in R, with \code{fn}, \code{gr} (if provided) and
