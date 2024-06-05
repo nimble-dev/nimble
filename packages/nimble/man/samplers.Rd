@@ -21,6 +21,7 @@
 \alias{sampler_RW_block_lkj_corr_cholesky}
 \alias{sampler_CAR_normal}
 \alias{sampler_CAR_proper}
+\alias{sampler_polyagamma}
 \alias{samplers}
 \alias{sampler}
 \alias{binary}
@@ -94,6 +95,8 @@ sampler_RW_block_lkj_corr_cholesky(model, mvSaved, target, control)
 sampler_CAR_normal(model, mvSaved, target, control)
 
 sampler_CAR_proper(model, mvSaved, target, control)
+
+sampler_polyagamma(model, mvSaved, target, control)
 
 sampler_RJ_fixed_prior(model, mvSaved, target, control)
 

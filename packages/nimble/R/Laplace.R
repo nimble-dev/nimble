@@ -3443,12 +3443,13 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #'
 #' @param AGHQ Same as \code{laplace}.
 #'
+#' @param method Optimization method for outer optimization. See \code{method}
+#'   argument to \code{findMLE} method in \code{\link{buildLaplace}}.
+#'
 #' @param pStart Initial values for parameters to begin optimization search for
 #'   the maximum likelihood estimates. If omitted, the values currently in the
 #'   (compiled or uncompiled) model object will be used.
 #'
-#' @param method character string giving the optimization method to be used.
-#' Default = \code{'BFGS'}.
 #'
 #' @param originalScale If \code{TRUE}, return all results on the original scale
 #'   of the parameters and/or random effects as written in the model. Otherwise,
@@ -3478,7 +3479,7 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' effects estimates (conditional modes), their standard errors, and the full
 #' parameter-random effects covariance matrix.
 #'
-#' Note that for `nQuad > 1` (see \link{\code{buildAGHQuad}}), i.e., AGHQ with
+#' Note that for `nQuad > 1` (see \code{\link{buildAGHQuad}}), i.e., AGHQ with
 #' higher order than Laplace approximation, maximum likelihood estimation is
 #' available only if all random effects integrations are univariate. With
 #' multivariate random effects integrations, one can use `nQuad > 1` only to
@@ -3487,7 +3488,7 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' Laplace approximation (`nQuad == 1`). `nQuad` can be changed using the
 #' `updateSettings` method of the approximation object.
 #'
-#' See \link{\code{summaryLaplace}}, which is called for the summary components.
+#' See \code{\link{summaryLaplace}}, which is called for the summary components.
 #'
 #' @return
 #'

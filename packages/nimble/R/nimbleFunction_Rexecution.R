@@ -1258,7 +1258,7 @@ nimRound <- round
 #' If \code{optim} appears in a nimbleFunction, it will be converted to
 #' \code{nimOptim}.
 #'
-#' Note that if a gradient function (code{gr}) is not provided, \code{optim}
+#' Note that if a gradient function (\code{gr}) is not provided, \code{optim}
 #'   provides a finite difference approximation for use by optimization methods
 #'   that need gradients. nimble's compiled version of \code{nimOptim} does the
 #'   same thing, although results might not be completely identical.
