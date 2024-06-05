@@ -139,7 +139,7 @@ pumpMLE
 
 ## ---- dont-run-mcemPump
 
-pumpMLE <- c(0.823025, 1.26278)
+pumpMLE <- list(par = c(0.823025, 1.26278))
 
 pumpMLE
 
@@ -166,8 +166,8 @@ simNodesTheta6to10 <- simNodesMany(pump, "theta[6:10]")
 
 ## ---- runPumpSimsR
 set.seed(1)  # make the calculation repeatable
-pump$alpha <- pumpMLE[1]
-pump$beta <- pumpMLE[2]
+pump$alpha <- pumpMLE$par[1]
+pump$beta <- pumpMLE$par[2]
 # make sure to update deterministic dependencies of the altered nodes
 pump$calculate(pump$getDependencies(c("alpha","beta"), determOnly = TRUE))
 saveTheta <- pump$theta
@@ -178,8 +178,8 @@ simNodesTheta1to5$mv[["logProb_x"]][1:2]
 ## ---- runPumpSimsC
 CsimNodesTheta1to5 <- compileNimble(simNodesTheta1to5,
                                     project  = pump, resetFunctions = TRUE)
-Cpump$alpha <- pumpMLE[1]
-Cpump$beta <- pumpMLE[2]
+Cpump$alpha <- pumpMLE$par[1]
+Cpump$beta <- pumpMLE$par[2]
 Cpump$calculate(Cpump$getDependencies(c("alpha","beta"), determOnly = TRUE))
 Cpump$theta <- saveTheta
 
