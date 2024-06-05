@@ -3443,6 +3443,9 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #'
 #' @param AGHQ Same as \code{laplace}.
 #'
+#' @method Optimization method for outer optimization. See \code{method}
+#'   argument to \code{findMLE} method in \link{\code{buildLaplace}}.
+#'
 #' @param pStart Initial values for parameters to begin optimization search for
 #'   the maximum likelihood estimates. If omitted, the values currently in the
 #'   (compiled or uncompiled) model object will be used.
