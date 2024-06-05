@@ -1222,7 +1222,96 @@ test_that("simple LME case works", {
   expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
 })
 
-test_that("simple LME with correlated intercept and slope works (and runLaplace works)", {
+test_that("simple LME with correlated intercept and slope works (and check with nQuad=3)", {
+  nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=TRUE)
+  set.seed(1)
+  g <- rep(1:10, each = 10)
+  n <- length(g)
+  x <- runif(n)
+  m <- nimbleModel(
+    nimbleCode({
+      for(i in 1:n) {
+        y[i] ~ dnorm((fixed_int + random_int_slope[g[i], 1]) + (fixed_slope + random_int_slope[g[i], 2])*x[i], sd = sigma_res)
+      }
+      cov[1, 1] <- sigma_int^2
+      cov[2, 2] <- sigma_slope^2
+      cov[1, 2] <- rho * sigma_int * sigma_slope
+      cov[2, 1] <- rho * sigma_int * sigma_slope
+      for(i in 1:ng) {
+        random_int_slope[i, 1:2] ~ dmnorm(zeros[1:2], cov = cov[1:2, 1:2])
+      }
+      sigma_int ~ dunif(0, 10)
+      sigma_slope ~ dunif(0, 10)
+      sigma_res ~ dunif(0, 10)
+      fixed_int ~ dnorm(0, sd = 100)
+      fixed_slope ~ dnorm(0, sd = 100)
+      rho ~ dunif(-1, 1)
+    }),
+    constants = list(g = g, ng = max(g), n = n, x = x, zeros = rep(0, 2)),
+    buildDerivs = TRUE
+  )
+  params <- c("fixed_int", "fixed_slope", "sigma_int", "sigma_slope", "sigma_res", "rho")
+  values(m, params) <- c(10, 0.5, 3, 0.25, 0.2, 0.45)
+  m$simulate(m$getDependencies(params, self = FALSE))
+  m$setData('y')
+  y <- m$y
+  library(lme4)
+  manual_fit <- lmer(y ~ x + (1 + x | g), REML = FALSE)
+  mLaplace <- buildLaplace(model = m)#, control=list(innerOptimStart="last.best"))
+  cm <- compileNimble(m)
+  cmLaplace <- compileNimble(mLaplace, project = m)
+
+  params_in_order <- setupMargNodes(m)$paramNodes
+
+  pStart <- values(m, params_in_order)
+
+  init_llh <- cmLaplace$calcLogLik(pStart)
+  init_gr_llh <- cmLaplace$gr_logLik(pStart)
+
+  opt <- cmLaplace$findMLE()
+  nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
+  nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
+
+  lme4res <- summary(manual_fit)
+  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
+  sdparams <- nimres$params$estimates[-c(4,5)]
+  expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
+  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
+
+  cmLaplace$updateSettings(nQuad = 3)
+  init_llh_3 <- cmLaplace$calcLogLik(pStart)
+  max_llh_3 <- cmLaplace$calcLogLik(opt$par  )
+  expect_equal(init_llh, init_llh_3, tolerance = 1e-7)
+  expect_equal(opt$value, max_llh_3, tolerance = 1e-4)
+
+  for(v in m$getVarNames()) cm[[v]] <- m[[v]]
+  cm$calculate()
+  cmLaplace$updateSettings(useInnerCache=FALSE)
+  cmLaplace$updateSettings(nQuad = 1)
+  CrunLaplaceRes <- runLaplace(cmLaplace, pStart = pStart)
+  expect_equal(opt$par, CrunLaplaceRes$MLE$par, tolerance = 1e-4)
+  expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$estimate,
+               CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$se,
+               CrunLaplaceRes$summary$randomEffects$se, tolerance = 1e-4)
+
+
+  for(v in m$getVarNames()) cm[[v]] <- m[[v]]
+  cm$calculate()
+  cmLaplace$updateSettings(useInnerCache=FALSE)
+  CrunLaplaceRes <- runLaplace(cmLaplace, pStart = pStart)
+  expect_equal(opt$par, CrunLaplaceRes$MLE$par, tolerance = 1e-4)
+  expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$estimate,
+               CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$se,
+               CrunLaplaceRes$summary$randomEffects$se, tolerance = 1e-4)
+
+})
+
+test_that("simple LME with correlated intercept and slope works through runLaplace", {
   set.seed(1)
   g <- rep(1:10, each = 10)
   n <- length(g)
@@ -1262,33 +1351,20 @@ test_that("simple LME with correlated intercept and slope works (and runLaplace 
 
   pStart <- values(m, params)
 
-  opt <- cmLaplace$findMLE()
-  nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
-  nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
+  res <- runLaplace(cmLaplace)
+  opt <- res$MLE
+  nimsumm <- res$summary
+
+  #opt <- cmLaplace$findMLE()
+  #nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
+  #nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
 
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
-  sdparams <- nimres$params$estimates[-c(4,5)]
+  expect_equal(nimsumm$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
+  sdparams <- nimsumm$params$estimate[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
-  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
-
-  # This is not an ideal test because the
-  # inner init mode is "last.best". But it checks that the code runs
-  # without some stupid typo or such. We at least try to make it fresh
-  # by starting from original pStart.
-  # THIS IS FALLING INTO A DIFFERENT MODE, WITH 3 parameters agreeing and two different
-  ## for(v in m$getVarNames()) cm[[v]] <- m[[v]]
-  ## cm$calculate()
-  ## cmLaplace$updateSettings(useInnerCache=FALSE)
-  ## CrunLaplaceRes <- runLaplace(cmLaplace, pStart = pStart)
-  ## expect_equal(opt$par, CrunLaplaceRes$MLE$par, tolerance = 1e-4)
-  ## expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 2e-3)
-  ## expect_equal(nimsumm$randomEffects$estimate,
-  ##              CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-3)
-  ## # NOTE THESE ARE NOT VERY ACCURATE
-  ## expect_equal(nimsumm$randomEffects$se,
-  ##              CrunLaplaceRes$summary$randomEffects$se, tolerance = 0.1)
+  expect_equal(nimsumm$params$se[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimsumm$randomEffects$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 })
 
 test_that("Laplace with non-empty calcNodesOther works", {

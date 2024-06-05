@@ -427,7 +427,6 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
 
 })
 
-
 ## This might be better to compare for MLE as lme4 does some different
 ## optimization steps for LMMs.
 test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
@@ -493,6 +492,68 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   expect_equal(mleLaplace, mleLaplace2, tol = 1e-5)
   expect_equal(mleQuad, mleQuad2, tol = 1e-8)
 })
+
+
+test_that("AGHQ nQuad > 1 for simple LME with correlated intercept and slope works", {
+  set.seed(1)
+  g <- rep(1:10, each = 10)
+  n <- length(g)
+  x <- runif(n)
+  m <- nimbleModel(
+    nimbleCode({
+      for(i in 1:n) {
+        y[i] ~ dnorm((fixed_int + random_int_slope[g[i], 1]) + (fixed_slope + random_int_slope[g[i], 2])*x[i], sd = sigma_res)
+      }
+      cov[1, 1] <- sigma_int^2
+      cov[2, 2] <- sigma_slope^2
+      cov[1, 2] <- rho * sigma_int * sigma_slope
+      cov[2, 1] <- rho * sigma_int * sigma_slope
+      for(i in 1:ng) {
+        random_int_slope[i, 1:2] ~ dmnorm(zeros[1:2], cov = cov[1:2, 1:2])
+      }
+      sigma_int ~ dunif(0, 10)
+      sigma_slope ~ dunif(0, 10)
+      sigma_res ~ dunif(0, 10)
+      fixed_int ~ dnorm(0, sd = 100)
+      fixed_slope ~ dnorm(0, sd = 100)
+      rho ~ dunif(-1, 1)
+    }),
+    constants = list(g = g, ng = max(g), n = n, x = x, zeros = rep(0, 2)),
+    buildDerivs = TRUE
+  )
+  params <- c("fixed_int", "fixed_slope", "sigma_int", "sigma_slope", "sigma_res", "rho")
+  values(m, params) <- c(10, 0.5, 3, 0.25, 0.2, 0.45)
+  m$simulate(m$getDependencies(params, self = FALSE))
+  m$setData('y')
+  y <- m$y
+  library(lme4)
+  manual_fit <- lmer(y ~ x + (1 + x | g), REML = FALSE)
+  mLaplace <- buildAGHQuad(model = m, nQuad = 1)#, control=list(innerOptimStart="last.best"))
+  cm <- compileNimble(m)
+  cmLaplace <- compileNimble(mLaplace, project = m)
+
+  pStart <- values(m, params)
+
+  init_llh <- cmLaplace$calcLogLik(pStart)
+
+  opt <- cmLaplace$findMLE()
+  nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
+  nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
+
+  lme4res <- summary(manual_fit)
+  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
+  sdparams <- nimres$params$estimates[-c(4,5)]
+  expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
+  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
+
+  cmLaplace$updateSettings(nQuad = 3)
+  init_llh_3 <- cmLaplace$calcLogLik(pStart)
+  max_llh_3 <- cmLaplace$calcLogLik(opt$par  )
+  expect_equal(init_llh, init_llh_3)
+  expect_equal(opt$value, max_llh_3)
+})
+
 
 nimbleOptions(enableDerivs = EDopt)
 nimbleOptions(buildModelDerivs = BMDopt)

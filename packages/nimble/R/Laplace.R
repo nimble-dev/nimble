@@ -1643,7 +1643,7 @@ buildOneAGHQuad <- nimbleFunction(
     ## Update the maximum mode and neg hess based on the log likelihood passed via optim.
     ## For efficient saving of values for calculating MLE values of random-effects.
     save_outer_logLik = function(logLikVal = double()){
-      if(logLikVal > max_outer_logLik) {
+      if(logLikVal >= max_outer_logLik) {
         max_outer_logLik <<- logLikVal
         outer_mode_inner_negHess <<- saved_inner_negHess
         outer_mode_max_inner_logLik_last_argmax <<- max_inner_logLik_last_argmax
@@ -2952,7 +2952,7 @@ buildAGHQuad <- nimbleFunction(
                        hessian = logical(0, default = TRUE),
                        parscale = character(0, default = "transformed")) {
       if(!one_time_fixes_done) one_time_fixes() ## Otherwise summary will look bad.
-      if(multiSetsCheck & nQuad_ > 1) stop("Currently only Laplace is supported for Maximization. Use setNodeSize(1) to change.")
+      if(multiSetsCheck & nQuad_ > 1) stop("Currently only Laplace (nQuad=1) is supported for maximization when integrations have more than one dimension at a time. Use updateSettings(nQuad=1) to change.")
       if(any(abs(pStart) == Inf)) pStart <- values(model, paramNodes)
       if(length(pStart) != npar) {
         print("  [Warning] For Maximization, pStart should be length ", npar, " but is length ", length(pStart), ".")
