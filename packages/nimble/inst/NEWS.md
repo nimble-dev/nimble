@@ -3,8 +3,8 @@
 ## USER LEVEL CHANGES
 
 - Add a Pólya-gamma sampler, `sampler_polyagamma`, for conjugate sampling of
-  linear predictor parameters in logistic regression specifications, including
-  handling zero inflation and stochastic design matrices(PR #1439).
+  linear predictor parameters in logistic regression model specifications, 
+  including handling zero inflation and stochastic design matrices(PR #1439).
 
 - Add a new sampler, `sampler_noncentered`, which samples the mean or standard
   deviation of a set of random effect values in a transformed space such that
@@ -12,8 +12,8 @@
   their hyperparameters. For random effects written in a centered
   parameterization, sampling is performed as if they had been written in a
   noncentered parameterization, thereby enabling a variant on the Yu and Meng
-  (2011) interweaving sampling strategy (PR #1437) of sampling in both
-  parameterizations.
+  (2011) interweaving sampling strategy of sampling in both
+  parameterizations (PR #1437) .
   
 - Completely revamp MCEM algorithm, fixing a bug so that any parts of the model
   not connected to the latent states are included in MLE calculations, giving
@@ -33,7 +33,7 @@
 - Allow the use of nimbleFunctions with setup code in models either for
   user-defined functions via `<-` or for user-defined distributions via `~`.
   This supports holding large objects outside of model nodes for use in models
-  (PRs #1348, #1453)
+  (PRs #1348, #1453).
 
 - Error out if the `RW_block` sampler is assigned to any discrete nodes 
   (PR #1421).
@@ -44,7 +44,7 @@
 - Add an argument to `buildMCMC` controlling whether to initialize values in
   the model (PR #1429).
   
-- Improve the efficiency of setting up derivatives information for models
+- Improve the efficiency of setting up derivative information for models
   with multivariate nodes with many elements (PR #1431).
   
 - Provide ability to control number of digits printed in C++ output (PR #1145).
