@@ -138,14 +138,14 @@ wish_test_log <- make_AD_test2(
       # populate 2D matrices from the vectors
       # created from upper triangular values.
       x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
-      chol2D <- nimMatrix(nrow = 4, ncol = 4, init = FALSE)
+      chol2D <- nimMatrix(0, nrow = 4, ncol = 4)
       i <- 1L
       j <- 1L
       indOrig <- 1L
       for(j in 1:4) {
         for(i in 1:j) {
           x2D[i,j] <- x2D[j,i] <- x[indOrig]
-          chol2D[i,j] <- chol[indOrig]  # chol2D does not need lower triangular entries
+          chol2D[i,j] <- chol[indOrig]  
           indOrig <- indOrig + 1
         }
       }
@@ -185,14 +185,14 @@ invwish_test_log <- make_AD_test2(
       # populate 2D matrices from the vectors
       # created from upper triangular values.
       x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
-      chol2D <- nimMatrix(nrow = 4, ncol = 4, init = FALSE)
+      chol2D <- nimMatrix(0, nrow = 4, ncol = 4)
       i <- 1L
       j <- 1L
       indOrig <- 1L
       for(j in 1:4) {
         for(i in 1:j) {
           x2D[i,j] <- x2D[j,i] <- x[indOrig]
-          chol2D[i,j] <- chol[indOrig]  # chol2D does not need lower triangular entries
+          chol2D[i,j] <- chol[indOrig] 
           indOrig <- indOrig + 1
         }
       }

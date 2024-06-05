@@ -124,21 +124,22 @@ acf(samplesNew[, "alpha"]) # plot autocorrelation of alpha sample
 acf(samplesNew[, "beta"])  # plot autocorrelation of beta  sample
 
 ## ---- mcemPump
-pump2 <- pump$newModel()
+pump2 <- nimbleModel(code = pumpCode, name = "pump", constants = pumpConsts,
+                    data = pumpData, inits = pumpInits, buildDerivs = TRUE)
 
 pumpMCEM <- buildMCEM(model = pump2, latentNodes = "theta[1:10]")
-Cpump <- compileNimble(pump)
-CpumpMCEM <- compileNimble(pumpMCEM, project = pump)
+Cpump <- compileNimble(pump2)
+CpumpMCEM <- compileNimble(pumpMCEM, project = pump2)
 
 set.seed(1)
-MLE <- CpumpMCEM$findMLE()
+pumpMLE <- CpumpMCEM$findMLE()
 
 
 pumpMLE
 
 ## ---- dont-run-mcemPump
 
-pumpMLE <- c(0.8221657, 1.2589865)
+pumpMLE <- c(0.823025, 1.26278)
 
 pumpMLE
 
