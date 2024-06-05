@@ -1416,15 +1416,16 @@ nimOptim <- function(par, fn, gr = "NULL", he = "NULL", ..., method = "Nelder-Me
 # nimble_custom_optim_ function is called only from C++
 custom_optim <- function(method, par, lower, upper, control,
                          hessian, use_gr, use_he, extptr,...) {
+    
   fnsym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_fn # getNativeSymbolInfo("CALL_NimOptimProblem_fn")
-  fn <- \(p) .Call(fnsym, p, extptr)
+  fn <- \(p) eval(call('.Call', fnsym, p, extptr))
   if(use_gr) {
     grsym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_gr # getNativeSymbolInfo("CALL_NimOptimProblem_gr")
-    gr <- \(p) .Call(grsym, p, extptr)
+    gr <- \(p) eval(call('.Call', grsym, p, extptr)) 
   } else gr <- NULL
   if(use_he) {
     hesym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_he # getNativeSymbolInfo("CALL_NimOptimProblem_he")
-    he <- \(p) .Call(hesym, p, extptr)
+    he <- \(p) eval(call('.Call', hesym, p, extptr)) 
   } else he <- NULL
   custom_optim_inner(method, par, fn, gr, he, lower, upper, control, hessian)
 }

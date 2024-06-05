@@ -452,6 +452,8 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'   \code{calcNodesOther} (but there is no problem if they are).
 #' @param control a named list for providing additional settings used in MCEM.
 #'   See \code{control} section below.
+#' @param ... provided only as a means of checking if a user is using the
+#'   deprecated interface to `buildMCEM` in nimble versions < 1.2.0.
 #'
 #' @details \code{buildMCEM} is a nimbleFunction that creates an MCEM algorithm
 #'   for a model and choices (perhaps default) of nodes in different roles in

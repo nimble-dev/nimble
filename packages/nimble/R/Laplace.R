@@ -3447,6 +3447,9 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #'   the maximum likelihood estimates. If omitted, the values currently in the
 #'   (compiled or uncompiled) model object will be used.
 #'
+#' @param method character string giving the optimization method to be used.
+#' Default = \code{'BFGS'}.
+#'
 #' @param originalScale If \code{TRUE}, return all results on the original scale
 #'   of the parameters and/or random effects as written in the model. Otherwise,
 #'   return all results on potentially unconstrained transformed scales that are
@@ -3460,6 +3463,8 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' @param jointCovariance If \code{TRUE}, return the full joint covariance
 #'   matrix (inverse of the Hessian) of parameters and random effects. Default =
 #'   \code{FALSE}.
+#'
+#' @param ... for internal use
 #'
 #' @details
 #'
@@ -3612,13 +3617,13 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' necessary for nested, correlated, or otherwise dependent random effects.
 #'
 #' The recommended way to find the maximum likelihood estimate and associated
-#' outputs is by calling \link{\code{runLaplace}} or \link{\code{runAGHQ}}. The
+#' outputs is by calling \code{\link{runLaplace}} or \code{\link{runAGHQ}}. The
 #' input should be the compiled Laplace or AGHQ algorithm object. This would be
-#' produced by running \link{\code{compileNimble}} with input that is the result
+#' produced by running \code{\link{compileNimble}} with input that is the result
 #' of \code{buildLaplace} or \code{buildAGHQuad}.
 #'
 #' For more granular control, see below for methods \code{findMLE} and
-#'   \code{summary}. See function \link{\code{summaryLaplace}} for an easier way
+#'   \code{summary}. See function \code{\link{summaryLaplace}} for an easier way
 #'   to call the \code{summary} method and obtain results that include node
 #'   names. These steps are all done within \code{runLaplace} and
 #'   \code{runAGHQ}.
@@ -3626,7 +3631,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' The NIMBLE User Manual at r-nimble.org also contains an example of Laplace
 #' approximation.
 #'
-#' @section How input nodes are processed
+#' @section How input nodes are processed:
 #'
 #' \code{buildLaplace} and \code{buildAGHQuad} make good tries at deciding what
 #' to do with the input model and any (optional) of the node arguments. However,
@@ -3690,7 +3695,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' If \code{setupMargNodes} is emitting an unnecessary warning, simply use
 #'   \code{control=list(check=FALSE)}.
 #'
-#' @section Managing parameter transformations that may be used internally
+#' @section Managing parameter transformations that may be used internally:
 #'
 #' If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
 #'   effects / latent states) have constraints on the range of valid values
@@ -3709,7 +3714,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'   values. For a param \code{p} that has no constraint, a simple choice is
 #'   \code{p ~ dflat()}.
 #'
-#' @section Understanding inner and outer optimizations
+#' @section Understanding inner and outer optimizations:
 #'
 #' Note that there are two numerical optimizations when finding maximum
 #' likelihood estimates with a Laplace or (1D) AGHQ algorithm: (1) maximizing
@@ -3724,7 +3729,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' make a big difference for obtaining accurate results, especially for standard
 #' errors. Hence it is worth experimenting if one is in doubt.
 #'
-#' @section \code{control} list arguments
+#' @section \code{control} list arguments:
 #'
 #' The \code{control} list allows additional settings to be made using named
 #' elements of the list. Most (or all) of these can be updated later using the
@@ -3848,13 +3853,13 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'
 #' } # end itemize
 #'
-#' @section Available methods
+#' @section Available methods:
 #'
 #' The object returned by \code{buildLaplace} is a nimbleFunction object with
 #' numerous methods (functions). Here these are described in three tiers of user
 #' relevance.
 #'
-#' @section Most useful methods
+#' @section Most useful methods:
 #'
 #' The most relevant methods to a user are:
 #'
@@ -3961,7 +3966,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'     }
 #'
 #'
-#' @section Methods for more advanced uses
+#' @section Methods for more advanced uses:
 #'
 #' Additional methods to access or control more details of the Laplace
 #' approximation include:
@@ -4013,7 +4018,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'
 #' }
 #'
-#' @section Internal or development methods
+#' @section Internal or development methods:
 #'
 #' Some methods are included for calculating the (approximate) marginal log
 #' posterior density by including the prior distribution of the parameters. This

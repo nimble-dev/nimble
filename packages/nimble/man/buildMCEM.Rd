@@ -15,6 +15,8 @@ buildMCEM(
 )
 }
 \arguments{
+\item{model}{a NIMBLE model object, either compiled or uncompiled.}
+
 \item{paramNodes}{a character vector of names of parameter nodes in the
 model; defaults are provided by \code{\link{setupMargNodes}}.
 Alternatively, \code{paramNodes} can be a list in the format returned by
@@ -45,6 +47,9 @@ calculations automatically and thus do not need to be included in
 
 \item{control}{a named list for providing additional settings used in MCEM.
 See \code{control} section below.}
+
+\item{...}{provided only as a means of checking if a user is using the
+deprecated interface to `buildMCEM` in nimble versions < 1.2.0.}
 }
 \description{
 Takes a NIMBLE model (with some missing data, aka random effects or latent
@@ -61,7 +66,8 @@ algorithm. The M-step is done by a call to \code{optim}.
   the model. The MCEM can then be compiled for fast execution with a compiled model.
 
 Note that \code{buildMCEM} was re-written for nimble version 1.2.0 and is not
-backward-compatible with previous versions.
+backward-compatible with previous versions. The new version is considered to
+be in beta testing.
 
 Denote data by Y, latent states (or missing data) by X, and parameters by T.
 MCEM works by the following steps, starting from some T:
@@ -161,7 +167,7 @@ control list. (Constraints may be determined by priors written in the model
 for parameters, even though their priors play no other role in MLE. E.g.
 \code{sigma ~ halfflat()} indicates \code{sigma > 0}).
 
-Most of the control list elements can be over-ridden when calling the
+Most of the control list elements can be overridden when calling the
 \code{findMLE} method. The \code{findMLE} argument \code{continue=TRUE}
 results in attempting to continue the algorithm where the previous call
 finished, including whatever settings were in use.
@@ -189,7 +195,7 @@ old values of T, across the sample of X) and \code{m}, the sample size. It
 must return an estimate of the standard error of the mean of the sample.
 NIMBLE provides a default version (exported from the package namespace),
 which calls \code{mcmcse::mcse} with method "obm". Simply provide a different
-function with this name in your R session to over-ride NIMBLE's default.
+function with this name in your R session to override NIMBLE's default.
 }
 \section{Control list details}{
 
@@ -288,14 +294,14 @@ algorithms to be used. Default=TRUE.
 model must have been build with `buildDerivs=TRUE`. It is not automatically
 determined from the model whether derivatives are supported. Default=TRUE.
 
-\item \code{config} Optional function to create the MCMC configuration used
-for step 1. If missing, the MCMC configuration is created by
-\preformatted{configureMCMC(model, nodes = latentNodes,
-   monitors = latentNodes, thin = thinDefault,
-   control = mcmcControl, print = FALSE)
-}
-If provided, the MCMC configuration is created by the same call with
-\code{config} instead of \code{configureMCMC}.
+\item \code{config} Function to create the MCMC configuration used for step
+1. The MCMC configuration is created by calling
+
+\preformatted{config(model, nodes = latentNodes, monitors = latentNodes,
+thin = thinDefault, control = mcmcControl, print = FALSE) }
+
+The default for \code{config} (if it is missing) is \code{configureMCMC},
+which is nimble's general default MCMC configuration function.
 
 }
 }

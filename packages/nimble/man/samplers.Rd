@@ -8,11 +8,9 @@
 \alias{sampler_categorical}
 \alias{sampler_noncentered}
 \alias{sampler_RW}
-\alias{sampler_RW_noncentered}
 \alias{sampler_RW_block}
 \alias{sampler_RW_llFunction}
 \alias{sampler_slice}
-\alias{sampler_slice_noncentered}
 \alias{sampler_ess}
 \alias{sampler_AF_slice}
 \alias{sampler_crossLevel}
@@ -71,15 +69,11 @@ sampler_noncentered(model, mvSaved, target, control)
 
 sampler_RW(model, mvSaved, target, control)
 
-sampler_RW_noncentered(model, mvSaved, target, control)
-
 sampler_RW_block(model, mvSaved, target, control)
 
 sampler_RW_llFunction(model, mvSaved, target, control)
 
 sampler_slice(model, mvSaved, target, control)
-
-sampler_slice_noncentered(model, mvSaved, target, control)
 
 sampler_ess(model, mvSaved, target, control)
 
@@ -365,7 +359,7 @@ Note that this sampler is likely run much more slowly than the blocked sampler f
 \section{polyagamma sampler}{
 
 
-The polyagamma sampler uses Pólya-gamma data augmentation to do conjugate sampling for the parameters in the linear predictor of a logistic regression model (Polson et al., 2013), analogous to the Albert-Chib data augmentation scheme for probit regression. This sampler is not assigned as a default sampler by \code{configureMCMC} and so can only be used if manually added to an MCMC configuration.
+The polyagamma sampler uses P\u00f3lya-gamma data augmentation to do conjugate sampling for the parameters in the linear predictor of a logistic regression model (Polson et al., 2013), analogous to the Albert-Chib data augmentation scheme for probit regression. This sampler is not assigned as a default sampler by \code{configureMCMC} and so can only be used if manually added to an MCMC configuration.
 
 As an example, consider model code containing:
 \preformatted{for(i in 1:n) {
@@ -386,9 +380,9 @@ MCMCconf$addSampler(target = logistic_nodes, type = "polyagamma",
   control = list(fixedDesignColumns=TRUE))
 }
 
-As shown here, the stochastic dependencies (\code{y[i]} here) of the target nodes must follow \code{dbin} or \code{dbern} distributions. The logit transformation of their probability parameter must be a linear function (technically an affine function) of the target nodes, which themselves must have \code{dnorm} or \code{dmnorm} priors. Zero inflation to account for structural zeroes is also supported, allowed as discussed below. The stochastic dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the Pólya-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
+As shown here, the stochastic dependencies (\code{y[i]} here) of the target nodes must follow \code{dbin} or \code{dbern} distributions. The logit transformation of their probability parameter must be a linear function (technically an affine function) of the target nodes, which themselves must have \code{dnorm} or \code{dmnorm} priors. Zero inflation to account for structural zeroes is also supported, allowed as discussed below. The stochastic dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the P\u00f3lya-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
 
-Importantly, note that because the Pólya-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all parameter nodes involved in the linear predictor of the logistic regression, to avoid duplicative Pólya-gamma draws of the latent values. If there are stochastic indices (e.g., if \code{group[i]} above is stochastic), the Pólya-gamma sampler can still be used, but the stochastic nodes cannot be sampled by it and must have separate sampler(s). It is also possible in some models that regression parameters can be split into (conditionally independent) groups that can be sampled independently, e.g., if one has distinct logistic regression specifications for different sets of responses in the model.
+Importantly, note that because the P\u00f3lya-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all parameter nodes involved in the linear predictor of the logistic regression, to avoid duplicative P\u00f3lya-gamma draws of the latent values. If there are stochastic indices (e.g., if \code{group[i]} above is stochastic), the P\u00f3lya-gamma sampler can still be used, but the stochastic nodes cannot be sampled by it and must have separate sampler(s). It is also possible in some models that regression parameters can be split into (conditionally independent) groups that can be sampled independently, e.g., if one has distinct logistic regression specifications for different sets of responses in the model.
 
 Sampling involves use of the design matrix. The design matrix includes one column corresponding to each regression covariate as well as one columnar block corresponding to each random effect. In the example above, the columns would include a vector of ones (to multiply \code{beta0}), the vectors \code{x1} and \code{x2}, and a vector of indicators for each \code{u[j]} (with a 1 in row \code{i} if \code{group[i]} is \code{j}), resulting in \code{3+num_groups} columns. Note that the polyagamma sampler can determine the design matrix from the model, even when written as above such that the design matrix is not explicitly in the model code. It is also possible to write model code for the linear prediction using matrix multiplication and an explicit design matrix, but that is not necessary.
 
@@ -609,7 +603,7 @@ Neal, R. M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Ch
 
 Pitt, M. K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 
-Polson, N.G., Scott, J.G., and J. Windle. (2013). Bayesian inference for logistic models using Pólya-gamma latent variables. Journal of the American Statistical Association, 108(504), 1339–1349. https://doi.org/10.1080/01621459.2013.829001
+Polson, N.G., Scott, J.G., and J. Windle. (2013). Bayesian inference for logistic models using P\u00f3lya-gamma latent variables. Journal of the American Statistical Association, 108(504), 1339–1349. https://doi.org/10.1080/01621459.2013.829001
 
 Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
 

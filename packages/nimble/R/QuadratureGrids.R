@@ -249,6 +249,8 @@ buildAGHQGrid <- nimbleFunction(
 #'
 #' @param nQuad Number of quadrature nodes requested on build.
 #'
+#' @name buildAGHQGrid
+#' 
 #' @details
 #'
 #' This function is used by used by \code{buildOneAGHQuad1D}

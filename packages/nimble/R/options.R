@@ -5,8 +5,22 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 
 nimbleUserNamespace$.optimizers <- as.environment(list())
 
-#' Set or get an optimization function to be used by nimOptim
+#' Set or get an optimization function to be used by \code{nimOptim}
 #'
+#' Allows user to determine or update the optimization function
+#'
+#' @param name character string giving the name of the method
+#'
+#' @param value function that carries out the optimization
+#'
+#' @details
+#'
+#' An optimizer \code{fun} may be registered by
+#' \code{nimOptimMethod("method_name", fun)}, and then "\code{method_name}" can
+#' be used as the \code{method} argument to \code{nimOptim} to use \code{fun}.
+#' An optimizer may be found by \code{nimOptimMethod("method_name")} and may be
+#' removed by \code{nimOptimMethod("method_name", NULL)}.
+#' 
 #' @export
 nimOptimMethod <- function(name, value) {
   if(missing(value))
