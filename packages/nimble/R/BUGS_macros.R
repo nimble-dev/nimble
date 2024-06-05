@@ -487,7 +487,7 @@ getParametersFromCodeInternal <- function(code){
     return(lapply(as.list(code)[2:length(code)], getParametersFromCodeInternal))
   } else {
     # Otherwise  we should have a single line of code which is an assignment
-    if(as.character(code[[1]]) %in% c("~", "<-")){
+    if(safeDeparse(code[[1]], warn = TRUE) %in% c("~", "<-")){
       # Separate the assignment into LHS and RHS side "pieces" and get the
       # parameters from each
       RHS <- getParsFromCodePiece(code[[3]])
