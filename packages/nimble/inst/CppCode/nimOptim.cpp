@@ -21,6 +21,7 @@
 
 #include <R_ext/Applic.h>
 #include <nimble/nimOptim.h>
+#include <nimble/accessorClasses.h>
 #include <string.h>
 #include <algorithm>
 #include <cmath>
@@ -38,6 +39,17 @@ double NimOptimProblem::fn(int n, double* par, void* ex) {
     return ans;
 }
 
+SEXP CALL_NimOptimProblem_fn(SEXP Sx, SEXP Sextptr) {
+    NimArr<1, double> x;
+    SEXP_2_NimArr<1>(Sx, x);
+    void *ex = R_ExternalPtrAddr(Sextptr);
+    double ans = NimOptimProblem::fn(x.size(), x.getPtr(), ex);
+    SEXP S_returnValue;
+    PROTECT(S_returnValue = double_2_SEXP(ans)); // CHECK what is needed
+    UNPROTECT(1);
+    return S_returnValue;
+}
+
 void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
@@ -50,6 +62,46 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     for (int i = 0; i < n; ++i) {
         ans[i] = problem->ans_[i] / problem->control_->fnscale;
     }
+}
+
+SEXP CALL_NimOptimProblem_gr(SEXP Sx, SEXP Sextptr) {
+    NimArr<1, double> x;
+    SEXP_2_NimArr<1>(Sx, x);
+    void *ex = R_ExternalPtrAddr(Sextptr);
+    SEXP S_returnValue = PROTECT(Rf_allocVector(REALSXP, x.size()));
+    NimOptimProblem::gr(x.size(), x.getPtr(), REAL(S_returnValue), ex);
+    UNPROTECT(1);
+    return S_returnValue;
+}
+
+void NimOptimProblem::he(int n, double* par, double* ans, void* ex) {
+    NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
+    problem->par_.setSize(n, false, false);
+    double* problem_par = problem->par_.getPtr();
+    double* problem_parscale = problem->working_parscale.getPtr();
+    for(int i = 0; i < n; ++i)
+        *problem_par++ = par[i] * problem_parscale[i];
+    problem->ans_hessian_.setSize(n, n, false, false);
+    problem->hessian_callback();
+    for (int i = 0; i < n; ++i) {
+        for(int j = 0; j < n; ++j) {
+            ans[i + j*n] = problem->ans_hessian_(i, j) / problem->control_->fnscale;
+        }
+    }
+}
+
+SEXP CALL_NimOptimProblem_he(SEXP Sx, SEXP Sextptr) {
+    NimArr<1, double> x;
+    SEXP_2_NimArr<1>(Sx, x);
+    void *ex = R_ExternalPtrAddr(Sextptr);
+    size_t n = x.size();
+    SEXP S_returnValue = PROTECT(Rf_allocVector(REALSXP, n*n));
+    NimOptimProblem::he(x.size(), x.getPtr(), REAL(S_returnValue), ex);
+    SEXP Sdim = PROTECT(Rf_allocVector(INTSXP, 2));
+    INTEGER(Sdim)[0] = INTEGER(Sdim)[1] = n;
+    Rf_setAttrib(S_returnValue, R_DimSymbol, Sdim);
+    UNPROTECT(2);
+    return S_returnValue;
 }
 
 nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
@@ -133,7 +185,6 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         result->hessian.initialize(NA_REAL, true, n, n);
     }
 
-
     // Parameters common to all methods.
     double* dpar = par.getPtr();
     double* X = result->par.getPtr();
@@ -142,6 +193,8 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     void* ex = this;
     int* fncount = &(result->counts[0]);
     int* grcount = &(result->counts[1]);
+
+    bool calc_hessian_after = hessian_;
 
     if (method_ == "Nelder-Mead") {
         nmmin(n, dpar, X, Fmin, NimOptimProblem::fn, fail, control_->abstol,
@@ -157,31 +210,122 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         cgmin(n, dpar, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
               control_->abstol, control_->reltol, ex, control_->type,
               control_->trace, fncount, grcount, working_maxit);
-    } else if (method_ == "L-BFGS-B") {
+    } else {
+        // from here on, all methods need lower_ and upper_ set up.
         if (lower_.dimSize(0) == 1) lower_.initialize(lower_[0], true, n);
         if (upper_.dimSize(0) == 1) upper_.initialize(upper_[0], true, n);
         NIM_ASSERT_SIZE(lower_, n);
         NIM_ASSERT_SIZE(upper_, n);
-        std::vector<int> nbd(n, 0);
-        for (int i = 0; i < n; ++i) {
-            if (std::isfinite(lower_[i])) nbd[i] |= 1;
-            if (std::isfinite(upper_[i])) nbd[i] |= 2;
+        if (method_ == "L-BFGS-B") {
+            std::vector<int> nbd(n, 0);
+            for (int i = 0; i < n; ++i) {
+                if (std::isfinite(lower_[i])) nbd[i] |= 1;
+                if (std::isfinite(upper_[i])) nbd[i] |= 2;
+            }
+            char msg[60];
+            lbfgsb(n, control_->lmm, X, lower_.getPtr(), upper_.getPtr(),
+                   nbd.data(), Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
+                   ex, control_->factr, control_->pgtol, fncount, grcount,
+                   working_maxit, msg, control_->trace, working_REPORT);
+            result->message = msg;
+        } else { //"nvm" or other
+            SEXP SLANG;
+            SEXP SLANGpiece;
+            SEXP SANS;
+            SEXP Spar;
+            SEXP Smethod;
+            Spar = PROTECT(NimArr_2_SEXP(par));
+            SEXP Slower = PROTECT(NimArr_2_SEXP(lower_));
+            SEXP Supper = PROTECT(NimArr_2_SEXP(upper_));
+            SEXP Sgr_provided = PROTECT(bool_2_SEXP(gr_provided_));
+            SEXP She_provided = PROTECT(bool_2_SEXP(he_provided_));
+            SEXP Sreturn_hessian = PROTECT(bool_2_SEXP(hessian_));
+
+            // if (!(*control_).RObjectPointer) control_->createNewSEXP();
+            // SEXP Scontrol = PROTECT(Scontrol = control_->copyToSEXP());
+            // control_->resetFlags();
+
+            SEXP Scontrol = PROTECT(Rf_allocVector(VECSXP, 6));
+            SET_VECTOR_ELT(Scontrol, 0, PROTECT(double_2_SEXP(control_->abstol)));
+            SET_VECTOR_ELT(Scontrol, 1, PROTECT(double_2_SEXP(control_->reltol)));
+            SET_VECTOR_ELT(Scontrol, 2, PROTECT(int_2_SEXP(control_->maxit)));
+            SET_VECTOR_ELT(Scontrol, 3, PROTECT(NimArr_2_SEXP<1>(working_parscale)));
+            SET_VECTOR_ELT(Scontrol, 4, PROTECT(double_2_SEXP(control_->fnscale)));
+            SET_VECTOR_ELT(Scontrol, 5, PROTECT(int_2_SEXP(control_->trace)));
+            vector<string> newNames(6);
+            newNames[0].assign("abstol");
+            newNames[1].assign("reltol");
+            newNames[2].assign("maxit");
+            newNames[3].assign("parscale");
+            newNames[4].assign("fnscale");
+            newNames[5].assign("trace");
+            SEXP SnewNames;
+            PROTECT(SnewNames = vectorString_2_STRSEXP(newNames));
+            Rf_setAttrib(Scontrol, R_NamesSymbol, SnewNames);
+
+            Smethod = PROTECT(string_2_STRSEXP(method_));
+            SLANGpiece = (SLANG = PROTECT(Rf_allocVector(LANGSXP, 10)));
+            SET_NEXT_LANG_ARG(SLANGpiece, Rf_install("custom_optim"));
+            SET_TAG(SLANGpiece, Rf_install("method"));
+            SET_NEXT_LANG_ARG(SLANGpiece, Smethod);
+            SET_TAG(SLANGpiece, Rf_install("par"));
+            SET_NEXT_LANG_ARG(SLANGpiece, Spar);
+            SET_TAG(SLANGpiece, Rf_install("lower"));
+            SET_NEXT_LANG_ARG(SLANGpiece, Slower);
+            SET_TAG(SLANGpiece, Rf_install("upper"));
+            SET_NEXT_LANG_ARG(SLANGpiece, Supper);
+            SET_TAG(SLANGpiece, Rf_install("control"));
+            SET_NEXT_LANG_ARG(SLANGpiece, Scontrol);
+
+            SET_TAG(SLANGpiece, Rf_install("hessian"));
+            SET_NEXT_LANG_ARG(SLANGpiece, Sreturn_hessian);
+
+            SET_TAG(SLANGpiece, Rf_install("use_gr"));
+            SET_NEXT_LANG_ARG(SLANGpiece, Sgr_provided);
+            SET_TAG(SLANGpiece, Rf_install("use_he"));
+            SET_NEXT_LANG_ARG(SLANGpiece, She_provided);
+
+            SET_TAG(SLANGpiece, Rf_install("extptr"));
+            SET_NEXT_LANG_ARG(SLANGpiece,
+                              PROTECT(R_MakeExternalPtr(this, R_NilValue, R_NilValue)));
+            SEXP SnimbleInternalFunctionsEnv =
+                PROTECT(Rf_eval(PROTECT(Rf_findVar(Rf_install("nimbleInternalFunctions"),
+                                                   R_GlobalEnv)),
+                                R_GlobalEnv));
+
+            PutRNGstate();
+            SANS = PROTECT(Rf_eval(SLANG, SnimbleInternalFunctionsEnv));
+            GetRNGstate();
+            SEXP Sresult_par = PROTECT(getListElement(SANS, "par"));
+            SEXP Sresult_value = PROTECT(getListElement(SANS, "value"));
+            SEXP Sresult_msg = PROTECT(getListElement(SANS, "message"));
+            SEXP_2_NimArr<1>(Sresult_par, result->par);
+            result->value = SEXP_2_double(Sresult_value);
+            if(!Rf_isString(Sresult_msg)) result->message = std::string("");
+            else result->message = STRSEXP_2_string(Sresult_msg, 0);
+            result->convergence = SEXP_2_int(PROTECT(getListElement(SANS, "convergence")));
+            SEXP_2_NimArr<1>(PROTECT(getListElement(SANS, "counts")), result->counts);
+            if(hessian_) {
+                SEXP Sresult_hessian = PROTECT(getListElement(SANS, "hessian"));
+                if( Sresult_hessian != R_NilValue ) {
+                    SEXP_2_NimArr<2>(Sresult_hessian, result->hessian);
+                    calc_hessian_after = false;
+                }
+                UNPROTECT(1);
+            }
+            UNPROTECT(25);
+            //        return result;
         }
-        char msg[60];
-        lbfgsb(n, control_->lmm, X, lower_.getPtr(), upper_.getPtr(),
-               nbd.data(), Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
-               ex, control_->factr, control_->pgtol, fncount, grcount,
-               working_maxit, msg, control_->trace, working_REPORT);
-        result->message = msg;
-    } else {
-        NIMERROR("Unknown method_: %s", method_.c_str());
     }
+    //else {
+        //  NIMERROR("Unknown method_: %s", method_.c_str());
+        //}
     result->value *= control_->fnscale;
 
     // Compute Hessian.
     // Parameters are still on the optimization scale,
     // i.e. divided by parscale
-    if (hessian_) {
+    if (calc_hessian_after) {
         NimOptimProblem::calc_hessian(result->par, result->hessian);
     }
 
@@ -190,11 +334,12 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     return result;
 }
 
-// This will be deprecated or updated.  It is only used in one place,
-// which is commented out just above.
 void NimOptimProblem::calc_hessian(NimArr<1, double> par,
-				   NimArr<2, double> &hessian) {
-  // Notice par is copied but hessian is by reference.
+                                   NimArr<2, double> &hessian) {
+//    Rprintf("entering calc_hessian\n");
+//    for(int i = 0; i < par.size(); ++i) std::cout<<par[i]<<" ";
+//    std::cout<<std::endl;
+    // Notice par is copied but hessian is by reference.
     double *ndeps = working_ndeps.getPtr();
     double *parscale = working_parscale.getPtr();
     //  double ndeps = 0.001; //  This should be obtained from control list but is hard-wired for now.
@@ -209,9 +354,11 @@ void NimOptimProblem::calc_hessian(NimArr<1, double> par,
   hessian.setSize(n, n, false, false);
   int i, j;
   for(i = 0; i < n; ++i) {
+  //  std::cout<<"i = "<<i<<std::endl;
       // It is strange to divide ndeps by parscale, but that's
       // exactly what R's C code for optimhess does
       epsilon = ndeps[i] / parscale[i];
+  //  std::cout<<"epsilon = "<<epsilon<<std::endl;
     dpar[i] += epsilon;
     gr(n, dpar, ansUpper.getPtr(), ex);
     dpar[i] -= 2*epsilon;
@@ -219,6 +366,7 @@ void NimOptimProblem::calc_hessian(NimArr<1, double> par,
     for(j = 0; j < n; ++j) {
       // Following R's optimhess, we want to multiply by fnscale here to return answer to original scale.
       hessian(i, j) = control_->fnscale * (ansUpper[j] - ansLower[j]) / (2.*epsilon*parscale[i]*parscale[j]);
+    //  std::cout<<ansUpper[j]<<" "<<ansLower[j]<<" "<<parscale[i]<<" "<<parscale[j]<<" "<<hessian(i,j)<<std::endl;
     }
     dpar[i] += epsilon;
   }
@@ -227,7 +375,9 @@ void NimOptimProblem::calc_hessian(NimArr<1, double> par,
     for(j = 0; j < i; ++j) {
       double tmp = 0.5* (hessian(i,j) + hessian(j,i));
       hessian(i, j) = hessian(j, i) = tmp;
+   //   std::cout<<hessian(i,j)<<" ";
     }
+  //  std::cout<<std::endl;
   }
 }
 

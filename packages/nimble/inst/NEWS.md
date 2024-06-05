@@ -2,34 +2,36 @@
 
 ## USER LEVEL CHANGES
 
-- Adds a Pólya-gamma sampler for conjugate sampling of linear predictor 
-  parameters in logistic regression model specifications, including handling
-  zero inflation and stochastic design matrices (PR #1439).
+- Add a Pólya-gamma sampler, `sampler_polyagamma`, for conjugate sampling of
+  linear predictor parameters in logistic regression model specifications, 
+  including handling zero inflation and stochastic design matrices(PR #1439).
 
-- Adds a new `noncentered` sampler which samples random effect
-  values in a transformed space, given a proposal for the mean or standard 
-  deviation, by deterministically shifting or scaling the values. Sampling is
-  performed in the context of an implicit noncentered parameterization,
-  thereby providing a variant on the Yu and Meng (2011) interweaving
-  sampling strategy (PR #1437).
+- Add a new sampler, `sampler_noncentered`, which samples the mean or standard
+  deviation of a set of random effect values in a transformed space such that
+  the random effects are deterministically shifted or scaled given new values of
+  their hyperparameters. For random effects written in a centered
+  parameterization, sampling is performed as if they had been written in a
+  noncentered parameterization, thereby enabling a variant on the Yu and Meng
+  (2011) interweaving sampling strategy of sampling in both
+  parameterizations (PR #1437) .
   
 - Completely revamp MCEM algorithm, fixing a bug so that any parts of the model
   not connected to the latent states are included in MLE calculations, giving
   greater control and adding minor extensions to the ascent-based MCEM approach,
-  using AD in the maximization when possible, and converting `buildMCEM` to
-  a nimbleFunction rather than an R function (PR #1428).
+  using automatic derivatives in the maximization when possible, and converting
+  `buildMCEM` to be a nimbleFunction rather than an R function (PR #1428).
   
 - Provide adaptive Gauss-Hermite quadrature (AGHQ) for integrating over latent
   effects, as an extension of NIMBLE's Laplace approximation functionality.
   Also adds user-friendly R functions, `runLaplace` and `runAGHQ`, for using
   Laplace and AGHQ approximation for maximum likelihood estimation (PR #1455).
   
-- Provide a more flexible optimization system via `nimOptim`, allowing users
-  to specify various optimization methods available in R (via `optim`, `optimx`,
-  `nlminb`, etc.) as well as user-provided optimization functions (PR #1455).
+- Provide a more flexible optimization system via `nimOptim`, with
+  support for `nlminb` built in as well as the capability for users to provide
+  potentially arbitrary optimization functions in R (PR #1455).
 
-- Allow the use of nimbleFunctions with setup code in models either for 
-  deterministic assignment via `<-` or for specifying user-defined distributions. 
+- Allow the use of nimbleFunctions with setup code in models either for
+  user-defined functions via `<-` or for user-defined distributions via `~`.
   This supports holding large objects outside of model nodes for use in models
   (PRs #1348, #1453).
 

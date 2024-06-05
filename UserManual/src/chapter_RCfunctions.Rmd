@@ -273,17 +273,19 @@ interrupt waiting to be handled, the process will stop and return control to R.
 
 ### Optimization: *optim* and *nimOptim*
 
-NIMBLE provides a `nimOptim` function that partially implement's R's
-`optim` function with some minor differences.  `nimOptim` supports
-optimization methods 'Nelder-Mead', 'BFGS', 'CG', 'L-BFGS-B', but does
-not support methods 'SANN' and 'Brent'. NIMBLE's `nimOptim` allows gradients
-to be supplied using user-provided functions if available or finite differences
-otherwise. Currently `nimOptim` does not support extra parameters to the
-function being optimized (via `\dots`), but a work-around is to create a
-new `nimbleFunction` that calls another one with the additional parameters.
-Finally, `nimOptim` requires a `nimbleList`
-datatype for the `control` parameter, whereas R's `optim` uses a simple R
-`list`. To define the `control` parameter, create a default value with
+NIMBLE provides a `nimOptim` function that partially implement's R's `optim`
+function with some minor differences. `nimOptim` can use methods from R's
+`optim`, including 'Nelder-Mead', 'BFGS', 'CG', 'L-BFGS-B', but it does not
+support methods 'SANN' and 'Brent'. As of version 1.2.0, it also allows users to
+provide their own optimization methods as R functions (although this feature is
+subject to change in future versions). Support for R's `nlminb` is provided in
+this way. NIMBLE's `nimOptim` allows gradients to be supplied using
+user-provided functions if available or finite differences otherwise. Currently
+`nimOptim` does not support extra parameters to the function being optimized
+(via `\dots`), but a work-around is to create a new `nimbleFunction` that calls
+another one with the additional parameters. Finally, `nimOptim` requires a
+`nimbleList` datatype for the `control` parameter, whereas R's `optim` uses a
+simple R `list`. To define the `control` parameter, create a default value with
 the `nimOptimDefaultControl` function, and set any desired fields.
 
 See `help(nimOptim)` for details, including example usage. 

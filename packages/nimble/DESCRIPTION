@@ -30,7 +30,7 @@ Authors@R: c(
     person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
-    person("Paul", "van Dam-Bates", role = "aut", comment = "nimIntegrate"),
+    person("Paul", "van Dam-Bates", role = "aut", comment = "AGHQ approximation, P\u00f3lya-Gamma sampler, nimIntegrate"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
     person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
     person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")
@@ -148,5 +148,6 @@ Collate:
     setNimbleInternalFunctions.R
     registration.R
     nimble-package.r
+    QuadratureGrids.R
     zzz.R
 RoxygenNote: 7.2.3
