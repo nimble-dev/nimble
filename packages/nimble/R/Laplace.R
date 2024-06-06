@@ -3508,8 +3508,12 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' requested.
 #'
 #' @export
-runLaplace <- function(laplace, ...) {
-  runAGHQ(AGHQ = laplace, ...)
+runLaplace <- function(laplace, pstart, method = "BFGS",
+                       originalScale = TRUE,
+                       randomEffectsStdError = TRUE,
+                       jointCovariance = FALSE) {
+    runAGHQ(AGHQ = laplace, pstart, method, originalScale, randomEffectsStdError,
+            jointCovariance)
 }
 
 #' @rdname runLaplace
@@ -3520,7 +3524,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
                     jointCovariance = FALSE) {
   if(missing(AGHQ)) stop('must provide a NIMBLE Laplace or AGHQ algorithm')
   if(!identical(nfGetDefVar(AGHQ, 'name'), 'AGHQuad'))
-    stop('AGHQ or laplace argument must be a NIMBLE Lapace orAGHQ algorithm (compiled or uncompiled) from buildLaplace or buildAGHQuad.')
+    stop('AGHQ or laplace argument must be a NIMBLE Laplace or AGHQ algorithm (compiled or uncompiled) from buildLaplace or buildAGHQuad.')
   if(!is.Cnf(AGHQ))
     messageIfVerbose('  [Warning] Running an uncompiled Laplace or AGHQ algorithm.',
                      ' Use compileNimble() for faster execution.')
