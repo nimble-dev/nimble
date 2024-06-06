@@ -383,7 +383,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("  [Warning] `optim` did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -409,7 +409,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("Warning: optim did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -1242,7 +1242,7 @@ buildOneAGHQuad <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("  [Warning] `optim` did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -1261,7 +1261,7 @@ buildOneAGHQuad <- nimbleFunction(
       }
       optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
-        print("Warning: optim did not converge for the inner optimization of AGHQuad or Laplace approximation")
+        print("  [Warning] `optim` did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
       converged <<- optRes$convergence
       return(optRes)
@@ -2060,7 +2060,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
       if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
       warning(paste0("There are some random effects (latent states) in the model that look\n",
-                     "like they should be included in randomEffectsNodes for Laplace or AGHQuad approximation\n",
+                     "like they should be included in randomEffectsNodes for Laplace or AGHQ approximation\n",
                      "for the provided (or default) paramNodes:\n",
                      errorNodes, "\n",
                      "To silence this warning, include \'check = FALSE\' in the control list\n",
@@ -2081,12 +2081,12 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       if(length(reCheck)) {
         errorNodes <- paste0(head(reCheck, n = 4), sep = "", collapse = ", ")
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some randomEffectsNodes provided that look like\n",
-                       "they are not needed for Laplace or AGHQuad approximation for the\n",
+        messageIfVerbose("  [Warning] There are some `randomEffectsNodes` provided that look like\n",
+                       "they are not needed for Laplace or AGHQ approximation for the\n",
                        "provided (or default) paramNodes:\n",
                        errorNodes, "\n",
                        "To silence this warning, include \'check = FALSE\' in the control list\n",
-                       "to buildLaplace or as an argument to setupMargNodes."))
+                       "to buildLaplace or as an argument to setupMargNodes.")
       }
     }
   }
@@ -2106,12 +2106,12 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     if(length(calcCheck)) {
       errorNodes <- paste0(head(calcCheck, n = 4), sep = "", collapse = ", ")
       if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
-      warning(paste0("There are some model nodes that look like they should be\n",
-                     "included in the calcNodes for Laplace or AGHQuad approximation because\n",
+      messageIfVerbose("  [Warning] There are some model nodes that look like they should be\n",
+                     "included in the calcNodes for Laplace or AGHQ approximation because\n",
                      "they are dependencies of some randomEffectsNodes:\n",
                      errorNodes, "\n",
                      "To silence this warning, include \'check = FALSE\' in the control list\n",
-                     "to buildLaplace or as an argument to setupMargNodes."))
+                     "to buildLaplace or as an argument to setupMargNodes.")
     }
     # Second check is for calcNodes that look unnecessary
     # If some determ nodes between paramNodes and randomEffectsNodes are provided in calcNodes
@@ -2137,12 +2137,12 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
-      warning(paste0("There are some calcNodes provided that look like\n",
-                     "they are not needed for Laplace or AGHQuad approximation over\n",
+      messageIfVerbose("  [Warning] There are some calcNodes provided that look like\n",
+                     "they are not needed for Laplace or AGH approximation over\n",
                      "the provided (or default) randomEffectsNodes:\n",
                      outErrorNodes, "\n",
                      "To silence this warning, include \'check = FALSE\' in the control list\n",
-                     "to buildLaplace or as an argument to setupMargNodes."))
+                     "to buildLaplace or as an argument to setupMargNodes.")
     }
   }
   # Finish step 4
@@ -2172,7 +2172,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   }
   if(calcOtherProvided) {
     if((length(calcNodesOther) > 0) && !any(model$getNodeType(calcNodesOther)=="stoch")){
-      warning("There are no stochastic nodes in the calcNodesOther provided for Laplace or AGHQuad approximation.")
+      messageIfVerbose("  [Warning] There are no stochastic nodes in the calcNodesOther provided for Laplace or AGHQ approximation.")
     }
   }
   if(!calcOtherProvided){
@@ -2188,12 +2188,12 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         missingStochNodes <- calcOtherCheck[missingStochNodesInds]
         errorNodes <- paste0(head(missingStochNodes, n = 4), sep = "", collapse = ", ")
         if(lengthMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
-        warning(paste0("There are some model nodes (stochastic) that look like they should be\n",
+        messageIfVerbose("  [Warning] There are some model nodes (stochastic) that look like they should be\n",
                        "included in the calcNodesOther for parts of the likelihood calculation\n",
-                       "outside of Laplace or AGHQuad approximation:\n",
+                       "outside of Laplace or AGHQ approximation:\n",
                        errorNodes, "\n",
                        "To silence this warning, include \'check = FALSE\' in the control list\n",
-                       "to buildLaplace or as an argument to setupMargNodes."))
+                       "to buildLaplace or as an argument to setupMargNodes.")
       }
     }
     # Check redundant stochastic nodes
@@ -2221,9 +2221,9 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
-      warning(paste0("There are some nodes provided in calcNodesOther that look like\n",
+      messageIfVerbose("  [Warning] There are some nodes provided in calcNodesOther that look like\n",
                      "they are not needed for parts of the likelihood calculation\n",
-                     "outside of Laplace or AGHQuad approximation:\n",
+                     "outside of Laplace or AGHQ approximation:\n",
                      outErrorNodes, "\n",
                      "To silence this warning, include \'check = FALSE\' in the control list\n",
                      "to buildLaplace or as an argument to setupMargNodes."))
@@ -2286,15 +2286,15 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
 #' @export
 buildLaplace <- function(model, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
                                control = list()) {
- buildAGHQuad(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
+ buildAGHQ(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes, calcNodesOther,
    control)
 }
 
 ## Main function for Adaptive Gauss-Hermite Quadrature
 #' @rdname laplace
 #' @export
-buildAGHQuad <- nimbleFunction(
-  name = 'AGHQuad',
+buildAGHQ <- nimbleFunction(
+  name = 'AGHQ',
   setup = function(model, nQuad = 1, paramNodes, randomEffectsNodes, calcNodes,
                    calcNodesOther, control = list()) {
     split <- extractControlElement(control, 'split', TRUE)
@@ -2302,7 +2302,7 @@ buildAGHQuad <- nimbleFunction(
     innerOptimWarning <- extractControlElement(control, 'innerOptimWarning', FALSE)
 
     if(nQuad > 35) {
-      print("  Warning: Currently only a maximum of 35 quadrature points are allowed, setting nQuad to 35.")
+      print("  [Note] Currently only a maximum of 35 quadrature points are allowed, setting nQuad to 35.")
       nQuad <- 35
     }
     nQuad_ <- nQuad
@@ -2524,7 +2524,7 @@ buildAGHQuad <- nimbleFunction(
       reNodesAsScalars_vec <- character(0)
       reNodesAsScalars_first <- character(1)
       if(num_calcNodesOther == 0)
-        stop("Both calcNodesOther and randomEffectsNodes are empty for Laplace or AGHQuad for the given model.")
+        stop("Both calcNodesOther and randomEffectsNodes are empty for Laplace or AGHQ for the given model.")
     }
     
     paramNodesAsScalars <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
@@ -2972,13 +2972,13 @@ buildAGHQuad <- nimbleFunction(
       optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outerOptimControl_, hessian = hessian)
       
       if(optRes$convergence != 0) 
-        print("Warning: optim has a non-zero convergence code: ", optRes$convergence, ".\n",
-              "The control parameters of optim can be adjusted in the control argument of\n",
-              "buildLaplace or buildAGHQuad via list(outerOptimControl = list()).")
+        print("  [Warning] `optim` has a non-zero convergence code: ", optRes$convergence, ".\n",
+              "The control parameters of `optim` can be adjusted in the control argument of\n",
+              "`buildLaplace` or `buildAGHQ` via `list(outerOptimControl = list())`.")
       
       ## Print out warning about inner convergence.
       if( checkInnerConvergence(FALSE) != 0 )
-        print("  Warning: inner optimization had a non-zero convergence code. Use checkInnerConvergence(TRUE) to see details.")
+        print("  [Warning] inner optimization had a non-zero convergence code. Use `checkInnerConvergence(TRUE)` to see details.")
 
       ## Back transform results to original scale if requested.
       p <- paramsTransform$inverseTransform(optRes$par)
@@ -3124,7 +3124,7 @@ buildAGHQuad <- nimbleFunction(
                        originalScale             = logical(0, default = TRUE),
                        randomEffectsStdError = logical(0, default = FALSE),
                        jointCovariance       = logical(0, default = FALSE)){
-      if(dim(MLEoutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace or AGHQuad MLE")
+      if(dim(MLEoutput$hessian)[1] == 0) stop("Hessian matrix was not calculated for Laplace or AGHQ MLE")
       ## Output lists
       ans <- AGHQuad_summary$new()
       pres <- AGHQuad_params$new()
@@ -3339,13 +3339,13 @@ buildAGHQuad <- nimbleFunction(
 #'   `buildLaplace`.
 #'
 #' @param AGHQ Same as \code{laplace}. Note that `buildLaplace` and
-#'   `buildAGHQuad` create the same kind of algorithm object that can be used
+#'   `buildAGHQ` create the same kind of algorithm object that can be used
 #'   interchangeably. `buildLaplace` simply sets the number of quadrature points
 #'   (`nQuad`) to 1 to achieve Laplace approximation as a special case of AGHQ.
 #'
 #' @param MLEoutput The maximum likelihood estimate using Laplace or AGHQ,
 #'   returned from e.g. `approx$findMLE(...)`, where \code{approx} is the
-#'   algorithm object returned by `buildLaplace` or `buildAGHQuad`, or (more
+#'   algorithm object returned by `buildLaplace` or `buildAGHQ`, or (more
 #'   typically) the result of compiling that object with `compileNimble`. See
 #'   `help(buildLaplace)` for more information.
 #'
@@ -3431,14 +3431,14 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' Combine steps of running Laplace or adaptive Gauss-Hermite quadrature approximation
 #'
 #' Use an approximation (compiled or uncompiled) returned from
-#' `buildLaplace` or `buildAGHQuad` to find the maximum likelihood estimate and return it
+#' `buildLaplace` or `buildAGHQ` to find the maximum likelihood estimate and return it
 #' with random effects estimates and/or standard errors.
 #'
 #' @aliases runAGHQ runLaplace
 #'
 #' @param laplace A (compiled or uncompiled) nimble laplace approximation object
-#'   returned from `buildLaplace` or `buildAGHQuad`. These return the same type of
-#'   approximation algorithm object. `buildLaplace` is simply `buildAGHQuad`
+#'   returned from `buildLaplace` or `buildAGHQ`. These return the same type of
+#'   approximation algorithm object. `buildLaplace` is simply `buildAGHQ`
 #'   with `nQuad=1`.
 #'
 #' @param AGHQ Same as \code{laplace}.
@@ -3477,7 +3477,7 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' effects estimates (conditional modes), their standard errors, and the full
 #' parameter-random effects covariance matrix.
 #'
-#' Note that for `nQuad > 1` (see \code{\link{buildAGHQuad}}), i.e., AGHQ with
+#' Note that for `nQuad > 1` (see \code{\link{buildAGHQ}}), i.e., AGHQ with
 #' higher order than Laplace approximation, maximum likelihood estimation is
 #' available only if all random effects integrations are univariate. With
 #' multivariate random effects integrations, one can use `nQuad > 1` only to
@@ -3522,8 +3522,8 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
                     randomEffectsStdError = TRUE,
                     jointCovariance = FALSE) {
   if(missing(AGHQ)) stop('must provide a NIMBLE Laplace or AGHQ algorithm')
-  if(!identical(nfGetDefVar(AGHQ, 'name'), 'AGHQuad'))
-    stop('AGHQ or laplace argument must be a NIMBLE Laplace or AGHQ algorithm (compiled or uncompiled) from buildLaplace or buildAGHQuad.')
+  if(!identical(nfGetDefVar(AGHQ, 'name'), 'AGHQ'))
+    stop('AGHQ or laplace argument must be a NIMBLE Laplace or AGHQ algorithm (compiled or uncompiled) from buildLaplace or buildAGHQ.')
   if(!is.Cnf(AGHQ))
     messageIfVerbose('  [Warning] Running an uncompiled Laplace or AGHQ algorithm.',
                      ' Use compileNimble() for faster execution.')
@@ -3588,7 +3588,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' @section \code{buildLaplace}:
 #'
 #' \code{buildLaplace} creates an object that can run Laplace approximation and
-#'   for a given model or part of a model. \code{buildAGHQuad} creates an object
+#'   for a given model or part of a model. \code{buildAGHQ} creates an object
 #'   that can run adaptive Gauss-Hermite quadrature (AGHQ, sometimes called
 #'   "adaptive Gaussian quadrature") for a given model or part of a model.
 #'   Laplace approximation is AGHQ with one quadrature point, hence
@@ -3615,7 +3615,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'
 #' Beware that quadrature will use `nQuad^k` quadrature points, where `k` is the
 #' dimension of each integration. Therefore quadrature for `k` greater that 2 or
-#' 3 can be slow. As just noted, `buildAGHQuad` will determine independent
+#' 3 can be slow. As just noted, `buildAGHQ` will determine independent
 #' dimensions of quadrature, so it is fine to have a set of univariate random
 #' effects, as these will each have k=1. Multivariate quadrature (k>1) is only
 #' necessary for nested, correlated, or otherwise dependent random effects.
@@ -3624,7 +3624,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' outputs is by calling \code{\link{runLaplace}} or \code{\link{runAGHQ}}. The
 #' input should be the compiled Laplace or AGHQ algorithm object. This would be
 #' produced by running \code{\link{compileNimble}} with input that is the result
-#' of \code{buildLaplace} or \code{buildAGHQuad}.
+#' of \code{buildLaplace} or \code{buildAGHQ}.
 #'
 #' For more granular control, see below for methods \code{findMLE} and
 #'   \code{summary}. See function \code{\link{summaryLaplace}} for an easier way
@@ -3637,7 +3637,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'
 #' @section How input nodes are processed:
 #'
-#' \code{buildLaplace} and \code{buildAGHQuad} make good tries at deciding what
+#' \code{buildLaplace} and \code{buildAGHQ} make good tries at deciding what
 #' to do with the input model and any (optional) of the node arguments. However,
 #' random effects (over which approximate integration will be done) can be
 #' written in models in multiple equivalent ways, and customized use cases may
@@ -4121,7 +4121,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' 
 #' @name laplace
 #' 
-#' @aliases Laplace buildLaplace AGHQuad buildAGHQuad AGHQ
+#' @aliases Laplace buildLaplace AGHQuad buildAGHQ AGHQ
 #'
 #' @examples
 #' pumpCode <- nimbleCode({ 
