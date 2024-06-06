@@ -23,8 +23,8 @@ test_that("AGH Quadrature Normal-Normal 1D works", {
     }}), data = list(y=rnorm(n, 5, sqrt(1 + 0.5^2))), constants = list(n=n),
     inits = list(b0 = 3.5, sigma1 = 1, sigma2 = 1), buildDerivs = TRUE)
 
-  mQuad <- buildAGHQuad(model = m, nQuad = 5)
-  mLaplace <- buildAGHQuad(model = m, nQuad = 1)
+  mQuad <- buildAGHQ(model = m, nQuad = 5)
+  mLaplace <- buildAGHQ(model = m, nQuad = 1)
   cm <- compileNimble(m)
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
@@ -129,7 +129,7 @@ test_that("AGH Quadrature 1D Poisson-Gamma for checking nQuad", {
     inits = list(a = 10, b = 2), buildDerivs = TRUE)
 
   cm <- compileNimble(m)
-  mQuad <- buildAGHQuad(model = m, nQuad = 20)
+  mQuad <- buildAGHQ(model = m, nQuad = 20)
   cmQuad <- compileNimble(mQuad, project = m)
   test.val1 <- c(10, 2)
   test.val2 <- c(1, 5)
@@ -191,7 +191,7 @@ test_that("AGH Quadrature 1D Binomial-Beta check 3 methods", {
   
   cm <- compileNimble(m)
   # mQuad <- buildLaplace(model = m)
-  mQuad <- buildAGHQuad(model = m, nQuad = 5, control=list(innerOptimMethod="nlminb")) # tolerances set for this result
+  mQuad <- buildAGHQ(model = m, nQuad = 5, control=list(innerOptimMethod="nlminb")) # tolerances set for this result
   cmQuad <- compileNimble(mQuad, project = m)
 
   param.val <- c(7, 1)
@@ -306,7 +306,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
     buildDerivs = TRUE)
   
   cm <- compileNimble(m)
-  mQuad <- buildAGHQuad(model = m, nQuad = 5, control=list(innerOptimeMethod="nlminb"))
+  mQuad <- buildAGHQ(model = m, nQuad = 5, control=list(innerOptimeMethod="nlminb"))
   cmQuad <- compileNimble(mQuad, project = m)
 
   ## Check gradient and marginalization accuracy.
@@ -377,8 +377,8 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
 
   cm <- compileNimble(m)
   # N.B. It is not clear that setting reltol values less than sqrt(.Machine$double.eps) is useful, so we may want to update this:
-  mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
+  mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
+  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
   mQuad$updateSettings(innerOptimMethod="nlminb")
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
@@ -452,8 +452,8 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   m$calculate()  
 
   cm <- compileNimble(m)	  
-  mQuad <- buildAGHQuad(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mLaplace <- buildAGHQuad(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
+  mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
+  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
   mQuad$updateSettings(innerOptimMethod = "nlminb")
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
@@ -528,7 +528,7 @@ test_that("AGHQ nQuad > 1 for simple LME with correlated intercept and slope wor
   y <- m$y
   library(lme4)
   manual_fit <- lmer(y ~ x + (1 + x | g), REML = FALSE)
-  mLaplace <- buildAGHQuad(model = m, nQuad = 1)#, control=list(innerOptimStart="last.best"))
+  mLaplace <- buildAGHQ(model = m, nQuad = 1)#, control=list(innerOptimStart="last.best"))
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
 
