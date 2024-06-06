@@ -253,9 +253,8 @@ distsNotAllowedInAD <- c(
 
 # Add buildDerivs=TRUE to all distributions except distsNotAllowedInAD
 distributionsInputList <-
-  seq_along(distributionsInputList) |>
-  lapply(\(i) {
+  setNames(lapply(seq_along(distributionsInputList), function(i) {
     this_name <- names(distributionsInputList)[i]
     buildDerivs <- !(this_name %in% distsNotAllowedInAD)
     c(distributionsInputList[[i]], list(buildDerivs=buildDerivs))
-  }) |> setNames(names(distributionsInputList))
+  }), names(distributionsInputList))

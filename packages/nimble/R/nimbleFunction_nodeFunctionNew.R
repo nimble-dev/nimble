@@ -147,16 +147,16 @@ nndf_createSetupFunction <- function(buildDerivs = FALSE, RHS) {
       new_NFs <- find_NFs_recurse(RHS)
       new_NFs <- unique(new_NFs)
       if(length(new_NFs)) {
-        any_nested_dollar_signs <- new_NFs |> lapply(\(x) length(x) > 1 && x[[1]]=='$') |> unlist() |> any()
+        any_nested_dollar_signs <- any(unlist(lapply(new_NFs, function(x) length(x) > 1 && x[[1]]=='$')))
         if(any_nested_dollar_signs) {
           warning("  [warning] when using a nimbleFunction within model code, there can only be one '$' (e.g. a$b, not a$b$c).")
         }
         # One can get a $ in a line of model code from something like
         # a[] <- eigen(B[,])$values
         # so we must ignore anything like a$foo where the a part is itself a call.
-        ignore <- new_NFs |> lapply(is.call) |> unlist()
+        ignore <- unlist(lapply(new_NFs, is.call))
         new_NFs <- new_NFs[!ignore]
-        new_lines <- new_NFs |> lapply(\(x) substitute(X <- eval(X),
+        new_lines <- lapply(new_NFs, function(x) substitute(X <- eval(X),
                                                        list(X = x)))
         new_lines <- c(new_lines, quote(invisible(NULL)))
         new_body <- body(setup)

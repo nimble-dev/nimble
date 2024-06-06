@@ -1357,14 +1357,14 @@ nimOptim <- function(par, fn, gr = "NULL", he = "NULL", ..., method = "Nelder-Me
       if(is.null(working_parscale) ||
            ((length(working_parscale)==1) && is.na(working_parscale[1])))
         working_parscale <- rep(1, length(par))
-      adj_fn <- \(par, ...) fn(par*working_parscale, ...) / fnscale
+      adj_fn <- function(par, ...) fn(par*working_parscale, ...) / fnscale
       if(is.function(gr))
-        adj_gr <- \(par, ...) working_parscale * gr(par*working_parscale, ...) / fnscale
+        adj_gr <- function(par, ...) working_parscale * gr(par*working_parscale, ...) / fnscale
       else adj_gr <- NULL
       if(hessian || is.function(he))
         working_parscale_mat <- outer(working_parscale, working_parscale)
       if(is.function(he)) {
-        adj_he <- \(par, ...) working_parscale_mat * he(par*working_parscale, ...) / fnscale
+        adj_he <- function(par, ...) working_parscale_mat * he(par*working_parscale, ...) / fnscale
       }
       else adj_he <- NULL
       init_par <- par / working_parscale
@@ -1418,14 +1418,14 @@ custom_optim <- function(method, par, lower, upper, control,
                          hessian, use_gr, use_he, extptr,...) {
     
   fnsym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_fn # getNativeSymbolInfo("CALL_NimOptimProblem_fn")
-  fn <- \(p) eval(call('.Call', fnsym, p, extptr))
+  fn <- function(p) eval(call('.Call', fnsym, p, extptr))
   if(use_gr) {
     grsym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_gr # getNativeSymbolInfo("CALL_NimOptimProblem_gr")
-    gr <- \(p) eval(call('.Call', grsym, p, extptr)) 
+    gr <- function(p) eval(call('.Call', grsym, p, extptr)) 
   } else gr <- NULL
   if(use_he) {
     hesym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_he # getNativeSymbolInfo("CALL_NimOptimProblem_he")
-    he <- \(p) eval(call('.Call', hesym, p, extptr)) 
+    he <- function(p) eval(call('.Call', hesym, p, extptr))
   } else he <- NULL
   custom_optim_inner(method, par, fn, gr, he, lower, upper, control, hessian)
 }

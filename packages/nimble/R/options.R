@@ -94,7 +94,7 @@ nimOptimMethod("nlminb",
                    iter.max = control$maxit,
                    trace = control$trace
                  )
-                 invalid <- \(x) is.null(x) || is.na(x) || is.infinite(x)
+                 invalid <- function(x) is.null(x) || is.na(x) || is.infinite(x)
                  if(invalid(control_nlminb$abs.tol)) control_nlminb$abs.tol <- 0
                  if(invalid(control_nlminb$rel.tol)) control_nlminb$rel.tol <- 1e-10
                  if(invalid(control_nlminb$iter.max)) control_nlminb$iter.max <- 150
