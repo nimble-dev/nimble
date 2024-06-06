@@ -115,10 +115,10 @@ determine if the uphill increment is less than \code{tol}, with Type I error
 rate gamma. (But if \code{M} hits a maximum value, the convergence criterion
 changes. See below.)
 
-beta is used to help set M to a minimal level based on previous iterations.
-This is a desired Type II error rate, assuming an uphill move and standard
-error based on the previous iteration. Set \code{adjustM=FALSE} in the
-control list if you don't want this behavior.
+\code{beta} is used to help set \code{M} to a minimal level based on previous
+iterations. This is a desired Type II error rate, assuming an uphill move
+and standard error based on the previous iteration. Set \code{adjustM=FALSE}
+in the control list if you don't want this behavior.
 
 There are some additional controls on convergence for practical purposes. Set
 \code{C} in the control list to be the number of times the convergence
@@ -140,10 +140,11 @@ can continue the algorithm from where it stopped, so it is helpful to not
 have it get stuck when having a very hard time with the first (stricter)
 convergence criterion.
 
-All of alpha, beta, delta, and gamma are utilized based on asymptotic
-arguments but in practice must be chosen heuristically. In other words, their
-theoretical basis does not exactly yield practical advice on good choices for
-efficiency and accuracy, so some trial and error will be needed.
+All of \code{alpha}, \code{beta}, \code{delta}, and \code{gamma} are utilized
+based on asymptotic arguments but in practice must be chosen heuristically.
+In other words, their theoretical basis does not exactly yield practical
+advice on good choices for efficiency and accuracy, so some trial and error
+will be needed.
 
 It can also be helpful to set a minimum and maximum of allowed iterations (of
 steps 1 and 2 above). Setting \code{minIter>1} in the control list can

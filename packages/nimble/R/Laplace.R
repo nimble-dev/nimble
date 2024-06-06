@@ -3465,8 +3465,6 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #'   matrix (inverse of the Hessian) of parameters and random effects. Default =
 #'   \code{FALSE}.
 #'
-#' @param ... for internal use
-#'
 #' @details
 #'
 #' Adaptive Gauss-Hermite quadrature is a generalization of Laplace
@@ -3508,11 +3506,11 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' requested.
 #'
 #' @export
-runLaplace <- function(laplace, pstart, method = "BFGS",
+runLaplace <- function(laplace, pStart, method = "BFGS",
                        originalScale = TRUE,
                        randomEffectsStdError = TRUE,
                        jointCovariance = FALSE) {
-    runAGHQ(AGHQ = laplace, pstart, method, originalScale, randomEffectsStdError,
+    runAGHQ(AGHQ = laplace, pStart, method, originalScale, randomEffectsStdError,
             jointCovariance)
 }
 
