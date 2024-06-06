@@ -135,13 +135,13 @@ set.seed(1)
 pumpMLE <- CpumpMCEM$findMLE()
 
 
-pumpMLE
+pumpMLE$par
 
 ## ---- dont-run-mcemPump
 
 pumpMLE <- list(par = c(0.823025, 1.26278))
 
-pumpMLE
+pumpMLE$par
 
 ## ---- nfPump
 

@@ -426,7 +426,7 @@ it can also be worth exploring different ways to write a model.
 
 The `vcov` method of an MCEM nimbleFunction calculates a Monte Carlo estimate of
 the asymptotic covariance of the parameters based on the Hessian matrix at the
-MLE, using the method of @Louis_82. Arguments to this method allow control over
+MLE, using the method of @Louis_1982. Arguments to this method allow control over
 whether to generate a new MCMC sample for this purpose and other details.
 
 Continuing the above example, here is the covariance matrix:

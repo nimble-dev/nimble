@@ -318,7 +318,8 @@ integrand <- nimbleFunction(
 })
 
 dGenVonMises <- nimbleFunction(
-  run = function(x = double(1), mu1 = double(), mu2 = double(), kappa1 = double(), kappa2 = double(),
+  run = function(x = double(1), mu1 = double(), mu2 = double(),
+                 kappa1 = double(), kappa2 = double(),
   limits = double(1), log = integer(0, default = 0)){
     range <- limits[2] - limits[1]
     mu1R <- (mu1 - range/2)/range*2*pi

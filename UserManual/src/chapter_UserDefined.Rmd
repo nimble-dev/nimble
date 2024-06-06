@@ -12,7 +12,7 @@ NIMBLE allows you to define your own functions and distributions as *nimbleFunct
 
 Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions, and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model.  See Sections \@ref(sec:calling-external-code)-\@ref(sec:calling-R-code).
 
-As of version 1.2.0, NIMBLE also supports using more advanced nimbleFunctions, those with `setup` code and possibly multiple methods (see Ch. @ref(cha-progr-with-models)), to provide functions and/or distributions for use in models. This allows the functions and/or distributions to store information internally. See section @ref{sec:adv-user-def} below.
+As of version 1.2.0, NIMBLE also supports using more advanced nimbleFunctions, those with `setup` code and possibly multiple methods (see Chapter \@ref(cha-progr-with-models)), to provide functions and/or distributions for use in models. This allows the functions and/or distributions to store information internally. See section \@ref(sec:adv-user-def) below.
 
 Note that NIMBLE generally expects user-defined distributions or functions to be defined in the global environment.
 If you define them in a function (which would generally be the case if you are using them in the context of parallelization), one approach would be to assign them to the global environment in your function:
@@ -255,7 +255,7 @@ do this by creating nimbleFunctions that use `setup` code and have one or more
 methods. If you are familiar with object-oriented programming, this variety of
 nimbleFunction defines a class. Here we will give a toy example that is not
 fully explained because the NIMBLE programming concepts are covered in Chapter
-@ref(cha-progr-with-models). After studying that chapter, the example here
+\@ref(cha-progr-with-models). After studying that chapter, the example here
 should make more sense.
 
 As a toy example, consider this basic linear regression model with one explanatory variable:

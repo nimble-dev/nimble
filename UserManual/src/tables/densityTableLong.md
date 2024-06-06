@@ -37,7 +37,7 @@ is given by $x$.
                 $\sum_j x_j = n$
   Multivariate  `dmnorm(mean =` $\mu$`, prec =` $\Lambda$`)`$(2\pi)^{-\frac{d}{2}}|\Lambda|^{\frac{1}{2}} \exp\{-\frac{(x-\mu)^T \Lambda (x-\mu)}{2}\}$
   normal        $\Lambda$ positive definite
-  Multivariate  `dmvt(mu =` $\mu$`, prec =` $\Lambda$       $\frac{\Gamma(\frac{\nu+d}{2})}{\Gamma(\frac{\nu}{2})(\nu\pi)^{d/2}}|\Lambda|^{1/2}(1+\frac{(x-\mu)^T\Lambda(x-\mu)}{\nu})^{-\frac{\nu+d}{2}}$
+  Multivariate  `dmvt(mu =` $\mu$`, prec =` $\Lambda$,      $\frac{\Gamma(\frac{\nu+d}{2})}{\Gamma(\frac{\nu}{2})(\nu\pi)^{d/2}}|\Lambda|^{1/2}(1+\frac{(x-\mu)^T\Lambda(x-\mu)}{\nu})^{-\frac{\nu+d}{2}}$
   Student t     `df =` $\nu$`), ` $\Lambda$ positive def.  
   Negative      `dnegbin(prob = p, size = r)`               ${x + r -1 \choose x} p^r (1-p)^x$                                                                                                                           $0$
   binomial      $0 < p \leq 1$, $r \geq 0$
