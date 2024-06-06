@@ -2226,7 +2226,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
                      "outside of Laplace or AGHQ approximation:\n",
                      outErrorNodes, "\n",
                      "To silence this warning, include \'check = FALSE\' in the control list\n",
-                     "to buildLaplace or as an argument to setupMargNodes."))
+                     "to buildLaplace or as an argument to setupMargNodes.")
     }
   }
   # Check and add necessary (upstream) deterministic nodes into calcNodesOther

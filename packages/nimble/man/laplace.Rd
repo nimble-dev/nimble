@@ -2,7 +2,7 @@
 % Please edit documentation in R/Laplace.R
 \name{buildLaplace}
 \alias{buildLaplace}
-\alias{buildAGHQuad}
+\alias{buildAGHQ}
 \alias{laplace}
 \alias{Laplace}
 \alias{AGHQuad}
@@ -18,7 +18,7 @@ buildLaplace(
   control = list()
 )
 
-buildAGHQuad(
+buildAGHQ(
   model,
   nQuad = 1,
   paramNodes,
@@ -78,7 +78,7 @@ Build a Laplace or AGHQ approximation algorithm for a given NIMBLE model.
 
 
 \code{buildLaplace} creates an object that can run Laplace approximation and
-  for a given model or part of a model. \code{buildAGHQuad} creates an object
+  for a given model or part of a model. \code{buildAGHQ} creates an object
   that can run adaptive Gauss-Hermite quadrature (AGHQ, sometimes called
   "adaptive Gaussian quadrature") for a given model or part of a model.
   Laplace approximation is AGHQ with one quadrature point, hence
@@ -105,7 +105,7 @@ method below) to check on accuracy of the marginal log likelihood at the MLE.
 
 Beware that quadrature will use `nQuad^k` quadrature points, where `k` is the
 dimension of each integration. Therefore quadrature for `k` greater that 2 or
-3 can be slow. As just noted, `buildAGHQuad` will determine independent
+3 can be slow. As just noted, `buildAGHQ` will determine independent
 dimensions of quadrature, so it is fine to have a set of univariate random
 effects, as these will each have k=1. Multivariate quadrature (k>1) is only
 necessary for nested, correlated, or otherwise dependent random effects.
@@ -114,7 +114,7 @@ The recommended way to find the maximum likelihood estimate and associated
 outputs is by calling \code{\link{runLaplace}} or \code{\link{runAGHQ}}. The
 input should be the compiled Laplace or AGHQ algorithm object. This would be
 produced by running \code{\link{compileNimble}} with input that is the result
-of \code{buildLaplace} or \code{buildAGHQuad}.
+of \code{buildLaplace} or \code{buildAGHQ}.
 
 For more granular control, see below for methods \code{findMLE} and
   \code{summary}. See function \code{\link{summaryLaplace}} for an easier way
@@ -129,7 +129,7 @@ approximation.
 \section{How input nodes are processed}{
 
 
-\code{buildLaplace} and \code{buildAGHQuad} make good tries at deciding what
+\code{buildLaplace} and \code{buildAGHQ} make good tries at deciding what
 to do with the input model and any (optional) of the node arguments. However,
 random effects (over which approximate integration will be done) can be
 written in models in multiple equivalent ways, and customized use cases may

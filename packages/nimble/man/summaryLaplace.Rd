@@ -28,7 +28,7 @@ This would be the result of compiling an object returned from
 
 \item{MLEoutput}{The maximum likelihood estimate using Laplace or AGHQ,
 returned from e.g. `approx$findMLE(...)`, where \code{approx} is the
-algorithm object returned by `buildLaplace` or `buildAGHQuad`, or (more
+algorithm object returned by `buildLaplace` or `buildAGHQ`, or (more
 typically) the result of compiling that object with `compileNimble`. See
 `help(buildLaplace)` for more information.}
 
@@ -47,7 +47,7 @@ the parameters and random effects together. If FALSE, calculate the
 covariance matrix of the parameters.}
 
 \item{AGHQ}{Same as \code{laplace}. Note that `buildLaplace` and
-`buildAGHQuad` create the same kind of algorithm object that can be used
+`buildAGHQ` create the same kind of algorithm object that can be used
 interchangeably. `buildLaplace` simply sets the number of quadrature points
 (`nQuad`) to 1 to achieve Laplace approximation as a special case of AGHQ.}
 }
