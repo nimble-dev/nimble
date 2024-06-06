@@ -4,18 +4,18 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 12 Creating user-defined BUGS distributions and functions | NimbleUserManual.knit</title>
+  <title>Chapter 12 Creating user-defined distributions and functions for models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
   <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 12 Creating user-defined BUGS distributions and functions | NimbleUserManual.knit" />
+  <meta property="og:title" content="Chapter 12 Creating user-defined distributions and functions for models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
   <meta property="og:image" content="/nimble-icon.png" />
   <meta property="og:description" content="This is the NIMBLE User Manual." />
   <meta name="github-repo" content="nimble-dev/nimble" />
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 12 Creating user-defined BUGS distributions and functions | NimbleUserManual.knit" />
+  <meta name="twitter:title" content="Chapter 12 Creating user-defined distributions and functions for models | NimbleUserManual.knit" />
   
   <meta name="twitter:description" content="This is the NIMBLE User Manual." />
   <meta name="twitter:image" content="/nimble-icon.png" />
@@ -159,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.1.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -282,7 +282,7 @@ div.csl-indent {
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
 <ul>
@@ -293,6 +293,7 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
+<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#laplace-approximation-and-adaptive-gauss-hermite-quadrature"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 </ul></li>
 <li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
 <ul>
@@ -361,13 +362,14 @@ div.csl-indent {
 <li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
 <li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined distributions and functions for models</a>
 <ul>
 <li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
 <li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
 <ul>
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
+<li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
 </ul></li>
 <li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
 <ul>
@@ -445,15 +447,15 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#how-to-use-laplace-approximation"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 <li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
 <li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
-<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#holding-some-local-variables-out-of-derivative-tracking"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
 <li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
-<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#understanding-more-about-how-ad-works-taping-of-operations"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
 <li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
 <li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
 </ul></li>
@@ -485,9 +487,10 @@ div.csl-indent {
 
             <section class="normal" id="section-">
 <div id="cha-user-defined" class="section level1 hasAnchor" number="12">
-<h1><span class="header-section-number">Chapter 12</span> Creating user-defined BUGS distributions and functions<a href="cha-user-defined.html#cha-user-defined" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<p>NIMBLE allows you to define your own functions and distributions as <em>nimbleFunction</em>s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter <a href="cha-writing-models.html#cha-writing-models">5</a>. For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.</p>
+<h1><span class="header-section-number">Chapter 12</span> Creating user-defined distributions and functions for models<a href="cha-user-defined.html#cha-user-defined" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>NIMBLE allows you to define your own functions and distributions as <em>nimbleFunction</em>s for use in model code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter <a href="cha-writing-models.html#cha-writing-models">5</a>. For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.</p>
 <p>Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions, and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model. See Sections <a href="cha-RCfunctions.html#sec:calling-external-code">11.6</a>-<a href="cha-RCfunctions.html#sec:calling-R-code">11.7</a>.</p>
+<p>As of version 1.2.0, NIMBLE also supports using more advanced nimbleFunctions, those with <code>setup</code> code and possibly multiple methods (see Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>), to provide functions and/or distributions for use in models. This allows the functions and/or distributions to store information internally. See section <a href="cha-user-defined.html#sec:adv-user-def">12.3</a> below.</p>
 <p>Note that NIMBLE generally expects user-defined distributions or functions to be defined in the global environment.
 If you define them in a function (which would generally be the case if you are using them in the context of parallelization), one approach would be to assign them to the global environment in your function:</p>
 <div class="sourceCode" id="cb243"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb243-1"><a href="cha-user-defined.html#cb243-1" aria-hidden="true" tabindex="-1"></a><span class="do">## for a user-defined function</span></span>
@@ -498,7 +501,7 @@ If you define them in a function (which would generally be the case if you are u
 <span id="cb243-6"><a href="cha-user-defined.html#cb243-6" aria-hidden="true" tabindex="-1"></a><span class="do">## similarly for &#39;p&#39; and &#39;q&#39; functions if you define them</span></span></code></pre></div>
 <div id="sec:user-functions" class="section level2 hasAnchor" number="12.1">
 <h2><span class="header-section-number">12.1</span> User-defined functions<a href="cha-user-defined.html#sec:user-functions" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>To provide a new function for use in BUGS code, simply create a nimbleFunction that has no <em>setup</em> code as discussed in Chapter <a href="cha-RCfunctions.html#cha-RCfunctions">11</a>. Then use it in your BUGS code. That’s it.</p>
+<p>To provide a new function for use in BUGS code, simply create a nimbleFunction as discussed in Chapter <a href="cha-RCfunctions.html#cha-RCfunctions">11</a>. Then use it in your BUGS code. That’s it.</p>
 <p>Writing nimbleFunctions requires that you declare the dimensionality of arguments and the returned object (Section <a href="cha-RCfunctions.html#sec:decl-argum-return">11.4</a>). Make sure that the dimensionality specified in your nimbleFunction matches how you use it in BUGS code. For example, if you define scalar parameters in your BUGS code you will want to define nimbleFunctions that take scalar arguments. Here is an example that returns twice its input argument:</p>
 <div class="sourceCode" id="cb244"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb244-1"><a href="cha-user-defined.html#cb244-1" aria-hidden="true" tabindex="-1"></a>timesTwo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(    </span>
 <span id="cb244-2"><a href="cha-user-defined.html#cb244-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">0</span>)) {</span>
@@ -538,8 +541,7 @@ values:</p>
 <h2><span class="header-section-number">12.2</span> User-defined distributions<a href="cha-user-defined.html#sec:user-distributions" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>To provide a user-defined distribution, you need to define density
 (‘d’) and (optionally)
-simulation (‘r’) <code>nimbleFunctions</code>, without setup
-code, for your distribution. In many cases you can then
+simulation (‘r’) <code>nimbleFunctions</code> for your distribution. In many cases you can then
 simply use your distribution in BUGS code as you would any
 distribution already provided by NIMBLE, while in a few special cases<a href="#fn24" class="footnote-ref" id="fnref24"><sup>24</sup></a>
 you need to explicitly register your distribution as described in Section <a href="cha-user-defined.html#sec:registerDistributions">12.2.1</a>.</p>
@@ -631,8 +633,8 @@ parameterization that NIMBLE will use.</p>
 <ul>
 <li>Your distribution-related functions must have names that begin with ‘d’, ‘r’, ‘p’ and ‘q’. The name of the distribution must not be identical to any of the NIMBLE-provided distributions.</li>
 <li>All simulation (‘r’) functions must take <code>n</code> as their first argument. Note that you may simply have your function only handle <code>n=1</code> and return an warning for other values of <code>n</code>.</li>
-<li>NIMBLE uses doubles for numerical calculations, so we suggest simply using doubles in general, even for integer-valued parameters or values of random variables. In fact, non-scalars must be declared as doubles.</li>
-<li>All density functions must have as their last argument <code>log</code> and implement return of the log probability density. NIMBLE algorithms typically use only <code>log = 1</code>, but we recommend you implement the <code>log = 0</code> case for completeness.</li>
+<li>NIMBLE uses doubles for numerical calculations, so we suggest simply using doubles in general, even for integer-valued parameters or values of random variables. In fact, non-scalars <em>must</em> be declared as doubles.</li>
+<li>All density functions must have as their last argument <code>log</code> and implement return of the log probability density. NIMBLE algorithms typically use only <code>log = 1</code> (i.e., TRUE), but we recommend you implement the <code>log = 0</code> (i.e., FALSE) case for completeness.</li>
 <li>All distribution and quantile functions must have their last two arguments be (in order) <code>lower.tail</code> and <code>log.p</code>. These functions must work for <code>lower.tail = 1</code> (i.e., TRUE) and <code>log.p = 0</code> (i.e., FALSE), as these are the inputs we use when working with truncated distributions. It is your choice whether you implement the necessary calculations for other combinations of these inputs, but again we recommend doing so for completeness.</li>
 <li>Define the nimbleFunctions in R’s global environment. Don’t expect R’s standard scoping to work<a href="#fn25" class="footnote-ref" id="fnref25"><sup>25</sup></a>.</li>
 </ul>
@@ -688,8 +690,63 @@ parameters in default order, starting as the second argument and in the order us
 <li>You must specify a <code>types</code> entry in the list provided to <code>registerDistributions</code> if the distribution is multivariate or if any parameter is non-scalar.</li>
 </ul>
 <p>Further details on using <code>registerDistributions</code> can be found via R help on <code>registerDistributions</code>. NIMBLE uses the same list format as <code>registerDistributions</code> to define its distributions. This list can be found in the <code>R/distributions_inputList.R</code> file in the package source code directory or as the R list <code>nimble:::distributionsInputList</code>.</p>
-
 </div>
+</div>
+<div id="sec:adv-user-def" class="section level2 hasAnchor" number="12.3">
+<h2><span class="header-section-number">12.3</span> Advanced user-defined functions and distributions<a href="cha-user-defined.html#sec:adv-user-def" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Sometimes it is useful for a user-defined function or distribution to use
+external information and/or hold variables that persist between calls. One can
+do this by creating nimbleFunctions that use <code>setup</code> code and have one or more
+methods. If you are familiar with object-oriented programming, this variety of
+nimbleFunction defines a class. Here we will give a toy example that is not
+fully explained because the NIMBLE programming concepts are covered in Chapter
+<a href="cha-progr-with-models.html#cha-progr-with-models">15</a>. After studying that chapter, the example here
+should make more sense.</p>
+<p>As a toy example, consider this basic linear regression model with one explanatory variable:</p>
+<div class="sourceCode" id="cb248"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb248-1"><a href="cha-user-defined.html#cb248-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb248-2"><a href="cha-user-defined.html#cb248-2" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb248-3"><a href="cha-user-defined.html#cb248-3" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb248-4"><a href="cha-user-defined.html#cb248-4" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
+<span id="cb248-5"><a href="cha-user-defined.html#cb248-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb248-6"><a href="cha-user-defined.html#cb248-6" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(beta0 <span class="sc">+</span> beta1<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb248-7"><a href="cha-user-defined.html#cb248-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb248-8"><a href="cha-user-defined.html#cb248-8" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb248-9"><a href="cha-user-defined.html#cb248-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate some data:</span></span>
+<span id="cb248-10"><a href="cha-user-defined.html#cb248-10" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">10</span>)</span>
+<span id="cb248-11"><a href="cha-user-defined.html#cb248-11" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>, <span class="dv">3</span> <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> x, <span class="at">sd =</span> <span class="fl">0.2</span>)</span>
+<span id="cb248-12"><a href="cha-user-defined.html#cb248-12" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">10</span>, <span class="at">x =</span> x), </span>
+<span id="cb248-13"><a href="cha-user-defined.html#cb248-13" aria-hidden="true" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y),</span>
+<span id="cb248-14"><a href="cha-user-defined.html#cb248-14" aria-hidden="true" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0=</span><span class="fl">3.1</span>,<span class="at">beta1=</span><span class="fl">0.4</span>,<span class="at">sigma=</span><span class="fl">0.3</span>))</span></code></pre></div>
+<p>Now suppose we want to rewrite this model in an equivalent way by providing a “distribution” that actually contains all the steps to calculate the log likelihood for the linear regression internally (for all of <code>y[1:10]</code> at once), including that it contains the explanatory variable <code>x</code>. We could do that as follows:</p>
+<div class="sourceCode" id="cb249"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb249-1"><a href="cha-user-defined.html#cb249-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">allowNFobjInModel=</span><span class="cn">TRUE</span>) <span class="co"># This option should be TRUE by default,</span></span>
+<span id="cb249-2"><a href="cha-user-defined.html#cb249-2" aria-hidden="true" tabindex="-1"></a>                                        <span class="co"># but we include this step to be sure.</span></span>
+<span id="cb249-3"><a href="cha-user-defined.html#cb249-3" aria-hidden="true" tabindex="-1"></a>linear_reg <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb249-4"><a href="cha-user-defined.html#cb249-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(predictor) {}, <span class="co"># Call x &quot;predictor&quot; here for clarity</span></span>
+<span id="cb249-5"><a href="cha-user-defined.html#cb249-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb249-6"><a href="cha-user-defined.html#cb249-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">dcalc =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="co"># Note that this will be y!</span></span>
+<span id="cb249-7"><a href="cha-user-defined.html#cb249-7" aria-hidden="true" tabindex="-1"></a>                     <span class="at">beta0=</span><span class="fu">double</span>(), <span class="at">beta1=</span><span class="fu">double</span>(), <span class="at">sigma=</span><span class="fu">double</span>(),</span>
+<span id="cb249-8"><a href="cha-user-defined.html#cb249-8" aria-hidden="true" tabindex="-1"></a>                     <span class="at">log=</span><span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default=</span><span class="dv">0</span>)) {</span>
+<span id="cb249-9"><a href="cha-user-defined.html#cb249-9" aria-hidden="true" tabindex="-1"></a>      llh <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">dnorm</span>(x, beta0<span class="sc">+</span>beta1<span class="sc">*</span>predictor, <span class="at">sd=</span>sigma, <span class="at">log=</span><span class="cn">TRUE</span>))</span>
+<span id="cb249-10"><a href="cha-user-defined.html#cb249-10" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span>(log) <span class="fu">return</span>(llh)</span>
+<span id="cb249-11"><a href="cha-user-defined.html#cb249-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">exp</span>(llh))</span>
+<span id="cb249-12"><a href="cha-user-defined.html#cb249-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb249-13"><a href="cha-user-defined.html#cb249-13" aria-hidden="true" tabindex="-1"></a>    }))</span>
+<span id="cb249-14"><a href="cha-user-defined.html#cb249-14" aria-hidden="true" tabindex="-1"></a>my_linear_reg <span class="ot">&lt;-</span> <span class="fu">linear_reg</span>(x)</span>
+<span id="cb249-15"><a href="cha-user-defined.html#cb249-15" aria-hidden="true" tabindex="-1"></a>code2 <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb249-16"><a href="cha-user-defined.html#cb249-16" aria-hidden="true" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb249-17"><a href="cha-user-defined.html#cb249-17" aria-hidden="true" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb249-18"><a href="cha-user-defined.html#cb249-18" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
+<span id="cb249-19"><a href="cha-user-defined.html#cb249-19" aria-hidden="true" tabindex="-1"></a>  y[<span class="dv">1</span><span class="sc">:</span>n] <span class="sc">~</span> my_linear_reg<span class="sc">$</span><span class="fu">dcalc</span>(beta0, beta1, sigma)</span>
+<span id="cb249-20"><a href="cha-user-defined.html#cb249-20" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb249-21"><a href="cha-user-defined.html#cb249-21" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code2, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">10</span>), </span>
+<span id="cb249-22"><a href="cha-user-defined.html#cb249-22" aria-hidden="true" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y),</span>
+<span id="cb249-23"><a href="cha-user-defined.html#cb249-23" aria-hidden="true" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0=</span><span class="fl">3.1</span>,<span class="at">beta1=</span><span class="fl">0.4</span>,<span class="at">sigma=</span><span class="fl">0.3</span>))</span></code></pre></div>
+<p>What is going on, and why would one even think of doing it this way? <code>linear_reg</code> here is defined as a nimbleFunction to create objects that will hold values of <code>x</code> internally and use them when the <code>dcalc</code> function (or “method”) is called. <code>my_linear_reg</code> is one instance of <code>linear_reg</code> that holds the specific values of <code>x</code> provided. The method <code>dcalc</code> has the format (arguments, return type, and prefix “d”) of a user-defined distribution, so it can be used that way via <code>my_linear_reg$dcalc</code>. One can provide a corresponding <code>rcalc</code> method, but as above this is only required if it will actually be needed by an algorithm. The suffix “calc” could be replaced with anything, but a user-defined distribution must have the prefix “d” (and can even be named just “<code>d</code>”), and a corresponding simulation must begin with “r”. Any method in an object like <code>my_linear_reg</code> can be used as a user-defined function, and the same nimbleFunction (<code>linear_reg</code>) can define multiple user-defined functions and/or distributions.</p>
+<p>(Note the deliberate illustration of a potential confusion: The random variable argument to a user-defined distribution is always named “<code>x</code>”, which in this example will get the values of <code>y[1:10]</code>.)</p>
+<p>Now, <em>why</em> would one want to do this? There are several reasons. First, sometimes instead of a short vector like <code>x</code>, there may be quite large data objects involved in some calculation. It can be wasteful (of time and memory when building and compiling models) to provide large objects in models for the sole purpose of passing them to user-defined functions or distributions. It can work well to access them internally as shown with <code>x</code> in this example. One can also consider caching intermediate values from costly calculations or other tricks to speed up calculations.</p>
+<p>It is vital when using this approach to understand clearly how an algorithm will use a model, and there is potential to create problems. For example, NIMBLE’s MCMC system uses a set of samplers, each of which assumes the model is fully up-to-date when it begins its operations. “Up-to-date” means that model variables all have the correct current values and all deterministic and stochastic calculations are up-to-date with those values. Sometimes, samplers copy values around to achieve this. However, a sampler has no way to know what variables a nimbleFunction object (e.g. <code>my_linear_reg</code>) is managing internally, and thus has no way to keep them up to date, if necessary. Techniques such as caching or “memoization” should be careful in this regard.</p>
+<p>One can also register a distribution in a nimbleFunction object manually, for the reasons given above. The name of the distribution is simply the string “my_linear_reg$dcalc”, to use the current example.</p>
+
 </div>
 </div>
 <div class="footnotes">

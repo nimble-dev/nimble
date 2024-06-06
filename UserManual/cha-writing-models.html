@@ -159,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.1.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -282,7 +282,7 @@ div.csl-indent {
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
 <ul>
@@ -293,6 +293,7 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
+<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#laplace-approximation-and-adaptive-gauss-hermite-quadrature"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 </ul></li>
 <li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
 <ul>
@@ -361,13 +362,14 @@ div.csl-indent {
 <li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
 <li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined distributions and functions for models</a>
 <ul>
 <li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
 <li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
 <ul>
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
+<li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
 </ul></li>
 <li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
 <ul>
@@ -445,15 +447,15 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#how-to-use-laplace-approximation"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 <li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
 <li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
-<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#holding-some-local-variables-out-of-derivative-tracking"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
 <li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
-<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#understanding-more-about-how-ad-works-taping-of-operations"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
 <li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
 <li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
 </ul></li>
@@ -792,7 +794,7 @@ parameterizations for a variety of distributions as described next.
 See Section <a href="cha-user-defined.html#sec:user-distributions">12.2</a> to learn how to write new distributions using nimbleFunctions.</p>
 <table>
 <caption><span id="tab:distributions">Table 5.1: </span> Distributions with their default order of parameters. The value of the random variable
-is denoted by <span class="math inline">\(x\)</span>.</caption>
+is given by <span class="math inline">\(x\)</span>.</caption>
 <thead>
 <tr class="header">
 <th align="left">Name</th>
@@ -1043,7 +1045,7 @@ is denoted by <span class="math inline">\(x\)</span>.</caption>
 </tr>
 <tr class="odd">
 <td align="left">Multivariate</td>
-<td align="left"><code>dmvt(mu =</code> <span class="math inline">\(\mu\)</span><code>, prec =</code> <span class="math inline">\(\Lambda\)</span>``</td>
+<td align="left"><code>dmvt(mu =</code> <span class="math inline">\(\mu\)</span><code>, prec =</code> <span class="math inline">\(\Lambda\)</span>,</td>
 <td align="left"><span class="math inline">\(\frac{\Gamma(\frac{\nu+d}{2})}{\Gamma(\frac{\nu}{2})(\nu\pi)^{d/2}}|\Lambda|^{1/2}(1+\frac{(x-\mu)^T\Lambda(x-\mu)}{\nu})^{-\frac{\nu+d}{2}}\)</span></td>
 <td></td>
 <td></td>
@@ -1197,12 +1199,12 @@ correlation matrix and a set of standard deviations.</p>
 <span id="cb82-5"><a href="cha-writing-models.html#cb82-5" aria-hidden="true" tabindex="-1"></a>        y[i, <span class="dv">1</span><span class="sc">:</span>p] <span class="sc">~</span> <span class="fu">dmnorm</span>(mu[<span class="dv">1</span><span class="sc">:</span>p], <span class="at">cholesky =</span> U[<span class="dv">1</span><span class="sc">:</span>p, <span class="dv">1</span><span class="sc">:</span>p], <span class="at">prec_param =</span> <span class="dv">0</span>)</span>
 <span id="cb82-6"><a href="cha-writing-models.html#cb82-6" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
 <p>Note that we need to take the upper triangular Cholesky factor (<code>Ustar</code>) of the correlation matrix
-and convert it to the upper triangular Cholesky factor of a covariance matrix (<code>U</code>), based on a vector of
+and convert it to the upper triangular Cholesky factor (<code>U</code>) of a covariance matrix, based on a vector of
 standard deviations (<code>sds</code>), and use that in the parameterization of
 <code>dmnorm</code> that directly (and therefore efficiently) uses the Cholesky of the covariance.</p>
 <p>Other approaches are possible, but unless care is taken they are likely to be less
 computationally efficient than the template above.</p>
-<p>The template uses a user-defined nimbleFunction to efficiently combine the
+<p>The template above uses a user-defined nimbleFunction to efficiently combine the
 Cholesky of the correlation matrix with a vector of standard deviations to produce the
 Cholesky of the covariance matrix. That function is given here:</p>
 <div class="sourceCode" id="cb83"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb83-1"><a href="cha-writing-models.html#cb83-1" aria-hidden="true" tabindex="-1"></a>uppertri_mult_diag <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
@@ -1214,6 +1216,14 @@ Cholesky of the covariance matrix. That function is given here:</p>
 <span id="cb83-7"><a href="cha-writing-models.html#cb83-7" aria-hidden="true" tabindex="-1"></a>            out[ , i] <span class="ot">&lt;-</span> mat[ , i] <span class="sc">*</span> vec[i]</span>
 <span id="cb83-8"><a href="cha-writing-models.html#cb83-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(out)</span>
 <span id="cb83-9"><a href="cha-writing-models.html#cb83-9" aria-hidden="true" tabindex="-1"></a>    })</span></code></pre></div>
+<p>Note that NIMBLE ignores the lower triangle of the Cholesky factor of the correlation matrix;
+the values are taken to be zero. It also ignores the <code>[1,1]</code> element, which is taken to be one.
+Any initial values for these elements will be ignored and simply repeated in the MCMC samples.</p>
+<p>Assuming the <code>[1,1]</code> element is one and the lower triangle is filled with zeroes in the MCMC samples, one can
+reconstruct a sample, here for the <code>s</code>th sample, of the correlation matrix as follows using the matrix of MCMC samples:</p>
+<div class="sourceCode" id="cb84"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb84-1"><a href="cha-writing-models.html#cb84-1" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">&quot;^Ustar&quot;</span>,<span class="fu">colnames</span>(samples))</span>
+<span id="cb84-2"><a href="cha-writing-models.html#cb84-2" aria-hidden="true" tabindex="-1"></a>Ustar_sample <span class="ot">&lt;-</span> <span class="fu">matrix</span>(samples[s, cols], p, p)</span>
+<span id="cb84-3"><a href="cha-writing-models.html#cb84-3" aria-hidden="true" tabindex="-1"></a>corrMatrix_sample <span class="ot">&lt;-</span> <span class="fu">crossprod</span>(Ustar_sample)  <span class="do">## i.e., t(Ustar_sample) %*% Ustar_sample</span></span></code></pre></div>
 </div>
 </div>
 <div id="subsec:alternative-params" class="section level4 hasAnchor" number="5.2.4.2">
@@ -2199,8 +2209,8 @@ x ~ T(dnorm(0, sd = 10), 0, a)</code></pre>
 <div id="censoring" class="section level4 hasAnchor" number="5.2.7.2">
 <h4><span class="header-section-number">5.2.7.2</span> Censoring<a href="cha-writing-models.html#censoring" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>Censoring refers to the situation where one datum gives the lower or upper bound on an unobserved random variable. This is common in survival analysis, when for an individual still surviving at the end of a study, the age of death is not known and hence is ‘censored’ (right-censoring). NIMBLE adopts JAGS syntax for censoring, as follows:</p>
-<div class="sourceCode" id="cb85"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb85-1"><a href="cha-writing-models.html#cb85-1" aria-hidden="true" tabindex="-1"></a>censored[i] <span class="sc">~</span> <span class="fu">dinterval</span>(t[i], c[i])</span>
-<span id="cb85-2"><a href="cha-writing-models.html#cb85-2" aria-hidden="true" tabindex="-1"></a>t[i] <span class="sc">~</span> <span class="fu">dweib</span>(r, mu[i])</span></code></pre></div>
+<div class="sourceCode" id="cb86"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb86-1"><a href="cha-writing-models.html#cb86-1" aria-hidden="true" tabindex="-1"></a>censored[i] <span class="sc">~</span> <span class="fu">dinterval</span>(t[i], c[i])</span>
+<span id="cb86-2"><a href="cha-writing-models.html#cb86-2" aria-hidden="true" tabindex="-1"></a>t[i] <span class="sc">~</span> <span class="fu">dweib</span>(r, mu[i])</span></code></pre></div>
 <p>In the case of right-censoring, <code>censored[i]</code> should be given as <code>data</code> with a value of 1 if
 <code>t[i]</code> is right-censored (<code>t[i] &gt; c[i]</code>) and 0 if it is
 observed. The data vector for <code>t</code> should have <code>NA</code> (indicating
@@ -2231,9 +2241,9 @@ as <code>data</code> with known values. Otherwise, the node may be simulated dur
 <div id="constraints-and-ordering" class="section level4 hasAnchor" number="5.2.7.3">
 <h4><span class="header-section-number">5.2.7.3</span> Constraints and ordering<a href="cha-writing-models.html#constraints-and-ordering" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>NIMBLE provides a more general way to enforce constraints using <code>dconstraint(cond)</code>. For example, we could specify that the sum of <code>mu1</code> and <code>mu2</code> must be positive like this:</p>
-<div class="sourceCode" id="cb86"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb86-1"><a href="cha-writing-models.html#cb86-1" aria-hidden="true" tabindex="-1"></a>mu1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
-<span id="cb86-2"><a href="cha-writing-models.html#cb86-2" aria-hidden="true" tabindex="-1"></a>mu2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
-<span id="cb86-3"><a href="cha-writing-models.html#cb86-3" aria-hidden="true" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( mu1 <span class="sc">+</span> mu2 <span class="sc">&gt;</span> <span class="dv">0</span> )</span></code></pre></div>
+<div class="sourceCode" id="cb87"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb87-1"><a href="cha-writing-models.html#cb87-1" aria-hidden="true" tabindex="-1"></a>mu1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
+<span id="cb87-2"><a href="cha-writing-models.html#cb87-2" aria-hidden="true" tabindex="-1"></a>mu2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
+<span id="cb87-3"><a href="cha-writing-models.html#cb87-3" aria-hidden="true" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( mu1 <span class="sc">+</span> mu2 <span class="sc">&gt;</span> <span class="dv">0</span> )</span></code></pre></div>
 <p>with <code>constraint_data</code> set (as <code>data</code>) to 1. This is
 equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 + \mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>.
 <!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. --></p>
@@ -2251,18 +2261,18 @@ algorithms that are not tailored to the constraints may fail or be inefficient. 
 <div id="ordering" class="section level5 hasAnchor" number="5.2.7.3.1">
 <h5><span class="header-section-number">5.2.7.3.1</span> Ordering<a href="cha-writing-models.html#ordering" class="anchor-section" aria-label="Anchor link to header"></a></h5>
 <p>To specify an ordering of parameters, such as <span class="math inline">\(\alpha_1 &lt;= \alpha_2 &lt;= \alpha_3\)</span> one can use <code>dconstraint</code> as follows:</p>
-<div class="sourceCode" id="cb87"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb87-1"><a href="cha-writing-models.html#cb87-1" aria-hidden="true" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( alpha1 <span class="sc">&lt;=</span> alpha2 <span class="sc">&amp;</span> alpha2 <span class="sc">&lt;=</span> alpha3 )</span></code></pre></div>
+<div class="sourceCode" id="cb88"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb88-1"><a href="cha-writing-models.html#cb88-1" aria-hidden="true" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( alpha1 <span class="sc">&lt;=</span> alpha2 <span class="sc">&amp;</span> alpha2 <span class="sc">&lt;=</span> alpha3 )</span></code></pre></div>
 <p>Note that unlike in BUGS, one cannot specify prior ordering using syntax such as</p>
-<div class="sourceCode" id="cb88"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb88-1"><a href="cha-writing-models.html#cb88-1" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(, alpha[<span class="dv">2</span>])</span>
-<span id="cb88-2"><a href="cha-writing-models.html#cb88-2" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">2</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])</span>
-<span id="cb88-3"><a href="cha-writing-models.html#cb88-3" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">3</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(alpha[<span class="dv">2</span>], )</span></code></pre></div>
+<div class="sourceCode" id="cb89"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb89-1"><a href="cha-writing-models.html#cb89-1" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(, alpha[<span class="dv">2</span>])</span>
+<span id="cb89-2"><a href="cha-writing-models.html#cb89-2" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">2</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(alpha[<span class="dv">1</span>], alpha[<span class="dv">3</span>])</span>
+<span id="cb89-3"><a href="cha-writing-models.html#cb89-3" aria-hidden="true" tabindex="-1"></a>alpha[<span class="dv">3</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">I</span>(alpha[<span class="dv">2</span>], )</span></code></pre></div>
 <p>as this does not represent a directed acyclic graph.
 <!---  TODO: CHRIS, WOULDN'T THIS WORK WITH `alpha[1] $\sim$ dnorm(0, 1)`?  DOES BUGS REALLY ALLOW THIS NON-DAG? 
 % PERRY, JAGS manual indicates the above is allowed in BUGS. Are you asking if it would work in NIMBLE with alpha1~dnorm(0,1) -- no because alpha2 still depends on alpha3 and vice versa --></p>
 <p>Also note that specifying prior ordering using <code>T(,)</code> can result in possibly unexpected results. For example:</p>
-<div class="sourceCode" id="cb89"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb89-1"><a href="cha-writing-models.html#cb89-1" aria-hidden="true" tabindex="-1"></a>alpha1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb89-2"><a href="cha-writing-models.html#cb89-2" aria-hidden="true" tabindex="-1"></a>alpha2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">T</span>(alpha1, )</span>
-<span id="cb89-3"><a href="cha-writing-models.html#cb89-3" aria-hidden="true" tabindex="-1"></a>alpha3 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">T</span>(alpha2, )</span></code></pre></div>
+<div class="sourceCode" id="cb90"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb90-1"><a href="cha-writing-models.html#cb90-1" aria-hidden="true" tabindex="-1"></a>alpha1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb90-2"><a href="cha-writing-models.html#cb90-2" aria-hidden="true" tabindex="-1"></a>alpha2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">T</span>(alpha1, )</span>
+<span id="cb90-3"><a href="cha-writing-models.html#cb90-3" aria-hidden="true" tabindex="-1"></a>alpha3 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">T</span>(alpha2, )</span></code></pre></div>
 <p>will enforce <code>alpha1</code> <span class="math inline">\(\le\)</span> <code>alpha2</code> <span class="math inline">\(\le\)</span> <code>alpha3</code>, but it does not treat the three parameters symmetrically. Instead it puts a marginal prior on <code>alpha1</code> that is standard normal and then constrains <code>alpha2</code> and <code>alpha3</code> to follow truncated normal distributions. This is not equivalent to a symmetric prior on the three <code>alpha</code>s that assigns zero probability density when values are not in order.</p>
 <p>NIMBLE does not support the JAGS <code>sort</code> syntax.</p>
 

@@ -159,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.1.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -282,7 +282,7 @@ div.csl-indent {
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
 <ul>
@@ -293,6 +293,7 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
+<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#laplace-approximation-and-adaptive-gauss-hermite-quadrature"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 </ul></li>
 <li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
 <ul>
@@ -361,13 +362,14 @@ div.csl-indent {
 <li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
 <li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined distributions and functions for models</a>
 <ul>
 <li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
 <li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
 <ul>
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
+<li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
 </ul></li>
 <li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
 <ul>
@@ -445,15 +447,15 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#how-to-use-laplace-approximation"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 <li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
 <li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
-<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#holding-some-local-variables-out-of-derivative-tracking"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
 <li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
-<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#understanding-more-about-how-ad-works-taping-of-operations"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
 <li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
 <li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
 </ul></li>
@@ -1335,17 +1337,19 @@ interrupt waiting to be handled, the process will stop and return control to R.<
 </div>
 <div id="optimization-optim-and-nimoptim" class="section level3 hasAnchor" number="11.2.8">
 <h3><span class="header-section-number">11.2.8</span> Optimization: <em>optim</em> and <em>nimOptim</em><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>NIMBLE provides a <code>nimOptim</code> function that partially implement’s R’s
-<code>optim</code> function with some minor differences. <code>nimOptim</code> supports
-optimization methods ‘Nelder-Mead’, ‘BFGS’, ‘CG’, ‘L-BFGS-B’, but does
-not support methods ‘SANN’ and ‘Brent’. NIMBLE’s <code>nimOptim</code> allows gradients
-to be supplied using user-provided functions if available or finite differences
-otherwise. Currently <code>nimOptim</code> does not support extra parameters to the
-function being optimized (via <code>\dots</code>), but a work-around is to create a
-new <code>nimbleFunction</code> that calls another one with the additional parameters.
-Finally, <code>nimOptim</code> requires a <code>nimbleList</code>
-datatype for the <code>control</code> parameter, whereas R’s <code>optim</code> uses a simple R
-<code>list</code>. To define the <code>control</code> parameter, create a default value with
+<p>NIMBLE provides a <code>nimOptim</code> function that partially implement’s R’s <code>optim</code>
+function with some minor differences. <code>nimOptim</code> can use methods from R’s
+<code>optim</code>, including ‘Nelder-Mead’, ‘BFGS’, ‘CG’, ‘L-BFGS-B’, but it does not
+support methods ‘SANN’ and ‘Brent’. As of version 1.2.0, it also allows users to
+provide their own optimization methods as R functions (although this feature is
+subject to change in future versions). Support for R’s <code>nlminb</code> is provided in
+this way. NIMBLE’s <code>nimOptim</code> allows gradients to be supplied using
+user-provided functions if available or finite differences otherwise. Currently
+<code>nimOptim</code> does not support extra parameters to the function being optimized
+(via <code>\dots</code>), but a work-around is to create a new <code>nimbleFunction</code> that calls
+another one with the additional parameters. Finally, <code>nimOptim</code> requires a
+<code>nimbleList</code> datatype for the <code>control</code> parameter, whereas R’s <code>optim</code> uses a
+simple R <code>list</code>. To define the <code>control</code> parameter, create a default value with
 the <code>nimOptimDefaultControl</code> function, and set any desired fields.</p>
 <p>See <code>help(nimOptim)</code> for details, including example usage.</p>
 </div>
@@ -1355,20 +1359,16 @@ the <code>nimOptimDefaultControl</code> function, and set any desired fields.</p
 <code>integrate</code> function, which carries out adaptive Gauss-Kronrod
 quadrature to integrate a function of one variable over a finite
 or infinite interval.</p>
-<p>In addition to general use in a nimbleFunction, this can, of course,
-be used in a user-defined function in
-model code, e.g., to implement models that involve
-an integral, such as certain point process and survival models.</p>
-<p>One could also consider using <code>nimIntegrate</code> to numerically
-integrate over a parameter in a model, such as to remove
-a parameter that is not mixing well in an MCMC. Note that
-NIMBLE’s Laplace approximation is a version of this,
-being equivalent to Gauss-Hermite quadrature with a single
-integration point (aka node). In a future version of NIMBLE, we will
-be making Gauss-Hermite quadrature available more generally
-as an extension of NIMBLE’s Laplace approximation.</p>
-<p>See <code>help(nimIntegrate)</code> for details, including basic example usage.</p>
-<p>Here is an example of using <code>nimIntegrate</code> to implement a vectorized von Mises distribution.</p>
+<p>In addition to general use in a nimbleFunction, this can, of course, be used in
+a user-defined function in model code, e.g., to implement models that involve an
+integral, such as certain point process and survival models.</p>
+<p>One could also consider using <code>nimIntegrate</code> to numerically integrate over a
+parameter in a model, such as to remove a parameter that is not mixing well in
+an MCMC. Note that NIMBLE Laplace approximation and adaptive Gauss-Hermite
+quadrature for integrating over continuous parameters such as random effects.
+See section <a href="cha-AD.html#sec:AD-laplace">16.2</a> and <code>help(Laplace)</code> for more information on those.</p>
+<p>Here is an example of using <code>nimIntegrate</code> to implement a vectorized von Mises
+distribution.</p>
 <div class="sourceCode" id="cb234"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb234-1"><a href="cha-RCfunctions.html#cb234-1" aria-hidden="true" tabindex="-1"></a>integrand <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
 <span id="cb234-2"><a href="cha-RCfunctions.html#cb234-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">theta =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
 <span id="cb234-3"><a href="cha-RCfunctions.html#cb234-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>( <span class="fu">exp</span>(theta[<span class="dv">1</span>] <span class="sc">*</span> <span class="fu">cos</span>(x) <span class="sc">+</span> theta[<span class="dv">2</span>] <span class="sc">*</span> <span class="fu">cos</span>(<span class="dv">2</span> <span class="sc">*</span> (x <span class="sc">+</span> theta[<span class="dv">3</span>]))) )</span>
@@ -1376,29 +1376,30 @@ as an extension of NIMBLE’s Laplace approximation.</p>
 <span id="cb234-5"><a href="cha-RCfunctions.html#cb234-5" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb234-6"><a href="cha-RCfunctions.html#cb234-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb234-7"><a href="cha-RCfunctions.html#cb234-7" aria-hidden="true" tabindex="-1"></a>dGenVonMises <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb234-8"><a href="cha-RCfunctions.html#cb234-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">mu1 =</span> <span class="fu">double</span>(), <span class="at">mu2 =</span> <span class="fu">double</span>(), <span class="at">kappa1 =</span> <span class="fu">double</span>(), <span class="at">kappa2 =</span> <span class="fu">double</span>(),</span>
-<span id="cb234-9"><a href="cha-RCfunctions.html#cb234-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">limits =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)){</span>
-<span id="cb234-10"><a href="cha-RCfunctions.html#cb234-10" aria-hidden="true" tabindex="-1"></a>    range <span class="ot">&lt;-</span> limits[<span class="dv">2</span>] <span class="sc">-</span> limits[<span class="dv">1</span>]</span>
-<span id="cb234-11"><a href="cha-RCfunctions.html#cb234-11" aria-hidden="true" tabindex="-1"></a>    mu1R <span class="ot">&lt;-</span> (mu1 <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
-<span id="cb234-12"><a href="cha-RCfunctions.html#cb234-12" aria-hidden="true" tabindex="-1"></a>    mu2R <span class="ot">&lt;-</span> (mu2 <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
-<span id="cb234-13"><a href="cha-RCfunctions.html#cb234-13" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> (x <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
-<span id="cb234-14"><a href="cha-RCfunctions.html#cb234-14" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> (mu1R <span class="sc">-</span> mu2R) <span class="sc">%%</span> pi</span>
-<span id="cb234-15"><a href="cha-RCfunctions.html#cb234-15" aria-hidden="true" tabindex="-1"></a>    num <span class="ot">&lt;-</span> <span class="fu">exp</span>(kappa1 <span class="sc">*</span> <span class="fu">cos</span>(z <span class="sc">-</span> mu1R) <span class="sc">+</span> kappa2 <span class="sc">*</span> <span class="fu">cos</span>(<span class="dv">2</span> <span class="sc">*</span> (z <span class="sc">-</span> mu2R)))</span>
-<span id="cb234-16"><a href="cha-RCfunctions.html#cb234-16" aria-hidden="true" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> <span class="fu">c</span>(kappa1, kappa2, d)</span>
-<span id="cb234-17"><a href="cha-RCfunctions.html#cb234-17" aria-hidden="true" tabindex="-1"></a>    den <span class="ot">&lt;-</span> <span class="fu">nimIntegrate</span>(integrand, <span class="at">lower =</span> <span class="dv">0</span>, <span class="at">upper =</span> <span class="dv">2</span><span class="sc">*</span>pi, tmp)[<span class="dv">1</span>]</span>
-<span id="cb234-18"><a href="cha-RCfunctions.html#cb234-18" aria-hidden="true" tabindex="-1"></a>    dens <span class="ot">&lt;-</span> num<span class="sc">/</span>den</span>
-<span id="cb234-19"><a href="cha-RCfunctions.html#cb234-19" aria-hidden="true" tabindex="-1"></a>    result <span class="ot">&lt;-</span> dens<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi<span class="sc">/</span>range</span>
-<span id="cb234-20"><a href="cha-RCfunctions.html#cb234-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(log) {</span>
-<span id="cb234-21"><a href="cha-RCfunctions.html#cb234-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">log</span>(result))</span>
-<span id="cb234-22"><a href="cha-RCfunctions.html#cb234-22" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="fu">return</span>(result)</span>
-<span id="cb234-23"><a href="cha-RCfunctions.html#cb234-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
-<span id="cb234-24"><a href="cha-RCfunctions.html#cb234-24" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb234-25"><a href="cha-RCfunctions.html#cb234-25" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb234-26"><a href="cha-RCfunctions.html#cb234-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb234-27"><a href="cha-RCfunctions.html#cb234-27" aria-hidden="true" tabindex="-1"></a>cgvonmises <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(dGenVonMises)</span>
-<span id="cb234-28"><a href="cha-RCfunctions.html#cb234-28" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">360</span></span>
-<span id="cb234-29"><a href="cha-RCfunctions.html#cb234-29" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(x, circular::dgenvonmises(circular(x, type = &quot;angles&quot;, units = &quot;degrees&quot;), -1, 1, 2, 1))</span></span>
-<span id="cb234-30"><a href="cha-RCfunctions.html#cb234-30" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(x, cgvonmises(x, mu1=20, mu2=300, kappa1=2, kappa2=1, limits = c(0, 360)), type = &#39;l&#39;)</span></span></code></pre></div>
+<span id="cb234-8"><a href="cha-RCfunctions.html#cb234-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">mu1 =</span> <span class="fu">double</span>(), <span class="at">mu2 =</span> <span class="fu">double</span>(),</span>
+<span id="cb234-9"><a href="cha-RCfunctions.html#cb234-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">kappa1 =</span> <span class="fu">double</span>(), <span class="at">kappa2 =</span> <span class="fu">double</span>(),</span>
+<span id="cb234-10"><a href="cha-RCfunctions.html#cb234-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">limits =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)){</span>
+<span id="cb234-11"><a href="cha-RCfunctions.html#cb234-11" aria-hidden="true" tabindex="-1"></a>    range <span class="ot">&lt;-</span> limits[<span class="dv">2</span>] <span class="sc">-</span> limits[<span class="dv">1</span>]</span>
+<span id="cb234-12"><a href="cha-RCfunctions.html#cb234-12" aria-hidden="true" tabindex="-1"></a>    mu1R <span class="ot">&lt;-</span> (mu1 <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
+<span id="cb234-13"><a href="cha-RCfunctions.html#cb234-13" aria-hidden="true" tabindex="-1"></a>    mu2R <span class="ot">&lt;-</span> (mu2 <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
+<span id="cb234-14"><a href="cha-RCfunctions.html#cb234-14" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> (x <span class="sc">-</span> range<span class="sc">/</span><span class="dv">2</span>)<span class="sc">/</span>range<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi</span>
+<span id="cb234-15"><a href="cha-RCfunctions.html#cb234-15" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> (mu1R <span class="sc">-</span> mu2R) <span class="sc">%%</span> pi</span>
+<span id="cb234-16"><a href="cha-RCfunctions.html#cb234-16" aria-hidden="true" tabindex="-1"></a>    num <span class="ot">&lt;-</span> <span class="fu">exp</span>(kappa1 <span class="sc">*</span> <span class="fu">cos</span>(z <span class="sc">-</span> mu1R) <span class="sc">+</span> kappa2 <span class="sc">*</span> <span class="fu">cos</span>(<span class="dv">2</span> <span class="sc">*</span> (z <span class="sc">-</span> mu2R)))</span>
+<span id="cb234-17"><a href="cha-RCfunctions.html#cb234-17" aria-hidden="true" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> <span class="fu">c</span>(kappa1, kappa2, d)</span>
+<span id="cb234-18"><a href="cha-RCfunctions.html#cb234-18" aria-hidden="true" tabindex="-1"></a>    den <span class="ot">&lt;-</span> <span class="fu">nimIntegrate</span>(integrand, <span class="at">lower =</span> <span class="dv">0</span>, <span class="at">upper =</span> <span class="dv">2</span><span class="sc">*</span>pi, tmp)[<span class="dv">1</span>]</span>
+<span id="cb234-19"><a href="cha-RCfunctions.html#cb234-19" aria-hidden="true" tabindex="-1"></a>    dens <span class="ot">&lt;-</span> num<span class="sc">/</span>den</span>
+<span id="cb234-20"><a href="cha-RCfunctions.html#cb234-20" aria-hidden="true" tabindex="-1"></a>    result <span class="ot">&lt;-</span> dens<span class="sc">*</span><span class="dv">2</span><span class="sc">*</span>pi<span class="sc">/</span>range</span>
+<span id="cb234-21"><a href="cha-RCfunctions.html#cb234-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(log) {</span>
+<span id="cb234-22"><a href="cha-RCfunctions.html#cb234-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">log</span>(result))</span>
+<span id="cb234-23"><a href="cha-RCfunctions.html#cb234-23" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="fu">return</span>(result)</span>
+<span id="cb234-24"><a href="cha-RCfunctions.html#cb234-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb234-25"><a href="cha-RCfunctions.html#cb234-25" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb234-26"><a href="cha-RCfunctions.html#cb234-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb234-27"><a href="cha-RCfunctions.html#cb234-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb234-28"><a href="cha-RCfunctions.html#cb234-28" aria-hidden="true" tabindex="-1"></a>cgvonmises <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(dGenVonMises)</span>
+<span id="cb234-29"><a href="cha-RCfunctions.html#cb234-29" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">360</span></span>
+<span id="cb234-30"><a href="cha-RCfunctions.html#cb234-30" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(x, circular::dgenvonmises(circular(x, type = &quot;angles&quot;, units = &quot;degrees&quot;), -1, 1, 2, 1))</span></span>
+<span id="cb234-31"><a href="cha-RCfunctions.html#cb234-31" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(x, cgvonmises(x, mu1=20, mu2=300, kappa1=2, kappa2=1, limits = c(0, 360)), type = &#39;l&#39;)</span></span></code></pre></div>
 </div>
 <div id="sec:altern-keyw-some" class="section level3 hasAnchor" number="11.2.10">
 <h3><span class="header-section-number">11.2.10</span> ‘nim’ synonyms for some functions<a href="cha-RCfunctions.html#sec:altern-keyw-some" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -1626,14 +1627,14 @@ and will be re-sized for the result.</li>
 <h4><span class="header-section-number">11.3.2.8</span> Size warnings and the potential for crashes<a href="cha-RCfunctions.html#sec:size-warn-potent" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>For matrix algebra, NIMBLE cannot ensure perfect behavior because
 sizes are not known until run time. Therefore, it is possible for you
-to write code that will crash your R session. In Version 1.1.0, NIMBLE
+to write code that will crash your R session. In Version 1.2.0, NIMBLE
 attempts to issue a warning if sizes are not compatible, but it does not
 halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication,
 NIMBLE will output a warning that the number of rows of <code>M1</code> does not
 match the number of columns of <code>M2</code>. After that warning the statement
 will be executed and may result in a crash. Another easy way to write
 code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to
-prevent crashes, but in Version 1.1.0 we limit ourselves to trying to provide
+prevent crashes, but in Version 1.2.0 we limit ourselves to trying to provide
 useful information.</p>
 </div>
 </div>
