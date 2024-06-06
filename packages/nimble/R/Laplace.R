@@ -3510,7 +3510,8 @@ runLaplace <- function(laplace, pStart, method = "BFGS",
                        originalScale = TRUE,
                        randomEffectsStdError = TRUE,
                        jointCovariance = FALSE) {
-    runAGHQ(AGHQ = laplace, pStart, method, originalScale, randomEffectsStdError,
+  if(missing(pStart)) pStart <- Inf # code to use values in model
+  runAGHQ(AGHQ = laplace, pStart, method, originalScale, randomEffectsStdError,
             jointCovariance)
 }
 
