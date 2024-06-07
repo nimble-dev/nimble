@@ -898,6 +898,7 @@ void waicDetailsNimbleList::resetFlags() {
   RObjectPointer = NULL;
 }
 void waicDetailsNimbleList::copyFromRobject(SEXP Robject) {
+  std::cout<<"waicDetailsNimbleList::copyFromRobject"<<std::endl;
   SETUP_S_xData;
   COPY_LOGICAL_SCALAR_FROM_R_OBJECT("marginal");
   COPY_DOUBLE_SCALAR_FROM_R_OBJECT("niterMarginal");
@@ -911,7 +912,7 @@ void waicDetailsNimbleList::copyFromRobject(SEXP Robject) {
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("WAIC_elements");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("lppd_elements");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("pWAIC_elements");
-  UNPROTECT(14);
+  UNPROTECT(15);
 }
 waicDetailsNimbleList::waicDetailsNimbleList() {
   RCopiedFlag = false;
@@ -1037,6 +1038,7 @@ void AGHQuad_params::resetFlags() {
   RObjectPointer = NULL;
 }
 void AGHQuad_params::copyFromRobject(SEXP Robject) {
+  std::cout<<"AGHQuad_params::copyFromRobject"<<std::endl;
   SETUP_S_xData;
   // There is no macro for a string vector, so do it by hand here
   std::string svarName("names");
@@ -1045,7 +1047,7 @@ void AGHQuad_params::copyFromRobject(SEXP Robject) {
                          *static_cast< std::vector<string>* >(getObjectPtr(svarName)));
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("estimates");
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("stdErrors");
-  UNPROTECT(4);
+  UNPROTECT(6);
 }
 AGHQuad_params::AGHQuad_params() {
   RCopiedFlag = false;
@@ -1174,6 +1176,7 @@ void  AGHQuad_summary::resetFlags (  )  {
   RObjectPointer = NULL;
 }
 void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
+  std::cout<<"AGHQuad_summary::copyFromRobject"<<std::endl;
   SETUP_S_xData;
   // Hand-coding: does this need more lines for params, randomEffects, and scale,
   // or are those handled by direct copying calls from R (for cases not included in the
