@@ -83,7 +83,13 @@ can test using rhub (from within packages/nimble):
 
 Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','fedora-clang-devel'))" >> /tmp/rhub.out
 
+As of 2024-06-06, having SSL certificate issues. Also it looks like rhub has updated its workflow substantially so a bit of work may be needed to get this working again.
+Error in curl::curl_fetch_memory(url, handle = handle) : 
+  SSL peer certificate or SSH remote key was not OK: [builder.r-hub.io] SSL certificate problem: self-signed certificate
+
 can test on Windows using win-builder and Mac M1 on macbuilder (https://mac.r-project.org/macbuilder/submit.html)
+
+As of 2024-06-06, Macbuilder was accepting the submission but immediately giving back a URL for results that gives a 404 and never sending any email to indicate it had done the check.
 
 careful AD testing:
 - run full ADmodel testing in packages/test-ADmodels-full.R, either scanning all results or (TBD) setting up a gold file. This is both time-consuming an a PITA because of tolerances.

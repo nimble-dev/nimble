@@ -54,7 +54,7 @@
 
 <style type="text/css">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -64,7 +64,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -126,6 +126,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
+  margin-bottom: 0em;
 }
 .hanging div.csl-entry {
   margin-left:2em;
@@ -521,29 +522,29 @@ objects created by the <em>setup</em> function.</li>
 </ol></li>
 </ol>
 <p>Here is a small example to fix ideas:</p>
-<div class="sourceCode" id="cb396"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb396-1"><a href="cha-progr-with-models.html#cb396-1" aria-hidden="true" tabindex="-1"></a>logProbCalcPlus <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb396-2"><a href="cha-progr-with-models.html#cb396-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model, node) {</span>
-<span id="cb396-3"><a href="cha-progr-with-models.html#cb396-3" aria-hidden="true" tabindex="-1"></a>        dependentNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(node)</span>
-<span id="cb396-4"><a href="cha-progr-with-models.html#cb396-4" aria-hidden="true" tabindex="-1"></a>        valueToAdd <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb396-5"><a href="cha-progr-with-models.html#cb396-5" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb396-6"><a href="cha-progr-with-models.html#cb396-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">P =</span> <span class="fu">double</span>(<span class="dv">0</span>)) {</span>
-<span id="cb396-7"><a href="cha-progr-with-models.html#cb396-7" aria-hidden="true" tabindex="-1"></a>        model[[node]] <span class="ot">&lt;&lt;-</span> P <span class="sc">+</span> valueToAdd</span>
-<span id="cb396-8"><a href="cha-progr-with-models.html#cb396-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(model<span class="sc">$</span><span class="fu">calculate</span>(dependentNodes))</span>
-<span id="cb396-9"><a href="cha-progr-with-models.html#cb396-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
-<span id="cb396-10"><a href="cha-progr-with-models.html#cb396-10" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb396-11"><a href="cha-progr-with-models.html#cb396-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb396-12"><a href="cha-progr-with-models.html#cb396-12" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb396-13"><a href="cha-progr-with-models.html#cb396-13" aria-hidden="true" tabindex="-1"></a>    a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb396-14"><a href="cha-progr-with-models.html#cb396-14" aria-hidden="true" tabindex="-1"></a>    b <span class="sc">~</span> <span class="fu">dnorm</span>(a, <span class="dv">1</span>)</span>
-<span id="cb396-15"><a href="cha-progr-with-models.html#cb396-15" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb396-16"><a href="cha-progr-with-models.html#cb396-16" aria-hidden="true" tabindex="-1"></a>testModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb396-17"><a href="cha-progr-with-models.html#cb396-17" aria-hidden="true" tabindex="-1"></a>logProbCalcPlusA <span class="ot">&lt;-</span> <span class="fu">logProbCalcPlus</span>(testModel, <span class="st">&quot;a&quot;</span>)</span>
-<span id="cb396-18"><a href="cha-progr-with-models.html#cb396-18" aria-hidden="true" tabindex="-1"></a>testModel<span class="sc">$</span>b <span class="ot">&lt;-</span> <span class="fl">1.5</span></span>
-<span id="cb396-19"><a href="cha-progr-with-models.html#cb396-19" aria-hidden="true" tabindex="-1"></a>logProbCalcPlusA<span class="sc">$</span><span class="fu">run</span>(<span class="fl">0.25</span>) </span></code></pre></div>
+<div class="sourceCode" id="cb396"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb396-1"><a href="cha-progr-with-models.html#cb396-1" tabindex="-1"></a>logProbCalcPlus <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb396-2"><a href="cha-progr-with-models.html#cb396-2" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model, node) {</span>
+<span id="cb396-3"><a href="cha-progr-with-models.html#cb396-3" tabindex="-1"></a>        dependentNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(node)</span>
+<span id="cb396-4"><a href="cha-progr-with-models.html#cb396-4" tabindex="-1"></a>        valueToAdd <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb396-5"><a href="cha-progr-with-models.html#cb396-5" tabindex="-1"></a>    },</span>
+<span id="cb396-6"><a href="cha-progr-with-models.html#cb396-6" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">P =</span> <span class="fu">double</span>(<span class="dv">0</span>)) {</span>
+<span id="cb396-7"><a href="cha-progr-with-models.html#cb396-7" tabindex="-1"></a>        model[[node]] <span class="ot">&lt;&lt;-</span> P <span class="sc">+</span> valueToAdd</span>
+<span id="cb396-8"><a href="cha-progr-with-models.html#cb396-8" tabindex="-1"></a>        <span class="fu">return</span>(model<span class="sc">$</span><span class="fu">calculate</span>(dependentNodes))</span>
+<span id="cb396-9"><a href="cha-progr-with-models.html#cb396-9" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb396-10"><a href="cha-progr-with-models.html#cb396-10" tabindex="-1"></a>    })</span>
+<span id="cb396-11"><a href="cha-progr-with-models.html#cb396-11" tabindex="-1"></a></span>
+<span id="cb396-12"><a href="cha-progr-with-models.html#cb396-12" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb396-13"><a href="cha-progr-with-models.html#cb396-13" tabindex="-1"></a>    a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb396-14"><a href="cha-progr-with-models.html#cb396-14" tabindex="-1"></a>    b <span class="sc">~</span> <span class="fu">dnorm</span>(a, <span class="dv">1</span>)</span>
+<span id="cb396-15"><a href="cha-progr-with-models.html#cb396-15" tabindex="-1"></a>})</span>
+<span id="cb396-16"><a href="cha-progr-with-models.html#cb396-16" tabindex="-1"></a>testModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb396-17"><a href="cha-progr-with-models.html#cb396-17" tabindex="-1"></a>logProbCalcPlusA <span class="ot">&lt;-</span> <span class="fu">logProbCalcPlus</span>(testModel, <span class="st">&quot;a&quot;</span>)</span>
+<span id="cb396-18"><a href="cha-progr-with-models.html#cb396-18" tabindex="-1"></a>testModel<span class="sc">$</span>b <span class="ot">&lt;-</span> <span class="fl">1.5</span></span>
+<span id="cb396-19"><a href="cha-progr-with-models.html#cb396-19" tabindex="-1"></a>logProbCalcPlusA<span class="sc">$</span><span class="fu">run</span>(<span class="fl">0.25</span>) </span></code></pre></div>
 <pre><code>## [1] -2.650377</code></pre>
-<div class="sourceCode" id="cb398"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb398-1"><a href="cha-progr-with-models.html#cb398-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dnorm</span>(<span class="fl">1.25</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="cn">TRUE</span>)<span class="sc">+</span><span class="fu">dnorm</span>(<span class="fl">1.5</span>,<span class="fl">1.25</span>,<span class="dv">1</span>,<span class="cn">TRUE</span>) <span class="co"># direct validation</span></span></code></pre></div>
+<div class="sourceCode" id="cb398"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb398-1"><a href="cha-progr-with-models.html#cb398-1" tabindex="-1"></a><span class="fu">dnorm</span>(<span class="fl">1.25</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="cn">TRUE</span>)<span class="sc">+</span><span class="fu">dnorm</span>(<span class="fl">1.5</span>,<span class="fl">1.25</span>,<span class="dv">1</span>,<span class="cn">TRUE</span>) <span class="co"># direct validation</span></span></code></pre></div>
 <pre><code>## [1] -2.650377</code></pre>
-<div class="sourceCode" id="cb400"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb400-1"><a href="cha-progr-with-models.html#cb400-1" aria-hidden="true" tabindex="-1"></a>testModel<span class="sc">$</span>a  <span class="co"># &quot;a&quot; was set to 0.5 + valueToAdd</span></span></code></pre></div>
+<div class="sourceCode" id="cb400"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb400-1"><a href="cha-progr-with-models.html#cb400-1" tabindex="-1"></a>testModel<span class="sc">$</span>a  <span class="co"># &quot;a&quot; was set to 0.5 + valueToAdd</span></span></code></pre></div>
 <pre><code>## [1] 1.25</code></pre>
 <p>The call to the R function called <code>nimbleFunction</code> returns a
 function, similarly to defining a function in R. That function,
@@ -579,25 +580,25 @@ the object.</p>
 <div id="sec:using-comp-nimbl" class="section level2 hasAnchor" number="15.2">
 <h2><span class="header-section-number">15.2</span> Using and compiling nimbleFunctions<a href="cha-progr-with-models.html#sec:using-comp-nimbl" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>To compile the nimbleFunction, together with its model, we use <code>compileNimble</code>:</p>
-<div class="sourceCode" id="cb402"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb402-1"><a href="cha-progr-with-models.html#cb402-1" aria-hidden="true" tabindex="-1"></a>CnfDemo <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(testModel, logProbCalcPlusA)</span>
-<span id="cb402-2"><a href="cha-progr-with-models.html#cb402-2" aria-hidden="true" tabindex="-1"></a>CtestModel <span class="ot">&lt;-</span> CnfDemo<span class="sc">$</span>testModel</span>
-<span id="cb402-3"><a href="cha-progr-with-models.html#cb402-3" aria-hidden="true" tabindex="-1"></a>ClogProbCalcPlusA <span class="ot">&lt;-</span> CnfDemo<span class="sc">$</span>logProbCalcPlusA</span></code></pre></div>
+<div class="sourceCode" id="cb402"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb402-1"><a href="cha-progr-with-models.html#cb402-1" tabindex="-1"></a>CnfDemo <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(testModel, logProbCalcPlusA)</span>
+<span id="cb402-2"><a href="cha-progr-with-models.html#cb402-2" tabindex="-1"></a>CtestModel <span class="ot">&lt;-</span> CnfDemo<span class="sc">$</span>testModel</span>
+<span id="cb402-3"><a href="cha-progr-with-models.html#cb402-3" tabindex="-1"></a>ClogProbCalcPlusA <span class="ot">&lt;-</span> CnfDemo<span class="sc">$</span>logProbCalcPlusA</span></code></pre></div>
 <p>These have been initialized with the values from their uncompiled
 versions and can be used in the same way:</p>
-<div class="sourceCode" id="cb403"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb403-1"><a href="cha-progr-with-models.html#cb403-1" aria-hidden="true" tabindex="-1"></a>CtestModel<span class="sc">$</span>a      <span class="co"># values were initialized from testModel</span></span></code></pre></div>
+<div class="sourceCode" id="cb403"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb403-1"><a href="cha-progr-with-models.html#cb403-1" tabindex="-1"></a>CtestModel<span class="sc">$</span>a      <span class="co"># values were initialized from testModel</span></span></code></pre></div>
 <pre><code>## [1] 1.25</code></pre>
-<div class="sourceCode" id="cb405"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb405-1"><a href="cha-progr-with-models.html#cb405-1" aria-hidden="true" tabindex="-1"></a>CtestModel<span class="sc">$</span>b</span></code></pre></div>
+<div class="sourceCode" id="cb405"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb405-1"><a href="cha-progr-with-models.html#cb405-1" tabindex="-1"></a>CtestModel<span class="sc">$</span>b</span></code></pre></div>
 <pre><code>## [1] 1.5</code></pre>
-<div class="sourceCode" id="cb407"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb407-1"><a href="cha-progr-with-models.html#cb407-1" aria-hidden="true" tabindex="-1"></a>lpA <span class="ot">&lt;-</span> ClogProbCalcPlusA<span class="sc">$</span><span class="fu">run</span>(<span class="fl">1.5</span>)</span>
-<span id="cb407-2"><a href="cha-progr-with-models.html#cb407-2" aria-hidden="true" tabindex="-1"></a>lpA</span></code></pre></div>
+<div class="sourceCode" id="cb407"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb407-1"><a href="cha-progr-with-models.html#cb407-1" tabindex="-1"></a>lpA <span class="ot">&lt;-</span> ClogProbCalcPlusA<span class="sc">$</span><span class="fu">run</span>(<span class="fl">1.5</span>)</span>
+<span id="cb407-2"><a href="cha-progr-with-models.html#cb407-2" tabindex="-1"></a>lpA</span></code></pre></div>
 <pre><code>## [1] -5.462877</code></pre>
-<div class="sourceCode" id="cb409"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb409-1"><a href="cha-progr-with-models.html#cb409-1" aria-hidden="true" tabindex="-1"></a><span class="co"># verify the answer:</span></span>
-<span id="cb409-2"><a href="cha-progr-with-models.html#cb409-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dnorm</span>(CtestModel<span class="sc">$</span>b, CtestModel<span class="sc">$</span>a, <span class="dv">1</span>, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">+</span> </span>
-<span id="cb409-3"><a href="cha-progr-with-models.html#cb409-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dnorm</span>(CtestModel<span class="sc">$</span>a, <span class="dv">0</span>, <span class="dv">1</span>, <span class="at">log =</span> <span class="cn">TRUE</span>) </span></code></pre></div>
+<div class="sourceCode" id="cb409"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb409-1"><a href="cha-progr-with-models.html#cb409-1" tabindex="-1"></a><span class="co"># verify the answer:</span></span>
+<span id="cb409-2"><a href="cha-progr-with-models.html#cb409-2" tabindex="-1"></a><span class="fu">dnorm</span>(CtestModel<span class="sc">$</span>b, CtestModel<span class="sc">$</span>a, <span class="dv">1</span>, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">+</span> </span>
+<span id="cb409-3"><a href="cha-progr-with-models.html#cb409-3" tabindex="-1"></a>    <span class="fu">dnorm</span>(CtestModel<span class="sc">$</span>a, <span class="dv">0</span>, <span class="dv">1</span>, <span class="at">log =</span> <span class="cn">TRUE</span>) </span></code></pre></div>
 <pre><code>## [1] -5.462877</code></pre>
-<div class="sourceCode" id="cb411"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb411-1"><a href="cha-progr-with-models.html#cb411-1" aria-hidden="true" tabindex="-1"></a>CtestModel<span class="sc">$</span>a       <span class="co"># a was modified in the compiled model</span></span></code></pre></div>
+<div class="sourceCode" id="cb411"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb411-1"><a href="cha-progr-with-models.html#cb411-1" tabindex="-1"></a>CtestModel<span class="sc">$</span>a       <span class="co"># a was modified in the compiled model</span></span></code></pre></div>
 <pre><code>## [1] 2.5</code></pre>
-<div class="sourceCode" id="cb413"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb413-1"><a href="cha-progr-with-models.html#cb413-1" aria-hidden="true" tabindex="-1"></a>testModel<span class="sc">$</span>a        <span class="co"># the uncompiled model was not modified</span></span></code></pre></div>
+<div class="sourceCode" id="cb413"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb413-1"><a href="cha-progr-with-models.html#cb413-1" tabindex="-1"></a>testModel<span class="sc">$</span>a        <span class="co"># the uncompiled model was not modified</span></span></code></pre></div>
 <pre><code>## [1] 1.25</code></pre>
 </div>
 <div id="writing-setup-code" class="section level2 hasAnchor" number="15.3">
@@ -638,15 +639,15 @@ empty setup code, use <code>setup = function() {}</code> or <code>setup = TRUE</
 <p>While models and nodes created during setup cannot be
 modified<a href="#fn32" class="footnote-ref" id="fnref32"><sup>32</sup></a>,
 numeric values and modelValues can be, as illustrated by extending the example from above.</p>
-<div class="sourceCode" id="cb415"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb415-1"><a href="cha-progr-with-models.html#cb415-1" aria-hidden="true" tabindex="-1"></a>logProbCalcPlusA<span class="sc">$</span>valueToAdd  <span class="co"># in the uncompiled version</span></span></code></pre></div>
+<div class="sourceCode" id="cb415"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb415-1"><a href="cha-progr-with-models.html#cb415-1" tabindex="-1"></a>logProbCalcPlusA<span class="sc">$</span>valueToAdd  <span class="co"># in the uncompiled version</span></span></code></pre></div>
 <pre><code>## [1] 1</code></pre>
-<div class="sourceCode" id="cb417"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb417-1"><a href="cha-progr-with-models.html#cb417-1" aria-hidden="true" tabindex="-1"></a>logProbCalcPlusA<span class="sc">$</span>valueToAdd <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb417-2"><a href="cha-progr-with-models.html#cb417-2" aria-hidden="true" tabindex="-1"></a>ClogProbCalcPlusA<span class="sc">$</span>valueToAdd  <span class="co"># or in the compiled version</span></span></code></pre></div>
+<div class="sourceCode" id="cb417"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb417-1"><a href="cha-progr-with-models.html#cb417-1" tabindex="-1"></a>logProbCalcPlusA<span class="sc">$</span>valueToAdd <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb417-2"><a href="cha-progr-with-models.html#cb417-2" tabindex="-1"></a>ClogProbCalcPlusA<span class="sc">$</span>valueToAdd  <span class="co"># or in the compiled version</span></span></code></pre></div>
 <pre><code>## [1] 1</code></pre>
-<div class="sourceCode" id="cb419"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb419-1"><a href="cha-progr-with-models.html#cb419-1" aria-hidden="true" tabindex="-1"></a>ClogProbCalcPlusA<span class="sc">$</span>valueToAdd <span class="ot">&lt;-</span> <span class="dv">3</span></span>
-<span id="cb419-2"><a href="cha-progr-with-models.html#cb419-2" aria-hidden="true" tabindex="-1"></a>ClogProbCalcPlusA<span class="sc">$</span><span class="fu">run</span>(<span class="fl">1.5</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb419"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb419-1"><a href="cha-progr-with-models.html#cb419-1" tabindex="-1"></a>ClogProbCalcPlusA<span class="sc">$</span>valueToAdd <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb419-2"><a href="cha-progr-with-models.html#cb419-2" tabindex="-1"></a>ClogProbCalcPlusA<span class="sc">$</span><span class="fu">run</span>(<span class="fl">1.5</span>)</span></code></pre></div>
 <pre><code>## [1] -16.46288</code></pre>
-<div class="sourceCode" id="cb421"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb421-1"><a href="cha-progr-with-models.html#cb421-1" aria-hidden="true" tabindex="-1"></a>CtestModel<span class="sc">$</span>a     <span class="co"># a == 1.5 + 3</span></span></code></pre></div>
+<div class="sourceCode" id="cb421"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb421-1"><a href="cha-progr-with-models.html#cb421-1" tabindex="-1"></a>CtestModel<span class="sc">$</span>a     <span class="co"># a == 1.5 + 3</span></span></code></pre></div>
 <pre><code>## [1] 4.5</code></pre>
 </div>
 <div id="determining-numeric-types-in-nimblefunctions" class="section level3 hasAnchor" number="15.3.3">
@@ -678,7 +679,7 @@ can be directly accessed in one nimbleFunction from another, which
 provides a way of using nimbleFunctions as general data structures.
 To force NIMBLE to include variables during compilation, for
 example <code>X</code> and <code>Y</code>, simply include</p>
-<div class="sourceCode" id="cb423"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb423-1"><a href="cha-progr-with-models.html#cb423-1" aria-hidden="true" tabindex="-1"></a><span class="fu">setupOutputs</span>(X, Y)</span></code></pre></div>
+<div class="sourceCode" id="cb423"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb423-1"><a href="cha-progr-with-models.html#cb423-1" tabindex="-1"></a><span class="fu">setupOutputs</span>(X, Y)</span></code></pre></div>
 <p>anywhere in the setup code.</p>
 </div>
 </div>
@@ -696,12 +697,12 @@ topological order. Model member functions such as <code>getDependencies</code> a
 always return topoligically sorted node names.</p>
 <p>Most R-like indexing of a node vector is allowed within the
 argument to <code>calculate</code>, <code>calculateDiff</code>, <code>simulate</code>, and <code>getLogProb</code>. For example, all of the following are allowed:</p>
-<div class="sourceCode" id="cb424"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb424-1"><a href="cha-progr-with-models.html#cb424-1" aria-hidden="true" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes)</span>
-<span id="cb424-2"><a href="cha-progr-with-models.html#cb424-2" aria-hidden="true" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[i])</span>
-<span id="cb424-3"><a href="cha-progr-with-models.html#cb424-3" aria-hidden="true" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>])</span>
-<span id="cb424-4"><a href="cha-progr-with-models.html#cb424-4" aria-hidden="true" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>)])</span>
-<span id="cb424-5"><a href="cha-progr-with-models.html#cb424-5" aria-hidden="true" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[<span class="dv">2</span><span class="sc">:</span>i])</span>
-<span id="cb424-6"><a href="cha-progr-with-models.html#cb424-6" aria-hidden="true" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[ <span class="fu">values</span>(model, nodes) <span class="sc">+</span> <span class="fl">0.1</span> <span class="sc">&lt;</span> x ])</span></code></pre></div>
+<div class="sourceCode" id="cb424"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb424-1"><a href="cha-progr-with-models.html#cb424-1" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes)</span>
+<span id="cb424-2"><a href="cha-progr-with-models.html#cb424-2" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[i])</span>
+<span id="cb424-3"><a href="cha-progr-with-models.html#cb424-3" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>])</span>
+<span id="cb424-4"><a href="cha-progr-with-models.html#cb424-4" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>)])</span>
+<span id="cb424-5"><a href="cha-progr-with-models.html#cb424-5" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[<span class="dv">2</span><span class="sc">:</span>i])</span>
+<span id="cb424-6"><a href="cha-progr-with-models.html#cb424-6" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes[ <span class="fu">values</span>(model, nodes) <span class="sc">+</span> <span class="fl">0.1</span> <span class="sc">&lt;</span> x ])</span></code></pre></div>
 <p>Note that in the last line of code, one must have that the length of <code>nodes</code> is
 equal to that of <code>values(model, nodes)</code>, which means that all the nodes in <code>nodes</code>
 must be scalar nodes.</p>
@@ -722,48 +723,48 @@ subsets of nodes, or variables. Note the following:</p>
 <li>one should use the <code>&lt;&lt;-</code> global assignment operator to assign into model nodes.</li>
 </ul>
 <p>Note that NIMBLE does not allow variables to change dimensions. Model nodes are the same, and indeed are more restricted because they can’t change sizes. In addition, NIMBLE distinguishes between scalars and vectors of length 1. These rules, and ways to handle them correctly, are illustrated in the following code as well as in Section <a href="cha-RCfunctions.html#sec:how-nimble-handles">11.3</a>.</p>
-<div class="sourceCode" id="cb425"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb425-1"><a href="cha-progr-with-models.html#cb425-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb425-2"><a href="cha-progr-with-models.html#cb425-2" aria-hidden="true" tabindex="-1"></a>    z <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma)</span>
-<span id="cb425-3"><a href="cha-progr-with-models.html#cb425-3" aria-hidden="true" tabindex="-1"></a>    sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">10</span>)</span>
-<span id="cb425-4"><a href="cha-progr-with-models.html#cb425-4" aria-hidden="true" tabindex="-1"></a>    y[<span class="dv">1</span><span class="sc">:</span>n] <span class="sc">~</span> <span class="fu">dmnorm</span>(zeroes[<span class="dv">1</span><span class="sc">:</span>n], <span class="at">cov =</span> C[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>])</span>
-<span id="cb425-5"><a href="cha-progr-with-models.html#cb425-5" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb425-6"><a href="cha-progr-with-models.html#cb425-6" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb425-7"><a href="cha-progr-with-models.html#cb425-7" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> n, <span class="at">zeroes =</span> <span class="fu">rep</span>(<span class="dv">0</span>, n),</span>
-<span id="cb425-8"><a href="cha-progr-with-models.html#cb425-8" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">C =</span> <span class="fu">diag</span>(n)))</span>
-<span id="cb425-9"><a href="cha-progr-with-models.html#cb425-9" aria-hidden="true" tabindex="-1"></a>cm <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(m)</span>
-<span id="cb425-10"><a href="cha-progr-with-models.html#cb425-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb425-11"><a href="cha-progr-with-models.html#cb425-11" aria-hidden="true" tabindex="-1"></a>nfGen <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb425-12"><a href="cha-progr-with-models.html#cb425-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model) {</span>
-<span id="cb425-13"><a href="cha-progr-with-models.html#cb425-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># node1 and node2 would typically be setup arguments, so they could</span></span>
-<span id="cb425-14"><a href="cha-progr-with-models.html#cb425-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># have different values for different models.  We are assigning values</span></span>
-<span id="cb425-15"><a href="cha-progr-with-models.html#cb425-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># here so the example is clearer.</span></span>
-<span id="cb425-16"><a href="cha-progr-with-models.html#cb425-16" aria-hidden="true" tabindex="-1"></a>        node1 <span class="ot">&lt;-</span> <span class="st">&#39;sigma&#39;</span>            <span class="co"># a scalar node </span></span>
-<span id="cb425-17"><a href="cha-progr-with-models.html#cb425-17" aria-hidden="true" tabindex="-1"></a>        node2 <span class="ot">&lt;-</span> <span class="st">&#39;y[1:5]&#39;</span>           <span class="co"># a vector node</span></span>
-<span id="cb425-18"><a href="cha-progr-with-models.html#cb425-18" aria-hidden="true" tabindex="-1"></a>        notReallyANode <span class="ot">&lt;-</span> <span class="st">&#39;y[2:4]&#39;</span>  <span class="co"># y[2:4] allowed even though not a node!</span></span>
-<span id="cb425-19"><a href="cha-progr-with-models.html#cb425-19" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb425-20"><a href="cha-progr-with-models.html#cb425-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">vals =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
-<span id="cb425-21"><a href="cha-progr-with-models.html#cb425-21" aria-hidden="true" tabindex="-1"></a>        tmp0 <span class="ot">&lt;-</span> model[[node1]]           <span class="co"># 1. tmp0 will be a scalar</span></span>
-<span id="cb425-22"><a href="cha-progr-with-models.html#cb425-22" aria-hidden="true" tabindex="-1"></a>        tmp1 <span class="ot">&lt;-</span> model[[node2]]           <span class="co"># 2. tmp1 will be a vector</span></span>
-<span id="cb425-23"><a href="cha-progr-with-models.html#cb425-23" aria-hidden="true" tabindex="-1"></a>        tmp2 <span class="ot">&lt;-</span> model[[node2]][<span class="dv">1</span>]        <span class="co"># 3. tmp2 will be a scalar</span></span>
-<span id="cb425-24"><a href="cha-progr-with-models.html#cb425-24" aria-hidden="true" tabindex="-1"></a>        tmp3 <span class="ot">&lt;-</span> model[[notReallyANode]]  <span class="co"># 4. tmp3 will be a vector</span></span>
-<span id="cb425-25"><a href="cha-progr-with-models.html#cb425-25" aria-hidden="true" tabindex="-1"></a>        tmp4 <span class="ot">&lt;-</span> model<span class="sc">$</span>y[<span class="dv">3</span><span class="sc">:</span><span class="dv">4</span>]      <span class="co"># 5. hard-coded access to a model variable</span></span>
-<span id="cb425-26"><a href="cha-progr-with-models.html#cb425-26" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 6. node1 is scalar so can be assigned a scalar:</span></span>
-<span id="cb425-27"><a href="cha-progr-with-models.html#cb425-27" aria-hidden="true" tabindex="-1"></a>        model[[node1]] <span class="ot">&lt;&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>) </span>
-<span id="cb425-28"><a href="cha-progr-with-models.html#cb425-28" aria-hidden="true" tabindex="-1"></a>        model[[node2]][<span class="dv">1</span>] <span class="ot">&lt;&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>) </span>
-<span id="cb425-29"><a href="cha-progr-with-models.html#cb425-29" aria-hidden="true" tabindex="-1"></a>                 <span class="co"># 7. an element of node2 can be assigned a scalar </span></span>
-<span id="cb425-30"><a href="cha-progr-with-models.html#cb425-30" aria-hidden="true" tabindex="-1"></a>        model[[node2]] <span class="ot">&lt;&lt;-</span> <span class="fu">runif</span>(<span class="fu">length</span>(model[[node2]]))</span>
-<span id="cb425-31"><a href="cha-progr-with-models.html#cb425-31" aria-hidden="true" tabindex="-1"></a>                 <span class="co"># 8. a vector can be assigned to the vector node2</span></span>
-<span id="cb425-32"><a href="cha-progr-with-models.html#cb425-32" aria-hidden="true" tabindex="-1"></a>        model[[node2]][<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;&lt;-</span> vals[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] </span>
-<span id="cb425-33"><a href="cha-progr-with-models.html#cb425-33" aria-hidden="true" tabindex="-1"></a>             <span class="co"># elements of node2 can be indexed as needed</span></span>
-<span id="cb425-34"><a href="cha-progr-with-models.html#cb425-34" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
-<span id="cb425-35"><a href="cha-progr-with-models.html#cb425-35" aria-hidden="true" tabindex="-1"></a>        out <span class="ot">&lt;-</span> model[[node2]] <span class="co"># we can return a vector   </span></span>
-<span id="cb425-36"><a href="cha-progr-with-models.html#cb425-36" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(out)</span>
-<span id="cb425-37"><a href="cha-progr-with-models.html#cb425-37" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb425-38"><a href="cha-progr-with-models.html#cb425-38" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb425-39"><a href="cha-progr-with-models.html#cb425-39" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb425-40"><a href="cha-progr-with-models.html#cb425-40" aria-hidden="true" tabindex="-1"></a>Rnf <span class="ot">&lt;-</span> <span class="fu">nfGen</span>(m)</span>
-<span id="cb425-41"><a href="cha-progr-with-models.html#cb425-41" aria-hidden="true" tabindex="-1"></a>Cnf <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rnf)</span>
-<span id="cb425-42"><a href="cha-progr-with-models.html#cb425-42" aria-hidden="true" tabindex="-1"></a>Cnf<span class="sc">$</span><span class="fu">run</span>(<span class="fu">rnorm</span>(<span class="dv">10</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb425"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb425-1"><a href="cha-progr-with-models.html#cb425-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb425-2"><a href="cha-progr-with-models.html#cb425-2" tabindex="-1"></a>    z <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma)</span>
+<span id="cb425-3"><a href="cha-progr-with-models.html#cb425-3" tabindex="-1"></a>    sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">10</span>)</span>
+<span id="cb425-4"><a href="cha-progr-with-models.html#cb425-4" tabindex="-1"></a>    y[<span class="dv">1</span><span class="sc">:</span>n] <span class="sc">~</span> <span class="fu">dmnorm</span>(zeroes[<span class="dv">1</span><span class="sc">:</span>n], <span class="at">cov =</span> C[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>])</span>
+<span id="cb425-5"><a href="cha-progr-with-models.html#cb425-5" tabindex="-1"></a>})</span>
+<span id="cb425-6"><a href="cha-progr-with-models.html#cb425-6" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb425-7"><a href="cha-progr-with-models.html#cb425-7" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> n, <span class="at">zeroes =</span> <span class="fu">rep</span>(<span class="dv">0</span>, n),</span>
+<span id="cb425-8"><a href="cha-progr-with-models.html#cb425-8" tabindex="-1"></a>                                        <span class="at">C =</span> <span class="fu">diag</span>(n)))</span>
+<span id="cb425-9"><a href="cha-progr-with-models.html#cb425-9" tabindex="-1"></a>cm <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(m)</span>
+<span id="cb425-10"><a href="cha-progr-with-models.html#cb425-10" tabindex="-1"></a></span>
+<span id="cb425-11"><a href="cha-progr-with-models.html#cb425-11" tabindex="-1"></a>nfGen <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb425-12"><a href="cha-progr-with-models.html#cb425-12" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model) {</span>
+<span id="cb425-13"><a href="cha-progr-with-models.html#cb425-13" tabindex="-1"></a>    <span class="co"># node1 and node2 would typically be setup arguments, so they could</span></span>
+<span id="cb425-14"><a href="cha-progr-with-models.html#cb425-14" tabindex="-1"></a>    <span class="co"># have different values for different models.  We are assigning values</span></span>
+<span id="cb425-15"><a href="cha-progr-with-models.html#cb425-15" tabindex="-1"></a>    <span class="co"># here so the example is clearer.</span></span>
+<span id="cb425-16"><a href="cha-progr-with-models.html#cb425-16" tabindex="-1"></a>        node1 <span class="ot">&lt;-</span> <span class="st">&#39;sigma&#39;</span>            <span class="co"># a scalar node </span></span>
+<span id="cb425-17"><a href="cha-progr-with-models.html#cb425-17" tabindex="-1"></a>        node2 <span class="ot">&lt;-</span> <span class="st">&#39;y[1:5]&#39;</span>           <span class="co"># a vector node</span></span>
+<span id="cb425-18"><a href="cha-progr-with-models.html#cb425-18" tabindex="-1"></a>        notReallyANode <span class="ot">&lt;-</span> <span class="st">&#39;y[2:4]&#39;</span>  <span class="co"># y[2:4] allowed even though not a node!</span></span>
+<span id="cb425-19"><a href="cha-progr-with-models.html#cb425-19" tabindex="-1"></a>    },</span>
+<span id="cb425-20"><a href="cha-progr-with-models.html#cb425-20" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">vals =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb425-21"><a href="cha-progr-with-models.html#cb425-21" tabindex="-1"></a>        tmp0 <span class="ot">&lt;-</span> model[[node1]]           <span class="co"># 1. tmp0 will be a scalar</span></span>
+<span id="cb425-22"><a href="cha-progr-with-models.html#cb425-22" tabindex="-1"></a>        tmp1 <span class="ot">&lt;-</span> model[[node2]]           <span class="co"># 2. tmp1 will be a vector</span></span>
+<span id="cb425-23"><a href="cha-progr-with-models.html#cb425-23" tabindex="-1"></a>        tmp2 <span class="ot">&lt;-</span> model[[node2]][<span class="dv">1</span>]        <span class="co"># 3. tmp2 will be a scalar</span></span>
+<span id="cb425-24"><a href="cha-progr-with-models.html#cb425-24" tabindex="-1"></a>        tmp3 <span class="ot">&lt;-</span> model[[notReallyANode]]  <span class="co"># 4. tmp3 will be a vector</span></span>
+<span id="cb425-25"><a href="cha-progr-with-models.html#cb425-25" tabindex="-1"></a>        tmp4 <span class="ot">&lt;-</span> model<span class="sc">$</span>y[<span class="dv">3</span><span class="sc">:</span><span class="dv">4</span>]      <span class="co"># 5. hard-coded access to a model variable</span></span>
+<span id="cb425-26"><a href="cha-progr-with-models.html#cb425-26" tabindex="-1"></a>        <span class="co"># 6. node1 is scalar so can be assigned a scalar:</span></span>
+<span id="cb425-27"><a href="cha-progr-with-models.html#cb425-27" tabindex="-1"></a>        model[[node1]] <span class="ot">&lt;&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>) </span>
+<span id="cb425-28"><a href="cha-progr-with-models.html#cb425-28" tabindex="-1"></a>        model[[node2]][<span class="dv">1</span>] <span class="ot">&lt;&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>) </span>
+<span id="cb425-29"><a href="cha-progr-with-models.html#cb425-29" tabindex="-1"></a>                 <span class="co"># 7. an element of node2 can be assigned a scalar </span></span>
+<span id="cb425-30"><a href="cha-progr-with-models.html#cb425-30" tabindex="-1"></a>        model[[node2]] <span class="ot">&lt;&lt;-</span> <span class="fu">runif</span>(<span class="fu">length</span>(model[[node2]]))</span>
+<span id="cb425-31"><a href="cha-progr-with-models.html#cb425-31" tabindex="-1"></a>                 <span class="co"># 8. a vector can be assigned to the vector node2</span></span>
+<span id="cb425-32"><a href="cha-progr-with-models.html#cb425-32" tabindex="-1"></a>        model[[node2]][<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;&lt;-</span> vals[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] </span>
+<span id="cb425-33"><a href="cha-progr-with-models.html#cb425-33" tabindex="-1"></a>             <span class="co"># elements of node2 can be indexed as needed</span></span>
+<span id="cb425-34"><a href="cha-progr-with-models.html#cb425-34" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb425-35"><a href="cha-progr-with-models.html#cb425-35" tabindex="-1"></a>        out <span class="ot">&lt;-</span> model[[node2]] <span class="co"># we can return a vector   </span></span>
+<span id="cb425-36"><a href="cha-progr-with-models.html#cb425-36" tabindex="-1"></a>        <span class="fu">return</span>(out)</span>
+<span id="cb425-37"><a href="cha-progr-with-models.html#cb425-37" tabindex="-1"></a>    }</span>
+<span id="cb425-38"><a href="cha-progr-with-models.html#cb425-38" tabindex="-1"></a>    )</span>
+<span id="cb425-39"><a href="cha-progr-with-models.html#cb425-39" tabindex="-1"></a>    </span>
+<span id="cb425-40"><a href="cha-progr-with-models.html#cb425-40" tabindex="-1"></a>Rnf <span class="ot">&lt;-</span> <span class="fu">nfGen</span>(m)</span>
+<span id="cb425-41"><a href="cha-progr-with-models.html#cb425-41" tabindex="-1"></a>Cnf <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(Rnf)</span>
+<span id="cb425-42"><a href="cha-progr-with-models.html#cb425-42" tabindex="-1"></a>Cnf<span class="sc">$</span><span class="fu">run</span>(<span class="fu">rnorm</span>(<span class="dv">10</span>))</span></code></pre></div>
 <pre><code>## [1] -1.4887622 -1.1607519  1.4577382  0.4855725  0.6932443</code></pre>
 <p>Use of <code>[[ ]]</code> allows one to programmatically access a node based on a character variable containing the node name; this character variable would generally be set in setup code. In contrast, use of <code>$</code> hard codes the variable name and would not generally be suitable for nimbleFunctions intended for use with arbitrary models.</p>
 </div>
@@ -775,17 +776,17 @@ serve as the objective function for an optimizer. The input to the
 nimbleFunction would be a vector, which should be used to fill a
 collection of nodes in the model before calculating their log
 probabilities. This can be done using <code>values</code>:</p>
-<div class="sourceCode" id="cb427"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb427-1"><a href="cha-progr-with-models.html#cb427-1" aria-hidden="true" tabindex="-1"></a><span class="co"># get values from a set of model nodes into a vector</span></span>
-<span id="cb427-2"><a href="cha-progr-with-models.html#cb427-2" aria-hidden="true" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">values</span>(model, nodes)</span>
-<span id="cb427-3"><a href="cha-progr-with-models.html#cb427-3" aria-hidden="true" tabindex="-1"></a><span class="co"># or put values from a vector into a set of model nodes</span></span>
-<span id="cb427-4"><a href="cha-progr-with-models.html#cb427-4" aria-hidden="true" tabindex="-1"></a><span class="fu">values</span>(model, nodes) <span class="ot">&lt;-</span> P</span></code></pre></div>
+<div class="sourceCode" id="cb427"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb427-1"><a href="cha-progr-with-models.html#cb427-1" tabindex="-1"></a><span class="co"># get values from a set of model nodes into a vector</span></span>
+<span id="cb427-2"><a href="cha-progr-with-models.html#cb427-2" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">values</span>(model, nodes)</span>
+<span id="cb427-3"><a href="cha-progr-with-models.html#cb427-3" tabindex="-1"></a><span class="co"># or put values from a vector into a set of model nodes</span></span>
+<span id="cb427-4"><a href="cha-progr-with-models.html#cb427-4" tabindex="-1"></a><span class="fu">values</span>(model, nodes) <span class="ot">&lt;-</span> P</span></code></pre></div>
 <p>where the first line would assign the collection of values from <code>nodes</code>
 into <code>P</code>, and the second would do the inverse. In both cases, values
 from nodes with two or more dimensions are flattened into a vector in
 column-wise order.</p>
 <p><code>values(model, nodes)</code> may be used as a
 vector in other expressions, e.g.,</p>
-<div class="sourceCode" id="cb428"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb428-1"><a href="cha-progr-with-models.html#cb428-1" aria-hidden="true" tabindex="-1"></a>Y <span class="ot">&lt;-</span> A <span class="sc">%*%</span> <span class="fu">values</span>(model, nodes) <span class="sc">+</span> b</span></code></pre></div>
+<div class="sourceCode" id="cb428"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb428-1"><a href="cha-progr-with-models.html#cb428-1" tabindex="-1"></a>Y <span class="ot">&lt;-</span> A <span class="sc">%*%</span> <span class="fu">values</span>(model, nodes) <span class="sc">+</span> b</span></code></pre></div>
 <p>One can also index elements of nodes in the argument to values, in the same manner as discussed for <code>calculate</code> and related functions in Section <a href="cha-progr-with-models.html#sec:driv-models:-calc">15.4.1</a>.</p>
 <p>Note again the potential for confusion between scalars and vectors of
 length 1. <code>values</code> returns a vector and expects a vector when used
@@ -793,13 +794,13 @@ on the left-hand side of an assignment. If only a single value is
 being assigned, it must be a vector of length 1, not a scalar. This
 can be achieved by wrapping a scalar in <code>c()</code> when necessary.
 For example:</p>
-<div class="sourceCode" id="cb429"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb429-1"><a href="cha-progr-with-models.html#cb429-1" aria-hidden="true" tabindex="-1"></a><span class="co"># c(rnorm(1)) creates vector of length one:</span></span>
-<span id="cb429-2"><a href="cha-progr-with-models.html#cb429-2" aria-hidden="true" tabindex="-1"></a><span class="fu">values</span>(model, nodes[<span class="dv">1</span>]) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rnorm</span>(<span class="dv">1</span>)) </span>
-<span id="cb429-3"><a href="cha-progr-with-models.html#cb429-3" aria-hidden="true" tabindex="-1"></a><span class="co"># won&#39;t compile because rnorm(1) is a scalar</span></span>
-<span id="cb429-4"><a href="cha-progr-with-models.html#cb429-4" aria-hidden="true" tabindex="-1"></a><span class="co"># values(model, nodes[1]) &lt;- rnorm(1)  </span></span>
-<span id="cb429-5"><a href="cha-progr-with-models.html#cb429-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb429-6"><a href="cha-progr-with-models.html#cb429-6" aria-hidden="true" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">values</span>(model, nodes[<span class="dv">1</span>]) <span class="co"># out is a vector</span></span>
-<span id="cb429-7"><a href="cha-progr-with-models.html#cb429-7" aria-hidden="true" tabindex="-1"></a>out2 <span class="ot">&lt;-</span> <span class="fu">values</span>(model, nodes[<span class="dv">1</span>])[<span class="dv">1</span>] <span class="co"># out2 is a scalar</span></span></code></pre></div>
+<div class="sourceCode" id="cb429"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb429-1"><a href="cha-progr-with-models.html#cb429-1" tabindex="-1"></a><span class="co"># c(rnorm(1)) creates vector of length one:</span></span>
+<span id="cb429-2"><a href="cha-progr-with-models.html#cb429-2" tabindex="-1"></a><span class="fu">values</span>(model, nodes[<span class="dv">1</span>]) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rnorm</span>(<span class="dv">1</span>)) </span>
+<span id="cb429-3"><a href="cha-progr-with-models.html#cb429-3" tabindex="-1"></a><span class="co"># won&#39;t compile because rnorm(1) is a scalar</span></span>
+<span id="cb429-4"><a href="cha-progr-with-models.html#cb429-4" tabindex="-1"></a><span class="co"># values(model, nodes[1]) &lt;- rnorm(1)  </span></span>
+<span id="cb429-5"><a href="cha-progr-with-models.html#cb429-5" tabindex="-1"></a></span>
+<span id="cb429-6"><a href="cha-progr-with-models.html#cb429-6" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">values</span>(model, nodes[<span class="dv">1</span>]) <span class="co"># out is a vector</span></span>
+<span id="cb429-7"><a href="cha-progr-with-models.html#cb429-7" tabindex="-1"></a>out2 <span class="ot">&lt;-</span> <span class="fu">values</span>(model, nodes[<span class="dv">1</span>])[<span class="dv">1</span>] <span class="co"># out2 is a scalar</span></span></code></pre></div>
 </div>
 </div>
 <div id="getting-parameter-values-and-node-bounds" class="section level3 hasAnchor" number="15.4.3">
@@ -822,17 +823,17 @@ for their log
 probabilities (densities). <code>savedWeights</code> will contain the
 difference in log probability (density) between the model and the
 <code>propLL</code> value provided for each set of values.</p>
-<div class="sourceCode" id="cb430"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb430-1"><a href="cha-progr-with-models.html#cb430-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Accepting modelValues as a setup argument</span></span>
-<span id="cb430-2"><a href="cha-progr-with-models.html#cb430-2" aria-hidden="true" tabindex="-1"></a>swConf <span class="ot">&lt;-</span> <span class="fu">modelValuesConf</span>(<span class="at">vars =</span> <span class="st">&quot;w&quot;</span>,</span>
-<span id="cb430-3"><a href="cha-progr-with-models.html#cb430-3" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">types =</span> <span class="st">&quot;double&quot;</span>,</span>
-<span id="cb430-4"><a href="cha-progr-with-models.html#cb430-4" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">sizes =</span> <span class="dv">1</span>)</span>
-<span id="cb430-5"><a href="cha-progr-with-models.html#cb430-5" aria-hidden="true" tabindex="-1"></a>setup <span class="ot">=</span> <span class="cf">function</span>(propModelValues, model, savedWeightsConf){</span>
-<span id="cb430-6"><a href="cha-progr-with-models.html#cb430-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Building a modelValues in the setup function </span></span>
-<span id="cb430-7"><a href="cha-progr-with-models.html#cb430-7" aria-hidden="true" tabindex="-1"></a>    savedWeights <span class="ot">&lt;-</span> <span class="fu">modelValues</span>(<span class="at">conf =</span> savedWeightsConf)</span>
-<span id="cb430-8"><a href="cha-progr-with-models.html#cb430-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># List of nodes to be used in run function</span></span>
-<span id="cb430-9"><a href="cha-progr-with-models.html#cb430-9" aria-hidden="true" tabindex="-1"></a>    modelNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getNodeNames</span>(<span class="at">stochOnly =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb430-10"><a href="cha-progr-with-models.html#cb430-10" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">includeData =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb430-11"><a href="cha-progr-with-models.html#cb430-11" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb430"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb430-1"><a href="cha-progr-with-models.html#cb430-1" tabindex="-1"></a><span class="co"># Accepting modelValues as a setup argument</span></span>
+<span id="cb430-2"><a href="cha-progr-with-models.html#cb430-2" tabindex="-1"></a>swConf <span class="ot">&lt;-</span> <span class="fu">modelValuesConf</span>(<span class="at">vars =</span> <span class="st">&quot;w&quot;</span>,</span>
+<span id="cb430-3"><a href="cha-progr-with-models.html#cb430-3" tabindex="-1"></a>                                    <span class="at">types =</span> <span class="st">&quot;double&quot;</span>,</span>
+<span id="cb430-4"><a href="cha-progr-with-models.html#cb430-4" tabindex="-1"></a>                                    <span class="at">sizes =</span> <span class="dv">1</span>)</span>
+<span id="cb430-5"><a href="cha-progr-with-models.html#cb430-5" tabindex="-1"></a>setup <span class="ot">=</span> <span class="cf">function</span>(propModelValues, model, savedWeightsConf){</span>
+<span id="cb430-6"><a href="cha-progr-with-models.html#cb430-6" tabindex="-1"></a>    <span class="co"># Building a modelValues in the setup function </span></span>
+<span id="cb430-7"><a href="cha-progr-with-models.html#cb430-7" tabindex="-1"></a>    savedWeights <span class="ot">&lt;-</span> <span class="fu">modelValues</span>(<span class="at">conf =</span> savedWeightsConf)</span>
+<span id="cb430-8"><a href="cha-progr-with-models.html#cb430-8" tabindex="-1"></a>    <span class="co"># List of nodes to be used in run function</span></span>
+<span id="cb430-9"><a href="cha-progr-with-models.html#cb430-9" tabindex="-1"></a>    modelNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getNodeNames</span>(<span class="at">stochOnly =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb430-10"><a href="cha-progr-with-models.html#cb430-10" tabindex="-1"></a>                                     <span class="at">includeData =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb430-11"><a href="cha-progr-with-models.html#cb430-11" tabindex="-1"></a>}</span></code></pre></div>
 <p>The simplest way to pass values back and forth between models and
 modelValues inside of a nimbleFunction is with <code>copy</code>, which
 has the synonym <code>nimCopy</code>. See <code>help(nimCopy)</code> for argument details.
@@ -854,118 +855,118 @@ and <code>i</code> is a row number. Likewise, the <code>getsize</code> and
 <code>resize</code> functions can be used as discussed in Section <a href="cha-data-structures.html#sec:modelValues-struct">14.1</a>. However the function
 <code>as.matrix</code> does not work in run code.</p>
 <p>Here is a run function to use these modelValues:</p>
-<div class="sourceCode" id="cb431"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb431-1"><a href="cha-progr-with-models.html#cb431-1" aria-hidden="true" tabindex="-1"></a>run <span class="ot">=</span> <span class="cf">function</span>(){</span>
-<span id="cb431-2"><a href="cha-progr-with-models.html#cb431-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># gets the number of rows of propSamples</span></span>
-<span id="cb431-3"><a href="cha-progr-with-models.html#cb431-3" aria-hidden="true" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">getsize</span>(propModelValues)</span>
-<span id="cb431-4"><a href="cha-progr-with-models.html#cb431-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb431-5"><a href="cha-progr-with-models.html#cb431-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># resized savedWeights to have the proper rows</span></span>
-<span id="cb431-6"><a href="cha-progr-with-models.html#cb431-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">resize</span>(savedWeights, m)</span>
-<span id="cb431-7"><a href="cha-progr-with-models.html#cb431-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m){</span>
-<span id="cb431-8"><a href="cha-progr-with-models.html#cb431-8" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Copying from propSamples to model. </span></span>
-<span id="cb431-9"><a href="cha-progr-with-models.html#cb431-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Node names of propSamples and model must match!</span></span>
-<span id="cb431-10"><a href="cha-progr-with-models.html#cb431-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">nimCopy</span>(<span class="at">from =</span> propModelValues, <span class="at">to =</span> model, <span class="at">row =</span> i,</span>
-<span id="cb431-11"><a href="cha-progr-with-models.html#cb431-11" aria-hidden="true" tabindex="-1"></a>                <span class="at">nodes =</span> modelNodes, <span class="at">logProb =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb431-12"><a href="cha-progr-with-models.html#cb431-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># calculates the log likelihood of the model</span></span>
-<span id="cb431-13"><a href="cha-progr-with-models.html#cb431-13" aria-hidden="true" tabindex="-1"></a>        targLL <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">calculate</span>()</span>
-<span id="cb431-14"><a href="cha-progr-with-models.html#cb431-14" aria-hidden="true" tabindex="-1"></a>        <span class="co"># retreaves the saved log likelihood from the proposed model</span></span>
-<span id="cb431-15"><a href="cha-progr-with-models.html#cb431-15" aria-hidden="true" tabindex="-1"></a>        propLL <span class="ot">&lt;-</span> propModelValues[<span class="st">&quot;propLL&quot;</span>,i][<span class="dv">1</span>]</span>
-<span id="cb431-16"><a href="cha-progr-with-models.html#cb431-16" aria-hidden="true" tabindex="-1"></a>        <span class="co"># saves the importance weight for the i-th sample </span></span>
-<span id="cb431-17"><a href="cha-progr-with-models.html#cb431-17" aria-hidden="true" tabindex="-1"></a>        savedWeights[<span class="st">&quot;w&quot;</span>, i][<span class="dv">1</span>] <span class="ot">&lt;&lt;-</span> <span class="fu">exp</span>(targLL <span class="sc">-</span> propLL)</span>
-<span id="cb431-18"><a href="cha-progr-with-models.html#cb431-18" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb431-19"><a href="cha-progr-with-models.html#cb431-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># does not return anything</span></span>
-<span id="cb431-20"><a href="cha-progr-with-models.html#cb431-20" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb431"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb431-1"><a href="cha-progr-with-models.html#cb431-1" tabindex="-1"></a>run <span class="ot">=</span> <span class="cf">function</span>(){</span>
+<span id="cb431-2"><a href="cha-progr-with-models.html#cb431-2" tabindex="-1"></a>    <span class="co"># gets the number of rows of propSamples</span></span>
+<span id="cb431-3"><a href="cha-progr-with-models.html#cb431-3" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">getsize</span>(propModelValues)</span>
+<span id="cb431-4"><a href="cha-progr-with-models.html#cb431-4" tabindex="-1"></a></span>
+<span id="cb431-5"><a href="cha-progr-with-models.html#cb431-5" tabindex="-1"></a>    <span class="co"># resized savedWeights to have the proper rows</span></span>
+<span id="cb431-6"><a href="cha-progr-with-models.html#cb431-6" tabindex="-1"></a>    <span class="fu">resize</span>(savedWeights, m)</span>
+<span id="cb431-7"><a href="cha-progr-with-models.html#cb431-7" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m){</span>
+<span id="cb431-8"><a href="cha-progr-with-models.html#cb431-8" tabindex="-1"></a>        <span class="co"># Copying from propSamples to model. </span></span>
+<span id="cb431-9"><a href="cha-progr-with-models.html#cb431-9" tabindex="-1"></a>        <span class="co"># Node names of propSamples and model must match!</span></span>
+<span id="cb431-10"><a href="cha-progr-with-models.html#cb431-10" tabindex="-1"></a>        <span class="fu">nimCopy</span>(<span class="at">from =</span> propModelValues, <span class="at">to =</span> model, <span class="at">row =</span> i,</span>
+<span id="cb431-11"><a href="cha-progr-with-models.html#cb431-11" tabindex="-1"></a>                <span class="at">nodes =</span> modelNodes, <span class="at">logProb =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb431-12"><a href="cha-progr-with-models.html#cb431-12" tabindex="-1"></a>        <span class="co"># calculates the log likelihood of the model</span></span>
+<span id="cb431-13"><a href="cha-progr-with-models.html#cb431-13" tabindex="-1"></a>        targLL <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">calculate</span>()</span>
+<span id="cb431-14"><a href="cha-progr-with-models.html#cb431-14" tabindex="-1"></a>        <span class="co"># retreaves the saved log likelihood from the proposed model</span></span>
+<span id="cb431-15"><a href="cha-progr-with-models.html#cb431-15" tabindex="-1"></a>        propLL <span class="ot">&lt;-</span> propModelValues[<span class="st">&quot;propLL&quot;</span>,i][<span class="dv">1</span>]</span>
+<span id="cb431-16"><a href="cha-progr-with-models.html#cb431-16" tabindex="-1"></a>        <span class="co"># saves the importance weight for the i-th sample </span></span>
+<span id="cb431-17"><a href="cha-progr-with-models.html#cb431-17" tabindex="-1"></a>        savedWeights[<span class="st">&quot;w&quot;</span>, i][<span class="dv">1</span>] <span class="ot">&lt;&lt;-</span> <span class="fu">exp</span>(targLL <span class="sc">-</span> propLL)</span>
+<span id="cb431-18"><a href="cha-progr-with-models.html#cb431-18" tabindex="-1"></a>    }</span>
+<span id="cb431-19"><a href="cha-progr-with-models.html#cb431-19" tabindex="-1"></a>    <span class="co"># does not return anything</span></span>
+<span id="cb431-20"><a href="cha-progr-with-models.html#cb431-20" tabindex="-1"></a>}</span></code></pre></div>
 <p>Once the nimbleFunction is built, the modelValues object can be accessed
 using <code>$</code>, which is shown in more detail below. In
 fact, since modelValues, like most NIMBLE objects, are reference class
 objects, one can get a reference to them before the function is
 executed and then use that reference afterwards.</p>
-<div class="sourceCode" id="cb432"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb432-1"><a href="cha-progr-with-models.html#cb432-1" aria-hidden="true" tabindex="-1"></a><span class="co"># simple model and modelValues for example use with code above</span></span>
-<span id="cb432-2"><a href="cha-progr-with-models.html#cb432-2" aria-hidden="true" tabindex="-1"></a>targetModelCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb432-3"><a href="cha-progr-with-models.html#cb432-3" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
-<span id="cb432-4"><a href="cha-progr-with-models.html#cb432-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
-<span id="cb432-5"><a href="cha-progr-with-models.html#cb432-5" aria-hidden="true" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
-<span id="cb432-6"><a href="cha-progr-with-models.html#cb432-6" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb432-7"><a href="cha-progr-with-models.html#cb432-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-8"><a href="cha-progr-with-models.html#cb432-8" aria-hidden="true" tabindex="-1"></a><span class="co"># code for proposal model</span></span>
-<span id="cb432-9"><a href="cha-progr-with-models.html#cb432-9" aria-hidden="true" tabindex="-1"></a>propModelCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb432-10"><a href="cha-progr-with-models.html#cb432-10" aria-hidden="true" tabindex="-1"></a>    x <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>)</span>
-<span id="cb432-11"><a href="cha-progr-with-models.html#cb432-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
-<span id="cb432-12"><a href="cha-progr-with-models.html#cb432-12" aria-hidden="true" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>)</span>
-<span id="cb432-13"><a href="cha-progr-with-models.html#cb432-13" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb432-14"><a href="cha-progr-with-models.html#cb432-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-15"><a href="cha-progr-with-models.html#cb432-15" aria-hidden="true" tabindex="-1"></a><span class="co"># creating the models</span></span>
-<span id="cb432-16"><a href="cha-progr-with-models.html#cb432-16" aria-hidden="true" tabindex="-1"></a>targetModel <span class="ot">=</span> <span class="fu">nimbleModel</span>(targetModelCode, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb432-17"><a href="cha-progr-with-models.html#cb432-17" aria-hidden="true" tabindex="-1"></a>propModel <span class="ot">=</span> <span class="fu">nimbleModel</span>(propModelCode, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb432-18"><a href="cha-progr-with-models.html#cb432-18" aria-hidden="true" tabindex="-1"></a>cTargetModel <span class="ot">=</span> <span class="fu">compileNimble</span>(targetModel)</span>
-<span id="cb432-19"><a href="cha-progr-with-models.html#cb432-19" aria-hidden="true" tabindex="-1"></a>cPropModel <span class="ot">=</span> <span class="fu">compileNimble</span>(propModel)</span>
-<span id="cb432-20"><a href="cha-progr-with-models.html#cb432-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-21"><a href="cha-progr-with-models.html#cb432-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-22"><a href="cha-progr-with-models.html#cb432-22" aria-hidden="true" tabindex="-1"></a>sampleMVConf <span class="ot">=</span> <span class="fu">modelValuesConf</span>(<span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;x&quot;</span>, <span class="st">&quot;y&quot;</span>, <span class="st">&quot;propLL&quot;</span>), </span>
-<span id="cb432-23"><a href="cha-progr-with-models.html#cb432-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">types =</span> <span class="fu">c</span>(<span class="st">&quot;double&quot;</span>, <span class="st">&quot;double&quot;</span>, <span class="st">&quot;double&quot;</span>), </span>
-<span id="cb432-24"><a href="cha-progr-with-models.html#cb432-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">sizes =</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="dv">1</span>, <span class="at">y =</span> <span class="dv">4</span>, <span class="at">propLL =</span> <span class="dv">1</span>) )</span>
-<span id="cb432-25"><a href="cha-progr-with-models.html#cb432-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-26"><a href="cha-progr-with-models.html#cb432-26" aria-hidden="true" tabindex="-1"></a>sampleMV <span class="ot">&lt;-</span> <span class="fu">modelValues</span>(sampleMVConf)</span>
-<span id="cb432-27"><a href="cha-progr-with-models.html#cb432-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-28"><a href="cha-progr-with-models.html#cb432-28" aria-hidden="true" tabindex="-1"></a><span class="co">#   nimbleFunction for generating proposal sample</span></span>
-<span id="cb432-29"><a href="cha-progr-with-models.html#cb432-29" aria-hidden="true" tabindex="-1"></a>PropSamp_Gen <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb432-30"><a href="cha-progr-with-models.html#cb432-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(mv, propModel){</span>
-<span id="cb432-31"><a href="cha-progr-with-models.html#cb432-31" aria-hidden="true" tabindex="-1"></a>        nodeNames <span class="ot">&lt;-</span> propModel<span class="sc">$</span><span class="fu">getNodeNames</span>()</span>
-<span id="cb432-32"><a href="cha-progr-with-models.html#cb432-32" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb432-33"><a href="cha-progr-with-models.html#cb432-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">m =</span> <span class="fu">integer</span>() ){</span>
-<span id="cb432-34"><a href="cha-progr-with-models.html#cb432-34" aria-hidden="true" tabindex="-1"></a>        <span class="fu">resize</span>(mv, m)</span>
-<span id="cb432-35"><a href="cha-progr-with-models.html#cb432-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m){</span>
-<span id="cb432-36"><a href="cha-progr-with-models.html#cb432-36" aria-hidden="true" tabindex="-1"></a>            propModel<span class="sc">$</span><span class="fu">simulate</span>()</span>
-<span id="cb432-37"><a href="cha-progr-with-models.html#cb432-37" aria-hidden="true" tabindex="-1"></a>            <span class="fu">nimCopy</span>(<span class="at">from =</span> propModel, <span class="at">to =</span> mv, <span class="at">nodes =</span> nodeNames, <span class="at">row =</span> i)</span>
-<span id="cb432-38"><a href="cha-progr-with-models.html#cb432-38" aria-hidden="true" tabindex="-1"></a>            mv[<span class="st">&quot;propLL&quot;</span>, i][<span class="dv">1</span>] <span class="ot">&lt;&lt;-</span> propModel<span class="sc">$</span><span class="fu">calculate</span>()</span>
-<span id="cb432-39"><a href="cha-progr-with-models.html#cb432-39" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb432-40"><a href="cha-progr-with-models.html#cb432-40" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb432-41"><a href="cha-progr-with-models.html#cb432-41" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb432-42"><a href="cha-progr-with-models.html#cb432-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-43"><a href="cha-progr-with-models.html#cb432-43" aria-hidden="true" tabindex="-1"></a><span class="co"># nimbleFunction for calculating importance weights</span></span>
-<span id="cb432-44"><a href="cha-progr-with-models.html#cb432-44" aria-hidden="true" tabindex="-1"></a><span class="co"># uses setup and run functions as defined in previous code chunk</span></span>
-<span id="cb432-45"><a href="cha-progr-with-models.html#cb432-45" aria-hidden="true" tabindex="-1"></a>impWeights_Gen <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(<span class="at">setup =</span> setup,</span>
-<span id="cb432-46"><a href="cha-progr-with-models.html#cb432-46" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">run =</span> run)</span>
-<span id="cb432-47"><a href="cha-progr-with-models.html#cb432-47" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb432-48"><a href="cha-progr-with-models.html#cb432-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-49"><a href="cha-progr-with-models.html#cb432-49" aria-hidden="true" tabindex="-1"></a><span class="co"># making instances of nimbleFunctions</span></span>
-<span id="cb432-50"><a href="cha-progr-with-models.html#cb432-50" aria-hidden="true" tabindex="-1"></a><span class="co"># note that both functions share the same modelValues object</span></span>
-<span id="cb432-51"><a href="cha-progr-with-models.html#cb432-51" aria-hidden="true" tabindex="-1"></a>RPropSamp <span class="ot">&lt;-</span> <span class="fu">PropSamp_Gen</span>(sampleMV, propModel)</span>
-<span id="cb432-52"><a href="cha-progr-with-models.html#cb432-52" aria-hidden="true" tabindex="-1"></a>RImpWeights <span class="ot">&lt;-</span> <span class="fu">impWeights_Gen</span>(sampleMV, targetModel, swConf)</span>
-<span id="cb432-53"><a href="cha-progr-with-models.html#cb432-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-54"><a href="cha-progr-with-models.html#cb432-54" aria-hidden="true" tabindex="-1"></a><span class="co"># compiling </span></span>
-<span id="cb432-55"><a href="cha-progr-with-models.html#cb432-55" aria-hidden="true" tabindex="-1"></a>CPropSamp <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(RPropSamp, <span class="at">project =</span> propModel)</span>
-<span id="cb432-56"><a href="cha-progr-with-models.html#cb432-56" aria-hidden="true" tabindex="-1"></a>CImpWeights <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(RImpWeights, <span class="at">project =</span> targetModel)</span>
-<span id="cb432-57"><a href="cha-progr-with-models.html#cb432-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-58"><a href="cha-progr-with-models.html#cb432-58" aria-hidden="true" tabindex="-1"></a><span class="co"># generating and saving proposal sample of size 10</span></span>
-<span id="cb432-59"><a href="cha-progr-with-models.html#cb432-59" aria-hidden="true" tabindex="-1"></a>CPropSamp<span class="sc">$</span><span class="fu">run</span>(<span class="dv">10</span>)</span>
-<span id="cb432-60"><a href="cha-progr-with-models.html#cb432-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-61"><a href="cha-progr-with-models.html#cb432-61" aria-hidden="true" tabindex="-1"></a><span class="co"># calculating the importance weights and saving to mv</span></span>
-<span id="cb432-62"><a href="cha-progr-with-models.html#cb432-62" aria-hidden="true" tabindex="-1"></a>CImpWeights<span class="sc">$</span><span class="fu">run</span>()</span>
-<span id="cb432-63"><a href="cha-progr-with-models.html#cb432-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-64"><a href="cha-progr-with-models.html#cb432-64" aria-hidden="true" tabindex="-1"></a><span class="co"># retrieving the modelValues objects</span></span>
-<span id="cb432-65"><a href="cha-progr-with-models.html#cb432-65" aria-hidden="true" tabindex="-1"></a><span class="co"># extracted objects are C-based modelValues objects</span></span>
-<span id="cb432-66"><a href="cha-progr-with-models.html#cb432-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-67"><a href="cha-progr-with-models.html#cb432-67" aria-hidden="true" tabindex="-1"></a>savedPropSamp_1 <span class="ot">=</span> CImpWeights<span class="sc">$</span>propModelValues</span>
-<span id="cb432-68"><a href="cha-progr-with-models.html#cb432-68" aria-hidden="true" tabindex="-1"></a>savedPropSamp_2 <span class="ot">=</span> CPropSamp<span class="sc">$</span>mv</span>
-<span id="cb432-69"><a href="cha-progr-with-models.html#cb432-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-70"><a href="cha-progr-with-models.html#cb432-70" aria-hidden="true" tabindex="-1"></a><span class="co"># Subtle note: savedPropSamp_1 and savedPropSamp_2</span></span>
-<span id="cb432-71"><a href="cha-progr-with-models.html#cb432-71" aria-hidden="true" tabindex="-1"></a><span class="co"># both provide interface to the same compiled modelValues objects!</span></span>
-<span id="cb432-72"><a href="cha-progr-with-models.html#cb432-72" aria-hidden="true" tabindex="-1"></a><span class="co"># This is because they were both built from sampleMV.</span></span>
-<span id="cb432-73"><a href="cha-progr-with-models.html#cb432-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb432-74"><a href="cha-progr-with-models.html#cb432-74" aria-hidden="true" tabindex="-1"></a>savedPropSamp_1[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb432"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb432-1"><a href="cha-progr-with-models.html#cb432-1" tabindex="-1"></a><span class="co"># simple model and modelValues for example use with code above</span></span>
+<span id="cb432-2"><a href="cha-progr-with-models.html#cb432-2" tabindex="-1"></a>targetModelCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb432-3"><a href="cha-progr-with-models.html#cb432-3" tabindex="-1"></a>    x <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
+<span id="cb432-4"><a href="cha-progr-with-models.html#cb432-4" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
+<span id="cb432-5"><a href="cha-progr-with-models.html#cb432-5" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
+<span id="cb432-6"><a href="cha-progr-with-models.html#cb432-6" tabindex="-1"></a>})</span>
+<span id="cb432-7"><a href="cha-progr-with-models.html#cb432-7" tabindex="-1"></a></span>
+<span id="cb432-8"><a href="cha-progr-with-models.html#cb432-8" tabindex="-1"></a><span class="co"># code for proposal model</span></span>
+<span id="cb432-9"><a href="cha-progr-with-models.html#cb432-9" tabindex="-1"></a>propModelCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb432-10"><a href="cha-progr-with-models.html#cb432-10" tabindex="-1"></a>    x <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>)</span>
+<span id="cb432-11"><a href="cha-progr-with-models.html#cb432-11" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
+<span id="cb432-12"><a href="cha-progr-with-models.html#cb432-12" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">2</span>)</span>
+<span id="cb432-13"><a href="cha-progr-with-models.html#cb432-13" tabindex="-1"></a>})</span>
+<span id="cb432-14"><a href="cha-progr-with-models.html#cb432-14" tabindex="-1"></a></span>
+<span id="cb432-15"><a href="cha-progr-with-models.html#cb432-15" tabindex="-1"></a><span class="co"># creating the models</span></span>
+<span id="cb432-16"><a href="cha-progr-with-models.html#cb432-16" tabindex="-1"></a>targetModel <span class="ot">=</span> <span class="fu">nimbleModel</span>(targetModelCode, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb432-17"><a href="cha-progr-with-models.html#cb432-17" tabindex="-1"></a>propModel <span class="ot">=</span> <span class="fu">nimbleModel</span>(propModelCode, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb432-18"><a href="cha-progr-with-models.html#cb432-18" tabindex="-1"></a>cTargetModel <span class="ot">=</span> <span class="fu">compileNimble</span>(targetModel)</span>
+<span id="cb432-19"><a href="cha-progr-with-models.html#cb432-19" tabindex="-1"></a>cPropModel <span class="ot">=</span> <span class="fu">compileNimble</span>(propModel)</span>
+<span id="cb432-20"><a href="cha-progr-with-models.html#cb432-20" tabindex="-1"></a></span>
+<span id="cb432-21"><a href="cha-progr-with-models.html#cb432-21" tabindex="-1"></a></span>
+<span id="cb432-22"><a href="cha-progr-with-models.html#cb432-22" tabindex="-1"></a>sampleMVConf <span class="ot">=</span> <span class="fu">modelValuesConf</span>(<span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;x&quot;</span>, <span class="st">&quot;y&quot;</span>, <span class="st">&quot;propLL&quot;</span>), </span>
+<span id="cb432-23"><a href="cha-progr-with-models.html#cb432-23" tabindex="-1"></a>    <span class="at">types =</span> <span class="fu">c</span>(<span class="st">&quot;double&quot;</span>, <span class="st">&quot;double&quot;</span>, <span class="st">&quot;double&quot;</span>), </span>
+<span id="cb432-24"><a href="cha-progr-with-models.html#cb432-24" tabindex="-1"></a>    <span class="at">sizes =</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="dv">1</span>, <span class="at">y =</span> <span class="dv">4</span>, <span class="at">propLL =</span> <span class="dv">1</span>) )</span>
+<span id="cb432-25"><a href="cha-progr-with-models.html#cb432-25" tabindex="-1"></a></span>
+<span id="cb432-26"><a href="cha-progr-with-models.html#cb432-26" tabindex="-1"></a>sampleMV <span class="ot">&lt;-</span> <span class="fu">modelValues</span>(sampleMVConf)</span>
+<span id="cb432-27"><a href="cha-progr-with-models.html#cb432-27" tabindex="-1"></a></span>
+<span id="cb432-28"><a href="cha-progr-with-models.html#cb432-28" tabindex="-1"></a><span class="co">#   nimbleFunction for generating proposal sample</span></span>
+<span id="cb432-29"><a href="cha-progr-with-models.html#cb432-29" tabindex="-1"></a>PropSamp_Gen <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb432-30"><a href="cha-progr-with-models.html#cb432-30" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(mv, propModel){</span>
+<span id="cb432-31"><a href="cha-progr-with-models.html#cb432-31" tabindex="-1"></a>        nodeNames <span class="ot">&lt;-</span> propModel<span class="sc">$</span><span class="fu">getNodeNames</span>()</span>
+<span id="cb432-32"><a href="cha-progr-with-models.html#cb432-32" tabindex="-1"></a>    },</span>
+<span id="cb432-33"><a href="cha-progr-with-models.html#cb432-33" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">m =</span> <span class="fu">integer</span>() ){</span>
+<span id="cb432-34"><a href="cha-progr-with-models.html#cb432-34" tabindex="-1"></a>        <span class="fu">resize</span>(mv, m)</span>
+<span id="cb432-35"><a href="cha-progr-with-models.html#cb432-35" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>m){</span>
+<span id="cb432-36"><a href="cha-progr-with-models.html#cb432-36" tabindex="-1"></a>            propModel<span class="sc">$</span><span class="fu">simulate</span>()</span>
+<span id="cb432-37"><a href="cha-progr-with-models.html#cb432-37" tabindex="-1"></a>            <span class="fu">nimCopy</span>(<span class="at">from =</span> propModel, <span class="at">to =</span> mv, <span class="at">nodes =</span> nodeNames, <span class="at">row =</span> i)</span>
+<span id="cb432-38"><a href="cha-progr-with-models.html#cb432-38" tabindex="-1"></a>            mv[<span class="st">&quot;propLL&quot;</span>, i][<span class="dv">1</span>] <span class="ot">&lt;&lt;-</span> propModel<span class="sc">$</span><span class="fu">calculate</span>()</span>
+<span id="cb432-39"><a href="cha-progr-with-models.html#cb432-39" tabindex="-1"></a>        }</span>
+<span id="cb432-40"><a href="cha-progr-with-models.html#cb432-40" tabindex="-1"></a>    }</span>
+<span id="cb432-41"><a href="cha-progr-with-models.html#cb432-41" tabindex="-1"></a>    )</span>
+<span id="cb432-42"><a href="cha-progr-with-models.html#cb432-42" tabindex="-1"></a></span>
+<span id="cb432-43"><a href="cha-progr-with-models.html#cb432-43" tabindex="-1"></a><span class="co"># nimbleFunction for calculating importance weights</span></span>
+<span id="cb432-44"><a href="cha-progr-with-models.html#cb432-44" tabindex="-1"></a><span class="co"># uses setup and run functions as defined in previous code chunk</span></span>
+<span id="cb432-45"><a href="cha-progr-with-models.html#cb432-45" tabindex="-1"></a>impWeights_Gen <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(<span class="at">setup =</span> setup,</span>
+<span id="cb432-46"><a href="cha-progr-with-models.html#cb432-46" tabindex="-1"></a>                                 <span class="at">run =</span> run)</span>
+<span id="cb432-47"><a href="cha-progr-with-models.html#cb432-47" tabindex="-1"></a>      </span>
+<span id="cb432-48"><a href="cha-progr-with-models.html#cb432-48" tabindex="-1"></a></span>
+<span id="cb432-49"><a href="cha-progr-with-models.html#cb432-49" tabindex="-1"></a><span class="co"># making instances of nimbleFunctions</span></span>
+<span id="cb432-50"><a href="cha-progr-with-models.html#cb432-50" tabindex="-1"></a><span class="co"># note that both functions share the same modelValues object</span></span>
+<span id="cb432-51"><a href="cha-progr-with-models.html#cb432-51" tabindex="-1"></a>RPropSamp <span class="ot">&lt;-</span> <span class="fu">PropSamp_Gen</span>(sampleMV, propModel)</span>
+<span id="cb432-52"><a href="cha-progr-with-models.html#cb432-52" tabindex="-1"></a>RImpWeights <span class="ot">&lt;-</span> <span class="fu">impWeights_Gen</span>(sampleMV, targetModel, swConf)</span>
+<span id="cb432-53"><a href="cha-progr-with-models.html#cb432-53" tabindex="-1"></a></span>
+<span id="cb432-54"><a href="cha-progr-with-models.html#cb432-54" tabindex="-1"></a><span class="co"># compiling </span></span>
+<span id="cb432-55"><a href="cha-progr-with-models.html#cb432-55" tabindex="-1"></a>CPropSamp <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(RPropSamp, <span class="at">project =</span> propModel)</span>
+<span id="cb432-56"><a href="cha-progr-with-models.html#cb432-56" tabindex="-1"></a>CImpWeights <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(RImpWeights, <span class="at">project =</span> targetModel)</span>
+<span id="cb432-57"><a href="cha-progr-with-models.html#cb432-57" tabindex="-1"></a></span>
+<span id="cb432-58"><a href="cha-progr-with-models.html#cb432-58" tabindex="-1"></a><span class="co"># generating and saving proposal sample of size 10</span></span>
+<span id="cb432-59"><a href="cha-progr-with-models.html#cb432-59" tabindex="-1"></a>CPropSamp<span class="sc">$</span><span class="fu">run</span>(<span class="dv">10</span>)</span>
+<span id="cb432-60"><a href="cha-progr-with-models.html#cb432-60" tabindex="-1"></a></span>
+<span id="cb432-61"><a href="cha-progr-with-models.html#cb432-61" tabindex="-1"></a><span class="co"># calculating the importance weights and saving to mv</span></span>
+<span id="cb432-62"><a href="cha-progr-with-models.html#cb432-62" tabindex="-1"></a>CImpWeights<span class="sc">$</span><span class="fu">run</span>()</span>
+<span id="cb432-63"><a href="cha-progr-with-models.html#cb432-63" tabindex="-1"></a></span>
+<span id="cb432-64"><a href="cha-progr-with-models.html#cb432-64" tabindex="-1"></a><span class="co"># retrieving the modelValues objects</span></span>
+<span id="cb432-65"><a href="cha-progr-with-models.html#cb432-65" tabindex="-1"></a><span class="co"># extracted objects are C-based modelValues objects</span></span>
+<span id="cb432-66"><a href="cha-progr-with-models.html#cb432-66" tabindex="-1"></a></span>
+<span id="cb432-67"><a href="cha-progr-with-models.html#cb432-67" tabindex="-1"></a>savedPropSamp_1 <span class="ot">=</span> CImpWeights<span class="sc">$</span>propModelValues</span>
+<span id="cb432-68"><a href="cha-progr-with-models.html#cb432-68" tabindex="-1"></a>savedPropSamp_2 <span class="ot">=</span> CPropSamp<span class="sc">$</span>mv</span>
+<span id="cb432-69"><a href="cha-progr-with-models.html#cb432-69" tabindex="-1"></a></span>
+<span id="cb432-70"><a href="cha-progr-with-models.html#cb432-70" tabindex="-1"></a><span class="co"># Subtle note: savedPropSamp_1 and savedPropSamp_2</span></span>
+<span id="cb432-71"><a href="cha-progr-with-models.html#cb432-71" tabindex="-1"></a><span class="co"># both provide interface to the same compiled modelValues objects!</span></span>
+<span id="cb432-72"><a href="cha-progr-with-models.html#cb432-72" tabindex="-1"></a><span class="co"># This is because they were both built from sampleMV.</span></span>
+<span id="cb432-73"><a href="cha-progr-with-models.html#cb432-73" tabindex="-1"></a></span>
+<span id="cb432-74"><a href="cha-progr-with-models.html#cb432-74" tabindex="-1"></a>savedPropSamp_1[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>]</span></code></pre></div>
 <pre><code>## [1] -0.3919851</code></pre>
-<div class="sourceCode" id="cb434"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb434-1"><a href="cha-progr-with-models.html#cb434-1" aria-hidden="true" tabindex="-1"></a>savedPropSamp_2[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb434"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb434-1"><a href="cha-progr-with-models.html#cb434-1" tabindex="-1"></a>savedPropSamp_2[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>]</span></code></pre></div>
 <pre><code>## [1] -0.3919851</code></pre>
-<div class="sourceCode" id="cb436"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb436-1"><a href="cha-progr-with-models.html#cb436-1" aria-hidden="true" tabindex="-1"></a>savedPropSamp_1[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># example of directly setting a value</span></span>
-<span id="cb436-2"><a href="cha-progr-with-models.html#cb436-2" aria-hidden="true" tabindex="-1"></a>savedPropSamp_2[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb436"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb436-1"><a href="cha-progr-with-models.html#cb436-1" tabindex="-1"></a>savedPropSamp_1[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># example of directly setting a value</span></span>
+<span id="cb436-2"><a href="cha-progr-with-models.html#cb436-2" tabindex="-1"></a>savedPropSamp_2[<span class="st">&quot;x&quot;</span>,<span class="dv">1</span>]</span></code></pre></div>
 <pre><code>## [1] 0</code></pre>
-<div class="sourceCode" id="cb438"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb438-1"><a href="cha-progr-with-models.html#cb438-1" aria-hidden="true" tabindex="-1"></a><span class="co"># viewing the saved importance weights</span></span>
-<span id="cb438-2"><a href="cha-progr-with-models.html#cb438-2" aria-hidden="true" tabindex="-1"></a>savedWeights <span class="ot">&lt;-</span> CImpWeights<span class="sc">$</span>savedWeights</span>
-<span id="cb438-3"><a href="cha-progr-with-models.html#cb438-3" aria-hidden="true" tabindex="-1"></a><span class="fu">unlist</span>(savedWeights[[<span class="st">&quot;w&quot;</span>]])</span></code></pre></div>
+<div class="sourceCode" id="cb438"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb438-1"><a href="cha-progr-with-models.html#cb438-1" tabindex="-1"></a><span class="co"># viewing the saved importance weights</span></span>
+<span id="cb438-2"><a href="cha-progr-with-models.html#cb438-2" tabindex="-1"></a>savedWeights <span class="ot">&lt;-</span> CImpWeights<span class="sc">$</span>savedWeights</span>
+<span id="cb438-3"><a href="cha-progr-with-models.html#cb438-3" tabindex="-1"></a><span class="fu">unlist</span>(savedWeights[[<span class="st">&quot;w&quot;</span>]])</span></code></pre></div>
 <pre><code>##  [1] 0.5024644 1.7765357 3.5155732 0.3893390 0.5530012 0.5085069 2.3890876
 ##  [8] 0.6548453 0.5940573 0.4943950</code></pre>
-<div class="sourceCode" id="cb440"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb440-1"><a href="cha-progr-with-models.html#cb440-1" aria-hidden="true" tabindex="-1"></a><span class="co"># viewing first 3 rows -- note that savedPropSsamp_1[&quot;x&quot;, 1] was altered </span></span>
-<span id="cb440-2"><a href="cha-progr-with-models.html#cb440-2" aria-hidden="true" tabindex="-1"></a><span class="fu">as.matrix</span>(savedPropSamp_1)[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, ]</span></code></pre></div>
+<div class="sourceCode" id="cb440"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb440-1"><a href="cha-progr-with-models.html#cb440-1" tabindex="-1"></a><span class="co"># viewing first 3 rows -- note that savedPropSsamp_1[&quot;x&quot;, 1] was altered </span></span>
+<span id="cb440-2"><a href="cha-progr-with-models.html#cb440-2" tabindex="-1"></a><span class="fu">as.matrix</span>(savedPropSamp_1)[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, ]</span></code></pre></div>
 <pre><code>##      propLL[1]        x[1]       y[1]       y[2]       y[3]       y[4]
 ## [1,] -4.951100  0.00000000 -0.3951785 -1.0040021 -0.6420246  0.5993671
 ## [2,] -7.476891  0.35317374 -0.4510107  1.7080201  1.0471602 -0.5225390
@@ -980,9 +981,9 @@ with model variables.</p>
 expressions, including with indexing, or passed to another
 nimbleFunction as an argument. For example, the following two
 statements would be valid:</p>
-<div class="sourceCode" id="cb442"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb442-1"><a href="cha-progr-with-models.html#cb442-1" aria-hidden="true" tabindex="-1"></a>model[[<span class="st">&quot;x[2:8, ]&quot;</span>]][<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">%*%</span> Z</span></code></pre></div>
+<div class="sourceCode" id="cb442"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb442-1"><a href="cha-progr-with-models.html#cb442-1" tabindex="-1"></a>model[[<span class="st">&quot;x[2:8, ]&quot;</span>]][<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">%*%</span> Z</span></code></pre></div>
 <p>if Z is a vector or matrix, and</p>
-<div class="sourceCode" id="cb443"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb443-1"><a href="cha-progr-with-models.html#cb443-1" aria-hidden="true" tabindex="-1"></a>C[<span class="dv">6</span><span class="sc">:</span><span class="dv">10</span>] <span class="ot">&lt;-</span> mv[v, i][<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, k] <span class="sc">+</span> B</span></code></pre></div>
+<div class="sourceCode" id="cb443"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb443-1"><a href="cha-progr-with-models.html#cb443-1" tabindex="-1"></a>C[<span class="dv">6</span><span class="sc">:</span><span class="dv">10</span>] <span class="ot">&lt;-</span> mv[v, i][<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, k] <span class="sc">+</span> B</span></code></pre></div>
 <p>if B is a vector or matrix.</p>
 <p>The NIMBLE language allows scalars, but models defined from BUGS code
 are never created as purely
@@ -998,34 +999,34 @@ access <code>z</code> is <code>model$z[1]</code> or <code>model[["z"]][1]</code>
 <code>nimbleFunction</code>. These methods can use the objects created in
 setup code in just the same ways as the run function. In
 fact, the run function is just a default main method name. Any method can then call another method.</p>
-<div class="sourceCode" id="cb444"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb444-1"><a href="cha-progr-with-models.html#cb444-1" aria-hidden="true" tabindex="-1"></a>methodsDemo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb444-2"><a href="cha-progr-with-models.html#cb444-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>() {sharedValue <span class="ot">&lt;-</span> <span class="dv">1</span>},</span>
-<span id="cb444-3"><a href="cha-progr-with-models.html#cb444-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
-<span id="cb444-4"><a href="cha-progr-with-models.html#cb444-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;sharedValues = &quot;</span>, sharedValue, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb444-5"><a href="cha-progr-with-models.html#cb444-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">increment</span>()</span>
-<span id="cb444-6"><a href="cha-progr-with-models.html#cb444-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;sharedValues = &quot;</span>, sharedValue, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb444-7"><a href="cha-progr-with-models.html#cb444-7" aria-hidden="true" tabindex="-1"></a>        A <span class="ot">&lt;-</span> <span class="fu">times</span>(<span class="dv">5</span>)</span>
-<span id="cb444-8"><a href="cha-progr-with-models.html#cb444-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(A <span class="sc">*</span> x)</span>
-<span id="cb444-9"><a href="cha-progr-with-models.html#cb444-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
-<span id="cb444-10"><a href="cha-progr-with-models.html#cb444-10" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb444-11"><a href="cha-progr-with-models.html#cb444-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
-<span id="cb444-12"><a href="cha-progr-with-models.html#cb444-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">increment =</span> <span class="cf">function</span>() {</span>
-<span id="cb444-13"><a href="cha-progr-with-models.html#cb444-13" aria-hidden="true" tabindex="-1"></a>            sharedValue <span class="ot">&lt;&lt;-</span> sharedValue <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb444-14"><a href="cha-progr-with-models.html#cb444-14" aria-hidden="true" tabindex="-1"></a>        },</span>
-<span id="cb444-15"><a href="cha-progr-with-models.html#cb444-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">times =</span> <span class="cf">function</span>(<span class="at">factor =</span> <span class="fu">double</span>()) {</span>
-<span id="cb444-16"><a href="cha-progr-with-models.html#cb444-16" aria-hidden="true" tabindex="-1"></a>            <span class="fu">return</span>(factor <span class="sc">*</span> sharedValue)</span>
-<span id="cb444-17"><a href="cha-progr-with-models.html#cb444-17" aria-hidden="true" tabindex="-1"></a>            <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb444-18"><a href="cha-progr-with-models.html#cb444-18" aria-hidden="true" tabindex="-1"></a>        }))</span>
-<span id="cb444-19"><a href="cha-progr-with-models.html#cb444-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb444-20"><a href="cha-progr-with-models.html#cb444-20" aria-hidden="true" tabindex="-1"></a>methodsDemo1 <span class="ot">&lt;-</span> <span class="fu">methodsDemo</span>()</span>
-<span id="cb444-21"><a href="cha-progr-with-models.html#cb444-21" aria-hidden="true" tabindex="-1"></a>methodsDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb444"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb444-1"><a href="cha-progr-with-models.html#cb444-1" tabindex="-1"></a>methodsDemo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb444-2"><a href="cha-progr-with-models.html#cb444-2" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>() {sharedValue <span class="ot">&lt;-</span> <span class="dv">1</span>},</span>
+<span id="cb444-3"><a href="cha-progr-with-models.html#cb444-3" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb444-4"><a href="cha-progr-with-models.html#cb444-4" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;sharedValues = &quot;</span>, sharedValue, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb444-5"><a href="cha-progr-with-models.html#cb444-5" tabindex="-1"></a>        <span class="fu">increment</span>()</span>
+<span id="cb444-6"><a href="cha-progr-with-models.html#cb444-6" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;sharedValues = &quot;</span>, sharedValue, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb444-7"><a href="cha-progr-with-models.html#cb444-7" tabindex="-1"></a>        A <span class="ot">&lt;-</span> <span class="fu">times</span>(<span class="dv">5</span>)</span>
+<span id="cb444-8"><a href="cha-progr-with-models.html#cb444-8" tabindex="-1"></a>        <span class="fu">return</span>(A <span class="sc">*</span> x)</span>
+<span id="cb444-9"><a href="cha-progr-with-models.html#cb444-9" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb444-10"><a href="cha-progr-with-models.html#cb444-10" tabindex="-1"></a>    },</span>
+<span id="cb444-11"><a href="cha-progr-with-models.html#cb444-11" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb444-12"><a href="cha-progr-with-models.html#cb444-12" tabindex="-1"></a>        <span class="at">increment =</span> <span class="cf">function</span>() {</span>
+<span id="cb444-13"><a href="cha-progr-with-models.html#cb444-13" tabindex="-1"></a>            sharedValue <span class="ot">&lt;&lt;-</span> sharedValue <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb444-14"><a href="cha-progr-with-models.html#cb444-14" tabindex="-1"></a>        },</span>
+<span id="cb444-15"><a href="cha-progr-with-models.html#cb444-15" tabindex="-1"></a>        <span class="at">times =</span> <span class="cf">function</span>(<span class="at">factor =</span> <span class="fu">double</span>()) {</span>
+<span id="cb444-16"><a href="cha-progr-with-models.html#cb444-16" tabindex="-1"></a>            <span class="fu">return</span>(factor <span class="sc">*</span> sharedValue)</span>
+<span id="cb444-17"><a href="cha-progr-with-models.html#cb444-17" tabindex="-1"></a>            <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb444-18"><a href="cha-progr-with-models.html#cb444-18" tabindex="-1"></a>        }))</span>
+<span id="cb444-19"><a href="cha-progr-with-models.html#cb444-19" tabindex="-1"></a></span>
+<span id="cb444-20"><a href="cha-progr-with-models.html#cb444-20" tabindex="-1"></a>methodsDemo1 <span class="ot">&lt;-</span> <span class="fu">methodsDemo</span>()</span>
+<span id="cb444-21"><a href="cha-progr-with-models.html#cb444-21" tabindex="-1"></a>methodsDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
 <pre><code>## sharedValues = 1
 ## 
 ## sharedValues = 2</code></pre>
 <pre><code>##  [1]  10  20  30  40  50  60  70  80  90 100</code></pre>
-<div class="sourceCode" id="cb447"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb447-1"><a href="cha-progr-with-models.html#cb447-1" aria-hidden="true" tabindex="-1"></a>methodsDemo1<span class="sc">$</span>sharedValue <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb447-2"><a href="cha-progr-with-models.html#cb447-2" aria-hidden="true" tabindex="-1"></a>CmethodsDemo1 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(methodsDemo1)</span>
-<span id="cb447-3"><a href="cha-progr-with-models.html#cb447-3" aria-hidden="true" tabindex="-1"></a>CmethodsDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb447"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb447-1"><a href="cha-progr-with-models.html#cb447-1" tabindex="-1"></a>methodsDemo1<span class="sc">$</span>sharedValue <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb447-2"><a href="cha-progr-with-models.html#cb447-2" tabindex="-1"></a>CmethodsDemo1 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(methodsDemo1)</span>
+<span id="cb447-3"><a href="cha-progr-with-models.html#cb447-3" tabindex="-1"></a>CmethodsDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
 <pre><code>## sharedValues = 1
 ## 
 ## sharedValues = 2</code></pre>
@@ -1038,22 +1039,22 @@ it as a setup argument or was created in the setup function. This can
 be an effective way to program. When a nimbleFunction needs to
 access a setup variable or method of another nimbleFunction, use
 <code>$</code>.</p>
-<div class="sourceCode" id="cb450"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb450-1"><a href="cha-progr-with-models.html#cb450-1" aria-hidden="true" tabindex="-1"></a>usePreviousDemo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb450-2"><a href="cha-progr-with-models.html#cb450-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(initialSharedValue) {</span>
-<span id="cb450-3"><a href="cha-progr-with-models.html#cb450-3" aria-hidden="true" tabindex="-1"></a>        myMethodsDemo <span class="ot">&lt;-</span> <span class="fu">methodsDemo</span>()</span>
-<span id="cb450-4"><a href="cha-progr-with-models.html#cb450-4" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb450-5"><a href="cha-progr-with-models.html#cb450-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
-<span id="cb450-6"><a href="cha-progr-with-models.html#cb450-6" aria-hidden="true" tabindex="-1"></a>        myMethodsDemo<span class="sc">$</span>sharedValue <span class="ot">&lt;&lt;-</span> initialSharedValue</span>
-<span id="cb450-7"><a href="cha-progr-with-models.html#cb450-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">print</span>(myMethodsDemo<span class="sc">$</span>sharedValue)</span>
-<span id="cb450-8"><a href="cha-progr-with-models.html#cb450-8" aria-hidden="true" tabindex="-1"></a>        A <span class="ot">&lt;-</span> myMethodsDemo<span class="sc">$</span><span class="fu">run</span>(x[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>])</span>
-<span id="cb450-9"><a href="cha-progr-with-models.html#cb450-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">print</span>(A)</span>
-<span id="cb450-10"><a href="cha-progr-with-models.html#cb450-10" aria-hidden="true" tabindex="-1"></a>        B <span class="ot">&lt;-</span> myMethodsDemo<span class="sc">$</span><span class="fu">times</span>(<span class="dv">10</span>)</span>
-<span id="cb450-11"><a href="cha-progr-with-models.html#cb450-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(B)</span>
-<span id="cb450-12"><a href="cha-progr-with-models.html#cb450-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb450-13"><a href="cha-progr-with-models.html#cb450-13" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb450-14"><a href="cha-progr-with-models.html#cb450-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb450-15"><a href="cha-progr-with-models.html#cb450-15" aria-hidden="true" tabindex="-1"></a>usePreviousDemo1 <span class="ot">&lt;-</span> <span class="fu">usePreviousDemo</span>(<span class="dv">2</span>)</span>
-<span id="cb450-16"><a href="cha-progr-with-models.html#cb450-16" aria-hidden="true" tabindex="-1"></a>usePreviousDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb450"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb450-1"><a href="cha-progr-with-models.html#cb450-1" tabindex="-1"></a>usePreviousDemo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb450-2"><a href="cha-progr-with-models.html#cb450-2" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(initialSharedValue) {</span>
+<span id="cb450-3"><a href="cha-progr-with-models.html#cb450-3" tabindex="-1"></a>        myMethodsDemo <span class="ot">&lt;-</span> <span class="fu">methodsDemo</span>()</span>
+<span id="cb450-4"><a href="cha-progr-with-models.html#cb450-4" tabindex="-1"></a>    },</span>
+<span id="cb450-5"><a href="cha-progr-with-models.html#cb450-5" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb450-6"><a href="cha-progr-with-models.html#cb450-6" tabindex="-1"></a>        myMethodsDemo<span class="sc">$</span>sharedValue <span class="ot">&lt;&lt;-</span> initialSharedValue</span>
+<span id="cb450-7"><a href="cha-progr-with-models.html#cb450-7" tabindex="-1"></a>        <span class="fu">print</span>(myMethodsDemo<span class="sc">$</span>sharedValue)</span>
+<span id="cb450-8"><a href="cha-progr-with-models.html#cb450-8" tabindex="-1"></a>        A <span class="ot">&lt;-</span> myMethodsDemo<span class="sc">$</span><span class="fu">run</span>(x[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>])</span>
+<span id="cb450-9"><a href="cha-progr-with-models.html#cb450-9" tabindex="-1"></a>        <span class="fu">print</span>(A)</span>
+<span id="cb450-10"><a href="cha-progr-with-models.html#cb450-10" tabindex="-1"></a>        B <span class="ot">&lt;-</span> myMethodsDemo<span class="sc">$</span><span class="fu">times</span>(<span class="dv">10</span>)</span>
+<span id="cb450-11"><a href="cha-progr-with-models.html#cb450-11" tabindex="-1"></a>        <span class="fu">return</span>(B)</span>
+<span id="cb450-12"><a href="cha-progr-with-models.html#cb450-12" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb450-13"><a href="cha-progr-with-models.html#cb450-13" tabindex="-1"></a>    })</span>
+<span id="cb450-14"><a href="cha-progr-with-models.html#cb450-14" tabindex="-1"></a></span>
+<span id="cb450-15"><a href="cha-progr-with-models.html#cb450-15" tabindex="-1"></a>usePreviousDemo1 <span class="ot">&lt;-</span> <span class="fu">usePreviousDemo</span>(<span class="dv">2</span>)</span>
+<span id="cb450-16"><a href="cha-progr-with-models.html#cb450-16" tabindex="-1"></a>usePreviousDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
 <pre><code>## 2
 ## sharedValues = 2
 ## 
@@ -1061,8 +1062,8 @@ access a setup variable or method of another nimbleFunction, use
 ## 
 ## 15 30 45 60 75</code></pre>
 <pre><code>## [1] 30</code></pre>
-<div class="sourceCode" id="cb453"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb453-1"><a href="cha-progr-with-models.html#cb453-1" aria-hidden="true" tabindex="-1"></a>CusePreviousDemo1 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(usePreviousDemo1)</span>
-<span id="cb453-2"><a href="cha-progr-with-models.html#cb453-2" aria-hidden="true" tabindex="-1"></a>CusePreviousDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb453"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb453-1"><a href="cha-progr-with-models.html#cb453-1" tabindex="-1"></a>CusePreviousDemo1 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(usePreviousDemo1)</span>
+<span id="cb453-2"><a href="cha-progr-with-models.html#cb453-2" tabindex="-1"></a>CusePreviousDemo1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>)</span></code></pre></div>
 <pre><code>## 2
 ## sharedValues = 2
 ## 
@@ -1090,63 +1091,63 @@ Readers familiar with object oriented programming will recognize this
 as a simple class inheritance system. In Version 1.2.0 it is limited to
 simple, single-level inheritance.</p>
 <p>Here is how it works:</p>
-<div class="sourceCode" id="cb456"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb456-1"><a href="cha-progr-with-models.html#cb456-1" aria-hidden="true" tabindex="-1"></a>baseClass <span class="ot">&lt;-</span> <span class="fu">nimbleFunctionVirtual</span>(</span>
-<span id="cb456-2"><a href="cha-progr-with-models.html#cb456-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {<span class="fu">returnType</span>(<span class="fu">double</span>())},</span>
-<span id="cb456-3"><a href="cha-progr-with-models.html#cb456-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
-<span id="cb456-4"><a href="cha-progr-with-models.html#cb456-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">foo =</span> <span class="cf">function</span>() { <span class="fu">returnType</span>(<span class="fu">double</span>()) }</span>
-<span id="cb456-5"><a href="cha-progr-with-models.html#cb456-5" aria-hidden="true" tabindex="-1"></a>    ))</span>
-<span id="cb456-6"><a href="cha-progr-with-models.html#cb456-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb456-7"><a href="cha-progr-with-models.html#cb456-7" aria-hidden="true" tabindex="-1"></a>derived1 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb456-8"><a href="cha-progr-with-models.html#cb456-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">contains =</span> baseClass,</span>
-<span id="cb456-9"><a href="cha-progr-with-models.html#cb456-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(){},</span>
-<span id="cb456-10"><a href="cha-progr-with-models.html#cb456-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
-<span id="cb456-11"><a href="cha-progr-with-models.html#cb456-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;run 1&quot;</span>)</span>
-<span id="cb456-12"><a href="cha-progr-with-models.html#cb456-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">sum</span>(x))</span>
-<span id="cb456-13"><a href="cha-progr-with-models.html#cb456-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb456-14"><a href="cha-progr-with-models.html#cb456-14" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb456-15"><a href="cha-progr-with-models.html#cb456-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
-<span id="cb456-16"><a href="cha-progr-with-models.html#cb456-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">foo =</span> <span class="cf">function</span>() {</span>
-<span id="cb456-17"><a href="cha-progr-with-models.html#cb456-17" aria-hidden="true" tabindex="-1"></a>            <span class="fu">print</span>(<span class="st">&quot;foo 1&quot;</span>)</span>
-<span id="cb456-18"><a href="cha-progr-with-models.html#cb456-18" aria-hidden="true" tabindex="-1"></a>            <span class="fu">return</span>(<span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>))</span>
-<span id="cb456-19"><a href="cha-progr-with-models.html#cb456-19" aria-hidden="true" tabindex="-1"></a>            <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb456-20"><a href="cha-progr-with-models.html#cb456-20" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb456-21"><a href="cha-progr-with-models.html#cb456-21" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb456-22"><a href="cha-progr-with-models.html#cb456-22" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb456-23"><a href="cha-progr-with-models.html#cb456-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb456-24"><a href="cha-progr-with-models.html#cb456-24" aria-hidden="true" tabindex="-1"></a>derived2 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb456-25"><a href="cha-progr-with-models.html#cb456-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">contains =</span> baseClass,</span>
-<span id="cb456-26"><a href="cha-progr-with-models.html#cb456-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(){},</span>
-<span id="cb456-27"><a href="cha-progr-with-models.html#cb456-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
-<span id="cb456-28"><a href="cha-progr-with-models.html#cb456-28" aria-hidden="true" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;run 2&quot;</span>)</span>
-<span id="cb456-29"><a href="cha-progr-with-models.html#cb456-29" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">prod</span>(x))</span>
-<span id="cb456-30"><a href="cha-progr-with-models.html#cb456-30" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb456-31"><a href="cha-progr-with-models.html#cb456-31" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb456-32"><a href="cha-progr-with-models.html#cb456-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
-<span id="cb456-33"><a href="cha-progr-with-models.html#cb456-33" aria-hidden="true" tabindex="-1"></a>        <span class="at">foo =</span> <span class="cf">function</span>() {</span>
-<span id="cb456-34"><a href="cha-progr-with-models.html#cb456-34" aria-hidden="true" tabindex="-1"></a>            <span class="fu">print</span>(<span class="st">&quot;foo 2&quot;</span>)</span>
-<span id="cb456-35"><a href="cha-progr-with-models.html#cb456-35" aria-hidden="true" tabindex="-1"></a>            <span class="fu">return</span>(<span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">100</span>, <span class="dv">200</span>))</span>
-<span id="cb456-36"><a href="cha-progr-with-models.html#cb456-36" aria-hidden="true" tabindex="-1"></a>            <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb456-37"><a href="cha-progr-with-models.html#cb456-37" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb456-38"><a href="cha-progr-with-models.html#cb456-38" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb456-39"><a href="cha-progr-with-models.html#cb456-39" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb456-40"><a href="cha-progr-with-models.html#cb456-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb456-41"><a href="cha-progr-with-models.html#cb456-41" aria-hidden="true" tabindex="-1"></a>useThem <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb456-42"><a href="cha-progr-with-models.html#cb456-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>() {</span>
-<span id="cb456-43"><a href="cha-progr-with-models.html#cb456-43" aria-hidden="true" tabindex="-1"></a>        nfl <span class="ot">&lt;-</span> <span class="fu">nimbleFunctionList</span>(baseClass)</span>
-<span id="cb456-44"><a href="cha-progr-with-models.html#cb456-44" aria-hidden="true" tabindex="-1"></a>        nfl[[<span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="fu">derived1</span>()</span>
-<span id="cb456-45"><a href="cha-progr-with-models.html#cb456-45" aria-hidden="true" tabindex="-1"></a>        nfl[[<span class="dv">2</span>]] <span class="ot">&lt;-</span> <span class="fu">derived2</span>()</span>
-<span id="cb456-46"><a href="cha-progr-with-models.html#cb456-46" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb456-47"><a href="cha-progr-with-models.html#cb456-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
-<span id="cb456-48"><a href="cha-progr-with-models.html#cb456-48" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(nfl)) {</span>
-<span id="cb456-49"><a href="cha-progr-with-models.html#cb456-49" aria-hidden="true" tabindex="-1"></a>            <span class="fu">print</span>( nfl[[i]]<span class="sc">$</span><span class="fu">run</span>(x) )</span>
-<span id="cb456-50"><a href="cha-progr-with-models.html#cb456-50" aria-hidden="true" tabindex="-1"></a>            <span class="fu">print</span>( nfl[[i]]<span class="sc">$</span><span class="fu">foo</span>() )</span>
-<span id="cb456-51"><a href="cha-progr-with-models.html#cb456-51" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb456-52"><a href="cha-progr-with-models.html#cb456-52" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb456-53"><a href="cha-progr-with-models.html#cb456-53" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb456-54"><a href="cha-progr-with-models.html#cb456-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb456-55"><a href="cha-progr-with-models.html#cb456-55" aria-hidden="true" tabindex="-1"></a>useThem1 <span class="ot">&lt;-</span> <span class="fu">useThem</span>()</span>
-<span id="cb456-56"><a href="cha-progr-with-models.html#cb456-56" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb456-57"><a href="cha-progr-with-models.html#cb456-57" aria-hidden="true" tabindex="-1"></a>useThem1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>)    </span></code></pre></div>
+<div class="sourceCode" id="cb456"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb456-1"><a href="cha-progr-with-models.html#cb456-1" tabindex="-1"></a>baseClass <span class="ot">&lt;-</span> <span class="fu">nimbleFunctionVirtual</span>(</span>
+<span id="cb456-2"><a href="cha-progr-with-models.html#cb456-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {<span class="fu">returnType</span>(<span class="fu">double</span>())},</span>
+<span id="cb456-3"><a href="cha-progr-with-models.html#cb456-3" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb456-4"><a href="cha-progr-with-models.html#cb456-4" tabindex="-1"></a>        <span class="at">foo =</span> <span class="cf">function</span>() { <span class="fu">returnType</span>(<span class="fu">double</span>()) }</span>
+<span id="cb456-5"><a href="cha-progr-with-models.html#cb456-5" tabindex="-1"></a>    ))</span>
+<span id="cb456-6"><a href="cha-progr-with-models.html#cb456-6" tabindex="-1"></a></span>
+<span id="cb456-7"><a href="cha-progr-with-models.html#cb456-7" tabindex="-1"></a>derived1 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb456-8"><a href="cha-progr-with-models.html#cb456-8" tabindex="-1"></a>    <span class="at">contains =</span> baseClass,</span>
+<span id="cb456-9"><a href="cha-progr-with-models.html#cb456-9" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(){},</span>
+<span id="cb456-10"><a href="cha-progr-with-models.html#cb456-10" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb456-11"><a href="cha-progr-with-models.html#cb456-11" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;run 1&quot;</span>)</span>
+<span id="cb456-12"><a href="cha-progr-with-models.html#cb456-12" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">sum</span>(x))</span>
+<span id="cb456-13"><a href="cha-progr-with-models.html#cb456-13" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb456-14"><a href="cha-progr-with-models.html#cb456-14" tabindex="-1"></a>    },</span>
+<span id="cb456-15"><a href="cha-progr-with-models.html#cb456-15" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb456-16"><a href="cha-progr-with-models.html#cb456-16" tabindex="-1"></a>        <span class="at">foo =</span> <span class="cf">function</span>() {</span>
+<span id="cb456-17"><a href="cha-progr-with-models.html#cb456-17" tabindex="-1"></a>            <span class="fu">print</span>(<span class="st">&quot;foo 1&quot;</span>)</span>
+<span id="cb456-18"><a href="cha-progr-with-models.html#cb456-18" tabindex="-1"></a>            <span class="fu">return</span>(<span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>))</span>
+<span id="cb456-19"><a href="cha-progr-with-models.html#cb456-19" tabindex="-1"></a>            <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb456-20"><a href="cha-progr-with-models.html#cb456-20" tabindex="-1"></a>        }</span>
+<span id="cb456-21"><a href="cha-progr-with-models.html#cb456-21" tabindex="-1"></a>    )</span>
+<span id="cb456-22"><a href="cha-progr-with-models.html#cb456-22" tabindex="-1"></a>)</span>
+<span id="cb456-23"><a href="cha-progr-with-models.html#cb456-23" tabindex="-1"></a></span>
+<span id="cb456-24"><a href="cha-progr-with-models.html#cb456-24" tabindex="-1"></a>derived2 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb456-25"><a href="cha-progr-with-models.html#cb456-25" tabindex="-1"></a>    <span class="at">contains =</span> baseClass,</span>
+<span id="cb456-26"><a href="cha-progr-with-models.html#cb456-26" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(){},</span>
+<span id="cb456-27"><a href="cha-progr-with-models.html#cb456-27" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb456-28"><a href="cha-progr-with-models.html#cb456-28" tabindex="-1"></a>        <span class="fu">print</span>(<span class="st">&quot;run 2&quot;</span>)</span>
+<span id="cb456-29"><a href="cha-progr-with-models.html#cb456-29" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">prod</span>(x))</span>
+<span id="cb456-30"><a href="cha-progr-with-models.html#cb456-30" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb456-31"><a href="cha-progr-with-models.html#cb456-31" tabindex="-1"></a>    },</span>
+<span id="cb456-32"><a href="cha-progr-with-models.html#cb456-32" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb456-33"><a href="cha-progr-with-models.html#cb456-33" tabindex="-1"></a>        <span class="at">foo =</span> <span class="cf">function</span>() {</span>
+<span id="cb456-34"><a href="cha-progr-with-models.html#cb456-34" tabindex="-1"></a>            <span class="fu">print</span>(<span class="st">&quot;foo 2&quot;</span>)</span>
+<span id="cb456-35"><a href="cha-progr-with-models.html#cb456-35" tabindex="-1"></a>            <span class="fu">return</span>(<span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">100</span>, <span class="dv">200</span>))</span>
+<span id="cb456-36"><a href="cha-progr-with-models.html#cb456-36" tabindex="-1"></a>            <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb456-37"><a href="cha-progr-with-models.html#cb456-37" tabindex="-1"></a>        }</span>
+<span id="cb456-38"><a href="cha-progr-with-models.html#cb456-38" tabindex="-1"></a>    )</span>
+<span id="cb456-39"><a href="cha-progr-with-models.html#cb456-39" tabindex="-1"></a>)</span>
+<span id="cb456-40"><a href="cha-progr-with-models.html#cb456-40" tabindex="-1"></a></span>
+<span id="cb456-41"><a href="cha-progr-with-models.html#cb456-41" tabindex="-1"></a>useThem <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb456-42"><a href="cha-progr-with-models.html#cb456-42" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>() {</span>
+<span id="cb456-43"><a href="cha-progr-with-models.html#cb456-43" tabindex="-1"></a>        nfl <span class="ot">&lt;-</span> <span class="fu">nimbleFunctionList</span>(baseClass)</span>
+<span id="cb456-44"><a href="cha-progr-with-models.html#cb456-44" tabindex="-1"></a>        nfl[[<span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="fu">derived1</span>()</span>
+<span id="cb456-45"><a href="cha-progr-with-models.html#cb456-45" tabindex="-1"></a>        nfl[[<span class="dv">2</span>]] <span class="ot">&lt;-</span> <span class="fu">derived2</span>()</span>
+<span id="cb456-46"><a href="cha-progr-with-models.html#cb456-46" tabindex="-1"></a>    },</span>
+<span id="cb456-47"><a href="cha-progr-with-models.html#cb456-47" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb456-48"><a href="cha-progr-with-models.html#cb456-48" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(nfl)) {</span>
+<span id="cb456-49"><a href="cha-progr-with-models.html#cb456-49" tabindex="-1"></a>            <span class="fu">print</span>( nfl[[i]]<span class="sc">$</span><span class="fu">run</span>(x) )</span>
+<span id="cb456-50"><a href="cha-progr-with-models.html#cb456-50" tabindex="-1"></a>            <span class="fu">print</span>( nfl[[i]]<span class="sc">$</span><span class="fu">foo</span>() )</span>
+<span id="cb456-51"><a href="cha-progr-with-models.html#cb456-51" tabindex="-1"></a>        }</span>
+<span id="cb456-52"><a href="cha-progr-with-models.html#cb456-52" tabindex="-1"></a>    }</span>
+<span id="cb456-53"><a href="cha-progr-with-models.html#cb456-53" tabindex="-1"></a>    )</span>
+<span id="cb456-54"><a href="cha-progr-with-models.html#cb456-54" tabindex="-1"></a></span>
+<span id="cb456-55"><a href="cha-progr-with-models.html#cb456-55" tabindex="-1"></a>useThem1 <span class="ot">&lt;-</span> <span class="fu">useThem</span>()</span>
+<span id="cb456-56"><a href="cha-progr-with-models.html#cb456-56" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb456-57"><a href="cha-progr-with-models.html#cb456-57" tabindex="-1"></a>useThem1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>)    </span></code></pre></div>
 <pre><code>## run 1
 ## 15
 ## foo 1
@@ -1155,9 +1156,9 @@ simple, single-level inheritance.</p>
 ## 120
 ## foo 2
 ## 157.2853</code></pre>
-<div class="sourceCode" id="cb458"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb458-1"><a href="cha-progr-with-models.html#cb458-1" aria-hidden="true" tabindex="-1"></a>CuseThem1 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(useThem1)</span>
-<span id="cb458-2"><a href="cha-progr-with-models.html#cb458-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb458-3"><a href="cha-progr-with-models.html#cb458-3" aria-hidden="true" tabindex="-1"></a>CuseThem1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb458"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb458-1"><a href="cha-progr-with-models.html#cb458-1" tabindex="-1"></a>CuseThem1 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(useThem1)</span>
+<span id="cb458-2"><a href="cha-progr-with-models.html#cb458-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb458-3"><a href="cha-progr-with-models.html#cb458-3" tabindex="-1"></a>CuseThem1<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>)</span></code></pre></div>
 <pre><code>## run 1
 ## 15
 ## foo 1
@@ -1190,45 +1191,45 @@ a C++ string and therefore is needed in C++.</p>
 <h3><span class="header-section-number">15.4.10</span> User-defined data structures<a href="cha-progr-with-models.html#sec:user-defined-data" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Before the introduction of nimbleLists in Version 0.6-4, NIMBLE did not explicitly have user-defined data structures. An alternative way to create a data structure in NIMBLE is to use nimbleFunctions to achieve a similar effect. To do so, one can define setup code with whatever variables are wanted and ensure
 they are compiled using <code>setupOutputs</code>. Here is an example:</p>
-<div class="sourceCode" id="cb460"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb460-1"><a href="cha-progr-with-models.html#cb460-1" aria-hidden="true" tabindex="-1"></a>dataNF <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb460-2"><a href="cha-progr-with-models.html#cb460-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>() {</span>
-<span id="cb460-3"><a href="cha-progr-with-models.html#cb460-3" aria-hidden="true" tabindex="-1"></a>        X <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb460-4"><a href="cha-progr-with-models.html#cb460-4" aria-hidden="true" tabindex="-1"></a>        Y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb460-5"><a href="cha-progr-with-models.html#cb460-5" aria-hidden="true" tabindex="-1"></a>        Z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">as.numeric</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>), <span class="at">nrow =</span> <span class="dv">2</span>) </span>
-<span id="cb460-6"><a href="cha-progr-with-models.html#cb460-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">setupOutputs</span>(X, Y, Z)</span>
-<span id="cb460-7"><a href="cha-progr-with-models.html#cb460-7" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb460-8"><a href="cha-progr-with-models.html#cb460-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb460-9"><a href="cha-progr-with-models.html#cb460-9" aria-hidden="true" tabindex="-1"></a>useDataNF <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb460-10"><a href="cha-progr-with-models.html#cb460-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(myDataNF) {},</span>
-<span id="cb460-11"><a href="cha-progr-with-models.html#cb460-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">newX =</span> <span class="fu">double</span>(), <span class="at">newY =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">newZ =</span> <span class="fu">double</span>(<span class="dv">2</span>)) {</span>
-<span id="cb460-12"><a href="cha-progr-with-models.html#cb460-12" aria-hidden="true" tabindex="-1"></a>        myDataNF<span class="sc">$</span>X <span class="ot">&lt;&lt;-</span> newX</span>
-<span id="cb460-13"><a href="cha-progr-with-models.html#cb460-13" aria-hidden="true" tabindex="-1"></a>        myDataNF<span class="sc">$</span>Y <span class="ot">&lt;&lt;-</span> newY</span>
-<span id="cb460-14"><a href="cha-progr-with-models.html#cb460-14" aria-hidden="true" tabindex="-1"></a>        myDataNF<span class="sc">$</span>Z <span class="ot">&lt;&lt;-</span> newZ</span>
-<span id="cb460-15"><a href="cha-progr-with-models.html#cb460-15" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb460-16"><a href="cha-progr-with-models.html#cb460-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb460-17"><a href="cha-progr-with-models.html#cb460-17" aria-hidden="true" tabindex="-1"></a>myDataNF <span class="ot">&lt;-</span> <span class="fu">dataNF</span>()</span>
-<span id="cb460-18"><a href="cha-progr-with-models.html#cb460-18" aria-hidden="true" tabindex="-1"></a>myUseDataNF <span class="ot">&lt;-</span> <span class="fu">useDataNF</span>(myDataNF)</span>
-<span id="cb460-19"><a href="cha-progr-with-models.html#cb460-19" aria-hidden="true" tabindex="-1"></a>myUseDataNF<span class="sc">$</span><span class="fu">run</span>(<span class="fu">as.numeric</span>(<span class="dv">100</span>), <span class="fu">as.numeric</span>(<span class="dv">100</span><span class="sc">:</span><span class="dv">110</span>),</span>
-<span id="cb460-20"><a href="cha-progr-with-models.html#cb460-20" aria-hidden="true" tabindex="-1"></a>                <span class="fu">matrix</span>(<span class="fu">as.numeric</span>(<span class="dv">101</span><span class="sc">:</span><span class="dv">120</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
-<span id="cb460-21"><a href="cha-progr-with-models.html#cb460-21" aria-hidden="true" tabindex="-1"></a>myDataNF<span class="sc">$</span>X</span></code></pre></div>
+<div class="sourceCode" id="cb460"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb460-1"><a href="cha-progr-with-models.html#cb460-1" tabindex="-1"></a>dataNF <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb460-2"><a href="cha-progr-with-models.html#cb460-2" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>() {</span>
+<span id="cb460-3"><a href="cha-progr-with-models.html#cb460-3" tabindex="-1"></a>        X <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb460-4"><a href="cha-progr-with-models.html#cb460-4" tabindex="-1"></a>        Y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb460-5"><a href="cha-progr-with-models.html#cb460-5" tabindex="-1"></a>        Z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">as.numeric</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>), <span class="at">nrow =</span> <span class="dv">2</span>) </span>
+<span id="cb460-6"><a href="cha-progr-with-models.html#cb460-6" tabindex="-1"></a>        <span class="fu">setupOutputs</span>(X, Y, Z)</span>
+<span id="cb460-7"><a href="cha-progr-with-models.html#cb460-7" tabindex="-1"></a>    })</span>
+<span id="cb460-8"><a href="cha-progr-with-models.html#cb460-8" tabindex="-1"></a></span>
+<span id="cb460-9"><a href="cha-progr-with-models.html#cb460-9" tabindex="-1"></a>useDataNF <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb460-10"><a href="cha-progr-with-models.html#cb460-10" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(myDataNF) {},</span>
+<span id="cb460-11"><a href="cha-progr-with-models.html#cb460-11" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">newX =</span> <span class="fu">double</span>(), <span class="at">newY =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">newZ =</span> <span class="fu">double</span>(<span class="dv">2</span>)) {</span>
+<span id="cb460-12"><a href="cha-progr-with-models.html#cb460-12" tabindex="-1"></a>        myDataNF<span class="sc">$</span>X <span class="ot">&lt;&lt;-</span> newX</span>
+<span id="cb460-13"><a href="cha-progr-with-models.html#cb460-13" tabindex="-1"></a>        myDataNF<span class="sc">$</span>Y <span class="ot">&lt;&lt;-</span> newY</span>
+<span id="cb460-14"><a href="cha-progr-with-models.html#cb460-14" tabindex="-1"></a>        myDataNF<span class="sc">$</span>Z <span class="ot">&lt;&lt;-</span> newZ</span>
+<span id="cb460-15"><a href="cha-progr-with-models.html#cb460-15" tabindex="-1"></a>    })</span>
+<span id="cb460-16"><a href="cha-progr-with-models.html#cb460-16" tabindex="-1"></a></span>
+<span id="cb460-17"><a href="cha-progr-with-models.html#cb460-17" tabindex="-1"></a>myDataNF <span class="ot">&lt;-</span> <span class="fu">dataNF</span>()</span>
+<span id="cb460-18"><a href="cha-progr-with-models.html#cb460-18" tabindex="-1"></a>myUseDataNF <span class="ot">&lt;-</span> <span class="fu">useDataNF</span>(myDataNF)</span>
+<span id="cb460-19"><a href="cha-progr-with-models.html#cb460-19" tabindex="-1"></a>myUseDataNF<span class="sc">$</span><span class="fu">run</span>(<span class="fu">as.numeric</span>(<span class="dv">100</span>), <span class="fu">as.numeric</span>(<span class="dv">100</span><span class="sc">:</span><span class="dv">110</span>),</span>
+<span id="cb460-20"><a href="cha-progr-with-models.html#cb460-20" tabindex="-1"></a>                <span class="fu">matrix</span>(<span class="fu">as.numeric</span>(<span class="dv">101</span><span class="sc">:</span><span class="dv">120</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
+<span id="cb460-21"><a href="cha-progr-with-models.html#cb460-21" tabindex="-1"></a>myDataNF<span class="sc">$</span>X</span></code></pre></div>
 <pre><code>## [1] 100</code></pre>
-<div class="sourceCode" id="cb462"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb462-1"><a href="cha-progr-with-models.html#cb462-1" aria-hidden="true" tabindex="-1"></a>myDataNF<span class="sc">$</span>Y</span></code></pre></div>
+<div class="sourceCode" id="cb462"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb462-1"><a href="cha-progr-with-models.html#cb462-1" tabindex="-1"></a>myDataNF<span class="sc">$</span>Y</span></code></pre></div>
 <pre><code>##  [1] 100 101 102 103 104 105 106 107 108 109 110</code></pre>
-<div class="sourceCode" id="cb464"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb464-1"><a href="cha-progr-with-models.html#cb464-1" aria-hidden="true" tabindex="-1"></a>myDataNF<span class="sc">$</span>Z</span></code></pre></div>
+<div class="sourceCode" id="cb464"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb464-1"><a href="cha-progr-with-models.html#cb464-1" tabindex="-1"></a>myDataNF<span class="sc">$</span>Z</span></code></pre></div>
 <pre><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
 ## [1,]  101  103  105  107  109  111  113  115  117   119
 ## [2,]  102  104  106  108  110  112  114  116  118   120</code></pre>
-<div class="sourceCode" id="cb466"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb466-1"><a href="cha-progr-with-models.html#cb466-1" aria-hidden="true" tabindex="-1"></a>myUseDataNF<span class="sc">$</span>myDataNF<span class="sc">$</span>X</span></code></pre></div>
+<div class="sourceCode" id="cb466"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb466-1"><a href="cha-progr-with-models.html#cb466-1" tabindex="-1"></a>myUseDataNF<span class="sc">$</span>myDataNF<span class="sc">$</span>X</span></code></pre></div>
 <pre><code>## [1] 100</code></pre>
-<div class="sourceCode" id="cb468"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb468-1"><a href="cha-progr-with-models.html#cb468-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">buildInterfacesForCompiledNestedNimbleFunctions =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb468-2"><a href="cha-progr-with-models.html#cb468-2" aria-hidden="true" tabindex="-1"></a>CmyUseDataNF <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(myUseDataNF)</span>
-<span id="cb468-3"><a href="cha-progr-with-models.html#cb468-3" aria-hidden="true" tabindex="-1"></a>CmyUseDataNF<span class="sc">$</span><span class="fu">run</span>(<span class="sc">-</span><span class="dv">100</span>, <span class="sc">-</span>(<span class="dv">100</span><span class="sc">:</span><span class="dv">110</span>), <span class="fu">matrix</span>(<span class="sc">-</span>(<span class="dv">101</span><span class="sc">:</span><span class="dv">120</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
-<span id="cb468-4"><a href="cha-progr-with-models.html#cb468-4" aria-hidden="true" tabindex="-1"></a>CmyDataNF <span class="ot">&lt;-</span> CmyUseDataNF<span class="sc">$</span>myDataNF</span>
-<span id="cb468-5"><a href="cha-progr-with-models.html#cb468-5" aria-hidden="true" tabindex="-1"></a>CmyDataNF<span class="sc">$</span>X</span></code></pre></div>
+<div class="sourceCode" id="cb468"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb468-1"><a href="cha-progr-with-models.html#cb468-1" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">buildInterfacesForCompiledNestedNimbleFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb468-2"><a href="cha-progr-with-models.html#cb468-2" tabindex="-1"></a>CmyUseDataNF <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(myUseDataNF)</span>
+<span id="cb468-3"><a href="cha-progr-with-models.html#cb468-3" tabindex="-1"></a>CmyUseDataNF<span class="sc">$</span><span class="fu">run</span>(<span class="sc">-</span><span class="dv">100</span>, <span class="sc">-</span>(<span class="dv">100</span><span class="sc">:</span><span class="dv">110</span>), <span class="fu">matrix</span>(<span class="sc">-</span>(<span class="dv">101</span><span class="sc">:</span><span class="dv">120</span>), <span class="at">nrow =</span> <span class="dv">2</span>))</span>
+<span id="cb468-4"><a href="cha-progr-with-models.html#cb468-4" tabindex="-1"></a>CmyDataNF <span class="ot">&lt;-</span> CmyUseDataNF<span class="sc">$</span>myDataNF</span>
+<span id="cb468-5"><a href="cha-progr-with-models.html#cb468-5" tabindex="-1"></a>CmyDataNF<span class="sc">$</span>X</span></code></pre></div>
 <pre><code>## [1] -100</code></pre>
-<div class="sourceCode" id="cb470"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb470-1"><a href="cha-progr-with-models.html#cb470-1" aria-hidden="true" tabindex="-1"></a>CmyDataNF<span class="sc">$</span>Y</span></code></pre></div>
+<div class="sourceCode" id="cb470"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb470-1"><a href="cha-progr-with-models.html#cb470-1" tabindex="-1"></a>CmyDataNF<span class="sc">$</span>Y</span></code></pre></div>
 <pre><code>##  [1] -100 -101 -102 -103 -104 -105 -106 -107 -108 -109 -110</code></pre>
-<div class="sourceCode" id="cb472"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb472-1"><a href="cha-progr-with-models.html#cb472-1" aria-hidden="true" tabindex="-1"></a>CmyDataNF<span class="sc">$</span>Z</span></code></pre></div>
+<div class="sourceCode" id="cb472"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb472-1"><a href="cha-progr-with-models.html#cb472-1" tabindex="-1"></a>CmyDataNF<span class="sc">$</span>Z</span></code></pre></div>
 <pre><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
 ## [1,] -101 -103 -105 -107 -109 -111 -113 -115 -117  -119
 ## [2,] -102 -104 -106 -108 -110 -112 -114 -116 -118  -120</code></pre>
@@ -1261,49 +1262,49 @@ provided it as a setup argument to illustrate that option.</li>
 <h2><span class="header-section-number">15.5</span> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine<a href="cha-progr-with-models.html#sec:user-samplers" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>One important use of nimbleFunctions is to write additional samplers that can be used in NIMBLE’s MCMC engine. This allows a user to write a custom sampler for one or more nodes in a model, as well as for programmers to provide general samplers for use in addition to the library of samplers provided with NIMBLE.</p>
 <p>The following code illustrates how a NIMBLE developer would implement and use a Metropolis-Hastings random walk sampler with fixed proposal standard deviation.</p>
-<div class="sourceCode" id="cb474"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb474-1"><a href="cha-progr-with-models.html#cb474-1" aria-hidden="true" tabindex="-1"></a>my_RW <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb474-2"><a href="cha-progr-with-models.html#cb474-2" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb474-3"><a href="cha-progr-with-models.html#cb474-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">contains =</span> sampler_BASE,</span>
-<span id="cb474-4"><a href="cha-progr-with-models.html#cb474-4" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb474-5"><a href="cha-progr-with-models.html#cb474-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model, mvSaved, target, control) {</span>
-<span id="cb474-6"><a href="cha-progr-with-models.html#cb474-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># proposal standard deviation</span></span>
-<span id="cb474-7"><a href="cha-progr-with-models.html#cb474-7" aria-hidden="true" tabindex="-1"></a>        scale <span class="ot">&lt;-</span> <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(control<span class="sc">$</span>scale)) control<span class="sc">$</span>scale <span class="cf">else</span> <span class="dv">1</span></span>
-<span id="cb474-8"><a href="cha-progr-with-models.html#cb474-8" aria-hidden="true" tabindex="-1"></a>        calcNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(target)</span>
-<span id="cb474-9"><a href="cha-progr-with-models.html#cb474-9" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb474-10"><a href="cha-progr-with-models.html#cb474-10" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb474-11"><a href="cha-progr-with-models.html#cb474-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>() {</span>
-<span id="cb474-12"><a href="cha-progr-with-models.html#cb474-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># initial model logProb</span></span>
-<span id="cb474-13"><a href="cha-progr-with-models.html#cb474-13" aria-hidden="true" tabindex="-1"></a>        model_lp_initial <span class="ot">&lt;-</span> <span class="fu">getLogProb</span>(model, calcNodes) </span>
-<span id="cb474-14"><a href="cha-progr-with-models.html#cb474-14" aria-hidden="true" tabindex="-1"></a>        <span class="co"># generate proposal</span></span>
-<span id="cb474-15"><a href="cha-progr-with-models.html#cb474-15" aria-hidden="true" tabindex="-1"></a>        proposal <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, model[[target]], scale)     </span>
-<span id="cb474-16"><a href="cha-progr-with-models.html#cb474-16" aria-hidden="true" tabindex="-1"></a>        <span class="co"># store proposal into model</span></span>
-<span id="cb474-17"><a href="cha-progr-with-models.html#cb474-17" aria-hidden="true" tabindex="-1"></a>        model[[target]] <span class="ot">&lt;&lt;-</span> proposal                    </span>
-<span id="cb474-18"><a href="cha-progr-with-models.html#cb474-18" aria-hidden="true" tabindex="-1"></a>        <span class="co"># proposal model logProb</span></span>
-<span id="cb474-19"><a href="cha-progr-with-models.html#cb474-19" aria-hidden="true" tabindex="-1"></a>        model_lp_proposed <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">calculate</span>(calcNodes)</span>
-<span id="cb474-20"><a href="cha-progr-with-models.html#cb474-20" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb474-21"><a href="cha-progr-with-models.html#cb474-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># log-Metropolis-Hastings ratio</span></span>
-<span id="cb474-22"><a href="cha-progr-with-models.html#cb474-22" aria-hidden="true" tabindex="-1"></a>        log_MH_ratio <span class="ot">&lt;-</span> model_lp_proposed <span class="sc">-</span> model_lp_initial</span>
-<span id="cb474-23"><a href="cha-progr-with-models.html#cb474-23" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb474-24"><a href="cha-progr-with-models.html#cb474-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Metropolis-Hastings step: determine whether or</span></span>
-<span id="cb474-25"><a href="cha-progr-with-models.html#cb474-25" aria-hidden="true" tabindex="-1"></a>        <span class="co"># not to accept the newly proposed value</span></span>
-<span id="cb474-26"><a href="cha-progr-with-models.html#cb474-26" aria-hidden="true" tabindex="-1"></a>        u <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb474-27"><a href="cha-progr-with-models.html#cb474-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(u <span class="sc">&lt;</span> <span class="fu">exp</span>(log_MH_ratio)) jump <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
-<span id="cb474-28"><a href="cha-progr-with-models.html#cb474-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>                      jump <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
-<span id="cb474-29"><a href="cha-progr-with-models.html#cb474-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb474-30"><a href="cha-progr-with-models.html#cb474-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># keep the model and mvSaved objects consistent</span></span>
-<span id="cb474-31"><a href="cha-progr-with-models.html#cb474-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(jump) <span class="fu">copy</span>(<span class="at">from =</span> model, <span class="at">to =</span> mvSaved, <span class="at">row =</span> <span class="dv">1</span>, </span>
-<span id="cb474-32"><a href="cha-progr-with-models.html#cb474-32" aria-hidden="true" tabindex="-1"></a>                         <span class="at">nodes =</span> calcNodes, <span class="at">logProb =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb474-33"><a href="cha-progr-with-models.html#cb474-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>     <span class="fu">copy</span>(<span class="at">from =</span> mvSaved, <span class="at">to =</span> model, <span class="at">row =</span> <span class="dv">1</span>,</span>
-<span id="cb474-34"><a href="cha-progr-with-models.html#cb474-34" aria-hidden="true" tabindex="-1"></a>                         <span class="at">nodes =</span> calcNodes, <span class="at">logProb =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb474-35"><a href="cha-progr-with-models.html#cb474-35" aria-hidden="true" tabindex="-1"></a>    },</span>
-<span id="cb474-36"><a href="cha-progr-with-models.html#cb474-36" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb474-37"><a href="cha-progr-with-models.html#cb474-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(   <span class="at">reset =</span> <span class="cf">function</span> () {}   )</span>
-<span id="cb474-38"><a href="cha-progr-with-models.html#cb474-38" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb474"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb474-1"><a href="cha-progr-with-models.html#cb474-1" tabindex="-1"></a>my_RW <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb474-2"><a href="cha-progr-with-models.html#cb474-2" tabindex="-1"></a>    </span>
+<span id="cb474-3"><a href="cha-progr-with-models.html#cb474-3" tabindex="-1"></a>    <span class="at">contains =</span> sampler_BASE,</span>
+<span id="cb474-4"><a href="cha-progr-with-models.html#cb474-4" tabindex="-1"></a>    </span>
+<span id="cb474-5"><a href="cha-progr-with-models.html#cb474-5" tabindex="-1"></a>    <span class="at">setup =</span> <span class="cf">function</span>(model, mvSaved, target, control) {</span>
+<span id="cb474-6"><a href="cha-progr-with-models.html#cb474-6" tabindex="-1"></a>        <span class="co"># proposal standard deviation</span></span>
+<span id="cb474-7"><a href="cha-progr-with-models.html#cb474-7" tabindex="-1"></a>        scale <span class="ot">&lt;-</span> <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(control<span class="sc">$</span>scale)) control<span class="sc">$</span>scale <span class="cf">else</span> <span class="dv">1</span></span>
+<span id="cb474-8"><a href="cha-progr-with-models.html#cb474-8" tabindex="-1"></a>        calcNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(target)</span>
+<span id="cb474-9"><a href="cha-progr-with-models.html#cb474-9" tabindex="-1"></a>    },</span>
+<span id="cb474-10"><a href="cha-progr-with-models.html#cb474-10" tabindex="-1"></a>    </span>
+<span id="cb474-11"><a href="cha-progr-with-models.html#cb474-11" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>() {</span>
+<span id="cb474-12"><a href="cha-progr-with-models.html#cb474-12" tabindex="-1"></a>        <span class="co"># initial model logProb</span></span>
+<span id="cb474-13"><a href="cha-progr-with-models.html#cb474-13" tabindex="-1"></a>        model_lp_initial <span class="ot">&lt;-</span> <span class="fu">getLogProb</span>(model, calcNodes) </span>
+<span id="cb474-14"><a href="cha-progr-with-models.html#cb474-14" tabindex="-1"></a>        <span class="co"># generate proposal</span></span>
+<span id="cb474-15"><a href="cha-progr-with-models.html#cb474-15" tabindex="-1"></a>        proposal <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, model[[target]], scale)     </span>
+<span id="cb474-16"><a href="cha-progr-with-models.html#cb474-16" tabindex="-1"></a>        <span class="co"># store proposal into model</span></span>
+<span id="cb474-17"><a href="cha-progr-with-models.html#cb474-17" tabindex="-1"></a>        model[[target]] <span class="ot">&lt;&lt;-</span> proposal                    </span>
+<span id="cb474-18"><a href="cha-progr-with-models.html#cb474-18" tabindex="-1"></a>        <span class="co"># proposal model logProb</span></span>
+<span id="cb474-19"><a href="cha-progr-with-models.html#cb474-19" tabindex="-1"></a>        model_lp_proposed <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">calculate</span>(calcNodes)</span>
+<span id="cb474-20"><a href="cha-progr-with-models.html#cb474-20" tabindex="-1"></a>        </span>
+<span id="cb474-21"><a href="cha-progr-with-models.html#cb474-21" tabindex="-1"></a>        <span class="co"># log-Metropolis-Hastings ratio</span></span>
+<span id="cb474-22"><a href="cha-progr-with-models.html#cb474-22" tabindex="-1"></a>        log_MH_ratio <span class="ot">&lt;-</span> model_lp_proposed <span class="sc">-</span> model_lp_initial</span>
+<span id="cb474-23"><a href="cha-progr-with-models.html#cb474-23" tabindex="-1"></a>        </span>
+<span id="cb474-24"><a href="cha-progr-with-models.html#cb474-24" tabindex="-1"></a>        <span class="co"># Metropolis-Hastings step: determine whether or</span></span>
+<span id="cb474-25"><a href="cha-progr-with-models.html#cb474-25" tabindex="-1"></a>        <span class="co"># not to accept the newly proposed value</span></span>
+<span id="cb474-26"><a href="cha-progr-with-models.html#cb474-26" tabindex="-1"></a>        u <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb474-27"><a href="cha-progr-with-models.html#cb474-27" tabindex="-1"></a>        <span class="cf">if</span>(u <span class="sc">&lt;</span> <span class="fu">exp</span>(log_MH_ratio)) jump <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb474-28"><a href="cha-progr-with-models.html#cb474-28" tabindex="-1"></a>        <span class="cf">else</span>                      jump <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb474-29"><a href="cha-progr-with-models.html#cb474-29" tabindex="-1"></a></span>
+<span id="cb474-30"><a href="cha-progr-with-models.html#cb474-30" tabindex="-1"></a>        <span class="co"># keep the model and mvSaved objects consistent</span></span>
+<span id="cb474-31"><a href="cha-progr-with-models.html#cb474-31" tabindex="-1"></a>        <span class="cf">if</span>(jump) <span class="fu">copy</span>(<span class="at">from =</span> model, <span class="at">to =</span> mvSaved, <span class="at">row =</span> <span class="dv">1</span>, </span>
+<span id="cb474-32"><a href="cha-progr-with-models.html#cb474-32" tabindex="-1"></a>                         <span class="at">nodes =</span> calcNodes, <span class="at">logProb =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb474-33"><a href="cha-progr-with-models.html#cb474-33" tabindex="-1"></a>        <span class="cf">else</span>     <span class="fu">copy</span>(<span class="at">from =</span> mvSaved, <span class="at">to =</span> model, <span class="at">row =</span> <span class="dv">1</span>,</span>
+<span id="cb474-34"><a href="cha-progr-with-models.html#cb474-34" tabindex="-1"></a>                         <span class="at">nodes =</span> calcNodes, <span class="at">logProb =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb474-35"><a href="cha-progr-with-models.html#cb474-35" tabindex="-1"></a>    },</span>
+<span id="cb474-36"><a href="cha-progr-with-models.html#cb474-36" tabindex="-1"></a>    </span>
+<span id="cb474-37"><a href="cha-progr-with-models.html#cb474-37" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(   <span class="at">reset =</span> <span class="cf">function</span> () {}   )</span>
+<span id="cb474-38"><a href="cha-progr-with-models.html#cb474-38" tabindex="-1"></a>)</span></code></pre></div>
 <p>The name of this sampler function, for the purposes of using it in an<br />
 MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added
 to an exisiting MCMC configuration object <code>conf</code> using:</p>
-<div class="sourceCode" id="cb475"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb475-1"><a href="cha-progr-with-models.html#cb475-1" aria-hidden="true" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&#39;x&#39;</span>, <span class="at">type =</span> <span class="st">&#39;my_RW&#39;</span>,</span>
-<span id="cb475-2"><a href="cha-progr-with-models.html#cb475-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">control =</span> <span class="fu">list</span>(<span class="at">scale =</span> <span class="fl">0.1</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb475"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb475-1"><a href="cha-progr-with-models.html#cb475-1" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&#39;x&#39;</span>, <span class="at">type =</span> <span class="st">&#39;my_RW&#39;</span>,</span>
+<span id="cb475-2"><a href="cha-progr-with-models.html#cb475-2" tabindex="-1"></a>                    <span class="at">control =</span> <span class="fu">list</span>(<span class="at">scale =</span> <span class="fl">0.1</span>))</span></code></pre></div>
 <p>To be used within the MCMC engine, sampler functions definitions must
 adhere exactly to the following:</p>
 <ul>
@@ -1331,7 +1332,7 @@ probability calculations are done using <code>model$calculate(calcNodes)</code>.
 <p>The purpose of the <code>mvSaved</code> modelValues object is to store the state of the model, including both node values and log probability values, as it exists before any changes are made by the sampler. This allows restoration of the state when a proposal is rejected, as can be seen in the example above. When a proposal is accepted, one should copy from the model into the <code>mvSaved</code> object. NIMBLE’s MCMC engine expects that <code>mvSaved</code> contains an up-to-date copy of model values and logProb values at the end of the run code of a sampler.</p>
 <p>Note that NIMBLE generally expects the user-defined sampler to be defined in the global environment.
 If you define it in a function (which would generally be the case if you are using it in the context of parallelization), one approach would be to assign the user-defined sampler to the global environment in your function:</p>
-<div class="sourceCode" id="cb476"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb476-1"><a href="cha-progr-with-models.html#cb476-1" aria-hidden="true" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;sampler_yourSampler&#39;</span>, sampler_yourSampler, <span class="at">envir =</span> .GlobalEnv)</span></code></pre></div>
+<div class="sourceCode" id="cb476"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb476-1"><a href="cha-progr-with-models.html#cb476-1" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;sampler_yourSampler&#39;</span>, sampler_yourSampler, <span class="at">envir =</span> .GlobalEnv)</span></code></pre></div>
 <div id="user-defined-samplers-and-posterior-predictive-nodes" class="section level3 hasAnchor" number="15.5.1">
 <h3><span class="header-section-number">15.5.1</span> User-defined samplers and posterior predictive nodes<a href="cha-progr-with-models.html#user-defined-samplers-and-posterior-predictive-nodes" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>As of version 0.13.0, NIMBLE’s handling of posterior predictive nodes in MCMC sampling has changed in order to improve MCMC mixing. Samplers for nodes that are not posterior predictive nodes no longer condition on the values of the posterior predictive nodes. This is done by two changes:</p>
@@ -1408,23 +1409,23 @@ Expert users fluent in C++ may also try setting <code>nimbleOptions(pauseAfterWr
 <h2><span class="header-section-number">15.8</span> Timing nimbleFunctions with <em>run.time</em><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>If your nimbleFunctions are correct but slow to run, you can use benchmarking tools to look for bottlenecks and to compare different implementations.
 If your functions are very long-running (say 1ms or more), then standard R benchmarking tools may suffice, e.g. the <code>microbenchmark</code> package</p>
-<div class="sourceCode" id="cb477"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb477-1"><a href="cha-progr-with-models.html#cb477-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(microbenchmark)</span>
-<span id="cb477-2"><a href="cha-progr-with-models.html#cb477-2" aria-hidden="true" tabindex="-1"></a><span class="fu">microbenchmark</span>(<span class="fu">myCompiledFunVersion1</span>(<span class="fl">1.234</span>),</span>
-<span id="cb477-3"><a href="cha-progr-with-models.html#cb477-3" aria-hidden="true" tabindex="-1"></a>               <span class="fu">myCompiledFunVersion2</span>(<span class="fl">1.234</span>))  <span class="co"># Beware R &lt;--&gt; C++ overhead!</span></span></code></pre></div>
+<div class="sourceCode" id="cb477"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb477-1"><a href="cha-progr-with-models.html#cb477-1" tabindex="-1"></a><span class="fu">library</span>(microbenchmark)</span>
+<span id="cb477-2"><a href="cha-progr-with-models.html#cb477-2" tabindex="-1"></a><span class="fu">microbenchmark</span>(<span class="fu">myCompiledFunVersion1</span>(<span class="fl">1.234</span>),</span>
+<span id="cb477-3"><a href="cha-progr-with-models.html#cb477-3" tabindex="-1"></a>               <span class="fu">myCompiledFunVersion2</span>(<span class="fl">1.234</span>))  <span class="co"># Beware R &lt;--&gt; C++ overhead!</span></span></code></pre></div>
 <p>If your nimbleFunctions are very fast, say under 1ms, then <code>microbenchmark</code> will be inaccurate due to R-to-C++ conversion overhead (that won’t happen in your actual functions).
 To get timing information in C++, NIMBLE provides a <code>run.time</code> function that avoids the R-to-C++ overhead.</p>
-<div class="sourceCode" id="cb478"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb478-1"><a href="cha-progr-with-models.html#cb478-1" aria-hidden="true" tabindex="-1"></a>myMicrobenchmark <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(<span class="fu">nimbleFunction</span>(</span>
-<span id="cb478-2"><a href="cha-progr-with-models.html#cb478-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">iters =</span> <span class="fu">integer</span>(<span class="dv">0</span>)){</span>
-<span id="cb478-3"><a href="cha-progr-with-models.html#cb478-3" aria-hidden="true" tabindex="-1"></a>        time1 <span class="ot">&lt;-</span> <span class="fu">run.time</span>({</span>
-<span id="cb478-4"><a href="cha-progr-with-models.html#cb478-4" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>iters) <span class="fu">myCompiledFunVersion1</span>(<span class="fl">1.234</span>)</span>
-<span id="cb478-5"><a href="cha-progr-with-models.html#cb478-5" aria-hidden="true" tabindex="-1"></a>        })</span>
-<span id="cb478-6"><a href="cha-progr-with-models.html#cb478-6" aria-hidden="true" tabindex="-1"></a>        time2 <span class="ot">&lt;-</span> <span class="fu">run.time</span>({</span>
-<span id="cb478-7"><a href="cha-progr-with-models.html#cb478-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>iters) <span class="fu">myCompiledFunVersion2</span>(<span class="fl">1.234</span>)</span>
-<span id="cb478-8"><a href="cha-progr-with-models.html#cb478-8" aria-hidden="true" tabindex="-1"></a>        })</span>
-<span id="cb478-9"><a href="cha-progr-with-models.html#cb478-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">c</span>(time1, time2))</span>
-<span id="cb478-10"><a href="cha-progr-with-models.html#cb478-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
-<span id="cb478-11"><a href="cha-progr-with-models.html#cb478-11" aria-hidden="true" tabindex="-1"></a>    }))</span>
-<span id="cb478-12"><a href="cha-progr-with-models.html#cb478-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">myMicroBenchmark</span>(<span class="dv">100000</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb478"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb478-1"><a href="cha-progr-with-models.html#cb478-1" tabindex="-1"></a>myMicrobenchmark <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(<span class="fu">nimbleFunction</span>(</span>
+<span id="cb478-2"><a href="cha-progr-with-models.html#cb478-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">iters =</span> <span class="fu">integer</span>(<span class="dv">0</span>)){</span>
+<span id="cb478-3"><a href="cha-progr-with-models.html#cb478-3" tabindex="-1"></a>        time1 <span class="ot">&lt;-</span> <span class="fu">run.time</span>({</span>
+<span id="cb478-4"><a href="cha-progr-with-models.html#cb478-4" tabindex="-1"></a>            <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>iters) <span class="fu">myCompiledFunVersion1</span>(<span class="fl">1.234</span>)</span>
+<span id="cb478-5"><a href="cha-progr-with-models.html#cb478-5" tabindex="-1"></a>        })</span>
+<span id="cb478-6"><a href="cha-progr-with-models.html#cb478-6" tabindex="-1"></a>        time2 <span class="ot">&lt;-</span> <span class="fu">run.time</span>({</span>
+<span id="cb478-7"><a href="cha-progr-with-models.html#cb478-7" tabindex="-1"></a>            <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>iters) <span class="fu">myCompiledFunVersion2</span>(<span class="fl">1.234</span>)</span>
+<span id="cb478-8"><a href="cha-progr-with-models.html#cb478-8" tabindex="-1"></a>        })</span>
+<span id="cb478-9"><a href="cha-progr-with-models.html#cb478-9" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">c</span>(time1, time2))</span>
+<span id="cb478-10"><a href="cha-progr-with-models.html#cb478-10" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb478-11"><a href="cha-progr-with-models.html#cb478-11" tabindex="-1"></a>    }))</span>
+<span id="cb478-12"><a href="cha-progr-with-models.html#cb478-12" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">myMicroBenchmark</span>(<span class="dv">100000</span>))</span></code></pre></div>
 </div>
 <div id="clearing-and-unloading-compiled-objects" class="section level2 hasAnchor" number="15.9">
 <h2><span class="header-section-number">15.9</span> Clearing and unloading compiled objects<a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects" class="anchor-section" aria-label="Anchor link to header"></a></h2>
