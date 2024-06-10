@@ -1,5 +1,4 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
-context("Testing of numeric type handling and casting")
 
 RwarnLevel <- options('warn')$warn
 ## There are a bunch of NaN warnings we want to ignore.

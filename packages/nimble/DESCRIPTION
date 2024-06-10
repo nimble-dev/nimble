@@ -14,8 +14,8 @@ Description: A system for writing hierarchical statistical models largely
     of MCMC as the main goal of the 'BUGS'/'JAGS' language for writing models,
     one can use 'NIMBLE' for writing arbitrary other kinds of model-generic
     algorithms as well. A full User Manual is available at <https://r-nimble.org>.
-Version: 1.1.0
-Date: 2024-01-29
+Version: 1.2.0
+Date: 2024-06-07
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
     person("Perry", "de Valpine", role = "aut"),
@@ -30,7 +30,7 @@ Authors@R: c(
     person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
-    person("Paul", "van Dam-Bates", role = "aut", comment = "nimIntegrate"),
+    person("Paul", "van Dam-Bates", role = "aut", comment = "AGHQ approximation, P\u00f3lya-Gamma sampler, nimIntegrate"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
     person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
     person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")
@@ -40,7 +40,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6,pracma,numDeriv
 Suggests:
-    testthat
+    testthat,mcmcse
 URL: https://r-nimble.org, https://github.com/nimble-dev/nimble
 BugReports: https://github.com/nimble-dev/nimble/issues
 SystemRequirements: GNU make
@@ -148,5 +148,6 @@ Collate:
     setNimbleInternalFunctions.R
     registration.R
     nimble-package.r
+    QuadratureGrids.R
     zzz.R
 RoxygenNote: 7.2.3

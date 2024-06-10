@@ -138,14 +138,14 @@ wish_test_log <- make_AD_test2(
       # populate 2D matrices from the vectors
       # created from upper triangular values.
       x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
-      chol2D <- nimMatrix(nrow = 4, ncol = 4, init = FALSE)
+      chol2D <- nimMatrix(0, nrow = 4, ncol = 4)
       i <- 1L
       j <- 1L
       indOrig <- 1L
       for(j in 1:4) {
         for(i in 1:j) {
           x2D[i,j] <- x2D[j,i] <- x[indOrig]
-          chol2D[i,j] <- chol[indOrig]  # chol2D does not need lower triangular entries
+          chol2D[i,j] <- chol[indOrig]  
           indOrig <- indOrig + 1
         }
       }
@@ -185,14 +185,14 @@ invwish_test_log <- make_AD_test2(
       # populate 2D matrices from the vectors
       # created from upper triangular values.
       x2D <- nimMatrix(nrow = 4, ncol = 4, init=FALSE)
-      chol2D <- nimMatrix(nrow = 4, ncol = 4, init = FALSE)
+      chol2D <- nimMatrix(0, nrow = 4, ncol = 4)
       i <- 1L
       j <- 1L
       indOrig <- 1L
       for(j in 1:4) {
         for(i in 1:j) {
           x2D[i,j] <- x2D[j,i] <- x[indOrig]
-          chol2D[i,j] <- chol[indOrig]  # chol2D does not need lower triangular entries
+          chol2D[i,j] <- chol[indOrig] 
           indOrig <- indOrig + 1
         }
       }
@@ -226,8 +226,8 @@ lkj_test_log <- make_AD_test2(
     opParam = list(name = "dlkj_corr_cholesky manual"),
     expr = quote({
       # correlation matrix inverse transform 
-      z <- nimMatrix(nrow = 5, ncol = 5, init=FALSE)
-      u <- nimMatrix(nrow = 5, ncol = 5, init=FALSE)
+      z <- nimMatrix(nrow = 5, ncol = 5)
+      u <- nimMatrix(nrow = 5, ncol = 5)
         
       j <- 1L
       i <- 1L
@@ -241,8 +241,9 @@ lkj_test_log <- make_AD_test2(
       u[2,3:5] <- z[2,3:5]*sqrt(1-u[1,3:5]^2)
       u[3,4:5] <- z[3,4:5]*sqrt(1-u[1,4:5]^2-u[2,4:5]^2)
       u[4,5] <- z[4,5]*sqrt(1-u[1,5]^2-u[2,5]^2-u[3,5]^2)
-      for(j in 1:5)
-          u[j,j] <- sqrt(1-sum(u[1:5,j]^2))
+      u[1,1] <- 1
+      for(j in 2:5)
+          u[j,j] <- sqrt(1-sum(u[1:(j-1),j]^2))
       out <- dlkj_corr_cholesky(x = u, eta = eta, p = 5, log = log)
     }),
     args = list(

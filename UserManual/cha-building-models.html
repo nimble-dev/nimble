@@ -54,7 +54,7 @@
 
 <style type="text/css">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -64,7 +64,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -126,6 +126,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
+  margin-bottom: 0em;
 }
 .hanging div.csl-entry {
   margin-left:2em;
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.1.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -282,7 +283,7 @@ div.csl-indent {
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo, Particle MCMC, Iterated Filtering, and MCEM</a>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
 <ul>
@@ -293,6 +294,7 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
+<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#laplace-approximation-and-adaptive-gauss-hermite-quadrature"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 </ul></li>
 <li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
 <ul>
@@ -361,13 +363,14 @@ div.csl-indent {
 <li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
 <li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined distributions and functions for models</a>
 <ul>
 <li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
 <li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
 <ul>
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
+<li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
 </ul></li>
 <li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
 <ul>
@@ -445,15 +448,15 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#how-to-use-laplace-approximation"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
 <li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
 <li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
-<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#holding-some-local-variables-out-of-derivative-tracking"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
 <li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
-<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#understanding-more-about-how-ad-works-taping-of-operations"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
 <li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
 <li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
 </ul></li>
@@ -504,27 +507,27 @@ provided at this step. Data and initial values can optionally be
 provided. BUGS code passed to <code>nimbleModel</code> must go through
 <code>nimbleCode</code>.</p>
 <p>We look again at the pump example from the introduction:</p>
-<div class="sourceCode" id="cb90"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb90-1"><a href="cha-building-models.html#cb90-1" aria-hidden="true" tabindex="-1"></a>pumpCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({ </span>
-<span id="cb90-2"><a href="cha-building-models.html#cb90-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
-<span id="cb90-3"><a href="cha-building-models.html#cb90-3" aria-hidden="true" tabindex="-1"></a>      theta[i] <span class="sc">~</span> <span class="fu">dgamma</span>(alpha,beta);</span>
-<span id="cb90-4"><a href="cha-building-models.html#cb90-4" aria-hidden="true" tabindex="-1"></a>      lambda[i] <span class="ot">&lt;-</span> theta[i]<span class="sc">*</span>t[i];</span>
-<span id="cb90-5"><a href="cha-building-models.html#cb90-5" aria-hidden="true" tabindex="-1"></a>      x[i] <span class="sc">~</span> <span class="fu">dpois</span>(lambda[i])</span>
-<span id="cb90-6"><a href="cha-building-models.html#cb90-6" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb90-7"><a href="cha-building-models.html#cb90-7" aria-hidden="true" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">1.0</span>);</span>
-<span id="cb90-8"><a href="cha-building-models.html#cb90-8" aria-hidden="true" tabindex="-1"></a>  beta <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>);</span>
-<span id="cb90-9"><a href="cha-building-models.html#cb90-9" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb90-10"><a href="cha-building-models.html#cb90-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-11"><a href="cha-building-models.html#cb90-11" aria-hidden="true" tabindex="-1"></a>pumpConsts <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>,</span>
-<span id="cb90-12"><a href="cha-building-models.html#cb90-12" aria-hidden="true" tabindex="-1"></a>               <span class="at">t =</span> <span class="fu">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,</span>
-<span id="cb90-13"><a href="cha-building-models.html#cb90-13" aria-hidden="true" tabindex="-1"></a>                 <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))</span>
-<span id="cb90-14"><a href="cha-building-models.html#cb90-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-15"><a href="cha-building-models.html#cb90-15" aria-hidden="true" tabindex="-1"></a>pumpData <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))</span>
-<span id="cb90-16"><a href="cha-building-models.html#cb90-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-17"><a href="cha-building-models.html#cb90-17" aria-hidden="true" tabindex="-1"></a>pumpInits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">beta =</span> <span class="dv">1</span>,</span>
-<span id="cb90-18"><a href="cha-building-models.html#cb90-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">theta =</span> <span class="fu">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="sc">$</span>N))</span>
-<span id="cb90-19"><a href="cha-building-models.html#cb90-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-20"><a href="cha-building-models.html#cb90-20" aria-hidden="true" tabindex="-1"></a>pump <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> pumpCode, <span class="at">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="at">constants =</span> pumpConsts,</span>
-<span id="cb90-21"><a href="cha-building-models.html#cb90-21" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> pumpData, <span class="at">inits =</span> pumpInits)</span></code></pre></div>
+<div class="sourceCode" id="cb91"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb91-1"><a href="cha-building-models.html#cb91-1" tabindex="-1"></a>pumpCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({ </span>
+<span id="cb91-2"><a href="cha-building-models.html#cb91-2" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb91-3"><a href="cha-building-models.html#cb91-3" tabindex="-1"></a>      theta[i] <span class="sc">~</span> <span class="fu">dgamma</span>(alpha,beta);</span>
+<span id="cb91-4"><a href="cha-building-models.html#cb91-4" tabindex="-1"></a>      lambda[i] <span class="ot">&lt;-</span> theta[i]<span class="sc">*</span>t[i];</span>
+<span id="cb91-5"><a href="cha-building-models.html#cb91-5" tabindex="-1"></a>      x[i] <span class="sc">~</span> <span class="fu">dpois</span>(lambda[i])</span>
+<span id="cb91-6"><a href="cha-building-models.html#cb91-6" tabindex="-1"></a>  }</span>
+<span id="cb91-7"><a href="cha-building-models.html#cb91-7" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dexp</span>(<span class="fl">1.0</span>);</span>
+<span id="cb91-8"><a href="cha-building-models.html#cb91-8" tabindex="-1"></a>  beta <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>);</span>
+<span id="cb91-9"><a href="cha-building-models.html#cb91-9" tabindex="-1"></a>})</span>
+<span id="cb91-10"><a href="cha-building-models.html#cb91-10" tabindex="-1"></a></span>
+<span id="cb91-11"><a href="cha-building-models.html#cb91-11" tabindex="-1"></a>pumpConsts <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>,</span>
+<span id="cb91-12"><a href="cha-building-models.html#cb91-12" tabindex="-1"></a>               <span class="at">t =</span> <span class="fu">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,</span>
+<span id="cb91-13"><a href="cha-building-models.html#cb91-13" tabindex="-1"></a>                 <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))</span>
+<span id="cb91-14"><a href="cha-building-models.html#cb91-14" tabindex="-1"></a></span>
+<span id="cb91-15"><a href="cha-building-models.html#cb91-15" tabindex="-1"></a>pumpData <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))</span>
+<span id="cb91-16"><a href="cha-building-models.html#cb91-16" tabindex="-1"></a></span>
+<span id="cb91-17"><a href="cha-building-models.html#cb91-17" tabindex="-1"></a>pumpInits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">beta =</span> <span class="dv">1</span>,</span>
+<span id="cb91-18"><a href="cha-building-models.html#cb91-18" tabindex="-1"></a>              <span class="at">theta =</span> <span class="fu">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="sc">$</span>N))</span>
+<span id="cb91-19"><a href="cha-building-models.html#cb91-19" tabindex="-1"></a></span>
+<span id="cb91-20"><a href="cha-building-models.html#cb91-20" tabindex="-1"></a>pump <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> pumpCode, <span class="at">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="at">constants =</span> pumpConsts,</span>
+<span id="cb91-21"><a href="cha-building-models.html#cb91-21" tabindex="-1"></a>                    <span class="at">data =</span> pumpData, <span class="at">inits =</span> pumpInits)</span></code></pre></div>
 <div id="sec:data-constants" class="section level4 hasAnchor" number="6.1.1.1">
 <h4><span class="header-section-number">6.1.1.1</span> Data and constants<a href="cha-building-models.html#sec:data-constants" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>NIMBLE makes a distinction between data and constants:</p>
@@ -583,7 +586,7 @@ are deterministically calculated.</p>
 <p>To change data values without any modification of which nodes are
 flagged as containing data, simply use R’s usual assignment syntax
 to assign values in a compiled (or, more rarely, an uncompiled) model, e.g.,</p>
-<div class="sourceCode" id="cb91"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb91-1"><a href="cha-building-models.html#cb91-1" aria-hidden="true" tabindex="-1"></a>cModel<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">1.7</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb92"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb92-1"><a href="cha-building-models.html#cb92-1" tabindex="-1"></a>cModel<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="fl">2.5</span>, <span class="fl">1.7</span>)</span></code></pre></div>
 <p>This can be useful for running an MCMC with a different dataset of the same size
 (and of course the same pattern of missingness, if any) without
 having to rebuild and recompile the MCMC, such as in a simulation study.
@@ -602,13 +605,13 @@ of the observations taken to be missing. Some of the steps in this
 example are documented more below. NIMBLE’s default MCMC
 configuration will treat the missing values as unknowns to be sampled,
 as can be seen in the MCMC output here.</p>
-<div class="sourceCode" id="cb92"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb92-1"><a href="cha-building-models.html#cb92-1" aria-hidden="true" tabindex="-1"></a>pumpMiss <span class="ot">&lt;-</span> pump<span class="sc">$</span><span class="fu">newModel</span>()</span>
-<span id="cb92-2"><a href="cha-building-models.html#cb92-2" aria-hidden="true" tabindex="-1"></a>pumpMiss<span class="sc">$</span><span class="fu">resetData</span>()</span>
-<span id="cb92-3"><a href="cha-building-models.html#cb92-3" aria-hidden="true" tabindex="-1"></a>pumpDataNew <span class="ot">&lt;-</span> pumpData</span>
-<span id="cb92-4"><a href="cha-building-models.html#cb92-4" aria-hidden="true" tabindex="-1"></a>pumpDataNew<span class="sc">$</span>x[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb92-5"><a href="cha-building-models.html#cb92-5" aria-hidden="true" tabindex="-1"></a>pumpMiss<span class="sc">$</span><span class="fu">setData</span>(pumpDataNew)</span>
-<span id="cb92-6"><a href="cha-building-models.html#cb92-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb92-7"><a href="cha-building-models.html#cb92-7" aria-hidden="true" tabindex="-1"></a>pumpMissConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(pumpMiss)</span></code></pre></div>
+<div class="sourceCode" id="cb93"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb93-1"><a href="cha-building-models.html#cb93-1" tabindex="-1"></a>pumpMiss <span class="ot">&lt;-</span> pump<span class="sc">$</span><span class="fu">newModel</span>()</span>
+<span id="cb93-2"><a href="cha-building-models.html#cb93-2" tabindex="-1"></a>pumpMiss<span class="sc">$</span><span class="fu">resetData</span>()</span>
+<span id="cb93-3"><a href="cha-building-models.html#cb93-3" tabindex="-1"></a>pumpDataNew <span class="ot">&lt;-</span> pumpData</span>
+<span id="cb93-4"><a href="cha-building-models.html#cb93-4" tabindex="-1"></a>pumpDataNew<span class="sc">$</span>x[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb93-5"><a href="cha-building-models.html#cb93-5" tabindex="-1"></a>pumpMiss<span class="sc">$</span><span class="fu">setData</span>(pumpDataNew)</span>
+<span id="cb93-6"><a href="cha-building-models.html#cb93-6" tabindex="-1"></a></span>
+<span id="cb93-7"><a href="cha-building-models.html#cb93-7" tabindex="-1"></a>pumpMissConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(pumpMiss)</span></code></pre></div>
 <pre><code>## ===== Monitors =====
 ## thin = 1: alpha, beta
 ## ===== Samplers =====
@@ -620,17 +623,17 @@ as can be seen in the MCMC output here.</p>
 ##   - beta
 ##   - theta[]  (8 elements)
 ## ===== Comments =====</code></pre>
-<div class="sourceCode" id="cb94"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb94-1"><a href="cha-building-models.html#cb94-1" aria-hidden="true" tabindex="-1"></a>pumpMissConf<span class="sc">$</span><span class="fu">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb95"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb95-1"><a href="cha-building-models.html#cb95-1" tabindex="-1"></a>pumpMissConf<span class="sc">$</span><span class="fu">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</span></code></pre></div>
 <pre><code>## thin = 1: alpha, beta, theta, x</code></pre>
-<div class="sourceCode" id="cb96"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb96-1"><a href="cha-building-models.html#cb96-1" aria-hidden="true" tabindex="-1"></a>pumpMissMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(pumpMissConf)</span>
-<span id="cb96-2"><a href="cha-building-models.html#cb96-2" aria-hidden="true" tabindex="-1"></a>Cobj <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(pumpMiss, pumpMissMCMC)</span>
-<span id="cb96-3"><a href="cha-building-models.html#cb96-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-4"><a href="cha-building-models.html#cb96-4" aria-hidden="true" tabindex="-1"></a>niter <span class="ot">&lt;-</span> <span class="dv">10</span></span>
-<span id="cb96-5"><a href="cha-building-models.html#cb96-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">0</span>)</span>
-<span id="cb96-6"><a href="cha-building-models.html#cb96-6" aria-hidden="true" tabindex="-1"></a>Cobj<span class="sc">$</span>pumpMissMCMC<span class="sc">$</span><span class="fu">run</span>(niter)</span>
-<span id="cb96-7"><a href="cha-building-models.html#cb96-7" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(Cobj<span class="sc">$</span>pumpMissMCMC<span class="sc">$</span>mvSamples)</span>
-<span id="cb96-8"><a href="cha-building-models.html#cb96-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-9"><a href="cha-building-models.html#cb96-9" aria-hidden="true" tabindex="-1"></a>samples[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">13</span><span class="sc">:</span><span class="dv">17</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb97"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb97-1"><a href="cha-building-models.html#cb97-1" tabindex="-1"></a>pumpMissMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(pumpMissConf)</span>
+<span id="cb97-2"><a href="cha-building-models.html#cb97-2" tabindex="-1"></a>Cobj <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(pumpMiss, pumpMissMCMC)</span>
+<span id="cb97-3"><a href="cha-building-models.html#cb97-3" tabindex="-1"></a></span>
+<span id="cb97-4"><a href="cha-building-models.html#cb97-4" tabindex="-1"></a>niter <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb97-5"><a href="cha-building-models.html#cb97-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">0</span>)</span>
+<span id="cb97-6"><a href="cha-building-models.html#cb97-6" tabindex="-1"></a>Cobj<span class="sc">$</span>pumpMissMCMC<span class="sc">$</span><span class="fu">run</span>(niter)</span>
+<span id="cb97-7"><a href="cha-building-models.html#cb97-7" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(Cobj<span class="sc">$</span>pumpMissMCMC<span class="sc">$</span>mvSamples)</span>
+<span id="cb97-8"><a href="cha-building-models.html#cb97-8" tabindex="-1"></a></span>
+<span id="cb97-9"><a href="cha-building-models.html#cb97-9" tabindex="-1"></a>samples[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">13</span><span class="sc">:</span><span class="dv">17</span>]</span></code></pre></div>
 <pre><code>##      x[1] x[2] x[3] x[4] x[5]
 ## [1,]   12    1    0   14    3
 ## [2,]    7    1   35   14    3
@@ -650,32 +653,32 @@ NIMBLE, one can use definition-time if-then-else statements to create
 different models from the same code. As a simple example, say we have
 a linear regression model and want to consider including or omitting
 <code>x[2]</code> as an explanatory variable:</p>
-<div class="sourceCode" id="cb98"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb98-1"><a href="cha-building-models.html#cb98-1" aria-hidden="true" tabindex="-1"></a>regressionCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb98-2"><a href="cha-building-models.html#cb98-2" aria-hidden="true" tabindex="-1"></a>    intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
-<span id="cb98-3"><a href="cha-building-models.html#cb98-3" aria-hidden="true" tabindex="-1"></a>    slope1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
-<span id="cb98-4"><a href="cha-building-models.html#cb98-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(includeX2) {</span>
-<span id="cb98-5"><a href="cha-building-models.html#cb98-5" aria-hidden="true" tabindex="-1"></a>        slope2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
-<span id="cb98-6"><a href="cha-building-models.html#cb98-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) </span>
-<span id="cb98-7"><a href="cha-building-models.html#cb98-7" aria-hidden="true" tabindex="-1"></a>            predictedY[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope1 <span class="sc">*</span> x1[i] <span class="sc">+</span> slope2 <span class="sc">*</span> x2[i]</span>
-<span id="cb98-8"><a href="cha-building-models.html#cb98-8" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb98-9"><a href="cha-building-models.html#cb98-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) predictedY[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope1 <span class="sc">*</span> x1[i]</span>
-<span id="cb98-10"><a href="cha-building-models.html#cb98-10" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb98-11"><a href="cha-building-models.html#cb98-11" aria-hidden="true" tabindex="-1"></a>    sigmaY <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
-<span id="cb98-12"><a href="cha-building-models.html#cb98-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(predictedY[i], sigmaY)</span>
-<span id="cb98-13"><a href="cha-building-models.html#cb98-13" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb98-14"><a href="cha-building-models.html#cb98-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb98-15"><a href="cha-building-models.html#cb98-15" aria-hidden="true" tabindex="-1"></a>includeX2 <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
-<span id="cb98-16"><a href="cha-building-models.html#cb98-16" aria-hidden="true" tabindex="-1"></a>modelWithoutX2 <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(regressionCode, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">30</span>), </span>
-<span id="cb98-17"><a href="cha-building-models.html#cb98-17" aria-hidden="true" tabindex="-1"></a>                              <span class="at">check=</span><span class="cn">FALSE</span>)</span>
-<span id="cb98-18"><a href="cha-building-models.html#cb98-18" aria-hidden="true" tabindex="-1"></a>modelWithoutX2<span class="sc">$</span><span class="fu">getVarNames</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb99"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb99-1"><a href="cha-building-models.html#cb99-1" tabindex="-1"></a>regressionCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb99-2"><a href="cha-building-models.html#cb99-2" tabindex="-1"></a>    intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb99-3"><a href="cha-building-models.html#cb99-3" tabindex="-1"></a>    slope1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb99-4"><a href="cha-building-models.html#cb99-4" tabindex="-1"></a>    <span class="cf">if</span>(includeX2) {</span>
+<span id="cb99-5"><a href="cha-building-models.html#cb99-5" tabindex="-1"></a>        slope2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1000</span>)</span>
+<span id="cb99-6"><a href="cha-building-models.html#cb99-6" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) </span>
+<span id="cb99-7"><a href="cha-building-models.html#cb99-7" tabindex="-1"></a>            predictedY[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope1 <span class="sc">*</span> x1[i] <span class="sc">+</span> slope2 <span class="sc">*</span> x2[i]</span>
+<span id="cb99-8"><a href="cha-building-models.html#cb99-8" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb99-9"><a href="cha-building-models.html#cb99-9" tabindex="-1"></a>        <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) predictedY[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope1 <span class="sc">*</span> x1[i]</span>
+<span id="cb99-10"><a href="cha-building-models.html#cb99-10" tabindex="-1"></a>    }</span>
+<span id="cb99-11"><a href="cha-building-models.html#cb99-11" tabindex="-1"></a>    sigmaY <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb99-12"><a href="cha-building-models.html#cb99-12" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) Y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(predictedY[i], sigmaY)</span>
+<span id="cb99-13"><a href="cha-building-models.html#cb99-13" tabindex="-1"></a>})</span>
+<span id="cb99-14"><a href="cha-building-models.html#cb99-14" tabindex="-1"></a></span>
+<span id="cb99-15"><a href="cha-building-models.html#cb99-15" tabindex="-1"></a>includeX2 <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb99-16"><a href="cha-building-models.html#cb99-16" tabindex="-1"></a>modelWithoutX2 <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(regressionCode, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">30</span>), </span>
+<span id="cb99-17"><a href="cha-building-models.html#cb99-17" tabindex="-1"></a>                              <span class="at">check=</span><span class="cn">FALSE</span>)</span>
+<span id="cb99-18"><a href="cha-building-models.html#cb99-18" tabindex="-1"></a>modelWithoutX2<span class="sc">$</span><span class="fu">getVarNames</span>()</span></code></pre></div>
 <pre><code>## [1] &quot;intercept&quot;                       &quot;slope1&quot;                         
 ## [3] &quot;predictedY&quot;                      &quot;sigmaY&quot;                         
 ## [5] &quot;lifted_d1_over_sqrt_oPsigmaY_cP&quot; &quot;Y&quot;                              
 ## [7] &quot;x1&quot;</code></pre>
-<div class="sourceCode" id="cb100"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb100-1"><a href="cha-building-models.html#cb100-1" aria-hidden="true" tabindex="-1"></a>includeX2 <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
-<span id="cb100-2"><a href="cha-building-models.html#cb100-2" aria-hidden="true" tabindex="-1"></a>modelWithX2 <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(regressionCode, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">30</span>), </span>
-<span id="cb100-3"><a href="cha-building-models.html#cb100-3" aria-hidden="true" tabindex="-1"></a>                           <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb100-4"><a href="cha-building-models.html#cb100-4" aria-hidden="true" tabindex="-1"></a>modelWithX2<span class="sc">$</span><span class="fu">getVarNames</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb101"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb101-1"><a href="cha-building-models.html#cb101-1" tabindex="-1"></a>includeX2 <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb101-2"><a href="cha-building-models.html#cb101-2" tabindex="-1"></a>modelWithX2 <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(regressionCode, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">30</span>), </span>
+<span id="cb101-3"><a href="cha-building-models.html#cb101-3" tabindex="-1"></a>                           <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb101-4"><a href="cha-building-models.html#cb101-4" tabindex="-1"></a>modelWithX2<span class="sc">$</span><span class="fu">getVarNames</span>()</span></code></pre></div>
 <pre><code>## [1] &quot;intercept&quot;                       &quot;slope1&quot;                         
 ## [3] &quot;slope2&quot;                          &quot;predictedY&quot;                     
 ## [5] &quot;sigmaY&quot;                          &quot;lifted_d1_over_sqrt_oPsigmaY_cP&quot;
@@ -697,27 +700,27 @@ argument to <code>nimbleModel</code>.</p>
 <p>Here’s an example with multivariate nodes. The first provides indices, so
 no <code>dimensions</code> argument is needed, while the second omits the
 indices and provides a <code>dimensions</code> argument instead.</p>
-<div class="sourceCode" id="cb102"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb102-1"><a href="cha-building-models.html#cb102-1" aria-hidden="true" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb102-2"><a href="cha-building-models.html#cb102-2" aria-hidden="true" tabindex="-1"></a>  y[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">dmulti</span>(p[<span class="dv">1</span><span class="sc">:</span>K], n)</span>
-<span id="cb102-3"><a href="cha-building-models.html#cb102-3" aria-hidden="true" tabindex="-1"></a>  p[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K])</span>
-<span id="cb102-4"><a href="cha-building-models.html#cb102-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K]) <span class="sc">~</span> <span class="fu">dmnorm</span>(alpha0[<span class="dv">1</span><span class="sc">:</span>K], R[<span class="dv">1</span><span class="sc">:</span>K, <span class="dv">1</span><span class="sc">:</span>K])</span>
-<span id="cb102-5"><a href="cha-building-models.html#cb102-5" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb102-6"><a href="cha-building-models.html#cb102-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-7"><a href="cha-building-models.html#cb102-7" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb102-8"><a href="cha-building-models.html#cb102-8" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">3</span>, <span class="at">K =</span> K,</span>
-<span id="cb102-9"><a href="cha-building-models.html#cb102-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">alpha0 =</span> <span class="fu">rep</span>(<span class="dv">0</span>, K), <span class="at">R =</span> <span class="fu">diag</span>(K)),</span>
-<span id="cb102-10"><a href="cha-building-models.html#cb102-10" aria-hidden="true" tabindex="-1"></a>                     <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb102-11"><a href="cha-building-models.html#cb102-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-12"><a href="cha-building-models.html#cb102-12" aria-hidden="true" tabindex="-1"></a>codeAlt <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb102-13"><a href="cha-building-models.html#cb102-13" aria-hidden="true" tabindex="-1"></a>  y[] <span class="sc">~</span> <span class="fu">dmulti</span>(p[], n)</span>
-<span id="cb102-14"><a href="cha-building-models.html#cb102-14" aria-hidden="true" tabindex="-1"></a>  p[] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[])</span>
-<span id="cb102-15"><a href="cha-building-models.html#cb102-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log</span>(alpha[]) <span class="sc">~</span> <span class="fu">dmnorm</span>(alpha0[], R[ , ])</span>
-<span id="cb102-16"><a href="cha-building-models.html#cb102-16" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb102-17"><a href="cha-building-models.html#cb102-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-18"><a href="cha-building-models.html#cb102-18" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(codeAlt, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">3</span>, <span class="at">K =</span> K, <span class="at">alpha0 =</span> <span class="fu">rep</span>(<span class="dv">0</span>, K),</span>
-<span id="cb102-19"><a href="cha-building-models.html#cb102-19" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">R =</span> <span class="fu">diag</span>(K)),</span>
-<span id="cb102-20"><a href="cha-building-models.html#cb102-20" aria-hidden="true" tabindex="-1"></a>                              <span class="at">dimensions =</span> <span class="fu">list</span>(<span class="at">y =</span> K, <span class="at">p =</span> K, <span class="at">alpha =</span> K),</span>
-<span id="cb102-21"><a href="cha-building-models.html#cb102-21" aria-hidden="true" tabindex="-1"></a>                              <span class="at">check =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb103"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb103-1"><a href="cha-building-models.html#cb103-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb103-2"><a href="cha-building-models.html#cb103-2" tabindex="-1"></a>  y[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">dmulti</span>(p[<span class="dv">1</span><span class="sc">:</span>K], n)</span>
+<span id="cb103-3"><a href="cha-building-models.html#cb103-3" tabindex="-1"></a>  p[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K])</span>
+<span id="cb103-4"><a href="cha-building-models.html#cb103-4" tabindex="-1"></a>  <span class="fu">log</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K]) <span class="sc">~</span> <span class="fu">dmnorm</span>(alpha0[<span class="dv">1</span><span class="sc">:</span>K], R[<span class="dv">1</span><span class="sc">:</span>K, <span class="dv">1</span><span class="sc">:</span>K])</span>
+<span id="cb103-5"><a href="cha-building-models.html#cb103-5" tabindex="-1"></a>})</span>
+<span id="cb103-6"><a href="cha-building-models.html#cb103-6" tabindex="-1"></a></span>
+<span id="cb103-7"><a href="cha-building-models.html#cb103-7" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb103-8"><a href="cha-building-models.html#cb103-8" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">3</span>, <span class="at">K =</span> K,</span>
+<span id="cb103-9"><a href="cha-building-models.html#cb103-9" tabindex="-1"></a>                          <span class="at">alpha0 =</span> <span class="fu">rep</span>(<span class="dv">0</span>, K), <span class="at">R =</span> <span class="fu">diag</span>(K)),</span>
+<span id="cb103-10"><a href="cha-building-models.html#cb103-10" tabindex="-1"></a>                     <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb103-11"><a href="cha-building-models.html#cb103-11" tabindex="-1"></a></span>
+<span id="cb103-12"><a href="cha-building-models.html#cb103-12" tabindex="-1"></a>codeAlt <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb103-13"><a href="cha-building-models.html#cb103-13" tabindex="-1"></a>  y[] <span class="sc">~</span> <span class="fu">dmulti</span>(p[], n)</span>
+<span id="cb103-14"><a href="cha-building-models.html#cb103-14" tabindex="-1"></a>  p[] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[])</span>
+<span id="cb103-15"><a href="cha-building-models.html#cb103-15" tabindex="-1"></a>  <span class="fu">log</span>(alpha[]) <span class="sc">~</span> <span class="fu">dmnorm</span>(alpha0[], R[ , ])</span>
+<span id="cb103-16"><a href="cha-building-models.html#cb103-16" tabindex="-1"></a>})</span>
+<span id="cb103-17"><a href="cha-building-models.html#cb103-17" tabindex="-1"></a></span>
+<span id="cb103-18"><a href="cha-building-models.html#cb103-18" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(codeAlt, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">3</span>, <span class="at">K =</span> K, <span class="at">alpha0 =</span> <span class="fu">rep</span>(<span class="dv">0</span>, K),</span>
+<span id="cb103-19"><a href="cha-building-models.html#cb103-19" tabindex="-1"></a>                                               <span class="at">R =</span> <span class="fu">diag</span>(K)),</span>
+<span id="cb103-20"><a href="cha-building-models.html#cb103-20" tabindex="-1"></a>                              <span class="at">dimensions =</span> <span class="fu">list</span>(<span class="at">y =</span> K, <span class="at">p =</span> K, <span class="at">alpha =</span> K),</span>
+<span id="cb103-21"><a href="cha-building-models.html#cb103-21" tabindex="-1"></a>                              <span class="at">check =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
 <p>In that example, since <code>alpha0</code> and <code>R</code> are provided as constants, we don’t need to specify their dimensions.</p>
 </div>
 </div>
@@ -733,9 +736,9 @@ In either case, after processing the inputs, it calls <code>nimbleModel</code>.
 Note that unlike BUGS and JAGS, only a single set of initial values can be
 specified in creating a model. Please see <code>help(readBUGSmodel)</code> for argument details.</p>
 <p>As an example of using <code>readBUGSmodel</code>, let’s create a model for the <em>pump</em> example from BUGS.</p>
-<div class="sourceCode" id="cb103"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb103-1"><a href="cha-building-models.html#cb103-1" aria-hidden="true" tabindex="-1"></a>pumpDir <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="st">&#39;classic-bugs&#39;</span>, <span class="st">&#39;vol1&#39;</span>, <span class="st">&#39;pump&#39;</span>, <span class="at">package =</span> <span class="st">&#39;nimble&#39;</span>)</span>
-<span id="cb103-2"><a href="cha-building-models.html#cb103-2" aria-hidden="true" tabindex="-1"></a>pumpModel <span class="ot">&lt;-</span> <span class="fu">readBUGSmodel</span>(<span class="st">&#39;pump.bug&#39;</span>, <span class="at">data =</span> <span class="st">&#39;pump-data.R&#39;</span>, </span>
-<span id="cb103-3"><a href="cha-building-models.html#cb103-3" aria-hidden="true" tabindex="-1"></a>                           <span class="at">inits =</span> <span class="st">&#39;pump-init.R&#39;</span>, <span class="at">dir =</span> pumpDir)</span></code></pre></div>
+<div class="sourceCode" id="cb104"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb104-1"><a href="cha-building-models.html#cb104-1" tabindex="-1"></a>pumpDir <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="st">&#39;classic-bugs&#39;</span>, <span class="st">&#39;vol1&#39;</span>, <span class="st">&#39;pump&#39;</span>, <span class="at">package =</span> <span class="st">&#39;nimble&#39;</span>)</span>
+<span id="cb104-2"><a href="cha-building-models.html#cb104-2" tabindex="-1"></a>pumpModel <span class="ot">&lt;-</span> <span class="fu">readBUGSmodel</span>(<span class="st">&#39;pump.bug&#39;</span>, <span class="at">data =</span> <span class="st">&#39;pump-data.R&#39;</span>, </span>
+<span id="cb104-3"><a href="cha-building-models.html#cb104-3" tabindex="-1"></a>                           <span class="at">inits =</span> <span class="st">&#39;pump-init.R&#39;</span>, <span class="at">dir =</span> pumpDir)</span></code></pre></div>
 <p>Note that <code>readBUGSmodel</code> allows one to include <code>var</code> and <code>data</code> blocks in the model file as in some of the BUGS examples (such as <code>inhaler</code>). The <code>data</code> block pre-computes constant and data values. Also note that if <code>data</code> and <code>inits</code> are provided
 as files, the files should contain R code that creates objects
 analogous to what would populate the list if a list were provided
@@ -759,19 +762,19 @@ bound to a particular model before it is run. A user could build multiple algori
 to use the same model instance, or they may want each algorithm to
 have its own instance of the model.</p>
 <p>There are two ways to create new instances of a model, shown in this example:</p>
-<div class="sourceCode" id="cb104"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb104-1"><a href="cha-building-models.html#cb104-1" aria-hidden="true" tabindex="-1"></a>simpleCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb104-2"><a href="cha-building-models.html#cb104-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) x[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb104-3"><a href="cha-building-models.html#cb104-3" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb104-4"><a href="cha-building-models.html#cb104-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb104-5"><a href="cha-building-models.html#cb104-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Return the model definition only, not a built model</span></span>
-<span id="cb104-6"><a href="cha-building-models.html#cb104-6" aria-hidden="true" tabindex="-1"></a>simpleModelDefinition <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(simpleCode, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>),</span>
-<span id="cb104-7"><a href="cha-building-models.html#cb104-7" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">returnDef =</span> <span class="cn">TRUE</span>, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb104-8"><a href="cha-building-models.html#cb104-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Make one instance of the model</span></span>
-<span id="cb104-9"><a href="cha-building-models.html#cb104-9" aria-hidden="true" tabindex="-1"></a>simpleModelCopy1 <span class="ot">&lt;-</span> simpleModelDefinition<span class="sc">$</span><span class="fu">newModel</span>(<span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb104-10"><a href="cha-building-models.html#cb104-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Make another instance from the same definition</span></span>
-<span id="cb104-11"><a href="cha-building-models.html#cb104-11" aria-hidden="true" tabindex="-1"></a>simpleModelCopy2 <span class="ot">&lt;-</span> simpleModelDefinition<span class="sc">$</span><span class="fu">newModel</span>(<span class="at">check =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb104-12"><a href="cha-building-models.html#cb104-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Ask simpleModelCopy2 for another copy of itself</span></span>
-<span id="cb104-13"><a href="cha-building-models.html#cb104-13" aria-hidden="true" tabindex="-1"></a>simpleModelCopy3 <span class="ot">&lt;-</span> simpleModelCopy2<span class="sc">$</span><span class="fu">newModel</span>(<span class="at">check =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb105"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb105-1"><a href="cha-building-models.html#cb105-1" tabindex="-1"></a>simpleCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb105-2"><a href="cha-building-models.html#cb105-2" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) x[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb105-3"><a href="cha-building-models.html#cb105-3" tabindex="-1"></a>})</span>
+<span id="cb105-4"><a href="cha-building-models.html#cb105-4" tabindex="-1"></a></span>
+<span id="cb105-5"><a href="cha-building-models.html#cb105-5" tabindex="-1"></a><span class="co"># Return the model definition only, not a built model</span></span>
+<span id="cb105-6"><a href="cha-building-models.html#cb105-6" tabindex="-1"></a>simpleModelDefinition <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(simpleCode, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>),</span>
+<span id="cb105-7"><a href="cha-building-models.html#cb105-7" tabindex="-1"></a>                                     <span class="at">returnDef =</span> <span class="cn">TRUE</span>, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb105-8"><a href="cha-building-models.html#cb105-8" tabindex="-1"></a><span class="co"># Make one instance of the model</span></span>
+<span id="cb105-9"><a href="cha-building-models.html#cb105-9" tabindex="-1"></a>simpleModelCopy1 <span class="ot">&lt;-</span> simpleModelDefinition<span class="sc">$</span><span class="fu">newModel</span>(<span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb105-10"><a href="cha-building-models.html#cb105-10" tabindex="-1"></a><span class="co"># Make another instance from the same definition</span></span>
+<span id="cb105-11"><a href="cha-building-models.html#cb105-11" tabindex="-1"></a>simpleModelCopy2 <span class="ot">&lt;-</span> simpleModelDefinition<span class="sc">$</span><span class="fu">newModel</span>(<span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb105-12"><a href="cha-building-models.html#cb105-12" tabindex="-1"></a><span class="co"># Ask simpleModelCopy2 for another copy of itself</span></span>
+<span id="cb105-13"><a href="cha-building-models.html#cb105-13" tabindex="-1"></a>simpleModelCopy3 <span class="ot">&lt;-</span> simpleModelCopy2<span class="sc">$</span><span class="fu">newModel</span>(<span class="at">check =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
 <p>Each copy of the model can have different nodes flagged as data and
 different values in any nodes. They cannot have different values of
 <code>N</code> because that is a constant; it must be a constant because
@@ -790,18 +793,18 @@ algorithms that use models.</p>
 be able to speak about NIMBLE models clearly.</p>
 <p>Suppose we have created a model from the following BUGS code.
 <!---  This chunk can be modified to jut remove the nimbleModel call. --></p>
-<div class="sourceCode" id="cb105"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb105-1"><a href="cha-building-models.html#cb105-1" aria-hidden="true" tabindex="-1"></a>mc <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb105-2"><a href="cha-building-models.html#cb105-2" aria-hidden="true" tabindex="-1"></a>    a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.001</span>)</span>
-<span id="cb105-3"><a href="cha-building-models.html#cb105-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>) {</span>
-<span id="cb105-4"><a href="cha-building-models.html#cb105-4" aria-hidden="true" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(a, <span class="at">sd =</span> <span class="fl">0.1</span>)</span>
-<span id="cb105-5"><a href="cha-building-models.html#cb105-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
-<span id="cb105-6"><a href="cha-building-models.html#cb105-6" aria-hidden="true" tabindex="-1"></a>            z[i,j] <span class="sc">~</span> <span class="fu">dnorm</span>(y[i], tau)</span>
-<span id="cb105-7"><a href="cha-building-models.html#cb105-7" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb105-8"><a href="cha-building-models.html#cb105-8" aria-hidden="true" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">20</span>)</span>
-<span id="cb105-9"><a href="cha-building-models.html#cb105-9" aria-hidden="true" tabindex="-1"></a>    y.squared[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>] <span class="ot">&lt;-</span> y[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb105-10"><a href="cha-building-models.html#cb105-10" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb105-11"><a href="cha-building-models.html#cb105-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb105-12"><a href="cha-building-models.html#cb105-12" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(mc, <span class="at">data =</span> <span class="fu">list</span>(<span class="at">z =</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">15</span>), <span class="at">nrow =</span> <span class="dv">5</span>)))</span></code></pre></div>
+<div class="sourceCode" id="cb106"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb106-1"><a href="cha-building-models.html#cb106-1" tabindex="-1"></a>mc <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb106-2"><a href="cha-building-models.html#cb106-2" tabindex="-1"></a>    a <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.001</span>)</span>
+<span id="cb106-3"><a href="cha-building-models.html#cb106-3" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>) {</span>
+<span id="cb106-4"><a href="cha-building-models.html#cb106-4" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(a, <span class="at">sd =</span> <span class="fl">0.1</span>)</span>
+<span id="cb106-5"><a href="cha-building-models.html#cb106-5" tabindex="-1"></a>        <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb106-6"><a href="cha-building-models.html#cb106-6" tabindex="-1"></a>            z[i,j] <span class="sc">~</span> <span class="fu">dnorm</span>(y[i], tau)</span>
+<span id="cb106-7"><a href="cha-building-models.html#cb106-7" tabindex="-1"></a>    }</span>
+<span id="cb106-8"><a href="cha-building-models.html#cb106-8" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">20</span>)</span>
+<span id="cb106-9"><a href="cha-building-models.html#cb106-9" tabindex="-1"></a>    y.squared[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>] <span class="ot">&lt;-</span> y[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb106-10"><a href="cha-building-models.html#cb106-10" tabindex="-1"></a>})</span>
+<span id="cb106-11"><a href="cha-building-models.html#cb106-11" tabindex="-1"></a></span>
+<span id="cb106-12"><a href="cha-building-models.html#cb106-12" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(mc, <span class="at">data =</span> <span class="fu">list</span>(<span class="at">z =</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">15</span>), <span class="at">nrow =</span> <span class="dv">5</span>)))</span></code></pre></div>
 <p>In NIMBLE terminology:</p>
 <ul>
 <li>The <em>variables</em> of this model are <code>a</code>, <code>y</code>, <code>z</code>,
@@ -826,11 +829,11 @@ nodes as well as the scalar elements <code>y.squared[1]</code> <span class="math
 <div id="determining-the-nodes-and-variables-in-a-model" class="section level3 hasAnchor" number="6.2.2">
 <h3><span class="header-section-number">6.2.2</span> Determining the nodes and variables in a model<a href="cha-building-models.html#determining-the-nodes-and-variables-in-a-model" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>One can determine the variables in a model using <code>getVarNames</code> and the nodes in a model using <code>getNodeNames</code>. Optional arguments to <code>getNodeNames</code> allow you to select only certain types of nodes, as discussed in Section <a href="cha-using-models.html#sec:get-nodes">13.1.1</a> and in the R help for <code>getNodeNames</code>.</p>
-<div class="sourceCode" id="cb106"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb106-1"><a href="cha-building-models.html#cb106-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">getVarNames</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb107"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb107-1"><a href="cha-building-models.html#cb107-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">getVarNames</span>()</span></code></pre></div>
 <pre><code>## [1] &quot;a&quot;                            &quot;y&quot;                           
 ## [3] &quot;lifted_d1_over_sqrt_oPtau_cP&quot; &quot;z&quot;                           
 ## [5] &quot;tau&quot;                          &quot;y.squared&quot;</code></pre>
-<div class="sourceCode" id="cb108"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb108-1"><a href="cha-building-models.html#cb108-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">getNodeNames</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb109"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb109-1"><a href="cha-building-models.html#cb109-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">getNodeNames</span>()</span></code></pre></div>
 <pre><code>##  [1] &quot;a&quot;                            &quot;tau&quot;                         
 ##  [3] &quot;y[1]&quot;                         &quot;y[2]&quot;                        
 ##  [5] &quot;y[3]&quot;                         &quot;y[4]&quot;                        
@@ -851,33 +854,33 @@ NIMBLE (Section <a href="cha-using-models.html#sec:introduced-nodes">13.1.2</a>)
 <h3><span class="header-section-number">6.2.3</span> Accessing nodes<a href="cha-building-models.html#sec:accessing-nodes" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Model variables can be accessed and set just as in R using <code>$</code> and
 <code>[[ ]]</code>. For example</p>
-<div class="sourceCode" id="cb110"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb110-1"><a href="cha-building-models.html#cb110-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>a <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb110-2"><a href="cha-building-models.html#cb110-2" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>a</span></code></pre></div>
+<div class="sourceCode" id="cb111"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb111-1"><a href="cha-building-models.html#cb111-1" tabindex="-1"></a>model<span class="sc">$</span>a <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb111-2"><a href="cha-building-models.html#cb111-2" tabindex="-1"></a>model<span class="sc">$</span>a</span></code></pre></div>
 <pre><code>## [1] 5</code></pre>
-<div class="sourceCode" id="cb112"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb112-1"><a href="cha-building-models.html#cb112-1" aria-hidden="true" tabindex="-1"></a>model[[<span class="st">&quot;a&quot;</span>]]</span></code></pre></div>
+<div class="sourceCode" id="cb113"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb113-1"><a href="cha-building-models.html#cb113-1" tabindex="-1"></a>model[[<span class="st">&quot;a&quot;</span>]]</span></code></pre></div>
 <pre><code>## [1] 5</code></pre>
-<div class="sourceCode" id="cb114"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb114-1"><a href="cha-building-models.html#cb114-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>y[<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">3</span>)</span>
-<span id="cb114-2"><a href="cha-building-models.html#cb114-2" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>y</span></code></pre></div>
+<div class="sourceCode" id="cb115"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb115-1"><a href="cha-building-models.html#cb115-1" tabindex="-1"></a>model<span class="sc">$</span>y[<span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">3</span>)</span>
+<span id="cb115-2"><a href="cha-building-models.html#cb115-2" tabindex="-1"></a>model<span class="sc">$</span>y</span></code></pre></div>
 <pre><code>## [1]         NA -0.7317482  0.8303732 -1.2080828         NA</code></pre>
-<div class="sourceCode" id="cb116"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb116-1"><a href="cha-building-models.html#cb116-1" aria-hidden="true" tabindex="-1"></a>model[[<span class="st">&quot;y&quot;</span>]][<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">5</span>)] <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">2</span>)</span>
-<span id="cb116-2"><a href="cha-building-models.html#cb116-2" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>y</span></code></pre></div>
+<div class="sourceCode" id="cb117"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb117-1"><a href="cha-building-models.html#cb117-1" tabindex="-1"></a>model[[<span class="st">&quot;y&quot;</span>]][<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">5</span>)] <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">2</span>)</span>
+<span id="cb117-2"><a href="cha-building-models.html#cb117-2" tabindex="-1"></a>model<span class="sc">$</span>y</span></code></pre></div>
 <pre><code>## [1] -1.0479844 -0.7317482  0.8303732 -1.2080828  1.4411577</code></pre>
-<div class="sourceCode" id="cb118"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb118-1"><a href="cha-building-models.html#cb118-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>z[<span class="dv">1</span>,]</span></code></pre></div>
+<div class="sourceCode" id="cb119"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb119-1"><a href="cha-building-models.html#cb119-1" tabindex="-1"></a>model<span class="sc">$</span>z[<span class="dv">1</span>,]</span></code></pre></div>
 <pre><code>## [1]  2.0752450  0.2199248 -0.7660820</code></pre>
 <p>While nodes that are part of a variable can be accessed as above, each
 node also has its own name that can be used to access it directly. For
 example, <code>y[2]</code> has the name ‘y[2]’ and can be accessed by that
 name as follows:</p>
-<div class="sourceCode" id="cb120"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb120-1"><a href="cha-building-models.html#cb120-1" aria-hidden="true" tabindex="-1"></a>model[[<span class="st">&quot;y[2]&quot;</span>]]</span></code></pre></div>
+<div class="sourceCode" id="cb121"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb121-1"><a href="cha-building-models.html#cb121-1" tabindex="-1"></a>model[[<span class="st">&quot;y[2]&quot;</span>]]</span></code></pre></div>
 <pre><code>## [1] -0.7317482</code></pre>
-<div class="sourceCode" id="cb122"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb122-1"><a href="cha-building-models.html#cb122-1" aria-hidden="true" tabindex="-1"></a>model[[<span class="st">&quot;y[2]&quot;</span>]] <span class="ot">&lt;-</span> <span class="sc">-</span><span class="dv">5</span></span>
-<span id="cb122-2"><a href="cha-building-models.html#cb122-2" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>y</span></code></pre></div>
+<div class="sourceCode" id="cb123"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb123-1"><a href="cha-building-models.html#cb123-1" tabindex="-1"></a>model[[<span class="st">&quot;y[2]&quot;</span>]] <span class="ot">&lt;-</span> <span class="sc">-</span><span class="dv">5</span></span>
+<span id="cb123-2"><a href="cha-building-models.html#cb123-2" tabindex="-1"></a>model<span class="sc">$</span>y</span></code></pre></div>
 <pre><code>## [1] -1.0479844 -5.0000000  0.8303732 -1.2080828  1.4411577</code></pre>
-<div class="sourceCode" id="cb124"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb124-1"><a href="cha-building-models.html#cb124-1" aria-hidden="true" tabindex="-1"></a>model[[<span class="st">&quot;z[2, 3]&quot;</span>]]</span></code></pre></div>
+<div class="sourceCode" id="cb125"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb125-1"><a href="cha-building-models.html#cb125-1" tabindex="-1"></a>model[[<span class="st">&quot;z[2, 3]&quot;</span>]]</span></code></pre></div>
 <pre><code>## [1] -0.4302118</code></pre>
-<div class="sourceCode" id="cb126"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb126-1"><a href="cha-building-models.html#cb126-1" aria-hidden="true" tabindex="-1"></a>model[[<span class="st">&quot;z[2:4, 1:2]&quot;</span>]][<span class="dv">1</span>, <span class="dv">2</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb127"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb127-1"><a href="cha-building-models.html#cb127-1" tabindex="-1"></a>model[[<span class="st">&quot;z[2:4, 1:2]&quot;</span>]][<span class="dv">1</span>, <span class="dv">2</span>]</span></code></pre></div>
 <pre><code>## [1] -1.46725</code></pre>
-<div class="sourceCode" id="cb128"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb128-1"><a href="cha-building-models.html#cb128-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span>z[<span class="dv">2</span>, <span class="dv">2</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb129"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb129-1"><a href="cha-building-models.html#cb129-1" tabindex="-1"></a>model<span class="sc">$</span>z[<span class="dv">2</span>, <span class="dv">2</span>]</span></code></pre></div>
 <pre><code>## [1] -1.46725</code></pre>
 <p>Notice that node names can include index blocks, such as
 <code>model[["z[2:4, 1:2]"]]</code>, and these are not strictly required to
@@ -896,19 +899,19 @@ example, a multivariate node for <code>X[6:10, 3]</code> has the name ‘X[6:10,
 <p>In the event you need to ensure that a name is formatted correctly,
 you can use the <code>expandNodeNames</code> method. For
 example, to get the spaces correctly inserted into ‘X[1,1:5]’:</p>
-<div class="sourceCode" id="cb130"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb130-1"><a href="cha-building-models.html#cb130-1" aria-hidden="true" tabindex="-1"></a>multiVarCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb130-2"><a href="cha-building-models.html#cb130-2" aria-hidden="true" tabindex="-1"></a>    X[<span class="dv">1</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>] <span class="sc">~</span> <span class="fu">dmnorm</span>(mu[], cov[,])</span>
-<span id="cb130-3"><a href="cha-building-models.html#cb130-3" aria-hidden="true" tabindex="-1"></a>    X[<span class="dv">6</span><span class="sc">:</span><span class="dv">10</span>, <span class="dv">3</span>] <span class="sc">~</span> <span class="fu">dmnorm</span>(mu[], cov[,])</span>
-<span id="cb130-4"><a href="cha-building-models.html#cb130-4" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb130-5"><a href="cha-building-models.html#cb130-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb130-6"><a href="cha-building-models.html#cb130-6" aria-hidden="true" tabindex="-1"></a>multiVarModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(multiVarCode, <span class="at">dimensions =</span></span>
-<span id="cb130-7"><a href="cha-building-models.html#cb130-7" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">5</span>, <span class="at">cov =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>)), <span class="at">calculate =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb130-8"><a href="cha-building-models.html#cb130-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb130-9"><a href="cha-building-models.html#cb130-9" aria-hidden="true" tabindex="-1"></a>multiVarModel<span class="sc">$</span><span class="fu">expandNodeNames</span>(<span class="st">&quot;X[1,1:5]&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb131"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb131-1"><a href="cha-building-models.html#cb131-1" tabindex="-1"></a>multiVarCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb131-2"><a href="cha-building-models.html#cb131-2" tabindex="-1"></a>    X[<span class="dv">1</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>] <span class="sc">~</span> <span class="fu">dmnorm</span>(mu[], cov[,])</span>
+<span id="cb131-3"><a href="cha-building-models.html#cb131-3" tabindex="-1"></a>    X[<span class="dv">6</span><span class="sc">:</span><span class="dv">10</span>, <span class="dv">3</span>] <span class="sc">~</span> <span class="fu">dmnorm</span>(mu[], cov[,])</span>
+<span id="cb131-4"><a href="cha-building-models.html#cb131-4" tabindex="-1"></a>})</span>
+<span id="cb131-5"><a href="cha-building-models.html#cb131-5" tabindex="-1"></a></span>
+<span id="cb131-6"><a href="cha-building-models.html#cb131-6" tabindex="-1"></a>multiVarModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(multiVarCode, <span class="at">dimensions =</span></span>
+<span id="cb131-7"><a href="cha-building-models.html#cb131-7" tabindex="-1"></a>                   <span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">5</span>, <span class="at">cov =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>)), <span class="at">calculate =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb131-8"><a href="cha-building-models.html#cb131-8" tabindex="-1"></a></span>
+<span id="cb131-9"><a href="cha-building-models.html#cb131-9" tabindex="-1"></a>multiVarModel<span class="sc">$</span><span class="fu">expandNodeNames</span>(<span class="st">&quot;X[1,1:5]&quot;</span>)</span></code></pre></div>
 <pre><code>## [1] &quot;X[1, 1:5]&quot;</code></pre>
 <p>Alternatively, for those inclined to R’s less commonly used features, a nice trick is
 to use its <code>parse</code> and <code>deparse</code> functions.</p>
-<div class="sourceCode" id="cb132"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb132-1"><a href="cha-building-models.html#cb132-1" aria-hidden="true" tabindex="-1"></a><span class="fu">deparse</span>(<span class="fu">parse</span>(<span class="at">text =</span> <span class="st">&quot;X[1,1:5]&quot;</span>, <span class="at">keep.source =</span> <span class="cn">FALSE</span>)[[<span class="dv">1</span>]])</span></code></pre></div>
+<div class="sourceCode" id="cb133"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb133-1"><a href="cha-building-models.html#cb133-1" tabindex="-1"></a><span class="fu">deparse</span>(<span class="fu">parse</span>(<span class="at">text =</span> <span class="st">&quot;X[1,1:5]&quot;</span>, <span class="at">keep.source =</span> <span class="cn">FALSE</span>)[[<span class="dv">1</span>]])</span></code></pre></div>
 <pre><code>## [1] &quot;X[1, 1:5]&quot;</code></pre>
 <p>The <code>keep.source = FALSE</code> makes <code>parse</code> more efficient.</p>
 </div>
@@ -928,13 +931,13 @@ during the compilation process.</p>
 <h3><span class="header-section-number">6.2.6</span> Checking if a node holds data<a href="cha-building-models.html#sec:cdisdata" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Finally, you can query whether a node is flagged as data using the
 <code>isData</code> method applied to one or more nodes or nodes within variables:</p>
-<div class="sourceCode" id="cb134"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb134-1"><a href="cha-building-models.html#cb134-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="st">&#39;z[1]&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb135"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb135-1"><a href="cha-building-models.html#cb135-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="st">&#39;z[1]&#39;</span>)</span></code></pre></div>
 <pre><code>## [1] TRUE</code></pre>
-<div class="sourceCode" id="cb136"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb136-1"><a href="cha-building-models.html#cb136-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="fu">c</span>(<span class="st">&#39;z[1]&#39;</span>, <span class="st">&#39;z[2]&#39;</span>, <span class="st">&#39;a&#39;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb137"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb137-1"><a href="cha-building-models.html#cb137-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="fu">c</span>(<span class="st">&#39;z[1]&#39;</span>, <span class="st">&#39;z[2]&#39;</span>, <span class="st">&#39;a&#39;</span>))</span></code></pre></div>
 <pre><code>## [1]  TRUE  TRUE FALSE</code></pre>
-<div class="sourceCode" id="cb138"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb138-1"><a href="cha-building-models.html#cb138-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="st">&#39;z&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb139"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb139-1"><a href="cha-building-models.html#cb139-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="st">&#39;z&#39;</span>)</span></code></pre></div>
 <pre><code>##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE</code></pre>
-<div class="sourceCode" id="cb140"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb140-1"><a href="cha-building-models.html#cb140-1" aria-hidden="true" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="st">&#39;z[1:3, 1]&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb141"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb141-1"><a href="cha-building-models.html#cb141-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">isData</span>(<span class="st">&#39;z[1:3, 1]&#39;</span>)</span></code></pre></div>
 <pre><code>## [1] TRUE TRUE TRUE</code></pre>
 </div>
 </div>

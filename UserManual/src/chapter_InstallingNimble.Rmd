@@ -137,7 +137,7 @@ However, there are some options that some users may want to utilize.
 
 ### Using your own copy of Eigen
 <!--- ### Finding the Eigen Header Files -->
-NIMBLE uses the Eigen C++ template library for linear algebra.  Version 3.2.1
+NIMBLE uses the Eigen C++ template library for linear algebra.  Version 3.4.0
 of Eigen is included in the NIMBLE package and that version will be
 used unless the package's configuration script finds another version
 on the machine.  This works well, and the following is only relevant

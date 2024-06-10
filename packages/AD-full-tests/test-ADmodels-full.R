@@ -15,9 +15,6 @@ relTol[4] <- 1e-4
 
 verbose <- TRUE
 
-##nimbleOptions(showCompilerOutput = TRUE)
-context("Testing of derivatives for calculate() for nimbleModels")
-
 ## Start of Nick's tests ##
 
 if(FALSE) {
@@ -608,6 +605,7 @@ covFunLoop <- nimbleFunction(
 
 
 ## user-defined cov function vectorized
+
 set.seed(1)
 covFunVec <- nimbleFunction(
     run = function(dist = double(2), rho = double(0)) {
@@ -795,6 +793,9 @@ test_ADModelCalculate(model, useParamTransform = TRUE, checkCompiledValuesIdenti
                       newConstantNodes = list(W1 = newW1, W2 = newW2, W3 = newW3, W4 = newW4,
                                         IW1 = newIW1, IW2 = newIW2, IW3 = newIW3, IW4 = newIW4),
                       relTol = relTolTmp, verbose = verbose, name = 'dwish, dinvwish')
+
+## 2024-06-03: when run manually the second of the two calls above seg faults on the EB scenario
+## on both nimble 1.1.0 and (a partial) 1.2.0.
 
 ## Both of the above:
 ## Detected some values out of (relative, usually) tolerance:  cOutput2d$value   c(cOutput012$hessian) .

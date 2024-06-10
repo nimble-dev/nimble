@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 16 Automatic Derivatives | NimbleUserManual.knit</title>
+  <meta name="description" content="This is the NIMBLE User Manual." />
+  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 16 Automatic Derivatives | NimbleUserManual.knit" />
+  <meta property="og:type" content="book" />
+  <meta property="og:image" content="/nimble-icon.png" />
+  <meta property="og:description" content="This is the NIMBLE User Manual." />
+  <meta name="github-repo" content="nimble-dev/nimble" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 16 Automatic Derivatives | NimbleUserManual.knit" />
+  
+  <meta name="twitter:description" content="This is the NIMBLE User Manual." />
+  <meta name="twitter:image" content="/nimble-icon.png" />
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="cha-progr-with-models.html"/>
+<link rel="next" href="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<img src="./nimble-icon.png"
+     width=100>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.0</a></li>
+<li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
+<li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
+
+<li class="divider"></li>
+<li class="part"><span><b>I Introduction</b></span></li>
+<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#sec:what-is-nimble"><i class="fa fa-check"></i><b>1.1</b> What does NIMBLE do?</a></li>
+<li class="chapter" data-level="1.2" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#how-to-use-this-manual"><i class="fa fa-check"></i><b>1.2</b> How to use this manual</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:brief-example"><i class="fa fa-check"></i><b>2.1</b> A brief example</a></li>
+<li class="chapter" data-level="2.2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-model"><i class="fa fa-check"></i><b>2.2</b> Creating a model</a></li>
+<li class="chapter" data-level="2.3" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:compiling-model"><i class="fa fa-check"></i><b>2.3</b> Compiling the model</a></li>
+<li class="chapter" data-level="2.4" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:intro-runMCMC"><i class="fa fa-check"></i><b>2.4</b> One-line invocation of MCMC</a></li>
+<li class="chapter" data-level="2.5" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-mcmc"><i class="fa fa-check"></i><b>2.5</b> Creating, compiling and running a basic MCMC configuration</a></li>
+<li class="chapter" data-level="2.6" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:customizing-mcmc"><i class="fa fa-check"></i><b>2.6</b> Customizing the MCMC</a></li>
+<li class="chapter" data-level="2.7" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:running-mcem"><i class="fa fa-check"></i><b>2.7</b> Running MCEM</a></li>
+<li class="chapter" data-level="2.8" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-your-own"><i class="fa fa-check"></i><b>2.8</b> Creating your own functions</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#nimble-adopts-and-extends-the-bugs-language-for-specifying-models"><i class="fa fa-check"></i><b>3.1</b> NIMBLE adopts and extends the BUGS language for specifying models</a></li>
+<li class="chapter" data-level="3.2" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-lang-writ"><i class="fa fa-check"></i><b>3.2</b> nimbleFunctions for writing algorithms</a></li>
+<li class="chapter" data-level="3.3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-algor-libr"><i class="fa fa-check"></i><b>3.3</b> The NIMBLE algorithm library</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
+<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a>
+<ul>
+<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#macos"><i class="fa fa-check"></i><b>4.2.1</b> MacOS</a></li>
+<li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
+<li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
+</ul></li>
+<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a></li>
+<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#troubleshooting-installation-problems"><i class="fa fa-check"></i><b>4.4</b> Troubleshooting installation problems</a></li>
+<li class="chapter" data-level="4.5" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.5</b> Customizing your installation</a>
+<ul>
+<li class="chapter" data-level="4.5.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.5.1</b> Using your own copy of Eigen</a></li>
+<li class="chapter" data-level="4.5.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.5.2</b> Using libnimble</a></li>
+<li class="chapter" data-level="4.5.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.5.3</b> BLAS and LAPACK</a></li>
+<li class="chapter" data-level="4.5.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.5.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>II Models in NIMBLE</b></span></li>
+<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a>
+<ul>
+<li class="chapter" data-level="5.1.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#supported-features-of-bugs-and-jags"><i class="fa fa-check"></i><b>5.1.1</b> Supported features of BUGS and JAGS</a></li>
+<li class="chapter" data-level="5.1.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:extensions-bugs"><i class="fa fa-check"></i><b>5.1.2</b> NIMBLE’s Extensions to BUGS and JAGS</a></li>
+<li class="chapter" data-level="5.1.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:not-yet-supported"><i class="fa fa-check"></i><b>5.1.3</b> Not-supported features of BUGS and JAGS</a></li>
+</ul></li>
+<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a>
+<ul>
+<li class="chapter" data-level="5.2.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#declaring-stochastic-and-deterministic-nodes"><i class="fa fa-check"></i><b>5.2.1</b> Declaring stochastic and deterministic nodes</a></li>
+<li class="chapter" data-level="5.2.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:more-kinds-bugs"><i class="fa fa-check"></i><b>5.2.2</b> More kinds of BUGS declarations</a></li>
+<li class="chapter" data-level="5.2.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:vectorized-versus-scalar-declarations"><i class="fa fa-check"></i><b>5.2.3</b> Vectorized versus scalar declarations</a></li>
+<li class="chapter" data-level="5.2.4" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:dists-and-functions"><i class="fa fa-check"></i><b>5.2.4</b> Available distributions</a></li>
+<li class="chapter" data-level="5.2.5" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-lang-fxns"><i class="fa fa-check"></i><b>5.2.5</b> Available BUGS language functions</a></li>
+<li class="chapter" data-level="5.2.6" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-link"><i class="fa fa-check"></i><b>5.2.6</b> Available link functions</a></li>
+<li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a>
+<ul>
+<li class="chapter" data-level="6.1.1" data-path="cha-building-models.html"><a href="cha-building-models.html#using-nimblemodel-to-create-a-model"><i class="fa fa-check"></i><b>6.1.1</b> Using <em>nimbleModel</em> to create a model</a></li>
+<li class="chapter" data-level="6.1.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:readBUGSmodel"><i class="fa fa-check"></i><b>6.1.2</b> Creating a model from standard BUGS and JAGS input files</a></li>
+<li class="chapter" data-level="6.1.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sub:multiple-instances"><i class="fa fa-check"></i><b>6.1.3</b> Making multiple instances from the same model definition</a></li>
+</ul></li>
+<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a>
+<ul>
+<li class="chapter" data-level="6.2.1" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:what-are-nodes-and-variables"><i class="fa fa-check"></i><b>6.2.1</b> What are variables and nodes?</a></li>
+<li class="chapter" data-level="6.2.2" data-path="cha-building-models.html"><a href="cha-building-models.html#determining-the-nodes-and-variables-in-a-model"><i class="fa fa-check"></i><b>6.2.2</b> Determining the nodes and variables in a model</a></li>
+<li class="chapter" data-level="6.2.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:accessing-nodes"><i class="fa fa-check"></i><b>6.2.3</b> Accessing nodes</a></li>
+<li class="chapter" data-level="6.2.4" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:how-nodes-are"><i class="fa fa-check"></i><b>6.2.4</b> How nodes are named</a></li>
+<li class="chapter" data-level="6.2.5" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:why-use-node"><i class="fa fa-check"></i><b>6.2.5</b> Why use node names?</a></li>
+<li class="chapter" data-level="6.2.6" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:cdisdata"><i class="fa fa-check"></i><b>6.2.6</b> Checking if a node holds data</a></li>
+</ul></li>
+<li class="chapter" data-level="6.3" data-path="cha-building-models.html"><a href="cha-building-models.html#using-models-in-parallel"><i class="fa fa-check"></i><b>6.3</b> Using models in parallel</a></li>
+</ul></li>
+<li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
+<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:nimbleMCMC"><i class="fa fa-check"></i><b>7.1</b> One-line invocation of MCMC: <em>nimbleMCMC</em></a></li>
+<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a>
+<ul>
+<li class="chapter" data-level="7.2.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:default-mcmc-conf"><i class="fa fa-check"></i><b>7.2.1</b> Default MCMC configuration</a></li>
+<li class="chapter" data-level="7.2.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:customizing-mcmc-conf"><i class="fa fa-check"></i><b>7.2.2</b> Customizing the MCMC configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
+<li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:initMCMC"><i class="fa fa-check"></i><b>7.4</b> Initializing MCMC</a></li>
+<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.5</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
+<li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.6</b> Running the MCMC</a>
+<ul>
+<li class="chapter" data-level="7.6.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-rerun"><i class="fa fa-check"></i><b>7.6.1</b> Rerunning versus restarting an MCMC</a></li>
+<li class="chapter" data-level="7.6.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.6.2</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+<li class="chapter" data-level="7.6.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#assessing-the-adaption-process-of-rw-and-rw_block-samplers"><i class="fa fa-check"></i><b>7.6.3</b> Assessing the adaption process of <em>RW</em> and <em>RW_block</em> samplers</a></li>
+</ul></li>
+<li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.7</b> Extracting MCMC samples</a></li>
+<li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.8</b> Calculating WAIC</a></li>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.9</b> k-fold cross-validation</a></li>
+<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc"><i class="fa fa-check"></i><b>7.10</b> Variable selection using Reversible Jump MCMC</a>
+<ul>
+<li class="chapter" data-level="7.10.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-indicator"><i class="fa fa-check"></i><b>7.10.1</b> Using indicator variables</a></li>
+<li class="chapter" data-level="7.10.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:rjmcmc-no-indicator"><i class="fa fa-check"></i><b>7.10.2</b> Without indicator variables</a></li>
+</ul></li>
+<li class="chapter" data-level="7.11" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.11</b> Samplers provided with NIMBLE</a>
+<ul>
+<li class="chapter" data-level="7.11.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.11.1</b> Conjugate (‘Gibbs’) samplers</a></li>
+<li class="chapter" data-level="7.11.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#subsec:HMC"><i class="fa fa-check"></i><b>7.11.2</b> Hamiltonian Monte Carlo (HMC)</a></li>
+<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-filter-samplers"><i class="fa fa-check"></i><b>7.11.3</b> Particle filter samplers</a></li>
+<li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
+</ul></li>
+<li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
+<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
+<li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
+<ul>
+<li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering algorithms</a></li>
+<li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
+</ul></li>
+<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a>
+<ul>
+<li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
+</ul></li>
+<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#laplace-approximation-and-adaptive-gauss-hermite-quadrature"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a>
+<ul>
+<li class="chapter" data-level="9.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>9.1.1</b> Specification and density</a></li>
+<li class="chapter" data-level="9.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>9.1.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a>
+<ul>
+<li class="chapter" data-level="9.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>9.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="9.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>9.2.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a>
+<ul>
+<li class="chapter" data-level="9.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>9.3.1</b> Initial values</a></li>
+<li class="chapter" data-level="9.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>9.3.2</b> Zero-neighbor regions</a></li>
+<li class="chapter" data-level="9.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>9.3.3</b> Zero-mean constraint</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>10.1</b> Bayesian nonparametric mixture models</a></li>
+<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a>
+<ul>
+<li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
+</ul></li>
+<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a>
+<ul>
+<li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
+<li class="chapter" data-level="10.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>10.3.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a>
+<ul>
+<li class="chapter" data-level="10.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>10.4.1</b> Sampling CRP models</a></li>
+<li class="chapter" data-level="10.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>10.4.2</b> Sampling stick-breaking models</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>IV Programming with NIMBLE</b></span></li>
+<li class="chapter" data-level="" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i>Overview</a></li>
+<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>11.1</b> Introduction to simple nimbleFunctions</a></li>
+<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a>
+<ul>
+<li class="chapter" data-level="11.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>11.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
+<li class="chapter" data-level="11.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>11.2.2</b> Basic operations</a></li>
+<li class="chapter" data-level="11.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>11.2.3</b> Math and linear algebra</a></li>
+<li class="chapter" data-level="11.2.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimble-dist-funs"><i class="fa fa-check"></i><b>11.2.4</b> Distribution functions</a></li>
+<li class="chapter" data-level="11.2.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-flow-control"><i class="fa fa-check"></i><b>11.2.5</b> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></a></li>
+<li class="chapter" data-level="11.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>11.2.6</b> <em>print</em> and <em>cat</em></a></li>
+<li class="chapter" data-level="11.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>11.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
+<li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
+<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#integration-integrate-and-nimintegrate"><i class="fa fa-check"></i><b>11.2.9</b> Integration: <em>integrate</em> and <em>nimIntegrate</em></a></li>
+<li class="chapter" data-level="11.2.10" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.10</b> ‘nim’ synonyms for some functions</a></li>
+</ul></li>
+<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
+<ul>
+<li class="chapter" data-level="11.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>11.3.1</b> nimbleList data structures</a></li>
+<li class="chapter" data-level="11.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>11.3.2</b> How numeric types work</a></li>
+</ul></li>
+<li class="chapter" data-level="11.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:decl-argum-return"><i class="fa fa-check"></i><b>11.4</b> Declaring argument and return types</a></li>
+<li class="chapter" data-level="11.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:comp-nimbl-pass"><i class="fa fa-check"></i><b>11.5</b> Compiled nimbleFunctions pass arguments by reference</a></li>
+<li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
+<li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined distributions and functions for models</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
+<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
+<ul>
+<li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
+</ul></li>
+<li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a>
+<ul>
+<li class="chapter" data-level="13.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>13.1.1</b> Determining the nodes in a model</a></li>
+<li class="chapter" data-level="13.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>13.1.2</b> Understanding lifted nodes</a></li>
+<li class="chapter" data-level="13.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>13.1.3</b> Determining dependencies in a model</a></li>
+</ul></li>
+<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a>
+<ul>
+<li class="chapter" data-level="13.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>13.2.1</b> Getting distributional information about a node</a></li>
+<li class="chapter" data-level="13.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>13.2.2</b> Getting information about a distribution</a></li>
+<li class="chapter" data-level="13.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>13.2.3</b> Getting distribution parameter values for a node</a></li>
+<li class="chapter" data-level="13.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>13.2.4</b> Getting distribution bounds for a node</a></li>
+</ul></li>
+<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a>
+<ul>
+<li class="chapter" data-level="13.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>13.3.1</b> Core model operations: calculation and simulation</a></li>
+<li class="chapter" data-level="13.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>13.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
+<li class="chapter" data-level="13.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>13.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a>
+<ul>
+<li class="chapter" data-level="14.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>14.1.1</b> Creating modelValues objects</a></li>
+<li class="chapter" data-level="14.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>14.1.2</b> Accessing contents of modelValues</a></li>
+</ul></li>
+<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a>
+<ul>
+<li class="chapter" data-level="14.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:predef-nimbleLists"><i class="fa fa-check"></i><b>14.2.1</b> Pre-defined nimbleList types</a></li>
+<li class="chapter" data-level="14.2.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>14.2.2</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>15.1</b> Overview</a></li>
+<li class="chapter" data-level="15.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>15.2</b> Using and compiling nimbleFunctions</a></li>
+<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a>
+<ul>
+<li class="chapter" data-level="15.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>15.3.1</b> Useful tools for setup functions</a></li>
+<li class="chapter" data-level="15.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>15.3.2</b> Accessing and modifying numeric values from setup</a></li>
+<li class="chapter" data-level="15.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>15.3.3</b> Determining numeric types in nimbleFunctions</a></li>
+<li class="chapter" data-level="15.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>15.3.4</b> Control of setup outputs</a></li>
+</ul></li>
+<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a>
+<ul>
+<li class="chapter" data-level="15.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>15.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
+<li class="chapter" data-level="15.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>15.4.2</b> Getting and setting variable and node values</a></li>
+<li class="chapter" data-level="15.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>15.4.3</b> Getting parameter values and node bounds</a></li>
+<li class="chapter" data-level="15.4.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-model-modelv"><i class="fa fa-check"></i><b>15.4.4</b> Using modelValues objects</a></li>
+<li class="chapter" data-level="15.4.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-model-variable"><i class="fa fa-check"></i><b>15.4.5</b> Using model variables and modelValues in expressions</a></li>
+<li class="chapter" data-level="15.4.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:incl-other-meth"><i class="fa fa-check"></i><b>15.4.6</b> Including other methods in a nimbleFunction</a></li>
+<li class="chapter" data-level="15.4.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-other-nimbl"><i class="fa fa-check"></i><b>15.4.7</b> Using other nimbleFunctions</a></li>
+<li class="chapter" data-level="15.4.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl"><i class="fa fa-check"></i><b>15.4.8</b> Virtual nimbleFunctions and nimbleFunctionLists</a></li>
+<li class="chapter" data-level="15.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>15.4.9</b> Character objects</a></li>
+<li class="chapter" data-level="15.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>15.4.10</b> User-defined data structures</a></li>
+</ul></li>
+<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a>
+<ul>
+<li class="chapter" data-level="15.5.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#user-defined-samplers-and-posterior-predictive-nodes"><i class="fa fa-check"></i><b>15.5.1</b> User-defined samplers and posterior predictive nodes</a></li>
+</ul></li>
+<li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
+<li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
+<li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
+</ul></li>
+<li class="part"><span><b>V Automatic Derivatives in NIMBLE</b></span></li>
+<li class="chapter" data-level="16" data-path="cha-AD.html"><a href="cha-AD.html"><i class="fa fa-check"></i><b>16</b> Automatic Derivatives</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="cha-AD.html"><a href="cha-AD.html#sec:use-derivs"><i class="fa fa-check"></i><b>16.1</b> How to turn on derivatives in a model</a>
+<ul>
+<li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
+</ul></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
+<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
+<li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
+<li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
+<ul>
+<li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
+<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
+<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
+<li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
+</ul></li>
+<li class="chapter" data-level="16.6" data-path="cha-AD.html"><a href="cha-AD.html#advanced-uses-double-taping"><i class="fa fa-check"></i><b>16.6</b> Advanced uses: double taping</a></li>
+<li class="chapter" data-level="16.7" data-path="cha-AD.html"><a href="cha-AD.html#derivatives-involving-model-calculations"><i class="fa fa-check"></i><b>16.7</b> Derivatives involving model calculations</a>
+<ul>
+<li class="chapter" data-level="16.7.1" data-path="cha-AD.html"><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate"><i class="fa fa-check"></i><b>16.7.1</b> Method 1: <code>nimDerivs</code> of <code>model$calculate</code></a></li>
+<li class="chapter" data-level="16.7.2" data-path="cha-AD.html"><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate"><i class="fa fa-check"></i><b>16.7.2</b> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code></a></li>
+</ul></li>
+<li class="chapter" data-level="16.8" data-path="cha-AD.html"><a href="cha-AD.html#sec:parameter-transform"><i class="fa fa-check"></i><b>16.8</b> Parameter transformations</a></li>
+</ul></li>
+<li class="chapter" data-level="17" data-path="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><a href="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><i class="fa fa-check"></i><b>17</b> Example: maximum likelihood estimation using <code>optim</code> with gradients from <code>nimDerivs</code>.</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./"></a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="cha-AD" class="section level1 hasAnchor" number="16">
+<h1><span class="header-section-number">Chapter 16</span> Automatic Derivatives<a href="cha-AD.html#cha-AD" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package <code>nimbleHMC</code>), Laplace approximation, and fast optimization with methods that use function gradients.</p>
+<p>Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations. When done this way, derivatives are numerically accurate to the precision of the computer. This is distinct from finite difference methods, used by R packages such as <code>numDeriv</code> <span class="citation">(<a href="references.html#ref-gilbert-varadhan-19">Gilbert and Varadhan 2019</a>)</span> and <code>pracma</code> <span class="citation">(<a href="references.html#ref-borchers-22">Borchers 2022</a>)</span>, which approximate derivatives by calculating function values at extremely nearby points. Finite difference methods are slower and less accurate than AD. It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD. NIMBLE uses the CppAD package <span class="citation">(<a href="references.html#ref-bell-22">Bell 2022</a>)</span> as its AD engine, following TMB’s success in doing so <span class="citation">(<a href="references.html#ref-kristensen-etal-16">Kristensen et al. 2016</a>)</span>. A general reference on AD is <span class="citation">Griewank and Walther (<a href="references.html#ref-griewank-walther-08">2008</a>)</span>.</p>
+<p>Using a packaged AD algorithm should be as simple as setting <code>buildDerivs=TRUE</code> in the model. On the other hand, writing new algorithms (as nimbleFunctions) that use AD requires understanding how the AD system works internally, including what can go wrong. Calls to <code>compileNimble</code> that include AD features will result in slower C++ compilation.</p>
+<!-- A key concept from CppAD used by NIMBLE is that mathematical operations are *taped* and then re-used -- *played* -- to obtain derivatives.  Hence we will refer to the AD *tape* in explaining some features below.  In addition, when taped operations are played, the resulting operations can themselves be taped.  We call this *meta-taping* or *double-taping*.  It is useful because it can sometimes boost efficiency. -->
+<p>We will introduce NIMBLE’s AD features step by step, from simply turning them on for a model to using them in your own nimbleFunctions. We will show you:</p>
+<ol style="list-style-type: decimal">
+<li>how to turn on derivatives in a model and use them in Laplace approximation (for Hamiltonian Monte Carlo (HMC), see <a href="cha-mcmc.html#subsec:HMC">7.11.2</a>).</li>
+<li>how to modify user-defined functions and distributions to support derivatives.</li>
+<li>what functions are supported and not supported for derivatives.</li>
+<li>basics of obtaining derivatives in your own algorithms written as <code>nimbleFunctions</code>.</li>
+<li>advanced methods of obtaining derivatives in <code>nimbleFunctions</code>, including <em>double-taping</em>.</li>
+<li>how to get derivatives involving model calculations.</li>
+<li>automatic parameter transformations to give any model an unconstrained parameter space for algorithms to work in.</li>
+<li>an example showing use of nimble’s derivatives for maximum likelihood estimation.</li>
+</ol>
+<p>First, make sure to set the option to enable derivative features. This should be <code>TRUE</code> by default, but just in case:</p>
+<div class="sourceCode" id="cb479"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb479-1"><a href="cha-AD.html#cb479-1" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">enableDerivs =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div id="sec:use-derivs" class="section level2 hasAnchor" number="16.1">
+<h2><span class="header-section-number">16.1</span> How to turn on derivatives in a model<a href="cha-AD.html#sec:use-derivs" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>To allow algorithms to use automatic derivatives for a model, include <code>buildDerivs=TRUE</code> in the call to <code>nimbleModel</code>. If you want derivatives to be set up for all models, you can run <code>nimbleOptions(buildModelDerivs = TRUE)</code> and omit the <code>buildDerivs</code> argument.</p>
+<p>We’ll re-introduce the simple Poisson Generalized Linear Mixed Model (GLMM) example model from <a href="cha-mcmc.html#subsec:HMC-example">7.11.2.1</a> and use Laplace approximation on it. There will be 10 groups (<code>i</code>) of 5 observations (<code>j</code>) each. Each observation has a covariate, <code>X</code>, and each group has a random effect <code>ran_eff</code>. Here is the model code:</p>
+<div class="sourceCode" id="cb480"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb480-1"><a href="cha-AD.html#cb480-1" tabindex="-1"></a>model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb480-2"><a href="cha-AD.html#cb480-2" tabindex="-1"></a>  <span class="co"># priors </span></span>
+<span id="cb480-3"><a href="cha-AD.html#cb480-3" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb480-4"><a href="cha-AD.html#cb480-4" tabindex="-1"></a>  beta <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb480-5"><a href="cha-AD.html#cb480-5" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
+<span id="cb480-6"><a href="cha-AD.html#cb480-6" tabindex="-1"></a>  <span class="co"># random effects and data  </span></span>
+<span id="cb480-7"><a href="cha-AD.html#cb480-7" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>) {</span>
+<span id="cb480-8"><a href="cha-AD.html#cb480-8" tabindex="-1"></a>    <span class="co"># random effects</span></span>
+<span id="cb480-9"><a href="cha-AD.html#cb480-9" tabindex="-1"></a>    ran_eff[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma)</span>
+<span id="cb480-10"><a href="cha-AD.html#cb480-10" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>) {</span>
+<span id="cb480-11"><a href="cha-AD.html#cb480-11" tabindex="-1"></a>      <span class="co"># data</span></span>
+<span id="cb480-12"><a href="cha-AD.html#cb480-12" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dpois</span>(<span class="fu">exp</span>(intercept <span class="sc">+</span> beta<span class="sc">*</span>X[i,j] <span class="sc">+</span> ran_eff[i]))</span>
+<span id="cb480-13"><a href="cha-AD.html#cb480-13" tabindex="-1"></a>    }</span>
+<span id="cb480-14"><a href="cha-AD.html#cb480-14" tabindex="-1"></a>  }</span>
+<span id="cb480-15"><a href="cha-AD.html#cb480-15" tabindex="-1"></a>})</span></code></pre></div>
+<p>Note that we changed the prior on <code>sigma</code> to avoid having an upper bound. Prior distributions are not included in maximum likelihood using the Laplace approximation but do indicate the range of valid values. We recommend caution in using priors for variance component parameters (standard deviations, variances, precisions) that have a finite upper bound (e.g., <code>sigma ~ dunif(0, 100)</code>), because the probit transformation applied in that case may result in poor optimization performance.</p>
+<p>We’ll simulate some values for <code>X</code>.</p>
+<div class="sourceCode" id="cb481"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb481-1"><a href="cha-AD.html#cb481-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb481-2"><a href="cha-AD.html#cb481-2" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">50</span>), <span class="at">nrow =</span> <span class="dv">10</span>)</span></code></pre></div>
+<p>Next, we build the model, including <code>buildDerivs=TRUE</code>.</p>
+<div class="sourceCode" id="cb482"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb482-1"><a href="cha-AD.html#cb482-1" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(model_code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">X =</span> X), <span class="at">calculate =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb482-2"><a href="cha-AD.html#cb482-2" tabindex="-1"></a>                     <span class="at">buildDerivs =</span> <span class="cn">TRUE</span>) <span class="co"># Here is the argument needed for AD.</span></span></code></pre></div>
+<div id="finish-setting-up-the-glmm-example" class="section level3 hasAnchor" number="16.1.1">
+<h3><span class="header-section-number">16.1.1</span> Finish setting up the GLMM example<a href="cha-AD.html#finish-setting-up-the-glmm-example" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>As preparation for the Laplace examples below, we need to finish setting up the GLMM. We could have provided data in the call to <code>nimbleModel</code>, but instead we will simulate it using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.</p>
+<div class="sourceCode" id="cb483"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb483-1"><a href="cha-AD.html#cb483-1" tabindex="-1"></a>model<span class="sc">$</span>intercept <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb483-2"><a href="cha-AD.html#cb483-2" tabindex="-1"></a>model<span class="sc">$</span>beta <span class="ot">&lt;-</span> <span class="fl">0.2</span></span>
+<span id="cb483-3"><a href="cha-AD.html#cb483-3" tabindex="-1"></a>model<span class="sc">$</span>sigma <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb483-4"><a href="cha-AD.html#cb483-4" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">calculate</span>() <span class="co"># This will return NA because the model is not fully initialized.</span></span></code></pre></div>
+<pre><code>## [1] NA</code></pre>
+<div class="sourceCode" id="cb485"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb485-1"><a href="cha-AD.html#cb485-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">simulate</span>(model<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="st">&#39;ran_eff&#39;</span>))</span>
+<span id="cb485-2"><a href="cha-AD.html#cb485-2" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">calculate</span>() <span class="co"># Now the model is fully initialized: all nodes have valid values.</span></span></code></pre></div>
+<pre><code>## [1] -78.44085</code></pre>
+<div class="sourceCode" id="cb487"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb487-1"><a href="cha-AD.html#cb487-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">setData</span>(<span class="st">&#39;y&#39;</span>) <span class="co"># Now the model has y marked as data, with values from simulation.</span></span></code></pre></div>
+<p>If you are not very familiar with using a <code>nimble</code> model, that might have been confusing, but it was just for setting up the example.</p>
+<p>Finally, we will make a compiled version of the model.</p>
+<div class="sourceCode" id="cb488"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb488-1"><a href="cha-AD.html#cb488-1" tabindex="-1"></a>Cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span></code></pre></div>
+</div>
+</div>
+<div id="sec:AD-laplace" class="section level2 hasAnchor" number="16.2">
+<h2><span class="header-section-number">16.2</span> How to use Laplace approximation and adaptive Gauss-Hermite quadrature<a href="cha-AD.html#sec:AD-laplace" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Next we will show how to use nimble’s Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above. Laplace approximation is equivalent to first-order adaptive Gauss-Hermite quadrature, which is also available, although here we will focus on Laplace approximation only. What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation (used for finding the MLE efficiently) uses third derivatives. These are described in detail by <span class="citation">Skaug and Fournier (<a href="references.html#ref-skaug-fournier-06">2006</a>)</span> and <span class="citation">Fournier et al. (<a href="references.html#ref-fournier-etal-12">2012</a>)</span>.</p>
+<p>To create a Laplace approximation specialized to the parameters of interest for this model, we use the nimbleFunction <code>buildLaplace</code>. For many models, the setup code in <code>buildLaplace</code> will automatically determine the random effects to be integrated over and the associated nodes to calculate. In fact, if you omit the parameter nodes, it will assume that all top-level nodes in the model should be treated as parameters. If fine-grained control is needed, these various sets of nodes can be input directly into <code>buildLaplace</code>. To see what default handling of nodes is being done for your model, use <code>setupMargNodes</code> with the same node inputs as <code>buildLaplace</code>.</p>
+<div class="sourceCode" id="cb489"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb489-1"><a href="cha-AD.html#cb489-1" tabindex="-1"></a>glmm_laplace <span class="ot">&lt;-</span> <span class="fu">buildLaplace</span>(model, <span class="fu">c</span>(<span class="st">&#39;intercept&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;sigma&#39;</span>))</span>
+<span id="cb489-2"><a href="cha-AD.html#cb489-2" tabindex="-1"></a>Cglmm_laplace <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(glmm_laplace, <span class="at">project =</span> model)</span></code></pre></div>
+<p>Now we are ready to use some of the methods provided by <code>buildLaplace</code>. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood. Here we will show detailed steps for using the Laplace approximation, but see <code>help(runLaplace)</code> to combine the basic steps into one call.</p>
+<div class="sourceCode" id="cb490"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb490-1"><a href="cha-AD.html#cb490-1" tabindex="-1"></a><span class="co"># Get the Laplace approximation for one set of parameter values.</span></span>
+<span id="cb490-2"><a href="cha-AD.html#cb490-2" tabindex="-1"></a>Cglmm_laplace<span class="sc">$</span><span class="fu">calcLaplace</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>)) </span></code></pre></div>
+<pre><code>## [1] -65.57247</code></pre>
+<div class="sourceCode" id="cb492"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb492-1"><a href="cha-AD.html#cb492-1" tabindex="-1"></a>Cglmm_laplace<span class="sc">$</span><span class="fu">gr_Laplace</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>)) <span class="co"># Get the corresponding gradient.</span></span></code></pre></div>
+<pre><code>## [1] -1.866489  8.001907 -4.059747</code></pre>
+<div class="sourceCode" id="cb494"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb494-1"><a href="cha-AD.html#cb494-1" tabindex="-1"></a>MLE <span class="ot">&lt;-</span> Cglmm_laplace<span class="sc">$</span><span class="fu">findMLE</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>)) <span class="co"># Find the (approximate) MLE.</span></span>
+<span id="cb494-2"><a href="cha-AD.html#cb494-2" tabindex="-1"></a>MLE<span class="sc">$</span>par     <span class="co"># MLE parameter values</span></span></code></pre></div>
+<pre><code>## [1] -0.1492192  0.1934659  0.5703621</code></pre>
+<div class="sourceCode" id="cb496"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb496-1"><a href="cha-AD.html#cb496-1" tabindex="-1"></a>MLE<span class="sc">$</span>value   <span class="co"># MLE log likelihood value</span></span></code></pre></div>
+<pre><code>## [1] -63.44875</code></pre>
+<p>The final outputs show the MLE for <code>intercept</code>, <code>beta</code>, and <code>sigma</code>, followed by the maximum (approximate) likelihood.</p>
+<p>More information about the MLE can be obtained in two ways. The <code>summary</code> method
+can give estimated random effects and standard errors as well as the variance-covariance matrix
+for the parameters and/or the random effects. The <code>summaryLaplace</code> function
+returns similar information but with names included in a more useful way. For example:</p>
+<div class="sourceCode" id="cb498"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb498-1"><a href="cha-AD.html#cb498-1" tabindex="-1"></a>Cglmm_laplace<span class="sc">$</span><span class="fu">summary</span>(MLE)<span class="sc">$</span>randomEffects<span class="sc">$</span>estimates</span></code></pre></div>
+<pre><code>##  [1] -0.33711665 -0.02963529  0.40579361  1.04775648 -0.36731223  0.26912090
+##  [7] -0.54951124 -0.11865786  0.10009745 -0.04409902</code></pre>
+<div class="sourceCode" id="cb500"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb500-1"><a href="cha-AD.html#cb500-1" tabindex="-1"></a><span class="fu">summaryLaplace</span>(Cglmm_laplace, MLE)<span class="sc">$</span>params</span></code></pre></div>
+<pre><code>##             estimate        se
+## intercept -0.1492192 0.2465037
+## beta       0.1934659 0.1467228
+## sigma      0.5703621 0.2066538</code></pre>
+<p><code>buildLaplace</code> actually offers several choices in how computations are done, differing in how they use <em>double taping</em> for derivatives or not. In some cases one or another choice might be more efficient. See <code>help(buildLaplace)</code> if you want to explore it further.</p>
+<p>Finally, let’s confirm that it worked by comparing to results from package <code>glmmTMB</code>. In this case, nimble’s Laplace approximation is faster than <code>glmmTMB</code> (on the machine used here), but that is not the point of this example. Here our interest is in checking that nimble’s Laplace approximation worked correctly in a case where we have an established tool such as <code>glmmTMB</code>.</p>
+<div class="sourceCode" id="cb502"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb502-1"><a href="cha-AD.html#cb502-1" tabindex="-1"></a><span class="fu">library</span>(glmmTMB)</span>
+<span id="cb502-2"><a href="cha-AD.html#cb502-2" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(model<span class="sc">$</span>y) <span class="co"># Re-arrange inputs for call to glmmTMB</span></span>
+<span id="cb502-3"><a href="cha-AD.html#cb502-3" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(X)</span>
+<span id="cb502-4"><a href="cha-AD.html#cb502-4" tabindex="-1"></a>group <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="dv">5</span>)</span>
+<span id="cb502-5"><a href="cha-AD.html#cb502-5" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">cbind</span>(X,y,group))</span>
+<span id="cb502-6"><a href="cha-AD.html#cb502-6" tabindex="-1"></a>tmb_fit <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(y <span class="sc">~</span> X <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">|</span> group), <span class="at">family =</span> poisson, <span class="at">data =</span> data)</span>
+<span id="cb502-7"><a href="cha-AD.html#cb502-7" tabindex="-1"></a><span class="fu">summary</span>(tmb_fit)</span></code></pre></div>
+<pre><code>##  Family: poisson  ( log )
+## Formula:          y ~ X + (1 | group)
+## Data: data
+## 
+##      AIC      BIC   logLik deviance df.resid 
+##    132.9    138.6    -63.4    126.9       47 
+## 
+## Random effects:
+## 
+## Conditional model:
+##  Groups Name        Variance Std.Dev.
+##  group  (Intercept) 0.3253   0.5703  
+## Number of obs: 50, groups:  group, 10
+## 
+## Conditional model:
+##             Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept)  -0.1492     0.2465  -0.605    0.545
+## X             0.1935     0.1467   1.319    0.187</code></pre>
+<div class="sourceCode" id="cb504"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb504-1"><a href="cha-AD.html#cb504-1" tabindex="-1"></a><span class="fu">logLik</span>(tmb_fit)</span></code></pre></div>
+<pre><code>## &#39;log Lik.&#39; -63.44875 (df=3)</code></pre>
+<p>The results match within numerical tolerance typical of optimization problems. Specifically, the coefficients for <code>(Intercept)</code> and <code>X</code> match nimble’s <code>Intercept</code> and <code>beta</code>, the random effects standard deviation for <code>group</code> matches nimble’s <code>sigma</code>, and the standard errors match.</p>
+</div>
+<div id="sec:AD-user-def" class="section level2 hasAnchor" number="16.3">
+<h2><span class="header-section-number">16.3</span> How to support derivatives in user-defined functions and distributions<a href="cha-AD.html#sec:AD-user-def" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>It is possible to activate derivative support for a user-defined function or distribution used in a model. Simply set <code>buildDerivs=TRUE</code> in <code>nimbleFunction</code>.</p>
+<p>Here is an extremely toy example. Let’s say we want a model with one node that follows a user-defined distribution, which will happen to be the same as <code>dnorm</code> (a normal distribution) for illustration.</p>
+<p>The model code is:</p>
+<div class="sourceCode" id="cb506"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb506-1"><a href="cha-AD.html#cb506-1" tabindex="-1"></a>toyCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb506-2"><a href="cha-AD.html#cb506-2" tabindex="-1"></a>  x <span class="sc">~</span> <span class="fu">d_my_norm</span>(<span class="at">mean =</span> mu, <span class="at">sd =</span> sigma)</span>
+<span id="cb506-3"><a href="cha-AD.html#cb506-3" tabindex="-1"></a>  mu <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="dv">10</span>, <span class="dv">10</span>)</span>
+<span id="cb506-4"><a href="cha-AD.html#cb506-4" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">5</span>)</span>
+<span id="cb506-5"><a href="cha-AD.html#cb506-5" tabindex="-1"></a>})</span></code></pre></div>
+<p>The user-defined distribution is:</p>
+<div class="sourceCode" id="cb507"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb507-1"><a href="cha-AD.html#cb507-1" tabindex="-1"></a>d_my_norm <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb507-2"><a href="cha-AD.html#cb507-2" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(), <span class="at">mean =</span> <span class="fu">double</span>(), <span class="at">sd =</span> <span class="fu">double</span>(),</span>
+<span id="cb507-3"><a href="cha-AD.html#cb507-3" tabindex="-1"></a>                 <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
+<span id="cb507-4"><a href="cha-AD.html#cb507-4" tabindex="-1"></a>    ans <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">log</span>(<span class="fu">sqrt</span>(<span class="dv">2</span><span class="sc">*</span>pi)<span class="sc">*</span>sd) <span class="sc">-</span> <span class="fl">0.5</span><span class="sc">*</span>((x<span class="sc">-</span>mean)<span class="sc">/</span>sd)<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb507-5"><a href="cha-AD.html#cb507-5" tabindex="-1"></a>    <span class="cf">if</span>(log) <span class="fu">return</span>(ans)</span>
+<span id="cb507-6"><a href="cha-AD.html#cb507-6" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">exp</span>(ans))</span>
+<span id="cb507-7"><a href="cha-AD.html#cb507-7" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb507-8"><a href="cha-AD.html#cb507-8" tabindex="-1"></a>  },</span>
+<span id="cb507-9"><a href="cha-AD.html#cb507-9" tabindex="-1"></a>  <span class="at">buildDerivs=</span><span class="cn">TRUE</span></span>
+<span id="cb507-10"><a href="cha-AD.html#cb507-10" tabindex="-1"></a>)</span></code></pre></div>
+<p>Now we can build the model with <code>buildDerivs=TRUE</code> and compile it:</p>
+<div class="sourceCode" id="cb508"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb508-1"><a href="cha-AD.html#cb508-1" tabindex="-1"></a><span class="co"># Don&#39;t worry about the warnings from nimbleModel in this case.</span></span>
+<span id="cb508-2"><a href="cha-AD.html#cb508-2" tabindex="-1"></a>toyModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(toyCode, <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">0</span>, <span class="at">sigma =</span> <span class="dv">1</span>, <span class="at">x =</span> <span class="dv">0</span>),</span>
+<span id="cb508-3"><a href="cha-AD.html#cb508-3" tabindex="-1"></a>                        <span class="at">buildDerivs =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>Now <code>toyModel</code> can be used in algorithms such as HMC and Laplace approximation, as above, or new ones you might write, as below.</p>
+</div>
+<div id="what-operations-are-and-arent-supported-for-ad" class="section level2 hasAnchor" number="16.4">
+<h2><span class="header-section-number">16.4</span> What operations are and aren’t supported for AD<a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Much of the math supported by NIMBLE will work for AD. Here are some details on what is and isn’t supported, as well as on some options to control how linear algebra is handled.</p>
+<p>Features that are not supported for AD include:</p>
+<ul>
+<li>cumulative (“p”) and quantile (“q”) functions for distributions;</li>
+<li>truncated distributions (because they use cumulative distribution functions), for any derivatives;</li>
+<li>discrete distributions, for derivatives with respect to the random variable;</li>
+<li>random number generation;</li>
+<li>some specific functions including <code>step</code>, <code>%%</code> (mod), <code>eigen</code>, <code>svd</code>, and <code>besselK</code>; and</li>
+<li>most model operations (other than <code>model$calculate</code>, which is supported) including <code>model$calculateDiff</code>, <code>model$simulate</code>, <code>model$getBound</code>, and <code>model$getParam</code>.</li>
+</ul>
+<p>Note that functions and distributions that are not supported can still be used in a model, as long as no algorithm tries to take derivatives with respect to node(s) that is (are) not supported. For example, <code>x ~ dcat(p[1:3])</code> declares <code>x</code> to be a discrete random variable following a categorical distribution. An algorithm can use derivatives with respect to <code>p[1:3]</code> (or with respect to parent nodes of <code>p[1:3]</code>) because the calculation of the log probability of <code>x</code> given <code>p[1:3]</code> is continuous with respect to <code>p</code>. However, derivatives with respect to <code>x</code> will not work. In the case of truncated distributions, derivatives with respect to neither the parameters nor to the random variable are supported.</p>
+<p>Some details on what is supported include:</p>
+<ul>
+<li><code>round</code>, <code>floor</code>, <code>ceil</code>, and <code>trunc</code> are all supported with derivatives defined to be zero everywhere.</li>
+<li><code>pow(a, b)</code> requires positive <code>a</code> and <code>b</code>. Note that if <code>b</code> is coded as a (possibly negative) integer, <code>pow_int</code> will be used. For example <code>pow(tau, -2)</code> will be converted to <code>pow_int(tau, -2)</code>.</li>
+<li>A new function <code>pow_int(a, b)</code> returns <code>pow(a, round(b))</code> and thus sets all derivatives with respect to <code>b</code> to zero. This allows valid derivatives with respect to <code>a</code> even if it takes a negative value.</li>
+</ul>
+<p>For the linear algebra functions <code>%*%</code>, <code>chol</code>, <code>forwardsolve</code>, <code>backsolve</code>, and <code>inverse</code>, there are special extensions provided by NIMBLE for CppAD called (in CppAD jargon) “atomics”. By default, these atomics will be used and often improve efficiency. There may be cases where they decrease efficiency, which might include when the matrix operands are small or contain many zeros. To compare results with and without use of the atomics, they can be turned off with a set of options:</p>
+<div class="sourceCode" id="cb509"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb509-1"><a href="cha-AD.html#cb509-1" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">useADmatMultAtomic =</span> <span class="cn">FALSE</span>) <span class="co"># for %*%</span></span>
+<span id="cb509-2"><a href="cha-AD.html#cb509-2" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">useADcholAtomic =</span> <span class="cn">FALSE</span>)    <span class="co"># for chol</span></span>
+<span id="cb509-3"><a href="cha-AD.html#cb509-3" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">useADmatInverseAtomic =</span> <span class="cn">FALSE</span>) <span class="co"># for inverse</span></span>
+<span id="cb509-4"><a href="cha-AD.html#cb509-4" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">useADsolveAtomic =</span> <span class="cn">FALSE</span>)   <span class="co"># for forwardsolve and backsolve</span></span></code></pre></div>
+<p>When a linear algebra atomic is turned off, the AD system simply uses all the scalar operations that compose the linear algebra operation.</p>
+<p>Another important feature of AD is that sometimes values get “baked in” to AD calculations, meaning they are used <em>and permanently retained</em> from the first set of calculations and then can’t have their value changed later (unless an algorithm does a “reset”, described below). For people writing user-defined distributions and functions, a brief summary of what can get baked in includes:</p>
+<ul>
+<li>the extent (iteration values) of any for-loops.</li>
+<li>values of any arguments that are not of type ‘double’, including e.g. the ‘log’ argument in <code>d_my_norm</code>. (‘d’ functions called from models always have <code>log = TRUE</code>, so in that case it is not a problem.)</li>
+<li>the evaluation path followed by any if-then-else calls.</li>
+<li>values of any integer indices.</li>
+</ul>
+<p>See below for more thorough explanations.</p>
+</div>
+<div id="basics-of-obtaining-derivatives-in-nimblefunctions" class="section level2 hasAnchor" number="16.5">
+<h2><span class="header-section-number">16.5</span> Basics of obtaining derivatives in <code>nimbleFunctions</code><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Now that we have seen a derivative-enabled algorithm work, let’s see how to obtain derivatives in methods you write. From here on, this part of the chapter is oriented towards algorithm developers. We’ll start by showing how derivatives work in nimbleFunctions <em>without</em> using a model. The AD system allows you to obtain derivatives of one function or method from another.</p>
+<p>Let’s get derivatives of the function <code>y = exp(-d * x)</code> where <code>x</code> is a vector, <code>d</code> is a scalar, and <code>y</code> is a vector.</p>
+<div class="sourceCode" id="cb510"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb510-1"><a href="cha-AD.html#cb510-1" tabindex="-1"></a>derivs_demo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb510-2"><a href="cha-AD.html#cb510-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>() {},</span>
+<span id="cb510-3"><a href="cha-AD.html#cb510-3" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb510-4"><a href="cha-AD.html#cb510-4" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">exp</span>(<span class="sc">-</span>d<span class="sc">*</span>x))</span>
+<span id="cb510-5"><a href="cha-AD.html#cb510-5" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb510-6"><a href="cha-AD.html#cb510-6" tabindex="-1"></a>  },</span>
+<span id="cb510-7"><a href="cha-AD.html#cb510-7" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb510-8"><a href="cha-AD.html#cb510-8" tabindex="-1"></a>    <span class="at">derivsRun =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb510-9"><a href="cha-AD.html#cb510-9" tabindex="-1"></a>      wrt <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="fu">length</span>(x)) <span class="co"># total length of d and x</span></span>
+<span id="cb510-10"><a href="cha-AD.html#cb510-10" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">derivs</span>(<span class="fu">run</span>(d, x), <span class="at">wrt =</span> wrt, <span class="at">order =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">2</span>))</span>
+<span id="cb510-11"><a href="cha-AD.html#cb510-11" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">ADNimbleList</span>())</span>
+<span id="cb510-12"><a href="cha-AD.html#cb510-12" tabindex="-1"></a>    }</span>
+<span id="cb510-13"><a href="cha-AD.html#cb510-13" tabindex="-1"></a>  ),</span>
+<span id="cb510-14"><a href="cha-AD.html#cb510-14" tabindex="-1"></a>  <span class="at">buildDerivs =</span> <span class="st">&#39;run&#39;</span></span>
+<span id="cb510-15"><a href="cha-AD.html#cb510-15" tabindex="-1"></a>)</span></code></pre></div>
+<p>Here are some things to notice:</p>
+<ul>
+<li>Having <code>setup</code> code allows the nimbleFunction to have multiple methods (i.e. to behave like a class definition in object-oriented programming). Some nimbleFunctions don’t have <code>setup</code> code, but <code>setup</code> code is required when there will be a call to <code>derivs</code>. If, as here, you don’t need the <code>setup</code> to do anything, you can simply use <code>setup=TRUE</code>, which is equivalent to <code>setup=function(){}</code>.</li>
+<li>Any arguments to <code>run</code> that are real numbers (i.e. regular double precision numbers, but not integers or logicals) will have derivatives tracked when called through <code>derivs</code>.</li>
+<li>The “with-respect-to” (<code>wrt</code>) argument gives indices of the arguments for which you want derivatives. In this case, we’re including all elements of <code>d</code> and <code>X</code>. The indices form one sequence over all arguments.</li>
+<li><code>order</code> is a vector of derivative orders to return, which can include any of <code>0</code> (the function value, not a derivative!), <code>1</code> (1st order), or <code>2</code> (2nd order). Higher-order derivatives can be obtained by double-taping, described below.</li>
+<li>Basics of <code>nimbleFunction</code> programming are covered in Chapters <a href="cha-RCfunctions.html#cha-RCfunctions">11</a>-<a href="cha-progr-with-models.html#cha-progr-with-models">15</a>. These include type declarations (<code>double()</code> for scalar, <code>double(1)</code> for vector), the distinction between <code>setup</code> code and <code>run</code> code, and how to write more methods (of which <code>run</code> is simply a default name when there is only one method).</li>
+<li><code>derivs</code> can alternatively be called <code>nimDerivs</code>. In fact the former will be converted to the latter internally.</li>
+</ul>
+<p>Let’s see this work.</p>
+<div class="sourceCode" id="cb511"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb511-1"><a href="cha-AD.html#cb511-1" tabindex="-1"></a>my_derivs_demo <span class="ot">&lt;-</span> <span class="fu">derivs_demo</span>()</span>
+<span id="cb511-2"><a href="cha-AD.html#cb511-2" tabindex="-1"></a>C_my_derivs_demo <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(my_derivs_demo)</span>
+<span id="cb511-3"><a href="cha-AD.html#cb511-3" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fl">1.2</span></span>
+<span id="cb511-4"><a href="cha-AD.html#cb511-4" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.1</span>, <span class="fl">2.2</span>)</span>
+<span id="cb511-5"><a href="cha-AD.html#cb511-5" tabindex="-1"></a>C_my_derivs_demo<span class="sc">$</span><span class="fu">derivsRun</span>(d, x)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## [1] 0.08045961 0.07136127
+## Field &quot;jacobian&quot;:
+##            [,1]        [,2]        [,3]
+## [1,] -0.1689652 -0.09655153  0.00000000
+## [2,] -0.1569948  0.00000000 -0.08563352
+## Field &quot;hessian&quot;:
+## , , 1
+## 
+##           [,1]      [,2] [,3]
+## [1,] 0.3548269 0.1222986    0
+## [2,] 0.1222986 0.1158618    0
+## [3,] 0.0000000 0.0000000    0
+## 
+## , , 2
+## 
+##           [,1] [,2]      [,3]
+## [1,] 0.3453885    0 0.1170325
+## [2,] 0.0000000    0 0.0000000
+## [3,] 0.1170325    0 0.1027602</code></pre>
+<p>We can see that using <code>order = 0:2</code> results in the the value (“0th” order result, i.e. the value returned by <code>run(d, x)</code>), the Jacobian (matrix of first order derivatives), and the Hessian (array of second order derivatives). The <code>run</code> function here has taken three inputs (in the order <code>d</code>, <code>x[1]</code>, <code>x[2]</code>) and returned two outputs (the first and second elements of <code>exp(-d*x)</code>).</p>
+<p>The i-th Jacobian row contains the first derivatives of the i-th output with respect to <code>d</code>, <code>x[1]</code>, and <code>x[2]</code>, in that order. The first and second indices of the Hessian array follow the same ordering as the columns of the Jacobian. The third index of the Hessian array is for the output index. For example, <code>hessian[3,1,2]</code> is the second derivative of the second output value (third index = 2) with respect to <code>x[2]</code> (first index = 3) and <code>d</code> (second index = 1).</p>
+<p>(Although it may seem inconsistent to have the output index be first for Jacobian and last for Hessian, it is consistent with some standards for how these objects are created in other packages and used mathematically.)</p>
+<p>When a function being called for derivatives (<code>run</code> in this case) has non-scalar arguments (<code>x</code> in this case), the indexing of inputs goes in order of arguments, and in column-major order within arguments. For example, if we had arguments <code>x = double(1)</code> and <code>z = double(2)</code> (a matrix), the inputs would be ordered as <code>x[1]</code>, <code>x[2]</code>, …, <code>z[1, 1]</code>, <code>z[2, 1]</code>, …, <code>z[1, 2]</code>, <code>z[2, 2]</code>, …, etc.</p>
+<div id="checking-derivatives-with-uncompiled-execution" class="section level3 hasAnchor" number="16.5.1">
+<h3><span class="header-section-number">16.5.1</span> Checking derivatives with uncompiled execution<a href="cha-AD.html#checking-derivatives-with-uncompiled-execution" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Derivatives can also be calculated in uncompiled execution, but they will be much slower and less accurate: slower because they are run in R, and less accurate because they use finite element methods (from packages <code>pracma</code> and/or <code>numDeriv</code>). Uncompiled execution is mostly useful for checking that compiled derivatives are working correctly, because although they are slower and less accurate, they are also much simpler internally and thus provide good checks on compiled results. For example:</p>
+<div class="sourceCode" id="cb513"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb513-1"><a href="cha-AD.html#cb513-1" tabindex="-1"></a>my_derivs_demo<span class="sc">$</span><span class="fu">derivsRun</span>(d, x)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## [1] 0.08045961 0.07136127
+## Field &quot;jacobian&quot;:
+##            [,1]        [,2]        [,3]
+## [1,] -0.1689652 -0.09655153  0.00000000
+## [2,] -0.1569948  0.00000000 -0.08563352
+## Field &quot;hessian&quot;:
+## , , 1
+## 
+##           [,1]      [,2] [,3]
+## [1,] 0.3548269 0.1222986    0
+## [2,] 0.1222986 0.1158618    0
+## [3,] 0.0000000 0.0000000    0
+## 
+## , , 2
+## 
+##           [,1] [,2]      [,3]
+## [1,] 0.3453885    0 0.1170325
+## [2,] 0.0000000    0 0.0000000
+## [3,] 0.1170325    0 0.1027602</code></pre>
+<p>We can see that the results are very close, but typically not identical, to those from the compiled version.</p>
+</div>
+<div id="sec:AD-holding-out" class="section level3 hasAnchor" number="16.5.2">
+<h3><span class="header-section-number">16.5.2</span> Holding some local variables out of derivative tracking<a href="cha-AD.html#sec:AD-holding-out" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Sometimes one wants to omit tracking of certain variables in derivative calculations. There are three ways to do this: naming variables in an <code>ignore</code> set; ensuring a variable’s type is <code>integer</code> (not simply <code>numeric</code> with an integer value) or <code>logical</code>; or using the <code>ADbreak</code> function. The differences between these have to do with the fact that the variable types used for tracking derivatives in C++ are special. The <code>ignore</code> method marks a variable as a regular type rather than a derivative-tracking type. The <code>integer</code> or <code>logical</code> method results in a regular (integer or logical) variable simply because those types are never used in derivative-tracking. The <code>ADbreak</code> method assigns one derivative-tracked variable to another (derivative-tracked or not) variable while severing any actual derivative tracking between them.</p>
+<div id="holding-variables-out-of-derivative-tracking-using-ignore" class="section level4 hasAnchor" number="16.5.2.1">
+<h4><span class="header-section-number">16.5.2.1</span> Holding variables out of derivative tracking using <code>ignore</code><a href="cha-AD.html#holding-variables-out-of-derivative-tracking-using-ignore" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>Here is an example of <code>ignore</code>, while <code>ADbreak</code> is described below.</p>
+<p>Say that we write <code>exp(-d*x)</code> using a for-loop instead of a vectorized operation as above. It wouldn’t make sense to track derivatives for the for-loop index (<code>i</code>), and indeed it would cause <code>compileNimble</code> to fail. The code to use a for-loop index <code>i</code> while telling <code>derivs</code> to <em>ignore</em> derivatives for <code>i</code> is:</p>
+<div class="sourceCode" id="cb515"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb515-1"><a href="cha-AD.html#cb515-1" tabindex="-1"></a>derivs_demo2 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb515-2"><a href="cha-AD.html#cb515-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>() {},</span>
+<span id="cb515-3"><a href="cha-AD.html#cb515-3" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb515-4"><a href="cha-AD.html#cb515-4" tabindex="-1"></a>    ans <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="at">length =</span> <span class="fu">length</span>(x))</span>
+<span id="cb515-5"><a href="cha-AD.html#cb515-5" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(x))</span>
+<span id="cb515-6"><a href="cha-AD.html#cb515-6" tabindex="-1"></a>      ans[i] <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="sc">-</span>d<span class="sc">*</span>x[i])</span>
+<span id="cb515-7"><a href="cha-AD.html#cb515-7" tabindex="-1"></a>    <span class="fu">return</span>(ans)</span>
+<span id="cb515-8"><a href="cha-AD.html#cb515-8" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb515-9"><a href="cha-AD.html#cb515-9" tabindex="-1"></a>  },</span>
+<span id="cb515-10"><a href="cha-AD.html#cb515-10" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb515-11"><a href="cha-AD.html#cb515-11" tabindex="-1"></a>    <span class="at">derivsRun =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb515-12"><a href="cha-AD.html#cb515-12" tabindex="-1"></a>      wrt <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="fu">length</span>(x)) <span class="co"># total length of d and x</span></span>
+<span id="cb515-13"><a href="cha-AD.html#cb515-13" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">derivs</span>(<span class="fu">run</span>(d, x), <span class="at">wrt =</span> wrt, <span class="at">order =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">2</span>))</span>
+<span id="cb515-14"><a href="cha-AD.html#cb515-14" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">ADNimbleList</span>())</span>
+<span id="cb515-15"><a href="cha-AD.html#cb515-15" tabindex="-1"></a>    }</span>
+<span id="cb515-16"><a href="cha-AD.html#cb515-16" tabindex="-1"></a>  ),</span>
+<span id="cb515-17"><a href="cha-AD.html#cb515-17" tabindex="-1"></a>  <span class="at">buildDerivs =</span> <span class="fu">list</span>(<span class="at">run =</span> <span class="fu">list</span>(<span class="at">ignore =</span> <span class="st">&#39;i&#39;</span>))</span>
+<span id="cb515-18"><a href="cha-AD.html#cb515-18" tabindex="-1"></a>)</span></code></pre></div>
+<p>We can see that it gives identical results as above, looking at only the Jacobian to keep the output short.</p>
+<div class="sourceCode" id="cb516"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb516-1"><a href="cha-AD.html#cb516-1" tabindex="-1"></a>my_derivs_demo2 <span class="ot">&lt;-</span> <span class="fu">derivs_demo2</span>()</span>
+<span id="cb516-2"><a href="cha-AD.html#cb516-2" tabindex="-1"></a>C_my_derivs_demo2 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(my_derivs_demo2)</span>
+<span id="cb516-3"><a href="cha-AD.html#cb516-3" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fl">1.2</span></span>
+<span id="cb516-4"><a href="cha-AD.html#cb516-4" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.1</span>, <span class="fl">2.2</span>)</span>
+<span id="cb516-5"><a href="cha-AD.html#cb516-5" tabindex="-1"></a>C_my_derivs_demo2<span class="sc">$</span><span class="fu">derivsRun</span>(d, x)<span class="sc">$</span>jacobian</span></code></pre></div>
+<pre><code>##            [,1]        [,2]        [,3]
+## [1,] -0.1689652 -0.09655153  0.00000000
+## [2,] -0.1569948  0.00000000 -0.08563352</code></pre>
+<p>One might think it should be obvious that <code>i</code> should not be involved in derivatives, but sometimes math is actually done with a for-loop index. Another way to ensure derivatives won’t be tracked for <code>i</code> would be to write <code>i &lt;- 1L</code>, before the loop. By assigning a definite integer to <code>i</code>, it will be established as definitely of integer type throughout the function and thus not have derivatives tracked. (If you are not familiar with the <code>L</code> in R, try <code>storage.mode(1L)</code> vs <code>storage.mode(1)</code>.) The only way to mark a double-precision variable to be a regular (not derivative-tracking) type is to name it in the <code>ignore</code> set.</p>
+<p>Another case where the <code>ignore</code> or <code>integer</code> methods are useful is in determining the start and/or end values of a for-loop. If you need <code>for(i in 1:n) {...}</code> where you previously set <code>n &lt;- length(some_values)</code>, you need <code>n</code> to be a non-derivative tracking type. You can achieve this either by including <code>"n"</code> in the <code>ignore</code> set or by doing <code>n &lt;- 0L</code> before setting <code>n &lt;- length(some_values)</code>, to establish with certainty that <code>n</code> is an integer.</p>
+<p>Because derivatives are not tracked for integer or logical variables, arguments to <code>run</code> that have <code>integer</code> or <code>logical</code> types will not have derivatives tracked. You can also include an argument name (even for a double-precision argument) in the <code>ignore</code> set. In any of these cases, you must then be careful in passing a non-derivative tracking type to another function. If passed as an argument to another function, the argument in that function must also be a non-derivative tracking type (<code>integer</code>, <code>logical</code>, or in the <code>ignore</code> set).</p>
+<p>If you need to assign a value from a derivative-tracked variable to a non-derivative tracked variable, you must use <code>ADbreak</code> (see the next subsection for more on this). For example if <code>y</code> is in the <code>ignore</code> set, <code>y &lt;- ADbreak(x)</code> assigns the value of <code>x</code> (with no derivative tracking) to <code>y</code>. You can also do <code>y &lt;- ADbreak(x)</code> if <code>y</code> is <em>not</em> in the <code>ignore</code> set, and the result is that <code>y</code> has derivative tracking and is initialized to the value of <code>x</code>, but all derivatives of <code>y</code> with respect to <code>x</code> are 0. This severs the derivative (chain-rule) relationship between <code>x</code> and any subsequent calculations with <code>y</code>, but it does allow <code>y</code> to be used where a derivative-tracking variable is expected (e.g. as another function’s argument). <strong>Derivative-tracked variables that are severed by <code>ADbreak</code> will be “baked in” to the AD tape from the first call</strong>. This means their values will be constants and <strong>will not change on subsequent calls</strong> even if the input values change, unless you use the <code>reset</code> feature. See section <a href="cha-AD.html#sec:understanding-more-AD">16.5.4</a> to learn more about “baked in” values.</p>
+<p>Only some math operations will work with a mix of derivative-tracking and regular variables. For example, most scalar operations will work with one argument of each kind. However, more complicated operations such as matrix multiplication require the arguments to be either both derivative-tracking or both regular.</p>
+<p>Note the more elaborate value for <code>buildDerivs</code>. In the previous example, this was just a character vector. Here it is a named list, with each element itself being a list of control values. The control value <code>ignore</code> is a character vector of variable names to ignore in derivative tracking. <code>buildDerivs = 'run'</code> is equivalent to <code>buildDerivs = list(run = list())</code>.</p>
+</div>
+<div id="holding-function-arguments-including-variables-passed-from-a-model-out-of-derivative-tracking" class="section level4 hasAnchor" number="16.5.2.2">
+<h4><span class="header-section-number">16.5.2.2</span> Holding function arguments (including variables passed from a model) out of derivative tracking<a href="cha-AD.html#holding-function-arguments-including-variables-passed-from-a-model-out-of-derivative-tracking" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>Derivatives can be tracked through function calls, including from a model to a user-defined distribution or function (see <a href="cha-AD.html#sec:AD-user-def">16.3</a> and <a href="cha-AD.html#sec:AD-multiple-NF">16.5.3</a>). However, if one function is tracking derivatives for <code>x</code> and passes <code>x</code> as an argument to another function where it is non-derivative tracking type, there will be an error (most likely from <code>compileNimble</code>). The problem is that, as noted above, the C++ variable types used for tracking derivatives or not are different and are not automatically interchangeable. Importantly, variables passed from models are always derivative-tracking (even if they will always have integer values).</p>
+<p>For this situation, you can use <code>ADbreak</code> to stop derivative tracking. For example, if one has a nimbleFunction argument <code>x</code>, one would do <code>x_noDeriv &lt;- ADbreak(x)</code> and then use <code>x_noDeriv</code> in subsequent calculations. This “breaks” derivative tracking in the sense that the derivative of <code>x_noDeriv</code> with respect to <code>x</code> is 0. However, it is important to realize that <code>x_noDeriv</code> is still a derivative-tracking type (unless it is in the <code>ignore</code> set), so it can be passed to other functions involved in the derivative-tracked operations. And, on the other hand, it can’t be used as a for-loop index or as the start of end of a for-loop extent. As noted above, if the values of <code>x</code> or <code>x_noDeriv</code> are used in further calculations, their values will be “baked in” to the tape.</p>
+<p>Including <code>"x"</code> in the <code>ignore</code> set won’t work in this case because, if <code>x</code> is a function argument, its type will then be changed to be a non-derivative type. If a derivative-tracking type is then passed as the value for <code>x</code> there will be a mismatch in types. Since variables passed from models always allow derivative-tracking, one should not <code>ignore</code> the corresponding function arguments.</p>
+<p>Note that <code>ADbreak</code> only works for scalars. If you need to break AD tracking for a non-scalar, you have to write a for-loop to apply <code>ADbreak</code> for each element. For example:</p>
+<div class="sourceCode" id="cb518"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb518-1"><a href="cha-AD.html#cb518-1" tabindex="-1"></a>x_noDeriv <span class="ot">&lt;-</span> <span class="fu">nimNumeric</span>(<span class="fu">length</span>(x), <span class="at">init=</span><span class="cn">FALSE</span>)</span>
+<span id="cb518-2"><a href="cha-AD.html#cb518-2" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="dv">1</span><span class="dt">L</span></span>
+<span id="cb518-3"><a href="cha-AD.html#cb518-3" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(x)) x_noDeriv[i] <span class="ot">&lt;-</span> <span class="fu">ADbreak</span>(x[i])</span></code></pre></div>
+<p>In summary:</p>
+<ul>
+<li>Use the <code>ignore</code> set or explicit creation of variables as <code>integer</code> or <code>logical</code> to create regular variable types.</li>
+<li>If you need an argument to have derivative-tracking (as is always the case when called from a model) but derivatives with respect to it don’t make sense, use <code>ADbreak</code> to assign to a local variable that will “bake in” the value and remove it from derivative tracking. The local variable can be regular (if it is in the <code>ignore</code> list or was created first as an <code>integer</code> or <code>logical</code>) or derivative-tracking.</li>
+</ul>
+</div>
+</div>
+<div id="sec:AD-multiple-NF" class="section level3 hasAnchor" number="16.5.3">
+<h3><span class="header-section-number">16.5.3</span> Using AD with multiple nimbleFunctions<a href="cha-AD.html#sec:AD-multiple-NF" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Derivatives will be tracked through whatever series of calculations occur in a method, possibly including calls to other methods or nimbleFunctions that have <code>buildDerivs</code> set. Let’s look at an example where we have a separate function to return the element-wise square root of an input vector. The net calculation for derivatives will be <code>sqrt(exp(-d*x)))</code>.</p>
+<div class="sourceCode" id="cb519"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb519-1"><a href="cha-AD.html#cb519-1" tabindex="-1"></a>nf_sqrt <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb519-2"><a href="cha-AD.html#cb519-2" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb519-3"><a href="cha-AD.html#cb519-3" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">sqrt</span>(x))</span>
+<span id="cb519-4"><a href="cha-AD.html#cb519-4" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb519-5"><a href="cha-AD.html#cb519-5" tabindex="-1"></a>  },</span>
+<span id="cb519-6"><a href="cha-AD.html#cb519-6" tabindex="-1"></a>  <span class="at">buildDerivs =</span> <span class="cn">TRUE</span></span>
+<span id="cb519-7"><a href="cha-AD.html#cb519-7" tabindex="-1"></a>)</span>
+<span id="cb519-8"><a href="cha-AD.html#cb519-8" tabindex="-1"></a></span>
+<span id="cb519-9"><a href="cha-AD.html#cb519-9" tabindex="-1"></a>derivs_demo3 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb519-10"><a href="cha-AD.html#cb519-10" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>() {},</span>
+<span id="cb519-11"><a href="cha-AD.html#cb519-11" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb519-12"><a href="cha-AD.html#cb519-12" tabindex="-1"></a>    ans <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="sc">-</span>d<span class="sc">*</span>x)</span>
+<span id="cb519-13"><a href="cha-AD.html#cb519-13" tabindex="-1"></a>    ans <span class="ot">&lt;-</span> <span class="fu">nf_sqrt</span>(ans) </span>
+<span id="cb519-14"><a href="cha-AD.html#cb519-14" tabindex="-1"></a>    <span class="fu">return</span>(ans) </span>
+<span id="cb519-15"><a href="cha-AD.html#cb519-15" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb519-16"><a href="cha-AD.html#cb519-16" tabindex="-1"></a>  }, </span>
+<span id="cb519-17"><a href="cha-AD.html#cb519-17" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb519-18"><a href="cha-AD.html#cb519-18" tabindex="-1"></a>    <span class="at">derivsRun =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb519-19"><a href="cha-AD.html#cb519-19" tabindex="-1"></a>      wrt <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="fu">length</span>(x)) <span class="co"># total length of d and x</span></span>
+<span id="cb519-20"><a href="cha-AD.html#cb519-20" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">derivs</span>(<span class="fu">run</span>(d, x), <span class="at">wrt =</span> wrt, <span class="at">order =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">2</span>))</span>
+<span id="cb519-21"><a href="cha-AD.html#cb519-21" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">ADNimbleList</span>())</span>
+<span id="cb519-22"><a href="cha-AD.html#cb519-22" tabindex="-1"></a>    }</span>
+<span id="cb519-23"><a href="cha-AD.html#cb519-23" tabindex="-1"></a>  ),</span>
+<span id="cb519-24"><a href="cha-AD.html#cb519-24" tabindex="-1"></a>  <span class="at">buildDerivs =</span> <span class="st">&#39;run&#39;</span></span>
+<span id="cb519-25"><a href="cha-AD.html#cb519-25" tabindex="-1"></a>)</span></code></pre></div>
+<p>And then let’s see it work:</p>
+<div class="sourceCode" id="cb520"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb520-1"><a href="cha-AD.html#cb520-1" tabindex="-1"></a>my_derivs_demo3 <span class="ot">&lt;-</span> <span class="fu">derivs_demo3</span>()</span>
+<span id="cb520-2"><a href="cha-AD.html#cb520-2" tabindex="-1"></a>C_my_derivs_demo3 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(my_derivs_demo3)</span>
+<span id="cb520-3"><a href="cha-AD.html#cb520-3" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fl">1.2</span></span>
+<span id="cb520-4"><a href="cha-AD.html#cb520-4" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.1</span>, <span class="fl">2.2</span>)</span>
+<span id="cb520-5"><a href="cha-AD.html#cb520-5" tabindex="-1"></a>C_my_derivs_demo3<span class="sc">$</span><span class="fu">derivsRun</span>(d, x)<span class="sc">$</span>jacobian</span></code></pre></div>
+<pre><code>##            [,1]       [,2]       [,3]
+## [1,] -0.2978367 -0.1701924  0.0000000
+## [2,] -0.2938488  0.0000000 -0.1602812</code></pre>
+<p>Note that for a nimbleFunction without setup code, one can say <code>buildDerivs=TRUE</code>, <code>buildDerivs = 'run'</code>, or <code>buildDerivs = list(run = list())</code>. One can’t take derivatives of <code>nf_sqrt</code> on its own, but it can be called by a method of a nimbleFunction that can have its derivatives taken (e.g. the <code>run</code> method of a <code>derivs_demo3</code> object).</p>
+</div>
+<div id="sec:understanding-more-AD" class="section level3 hasAnchor" number="16.5.4">
+<h3><span class="header-section-number">16.5.4</span> Understanding more about how AD works: <em>taping</em> of operations<a href="cha-AD.html#sec:understanding-more-AD" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library <span class="citation">(<a href="references.html#ref-bell-22">Bell 2022</a>)</span>. AD methods work by following a set of calculations multiple times, sometimes in reverse order.</p>
+<p>For example, the derivative of <span class="math inline">\(y = \exp(x^2)\)</span> can be calculated (by the chain rule of calculus) as the derivative of <span class="math inline">\(y = \exp(z)\)</span> (evaluated at <span class="math inline">\(z = x^2\)</span>) times the derivative of <span class="math inline">\(z = x^2\)</span> (evaluated at <span class="math inline">\(x\)</span>). This can be calculated by first going through the sequence of steps for the value, i.e. (i) <span class="math inline">\(z = x^2\)</span>, (ii) <span class="math inline">\(y = \exp(z)\)</span>, and then again for the derivatives, i.e. (i) <span class="math inline">\(dz = 2x (dx)\)</span>, (ii) <span class="math inline">\(dy = \exp(z) dz\)</span>. These steps determine the instantaneous change <span class="math inline">\(dy\)</span> that results from an instantaneous change <span class="math inline">\(dx\)</span>. (It may be helpful to think of both values as a function of a third variable such as <span class="math inline">\(t\)</span>. Then we are determining <span class="math inline">\(dy/dt\)</span> as a function of <span class="math inline">\(dx/dt\)</span>.) In CppAD, the basic numeric object type (double) is replaced with a special type and corresponding versions of all the basic math operations so that those operations can track not just the values but also derivative information.</p>
+<p>The derivative calculations typically need the values. For example, the derivative of <span class="math inline">\(\exp(z)\)</span> is (also) <span class="math inline">\(\exp(z)\)</span>, for which the value of <span class="math inline">\(z\)</span> is needed, which in this case is <span class="math inline">\(x^2\)</span>, which is one of the steps in calculating the value of <span class="math inline">\(\exp(x^2)\)</span>. (In fact, in this case the derivative of <span class="math inline">\(\exp(z)\)</span> can more simply use the value of <span class="math inline">\(y\)</span> itself.) Hence, values are calculated before derivatives, which are calculated by stepping through the calculation sequence a <em>second</em> time</p>
+<p>What was just described is called <em>forward</em> mode in AD. The derivatives can also be calculated by working through <span class="math inline">\(\exp(x^2)\)</span> in <em>reverse</em> mode. This is often less familiar to graduates of basic calculus courses. In reverse mode, one determines what instantaneous change <span class="math inline">\(dx\)</span> would give an instantaneous change <span class="math inline">\(dy\)</span>. For example, given a value of <span class="math inline">\(dy\)</span>, we can calculate <span class="math inline">\(1/dz = \exp(z) / dy\)</span> and then <span class="math inline">\((1/dx) = (x^2) / dz\)</span>. Again, values are calculated first, followed by derivatives in a second pass through the calculation sequence, this time in reverse order.</p>
+<p>In general, choice of forward mode versus reverse mode has to do with the lengths of inputs and outputs and possibly specific operations involved. In nimble, some reasonable choices are used.</p>
+<p>In CppAD, the metaphor of pre-digital technology – magnetic tapes – is used for the set of operations in a calculation. When a line with <code>nimDerivs</code> is first run, the operations in the function it calls are <em>taped</em> and then re-used – <em>played</em> – in forward and/or reverse orders to obtain derivatives. Hence we will refer to the AD <em>tape</em> in explaining some features below. It is also possible to reset (i.e. re-record) the AD tape used for a particular <code>nimDerivs</code> call.</p>
+<p>When taped operations are played, the resulting operations can themselves be taped. We call this <em>meta-taping</em> or <em>double-taping</em>. It is useful because it can sometimes boost efficiency and it can be used to get third and higher order derivatives.</p>
+</div>
+<div id="resetting-a-nimderivs-call" class="section level3 hasAnchor" number="16.5.5">
+<h3><span class="header-section-number">16.5.5</span> Resetting a <code>nimDerivs</code> call<a href="cha-AD.html#resetting-a-nimderivs-call" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>The first time a call to <code>nimDerivs</code> runs, it records a tape of the operations in its first argument (<code>run(d, x)</code> in the examples here). On subsequent calls, it re-uses that tape without re-recording it. That means subsequent calls are usually much faster. <em>It also means that subsequent calls <strong>must</strong> use the same sized arguments as the recorded call.</em> For example, we can use <code>C_my_derivs_demo$derivsRun</code> with new arguments of the same size(s):</p>
+<div class="sourceCode" id="cb522"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb522-1"><a href="cha-AD.html#cb522-1" tabindex="-1"></a>C_my_derivs_demo<span class="sc">$</span><span class="fu">derivsRun</span>(<span class="sc">-</span><span class="fl">0.4</span>, <span class="fu">c</span>(<span class="fl">3.2</span>, <span class="fl">5.1</span>))</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## [1] 3.596640 7.690609
+## Field &quot;jacobian&quot;:
+##           [,1]     [,2]     [,3]
+## [1,] -11.50925 1.438656 0.000000
+## [2,] -39.22211 0.000000 3.076244
+## Field &quot;hessian&quot;:
+## , , 1
+## 
+##           [,1]       [,2] [,3]
+## [1,] 36.829591 -8.2003386    0
+## [2,] -8.200339  0.5754624    0
+## [3,]  0.000000  0.0000000    0
+## 
+## , , 2
+## 
+##           [,1] [,2]       [,3]
+## [1,] 200.03275    0 -23.379452
+## [2,]   0.00000    0   0.000000
+## [3,] -23.37945    0   1.230497</code></pre>
+<p>However, if we call <code>C_my_derivs_demo$derivsRun</code> with <code>length(x)</code> different from 2, the result will be garbage. If we need to change the size of the arguments, we need to re-record the tape. This is done with the <code>reset</code> argument.</p>
+<p>Here is a slightly more general version of the <code>derivs_demo</code> allowing a user to reset the tape. It also takes <code>order</code> and <code>wrt</code> as arguments instead of hard-coding them.</p>
+<div class="sourceCode" id="cb524"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb524-1"><a href="cha-AD.html#cb524-1" tabindex="-1"></a>derivs_demo4 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb524-2"><a href="cha-AD.html#cb524-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>() {},</span>
+<span id="cb524-3"><a href="cha-AD.html#cb524-3" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb524-4"><a href="cha-AD.html#cb524-4" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">exp</span>(<span class="sc">-</span>d<span class="sc">*</span>x))</span>
+<span id="cb524-5"><a href="cha-AD.html#cb524-5" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb524-6"><a href="cha-AD.html#cb524-6" tabindex="-1"></a>  },</span>
+<span id="cb524-7"><a href="cha-AD.html#cb524-7" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb524-8"><a href="cha-AD.html#cb524-8" tabindex="-1"></a>    <span class="at">derivsRun =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>),</span>
+<span id="cb524-9"><a href="cha-AD.html#cb524-9" tabindex="-1"></a>                         <span class="at">wrt =</span> <span class="fu">integer</span>(<span class="dv">1</span>), <span class="at">order =</span> <span class="fu">integer</span>(<span class="dv">1</span>),</span>
+<span id="cb524-10"><a href="cha-AD.html#cb524-10" tabindex="-1"></a>                         <span class="at">reset =</span> <span class="fu">logical</span>(<span class="dv">0</span>, <span class="at">default=</span><span class="cn">FALSE</span>)) {</span>
+<span id="cb524-11"><a href="cha-AD.html#cb524-11" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">derivs</span>(<span class="fu">run</span>(d, x), <span class="at">wrt =</span> wrt, <span class="at">order =</span> order, <span class="at">reset =</span> reset))</span>
+<span id="cb524-12"><a href="cha-AD.html#cb524-12" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">ADNimbleList</span>())</span>
+<span id="cb524-13"><a href="cha-AD.html#cb524-13" tabindex="-1"></a>    }</span>
+<span id="cb524-14"><a href="cha-AD.html#cb524-14" tabindex="-1"></a>  ),</span>
+<span id="cb524-15"><a href="cha-AD.html#cb524-15" tabindex="-1"></a>  <span class="at">buildDerivs =</span> <span class="st">&#39;run&#39;</span></span>
+<span id="cb524-16"><a href="cha-AD.html#cb524-16" tabindex="-1"></a>)</span></code></pre></div>
+<p>Now we will illustrate the use of <code>reset</code>. To make shorter output, we’ll request only the Jacobian.</p>
+<div class="sourceCode" id="cb525"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb525-1"><a href="cha-AD.html#cb525-1" tabindex="-1"></a>my_derivs_demo4 <span class="ot">&lt;-</span> <span class="fu">derivs_demo4</span>()</span>
+<span id="cb525-2"><a href="cha-AD.html#cb525-2" tabindex="-1"></a>C_my_derivs_demo4 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(my_derivs_demo4)</span>
+<span id="cb525-3"><a href="cha-AD.html#cb525-3" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fl">1.2</span></span>
+<span id="cb525-4"><a href="cha-AD.html#cb525-4" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.1</span>, <span class="fl">2.2</span>)</span>
+<span id="cb525-5"><a href="cha-AD.html#cb525-5" tabindex="-1"></a><span class="co"># On the first call, reset is ignored because the tape must be recorded.</span></span>
+<span id="cb525-6"><a href="cha-AD.html#cb525-6" tabindex="-1"></a>C_my_derivs_demo4<span class="sc">$</span><span class="fu">derivsRun</span>(d, x, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span>)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## numeric(0)
+## Field &quot;jacobian&quot;:
+##            [,1]        [,2]        [,3]
+## [1,] -0.1689652 -0.09655153  0.00000000
+## [2,] -0.1569948  0.00000000 -0.08563352
+## Field &quot;hessian&quot;:
+## &lt;0 x 0 x 0 array of double&gt;
+## </code></pre>
+<div class="sourceCode" id="cb527"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb527-1"><a href="cha-AD.html#cb527-1" tabindex="-1"></a><span class="co"># On the second call, reset=FALSE, so the tape is re-used.</span></span>
+<span id="cb527-2"><a href="cha-AD.html#cb527-2" tabindex="-1"></a>C_my_derivs_demo4<span class="sc">$</span><span class="fu">derivsRun</span>(<span class="sc">-</span><span class="fl">0.4</span>, <span class="fu">c</span>(<span class="fl">3.2</span>, <span class="fl">5.1</span>), <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span>)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## numeric(0)
+## Field &quot;jacobian&quot;:
+##           [,1]     [,2]     [,3]
+## [1,] -11.50925 1.438656 0.000000
+## [2,] -39.22211 0.000000 3.076244
+## Field &quot;hessian&quot;:
+## &lt;0 x 0 x 0 array of double&gt;
+## </code></pre>
+<div class="sourceCode" id="cb529"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb529-1"><a href="cha-AD.html#cb529-1" tabindex="-1"></a><span class="co"># If we need a longer X, we need to say reset=TRUE</span></span>
+<span id="cb529-2"><a href="cha-AD.html#cb529-2" tabindex="-1"></a>C_my_derivs_demo4<span class="sc">$</span><span class="fu">derivsRun</span>(<span class="fl">1.2</span>, <span class="fu">c</span>(<span class="fl">2.1</span>, <span class="fl">2.2</span>, <span class="fl">2.3</span>), <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="dv">1</span>, <span class="at">reset=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## numeric(0)
+## Field &quot;jacobian&quot;:
+##            [,1]        [,2]        [,3]        [,4]
+## [1,] -0.1689652 -0.09655153  0.00000000  0.00000000
+## [2,] -0.1569948  0.00000000 -0.08563352  0.00000000
+## [3,] -0.1455711  0.00000000  0.00000000 -0.07595012
+## Field &quot;hessian&quot;:
+## &lt;0 x 0 x 0 array of double&gt;
+## </code></pre>
+<div class="sourceCode" id="cb531"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb531-1"><a href="cha-AD.html#cb531-1" tabindex="-1"></a><span class="co"># Now we can use with reset=FALSE with X of length 3</span></span>
+<span id="cb531-2"><a href="cha-AD.html#cb531-2" tabindex="-1"></a>C_my_derivs_demo4<span class="sc">$</span><span class="fu">derivsRun</span>(<span class="sc">-</span><span class="fl">0.4</span>, <span class="fu">c</span>(<span class="fl">3.2</span>, <span class="fl">5.1</span>, <span class="fl">4.5</span>), <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="dv">1</span>)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## numeric(0)
+## Field &quot;jacobian&quot;:
+##           [,1]     [,2]     [,3]     [,4]
+## [1,] -11.50925 1.438656 0.000000 0.000000
+## [2,] -39.22211 0.000000 3.076244 0.000000
+## [3,] -27.22341 0.000000 0.000000 2.419859
+## Field &quot;hessian&quot;:
+## &lt;0 x 0 x 0 array of double&gt;
+## </code></pre>
+<p>You could also make multiple instances of <code>derivs_demo4</code> and keep track of the argument sizes currently recorded for each one.</p>
+<p>Other important situations where you need to reset a tape are when values that are otherwise “baked in” to an AD tape need to be changed. By “baked in”, we mean that some values are permanently part of a tape until it is reset.</p>
+<div id="what-gets-baked-into-ad-tapes-until-resettrue" class="section level4 hasAnchor" number="16.5.5.1">
+<h4><span class="header-section-number">16.5.5.1</span> What gets baked into AD tapes until <code>reset=TRUE</code><a href="cha-AD.html#what-gets-baked-into-ad-tapes-until-resettrue" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>Specifically, you need to reset a tape when:</p>
+<ul>
+<li>the extent of any for-loops change. For-loops are not natively recorded, but rather each operation done in execution of the for-loop is recorded. (This is sometimes called “loop unrolling”.) Therefore, in <code>for(i in start:end)</code>, the values of <code>start</code> and <code>end</code> are in effect baked into a tape.</li>
+<li>the outcomes of any if-then-else conditions in a nimbleFunction are changed.</li>
+<li>values of any <code>integer</code> or <code>logical</code> inputs change.</li>
+<li>values of any variables with derivative tracking severed <code>ADbreak</code> change. (See <a href="cha-AD.html#sec:AD-holding-out">16.5.2</a>.)</li>
+<li>any other member data used in calculations changes. It is possible to create a variable in the <code>setup</code> function and use it in methods such as <code>run</code>. Such variables become member data in the terminology of object-oriented programming. Such variables will not have derivatives tracked if used in a function while it is being taped, so the values will be baked into the tape. This can be useful if you understand what is happening or confusing if not.</li>
+</ul>
+<p>Uncompiled execution of <code>derivs</code> ignores the reset argument.</p>
+</div>
+</div>
+<div id="a-note-on-performance-benchmarking" class="section level3 hasAnchor" number="16.5.6">
+<h3><span class="header-section-number">16.5.6</span> A note on performance benchmarking<a href="cha-AD.html#a-note-on-performance-benchmarking" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>If you are interested in measuring the performance of AD in nimble, please remember that the first call to <code>nimDerivs</code> and any subsequent call with <code>reset=TRUE</code> will be slower, often much slower, that subsequent calls.</p>
+</div>
+</div>
+<div id="advanced-uses-double-taping" class="section level2 hasAnchor" number="16.6">
+<h2><span class="header-section-number">16.6</span> Advanced uses: double taping<a href="cha-AD.html#advanced-uses-double-taping" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Suppose you are interested only in the Jacobian, not in the value, and/or want only some elements of the Jacobian. You might still need the value, but obtaining the value alone from an AD tape (i.e. from <code>derivs</code>) will be slower than obtaining it by simply calling the function. On the other hand, AD methods need to calculate the value before calculating first order derivatives, so the value will be calculated anyway. However, in some cases, some of the steps of value calculations aren’t really needed if one only wants, say, first-order derivatives. In addition, if not all elements of the Jacobian are wanted, then some unnecessary calculations will be done internally that one might want to avoid.</p>
+<p>A way to cut out unnecessary calculations is to record a tape of a tape, which we call double taping. Let’s see an example before explaining further.</p>
+<div class="sourceCode" id="cb533"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb533-1"><a href="cha-AD.html#cb533-1" tabindex="-1"></a>derivs_demo5 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb533-2"><a href="cha-AD.html#cb533-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>() {},</span>
+<span id="cb533-3"><a href="cha-AD.html#cb533-3" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb533-4"><a href="cha-AD.html#cb533-4" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">exp</span>(<span class="sc">-</span>d<span class="sc">*</span>x))</span>
+<span id="cb533-5"><a href="cha-AD.html#cb533-5" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb533-6"><a href="cha-AD.html#cb533-6" tabindex="-1"></a>  },</span>
+<span id="cb533-7"><a href="cha-AD.html#cb533-7" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb533-8"><a href="cha-AD.html#cb533-8" tabindex="-1"></a>    <span class="at">jacobian_run_wrt_d  =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>),</span>
+<span id="cb533-9"><a href="cha-AD.html#cb533-9" tabindex="-1"></a>                         <span class="at">wrt =</span> <span class="fu">integer</span>(<span class="dv">1</span>),</span>
+<span id="cb533-10"><a href="cha-AD.html#cb533-10" tabindex="-1"></a>                         <span class="at">reset =</span> <span class="fu">logical</span>(<span class="dv">0</span>, <span class="at">default=</span><span class="cn">FALSE</span>)) {</span>
+<span id="cb533-11"><a href="cha-AD.html#cb533-11" tabindex="-1"></a>      ans <span class="ot">&lt;-</span> <span class="fu">derivs</span>(<span class="fu">run</span>(d, x), <span class="at">wrt =</span> wrt, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">reset =</span> reset)</span>
+<span id="cb533-12"><a href="cha-AD.html#cb533-12" tabindex="-1"></a>      jac <span class="ot">&lt;-</span> ans<span class="sc">$</span>jacobian[,<span class="dv">1</span>] <span class="co"># derivatives wrt &#39;d&#39; only </span></span>
+<span id="cb533-13"><a href="cha-AD.html#cb533-13" tabindex="-1"></a>      <span class="fu">return</span>(jac)</span>
+<span id="cb533-14"><a href="cha-AD.html#cb533-14" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb533-15"><a href="cha-AD.html#cb533-15" tabindex="-1"></a>    },</span>
+<span id="cb533-16"><a href="cha-AD.html#cb533-16" tabindex="-1"></a>    <span class="at">derivsJacobian =</span> <span class="cf">function</span>(<span class="at">d =</span> <span class="fu">double</span>(), <span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>),</span>
+<span id="cb533-17"><a href="cha-AD.html#cb533-17" tabindex="-1"></a>                              <span class="at">wrt =</span> <span class="fu">integer</span>(<span class="dv">1</span>),</span>
+<span id="cb533-18"><a href="cha-AD.html#cb533-18" tabindex="-1"></a>                              <span class="at">order =</span> <span class="fu">integer</span>(<span class="dv">1</span>),</span>
+<span id="cb533-19"><a href="cha-AD.html#cb533-19" tabindex="-1"></a>                              <span class="at">reset =</span> <span class="fu">logical</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="cn">FALSE</span>)) {</span>
+<span id="cb533-20"><a href="cha-AD.html#cb533-20" tabindex="-1"></a>      innerWrt <span class="ot">&lt;-</span> <span class="fu">nimInteger</span>(<span class="at">value =</span> <span class="dv">1</span>, <span class="at">length =</span> <span class="dv">1</span>)</span>
+<span id="cb533-21"><a href="cha-AD.html#cb533-21" tabindex="-1"></a>      ans <span class="ot">&lt;-</span> <span class="fu">nimDerivs</span>(<span class="fu">jacobian_run_wrt_d</span>(d, x, <span class="at">wrt =</span> innerWrt, <span class="at">reset =</span> reset),</span>
+<span id="cb533-22"><a href="cha-AD.html#cb533-22" tabindex="-1"></a>                       <span class="at">wrt =</span> wrt, <span class="at">order =</span> order, <span class="at">reset =</span> reset)</span>
+<span id="cb533-23"><a href="cha-AD.html#cb533-23" tabindex="-1"></a>      <span class="fu">return</span>(ans)</span>
+<span id="cb533-24"><a href="cha-AD.html#cb533-24" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">ADNimbleList</span>())</span>
+<span id="cb533-25"><a href="cha-AD.html#cb533-25" tabindex="-1"></a>    }</span>
+<span id="cb533-26"><a href="cha-AD.html#cb533-26" tabindex="-1"></a>  ),</span>
+<span id="cb533-27"><a href="cha-AD.html#cb533-27" tabindex="-1"></a>  <span class="at">buildDerivs =</span> <span class="fu">c</span>(<span class="st">&#39;run&#39;</span>, <span class="st">&#39;jacobian_run_wrt_d&#39;</span>)</span>
+<span id="cb533-28"><a href="cha-AD.html#cb533-28" tabindex="-1"></a>)</span></code></pre></div>
+<p>What is happening in this code? <code>jacobian_run_wrt_d</code> is a method that returns part of the Jacobian of <code>run(d, x)</code>, specifically the first column, which contains derivatives with respect to <code>d</code>. It happens to use AD to do it, but otherwise it is just some function with inputs <code>d</code> and <code>x</code> and a vector output. (Arguments that are integer or logical do not have derivatives tracked.) <code>derivsJacobian</code> calculates derivatives of <code>jacobian_run_wrt_d</code>. This means that the <code>value</code> returned by <code>derivsJacobian</code> will be the value of <code>jacobian_run_wrt_d</code>, which comprises the first derivatives of <code>run</code> with respect to <code>d</code>. The <code>jacobian</code> returned by <code>derivsJacobian</code> will contain second derivatives of <code>run</code> with respect to <code>d</code> and each of <code>d</code>, <code>x[1]</code>, and <code>x[2]</code>. And the <code>hessian</code> returned by <code>derivsJacobian</code> will contain some <em>third</em> derivatives of <code>run</code>. Notice that <code>buildDerivs</code> now includes <code>jacobian_run_wrt_d</code>.</p>
+<p>Let’s see this in use.</p>
+<div class="sourceCode" id="cb534"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb534-1"><a href="cha-AD.html#cb534-1" tabindex="-1"></a>my_derivs_demo5 <span class="ot">&lt;-</span> <span class="fu">derivs_demo5</span>()</span>
+<span id="cb534-2"><a href="cha-AD.html#cb534-2" tabindex="-1"></a>C_my_derivs_demo5 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(my_derivs_demo5)</span>
+<span id="cb534-3"><a href="cha-AD.html#cb534-3" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fl">1.2</span></span>
+<span id="cb534-4"><a href="cha-AD.html#cb534-4" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.1</span>, <span class="fl">2.2</span>)</span>
+<span id="cb534-5"><a href="cha-AD.html#cb534-5" tabindex="-1"></a>C_my_derivs_demo5<span class="sc">$</span><span class="fu">derivsJacobian</span>(d, x, <span class="at">wrt =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">order =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">2</span>)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## [1] -0.1689652 -0.1569948
+## Field &quot;jacobian&quot;:
+##           [,1]      [,2]      [,3]
+## [1,] 0.3548269 0.1222986 0.0000000
+## [2,] 0.3453885 0.0000000 0.1170325
+## Field &quot;hessian&quot;:
+## , , 1
+## 
+##             [,1]        [,2] [,3]
+## [1,] -0.74513642 -0.08786189    0
+## [2,] -0.08786189 -0.05020679    0
+## [3,]  0.00000000  0.00000000    0
+## 
+## , , 2
+## 
+##            [,1] [,2]        [,3]
+## [1,] -0.7598548    0 -0.10047667
+## [2,]  0.0000000    0  0.00000000
+## [3,] -0.1004767    0 -0.05480546</code></pre>
+<p>We can compare these results to those shown above from the same values of <code>d</code> and <code>x</code>. The <code>value</code> here is the same as <code>jacobian[1:2, 1]</code> above. The <code>jacobian</code> here is the same as <code>t(hessian[1, 1:3, 1:2])</code> or (by symmetry of second derivatives) <code>t(hessian[1:3, 1, 1:2])</code> above. And the <code>hessian[i,j,k]</code> here contains the third derivative of the k-th output of <code>run(d, x)</code> with respect to <code>d</code>, the i-th input, and the j-th input.</p>
+<p>It is also possible to call <code>derivs</code> on (i.e. tape) a function containing a <code>derivs</code> call from which some 0-th and/or 2nd order derivatives are extracted. It is even possible to triple tape by calling <code>derivs</code> on a function calling <code>derivs</code> on a function calling <code>derivs</code>, and so on.</p>
+</div>
+<div id="derivatives-involving-model-calculations" class="section level2 hasAnchor" number="16.7">
+<h2><span class="header-section-number">16.7</span> Derivatives involving model calculations<a href="cha-AD.html#derivatives-involving-model-calculations" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Obtaining derivatives involving model calculations takes some special considerations, and there are two ways to do it.</p>
+<p>We will use the Poisson GLMM above as an example model for which we want derivatives. We can obtain derivatives with respect to any variables for all or any subset of model calculations.</p>
+<div id="method-1-nimderivs-of-modelcalculate" class="section level3 hasAnchor" number="16.7.1">
+<h3><span class="header-section-number">16.7.1</span> Method 1: <code>nimDerivs</code> of <code>model$calculate</code><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Recall that <code>model$calculate(nodes)</code> returns the sum of the log probabilities of all stochastic nodes in <code>nodes</code>. Deterministic calculations are also executed; they contribute 0 to the sum of probabilities but may be needed for inputs to subsequent calculations. Calculations are done in the order of <code>nodes</code>, which should be a valid order for the model, often obtained from <code>model$getDependencies</code>.</p>
+<p>The simplest way to get derivatives for model calculations is to use <code>model$calculate</code> as the function taped by <code>derivs</code> (here shown by its alternative name <code>nimDerivs</code> for illustration).</p>
+<div class="sourceCode" id="cb536"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb536-1"><a href="cha-AD.html#cb536-1" tabindex="-1"></a>derivs_nf <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb536-2"><a href="cha-AD.html#cb536-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(model, with_respect_to_nodes, calc_nodes) {},</span>
+<span id="cb536-3"><a href="cha-AD.html#cb536-3" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">order =</span> <span class="fu">integer</span>(<span class="dv">1</span>),</span>
+<span id="cb536-4"><a href="cha-AD.html#cb536-4" tabindex="-1"></a>                 <span class="at">reset =</span> <span class="fu">logical</span>(<span class="dv">0</span>, <span class="at">default=</span><span class="cn">FALSE</span>)) {</span>
+<span id="cb536-5"><a href="cha-AD.html#cb536-5" tabindex="-1"></a>    ans <span class="ot">&lt;-</span> <span class="fu">nimDerivs</span>(model<span class="sc">$</span><span class="fu">calculate</span>(calc_nodes), <span class="at">wrt =</span> with_respect_to_nodes,</span>
+<span id="cb536-6"><a href="cha-AD.html#cb536-6" tabindex="-1"></a>                     <span class="at">order =</span> order, <span class="at">reset =</span> reset)</span>
+<span id="cb536-7"><a href="cha-AD.html#cb536-7" tabindex="-1"></a>    <span class="fu">return</span>(ans)</span>
+<span id="cb536-8"><a href="cha-AD.html#cb536-8" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">ADNimbleList</span>())</span>
+<span id="cb536-9"><a href="cha-AD.html#cb536-9" tabindex="-1"></a>  }</span>
+<span id="cb536-10"><a href="cha-AD.html#cb536-10" tabindex="-1"></a>)</span></code></pre></div>
+<p>In <code>derivs_nf</code>:</p>
+<ul>
+<li>The mere presence of <code>model</code>, <code>with_respect_to_nodes</code>, and <code>calc_nodes</code> as <code>setup</code> arguments makes them available as member data for <code>run</code> or other methods.</li>
+<li><code>model</code> will be a model object returned from <code>nimbleModel</code>.</li>
+<li><code>with_respect_to_nodes</code> will be the names of nodes we want derivatives with respect to.</li>
+<li><code>calc_nodes</code> will be the nodes to be calculated, in the order given.</li>
+<li><code>order</code> can contain any of <code>0</code> (value), <code>1</code> (1st order), or <code>2</code> (2nd order) derivatives requested, as above.</li>
+<li><code>reset</code> should be TRUE if the AD tape should be reset (re-recorded), as above. There are additional situations when a tape for <code>model$calculate</code> should be reset, discussed below.</li>
+</ul>
+<p>Thus, <code>nimDerivs(model$calculate(calc_nodes), wrt = with_respect_to_nodes, &lt;other args&gt;)</code> takes derivatives of a function whose inputs are the values of <code>with_respect_to_nodes</code> (using their values in the model object) and whose output is the summed log probability returned by <code>model$calculate(calc_nodes)</code>. The internal handling of this case is distinct from other calls to <code>nimDerivs</code>.</p>
+<p>Now we can make an instance of <code>derivs_nf</code>, compile the model and nimbleFunction instance, and look at the results. We will assume the <code>model</code> was built as above in the Laplace example.</p>
+<div class="sourceCode" id="cb537"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb537-1"><a href="cha-AD.html#cb537-1" tabindex="-1"></a>wrt_nodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;intercept&#39;</span>,<span class="st">&#39;beta&#39;</span>, <span class="st">&#39;sigma&#39;</span>)</span>
+<span id="cb537-2"><a href="cha-AD.html#cb537-2" tabindex="-1"></a>calc_nodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(wrt_nodes)</span>
+<span id="cb537-3"><a href="cha-AD.html#cb537-3" tabindex="-1"></a>derivs_all <span class="ot">&lt;-</span> <span class="fu">derivs_nf</span>(model, wrt_nodes, calc_nodes)</span>
+<span id="cb537-4"><a href="cha-AD.html#cb537-4" tabindex="-1"></a>cModel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
+<span id="cb537-5"><a href="cha-AD.html#cb537-5" tabindex="-1"></a>cDerivs_all <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(derivs_all, <span class="at">project =</span> model)</span>
+<span id="cb537-6"><a href="cha-AD.html#cb537-6" tabindex="-1"></a>derivs_result <span class="ot">&lt;-</span> cDerivs_all<span class="sc">$</span><span class="fu">run</span>(<span class="at">order =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">2</span>)</span>
+<span id="cb537-7"><a href="cha-AD.html#cb537-7" tabindex="-1"></a>derivs_result</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## [1] -78.44085
+## Field &quot;jacobian&quot;:
+##           [,1]       [,2]     [,3]
+## [1,] -9.358104 -0.3637619 -5.81414
+## Field &quot;hessian&quot;:
+## , , 1
+## 
+##           [,1]      [,2]      [,3]
+## [1,] -62.35820 -16.21705   0.00000
+## [2,] -16.21705 -69.47074   0.00000
+## [3,]   0.00000   0.00000 -45.11516</code></pre>
+<p>As above, using <code>order = 0:2</code> results in the the value (0th order), Jacobian (1st order), and Hessian (2nd order). The function <code>model$calculate</code> is organized here to have inputs that are the current values of <code>intercept</code>, <code>beta</code>, and <code>sigma</code> in the model. It has output that is the summed log probability of the <code>calc_nodes</code>. The Jacobian columns are first derivatives with respect to <code>intercept</code>, <code>beta</code> and <code>sigma</code>, respectively. The first and second indices of the Hessian array follow the same ordering. For example <code>derivs_result$hessian[2,1,1]</code> is the second derivative with respect to <code>beta</code> (first index = 2) and <code>intercept</code> (second index = 1).</p>
+<p>In the case of <code>model$calculate</code>, the first index of the Jacobian and the last index of the Hessian are always 1 because derivatives are of the first (and only) output value.</p>
+<p>The ordering of inputs is similar to that used above, such as for the arguments <code>d</code> and <code>x</code>, but in this case the inputs are model nodes. When non-scalar nodes such as matrix or array nodes are used as <code>with_respect_to_nodes</code>, the resulting elements of Jacobian columns and Hessian first and second indices will follow column-major order. For example, for a 2x2 matrix <code>m</code>, the element order would be <code>m[1, 1]</code>, <code>m[2, 1]</code>, <code>m[1, 2]</code>, <code>m[2, 2]</code>. This will usually be the same ordering as the names returned by <code>model$expandNodeNames("m", returnScalarElements=TRUE)</code>.</p>
+<p>The actual values used as inputs are the current values in the compiled model object. These would typically be set by code like <code>values(model, with_respect_to_nodes) &lt;&lt;- my_values</code> before the call to <code>nimDerivs</code> in the above example.</p>
+<p>As above, derivatives can also be calculated in uncompiled execution, but they will be much slower and less accurate. Uncompiled execution is mostly useful for checking that compiled derivatives are working correctly. This will use values in the <em>uncompiled</em> model object.</p>
+<div class="sourceCode" id="cb539"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb539-1"><a href="cha-AD.html#cb539-1" tabindex="-1"></a>derivs_all<span class="sc">$</span><span class="fu">run</span>(<span class="at">order =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">2</span>)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## [1] -78.44085
+## Field &quot;jacobian&quot;:
+##           [,1]       [,2]     [,3]
+## [1,] -9.358104 -0.3637619 -5.81414
+## Field &quot;hessian&quot;:
+## , , 1
+## 
+##           [,1]          [,2]          [,3]
+## [1,] -62.35821 -1.621705e+01  0.000000e+00
+## [2,] -16.21705 -6.947075e+01  2.384186e-07
+## [3,]   0.00000  2.384186e-07 -4.511517e+01</code></pre>
+<p>We can see that all the results clearly match the compiled results to a reasonable numerical precision.</p>
+</div>
+<div id="method-2-nimderivs-of-a-method-that-calls-modelcalculate" class="section level3 hasAnchor" number="16.7.2">
+<h3><span class="header-section-number">16.7.2</span> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Sometimes one needs derivatives of calculations done in a nimbleFunction as well as in a model. And sometimes one needs to change values in a model before and/or after doing model calculations and have those changes recorded in the derivative tape.</p>
+<p>For these reasons, it is possible to take derivatives of a method that includes a call to <code>model$calculate</code>. Continuing the above example, say we want to take derivatives with respect to the log of <code>sigma</code>, so the input vector will be treated as <code>intercept</code>, <code>beta</code>, and <code>log(sigma)</code>, in that order. We will convert <code>log(sigma)</code> to <code>sigma</code> before using it in the model, and we want the derivative of that transformation included in the tape (i.e. using the chain rule).</p>
+<p>(Using <code>log(sigma)</code> instead of <code>sigma</code> is useful so an algorithm such as optimization or HMC can use an unconstrained parameter space. A constraint such as <code>sigma &gt; 0</code> can be difficult for many algorithms. See below for NIMBLE’s automated parameter transformation system if you need to do this systematically.)</p>
+<p>Here is a nimbleFunction to do that.</p>
+<div class="sourceCode" id="cb541"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb541-1"><a href="cha-AD.html#cb541-1" tabindex="-1"></a>derivs_nf2 <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb541-2"><a href="cha-AD.html#cb541-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(model, wrt_nodes, calc_nodes) {</span>
+<span id="cb541-3"><a href="cha-AD.html#cb541-3" tabindex="-1"></a>    derivsInfo <span class="ot">&lt;-</span> <span class="fu">makeModelDerivsInfo</span>(model, wrt_nodes, calc_nodes)</span>
+<span id="cb541-4"><a href="cha-AD.html#cb541-4" tabindex="-1"></a>    updateNodes <span class="ot">&lt;-</span> derivsInfo<span class="sc">$</span>updateNodes</span>
+<span id="cb541-5"><a href="cha-AD.html#cb541-5" tabindex="-1"></a>    constantNodes <span class="ot">&lt;-</span> derivsInfo<span class="sc">$</span>constantNodes</span>
+<span id="cb541-6"><a href="cha-AD.html#cb541-6" tabindex="-1"></a>    n_wrt <span class="ot">&lt;-</span> <span class="fu">length</span>(wrt_nodes) </span>
+<span id="cb541-7"><a href="cha-AD.html#cb541-7" tabindex="-1"></a>    <span class="co"># If wrt_nodes might contain non-scalar nodes, the more general way</span></span>
+<span id="cb541-8"><a href="cha-AD.html#cb541-8" tabindex="-1"></a>    <span class="co"># to determine the length of all scalar elements is:</span></span>
+<span id="cb541-9"><a href="cha-AD.html#cb541-9" tabindex="-1"></a>    <span class="co"># length(model$expandNodeNames(wrt_nodes, returnScalarComponents = TRUE))</span></span>
+<span id="cb541-10"><a href="cha-AD.html#cb541-10" tabindex="-1"></a>  },</span>
+<span id="cb541-11"><a href="cha-AD.html#cb541-11" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb541-12"><a href="cha-AD.html#cb541-12" tabindex="-1"></a>    x_trans <span class="ot">&lt;-</span> x               <span class="co"># x[1:2] don&#39;t need transformation</span></span>
+<span id="cb541-13"><a href="cha-AD.html#cb541-13" tabindex="-1"></a>    x_trans[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">exp</span>(x[<span class="dv">3</span>])    <span class="co"># transformation of x[3]</span></span>
+<span id="cb541-14"><a href="cha-AD.html#cb541-14" tabindex="-1"></a>    <span class="fu">values</span>(model, wrt_nodes) <span class="ot">&lt;&lt;-</span> x_trans <span class="co"># put inputs into model</span></span>
+<span id="cb541-15"><a href="cha-AD.html#cb541-15" tabindex="-1"></a>    ans <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">calculate</span>(calc_nodes)   <span class="co"># calculate model</span></span>
+<span id="cb541-16"><a href="cha-AD.html#cb541-16" tabindex="-1"></a>    <span class="fu">return</span>(ans)</span>
+<span id="cb541-17"><a href="cha-AD.html#cb541-17" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb541-18"><a href="cha-AD.html#cb541-18" tabindex="-1"></a>  },</span>
+<span id="cb541-19"><a href="cha-AD.html#cb541-19" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb541-20"><a href="cha-AD.html#cb541-20" tabindex="-1"></a>    <span class="at">derivsRun =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>),</span>
+<span id="cb541-21"><a href="cha-AD.html#cb541-21" tabindex="-1"></a>                         <span class="at">order =</span> <span class="fu">integer</span>(<span class="dv">1</span>),</span>
+<span id="cb541-22"><a href="cha-AD.html#cb541-22" tabindex="-1"></a>                         <span class="at">reset =</span> <span class="fu">logical</span>(<span class="dv">0</span>, <span class="at">default=</span><span class="cn">FALSE</span>)) {</span>
+<span id="cb541-23"><a href="cha-AD.html#cb541-23" tabindex="-1"></a>      wrt <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>n_wrt</span>
+<span id="cb541-24"><a href="cha-AD.html#cb541-24" tabindex="-1"></a>      ans <span class="ot">&lt;-</span> <span class="fu">nimDerivs</span>(<span class="fu">run</span>(x), <span class="at">wrt =</span> wrt, <span class="at">order =</span> order, <span class="at">reset =</span> reset,</span>
+<span id="cb541-25"><a href="cha-AD.html#cb541-25" tabindex="-1"></a>                       <span class="at">model =</span> model, <span class="at">updateNodes =</span> updateNodes, </span>
+<span id="cb541-26"><a href="cha-AD.html#cb541-26" tabindex="-1"></a>                       <span class="at">constantNodes =</span> constantNodes)</span>
+<span id="cb541-27"><a href="cha-AD.html#cb541-27" tabindex="-1"></a>      <span class="fu">return</span>(ans)</span>
+<span id="cb541-28"><a href="cha-AD.html#cb541-28" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">ADNimbleList</span>())</span>
+<span id="cb541-29"><a href="cha-AD.html#cb541-29" tabindex="-1"></a>    }</span>
+<span id="cb541-30"><a href="cha-AD.html#cb541-30" tabindex="-1"></a>  ),</span>
+<span id="cb541-31"><a href="cha-AD.html#cb541-31" tabindex="-1"></a>  <span class="at">buildDerivs =</span> <span class="fu">list</span>(<span class="at">run =</span> <span class="fu">list</span>()) <span class="co"># or simply &#39;run&#39; would work in this case</span></span>
+<span id="cb541-32"><a href="cha-AD.html#cb541-32" tabindex="-1"></a>)</span></code></pre></div>
+<p>Let’s see how this can be used.</p>
+<div class="sourceCode" id="cb542"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb542-1"><a href="cha-AD.html#cb542-1" tabindex="-1"></a>derivs_all2 <span class="ot">&lt;-</span> <span class="fu">derivs_nf2</span>(model, wrt_nodes, calc_nodes)</span>
+<span id="cb542-2"><a href="cha-AD.html#cb542-2" tabindex="-1"></a>cDerivs_all2 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(derivs_all2, <span class="at">project =</span> model)</span>
+<span id="cb542-3"><a href="cha-AD.html#cb542-3" tabindex="-1"></a>params <span class="ot">&lt;-</span> <span class="fu">values</span>(model, wrt_nodes)</span>
+<span id="cb542-4"><a href="cha-AD.html#cb542-4" tabindex="-1"></a>params[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">log</span>(params[<span class="dv">3</span>])</span>
+<span id="cb542-5"><a href="cha-AD.html#cb542-5" tabindex="-1"></a>cDerivs_all2<span class="sc">$</span><span class="fu">derivsRun</span>(params, <span class="at">order =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">2</span>)</span></code></pre></div>
+<pre><code>## nimbleList object of type NIMBLE_ADCLASS
+## Field &quot;value&quot;:
+## [1] -78.44085
+## Field &quot;jacobian&quot;:
+##           [,1]       [,2]     [,3]
+## [1,] -9.358104 -0.3637619 -2.90707
+## Field &quot;hessian&quot;:
+## , , 1
+## 
+##           [,1]      [,2]      [,3]
+## [1,] -62.35820 -16.21705   0.00000
+## [2,] -16.21705 -69.47074   0.00000
+## [3,]   0.00000   0.00000 -14.18586</code></pre>
+<p>Notice that these results are the same as we saw above except for third elements, which represent derivatives with respect to <code>sigma</code> above and to <code>log(sigma)</code> here.</p>
+<p>There are several important new points here:</p>
+<ul>
+<li><p>The only valid way to get values into the model that will be recorded on the AD tape is with <code>values(model, nodes) &lt;&lt;- some_values</code> as shown. Other ways such as <code>nimCopy</code> or <code>model[[node]] &lt;&lt;- some_value</code> are not currently supported to work with AD.</p></li>
+<li><p>The call to <code>nimDerivs</code> of <code>run</code> must be told some information about the model calculations that will be done inside of <code>run</code>. <code>model</code> is of course the model that will be used. <code>constantNodes</code> is a vector of node names whose values are needed for the calculations but are not expected to change until you use <code>reset = TRUE</code>. Values of these nodes will be baked into the AD tape until <code>reset = TRUE</code>. <code>updateNodes</code> is a vector of node names whose values are needed for the calculations, might change between calls even with <code>reset = FALSE</code>, and are neither part of <code>wrt_nodes</code> nor a deterministic part of <code>calc_nodes</code>. The function <code>makeModelDerivsInfo</code>, as shown in the <code>setup</code> code, determines what is usually needed for <code>constantNodes</code> and <code>updateNodes</code>.</p></li>
+<li><p>In Method 1 above, the NIMBLE compiler automatically determines <code>constantNodes</code> and <code>updateNodes</code> using <code>makeModelDerivsInfo</code> based on the inputs to
+<code>nimDerivs(model$calculate(...),...)</code>.</p></li>
+<li><p>One can use double-taping, but if so <em>both</em> calls to <code>nimDerivs</code> need the <code>model</code>, <code>updateNodes</code>, and <code>constantNodes</code> arguments, which should normally be identical.</p></li>
+</ul>
+<div id="advanced-topic-more-about-constantnodes-and-updatenodes" class="section level4 hasAnchor" number="16.7.2.1">
+<h4><span class="header-section-number">16.7.2.1</span> Advanced topic: more about <code>constantNodes</code> and <code>updateNodes</code><a href="cha-AD.html#advanced-topic-more-about-constantnodes-and-updatenodes" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>In most cases, you can obtain <code>constantNodes</code> and <code>updateNodes</code> from <code>makeModelDerivsInfo</code> without knowing exactly what they mean. But for advanced uses and possible debugging needs, let’s explore these arguments in more detail. The purpose of <code>constantNodes</code> and <code>updateNodes</code> is to tell the AD system about all nodes that will be needed for taped model calculations. Specifically:</p>
+<ul>
+<li><p><code>updateNodes</code> and <code>constantNodes</code> are vectors of nodes names that together comprise any nodes that are necessary for <code>model$calculate(calc_nodes)</code> but are:</p>
+<ul>
+<li>not in the <code>wrt</code> argument to <code>nimDerivs</code> (only relevant for Method 1), and</li>
+<li>not assigned into the model using <code>values(model, nodes) &lt;&lt;- some_values</code> prior to <code>model$calculate</code> (only relevant for Method 2), and</li>
+<li>not a deterministic node in <code>calc_nodes</code>.</li>
+</ul></li>
+<li><p><code>updateNodes</code> includes node names satisfying those conditions whose values might change between uses of the tape regardless of the <code>reset</code> argument.</p></li>
+<li><p><code>constantNodes</code> includes node names satisfying those conditions whose values will be baked into the tape (will not change) until the next call with <code>reset=TRUE</code>.</p></li>
+</ul>
+<p>To fix ideas, say that we want derivatives with respect to <code>ran_eff[1]</code> for calculations of it and the data that depend on it, including any deterministic nodes. In other words, <code>wrt</code> will be <code>ran_eff[1]</code>, and <code>calc_nodes</code> will be:</p>
+<div class="sourceCode" id="cb544"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb544-1"><a href="cha-AD.html#cb544-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="st">&#39;ran_eff[1]&#39;</span>)</span></code></pre></div>
+<pre><code>##  [1] &quot;ran_eff[1]&quot;                                                                             
+##  [2] &quot;lifted_exp_oPintercept_plus_beta_times_X_oBi_comma_j_cB_plus_ran_eff_oBi_cB_cP_L7[1, 1]&quot;
+##  [3] &quot;lifted_exp_oPintercept_plus_beta_times_X_oBi_comma_j_cB_plus_ran_eff_oBi_cB_cP_L7[1, 2]&quot;
+##  [4] &quot;lifted_exp_oPintercept_plus_beta_times_X_oBi_comma_j_cB_plus_ran_eff_oBi_cB_cP_L7[1, 3]&quot;
+##  [5] &quot;lifted_exp_oPintercept_plus_beta_times_X_oBi_comma_j_cB_plus_ran_eff_oBi_cB_cP_L7[1, 4]&quot;
+##  [6] &quot;lifted_exp_oPintercept_plus_beta_times_X_oBi_comma_j_cB_plus_ran_eff_oBi_cB_cP_L7[1, 5]&quot;
+##  [7] &quot;y[1, 1]&quot;                                                                                
+##  [8] &quot;y[1, 2]&quot;                                                                                
+##  [9] &quot;y[1, 3]&quot;                                                                                
+## [10] &quot;y[1, 4]&quot;                                                                                
+## [11] &quot;y[1, 5]&quot;</code></pre>
+<p>(The “lifted” nodes here are for the <code>exp(intercept + beta*X[i,j] + ran_eff[i])</code>, i.e. the inputs to <code>dpois</code>. See chapters <a href="cha-lightning-intro.html#cha-lightning-intro">2</a> and <a href="cha-using-models.html#cha-using-models">13</a> to learn about lifted nodes.)</p>
+<p>In this case, the log probability of <code>ran_eff[1]</code> itself requires <code>sigma</code>. Since <code>sigma</code> is not in <code>wrt_nodes</code>, it is not assigned into the model by the line <code>values(model, wrt_nodes) &lt;&lt;- x_trans</code>. It is also not a deterministic node (or any node) in <code>calc_nodes</code>, so it must be included in <code>updateNodes</code> or <code>constantNodes</code>. Since it might change between calls, it should be included in <code>updateNodes</code>.</p>
+<p>Next, notice that the stochastic node <code>y[1, 1]</code> in <code>calc_nodes</code> means that the log probability of <code>y[1, 1]</code> will be calculated, and this requires the actual value of <code>y[1, 1]</code>. This node is part of <code>calc_nodes</code> but is not a deterministic part of it, so it must be provided in either <code>updateNodes</code> or <code>constantNodes</code>. When data values will not be changed often, it is better to put those nodes in <code>constantNodes</code>, because that will be more efficient than putting them in <code>updateNodes</code>. (If the data values are changed, use <code>reset=TRUE</code>, which will reset values of all <code>constantNodes</code> in the tape.)</p>
+<p>The function <code>makeModelDerivsInfo</code> inspects the model and determines the usual needs for <code>updateNodes</code> and <code>constantNodes</code>. By default, data nodes are put in <code>constantNodes</code>. Use <code>dataAsConstantNodes = FALSE</code> in <code>makeModelDerivsInfo</code> if you want them put in <code>updateNodes</code>.</p>
+<p>Note that a deterministic node in <code>calc_nodes</code> will have its value calculated as part of the operations recorded in the AD tape, so it does not need to be included in <code>updateNodes</code> or <code>constantNodes</code>.</p>
+<p>As usual in model-generic programming in NIMBLE, be aware of lifted nodes and their implications. Suppose in the Poisson GLMM we had used a precision parameterization for the random effects, with the changes in this code snippet:</p>
+<div class="sourceCode" id="cb546"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb546-1"><a href="cha-AD.html#cb546-1" tabindex="-1"></a>  precision <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.01</span>, <span class="fl">0.01</span>)</span>
+<span id="cb546-2"><a href="cha-AD.html#cb546-2" tabindex="-1"></a>  <span class="co"># &lt;other lines&gt;</span></span>
+<span id="cb546-3"><a href="cha-AD.html#cb546-3" tabindex="-1"></a>    ran_eff[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">tau =</span> precision)</span></code></pre></div>
+<p>This would result in a lifted node for the standard deviation, calculated as <code>1/sqrt(precision)</code>. That lifted node is what would actually be used in <code>dnorm</code> for each <code>ran_eff[i]</code>. Now if <code>ran_eff[1]</code> is in <code>wrt_nodes</code>, the <em>lifted node</em> (but <em>not</em> <code>precision</code>) will be in <code>updateNodes</code> (as determined by <code>makeModelDerivsInfo</code>). If you then change the value of <code>precision</code>, you must be sure to calculate the lifted node before obtaining derivatives. Otherwise the value of the lifted node will correspond to the old value of precision. These considerations are not unique to AD but rather are part of model-generic programming (see chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>).</p>
+<p>An example of model-generic programming to update any lifted nodes that depend on <code>precision</code> would be:</p>
+<div class="sourceCode" id="cb547"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb547-1"><a href="cha-AD.html#cb547-1" tabindex="-1"></a>model<span class="sc">$</span><span class="fu">calculate</span>(model<span class="sc">$</span><span class="fu">getDependencies</span>(<span class="st">&#39;precision&#39;</span>, <span class="at">determOnly=</span><span class="cn">TRUE</span>))</span></code></pre></div>
+<p>In Method 1 above, NIMBLE automatically uses <code>makeModelDerivsInfo</code> based on the code <code>nimDerivs(model$calculate(&lt;args&gt;), &lt;args&gt;)</code>. However, in Method 2, when <code>model$calculate(&lt;args&gt;)</code> is used in a method such as <code>run</code>, then a call to <code>nimDerivs(run(&lt;args&gt;), &lt;args&gt;)</code> requires the <code>model</code>, <code>updateNodes</code> and <code>constantNodes</code> to be provided. Hence, the two functions (<code>run</code> and <code>derivsRun</code>) must be written in coordination.</p>
+</div>
+<div id="when-do-you-need-to-reset-a-tape-with-model-calculations" class="section level4 hasAnchor" number="16.7.2.2">
+<h4><span class="header-section-number">16.7.2.2</span> When do you need to reset a tape with model calculations?<a href="cha-AD.html#when-do-you-need-to-reset-a-tape-with-model-calculations" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>The additional rule for when tapes need to be reset based on model calculations is:</p>
+<ul>
+<li>when values of any <code>constantNodes</code> are changed. Usually these will only be data nodes.</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="sec:parameter-transform" class="section level2 hasAnchor" number="16.8">
+<h2><span class="header-section-number">16.8</span> Parameter transformations<a href="cha-AD.html#sec:parameter-transform" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Many algorithms that in some way explore a parameter space are best used in an unconstrained parameter space. For example, there are a bunch of optimization methods provided in R’s <code>optim</code>, but only one (<code>L-BFGS-B</code>) allows constraints on the parameter space. Similarly, HMC is implemented to work in an unconstrained parameter space.</p>
+<p>NIMBLE provides a nimbleFunction to automatically create a transformation from original parameters to unconstrained parameters and the inverse transformation back to the original parameters. Denoting <code>x</code> as an original parameter and <code>g(x)</code> as the transformed parameter, the cases handled include:</p>
+<ul>
+<li>If scalar <span class="math inline">\(x \in (0, \infty)\)</span>, then <span class="math inline">\(g(x) = \log(x)\)</span>. For example, <code>x ~ dweibull</code> in a model means <span class="math inline">\(x \in (0, \infty)\)</span>.</li>
+<li>If scalar <span class="math inline">\(x \in (0, 1)\)</span>, then <span class="math inline">\(g(x) = \mbox{logit}(x)\)</span>. For example, <code>x ~ dbeta</code> in a model means <span class="math inline">\(x \in (0, 1)\)</span></li>
+<li>If scalar <span class="math inline">\(x \in (a, \infty)\)</span>, then <span class="math inline">\(g(x) = \log(x - a)\)</span>.</li>
+<li>If scalar <span class="math inline">\(x \in (-\infty, b)\)</span>, then <span class="math inline">\(g(x) = -\log(b - x)\)</span>.</li>
+<li>If scalar <span class="math inline">\(x \in (a, b)\)</span>, then <span class="math inline">\(g(x) = \mbox{logit}((x-a)/(b-a))\)</span>. For example <code>x ~ dunif(a, b)</code> in a model means <span class="math inline">\(x \in (a, b)\)</span>.</li>
+<li>If matrix <code>x[1:n, 1:n] ~ dwishart</code> or <code>x[1:n, 1:n] ~ dinvwishart</code> in a model, then <span class="math inline">\(g(x) = \mbox{chol}(x)\)</span> for non-diagonal elements of <span class="math inline">\(\mbox{chol}(x)\)</span> and <span class="math inline">\(g(x) = \log(\mbox{chol}(x))\)</span> for diagonal elements of <span class="math inline">\(\mbox{chol}(x)\)</span>, where <span class="math inline">\(\mbox{chol}(x)\)</span> is the Cholesky decomposition of <span class="math inline">\(x\)</span>. Note that <span class="math inline">\(x\)</span> in these cases follows a Wishart or inverse Wishart distribution, respectively, and thus is a random precision or covariance matrix. That means it must be positive definite and thus have positive diagonal elements of <span class="math inline">\(\mbox{chol}(x)\)</span>.</li>
+<li>If vector <code>x[1:n] ~ ddirch</code> in a model, then <span class="math inline">\(g(x[1]) = \mbox{logit}(x[1])\)</span> and <span class="math inline">\(g(x[i]) = \mbox{logit}(x[i] / (1-\sum_{k=1}^{i-1}x[i]))\)</span> for <span class="math inline">\(i &gt; 1\)</span>. In this case, <code>x</code> follows a Dirichlet distribution and thus has the simplex constraint that <span class="math inline">\(\sum_{i=1}^n x[i] = 1\)</span>.</li>
+<li>If vector <code>x[1:n] ~ dlkj_corr_cholesky</code>, <span class="math inline">\(g(x)\)</span> is the LKJ Cholesky transformation. This provides the LKJ prior for a covariance matrix.</li>
+</ul>
+<p>Note that the scalar transformations are all monotonic increasing functions of the original parameter.</p>
+<p>The worked example next will illustrate use of the parameter transformation system.</p>
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="cha-progr-with-models.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
+"toc": {
+"collapse": "subsection"
+},
+"toc_depth": 3
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

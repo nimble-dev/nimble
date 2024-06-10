@@ -11,8 +11,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context('Testing of nimCopy and values')
-
 
 
 

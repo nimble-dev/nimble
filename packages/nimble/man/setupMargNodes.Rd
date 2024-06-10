@@ -11,7 +11,8 @@ setupMargNodes(
   calcNodes,
   calcNodesOther,
   split = TRUE,
-  check = TRUE
+  check = TRUE,
+  allowDiscreteLatent = FALSE
 )
 }
 \arguments{
@@ -47,6 +48,9 @@ calculation.}
 \item{check}{A logical indicating whether to try to give reasonable warnings
 of badly formed inputs that might be missing important nodes or include
 unnecessary nodes.}
+
+\item{allowDiscreteLatent}{A logical indicating whether to
+allow discrete latent states. (default = \code{FALSE})}
 }
 \value{
 A list is returned with elements:
@@ -185,5 +189,5 @@ If \code{check=TRUE}, then defaults for each of the four categories of nodes
   (ii) instead of (iii) in the list above.)
 }
 \author{
-Wei Zhang, Perry de Valpine
+Wei Zhang, Perry de Valpine, Paul van Dam-Bates
 }

@@ -9,7 +9,6 @@ nimbleOptions(verbose = TRUE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
-context('Testing of BNP functionality')
 
 
 

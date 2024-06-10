@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of nimIntegrate() in NIMBLE code")
-
 test_that("Basic use of integrate in an RCfunction calling an RCfunction", {
     integrand <- nimbleFunction(
         run = function(x = double(1), theta = double(1)) {

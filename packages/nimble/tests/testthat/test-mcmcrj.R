@@ -8,8 +8,6 @@ nimbleOptions(verbose = FALSE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
-context('Testing of MCMC_RJ functionality')
-
 test_that("Test configureRJ with no indicator variables", {
 
   ## Linear regression with 2 covariates, one in the model

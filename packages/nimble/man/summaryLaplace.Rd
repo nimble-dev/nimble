@@ -2,10 +2,19 @@
 % Please edit documentation in R/Laplace.R
 \name{summaryLaplace}
 \alias{summaryLaplace}
-\title{Summarize results from Laplace approximation}
+\alias{summaryAGHQ}
+\title{Summarize results from Laplace or adaptive Gauss-Hermite quadrature approximation}
 \usage{
 summaryLaplace(
   laplace,
+  MLEoutput,
+  originalScale = TRUE,
+  randomEffectsStdError = FALSE,
+  jointCovariance = FALSE
+)
+
+summaryAGHQ(
+  AGHQ,
   MLEoutput,
   originalScale = TRUE,
   randomEffectsStdError = FALSE,
@@ -17,9 +26,11 @@ summaryLaplace(
 This would be the result of compiling an object returned from
 `buildLaplace`.}
 
-\item{MLEoutput}{The maximum likelihood estimate using Laplace approximation,
-returned from `laplace$findMLE(...)`. See `help(buildLaplace)` for more
-information.}
+\item{MLEoutput}{The maximum likelihood estimate using Laplace or AGHQ,
+returned from e.g. `approx$findMLE(...)`, where \code{approx} is the
+algorithm object returned by `buildLaplace` or `buildAGHQ`, or (more
+typically) the result of compiling that object with `compileNimble`. See
+`help(buildLaplace)` for more information.}
 
 \item{originalScale}{Should results be returned using the original
 parameterization in the model code (TRUE) or the potentially transformed
@@ -34,6 +45,11 @@ estimates of random effects values.}
 \item{jointCovariance}{If TRUE, calculate the joint covariance matrix of
 the parameters and random effects together. If FALSE, calculate the 
 covariance matrix of the parameters.}
+
+\item{AGHQ}{Same as \code{laplace}. Note that `buildLaplace` and
+`buildAGHQ` create the same kind of algorithm object that can be used
+interchangeably. `buildLaplace` simply sets the number of quadrature points
+(`nQuad`) to 1 to achieve Laplace approximation as a special case of AGHQ.}
 }
 \value{
 A list with data frames `params` and `randomEffects`, each with columns for
@@ -43,13 +59,12 @@ and `originalScale` with the input value of `originalScale` so it is recorded
 for later use if wanted.
 }
 \description{
-Process the results of the `findMLE` method of a nimble Laplace approximation
+Process the results of the `findMLE` method of a nimble Laplace or AGHQ approximation
 into a more useful format.
 }
 \details{
 The numbers obtained by this function can be obtained more directly by
-`laplace$summary(...)`, which calls a (usually compiled) method of the
-`laplace` nimbleFunction. The added benefit of `summaryLaplace` is to arrange
+`approx$summary(...)`. The added benefit of `summaryLaplace` is to arrange
 the results into data frames (for parameters and random effects), with row
 names for the model nodes, and also adding row and column names to the
 covariance matrix.

@@ -919,26 +919,6 @@ modifyForAD_RCfunction <- function(code, symTab, workEnv) {
                                   ))
     }
   }
-  ## if(isTRUE(workEnv$.anyAD)) {
-  ##   isRCwithoutAD <- (!is.null(code$aux)) && (!isTRUE(code$aux[['buildDerivs']]))
-  ##   isRCwithAD <- (!is.null(code$aux)) && (isTRUE(code$aux[['buildDerivs']]))
-  ##   lacksADsupport <- isRCwithoutAD ||
-  ##                      any(code$name == callsNotAllowedInAD)
-  ##   supportsAD <- !lacksADsupport
-  ##   if(supportsAD) {
-  ##     if(isRCwithAD)
-  ##       code$name <- paste0(code$name, "< CppAD::AD<double> >")
-  ##   } else {
-  ##     browser()
-  ##     workEnv$.illegalADcall <- TRUE
-  ##     if(!is.character(workEnv$.illegalADmsgs)) workEnv$.illegalADmsgs <- character()
-  ##     workEnv$.illegalADmsgs <- c(workEnv$.illegalADmsgs,
-  ##                                 exprClassProcessingErrorMsg(
-  ##                                   code,
-  ##                                   "A function that might be intended for derivative tracking does not have buildDerivs set to enable that."
-  ##                                 ))
-  ##   }
-  ## }
   invisible(NULL)
 }
 
@@ -965,7 +945,7 @@ modifyForAD_nfMethod <- function(code, symTab, workEnv) {
   buildDerivs <- methodSymObj$nfMethodRCobj$buildDerivs
   if(!is.null(buildDerivs))
     if(!isFALSE(buildDerivs)) {
-      code$args[[2]] <- paste0( code$args[[2]], "_AD2_")
+      code$args[[2]] <- paste0( code$args[[2]], "_AD2_< CppAD::AD<double> >")
       code$name <- "nfMethodAD" ## This is a tag for modifyForAD_chainedCall
     }
   invisible(NULL)
@@ -974,7 +954,11 @@ modifyForAD_nfMethod <- function(code, symTab, workEnv) {
 modifyForAD_chainedCall <- function(code, symTab, workEnv) {
   arg1name <- code$args[[1]]$name
   if(arg1name == "nfMethodAD") { ## A tag set in modifyForAD_nfMethod
-    setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
+    if(isTRUE(workEnv[['.inModel']]))
+      newArg <- RparseTree2ExprClasses(quote(recordingInfo()))
+    else
+      newArg <- RparseTree2ExprClasses(quote(recordingInfo_))
+    setArg(code, length(code$args) + 1, newArg)
     code$args[[1]]$name <- "nfMethod" ## tag is no longer needed. revert to regular nfMethodAD
   }
   invisible(NULL)
@@ -1004,11 +988,6 @@ modifyForAD_recordable <- function(code, symTab, workEnv) {
                                   ))
     }
   }
-  ## if(!is.null(buildDerivs))
-  ##   if(!isFALSE(buildDerivs)) {
-  ##     code$name <- paste0(code$name, "_AD2_")
-  ##     setArg(code, length(code$args) + 1, RparseTree2ExprClasses(quote(recordingInfo_)))
-  ##   }
   invisible(NULL)
 }
 
@@ -1212,7 +1191,7 @@ makeCopyFromRobjectDef <- function(cppCopyTypes,
                             c(list('{'),
                               list(cppLiteral("SETUP_S_xData;")),
                               copyCalls,
-                              list(cppLiteral(paste0("UNPROTECT(",unprotectCount,");")))),
+                              list(cppLiteral(paste0("UNPROTECT(",unprotectCount,"+1);")))),
                             quote = TRUE
                             )
     }

@@ -15,7 +15,57 @@ relTol[4] <- 1e-4
 
 verbose <- FALSE
 
-context("Testing of derivatives for calculate() for nimbleModels")
+test_that('setUserEnv and getUserEnv work', {
+  m <- nimbleModel(quote({a ~ dnorm(0,1)}))
+  expect_identical(m$modelDef$getUserEnv(), environment())
+  foo <- \() list(\() {}, nimbleModel(quote({a ~ dnorm(0,1)})))
+  res <- foo()
+  expect_identical(res[[2]]$modelDef$getUserEnv(), environment(res[[1]]))
+})
+
+test_that('AD support is correctly determined for distributions', {
+  # These tests are a bit odd in that we don't really need to make the models
+  # to test the expectations.
+  mc <- nimbleCode({
+    mu ~ dnorm(0, sd = 100)
+    sigma ~ dhalfflat()
+    a ~ dnorm(mu, sd = sigma)
+    b ~ T(dnorm(mu, sd = sigma), 0, 1)
+  })
+  m <- nimbleModel(mc)
+  expect_true(m$modelDef$checkADsupportForDistribution("dnorm"))
+  expect_false(m$modelDef$checkADsupportForDistribution("T"))
+  expect_true(m$modelDef$checkADsupportForDistribution("dhalfflat"))
+
+  duserNO <- nimbleFunction(
+    run = function(x=double(), log=integer(0, default=0)) {return(log(x)); returnType(double())})
+  duserYES <- nimbleFunction(
+    run = function(x=double(), log=integer(0, default=0)) {return(log(x)); returnType(double())},
+    buildDerivs = list(run = list())
+  )
+  userObj <- nimbleFunction(
+    setup = TRUE,
+    methods = list(
+      dNO = function(x=double(), log=integer(0, default=0)) {return(log(x)); returnType(double())},
+      dYES = function(x=double(), log=integer(0, default=0)) {return(log(x)); returnType(double())}
+      ),
+    buildDerivs = c("dYES")
+  )
+  userObj1 <- userObj()
+  mc <- nimbleCode({
+    a ~ duserNO()
+    b ~ duserYES()
+    c ~ userObj1$dNO()
+    d ~ userObj1$dYES()
+  })
+  m <- nimbleModel(mc)
+  expect_false(m$modelDef$checkADsupportForDistribution("duserNO"))
+  expect_true(m$modelDef$checkADsupportForDistribution("duserYES"))
+  expect_false(m$modelDef$checkADsupportForDistribution("userObj1$dNO"))
+  expect_true(m$modelDef$checkADsupportForDistribution("userObj1$dYES"))
+
+  expect_error(m <- nimbleModel(nimbleCode({a ~ dnonsense()})))
+})
 
 test_that('pow and pow_int work', {  ## 28 sec.
 

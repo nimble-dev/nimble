@@ -14,7 +14,6 @@ if (nchar(Sys.getenv('CI'))) nimbleOptions(showCompilerOutput = TRUE)
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
-context('Benchmarking NIMBLE code')
 cat('\n')
 
 ## Computes number of iterations per second.

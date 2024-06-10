@@ -33,7 +33,7 @@ Authors:
   \item Wei Zhang (Laplace approximation)
   \item Sally Paganin (reversible jump MCMC)
   \item Joshua Hug (WAIC)
-  \item Paul van Dam-Bates (nimIntegrate)
+  \item Paul van Dam-Bates (AGHQ approximation, Pólya-Gamma sampler, nimIntegrate)
 }
 
 Other contributors:

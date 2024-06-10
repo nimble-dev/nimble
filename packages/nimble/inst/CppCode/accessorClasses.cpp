@@ -929,26 +929,26 @@ void populateNodeFxnVectorNew_copyFromRobject_forDerivs(void *nodeFxnVec_to, SEX
   SEXP S_rowIndices;
   PROTECT(S_rowIndices = VECTOR_ELT(S_indexingInfo, 1));
   SEXP S_numberedPtrs;
-  PROTECT(S_numberedPtrs = Rf_findVarInFrame(PROTECT(GET_SLOT(
-							      Rf_findVarInFrame(PROTECT(GET_SLOT(
-												 Rf_findVarInFrame(PROTECT(GET_SLOT(
+  PROTECT(S_numberedPtrs = PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
+							      PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
+												 PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
 																    VECTOR_ELT(S_nodeFxnVec_from,
 																	       2
 																	       ),
 																    S_pxData)),
 														   Rf_install("CobjectInterface")
-														   ),
+														   )),
 												 S_pxData)),
-										Rf_install(".nodeFxnPointers_byDeclID")),
+										Rf_install(".nodeFxnPointers_byDeclID"))),
 							      S_pxData)),
 					     Rf_install(".ptr")
-					     )
+					     ))
   );
   SEXP SderivInfo;
   PROTECT(SderivInfo = VECTOR_ELT(S_nodeFxnVec_from, 3));
   NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(nodeFxnVec_to);
   populateNodeFxnVectorNew_internal_forDerivs(nfv_derivs, S_declIDs, S_numberedPtrs, S_rowIndices, SderivInfo);
-  UNPROTECT(9);
+  UNPROTECT(12);
 }
 
 SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo){
