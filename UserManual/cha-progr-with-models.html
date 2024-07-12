@@ -868,7 +868,7 @@ and <code>i</code> is a row number. Likewise, the <code>getsize</code> and
 <span id="cb431-11"><a href="cha-progr-with-models.html#cb431-11" tabindex="-1"></a>                <span class="at">nodes =</span> modelNodes, <span class="at">logProb =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb431-12"><a href="cha-progr-with-models.html#cb431-12" tabindex="-1"></a>        <span class="co"># calculates the log likelihood of the model</span></span>
 <span id="cb431-13"><a href="cha-progr-with-models.html#cb431-13" tabindex="-1"></a>        targLL <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">calculate</span>()</span>
-<span id="cb431-14"><a href="cha-progr-with-models.html#cb431-14" tabindex="-1"></a>        <span class="co"># retreaves the saved log likelihood from the proposed model</span></span>
+<span id="cb431-14"><a href="cha-progr-with-models.html#cb431-14" tabindex="-1"></a>        <span class="co"># retrieves the saved log likelihood from the proposed model</span></span>
 <span id="cb431-15"><a href="cha-progr-with-models.html#cb431-15" tabindex="-1"></a>        propLL <span class="ot">&lt;-</span> propModelValues[<span class="st">&quot;propLL&quot;</span>,i][<span class="dv">1</span>]</span>
 <span id="cb431-16"><a href="cha-progr-with-models.html#cb431-16" tabindex="-1"></a>        <span class="co"># saves the importance weight for the i-th sample </span></span>
 <span id="cb431-17"><a href="cha-progr-with-models.html#cb431-17" tabindex="-1"></a>        savedWeights[<span class="st">&quot;w&quot;</span>, i][<span class="dv">1</span>] <span class="ot">&lt;&lt;-</span> <span class="fu">exp</span>(targLL <span class="sc">-</span> propLL)</span>
