@@ -123,7 +123,7 @@ run = function(){
                 nodes = modelNodes, logProb = FALSE)
         # calculates the log likelihood of the model
         targLL <- model$calculate()
-        # retreaves the saved log likelihood from the proposed model
+        # retrieves the saved log likelihood from the proposed model
         propLL <- propModelValues["propLL",i][1]
         # saves the importance weight for the i-th sample 
         savedWeights["w", i][1] <<- exp(targLL - propLL)
