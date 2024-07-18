@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing that SMC functionality throws errors pointing to nimbleSMC.")
-
 test_that("PF MCMCs fail with message", {
     timeModelCode <- nimbleCode({
         x[1] ~ dnorm(mu_0, 1)

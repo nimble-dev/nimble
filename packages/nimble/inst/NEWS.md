@@ -1,3 +1,109 @@
+#                            CHANGES IN VERSION 1.2.0 (June 2024) 
+
+## USER LEVEL CHANGES
+
+- Add a Pólya-gamma sampler, `sampler_polyagamma`, for conjugate sampling of
+  linear predictor parameters in logistic regression model specifications, 
+  including handling zero inflation and stochastic design matrices(PR #1439).
+
+- Add a new sampler, `sampler_noncentered`, which samples the mean or standard
+  deviation of a set of random effect values in a transformed space such that
+  the random effects are deterministically shifted or scaled given new values of
+  their hyperparameters. For random effects written in a centered
+  parameterization, sampling is performed as if they had been written in a
+  noncentered parameterization, thereby enabling a variant on the Yu and Meng
+  (2011) interweaving sampling strategy of sampling in both
+  parameterizations (PR #1437) .
+  
+- Completely revamp MCEM algorithm, fixing a bug so that any parts of the model
+  not connected to the latent states are included in MLE calculations, giving
+  greater control and adding minor extensions to the ascent-based MCEM approach,
+  using automatic derivatives in the maximization when possible, and converting
+  `buildMCEM` to be a nimbleFunction rather than an R function (PR #1428).
+  
+- Provide adaptive Gauss-Hermite quadrature (AGHQ) for integrating over latent
+  effects, as an extension of NIMBLE's Laplace approximation functionality.
+  Also adds user-friendly R functions, `runLaplace` and `runAGHQ`, for using
+  Laplace and AGHQ approximation for maximum likelihood estimation (PR #1455).
+  
+- Provide a more flexible optimization system via `nimOptim`, with
+  support for `nlminb` built in as well as the capability for users to provide
+  potentially arbitrary optimization functions in R (PR #1455).
+
+- Allow the use of nimbleFunctions with setup code in models either for
+  user-defined functions via `<-` or for user-defined distributions via `~`.
+  This supports holding large objects outside of model nodes for use in models
+  (PRs #1348, #1453).
+
+- Error out if the `RW_block` sampler is assigned to any discrete nodes 
+  (PR #1421).
+
+- Improve the speed of MCMC building in certain cases with many simple samplers 
+  by using `inherits` rather than `is` (PR #1413).
+  
+- Add an argument to `buildMCMC` controlling whether to initialize values in
+  the model (PR #1429).
+  
+- Improve the efficiency of setting up derivative information for models
+  with multivariate nodes with many elements (PR #1431).
+  
+- Provide ability to control number of digits printed in C++ output (PR #1145).
+
+- Allow use of categorical MCMC sampler with user-specified `dcat`-like
+  distributions (PR #1447).
+  
+- Update explanation in manual regarding avoiding tracking of derivatives for 
+  some variables in the AD system.
+  
+- Warn of use of backward indexing in nimble models.
+
+- Improve documentation of LKJ distribution.
+
+## BUG FIXES
+
+- Fix some internals related to memory handling in compiled code to avoid 
+  intermittent errors and crashes occurring in testing (PR #1430).
+  
+- Fix a harmless typo causing partial name matching in R (PR #1422).
+
+- Fix an insufficient check for conjugacy in stickbreaking specifications
+  (PR #1444).
+  
+- Remove spurious warning when `returnType` is `character()` in a 
+  nimbleFunction (issue #1457).
+  
+- Fix incorrect error message when `getParam` used with non-existent node
+  (issue #1338).
+  
+
+## DEVELOPER LEVEL CHANGES
+
+- Ensure parameter transformation system handles cases of zero nodes 
+  (PR #1427).
+
+- Update deprecated `igraph` calls (simply renaming them) (PR #1420).
+
+- Fix compilation failures occurring on Red Hat Linux (PR #1417).
+
+- Remove deprecated `testthat::context` calls (PR #1441).
+
+- Reenable functionality for user-provided Eigen library and related
+  updates to autoconf configuration (PR #1443).
+
+- Enhance functionality to support model macros (PR #1448).
+
+- Deprecate virtual nodeFunction definitions (PRs #1452, #1454).
+
+- Modify a few test tolerances and expectations of identical values in light 
+  of apparent MacOS changes.
+  
+- Save the user environment in the `modelDef` object for use in `nimbleHMC`.
+
+- Remove deprecated `is.na.vec` and `is.nan.vec`.
+
+- Remove deprecated dummy functions for `compareMCMCs` functions (issue #1436).
+
+
 #                            CHANGES IN VERSION 1.1.0 (January 2024) 
 
 ## USER LEVEL CHANGES
@@ -326,7 +432,6 @@ statements (PR #1254).
 - Remove code triggering Windows warnings about writing bytes into region of size 0 by modifying `setLength`.
 
 - Remove use of C++11 standard, per CRAN requirements. As part of this, replace use of `std::ptr_fun` (PR #1292).
-
 
 #                            CHANGES IN VERSION 0.13.1 (December 2022) 
 

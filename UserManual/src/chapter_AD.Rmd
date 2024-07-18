@@ -50,7 +50,7 @@ model_code <- nimbleCode({
   # priors 
   intercept ~ dnorm(0, sd = 100)
   beta ~ dnorm(0, sd = 100)
-  sigma ~ dunif(0, 10)
+  sigma ~ dhalfflat()
   # random effects and data  
   for(i in 1:10) {
     # random effects
@@ -62,6 +62,8 @@ model_code <- nimbleCode({
   }
 })
 ```
+
+Note that we changed the prior on `sigma` to avoid having an upper bound. Prior distributions are not included in maximum likelihood using the Laplace approximation but do indicate the range of valid values. We recommend caution in using priors for variance  component parameters (standard deviations, variances, precisions) that have a finite upper bound (e.g., `sigma ~ dunif(0, 100)`), because the probit transformation applied in that case may result in poor optimization performance.
 
 We'll simulate some values for `X`.
 ```{r eval=TRUE}
@@ -97,9 +99,9 @@ Cmodel <- compileNimble(model)
 ```
 
 
-## How to use Laplace approximation
+## How to use Laplace approximation and adaptive Gauss-Hermite quadrature  {#sec:AD-laplace}
 
-Next we will show how to use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above.  What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation (used for finding the MLE efficiently) uses third derivatves. These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
+Next we will show how to use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above. Laplace approximation is equivalent to first-order adaptive Gauss-Hermite quadrature, which is also available, although here we will focus on Laplace approximation only. What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation (used for finding the MLE efficiently) uses third derivatives. These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
 
 To create a Laplace approximation specialized to the parameters of interest for this model, we use the nimbleFunction `buildLaplace`. For many models, the setup code in `buildLaplace` will automatically determine the random effects to be integrated over and the associated nodes to calculate. In fact, if you omit the parameter nodes, it will assume that all top-level nodes in the model should be treated as parameters. If fine-grained control is needed, these various sets of nodes can be input directly into `buildLaplace`. To see what default handling of nodes is being done for your model, use `setupMargNodes` with the same node inputs as `buildLaplace`.
 
@@ -108,7 +110,7 @@ glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'))
 Cglmm_laplace <- compileNimble(glmm_laplace, project = model)
 ```
 
-Now we are ready to use some of the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood.
+Now we are ready to use some of the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood. Here we will show detailed steps for using the Laplace approximation, but see `help(runLaplace)` to combine the basic steps into one call.
 
 ```{r eval=eval}
 # Get the Laplace approximation for one set of parameter values.
@@ -137,7 +139,7 @@ Finally, let's confirm that it worked by comparing to results from package `glmm
 
 ```{r eval=eval}
 library(glmmTMB)
-y <- as.numeric(model$y) # Re-arrage inputs for call to glmmTMB
+y <- as.numeric(model$y) # Re-arrange inputs for call to glmmTMB
 X <- as.numeric(X)
 group <- rep(1:10, 5)
 data <- as.data.frame(cbind(X,y,group))
@@ -170,7 +172,7 @@ The user-defined distribution is:
 d_my_norm <- nimbleFunction(
   run = function(x = double(), mean = double(), sd = double(),
                  log = integer(0, default = 0)) {
-    ans <- -log(sqrt(2*pi*sd)) - 0.5*((x-mean)/sd)^2
+    ans <- -log(sqrt(2*pi)*sd) - 0.5*((x-mean)/sd)^2
     if(log) return(ans)
     return(exp(ans))
     returnType(double())
@@ -202,7 +204,7 @@ Features that are not supported for AD include:
 - some specific functions including `step`, `%%` (mod), `eigen`, `svd`, and `besselK`; and
 - most model operations (other than `model$calculate`, which is supported) including `model$calculateDiff`, `model$simulate`, `model$getBound`, and `model$getParam`.
 
-Note that functions and distributions that are not supported can still be used in a model, as long as no algorithm tries to take derivatives with respect to node(s) that is (are) not supported. For example, `x ~ dcat(p[1:3])` declares `x` to be a discrete random variable following a categorical distribution. An algorithm can use derivatives with respect to `p[1:3]` (or with respect to parent nodes of `p[1:3]`) because the calculation of the log probability of `x` given `p[1:3]` is continuous with respect to `p`. However, derivatives with respect to `x` will not work. In the case of truncated distributions, neither derivatives with respect to parameters nor to random variable are supported.
+Note that functions and distributions that are not supported can still be used in a model, as long as no algorithm tries to take derivatives with respect to node(s) that is (are) not supported. For example, `x ~ dcat(p[1:3])` declares `x` to be a discrete random variable following a categorical distribution. An algorithm can use derivatives with respect to `p[1:3]` (or with respect to parent nodes of `p[1:3]`) because the calculation of the log probability of `x` given `p[1:3]` is continuous with respect to `p`. However, derivatives with respect to `x` will not work. In the case of truncated distributions, derivatives with respect to neither the parameters nor to the random variable are supported.
 
 Some details on what is supported include:
 
@@ -290,11 +292,15 @@ my_derivs_demo$derivsRun(d, x)
 
 We can see that the results are very close, but typically not identical, to those from the compiled version.
 
-### Holding some local variables out of derivative tracking
+### Holding some local variables out of derivative tracking {#sec:AD-holding-out}
 
-Sometimes one wants to omit tracking of certain variables in derivative calculations. There are three ways to do this: naming variables in an `ignore` set; ensuring a variable's type is `integer` (not simply `numeric` with an integer value) or `logical`; or using the `ADbreak` function. The `ignore` method is coarse, holding a variable such as a for-loop counter entirely out of derivative tracking. The `ADbreak` method provides more fine-grained control and is essential when function arguments might be passed from models. Here is an example of `ignore`, while `ADbreak` is described below.
+Sometimes one wants to omit tracking of certain variables in derivative calculations. There are three ways to do this: naming variables in an `ignore` set; ensuring a variable's type is `integer` (not simply `numeric` with an integer value) or `logical`; or using the `ADbreak` function. The differences between these have to do with the fact that the variable types used for tracking derivatives in C++ are special. The `ignore` method marks a variable as a regular type rather than a derivative-tracking type. The `integer` or `logical` method results in a regular (integer or logical) variable simply because those types are never used in derivative-tracking. The `ADbreak` method assigns one derivative-tracked variable to another (derivative-tracked or not) variable while severing any actual derivative tracking between them.
 
-Say that we write `exp(-d*x)` using a for-loop instead of a vectorized operation as above. It wouldn't make sense to track derivatives for the for-loop index (`i`), and indeed it would cause `compileNimble` to fail. The code to use a for-loop while telling `derivs` to ignore the for-loop index is:
+#### Holding variables out of derivative tracking using `ignore`
+
+Here is an example of `ignore`, while `ADbreak` is described below.
+
+Say that we write `exp(-d*x)` using a for-loop instead of a vectorized operation as above. It wouldn't make sense to track derivatives for the for-loop index (`i`), and indeed it would cause `compileNimble` to fail. The code to use a for-loop index `i` while telling `derivs` to *ignore* derivatives for `i` is:
 
 ```{r eval=eval}
 derivs_demo2 <- nimbleFunction(
@@ -327,22 +333,25 @@ x <- c(2.1, 2.2)
 C_my_derivs_demo2$derivsRun(d, x)$jacobian
 ```
 
-One might think it should be obvious that `i` should not be involved in derivatives, but sometimes math is actually done with a for-loop index. Another way to ensure derivatives won't be tracked for `i` would be to write `i <- 1L`, before the loop. By assigning a definite integer to `i`, it will be established as definitely of integer type throughout the function and thus not have derivatives tracked. (If you are not familiar with the `L` in R, try `storage.mode(1L)` vs `storage.mode(1)`.)
+One might think it should be obvious that `i` should not be involved in derivatives, but sometimes math is actually done with a for-loop index. Another way to ensure derivatives won't be tracked for `i` would be to write `i <- 1L`, before the loop. By assigning a definite integer to `i`, it will be established as definitely of integer type throughout the function and thus not have derivatives tracked. (If you are not familiar with the `L` in R, try `storage.mode(1L)` vs `storage.mode(1)`.) The only way to mark a double-precision variable to be a regular (not derivative-tracking) type is to name it in the `ignore` set.
 
-Because derivatives are not tracked for integer or logical variables, arguments to `run` that have `integer` or `logical` types will not have derivatives tracked.
+Another case where the `ignore` or `integer` methods are useful is in determining the start and/or end values of a for-loop. If you need `for(i in 1:n) {...}` where you previously set `n <- length(some_values)`, you need `n` to be a non-derivative tracking type. You can achieve this either by including `"n"` in the `ignore` set or by doing `n <- 0L`  before setting `n <- length(some_values)`, to establish with certainty that `n` is an integer.
 
-Note the more elaborate value for `buildDerivs`. Above, this was just a character vector. Here it is a named list, with each element itself being a list of control values. The control value `ignore` is a character vector of variable names to ignore in derivative tracking. `buildDerivs = 'run'` is equivalent to `buildDerivs = list(run = list())`.
+Because derivatives are not tracked for integer or logical variables, arguments to `run` that have `integer` or `logical` types will not have derivatives tracked. You can also include an argument name (even for a double-precision argument) in the `ignore` set. In any of these cases, you must then be careful in passing a non-derivative tracking type to another function. If passed as an argument to another function, the argument in that function must also be a non-derivative tracking type (`integer`, `logical`, or in the `ignore` set).
+
+If you need to assign a value from a derivative-tracked variable to a non-derivative tracked variable, you must use `ADbreak` (see the next subsection for more on this). For example if `y` is in the `ignore` set, `y <- ADbreak(x)` assigns the value of `x` (with no derivative tracking) to `y`. You can also do `y <- ADbreak(x)` if `y` is *not* in the `ignore` set, and the result is that `y` has derivative tracking and is initialized to the value of `x`, but all derivatives of `y` with respect to `x` are 0. This severs the derivative (chain-rule) relationship between `x` and any subsequent calculations with `y`, but it does allow `y` to be used where a derivative-tracking variable is expected (e.g. as another function's argument). **Derivative-tracked variables that are severed by `ADbreak` will be "baked in" to the AD tape from the first call**. This means their values will be constants and **will not change on subsequent calls** even if the input values change, unless you use the `reset` feature. See section \@ref(sec:understanding-more-AD) to learn more about "baked in" values.
+
+Only some math operations will work with a mix of derivative-tracking and regular variables. For example, most scalar operations will work with one argument of each kind. However, more complicated operations such as matrix multiplication require the arguments to be either both derivative-tracking or both regular.
+
+Note the more elaborate value for `buildDerivs`. In the previous example, this was just a character vector. Here it is a named list, with each element itself being a list of control values. The control value `ignore` is a character vector of variable names to ignore in derivative tracking. `buildDerivs = 'run'` is equivalent to `buildDerivs = list(run = list())`.
 
 #### Holding function arguments (including variables passed from a model) out of derivative tracking
 
+Derivatives can be tracked through function calls, including from a model to a user-defined distribution or function (see \@ref(sec:AD-user-def) and \@ref(sec:AD-multiple-NF)). However, if one function is tracking derivatives for `x` and passes `x` as an argument to another function where it is non-derivative tracking type, there will be an error (most likely from `compileNimble`). The problem is that, as noted above, the C++ variable types used for tracking derivatives or not are different and are not automatically interchangeable. Importantly, variables passed from models are always derivative-tracking (even if they will always have integer values).
 
-Derivatives can be tracked through function calls, including from a model to a user-defined distribution or function (see \@ref(sec:AD-user-def) and \@ref(sec:AD-multiple-NF)). However, if one function is tracking derivatives for `x` and passes `x` as an argument to another function that does not track its derivatives, there will be an error (most likely from `compileNimble`). The problem is that the C++ variable types used for tracking derivatives or not are different. Importantly, variables passed from models always have derivatives tracked.
+For this situation, you can use `ADbreak` to stop derivative tracking. For example, if one has a nimbleFunction argument `x`, one would do `x_noDeriv <- ADbreak(x)` and then use `x_noDeriv` in subsequent calculations. This "breaks" derivative tracking in the sense that the derivative of `x_noDeriv` with respect to `x` is 0. However, it is important to realize that `x_noDeriv` is still a derivative-tracking type (unless it is in the `ignore` set), so it can be passed to other functions involved in the derivative-tracked operations. And, on the other hand, it can't be used as a for-loop index or as the start of end of a for-loop extent. As noted above, if the values of `x` or `x_noDeriv` are used in further calculations, their values will be "baked in" to the tape.
 
-For this situation, you can use `ADbreak` to stop derivative tracking. For example, if one has a nimbleFunction argument `x`, one would do `x_noDeriv <- ADbreak(x)` and then use `x_noDeriv` in subsequent calculations. This "breaks" derivative tracking in the sense that the derivative of `x_noDeriv` with respect to `x` is 0. 
-
-Including `"x"` in the `ignore` set won't work because, if `x` is a function argument, its type will then be changed to be a non-derivative type. If a derivative-tracking type is then passed as the value for `x` there will be a mismatch in types. Since variables passed from models always allow derivative-tracking, one should not `ignore` the corresponding function arguments. 
-
-The `ADbreak` method can be useful in other situations as well, not only for function arguments whose derivatives you don't want to track.
+Including `"x"` in the `ignore` set won't work in this case because, if `x` is a function argument, its type will then be changed to be a non-derivative type. If a derivative-tracking type is then passed as the value for `x` there will be a mismatch in types. Since variables passed from models always allow derivative-tracking, one should not `ignore` the corresponding function arguments. 
 
 Note that `ADbreak` only works for scalars. If you need to break AD tracking for a non-scalar, you have to write a for-loop to apply `ADbreak` for each element. For example:
 
@@ -351,6 +360,12 @@ x_noDeriv <- nimNumeric(length(x), init=FALSE)
 i <- 1L
 for(i in 1:length(x)) x_noDeriv[i] <- ADbreak(x[i])
 ```
+
+In summary:
+
+- Use the `ignore` set or explicit creation of variables as `integer` or `logical` to create regular variable types.
+- If you need an argument to have derivative-tracking (as is always the case when called from a model) but derivatives with respect to it don't make sense, use `ADbreak` to assign to a local variable that will "bake in" the value and remove it from derivative tracking. The local variable can be regular (if it is in the `ignore` list or was created first as an `integer` or `logical`) or derivative-tracking.
+
 
 ### Using AD with multiple nimbleFunctions {#sec:AD-multiple-NF}
 
@@ -396,7 +411,7 @@ C_my_derivs_demo3$derivsRun(d, x)$jacobian
 
 Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE`, `buildDerivs = 'run'`, or `buildDerivs = list(run = list())`. One can't take derivatives of `nf_sqrt` on its own, but it can be called by a method of a nimbleFunction that can have its derivatives taken (e.g. the `run` method of a `derivs_demo3` object). 
 
-### Understanding more about how AD works: *taping* of operations
+### Understanding more about how AD works: *taping* of operations {#sec:understanding-more-AD}
 
 At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library [@bell-22]. AD methods work by following a set of calculations multiple times, sometimes in reverse order. 
 
@@ -472,6 +487,7 @@ Specifically, you need to reset a tape when:
 - the extent of any for-loops change. For-loops are not natively recorded, but rather each operation done in execution of the for-loop is recorded. (This is sometimes called "loop unrolling".)  Therefore, in `for(i in start:end)`, the values of `start` and `end` are in effect baked into a tape.
 - the outcomes of any if-then-else conditions in a nimbleFunction are changed.
 - values of any `integer` or `logical` inputs change.
+- values of any variables with derivative tracking severed `ADbreak` change. (See \@ref(sec:AD-holding-out).)
 - any other member data used in calculations changes. It is possible to create a variable in the `setup` function and use it in methods such as `run`. Such variables become member data in the terminology of object-oriented programming. Such variables will not have derivatives tracked if used in a function while it is being taped, so the values will be baked into the tape. This can be useful if you understand what is happening or confusing if not.
 
 Uncompiled execution of `derivs` ignores the reset argument.

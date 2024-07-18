@@ -83,7 +83,13 @@ can test using rhub (from within packages/nimble):
 
 Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','fedora-clang-devel'))" >> /tmp/rhub.out
 
+As of 2024-06-06, having SSL certificate issues. Also it looks like rhub has updated its workflow substantially so a bit of work may be needed to get this working again.
+Error in curl::curl_fetch_memory(url, handle = handle) : 
+  SSL peer certificate or SSH remote key was not OK: [builder.r-hub.io] SSL certificate problem: self-signed certificate
+
 can test on Windows using win-builder and Mac M1 on macbuilder (https://mac.r-project.org/macbuilder/submit.html)
+
+As of 2024-06-06, Macbuilder was accepting the submission but immediately giving back a URL for results that gives a 404 and never sending any email to indicate it had done the check.
 
 careful AD testing:
 - run full ADmodel testing in packages/test-ADmodels-full.R, either scanning all results or (TBD) setting up a gold file. This is both time-consuming an a PITA because of tolerances.
@@ -98,7 +104,7 @@ Once CRAN package accepted:
 
 (make sure both html and pdf versions of manual are updated and in repo before doing zenodo upload, since we should use the updated pdf manual as part of Zenodoversion)
 
-create new version with package tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
+create new version with package tarball and manual in Zenodo (search for 10.5281/zenodo.1211190 in Google; finding using `nimble` in the Zenodo search bar is a pain). Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
 However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password

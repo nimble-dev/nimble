@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context('Testing of parameterTransform nimbleFunction')
-
 
 ##
 ## parameterTransform testing code below
@@ -253,7 +251,30 @@ test_that('parameterTransform for lkj correlation matrices', {
     expect_equal(U, matrix(cU_from_pt, p, p))
     expect_identical(logDetJac, clogDetJac_from_pt)
 })
-    
+
+test_that('parameterTransform works for zero nodes', {
+    Rmodel <- nimbleModel(quote({ x ~ dnorm(0, 1) }))
+    Rpt <- parameterTransform(Rmodel)
+    Cmodel <- compileNimble(Rmodel)
+    Cpt <- compileNimble(Rpt, project = Rmodel)
+    ##
+    expect_equal(Rpt$getOriginalLength(), 0)
+    expect_equal(Cpt$getOriginalLength(), 0)
+    ##
+    expect_equal(Rpt$getTransformedLength(), 0)
+    expect_equal(Cpt$getTransformedLength(), 0)
+    ##
+    expect_equal(Rpt$transform(1:5), numeric())
+    expect_equal(Cpt$transform(1:5), numeric())
+    ##
+    expect_equal(Rpt$inverseTransform(1:5), numeric())
+    expect_equal(Cpt$inverseTransform(1:5), numeric())
+    ##
+    expect_equal(Rpt$logDetJacobian(1:5), 0)
+    expect_equal(Cpt$logDetJacobian(1:5), 0)
+})
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 

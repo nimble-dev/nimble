@@ -10,14 +10,15 @@ requirements <- c(
     'ggplot2',  ## needed for test-compareMCMCs.R
     'covr',     ## needed for code coverage reports
     'pracma',   ## for AD
-    'numDeriv'  ## for AD
+    'numDeriv',  ## for AD
+    'mcmcse'    ## for MCEM
     # 'lme4'     ## for test-ADlaplace.R
     )     
 
 for (package in requirements) {
     if (!suppressPackageStartupMessages(require(package,
                                                 character.only = TRUE))) {
-        install.packages(package, repos = 'http://cran.us.r-project.org')
+        install.packages(package, repos = 'https://cran.r-project.org')
     }
 }
 

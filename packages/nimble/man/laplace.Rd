@@ -2,12 +2,25 @@
 % Please edit documentation in R/Laplace.R
 \name{buildLaplace}
 \alias{buildLaplace}
+\alias{buildAGHQ}
 \alias{laplace}
 \alias{Laplace}
-\title{Laplace approximation}
+\alias{AGHQuad}
+\alias{AGHQ}
+\title{Laplace approximation and adaptive Gauss-Hermite quadrature}
 \usage{
 buildLaplace(
   model,
+  paramNodes,
+  randomEffectsNodes,
+  calcNodes,
+  calcNodesOther,
+  control = list()
+)
+
+buildAGHQ(
+  model,
+  nQuad = 1,
   paramNodes,
   randomEffectsNodes,
   calcNodes,
@@ -27,9 +40,9 @@ Alternatively, \code{paramNodes} can be a list in the format returned by
 \code{calcNodes}, and \code{calcNodesOther} are not needed (and will be
 ignored).}
 
-\item{randomEffectsNodes}{a character vector of names of continuous unobserved 
-(latent) nodes to marginalize (integrate) over using Laplace approximation; 
-defaults are provided by \code{\link{setupMargNodes}}.}
+\item{randomEffectsNodes}{a character vector of names of continuous
+unobserved (latent) nodes to marginalize (integrate) over using Laplace
+approximation; defaults are provided by \code{\link{setupMargNodes}}.}
 
 \item{calcNodes}{a character vector of names of nodes for calculating the
 integrand for Laplace approximation; defaults are provided by
@@ -49,20 +62,79 @@ included in calculations automatically and thus do not need to be included
 in \code{calcNodesOther} (but there is no problem if they are).}
 
 \item{control}{a named list for providing additional settings used in Laplace
-approximation. See \code{control} section below.}
+approximation. See \code{control} section below. Most of these can be
+updated later with the `updateSettings` method.}
+
+\item{nQuad}{number of quadrature points for AGHQ (in one dimension). Laplace approximation is
+AGHQ with `nQuad=1`. Only odd numbers of nodes really
+make sense. Often only one or a few nodes can achieve high accuracy. A maximum of
+35 nodes is supported. Note that for multivariate quadratures, the number
+of nodes will be (number of dimensions)^nQuad.}
 }
 \description{
-Build a Laplace approximation algorithm for a given NIMBLE model.
+Build a Laplace or AGHQ approximation algorithm for a given NIMBLE model.
 }
 \section{\code{buildLaplace}}{
 
 
-\code{buildLaplace} is the main function for constructing the Laplace
-  approximation for a given model or part of a model.
+\code{buildLaplace} creates an object that can run Laplace approximation and
+  for a given model or part of a model. \code{buildAGHQ} creates an object
+  that can run adaptive Gauss-Hermite quadrature (AGHQ, sometimes called
+  "adaptive Gaussian quadrature") for a given model or part of a model.
+  Laplace approximation is AGHQ with one quadrature point, hence
+  `buildLaplace` simply calls `buildAGHQ` with `nQuad=1`. These methods
+  approximate the integration over continuous random effects in a
+  hierarchical model to calculate the (marginal) likelihood.
 
-See method \code{summary} below and the separation function
-  \code{\link{summaryLaplace}} for processing maximum likelihood estimates
-  obtained by method \code{findMLE} below.
+\code{buildAGHQ} and \code{buildLaplace} will by default (unless changed
+manually via `control$split`) determine from the model which random effects
+can be integrated over (marginalized) independently. For example, in a GLMM
+with a grouping factor and an independent random effect intercept for each
+group, the random effects can be marginalized as a set of univariate
+approximations rather than one multivariate approximation. On the other hand,
+correlated or nested random effects would require multivariate marginalization.
+
+Maximum likelihood estimation is available for Laplace approximation
+(`nQuad=1`) with univariate or multivariate integrations. With `nQuad > 1`,
+maximum likelihood estimation is available only if all integrations are
+univariate (e.g., a set of univariate random effects). If there are
+multivariate integrations, these can be calculated at chosen input parameters
+but not maximized over parameters. For example, one can find the MLE based on
+Laplace approximation and then increase `nQuad` (using the `updateSettings`
+method below) to check on accuracy of the marginal log likelihood at the MLE.
+
+Beware that quadrature will use `nQuad^k` quadrature points, where `k` is the
+dimension of each integration. Therefore quadrature for `k` greater that 2 or
+3 can be slow. As just noted, `buildAGHQ` will determine independent
+dimensions of quadrature, so it is fine to have a set of univariate random
+effects, as these will each have k=1. Multivariate quadrature (k>1) is only
+necessary for nested, correlated, or otherwise dependent random effects.
+
+The recommended way to find the maximum likelihood estimate and associated
+outputs is by calling \code{\link{runLaplace}} or \code{\link{runAGHQ}}. The
+input should be the compiled Laplace or AGHQ algorithm object. This would be
+produced by running \code{\link{compileNimble}} with input that is the result
+of \code{buildLaplace} or \code{buildAGHQ}.
+
+For more granular control, see below for methods \code{findMLE} and
+  \code{summary}. See function \code{\link{summaryLaplace}} for an easier way
+  to call the \code{summary} method and obtain results that include node
+  names. These steps are all done within \code{runLaplace} and
+  \code{runAGHQ}.
+
+The NIMBLE User Manual at r-nimble.org also contains an example of Laplace
+approximation.
+}
+
+\section{How input nodes are processed}{
+
+
+\code{buildLaplace} and \code{buildAGHQ} make good tries at deciding what
+to do with the input model and any (optional) of the node arguments. However,
+random effects (over which approximate integration will be done) can be
+written in models in multiple equivalent ways, and customized use cases may
+call for integrating over chosen parts of a model. Hence, one can take full
+charge of how different parts of the model will be used.
 
 Any of the input node vectors, when provided, will be processed using
   \code{nodes <- model$expandNodeNames(nodes)}, where \code{nodes} may be
@@ -89,7 +161,13 @@ In many (but not all) cases, one only needs to provide a NIMBLE model object
   \code{setupMargNodes} will try to determine appropriate choices for the
   others.
 
-These defaults make general assumptions such as that
+\code{setupMargNodes} also determines which integration dimensions are
+conditionally independent, i.e., which can be done separately from each
+other. For example, when possible, 10 univariate random effects will be split
+into 10 univariate integration problems rather than one 10-dimensional
+integration problem.
+
+The defaults make general assumptions such as that
   \code{randomEffectsNodes} have \code{paramNodes} as parents. However, The
   steps for determining defaults are not simple, and it is possible that they
   will be refined in the future. It is also possible that they simply don't
@@ -101,7 +179,7 @@ These defaults make general assumptions such as that
   you must provide a \code{randomEffectsNodes} argument to indicate which
   they are.
 
-It can be helpful to use \code{setupMargNodes} directly to see exactly how
+It can be helpful to call \code{setupMargNodes} directly to see exactly how
   nodes will be arranged for Laplace approximation. For example, you may want
   to verify the choice of \code{randomEffectsNodes} or get the order of
   parameters it has established to use for making sense of the MLE and
@@ -112,6 +190,10 @@ It can be helpful to use \code{setupMargNodes} directly to see exactly how
 
 If \code{setupMargNodes} is emitting an unnecessary warning, simply use
   \code{control=list(check=FALSE)}.
+}
+
+\section{Managing parameter transformations that may be used internally}{
+
 
 If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
   effects / latent states) have constraints on the range of valid values
@@ -120,27 +202,182 @@ If any \code{paramNodes} (parameters) or \code{randomEffectsNodes} (random
   Laplace approximation itself will be done on the transformed scale for
   random effects and finding the MLE will be done on the transformed scale
   for parameters. For parameters, prior distributions are not included in
-  calculations, but they are used to determine valid parameter ranges. For
-  example, if \code{sigma} is a standard deviation, you can declare it with a
-  prior such as \code{sigma ~ dhalfflat()} to indicate that it must be
-  greater than 0.
+  calculations, but they are used to determine valid parameter ranges and
+  hence to set up any transformations. For example, if \code{sigma} is a
+  standard deviation, you can declare it with a prior such as \code{sigma ~
+  dhalfflat()} to indicate that it must be greater than 0.
 
-For default determination of parameters, all parameters must have a prior
-  distribution simply to indicate the range of valid values. For a param
-  \code{p} that has no constraint, a simple choice is \code{p ~ dflat()}.
+For default determination of when transformations are needed, all parameters
+  must have a prior distribution simply to indicate the range of valid
+  values. For a param \code{p} that has no constraint, a simple choice is
+  \code{p ~ dflat()}.
+}
 
-The object returned by \code{buildLaplace} is a nimbleFunction object with
-numerous methods (functions). The most useful ones are:
+\section{Understanding inner and outer optimizations}{
+
+
+Note that there are two numerical optimizations when finding maximum
+likelihood estimates with a Laplace or (1D) AGHQ algorithm: (1) maximizing
+the joint log-likelihood of random effects and data given a parameter value
+to construct the approximation to the marginal log-likelihood at the given
+parameter value; (2) maximizing the approximation to the marginal
+log-likelihood over the parameters. In what follows, the prefix 'inner'
+refers to optimization (1) and 'outer' refers to optimization (2). Currently
+both optimizations default to using method \code{"BFGS"}. However, one can
+use other optimizers or simply run optimization (2) manually from R; see the
+example below. In some problems, choice of inner and/or outer optimizer can
+make a big difference for obtaining accurate results, especially for standard
+errors. Hence it is worth experimenting if one is in doubt.
+}
+
+\section{\code{control} list arguments}{
+
+
+The \code{control} list allows additional settings to be made using named
+elements of the list. Most (or all) of these can be updated later using the
+`updateSettings` method. Supported elements include:
 
 \itemize{
 
-\item \code{calcLogLik(p, trans)}. Calculate the Laplace approximation to
-      the marginal log-likelihood function at parameter value \code{p}, which
-      (if \code{trans} is FALSE, which is the default) should match the order
-      of \code{paramNodes}. For any non-scalar nodes in \code{paramNodes},
-      the order within the node is column-major (which can be seen for R
-      objects using \code{as.numeric}). Return value is the scalar
-      (approximate, marginal) log likelihood.
+  \item \code{split}. If TRUE (default), \code{randomEffectsNodes} will be
+        split into conditionally independent sets if possible. This
+        facilitates more efficient Laplace or AGHQ approximation because each
+        conditionally independent set can be marginalized independently. If
+        FALSE, \code{randomEffectsNodes} will be handled as one multivariate
+        block, with one multivariate approximation. If \code{split} is a
+        numeric vector, \code{randomEffectsNodes} will be split by calling
+        \code{split}(\code{randomEffectsNodes}, \code{control$split}). The
+        last option allows arbitrary control over how
+        \code{randomEffectsNodes} are blocked.
+
+  \item \code{check}. If TRUE (default), a warning is issued if
+        \code{paramNodes}, \code{randomEffectsNodes} and/or \code{calcNodes}
+        are provided but seem to have missing or unnecessary
+        elements based on some default inspections of the model. If
+        unnecessary warnings are emitted, simply set \code{check=FALSE}.
+
+  \item \code{innerOptimControl}. A list (either an R list or a
+        `optimControlNimbleList`) of control parameters for the inner
+        optimization of Laplace approximation using \code{nimOptim}. See
+        'Details' of \code{\link{nimOptim}} for further information. Default
+        is `nimOptimDefaultControl()`.
+
+  \item \code{innerOptimMethod}. Optimization method to be used in
+        \code{nimOptim} for the inner optimization. See 'Details' of
+        \code{\link{nimOptim}}. Currently \code{nimOptim} in NIMBLE supports:
+        "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}",
+        "\code{nlminb}", and user-provided optimizers. By default, method
+        "\code{BFGS}" is used for both univariate and multivariate cases. For
+        \code{"nlminb"} or user-provided optimizers, only a subset of
+        elements of the \code{innerOptimControlList} are supported. (Note
+        that control over the outer optimization method is available as an
+        argument to `findMLE`). Choice of optimizers can be important and so
+        can be worth exploring.
+
+  \item \code{innerOptimStart}. Method for determining starting values for
+        the inner optimization. Options are:
+
+\itemize{
+
+\item \code{"zero"} (default): use all zeros;
+
+\item \code{"last"}: use the result of the last inner optimization;
+
+\item \code{"last.best"}: use the result of the best inner
+        optimization so far for each conditionally independent part of the
+        approximation;
+
+\item \code{"constant"}: always use the same values, determined by
+        \code{innerOptimStartValues};
+
+\item \code{"random"}: randomly draw new starting values from the
+      model (i.e., from the prior);
+
+\item \code{"model"}: use values for random effects stored in the
+         model, which are determined from the first call.
+
+}
+
+      Note that \code{"model"} and \code{"zero"} are shorthand for
+        \code{"constant"} with particular choices of
+        \code{innerOptimStartValues}. Note that \code{"last"} and
+        \code{"last.best"} require a choice for the very first values, which will
+        come from \code{innerOptimStartValues}. The default is
+        \code{innerOptimStart="zero"} and may change in the future.
+
+  \item \code{innerOptimStartValues}. Values for some of
+        \code{innerOptimStart} approaches. If a scalar is provided, that
+        value is used for all elements of random effects for each
+        conditionally independent set. If a vector is provided, it must be
+        the length of *all* random effects. If these are named (by node
+        names), the names will be used to split them correctly among each
+        conditionally independent set of random effects. If they are not
+        named, it is not always obvious what the order should be because it
+        may depend on the conditionally independent sets of random
+        effects. It should match the order of names returned as part of
+        `summaryLaplace`.
+
+  \item \code{innerOptimWarning}. If FALSE (default), do not emit warnings
+  from the inner optimization. Optimization methods may sometimes emit a
+  warning such as for bad parameter values encountered during the
+  optimization search. Often, a method can recover and still find the
+  optimum. In the approximations here, sometimes the inner optimization
+  search can fail entirely, yet the outer optimization see this as one failed
+  parameter value and can recover. Hence, it is often desirable to silence
+  warnings from the inner optimizer, and this is done by default. Set
+  \code{innerOptimWarning=TRUE} to see all warnings.
+
+  \item \code{useInnerCache}. If TRUE (default), use caching system for
+    efficiency of inner optimizations. The caching system records one set of
+    previous parameters and uses the corresponding results if those parameters
+   are used again (e.g., in a gradient call). This should generally not be
+   modified.
+
+  \item \code{outerOptimControl}. A list of control parameters for maximizing
+        the Laplace log-likelihood using \code{nimOptim}. See 'Details' of
+        \code{\link{nimOptim}} for further information.
+
+  \item \code{computeMethod}. There are three approaches available for
+  internal details of how the approximations, and specifically derivatives
+  involved in their calculation, are handled. These are labeled simply 1, 2,
+  and 3, and the default is 2. The relative performance of the methods will
+  depend on the specific model. Users wanting to explore efficiency can try
+  switching from method 2 (default) to methods 1 or 3 and comparing
+  performance. The first Laplace approximation with each method will be
+  (much) slower than subsequent Laplace approximations. Further details are
+  not provided at this time.
+
+ \item \code{gridType} (relevant only \code{nQuad>1}). For multivariate AGHQ,
+ a grid must be constructed based on the Hessian at the inner mode. Options
+ include "cholesky" (default) and "spectral" (i.e., eigenvectors and
+ eigenvalues) for the corresponding matrix decompositions on which the grid
+ can be based.
+
+} # end itemize
+}
+
+\section{Available methods}{
+
+
+The object returned by \code{buildLaplace} is a nimbleFunction object with
+numerous methods (functions). Here these are described in three tiers of user
+relevance.
+}
+
+\section{Most useful methods}{
+
+
+The most relevant methods to a user are:
+
+\itemize{
+
+\item \code{calcLogLik(p, trans=FALSE)}. Calculate the approximation to the
+      marginal log-likelihood function at parameter value \code{p}, which (if
+      \code{trans} is FALSE) should match the order of \code{paramNodes}. For
+      any non-scalar nodes in \code{paramNodes}, the order within the node is
+      column-major. The order of names can be obtained from method
+      \code{getNodeNamesVec(TRUE)}. Return value is the scalar (approximate,
+      marginal) log likelihood.
 
       If \code{trans} is TRUE, then \code{p} is the vector of parameters on
       the transformed scale, if any, described above. In this case, the
@@ -151,28 +388,41 @@ numerous methods (functions). The most useful ones are:
       non-scalar parameters result in fewer free transformed parameters than
       original parameters).
 
-\item \code{calcLaplace(p, trans)}. This is the same as \code{calcLogLik}.
+\item \code{calcLaplace(p, trans)}. This is the same as \code{calcLogLik} but
+       requires that the approximation be Laplace (i.e \code{nQuad} is 1),
+       and results in an error otherwise.
 
 \item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
-        estimates of parameters using the Laplace-approximated marginal 
-        likelihood. Arguments include \code{pStart}: initial parameter values 
-        (defaults to parameter values currently in the model); 
-        \code{method}: (outer) optimization method to use in \code{optim} 
-        (defaults to "BFGS"); and
-        \code{hessian}: whether to calculate and return the Hessian matrix
-        (defaults to \code{TRUE}). Second derivatives in the Hessian are
-        determined by finite differences of the gradients obtained by
-        automatic differentiation (AD). Return value is a nimbleList of type
-        \code{optimResultNimbleList}, similar to what is returned by R's
-        optim. See \code{help(nimOptim)}.
+        estimates of parameters using the approximated marginal likelihood.
+        This can be used if \code{nQuad} is 1 (Laplace case) or if
+        \code{nQuad>1} and all marginalizations involve only univariate
+        random effects. Arguments include \code{pStart}: initial parameter
+        values (defaults to parameter values currently in the model);
+        \code{method}: (outer) optimization method to use in \code{nimOptim}
+        (defaults to "BFGS", although some problems may benefit from other
+        choices); and \code{hessian}: whether to calculate and return the
+        Hessian matrix (defaults to \code{TRUE}, which is required for
+        subsequent use of `summary` method). Second derivatives in the
+        Hessian are determined by finite differences of the gradients
+        obtained by automatic differentiation (AD). Return value is a
+        nimbleList of type \code{optimResultNimbleList}, similar to what is
+        returned by R's optim. See \code{help(nimOptim)}. Note that
+        parameters (`par`) are returned for the natural parameters, i.e. how
+        they are defined in the model. But the `hessian`, if requested, is
+        computed for the parameters as transformed for optimization if
+        necessary. Hence one must be careful interpreting `hessian` if any
+        parameters have constraints, and the safest next step is to use the
+        `summary` method or `summaryLaplace` function.
 
 \item \code{summary(MLEoutput, originalScale, randomEffectsStdError,
        jointCovariance)}. Summarize the maximum likelihood estimation
        results, given object \code{MLEoutput} that was returned by
        \code{findMLE}. The summary can include a covariance matrix for the
-       parameters, the random effects, or both),
-       and these can be returned on the original parameter scale or on the
-       (potentially) transformed scale(s) used in estimation.
+       parameters, the random effects, or both), and these can be returned on
+       the original parameter scale or on the (potentially) transformed
+       scale(s) used in estimation. It is often preferred instead to call
+       function (not method) `summaryLaplace` because this will attach
+       parameter and random effects names (i.e., node names) to the results.
 
 In more detail, \code{summary} accepts the following optional arguments:
 
@@ -194,19 +444,20 @@ In more detail, \code{summary} accepts the following optional arguments:
 
        }
 
-       The object returned by \code{summary} is a nimbleList with elements:
+       The object returned by \code{summary} is an \code{AGHQuad_summary}
+       nimbleList with elements:
 
        \itemize{
 
-          \item \code{params}. A list that contains estimates and standard
-          errors of parameters (on the original or transformed scale, as
-          chosen by \code{originalScale}).
+          \item \code{params}. A nimbleList that contains estimates and
+          standard errors of parameters (on the original or transformed
+          scale, as chosen by \code{originalScale}).
 
-          \item \code{randomEffects}. A list that contains estimates of random
-          effects and, if requested (\code{randomEffectsStdError=TRUE})
-          their standard errors, on original or transformed scale. Standard
-          errors are calculated following the generalized delta method of
-          Kass and Steffey (1989).
+          \item \code{randomEffects}. A nimbleList that contains estimates of
+          random effects and, if requested
+          (\code{randomEffectsStdError=TRUE}) their standard errors, on
+          original or transformed scale. Standard errors are calculated
+          following the generalized delta method of Kass and Steffey (1989).
 
           \item \code{vcov}. If requested (i.e.
           \code{jointCovariance=TRUE}), the joint variance-covariance
@@ -217,14 +468,30 @@ In more detail, \code{summary} accepts the following optional arguments:
 
           \item \code{scale}. \code{"original"} or \code{"transformed"}, the
           scale on which results were requested.
-          
        }
-
     }
+}
 
-Additional methods to access or control more details of the Laplace approximation include:
+\section{Methods for more advanced uses}{
+
+
+Additional methods to access or control more details of the Laplace
+approximation include:
 
 \itemize{
+
+  \item \code{updateSettings}. This provides a single function through which
+  many of the settings described above (mostly for the \code{control} list)
+  can be later changed. Options that can be changed include:
+  \code{innerOptimMethod}, \code{innerOptimStart},
+  \code{innerOptimStartValues}, \code{useInnerCache}, \code{nQuad},
+  \code{gridType}, \code{innerOptimControl}, \code{outerOptimControl}, and
+  \code{computeMethod}. For \code{innerOptimStart}, method "zero" cannot be
+  specified but can be achieved by choosing method "constant" with
+  \code{innerOptimStartValues=0}. Only provided options will be modified. The
+  exceptions are \code{innerOptimControl}, \code{outerOptimControl}, which
+  are replaced only \code{replace_innerOptimControl=TRUE} or
+  \code{replace_outerOptimControl=TRUE}, respectively.
 
   \item \code{getNodeNamesVec(returnParams)}. Return a vector (>1) of names
   of parameters/random effects nodes, according to \code{returnParams =
@@ -234,17 +501,12 @@ Additional methods to access or control more details of the Laplace approximatio
   single parameter/random effect node, according to \code{returnParams = 
   TRUE/FALSE}. Use this if there is only one node.
 
-  \item \code{setMethod(method)}. Set method ID for calculating the Laplace
-  approximation and gradient: 1 (\code{Laplace1}), 2 (\code{Laplace2},
-  default method), or 3 (\code{Laplace3}). See below for more details. Users
-  wanting to explore efficiency can try switching from method 2 (default) to
-  methods 1 or 3 and comparing performance. The first Laplace approximation
-  with each method will be (much) slower than subsequent Laplace
-  approximations.
+  \item \code{checkInnerConvergence(message)}. Checks whether all internal
+  optimizers converged. Returns a zero if everything converged and one
+  otherwise. If \code{message = TRUE}, it will print more details about
+  convergence for each conditionally independent set.
 
-  \item \code{getMethod()}. Return the current method ID for Laplace.
-
-  \item \code{gr_logLik(p, trans)}. Gradient of the Laplace-approximated
+  \item \code{gr_logLik(p, trans)}. Gradient of the (approximated)
   marginal log-likelihood at parameter value \code{p}. Argument \code{trans} 
   is similar to that in \code{calcLaplace}. If there are multiple parameters,
   the vector \code{p} is given in the order of parameter names returned by 
@@ -254,13 +516,38 @@ Additional methods to access or control more details of the Laplace approximatio
 
   \item \code{otherLogLik(p)}. Calculate the \code{calcNodesOther}
   nodes, which returns the log-likelihood of the parts of the model that are
-  not included in the Laplace approximation. 
+  not included in the Laplace or AGHQ approximation.
 
   \item \code{gr_otherLogLik(p)}. Gradient (vector of derivatives with
   respect to each parameter) of \code{otherLogLik(p)}. Results should
   match \code{gr_otherLogLik_internal(p)} but may be more efficient after
   the first call.
 
+}
+}
+
+\section{Internal or development methods}{
+
+
+Some methods are included for calculating the (approximate) marginal log
+posterior density by including the prior distribution of the parameters. This
+is useful for finding the maximum a posteriori probability (MAP) estimate.
+Currently these are provided for point calculations without estimation methods.
+
+\itemize{
+
+  \item \code{calcPrior_p(p)}. Log density of prior distribution.
+
+  \item \code{calcPrior_pTransformed(pTransform)}. Log density of prior distribution on transformed scale, includes the Jacobian.
+
+  \item \code{calcPostLogDens(p)}. Marginal log posterior density in terms of the parameter p.
+
+  \item \code{calcPostLogDens_pTransformed (pTransform)}. Marginal log posterior density in terms of the transformed
+  parameter, which includes the Jacobian transformation.
+
+  \item \code{gr_postLogDens_pTransformed(pTransform)}. Graident of marginal log posterior density on the transformed scale. 
+  Other available options that are used in the derivative for more flexible include \code{logDetJacobian(pTransform)} and
+  \code{gr_logDeJacobian(pTransform)}, as well as \code{gr_prior(p)}.
 }
 
 Finally, methods that are primarily for internal use by other methods include:
@@ -320,72 +607,20 @@ Finally, methods that are primarily for internal use by other methods include:
   This is obtained using automatic differentiation (AD) with single-taping.
   First call will always be slower than later calls.
 
+  \item \code{cache_outer_logLik(logLikVal)}. Save the marginal log likelihood value 
+  to the inner Laplace mariginlization functions to track the outer maximum internally.
+
+  \item \code{reset_outer_inner_logLik()}. Reset the internal saved maximum marginal log likelihood.
+
+  \item \code{get_inner_cholesky(atOuterMode = integer(0, default = 0))}. Returns the cholesky
+  of the negative Hessian with respect to the random effects. If \code{atOuterMode = 1} then returns
+  the value at the overall best marginal likelihood value, otherwise \code{atOuterMode = 0} returns the last.
+
+  \item \code{get_inner_mode(atOuterMode = integer(0, default = 0))}. Returns the mode of the random effects
+  for either the last call to the innner quadrature functions (\code{atOuterMode = 0} ), or the last best
+  value for the marginal log likelihood, \code{atOuterMode = 1}.
+
 }
-}
-
-\section{\code{control} list}{
-
-
-\code{buildLaplace} accepts the following control list elements:
-
-\itemize{
-
-  \item \code{split}. If TRUE (default), \code{randomEffectsNodes} will be
-        split into conditionally independent sets if possible. This
-        facilitates more efficient Laplace approximation because each
-        conditionally independent set can be marginalized independently. If
-        FALSE, \code{randomEffectsNodes} will be handled as one multivariate
-        block, with one multivariate Laplace approximation. If \code{split}
-        is a numeric vector, \code{randomEffectsNodes} will be split by
-        \code{split}(\code{randomEffectsNodes}, \code{control$split}). The
-        last option allows arbitrary control over how
-        \code{randomEffectsNodes} are blocked.
-
-  \item \code{check}. If TRUE (default), a warning is issued if
-        \code{paramNodes}, \code{randomEffectsNodes} and/or \code{calcNodes}
-        are provided but seek to have missing elements or unnecessary
-        elements based on some default inspection of the model. If
-        unnecessary warnings are emitted, simply set \code{check=FALSE}.
-
-  \item \code{innerOptimControl}. A list of control parameters for the inner 
-        optimization of Laplace approximation using \code{optim}. See 
-        'Details' of \code{\link{optim}} for further information.
-
-  \item \code{innerOptimMethod}. Optimization method to be used in 
-        \code{optim} for the inner optimization. See 'Details' of 
-        \code{\link{optim}}. Currently \code{optim} in NIMBLE supports: 
-        "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", and 
-        "\code{L-BFGS-B}". By default, method "\code{CG}" is used when 
-        marginalizing over a single (scalar) random effect, and "\code{BFGS}" 
-        is used for multiple random effects being jointly marginalized over.
-
-  \item \code{innerOptimStart}. Choice of starting values for the inner 
-        optimization. This could be \code{"last"}, \code{"last.best"}, or a 
-        vector of user provided values. \code{"last"} means the most recent 
-        random effects values left in the model will be used. When finding 
-        the MLE, the most recent values will be the result of the most recent 
-        inner optimization for Laplace. \code{"last.best"} means the random 
-        effects values corresponding to the largest Laplace likelihood (from 
-        any call to the \code{calcLaplace} or \code{calcLogLik} method, 
-        including during an MLE search) will be used (even if it was not the 
-        most recent Laplace likelihood). By default, the initial random 
-        effects values will be used for inner optimization.
-
-  \item \code{outOptimControl}. A list of control parameters for maximizing
-        the Laplace log-likelihood using \code{optim}. See 'Details' of
-        \code{\link{optim}} for further information.
-}
-
-Note that there are two numerical optimizations in the Laplace approximation 
-algorithm: (1) maximizing the joint log-likelihood of random effects and data 
-given a parameter value to construct the Laplace approximation to the marginal 
-log-likelihood at the given parameter value; (2) maximizing the Laplace 
-approximation to the marginal log-likelihood (i.e. \code{calcLaplace}) to find
-the MLEs of model parameters. In the \code{control} list above, the prefix
-'inner' refers to optimization (1) and 'out' refers to optimization (2).
-Currently both optimizations use the optimizer \code{optim}. However, one
-can easily turn to other optimizers (say \code{\link{nlminb}}) in R for
-optimization (2); see the example below.
 }
 
 \examples{
@@ -416,9 +651,15 @@ MLEres <- CpumpLaplace$findMLE()
 # Calculate estimates and standard errors for parameters and random effects on original scale
 allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
 
+# Change the settings and also illustrate runLaplace
+CpumpLaplace$updateSettings(innerOptimMethod = "nlminb", outerOptimMethod = "nlminb")
+newres <- runLaplace(CpumpLaplace)
+
+# Illustrate use of the component log likelihood and gradient functions to
+# run an optimizer manually from R.
 # Use nlminb to find MLEs
-MLEres.nlminb <- nlminb(c(0.1, 0.1), 
-                        function(x) -CpumpLaplace$calcLaplace(x),
+MLEres.manual <- nlminb(c(0.1, 0.1),
+                        function(x) -CpumpLaplace$calcLogLik(x),
                         function(x) -CpumpLaplace$gr_Laplace(x))
 }
 
@@ -429,10 +670,14 @@ conditionally independent hierarchical models (parametric empirical Bayes
 models). \emph{Journal of the American Statistical Association}, 84(407),
 717-726.
 
+Liu, Q. and Pierce, D. A. (1994). A Note on Gauss-Hermite Quadrature. \emph{Biometrika}, 81(3) 624-629.
+
+Jackel, P. (2005). A note on multivariate Gauss-Hermite quadrature. London: \emph{ABN-Amro. Re.}
+
 Skaug, H. and Fournier, D. (2006). Automatic approximation of the marginal
 likelihood in non-Gaussian hierarchical models. \emph{Computational
 Statistics & Data Analysis}, 56, 699-709.
 }
 \author{
-Wei Zhang, Perry de Valpine
+Wei Zhang, Perry de Valpine, Paul van Dam-Bates
 }

@@ -56,7 +56,7 @@ nodeFunctionNew <- function(LHS,
                            where = where)
           ,
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
-                 SETUPFUNCTION = nndf_createSetupFunction(buildDerivs),  ##nndf = new node function
+                 SETUPFUNCTION = nndf_createSetupFunction(buildDerivs, RHS),  ##nndf = new node function
                 METHODS       = nndf_createMethodList(LHSrep,
                                                       RHSrep,
                                                       parentsSizeAndDims,
@@ -114,7 +114,7 @@ nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels)
 setupOutputs <- function(...) NULL
 
 ## creates a function object for use as setup argument to nimbleFunction()
-nndf_createSetupFunction <- function(buildDerivs = FALSE) {
+nndf_createSetupFunction <- function(buildDerivs = FALSE, RHS) {
     if(isTRUE(buildDerivs)) {
         setup <- function(model, BUGSdecl) {
             indexedNodeInfoTable <- indexedNodeInfoTableClass(BUGSdecl)
@@ -129,6 +129,42 @@ nndf_createSetupFunction <- function(buildDerivs = FALSE) {
             invisible(NULL)
         }
     }
+
+    if(isTRUE(getNimbleOption('allowNFobjInModel'))) {
+      # We will find things like a$foo and insert a line of setup code
+      # so that a is created in setup code and thus will be identified by the
+      # nimble compiler as a setup output, which later makes it a class member variable in C++.
+      # This line of code is "a <- eval(a)". (The eval environment should be correct
+      # because the nodeFunction [nimbleFunction] sets that up.)
+      find_NFs_recurse <- function(code, result = list()) {
+        if(length(code)==1 && !is.call(code)) return(result)
+        if(code[[1]]=="$") return(c(result, list(code[[2]])))
+        for(i in seq_along(code)) {
+          result <- c(result, find_NFs_recurse(code[[i]]))
+        }
+        result
+      }
+      new_NFs <- find_NFs_recurse(RHS)
+      new_NFs <- unique(new_NFs)
+      if(length(new_NFs)) {
+        any_nested_dollar_signs <- any(unlist(lapply(new_NFs, function(x) length(x) > 1 && x[[1]]=='$')))
+        if(any_nested_dollar_signs) {
+          warning("  [warning] when using a nimbleFunction within model code, there can only be one '$' (e.g. a$b, not a$b$c).")
+        }
+        # One can get a $ in a line of model code from something like
+        # a[] <- eigen(B[,])$values
+        # so we must ignore anything like a$foo where the a part is itself a call.
+        ignore <- unlist(lapply(new_NFs, is.call))
+        new_NFs <- new_NFs[!ignore]
+        new_lines <- lapply(new_NFs, function(x) substitute(X <- eval(X),
+                                                       list(X = x)))
+        new_lines <- c(new_lines, quote(invisible(NULL)))
+        new_body <- body(setup)
+        new_body <- as.call(c(as.list(new_body), new_lines))
+        body(setup) <- new_body
+      }
+    }
+
     return(setup)
 }
 
@@ -179,8 +215,10 @@ nndf_createMethodList <- function(LHS,
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))))
         if(FALSE) {
+
         if(getNimbleOption('compileAltParamFunctions')) {
-            distName <- as.character(RHS[[1]])
+            distName <- safeDeparse(RHS[[1]])
+
             ## add accessor function for node value; used in multivariate conjugate sampler functions
             type = getType(distName)
             nDim <- getDimension(distName)
@@ -205,7 +243,7 @@ nndf_createMethodList <- function(LHS,
             ## TO-DO: unfold types and nDims more thoroughly (but all types are implemented as doubles anyway)
             ## understand use of altParams vs. all entries in typesListAllParams (i.e., getDistributionInfo(distName)$types
         ## need a value Entry
-        distName <- as.character(RHS[[1]])
+        distName <- safeDeparse(RHS[[1]])
 
         allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
 

@@ -21,13 +21,9 @@ getLogProbNodes(model, nodes)
 simulate, calculate, or get existing log probabilities for the current values in a NIMBLE model
 }
 \details{
-These are basic nimbleFunctions that take a model and set of nodes and return a function that will call \code{calculate}, \code{simulate}, or \code{getLogProb} on those nodes.  Each is equivalent to a direct call from R, but in nimbleFunction form they can be be compiled and can be put into a nimbleFunctionList.  For example, \code{myCalc <- calcNodes(model, nodes); ans <- myCalc()} is equivalent to \code{ans <- model$calculate(nodes)}, but one can also do \code{CmyCalc <- compileNimble(myCalc)} to get a faster version.
+These are basic nimbleFunctions that take a model and set of nodes and return a function that will call \code{calculate}, \code{simulate}, or \code{getLogProb} on those nodes.  Each is equivalent to a direct call from R, but in nimbleFunction form they can be be compiled.  For example, \code{myCalc <- calcNodes(model, nodes); ans <- myCalc()} is equivalent to \code{ans <- model$calculate(nodes)}, but one can also do \code{CmyCalc <- compileNimble(myCalc)} to get a faster version. Note that this will often be much faster than using `calculate` from R with a compiled model, such as \code{compiled_model$calculate(nodes)} because of overhead in running `calculate` from R.
 
-In nimbleFunctions, for only one set of nodes, it is equivalent or slightly better to simply use \code{model$calculate(nodes)} in the run-time code.  The compiler will process the model-nodes combination in the same way as would occur by creating a specialized \code{calcNodes} in the setup code.  However, if there are multiple sets of nodes, one can do the following:
-
-Setup code: \code{myCalcs <- nimbleFunctionList(calcNodes); myCalcs[[1]] <- calcNodes(model, nodes[[1]]); myCalcs[[2]] <- calcNodes[[2]]}
-
-Run code: \code{for(i in seq_along(myCalcs)) {ans[i] <- myCalcs[[i]]()} }
+In nimbleFunctions, one would generally use \code{model$calculate(nodes)} in the run-time code (and similarly for `simulate` and `getLogProb`).
 }
 \author{
 Perry de Valpine

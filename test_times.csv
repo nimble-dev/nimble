@@ -27,7 +27,6 @@ time	filename
 46.57	test-optim.R
 54.8	test-allocation.R
 77.57	test-declare.R
-118.97	test-mcem.R
 120.00	test-benchmarks.R
 122.95	test-nimbleList_RCfun.R
 125.0	test-ADbacksolve.R
@@ -41,6 +40,8 @@ time	filename
 205.3	test-numericTypes.R
 220.0	test-ADbasics.R
 234.87	test-nimbleList.R
+300.87	test-polyagamma.R
+278.87	test-noncenteredSampler.R
 415.45	test-getParam.R
 460.0	test-waic.R
 500.0	test-ADmatMult.R
@@ -52,6 +53,7 @@ time	filename
 786.42	test-models.R
 853.68	test-crossVal.R
 1160.0	test-ADdists.R
+1200.97	test-mcem.R
 2025.99	test-dynamicIndexing.R
 2200.00	test-bnp.R
 2700.0	test-mcmc.R

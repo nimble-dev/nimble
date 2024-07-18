@@ -9,8 +9,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of math functions in NIMBLE code")
-
 source(system.file(file.path('tests', 'testthat', 'mathTestLists.R'), package = 'nimble'))
 
 set.seed(0)

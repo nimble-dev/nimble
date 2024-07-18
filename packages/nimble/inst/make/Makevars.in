@@ -3,10 +3,6 @@
 
 CXXPICFLAGS = @CXXPICFLAGS@
 
-ifndef CPPAD_INC
-CPPAD_INC=@CPPAD_INC@
-endif
-
 ifndef EIGEN_INC
 EIGEN_INC=@EIGEN_INC@
 endif
@@ -19,6 +15,6 @@ ifndef NIMBLE_LIB_DIR
 NIMBLE_LIB_DIR=@NIMBLE_LIB_DIR@
 endif
 
-PKG_CPPFLAGS= -DR_NO_REMAP $(CPPAD_INC) $(EIGEN_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)" -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations
+PKG_CPPFLAGS= -DR_NO_REMAP $(EIGEN_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)" -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations
 PKG_LIBS=-L"$(NIMBLE_LIB_DIR)" -lnimble  $(LAPACK_LIBS) $(BLAS_LIBS) 
 

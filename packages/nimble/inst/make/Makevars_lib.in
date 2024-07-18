@@ -5,10 +5,6 @@
 # lib=TRUE
 # from=Makevars_lib.in
 
-ifndef CPPAD_INC
-CPPAD_INC=@CPPAD_INC@
-endif
-
 ifndef EIGEN_INC
 EIGEN_INC=@EIGEN_INC@
 endif

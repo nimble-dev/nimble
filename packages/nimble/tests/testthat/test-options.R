@@ -5,8 +5,6 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of nimble options")
-
 test_that('withNimbleOptions works for zero options', {
     expected <- 'foo'
     actual <- withNimbleOptions(list(), 'foo')
