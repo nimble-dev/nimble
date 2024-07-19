@@ -1467,99 +1467,55 @@ test_that('binary sampler handles out of bounds', {
     Csamples <- as.matrix(Cmcmc$mvSamples)
     expect_true(all(as.numeric(Csamples) == 1))
 })
+
+test_that('RW_multinomial sampler gives correct results', {
     
-#### testing the RW_multinomial sampler
-##test_that('RW_multinomial sampler', {
-##    cat('===== Starting MCMC test for RW_multinomial sampler. =====')
-##    codeTest <- nimbleCode ({
-##        X[1:nGroups] ~ dmultinom(size=N, prob=pVecX[1:nGroups])
-##        Y[1:nGroups] ~ dmultinom(size=N, prob=pVecY[1:nGroups])
-##        for (ii in 1:nGroups) {
-##            Z[ii] ~ dbeta(1 + X[ii], 1 + Y[ii])
-##        }
-##    })
-##    
-##    set.seed(0)
-##    nGroups   <- 5
-##    N         <- 1E6
-##    pVecX     <- rdirch(1, rep(1, nGroups))
-##    pVecY     <- rdirch(1, rep(1, nGroups))
-##    X         <- rmultinom(1, N, pVecX)[,1]
-##    Y         <- rmultinom(1, N, pVecY)[,1]
-##    Z         <- rbeta(nGroups, 1+X, 1+Y)
-##    ## Hard code in the results of sample() since output from sample
-##    ## changed as of R 3.6.0 to fix a long-standing bug in R.
-##    smpX <- pVecX[c(2,1,4,3,5)]
-##    smpY <- pVecY[c(1,4,2,3,5)]
-##    fakeSample <- sample(pVecX)  # to keep random number stream as before
-##    Xini      <- rmultinom(1, N, smpX)[,1]
-##    fakeSample <- sample(pVecY)  # to keep random number stream as before
-##    Yini      <- rmultinom(1, N, smpY)[,1]
-##    Constants <- list(nGroups=nGroups)
-##    Inits     <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N)
-##    Data      <- list(Z=Z)
-##    modelTest <- nimbleModel(codeTest, constants=Constants, inits=Inits, data=Data, check=TRUE)
-##    cModelTest <- compileNimble(modelTest)
-##    
-##    mcmcTestConfig <- configureMCMC(cModelTest, print = nimbleOptions('verbose'))
-##    samplers <- mcmcTestConfig$getSamplers()
-##    expect_equal(samplers[[1]]$name, 'RW_multinomial')
-##    expect_equal(samplers[[2]]$name, 'RW_multinomial')
-##    mcmcTest  <- buildMCMC(mcmcTestConfig)
-##    cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
-##    
-##    ## Optionally resample data
-##    cModelTest$N      <- N <- 1E3
-##    (cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups))))
-##    (cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups))))
-##    simulate(cModelTest, "X", includeData=TRUE); (X <- cModelTest$X)
-##    simulate(cModelTest, "Y", includeData=TRUE); (Y <- cModelTest$Y)
-##    simulate(cModelTest, "Z", includeData=TRUE); (Z <- cModelTest$Z)
-##    
-##    niter  <- 1E4
-##    cMcmcTest$run(niter)
-##    samples <- as.matrix(cMcmcTest$mvSamples)
-##    
-##    expect_identical(as.numeric(samples[10000,]), c(12, 34, 82, 113, 759, 30, 16, 79, 510, 365),
-##                     info = 'exact results of RW_multinomial sampler')
-##})
-## 
-#### testing the RW_multinomial sampler on distribution of size 2
-##test_that('RW_multinomial sampler on distribution of size 2', {
-##    cat('===== Starting MCMC test RW_multinomial sampler on distribution of size 2. =====')
-##    code <- nimbleCode({
-##        prob[1] <- p
-##        prob[2] <- 1-p
-##        x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
-##        y      ~ dbinom(   size = N, prob = p)
-##    })
-##    
-##    set.seed(0)
-##    N <- 2
-##    p <- 0.1
-##    x1 <- rbinom(1, size=N, prob=p)
-##    x2 <- N - x1
-##    inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
-##    Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
-##    Cmodel <- compileNimble(Rmodel)
-##    
-##    conf <- configureMCMC(Rmodel)
-##    if(nimbleOptions('verbose')) conf$printSamplers()
-##    conf$removeSamplers()
-##    if(nimbleOptions('verbose')) conf$printSamplers()
-##    conf$addSampler(target = 'x', type = 'RW_multinomial', print = nimbleOptions('verbose'))
-##    conf$addSampler(target = 'y', type = 'slice', print = nimbleOptions('verbose'))
-##    if(nimbleOptions('verbose')) conf$printSamplers()
-##    Rmcmc  <- buildMCMC(conf)
-##    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
-##    
-##    Cmcmc$run(100000)
-##    
-##    samples <- as.matrix(Cmcmc$mvSamples)
-##    fracs <- apply(samples, 2, mean) / N
-##    expect_true(all(abs(as.numeric(fracs[c(1,3)]) - p) < 0.001),
-##                info = 'RW_multinomial sampler results within tolerance')
-##})
+    code <- nimbleCode({
+        p[1:4] <- c(.05, .15, .3, .5)
+        x[1:4] ~ dmulti(size = 10, prob = p[1:4])
+    })
+    
+    Rmodel <- nimbleModel(code, inits = list(x = c(1,2,3,4)))
+    conf <- configureMCMC(Rmodel)
+    conf$replaceSampler('x', 'RW_multinomial')
+    Rmcmc <- buildMCMC(conf)
+
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 100000)
+
+    post_true <- 10 * c(.05, .15, .3, .5)
+    post_mcmc <- apply(samples, 2, mean)
+
+    ## less than 1% error
+    expect_true(all(abs(post_true - post_mcmc) / post_true < 0.01))
+
+    code <- nimbleCode({
+        p[1:4] <- c(.1, .2, 0, .7)
+        x[1:4] ~ dmulti(size = 1, prob = p[1:4])
+        y ~ dnorm(mean = inprod(x[1:4], 1:4), sd = 1)
+    })
+
+    Rmodel <- nimbleModel(code, data = list(y = 3), inits=list(x=c(1,0,0,0)))
+    Rmcmc <- buildMCMC(Rmodel)
+
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 1000000)
+
+    post_true <- c(.1, .2, 0, .7) * dnorm(3, 1:4, 1)
+    post_true <- post_true / sum(post_true)
+    post_true <- post_true[-3]    ## remove the 0-valued 3rd element
+    post_mcmc <- table(samples %*% 1:4) / 1000000
+    
+    ## less than 1% error
+    expect_true(all(abs(post_true - post_mcmc) / post_true < 0.01))
+})
+
 
 ## testing RW_dirichlet sampler
 ## consistent with conjugate multinomial sampler
