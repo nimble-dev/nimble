@@ -312,17 +312,8 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
             for(j in 1:length(nodeAsScalar)) {
                 currentConf <- conf$getSamplers(nodeAsScalar[j])
                 ## check on node configuration
-                if(length(currentConf) == 0) {
-                    warning(paste0("configureRJ: There are no samplers for '", nodeAsScalar[j],"'. Skipping it."))
-                    next
-                }
-                else if(any(sapply(currentConf,'[[','name') == 'RJ_fixed_prior' |
-                                sapply(currentConf,'[[','name') == 'RJ_indicator' |
-                                    sapply(currentConf,'[[','name') == 'RJ_toggled')) {
-                    stop(paste0("configureRJ: node '", nodeAsScalar[j],"' is already configured for reversible jump."))
-                }
-                else if(length(currentConf) > 1)
-                    warning(paste0("configureRJ: There is more than one sampler for '", nodeAsScalar[j], "'. Only the first will be used by RJ_toggled sampler, and others will be removed."))
+                skip <- configureRJ_checks(currentConf, nodeAsScalar[j])
+                if(skip) next
                 ## substitute node sampler
                 conf$removeSamplers(nodeAsScalar[j])
                 conf$addSampler(type = sampler_RJ_fixed_prior,
@@ -352,15 +343,8 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
                 nodeControl$targetNode <- nodeAsScalar[j]
                 currentConf <- conf$getSamplers(nodeAsScalar[j])
                 ## check on node configuration
-                if(length(currentConf) == 0) {
-                    warning(paste0("configureRJ: There are no samplers for '", nodeAsScalar[j],"'. Skipping it."))
-                } else if(any(sapply(currentConf,'[[','name') == 'RJ_fixed_prior' |
-                                  sapply(currentConf,'[[','name') == 'RJ_indicator' |
-                                      sapply(currentConf,'[[','name') == 'RJ_toggled')) {
-                    stop(paste0("configureRJ: Node '", nodeAsScalar[j],"' is already configured for reversible jump."))
-                } else if(length(currentConf) > 1) {
-                    warning(paste0("configureRJ: There is more than one sampler for '", nodeAsScalar[j], "'. Only the first will be used by RJ_toggled sampler, and others will be removed."))
-                }
+                skip <- configureRJ_checks(currentConf, nodeAsScalar[j])
+                if(skip) next
                 ## Add reversible jump sampler for the indicatorNodes variable
                 conf$removeSamplers(indicatorsAsScalar[j])
                 conf$addSampler(type = sampler_RJ_indicator,
@@ -377,3 +361,22 @@ configureRJ <- function(conf, targetNodes, indicatorNodes = NULL, priorProb = NU
     return(invisible(NULL))
 }
 
+
+configureRJ_checks <- function(currentConf, node) {
+    if(length(currentConf) == 0) {
+        warning(paste0("configureRJ: There are no samplers for '", node,"'. Skipping it."))
+        return(1)
+    }
+    if(any(sapply(currentConf,'[[','name') == 'RJ_fixed_prior' |
+                  sapply(currentConf,'[[','name') == 'RJ_indicator' |
+                  sapply(currentConf,'[[','name') == 'RJ_toggled')) {
+        stop(paste0("configureRJ: Node '", node,"' is already configured for reversible jump."))
+    }
+    if(length(currentConf) > 1) {
+        stop(paste0("configureRJ: There is more than one sampler for '", node, "'. This case is not handled by configureRJ."))
+    }
+    if(length(setdiff(currentConf[[1]]$targetAsScalar, node))) {
+        stop(paste0("configureRJ: Node '", node,"' has a sampler assigned which also updates other nodes, which is not handled by configureRJ."))
+    }
+    return(0)
+}
