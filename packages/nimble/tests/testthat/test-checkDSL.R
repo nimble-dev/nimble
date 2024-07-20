@@ -71,7 +71,7 @@ test_that("Test of DSL check of valid nimbleFunction with other nimbleFunctions 
 test5 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target)
     },
     run = function(par = double(1)) {
         returnType(double(0))

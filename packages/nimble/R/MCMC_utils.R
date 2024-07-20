@@ -49,7 +49,7 @@ decide <- function(logMetropolisRatio) {
 #' -- Return a logical value, indicating whether the proposal was accepted
 decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
-    setup = function(model, mvSaved, target) {
+    setup = function(model, mvSaved, target, UNUSED) {    ## should remove UNUSED argument, after next release of nimbleSMC -DT July 2024
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
     },
