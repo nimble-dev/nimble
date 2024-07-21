@@ -134,7 +134,7 @@ post examples as run on new version to /web/R-nimble/wordpress/nimbleExamples
 
 go to website: R-nimble.org/login and login 
 
-note that to make a new blog post or modify pages, need to 
+note that to make a new blog post, one may need to 
 deactivate Google analyticator on Plugins -> Installed Plugins page
 
 change Downloads page on R-nimble.org to reflect new version (including 'download source pkg' link);
