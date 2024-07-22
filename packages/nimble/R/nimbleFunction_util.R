@@ -6,6 +6,7 @@ getFunctionEnvVar <- function(f, var) {
   return(environment(f)[[var]])
 }
 
+#' @export
 nfGetDefVar <- function(f, var) {
     return(environment(nf_getGeneratorFunction(f))[[var]])
 }
