@@ -1640,6 +1640,7 @@ sampler_RW_multinomial <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
+        maxMove <- extractControlElement(control, 'maxMove', 0)
         tries <- extractControlElement(control, 'tries', 0)
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -1647,10 +1648,8 @@ sampler_RW_multinomial <- nimbleFunction(
         ## numeric value generation
         d <- length(targetAsScalar)
         propVector <- numeric(d)
-        if(tries == 0) {
-            ## tries control parameter not provided: use ceiling( N^(1/3) ) as a default
-            tries <- ceiling( model$getParam(target, 'size')^(1/3) )
-        }
+        if(maxMove == 0)   maxMove <- ceiling( model$getParam(target, 'size')/20    )   ## default maxMove is ceiling( N/20 )
+        if(tries == 0)     tries   <- ceiling( model$getParam(target, 'size')^(1/3) )   ## default tries is ceiling( N^(1/3) )
         ## nested function and function list definitions
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, target)
@@ -1667,10 +1666,12 @@ sampler_RW_multinomial <- nimbleFunction(
             iFrom <- nonZeroInd[ceiling(runif(1) * nonZeroN)]
             iTo <- iFrom
             while(iTo == iFrom)   iTo <- ceiling(runif(1) * d)
-            propVector[iFrom] <<- propVector[iFrom] - 1
-            propVector[iTo]   <<- propVector[iTo]   + 1
-            lpProp <- -log(nonZeroN)            # - log(d-1)   omitting from both
-            lpRev  <- -log(sum(propVector>0))   # - log(d-1)   omitting from both
+            thisMax <- min(propVector[iFrom], maxMove)
+            move <- ceiling(runif(1) * thisMax)
+            propVector[iFrom] <<- propVector[iFrom] - move
+            propVector[iTo]   <<- propVector[iTo]   + move
+            lpProp <- -log(nonZeroN)          - log(thisMax)                         # - log(d-1)   omitting from both
+            lpRev  <- -log(sum(propVector>0)) - log(min(propVector[iTo], maxMove))   # - log(d-1)   omitting from both
             logMHR <- my_setAndCalculateDiff$run(propVector) + lpRev - lpProp
             my_decideAndJump$run(logMHR, 0, 0, 0)
         }

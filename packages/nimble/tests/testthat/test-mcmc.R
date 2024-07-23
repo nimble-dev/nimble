@@ -1468,7 +1468,7 @@ test_that('binary sampler handles out of bounds', {
     expect_true(all(as.numeric(Csamples) == 1))
 })
 
-test_that('RW_multinomial sampler gives correct results', {
+test_that('RW_multinomial sampler gives correct results - test 1', {
     
     code <- nimbleCode({
         p[1:4] <- c(.05, .15, .3, .5)
@@ -1484,7 +1484,7 @@ test_that('RW_multinomial sampler gives correct results', {
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 
     set.seed(0)
-    samples <- runMCMC(Cmcmc, 100000)
+    samples <- runMCMC(Cmcmc, 200000)
 
     post_true <- 10 * c(.05, .15, .3, .5)
     post_mcmc <- apply(samples, 2, mean)
@@ -1492,6 +1492,11 @@ test_that('RW_multinomial sampler gives correct results', {
     ## less than 1% error
     expect_true(all(abs(post_true - post_mcmc) / post_true < 0.01))
 
+})
+
+
+test_that('RW_multinomial sampler gives correct results - test 2', {
+    
     code <- nimbleCode({
         p[1:4] <- c(.1, .2, 0, .7)
         x[1:4] ~ dmulti(size = 1, prob = p[1:4])
@@ -1505,16 +1510,45 @@ test_that('RW_multinomial sampler gives correct results', {
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 
     set.seed(0)
-    samples <- runMCMC(Cmcmc, 1000000)
+    niter <- 2000000
+    samples <- runMCMC(Cmcmc, niter)
 
     post_true <- c(.1, .2, 0, .7) * dnorm(3, 1:4, 1)
     post_true <- post_true / sum(post_true)
     post_true <- post_true[-3]    ## remove the 0-valued 3rd element
-    post_mcmc <- table(samples %*% 1:4) / 1000000
+    post_mcmc <- table(samples %*% 1:4) / niter
     
     ## less than 1% error
     expect_true(all(abs(post_true - post_mcmc) / post_true < 0.01))
 })
+
+
+test_that('RW_multinomial sampler gives correct results - test 3', {
+    
+    code <- nimbleCode({
+        p[1:7] <- c(.02, .05, .10, .15, .18, .21, 0.29)
+        x[1:7] ~ dmulti(size = 101, prob = p[1:7])
+    })
+    
+    Rmodel <- nimbleModel(code, inits = list(x = c(0,0,0,0,0,0,101)))
+    conf <- configureMCMC(Rmodel)
+    conf$replaceSampler('x', 'RW_multinomial')
+    Rmcmc <- buildMCMC(conf)
+
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 200000)
+
+    post_true <- 101 * c(.02, .05, .10, .15, .18, .21, 0.29)
+    post_mcmc <- apply(samples, 2, mean)
+
+    ## less than 0.5 % error
+    expect_true(all(abs(post_true - post_mcmc) / post_true < 0.005))
+
+})
+
 
 
 ## testing RW_dirichlet sampler
