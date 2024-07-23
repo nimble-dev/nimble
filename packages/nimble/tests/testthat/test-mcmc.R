@@ -1510,7 +1510,7 @@ test_that('RW_multinomial sampler gives correct results - test 2', {
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 
     set.seed(0)
-    niter <- 2000000
+    niter <- 3000000
     samples <- runMCMC(Cmcmc, niter)
 
     post_true <- c(.1, .2, 0, .7) * dnorm(3, 1:4, 1)
