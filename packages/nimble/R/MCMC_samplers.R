@@ -677,7 +677,6 @@ sampler_RW_block <- nimbleFunction(
         chol_propCov_scale <- scale * chol_propCov
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
-        targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
         if(any(model$isDiscrete(target)))       warning('cannot use RW_block sampler on discrete-valued target')  # This will become an error once we fix the designation of distributions in nimbleSCR to not be discrete.
@@ -689,7 +688,7 @@ sampler_RW_block <- nimbleFunction(
     run = function() {
         for(i in 1:tries) {
             propValueVector <- generateProposalVector()
-            values(model, targetNodesAsScalar) <<- propValueVector
+            values(model, targetAsScalar) <<- propValueVector
             lpD <- model$calculateDiff(calcNodesProposalStage)
             if(lpD == -Inf) {
                 jump <- FALSE
@@ -2083,7 +2082,6 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
         ##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
 
         z                   <- array(0, c(p, p))  # canonical partial correlations
