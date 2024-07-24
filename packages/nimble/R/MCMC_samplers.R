@@ -692,7 +692,7 @@ sampler_RW_block <- nimbleFunction(
             lpD <- model$calculateDiff(calcNodesProposalStage)
             if(lpD == -Inf) {
                 jump <- FALSE
-                nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
             } else {
                 lpD <- lpD + model$calculateDiff(calcNodesDepStage)
                 jump <- decide(lpD)
@@ -831,7 +831,7 @@ sampler_RW_llFunction <- nimbleFunction(
         RWControl <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale, log=FALSE, reflective=FALSE)
         targetRWSamplerFunction <- sampler_RW(model, mvInternal, target, RWControl)
         my_setAndCalculateOne <- setAndCalculateOne(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, target = target)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target)
     },
     run = function() {
         modelLP0 <- llFunction$run()
@@ -1571,7 +1571,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
         my_setAndCalculate <- setAndCalculate(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, target = target)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target)
         my_calcAdaptationFactor <- calcAdaptationFactor(d, adaptFactorExponent)
         ## checks
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
@@ -1629,118 +1629,57 @@ sampler_RW_llFunction_block <- nimbleFunction(
     )
 )
 
-#########################################################################################
-##### RW_multinomial sampler for multinomial distributions ##############################
-#########################################################################################
-##
-## @rdname samplers
-## @export
-##sampler_RW_multinomial <- nimbleFunction(
-##    name = 'sampler_RW_multinomial',
-##    contains = sampler_BASE,
-##    setup = function(model, mvSaved, target, control) {
-##        ## control list extraction
-##        adaptive      <- extractControlElement(control, 'adaptive',      TRUE)
-##        adaptInterval <- extractControlElement(control, 'adaptInterval', 200)
-##        ## node list generation
-##        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-##        targetAllNodes <- unique(model$expandNodeNames(target))
-##        calcNodes      <- model$getDependencies(target)
-##        lTarget        <- length(targetAsScalar)
-##        Ntotal         <- sum(values(model,target))
-##        NOverL         <- Ntotal / lTarget
-##        ## numeric value generation
-##        propVector        <- rep(0, lTarget)
-##        Zeros             <- matrix(0, lTarget, lTarget)
-##        Ones              <- matrix(1, lTarget, lTarget)
-##        timesRan          <- Zeros
-##        AcceptRates       <- Zeros
-##        ScaleShifts       <- Zeros
-##        totalAdapted      <- Zeros
-##        timesAccepted     <- Zeros
-##        ENSwapMatrix      <- Ones
-##        ENSwapDeltaMatrix <- Ones
-##        RescaleThreshold  <- 0.2 * Ones
-##        ## nested function and function list definitions
-##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-##        my_decideAndJump       <- decideAndJump(model, mvSaved, target = target)
-##        ## checks
-##        if(model$getDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
-##        if(length(targetAllNodes) > 1)                  stop('cannot use RW_multinomial sampler on more than one target')
-##        if(adaptive & adaptInterval < 100)              stop('adaptInterval < 100 is not recommended for RW_multinomial sampler')
-##    },
-##    run = function() {
-##        for(iFROM in 1:lTarget) {
-##            for(iTO in 1:(lTarget-1)) {
-##                if(runif(1,0,1) > 0.5) {
-##                    iFrom <- iFROM
-##                    iTo   <- iTO
-##                    if(iFrom == iTo)   iTo <- lTarget
-##                } else {
-##                    iFrom <- iTO
-##                    iTo   <- iFROM
-##                    if(iFrom == iTo)   iFrom <- lTarget
-##                }
-##                ## generate proposal vector
-##                propVector <<- values(model,target)
-##                pSwap       <- min(1, max(1, ENSwapMatrix[iFrom,iTo]) / propVector[iFrom])
-##                nSwap       <- rbinom(n=1,   size=propVector[iFrom], prob=pSwap)
-##                lpProp      <- dbinom(nSwap, size=propVector[iFrom], prob=pSwap, log=TRUE)
-##                propVector[iFrom] <<- propVector[iFrom] - nSwap
-##                propVector[iTo]   <<- propVector[iTo]   + nSwap
-##                pRevSwap    <- min(1, max(1, ENSwapMatrix[iTo,iFrom]) / propVector[iTo])
-##                lpRev       <- dbinom(nSwap, size=propVector[iTo], prob=pRevSwap, log=TRUE)
-##                ## decide and jump
-##                lpMHR <- my_setAndCalculateDiff$run(propVector) + lpRev - lpProp
-##                jump  <- my_decideAndJump$run(lpMHR, 0, 0, 0)
-##                ## adaptation
-##                if(adaptive)   adaptiveProcedure(jump=jump, iFrom=iFrom, iTo=iTo)
-##            }
-##        }
-##    },
-##    methods = list(
-##        adaptiveProcedure = function(jump=logical(), iFrom=integer(), iTo=integer()) {
-##            timesRan[iFrom, iTo] <<- timesRan[iFrom, iTo] + 1
-##            if(jump)
-##                timesAccepted[iFrom, iTo] <<- timesAccepted[iFrom, iTo] + 1
-##            if(timesRan[iFrom, iTo] %% adaptInterval == 0) {
-##                totalAdapted[iFrom, iTo] <<- totalAdapted[iFrom, iTo] + 1
-##                accRate                   <- timesAccepted[iFrom, iTo] / timesRan[iFrom, iTo]
-##                AcceptRates[iFrom, iTo]  <<- accRate
-##                if(accRate > 0.5) {
-##                    ENSwapMatrix[iFrom, iTo] <<- min(Ntotal, ENSwapMatrix[iFrom,iTo] + ENSwapDeltaMatrix[iFrom, iTo] / totalAdapted[iFrom,iTo])
-##                } else {
-##                    ENSwapMatrix[iFrom, iTo] <<- max(1, ENSwapMatrix[iFrom,iTo] - ENSwapDeltaMatrix[iFrom,iTo] / totalAdapted[iFrom,iTo])
-##                }
-##                if(accRate<RescaleThreshold[iFrom,iTo] | (accRate > (1-RescaleThreshold[iFrom,iTo]))) {
-##                    ## rescale iff ENSwapMatrix[iFrom, iTo] is not set to an upper or lower bound
-##                    if(ENSwapMatrix[iFrom, iTo] > 1 & ENSwapMatrix[iFrom, iTo] < Ntotal) {
-##                        ScaleShifts[iFrom, iTo]       <<- ScaleShifts[iFrom, iTo] + 1
-##                        ENSwapDeltaMatrix[iFrom, iTo] <<- min(NOverL, ENSwapDeltaMatrix[iFrom, iTo] * totalAdapted[iFrom,iTo] / 10)
-##                        ENSwapDeltaMatrix[iTo, iFrom] <<- ENSwapDeltaMatrix[iFrom, iTo]
-##                        RescaleThreshold[iFrom,iTo]   <<- 0.2 * 0.95^ScaleShifts[iFrom, iTo]
-##                    }
-##                }
-##                ## lower Bound
-##                if(ENSwapMatrix[iFrom, iTo] < 1)   ENSwapMatrix[iFrom, iTo] <<- 1
-##                ## symmetry in ENSwapMatrix helps maintain good acceptance rates
-##                ENSwapMatrix[iTo,iFrom]   <<- ENSwapMatrix[iFrom,iTo]
-##                timesRan[iFrom, iTo]      <<- 0
-##                timesAccepted[iFrom, iTo] <<- 0
-##            }
-##        },
-##        reset = function() {
-##            timesRan          <<- Zeros
-##            AcceptRates       <<- Zeros
-##            ScaleShifts       <<- Zeros
-##            totalAdapted      <<- Zeros
-##            timesAccepted     <<- Zeros
-##            ENSwapMatrix      <<- Ones
-##            ENSwapDeltaMatrix <<- Ones
-##            RescaleThreshold  <<- 0.2 * Ones
-##        }
-##    )
-##)
+#######################################################################################
+### RW_multinomial sampler for multinomial distributions ##############################
+#######################################################################################
+
+#' @rdname samplers
+#' @export
+sampler_RW_multinomial <- nimbleFunction(
+    name = 'sampler_RW_multinomial',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        maxMove <- extractControlElement(control, 'maxMove', 0)
+        tries <- extractControlElement(control, 'tries', 0)
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        ## numeric value generation
+        d <- length(targetAsScalar)
+        propVector <- numeric(d)
+        if(maxMove == 0)   maxMove <- ceiling( model$getParam(target, 'size')/20    )   ## default maxMove is ceiling( N/20 )
+        if(tries == 0)     tries   <- ceiling( model$getParam(target, 'size')^(1/3) )   ## default tries is ceiling( N^(1/3) )
+        ## nested function and function list definitions
+        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+        my_decideAndJump <- decideAndJump(model, mvSaved, target)
+        ## checks
+        if(d < 2)                                       stop('RW_multinomial sampler requires more than one observation category')
+        if(length(target) > 1)                          stop('RW_multinomial sampler cannot operate on more than one target node')
+        if(model$getDistribution(target) != 'dmulti')   stop('RW_multinomial sampler only operates on multinomial distributions')
+    },
+    run = function() {
+        for(i in 1:tries) {
+            propVector <<- values(model, target)
+            nonZeroInd <- which(propVector > 0)
+            nonZeroN <- length(nonZeroInd)
+            iFrom <- nonZeroInd[ceiling(runif(1) * nonZeroN)]
+            iTo <- iFrom
+            while(iTo == iFrom)   iTo <- ceiling(runif(1) * d)
+            thisMax <- min(propVector[iFrom], maxMove)
+            move <- ceiling(runif(1) * thisMax)
+            propVector[iFrom] <<- propVector[iFrom] - move
+            propVector[iTo]   <<- propVector[iTo]   + move
+            lpProp <- -log(nonZeroN)          - log(thisMax)                         # - log(d-1)   omitting from both
+            lpRev  <- -log(sum(propVector>0)) - log(min(propVector[iTo], maxMove))   # - log(d-1)   omitting from both
+            logMHR <- my_setAndCalculateDiff$run(propVector) + lpRev - lpProp
+            my_decideAndJump$run(logMHR, 0, 0, 0)
+        }
+    },
+    methods = list(
+        reset = function() { }
+    )
+)
 
 
 
@@ -3451,6 +3390,16 @@ sampler_polyagamma <- nimbleFunction(
 #' \item llFunction. A specialized nimbleFunction that accepts no arguments and returns a scalar double number.  The return value must be the total log-likelihood of all stochastic dependents of the target nodes -- and, if includesTarget = TRUE, of the target node(s) themselves --  or whatever surrogate is being used for the total log-likelihood.  This is a required element with no default.
 #' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
 #' }
+#' 
+#' @section RW_multinomial sampler:
+#' 
+#' This sampler updates latent multinomial distributions, using Metropolis-Hastings proposals to move observations between pairs of categories.  Each proposal moves one or more observations from one category to another category, and acceptance or rejection follows standard Metropolis-Hastings theory.  The number of observations in the proposed move is randomly drawn from a discrete uniform distribution, which is bounded above by the 'maxMove' control argument.  The RW_multinomial sampler can make multiple independent attempts at transitions on each sampling iteration, which is govered by the 'tries' control argument.
+#'  
+#' The \code{RW_multinomial} sampler accepts the following control list elements:
+#' \itemize{
+#' \item maxMove.  An integer argument, specifying the upper bound for the number of observations to propose moving, on each independent propose/accept/reject step.  The number to move is drawn from a discrete uniform distribution, with lower limit one, and upper limit given by the minimum of 'maxMove' and the number of observations in the category. The default value for 'maxMove' is 1/20 of the total number of observations comprising the target multinomial distribution (given by the 'size' parameter of the distribution).
+#' \item tries.  An integer argument, specifying the number of independent Metropolis-Hastings proposals (and subsequent acceptance or rejection) that are attempted each time the sampler operates.  For example, if 'tries' is one, then a single proposal (of moving one or more observations to a different category) will be made, and either accepted or rejected.  If tries is two, this process is repeated twice.  The default value for 'tries' scales as the cube root of the total number of observations comprising the target multinomial distribution (given by the 'size' parameter of the distribution).
+#' }
 #'
 #' @section RW_dirichlet sampler:
 #'
@@ -3684,7 +3633,7 @@ sampler_polyagamma <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky 
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky 
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
@@ -3757,18 +3706,3 @@ sampler_polyagamma <- nimbleFunction(
 #' 
 NULL
 
-
-
-
-##
-## Note: RW_multinomial sampler was removed from package, following version 0.1.0
-##
-##@section RW_multinomial sampler:
-##
-##This sampler is designed for sampling multinomial target distributions.  The sampler performs a series of Metropolis-Hastings steps between pairs of groups.  Proposals are generated via a draw from a binomial distribution, whereafter the proposed number density is moved from one group to another group.  The acceptance or rejection of these proposals follows a standard Metropolis-Hastings procedure.  Probabilities for the random binomial proposals are adapted to a target acceptance rate of 0.5.
-##
-##The \code{RW_multinomial} sampler accepts the following control list elements:
-##\itemize{
-##\item adaptive.  A logical argument, specifying whether the sampler should adapt the binomial proposal probabilities throughout the course of MCMC execution. (default = TRUE)
-##\item adaptInterval.  The interval on which to perform adaptation.  A minimum value of 100 is required. (default = 200)
-##}

@@ -28,11 +28,10 @@ decide <- function(logMetropolisRatio) {
 #' @param model An uncompiled or compiled NIMBLE model object.  
 #' @param mvSaved A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.
 #' @param target A character vector providing the target node.
-#' @param calcNodes A character vector representing a set of nodes in the model (and hence also the modelValues) object.  
 #' @author Daniel Turek
 #' @export
 #' @details
-#' Calling decideAndJump(model, mvSaved, calcNodes) will generate a specialized nimbleFunction with four required numeric arguments:
+#' Calling decideAndJump(model, mvSaved, target) will generate a specialized nimbleFunction with four required numeric arguments:
 #' 
 #' modelLP1: The model log-probability associated with the newly proposed value(s)
 #' 
@@ -50,7 +49,7 @@ decide <- function(logMetropolisRatio) {
 #' -- Return a logical value, indicating whether the proposal was accepted
 decideAndJump <- nimbleFunction(
     name = 'decideAndJump',
-    setup = function(model, mvSaved, target, calcNodes) {
+    setup = function(model, mvSaved, target, UNUSED) {    ## should remove UNUSED argument, after next release of nimbleSMC -DT July 2024
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
     },
