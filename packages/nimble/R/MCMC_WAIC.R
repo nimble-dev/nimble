@@ -383,6 +383,10 @@ buildWAIC <- nimbleFunction(
 #' Important: The necessary variables to compute WAIC (all stochastic parent
 #' nodes of the data nodes) must have been monitored when setting up the MCMC.
 #'
+#' Also note that while the \code{model} argument can be either a compiled or
+#' uncompiled model, the model must have been compiled prior to calling
+#' \code{calculateWAIC}.
+#'
 #' See \code{help(waic)} for details on using NIMBLE's recommended online
 #' algorithm for WAIC.
 #' 
