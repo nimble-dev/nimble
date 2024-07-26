@@ -2217,7 +2217,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## Note this can use LHS$name for RHSsizeExprs when returning from a nimbleFunction on RHS.  But this is probably not needed any more.
     if(any(unlist(lapply(RHSsizeExprs, is.null)))) RHSsizeExprs <- makeSizeExpressions(rep(NA, RHSnDim), LHS$name) ## reset sizeExprs for the LHS var. re-using RHSsizeExprs for LHS.  This would only be valid if it is a nimbleFunction returning something on the RHS.  For assignment to be executed in Eigen, the RHS sizes MUST be known
 
-     if(!getNimbleOption('experimentalNewSizeProcessing')) {
+  if(!getNimbleOption('experimentalNewSizeProcessing')) {
                 
     if(LHS$toEigenize == 'yes') {
         code$toEigenize <- 'yes'
@@ -2258,29 +2258,138 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                     assert <- list(assert)
                 } else { ## We have an indexed LHS of an eigenizable expression
                     ## need special handling if it is a row assignment like x[i,] <- ...
-                    ## also need to generate size assertions                    
+                  ## also need to generate size assertions
                     if(LHS$nDim == 1) {
-                        if(RHS$nDim == 2) {
-                            if(is.numeric(RHS$sizeExprs[[1]])) {
-                                if(RHS$sizeExprs[[1]] == 1) {
-                                    newExpr <- insertExprClassLayer(code, 1, 'asRow', type = LHS$type)
-                                    newExpr$sizeExprs <- RHS$sizeExprs 
-                                    newExpr$type <- LHS$type
-                                    newExpr$nDim <- RHS$nDim
-                                    if(!is.numeric(LHS$sizeExprs[[1]]) || !is.numeric(RHS$sizeExprs[[2]])) {
-                                        assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[2]]))
-                                        thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[2]], assertMessage)
-                                        if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert 
-                                    } else {
-                                        if(LHS$sizeExprs[[1]] != RHS$sizeExprs[[2]]) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Fixed size mismatch.')), call. = FALSE)
-                                    }
+                      if(RHS$nDim == 2) {
+                        # vector[] <- matrix case
+                        if(is.numeric(RHS$sizeExprs[[1]]) && (RHS$sizeExprs[[1]] == 1)) {
+                           ## simple vector <- matrix[1,] case
+                                newExpr <- insertExprClassLayer(code, 1, 'asRow', type = LHS$type)
+                                newExpr$sizeExprs <- RHS$sizeExprs
+                                newExpr$type <- LHS$type
+                                newExpr$nDim <- RHS$nDim
+                                if(!is.numeric(LHS$sizeExprs[[1]]) || !is.numeric(RHS$sizeExprs[[2]])) {
+                                    assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[2]]))
+                                    thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[2]], assertMessage)
+                                    if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                                } else {
+                                    if(LHS$sizeExprs[[1]] != RHS$sizeExprs[[2]]) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Fixed size mismatch.')), call. = FALSE)
                                 }
+                            } else {
+                              if(isTRUE(getNimbleOption("newAssignSizeChecks"))) {
+                                # print("vector[] <- matrix that is not a simple vector[] <- matrix[1,]  case")
+                                        # Here the checking is relaxed in the sense that we check the product of the
+                                        # matrix dimensions, which should match the vector dimension.
+
+                                if(!is.numeric(LHS$sizeExprs[[1]]) || !is.numeric(RHS$sizeExprs[[1]]) || !is.numeric(RHS$sizeExprs[[2]])) {
+
+                                  assertMessage <- paste0("Run-time size error: expected ",
+                                                          deparse(LHS$sizeExprs[[1]]), " == (", deparse(RHS$sizeExprs[[1]]),')*(', deparse(RHS$sizeExprs[[2]]))
+                                  thisAssert <- identityAssert(LHS$sizeExprs[[1]],
+                                                               substitute((A)*(B), list(A=RHS$sizeExprs[[1]], B=RHS$sizeExprs[[2]])),
+                                                               assertMessage)
+                                  if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                                } else {
+                                  ## All numeric
+                                  if(LHS$sizeExprs[[1]] != (RHS$sizeExprs[[1]] * RHS$sizeExprs[[2]]))
+                                    stop(exprClassProcessingErrorMsg(code,
+                                                                     'In sizeAssignAfterRecursing: Fixed size mismatch.'), call. = FALSE)
+                                }
+                                ## # check that RHS has ncol==1
+                                ## if(is.numeric(RHS$sizeExprs[[2]]) && (RHS$sizeExprs[[2]] != 1)) {
+                                ##   stop(exprClassProcessingErrorMsg(code,
+                                ##                                    'In sizeAssignAfterRecursing: Fixed size mismatch.'), call. = FALSE)
+                                ## } else {
+                                ##     assertMessage <- paste0("Run-time size error: expected ", deparse(RHS$sizeExprs[[2]]), " == 1")
+                                ##     thisAssert <- identityAssert(RHS$sizeExprs[[2]], 1, assertMessage)
+                                ##     if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                                ## }
+                              }
                             }
+                      } else if(RHS$nDim==1) {
+                        # vector[] <- vector case
+                          if(isTRUE(getNimbleOption("newAssignSizeChecks"))) {
+                            # print('RHS$nDim != 2')
+                            if(!is.numeric(LHS$sizeExprs[[1]]) || !is.numeric(RHS$sizeExprs[[1]])) {
+                              assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[1]]))
+                              thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[1]], assertMessage)
+                              if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                            } else {
+                              if(LHS$sizeExprs[[1]] != RHS$sizeExprs[[1]])
+                                stop(exprClassProcessingErrorMsg(code,
+                                                                 'In sizeAssignAfterRecursing: Fixed size mismatch.'), call. = FALSE)
+                            }
+                          }
                         }
-                    }
-                }
-            }
-        }
+                    } else if(LHS$nDim==2) {
+                      # matrix[] <- [matrix|vector]
+                      if(isTRUE(getNimbleOption("newAssignSizeChecks"))) {
+                        # print('LHS$nDim != 1')
+                        if(RHS$nDim == 1) {
+                          # print("matrix[] <- vector")
+                          if(is.numeric(LHS$sizeExprs[[1]]) && (LHS$sizeExprs[[1]] == 1)) {
+                            # simple matrix[1,] <- vector case (not even sure if we need this explicitly here?)
+                                newExpr <- insertExprClassLayer(code, 1, 'asRow', type = LHS$type)
+                                newExpr$sizeExprs <- LHS$sizeExprs
+                                newExpr$type <- LHS$type
+                                newExpr$nDim <- LHS$nDim
+                                if(!is.numeric(RHS$sizeExprs[[1]]) || !is.numeric(LHS$sizeExprs[[2]])) {
+                                    assertMessage <- paste0("Run-time size error: expected ", deparse(RHS$sizeExprs[[1]]), " == ", deparse(LHS$sizeExprs[[2]]))
+                                    thisAssert <- identityAssert(RHS$sizeExprs[[1]], LHS$sizeExprs[[2]], assertMessage)
+                                    if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                                } else {
+                                    if(RHS$sizeExprs[[1]] != LHS$sizeExprs[[2]]) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Fixed size mismatch.')), call. = FALSE)
+                                }
+                          } else {
+                            # not just simple matrix[1,] <- vector case
+                              if(isTRUE(getNimbleOption("newAssignSizeChecks"))) {
+                                # print("matrix[] <- vector that is not a simple matrix row <- vector case")
+                                # check only that product of LHS dims equals RHS
+                                if(!is.numeric(RHS$sizeExprs[[1]]) || !is.numeric(LHS$sizeExprs[[1]]) || !is.numeric(LHS$sizeExprs[[2]])) {
+                                  assertMessage <- paste0("Run-time size error: expected (",
+                                                          deparse(LHS$sizeExprs[[1]]), ")*(",
+                                                          deparse(LHS$sizeExprs[[2]]),
+                                                          ") == ", deparse(RHS$sizeExprs[[1]]))
+                                  thisAssert <- identityAssert(RHS$sizeExprs[[1]],
+                                                               substitute((A)*(B), list(A=LHS$sizeExprs[[1]], B=LHS$sizeExprs[[2]])),
+                                                               assertMessage)
+                                  if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                                } else {
+                                  if((LHS$sizeExprs[[1]]*LHS$sizeExprs[[2]]) != RHS$sizeExprs[[1]])
+                                    stop(exprClassProcessingErrorMsg(code,
+                                                                     'In sizeAssignAfterRecursing: Fixed size mismatch.'), call. = FALSE)
+                                }
+                                ## # check that LHS has ncol==1
+                                ## if(is.numeric(LHS$sizeExprs[[2]]) && (LHS$sizeExprs[[2]] != 1)) {
+                                ##   stop(exprClassProcessingErrorMsg(code,
+                                ##                                    'In sizeAssignAfterRecursing: Fixed size mismatch.'), call. = FALSE)
+                                ## } else {
+                                ##     assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[2]]), " == 1")
+                                ##     thisAssert <- identityAssert(LHS$sizeExprs[[2]], 1, assertMessage)
+                                ##     if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                                ## }
+                              }
+                            }
+                        } else if(RHS$nDim==2) {
+                          # print("matrix[] <- matrix case")
+                          for(iDim in 1:2) {
+                            if(!is.numeric(LHS$sizeExprs[[iDim]]) || !is.numeric(RHS$sizeExprs[[iDim]])) {
+                              assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[iDim]]), " == ", deparse(RHS$sizeExprs[[iDim]]))
+                              thisAssert <- identityAssert(LHS$sizeExprs[[iDim]], RHS$sizeExprs[[iDim]], assertMessage)
+                              if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert
+                            } else {
+                              if(LHS$sizeExprs[[iDim]] != RHS$sizeExprs[[iDim]])
+                                stop(exprClassProcessingErrorMsg(code,
+                                                                 'In sizeAssignAfterRecursing: Fixed size mismatch.'), call. = FALSE)
+                            }
+                          }
+                        }
+                      }
+                    } # end LHS$nDim == 2
+                } # end else (NOT if(LHS$isName || LHS$name == "nfVar") )
+            } #end if(!(RHS$name %in% setSizeNotNeededOperators))
+        } # end if(RHSnDim > 0)
+      # end if(code$toEigenize == 'yes')
     } else {
         if(inherits(RHS, 'exprClass')) {
             ## If we have A <- map(B, ...), we need to generate a setMap for the RHS, which will be done by sizeInsertIntermediate 
@@ -2291,7 +2400,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(LHS$name == 'map') assert <- c(assert, sizeInsertIntermediate(code, 1, symTab, typeEnv) )
         }
     }
-     } ##experimentalNewSizeProcessing
+  } ##end if(experimentalNewSizeProcessing)
     if(!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter', 'nimNonseqIndexedd', 'nimNonseqIndexedi','nimNonseqIndexedb'))) {
         ## should already be annotated if it is an indexed assignment.
         ## It should be harmless to re-annotated EXCEPT in case like out[1:5] <- scalar
