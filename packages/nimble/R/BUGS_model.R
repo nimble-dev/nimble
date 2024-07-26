@@ -62,10 +62,10 @@ See `help(simulate)`
 '
                                       nimble::simulate(.self, nodes, includeData)
                                   },
-                                  getParam = function(node, param) {                                                                                                                                                                                 '
+                                  getParam = function(node, param, warn = TRUE) {                                                                                                                                                                                 '
 See `help(getParam)`                                                                                                                                                                                                                               
 '
-                                      nimble::getParam(.self, node, param)
+                                      nimble::getParam(.self, node, param, warn = warn)
                                   },
                                   getBound = function(node, bound) {
 '                                                                                                                                                                                                                                                    
@@ -1121,6 +1121,13 @@ inits: A named list.  The names of list elements must correspond to model variab
                                               if(any(!is.na(inits[[i]][dataVals])))
                                                   messageIfVerbose("  [Note] Ignoring non-NA values in `inits` for data nodes: ", names(inits)[[i]], ".")
                                           } else {
+                                              if(is.data.frame(inits[[i]])) {
+                                                  if(!all(sapply(inits[[i]], is.numeric)))
+                                                      stop("setInits: `", varName, "` must be numeric")
+                                                  inits[[i]] <- as.matrix(inits[[i]])
+                                                  dimnames(inits[[i]]) <- NULL
+                                                  messageIfVerbose("  [Note] Initial value for `", names(inits)[[i]], "` is a dataframe. Converting to a matrix.")
+                                              }                                                  
                                               .self[[names(inits)[i]]] <- inits[[i]]
                                           }
                                       }
@@ -1144,7 +1151,6 @@ Details: The return value is a named list, with an element corresponding to each
 Checks for size/dimension mismatches and for presence of NAs in model variables (the latter is not an error but a note of this is given to the user)
 '
                                       # first do size checking; note that LHS of deterministic expressions are not necessarily filled in
-
                                       for(j in seq_along(.self$modelDef$declInfo)) {
                                               declInfo <- .self$modelDef$declInfo[[j]]
                                               nn <- length(declInfo$nodeFunctionNames)
@@ -1192,7 +1198,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       ##fun <- as.call(parse(text = paste0("nf$get_", nms[k])))
                                                       ##e = try(eval(fun))
                                                       ## NEWNODEFXN
-                                                      e <- try(.self$getParam(nfn, nms[k]))
+                                                      e <- try(.self$getParam(nfn, nms[k], warn = FALSE))
 
                                                       if(!is(e, "try-error")) {
                                                           if(!is.null(e)) {

@@ -270,6 +270,8 @@ defaultParamInfo <- function() {
 #'
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #'
+#' @param warn For internal NIMBLE use only
+#'
 #' @export
 #' @details
 #' Standard usage is as a method of a model, in the form \code{model$getParam(node, param)}, but the usage as a simple function with the model as the first argument as above is also allowed.
@@ -283,7 +285,7 @@ defaultParamInfo <- function() {
 #' parameter known to the distribution.  For example, one can request
 #' the scale or rate parameter of a gamma distribution, regardless of
 #' which one was used to declare the node.
-getParam <- function(model, node, param, nodeFunctionIndex) {
+getParam <- function(model, node, param, nodeFunctionIndex, warn = TRUE) {
     if(missing(param)) { ## already converted by keyword conversion
         stop('Missing either the node or the parameter. Please specify both the node and the parameter of interest. This error may also be triggered if this case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
         ## nodeFunctionIndex would only be used here, when we make this part work
@@ -311,7 +313,8 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
     type <- paramInfo$type
     unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
     if(nDim > 2) {
-        warning("Note that getParam is not available for parameters of dimension greater than two, but other calculations with models are unaffected")
+        if(warn)
+            messageIfVerbose("  [Warning] `getParam` is not available for parameters of dimension greater than two, but other calculations with models are unaffected.")
         return(NULL)
     }
     funName <- paste0('getParam_',nDim,'D_',type)

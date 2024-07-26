@@ -239,6 +239,8 @@ as.list.CmodelValues <- function(x, varNames, iterationAsLastIndex = FALSE, ...)
   results <- list()
   for(v in varNames) {
     samples <- x[[v]]
+    if(!is.list(samples))  # 1-row result (issue #1476)
+        samples <- list(samples)
     dims <- dimOrLength(samples[[1]])
     matrixVersion <- do.call("c", lapply(samples, as.numeric))
     ansDims <- c(dims, nrows)

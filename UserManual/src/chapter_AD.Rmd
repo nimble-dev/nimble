@@ -191,6 +191,8 @@ toyModel <- nimbleModel(toyCode, inits = list(mu = 0, sigma = 1, x = 0),
 
 Now `toyModel` can be used in algorithms such as HMC and Laplace approximation, as above, or new ones you might write, as below.
 
+Note that in models, all model variables are implemented as doubles, even when they will actually only ever take integer values. Therefore all arguments to user-defined distributions and functions used in models should be declared as type `double`. The `ADbreak` method discussed in Section \@ref(sec:AD-holding-out) should be used if you want to stop derivative tracking on a model variable.
+
 ## What operations are and aren't supported for AD
 
 Much of the math supported by NIMBLE will work for AD. Here are some details on what is and isn't supported, as well as on some options to control how linear algebra is handled.

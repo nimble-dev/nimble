@@ -341,7 +341,7 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
 
     ## update added Dec 2023, DT ... tbt earlier update in newModel method (Oct 2015)
     ## handling for JAGS style inits (a list of lists)
-    if(length(initsList) > 0 && is.list(initsList[[1]]))   initsList <- initsList[[1]]
+    if(length(initsList) > 0 && is.list(initsList[[1]]) && !is.data.frame(initsList[[1]]))   initsList <- initsList[[1]]
     ##
     # add dimensions of any *non-scalar* inits to dimensionsList
     # we'll try to be smart about this: check for duplicate names in inits and dimensions, and make sure they agree
@@ -2908,7 +2908,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
 
     ## handling for JAGS style inits (a list of lists)
     ## added Oct 2015, DT
-    if(length(inits) > 0 && is.list(inits[[1]])) {
+    if(length(inits) > 0 && is.list(inits[[1]]) && !is.data.frame(inits[[1]])) {
         message('  [Note] Detected JAGS-style initial values, provided as a list of lists. Using the first set of initial values')
         inits <- inits[[1]]
     }
