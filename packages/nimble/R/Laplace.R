@@ -314,6 +314,8 @@ buildOneAGHQuad1D <- nimbleFunction(
           }
         }
       }
+      if((!one_time_fixes_done) & (length(constant_init_par) == 1))
+         constant_init_par <<- c(constant_init_par, -1)
       if(optimWarning != -1) {
         warn_optim <<- optimWarning != 0
       }
@@ -1132,6 +1134,8 @@ buildOneAGHQuad <- nimbleFunction(
           }
         }
       }
+      if((!one_time_fixes_done) & (length(constant_init_par) == 1))
+         constant_init_par <<- c(constant_init_par, -1)
       if(optimWarning != -1) {
         warn_optim <<- optimWarning != 0
       }
