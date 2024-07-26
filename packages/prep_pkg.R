@@ -155,6 +155,7 @@ imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
 importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
+                 "igraph, plot.igraph, make_empty_graph, add_vertices, add_edges, top_sort, permute", 
                  "R6, R6Class",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
