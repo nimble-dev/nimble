@@ -240,7 +240,7 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: Multiple logical input arguments may be used simultaneously.  For example, `model$getNodeNames(endOnly = TRUE, dataOnly = TRUE)` will return all end-level nodes from the model which are designated as 'data'.}
 
-\item{\code{getParam(node, param)}}{See `help(getParam)`                                                                                                                                                                                                                               }
+\item{\code{getParam(node, param, warn = TRUE)}}{See `help(getParam)`                                                                                                                                                                                                                               }
 
 \item{\code{getParents(
   nodes,

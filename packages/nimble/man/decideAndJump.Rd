@@ -5,7 +5,7 @@
 \title{Creates a nimbleFunction for executing the Metropolis-Hastings jumping decision,
 and updating values in the model, or in a carbon copy modelValues object, accordingly.}
 \usage{
-decideAndJump(model, mvSaved, target, calcNodes)
+decideAndJump(model, mvSaved, target, UNUSED)
 }
 \arguments{
 \item{model}{An uncompiled or compiled NIMBLE model object.}
@@ -13,14 +13,12 @@ decideAndJump(model, mvSaved, target, calcNodes)
 \item{mvSaved}{A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.}
 
 \item{target}{A character vector providing the target node.}
-
-\item{calcNodes}{A character vector representing a set of nodes in the model (and hence also the modelValues) object.}
 }
 \description{
 This nimbleFunction generator must be specialized to three required arguments: a model, a modelValues, and a character vector of node names.
 }
 \details{
-Calling decideAndJump(model, mvSaved, calcNodes) will generate a specialized nimbleFunction with four required numeric arguments:
+Calling decideAndJump(model, mvSaved, target) will generate a specialized nimbleFunction with four required numeric arguments:
 
 modelLP1: The model log-probability associated with the newly proposed value(s)
 

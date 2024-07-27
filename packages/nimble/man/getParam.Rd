@@ -4,7 +4,7 @@
 \alias{getParam}
 \title{Get value of a parameter of a stochastic node in a model}
 \usage{
-getParam(model, node, param, nodeFunctionIndex)
+getParam(model, node, param, nodeFunctionIndex, warn = TRUE)
 }
 \arguments{
 \item{model}{A NIMBLE model object}
@@ -14,6 +14,8 @@ getParam(model, node, param, nodeFunctionIndex)
 \item{param}{The name of a parameter for the node}
 
 \item{nodeFunctionIndex}{For internal NIMBLE use only}
+
+\item{warn}{For internal NIMBLE use only}
 }
 \description{
 Get the value of a parameter for any single stochastic node in a model.

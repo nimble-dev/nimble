@@ -2132,7 +2132,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         }
     }
     if(is.null(RHStype) || length(RHStype)==0) {
-        stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '", RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
+        stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '", RHSname, "' is not available or its output type is unknown. This may occur if a user-defined function name is the same as the name of a function in a package that `nimble` uses.")), call. = FALSE)
     }
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
