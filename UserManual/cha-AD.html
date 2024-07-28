@@ -160,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -636,6 +636,7 @@ returns similar information but with names included in a more useful way. For ex
 <span id="cb508-2"><a href="cha-AD.html#cb508-2" tabindex="-1"></a>toyModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(toyCode, <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">mu =</span> <span class="dv">0</span>, <span class="at">sigma =</span> <span class="dv">1</span>, <span class="at">x =</span> <span class="dv">0</span>),</span>
 <span id="cb508-3"><a href="cha-AD.html#cb508-3" tabindex="-1"></a>                        <span class="at">buildDerivs =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <p>Now <code>toyModel</code> can be used in algorithms such as HMC and Laplace approximation, as above, or new ones you might write, as below.</p>
+<p>Note that in models, all model variables are implemented as doubles, even when they will actually only ever take integer values. Therefore all arguments to user-defined distributions and functions used in models should be declared as type <code>double</code>. The <code>ADbreak</code> method discussed in Section <a href="cha-AD.html#sec:AD-holding-out">16.5.2</a> should be used if you want to stop derivative tracking on a model variable.</p>
 </div>
 <div id="what-operations-are-and-arent-supported-for-ad" class="section level2 hasAnchor" number="16.4">
 <h2><span class="header-section-number">16.4</span> What operations are and aren’t supported for AD<a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad" class="anchor-section" aria-label="Anchor link to header"></a></h2>
