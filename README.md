@@ -1,7 +1,7 @@
 # NIMBLE
 [![Build Status](https://github.com/nimble-dev/nimble/actions/workflows/ci.yaml/badge.svg?branch=devel)](https://github.com/nimble-dev/nimble/actions/workflows/ci.yaml)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
-[![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://CRAN.R-project.org/package=nimble)
+[![CRAN](https://www.r-pkg.org/badges/version/nimble)](https://CRAN.R-project.org/package=nimble)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1211190.svg)](https://zenodo.org/record/1211190)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/nimble-users)
 
@@ -14,7 +14,7 @@
 NIMBLE is an R package for hierarchical statistical modeling (aka
 graphical modeling).  It enables writing general models along with
 methods such as Markov chain Monte Carlo (MCMC), particle filtering
-(aka sequential Monte Carlo), and other general methods.
+(aka sequential Monte Carlo), Laplace approximation and other general methods.
 
 For writing statistical models, NIMBLE adopts and extends the BUGS
 language, making it largely compatible with
@@ -77,7 +77,7 @@ NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://d
 
 In published work that uses NIMBLE, please also cite the package version:
 
-de Valpine, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodriguez, D. Temple Lang, and S. Paganin. 2024. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 1.2.0, https://cran.r-project.org/package=nimble.
+de Valpine, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodriguez, D. Temple Lang, W. Zhang, S. Paganin, and P. van Dam-Bates. 2024. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 1.2.1, https://cran.r-project.org/package=nimble.
 
 To help us track usage to justify funding support for NIMBLE, please include the DOI in the citation.
 
