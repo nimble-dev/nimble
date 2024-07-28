@@ -2382,16 +2382,16 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     
     ## 10. Build the graph for topological sorting
 #    if(debug) browser()
-    graph <<- graph.empty()
-    graph <<- add_vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
+    graph <<- igraph::make_empty_graph()
+    graph <<- igraph::add_vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
     allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
-    graph <<- add_edges(graph, allEdges)                                         ## add all edges at once
+    graph <<- igraph::add_edges(graph, allEdges)                                         ## add all edges at once
 
     ## 11. Topologically sort and re-index all objects with vertex IDs
 #    if(debug) browser()
-    newGraphID_2_oldGraphID <- as.numeric(topo_sort(graph, mode = 'out'))
+    newGraphID_2_oldGraphID <- as.numeric(igraph::topo_sort(graph, mode = 'out'))
     oldGraphID_2_newGraphID <- sort(newGraphID_2_oldGraphID, index = TRUE)$ix
-    graph <<- permute(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
+    graph <<- igraph::permute(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
 
     ## 11b. make new maps that use the sorted IDS
 #    if(debug) browser()
