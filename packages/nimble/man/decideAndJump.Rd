@@ -13,6 +13,8 @@ decideAndJump(model, mvSaved, target, UNUSED)
 \item{mvSaved}{A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.}
 
 \item{target}{A character vector providing the target node.}
+
+\item{UNUSED}{Unused placeholder argument.}
 }
 \description{
 This nimbleFunction generator must be specialized to three required arguments: a model, a modelValues, and a character vector of node names.

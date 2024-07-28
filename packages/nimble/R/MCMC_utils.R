@@ -28,6 +28,7 @@ decide <- function(logMetropolisRatio) {
 #' @param model An uncompiled or compiled NIMBLE model object.  
 #' @param mvSaved A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.
 #' @param target A character vector providing the target node.
+#' @param UNUSED Unused placeholder argument.
 #' @author Daniel Turek
 #' @export
 #' @details
