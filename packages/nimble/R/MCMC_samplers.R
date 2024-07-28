@@ -2851,7 +2851,7 @@ sampler_polyagamma <- nimbleFunction(
         }
         N <- length(yNodes)
 
-        checkMessage <- "If your model is in a non-standard form and you are sure the Pólya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`."
+        checkMessage <- "If your model is in a non-standard form and you are sure the P\u00f3lya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`."
 
         ## Conjugacy checking, part 1.
         if(check) {

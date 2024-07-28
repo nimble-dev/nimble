@@ -1,3 +1,37 @@
+#                            CHANGES IN VERSION 1.2.1 (July 2024) 
+
+## USER LEVEL CHANGES
+
+- Provide a multinomial MCMC sampler for random variables following 
+  a multinomial distribution. This replaces a sampler in earlier versions of
+  NIMBLE that had a bug and was removed as of version 1.1.0 (PR #1478).
+
+- More robustly handle dataframe inputs to `inits` (PR #1481).
+
+- Enhance compile-time and run-time error-trapping of size mismatches for 
+  assignment operator (#1459).
+
+## BUG FIXES
+
+- Fix minor issue affecting `buildAGHQ` when `updateSettings` is used
+  before compilation with inputs that change `constant_init_par` (PR #1480).
+  
+- Fix output of `as.list.CmodelValues` for 1-row case (PR #1482).
+
+- Improve documentation for AD related to preventing derivative tracking.
+
+## DEVELOPER LEVEL CHANGES
+
+- Turn off spurious `getParam` warning affecting use of user-defined 
+  distributions with more than two dimensions (PR #1481).
+
+- Rework checking for `configureRJ` (PR #1475).
+  
+- Remove template arguments from `NimArr` constructors/destructors for C++20,
+  fixing based on CRAN request (PR #1479).
+  
+- Only import `igraph` functions actually used (PR #1482).
+
 #                            CHANGES IN VERSION 1.2.0 (June 2024) 
 
 ## USER LEVEL CHANGES
