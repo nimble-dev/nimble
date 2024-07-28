@@ -2382,7 +2382,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     
     ## 10. Build the graph for topological sorting
 #    if(debug) browser()
-    graph <<- make_empty_graph()
+    graph <<- igraph::make_empty_graph()
     graph <<- igraph::add_vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
     allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
     graph <<- igraph::add_edges(graph, allEdges)                                         ## add all edges at once
