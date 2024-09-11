@@ -1447,7 +1447,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newCode <- substitute(nfMethod(this, FUN), list(FUN = fnCode$name))
         newExpr <- RparseTree2ExprClasses(newCode)
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
-        setArg(code, 2, newExpr)
+        setArg(code, "fn", newExpr)
     } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
         fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
     } else {
@@ -1464,7 +1464,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newCode <- substitute(nfMethod(this, FUN), list(FUN = grCode$name))
         newExpr <- RparseTree2ExprClasses(newCode)
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
-        setArg(code, 3, newExpr)
+        setArg(code, "gr", newExpr)
     } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
         # Handle gr arguments that are RCfunctions.
         grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName
@@ -1482,7 +1482,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newCode <- substitute(nfMethod(this, FUN), list(FUN = heCode$name))
         newExpr <- RparseTree2ExprClasses(newCode)
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
-        setArg(code, 3, newExpr)
+        setArg(code, "he", newExpr)
     } else if(exists(heCode$name) && is.rcf(get(heCode$name))) {
         # Handle he arguments that are RCfunctions.
         heCode$name <- environment(get(heCode$name))$nfMethodRCobject$uniqueName

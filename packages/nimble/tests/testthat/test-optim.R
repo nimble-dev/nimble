@@ -5,8 +5,7 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-
-context("Testing of the optim() function in NIMBLE code")
+PAUSE <- TRUE
 
 nimOptimMethod("my_nlminb",
                # identical to nlminb handling, but just for testing
@@ -23,7 +22,7 @@ nimOptimMethod("my_nlminb",
                  if(invalid(control_nlminb$rel.tol)) control_nlminb$rel.tol <- 1e-10
                  if(invalid(control_nlminb$iter.max)) control_nlminb$iter.max <- 150
                  if(invalid(control_nlminb$trace)) control_nlminb$trace <- 0
-                 # NB: control$parscale and control$fnscale are applied internally
+                # NB: control$parscale and control$fnscale are applied internally
                  result <- nlminb(par, objective=fn, gradient=gr, hessian=he,
                                   lower = lower, upper = upper, control=control_nlminb)
                  result$value <- result$objective
@@ -653,7 +652,7 @@ test_that("optim() with gradient minimizes with fnscale = 1 and maximizes when f
         return(sum(par) * exp(-sum(par ^ 2) / 2))
     }
     gr <- function(par) {
-        return(sum(par) * exp(-sum(par ^ 2) / 2) * (rep(1, length(par)) - par))
+        return(exp(-sum(par^2)/2) * (1 - par * sum(par)))
     }
     optimizer <- function(method, fnscale) {
       control <- list(fnscale = fnscale)
@@ -699,6 +698,78 @@ test_that("optim() with gradient minimizes with fnscale = 1 and maximizes when f
         }
     }
 })
+
+test_that("optim() with gradient and hessian minimizes with fnscale = 1 and maximizes when fnscale = -1", {
+    # Define R functions with exactly one global minimumm and one global maximum.
+    fn <- function(par) {
+        return(sum(par) * exp(-sum(par ^ 2) / 2))
+    }
+    gr <- function(par) {
+        return(exp(-sum(par^2)/2) * (1 - par * sum(par)))
+    }
+    he <- function(par) {
+        return(exp(-sum(par ^ 2) / 2) * (-outer(par, par, "+") + (outer(par, par) - diag(length(par)))*sum(par)))
+    }
+    optimizer <- function(method, fnscale) {
+      control <- list(fnscale = fnscale)
+      if(method %in% coreOptimMethods)
+        return(optim(c(0.1, -0.1), fn, gr, method = method, control = control, hessian=TRUE))
+      else
+        return(nimOptim(c(0.1, -0.1), fn, gr = gr, he = he, method = method, control = control, hessian=TRUE))
+    }
+    # Define DSL functions.
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(sum(par) * exp(-sum(par ^ 2) / 2))
+            returnType(double(0))
+        }
+    )
+    nimGr <- nimbleFunction(
+        run = function(par = double(1)) {
+          return(exp(-sum(par^2)/2) * (1 - par * sum(par)))
+          returnType(double(1))
+        }
+    )
+    nimHe <- nimbleFunction(
+      run = function(par = double(1)) {
+        n <- length(par)
+        res <- matrix(value = exp(-sum(par*par)/2), nrow = n, ncol = n)
+        sump <- sum(par)
+        for(i in 1:n) {
+          for(j in 1:n) {
+            res[i,j] <- res[i,j] * (-par[i] - par[j] + (par[i] * par[j] - (i==j))*sump)
+          }
+        }
+        return(res)
+        returnType(double(2))
+      }
+    )
+    temporarilyAssignInGlobalEnv(nimFn)
+    temporarilyAssignInGlobalEnv(nimGr)
+    temporarilyAssignInGlobalEnv(nimHe)
+    nimOptimizer <- nimbleFunction(
+        run = function(method = character(0), fnscale = double(0)) {
+            control <- optimDefaultControl()
+            control$fnscale <- fnscale
+            par <- c(0.1, -0.1)  # FIXME compilation fails when this is inline.
+            return(optim(par, nimFn, nimGr, he=nimHe, method = method, control = control, hessian=TRUE))
+            returnType(optimResultNimbleList())
+        }
+    )
+    compiledOptimizer <- compileNimble(nimOptimizer)
+    # Test with many methods and fnscales.
+    for (method in methodsAllowingGradient) {
+        for (fnscale in c(-1, 1)) {
+            result_r <- optimizer(method, fnscale)
+            result_dsl <- nimOptimizer(method, fnscale)
+            result_cpp <- compiledOptimizer(method, fnscale)
+            info <- paste(' where method =', method, ', fnscale =', fnscale)
+            expect_r_and_dsl_agree(result_r, result_dsl, info = info)
+            expect_equal(result_dsl, result_cpp, info = info)
+        }
+    }
+})
+
 
 # See test-ADoptim for a case with AD gradients
 test_that("optim() respects parscale in R and C++", {
