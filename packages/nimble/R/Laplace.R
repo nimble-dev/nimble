@@ -1236,7 +1236,7 @@ buildOneAGHQuad <- nimbleFunction(
     # numerical behavior, we can revisit the efficiency of how to get derivatives, such as getting gradient and hessian together
     # or whether it is better to keep them separate, as both may not always be jointly requested.
     he_inner_logLik_internal = function(reTransform = double(1)) {
-      ans <- derivs(inner_logLik(reTransform), wrt = re_indices_inner, order = 2, model = model,
+      ans <- derivs(inner_logLik(reTransform), wrt = reTrans_indices_inner, order = 2, model = model,
                     updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
       res <- ans$hessian[,,1]
       return(res)
@@ -1250,7 +1250,7 @@ buildOneAGHQuad <- nimbleFunction(
     },
     # Double taping for possible efficiency
     he_inner_logLik = function(reTransform = double(1)) {
-      ans <- derivs(he_inner_logLik_internal_as_vec(reTransform), wrt = re_indices_inner, order = 0, model = model,
+      ans <- derivs(he_inner_logLik_internal_as_vec(reTransform), wrt = reTrans_indices_inner, order = 0, model = model,
                     updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
       res <- matrix(value = ans$value, nrow = length(reTransform), ncol = length(reTransform))
       return(res)
