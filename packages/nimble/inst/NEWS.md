@@ -1,3 +1,9 @@
+## USER LEVEL CHANGES
+
+- Added a new method `getMixedDataNodeNames` for model objects.  This method
+  returns the node names (or, optionally, the graph ids) of any stochastic
+  multivariate model nodes which are partially, but not entirely, observed data.
+
 #                            CHANGES IN VERSION 1.2.1 (July 2024) 
 
 ## USER LEVEL CHANGES
