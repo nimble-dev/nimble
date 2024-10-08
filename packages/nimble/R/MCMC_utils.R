@@ -473,6 +473,63 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
 
 
 
+AD_checkTarget <- function(model, targetNodes, samplerType) {
+    ## Check validity of AD-based samplers for target nodes.
+    ## Checks for:
+    ## - target with discrete or truncated distribution
+    ## - dependencies with truncated, dinterval, or dconstraint distribution
+    ##
+    targetDeclIDs_unique <- unique(model$getDeclID(targetNodes))
+    targetDeclInfo_unique <- model$getModelDef()$declInfo[targetDeclIDs_unique]
+
+    targetDists_unique <- unique(sapply(targetDeclInfo_unique, function(x) x$getDistributionName()))
+    targetDiscreteBool <- sapply(targetDists_unique, isDiscrete)
+    if(any(targetDiscreteBool)) {
+        stop(samplerType, ' sampler cannot operate on nodes with discrete-valued distributions: ',
+             paste0(targetDists_unique[targetDiscreteBool], collapse = ', '))
+    }
+
+    targetTruncatedBool <- any(sapply(targetDeclInfo_unique, function(x) x$isTruncated()))
+    if(any(targetTruncatedBool)) {
+        targetExpanded <- model$expandNodeNames(targetNodes)
+        stop(samplerType, ' sampler cannot operate on nodes with truncated prior distributions: ',
+             paste0(targetExpanded[model$isTruncated(targetExpanded)], collapse = ', '))
+    }
+
+    depNodes <- model$getDependencies(targetNodes, self = FALSE, stochOnly = TRUE)
+    depDeclIDs_unique <- unique(model$getDeclID(depNodes))
+    depDeclInfo_unique <- model$getModelDef()$declInfo[depDeclIDs_unique]
+
+    depTruncatedBool <- any(sapply(depDeclInfo_unique, function(x) x$isTruncated()))
+    if(any(depTruncatedBool)) {
+        stop(samplerType, ' sampler cannot operate since these dependent nodes have truncated distributions, which do not support AD calculations: ',
+             paste0(depNodes[model$isTruncated(depNodes)], collapse = ', '))
+    }
+    
+    depDists_unique <- sapply(depDeclInfo_unique, function(x) x$getDistributionName())
+
+    depIntervalBool <- (depDists_unique == 'dinterval')
+    if(any(depIntervalBool)) {
+        stop(paste0(samplerType, ' sampler cannot operate since these dependent nodes have `dinterval` distributions, which do not support AD calculations: ',
+                    paste0(depNodes[which(model$getDistribution(depNodes) == 'dinterval')], collapse = ', ')))
+    }
+
+    depConstraintBool <- (depDists_unique == 'dconstraint')
+    if(any(depConstraintBool)) {
+        stop(paste0(samplerType, ' sampler cannot operate since these dependent nodes have `dconstraint` distributions, which do not support AD calculations: ',
+                    paste0(depNodes[which(model$getDistribution(depNodes) == 'dconstraint')], collapse = ', ')))
+    }
+
+    ## Check for target with user-defined distribution (without AD support).
+    dists <- targetDists_unique
+    ADok <- rep(TRUE, length(dists))
+    for(i in seq_along(dists)) {
+        ADok[i] <- model$getModelDef()$checkADsupportForDistribution(dists[i])
+    }
+    if(!all(ADok))
+        stop(samplerType, ' sampler cannot operate on user-defined distributions that do not support AD calculations.  Try using `buildDerivs = TRUE` in the definition of the distributions: ',
+             paste0(dists[!ADok], collapse = ', '))
+}
 
 
 

@@ -3229,6 +3229,247 @@ sampler_polyagamma <- nimbleFunction(
     )
 )
 
+sampler_barker <- nimbleFunction(
+    name = 'sampler_barker',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        scale <- extractControlElement(control, 'scale', 1)     # global scale, adapted during iterations.
+        sigma <- extractControlElement(control, 'sigma', 0.1)   # sd for default bimodal proposal distribution.
+        adaptive <- extractControlElement(control, 'adaptive', TRUE)
+        adaptInterval <- extractControlElement(control, 'adaptInterval', 1)
+        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.6) # Per Livingstone & Zanella 2022.
+        diagonal <- extractControlElement(control, 'diagonal', TRUE)
+        adaptIntervalDense <- extractControlElement(control, 'adaptIntervalDense', 1) # interval when dense proposal used.
+        propVar <- extractControlElement(control, 'propVar', 1)
+        propCov <- extractControlElement(control, 'propCov', 1)
+        bimodal <- extractControlElement(control, 'bimodal', TRUE) # Use bimodal proposal, following Vogrinc et al. 2023.
+        targetAcceptanceRate <- extractControlElement(control, 'targetAcceptanceRate', 0.574) # Per Vogrinc et al. 2023.
+        initWindowSize <- extractControlElement(control, 'initWindowSize', 100) # Window for initial diagonal-only adaptation.
+        ## Set adaptation weighting to be roughly invariant to change in adaptation interval length.
+        invariantWeight <- extractControlElement(control, 'invariantWeight', FALSE)  
+        
+        ## TODO: deal with case where non-diagonal, initWindowSize > 0 and propCov is provided.
+        if(adaptInterval != 1)
+            stop("sampler_barker: values of `adaptInterval` other than one are not yet implemented")
+        
+        ## node list generation
+        targetNodes <- model$expandNodeNames(target)
+        targetNodesAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(targetNodes)
+
+        ## check validity of target and dependent nodes (early, before parameterTransform is specialized)
+        AD_checkTarget(model, targetNodes, 'Barker')
+        ## processing of bounds and transformations
+        my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
+        d <- my_parameterTransform$getTransformedLength()
+        d2 <- max(d, 2) ## for pre-allocating vectors
+        nimDerivs_wrt <- 1:d
+        derivsInfo_return <- makeModelDerivsInfo(model, targetNodes, calcNodes)
+        nimDerivs_updateNodes   <- derivsInfo_return$updateNodes
+        nimDerivs_constantNodes <- derivsInfo_return$constantNodes
+        
+        if(length(propVar) == 1)
+            propVar <- nimNumeric(d, value = propVar)
+        if(length(propVar) != d)
+            stop("sampler_barker: `propVar` must be a scalar or vector of length equal to number of target elements")
+        if(length(propVar) == 1)
+            propVar <- c(propVar, 0)
+        
+        scaleOriginal <- scale
+        propVarOriginal <- propVar
+        
+        means <- numeric(d2)
+        sdValues <- sqrt(propVar)
+
+        ## TODO: if diagonal, perhaps make this a small dummy object.
+        if(is.null(dim(propCov))) 
+            if(length(propCov) == 1) {
+                propCov <- diag(rep(propCov, d))
+            } else {
+                if(length(propCov) != d)
+                    stop("sampler_barker: `propCov` must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix")
+                propCov <- diag(propCov)
+            }
+        propCovOriginal <- propCov
+        U <- chol(propCov)
+        L <- t(U)
+        
+        empirSamp <- matrix(0, nrow = adaptIntervalDense, ncol = d)
+        timesRan <- 0
+        timesRanInWindow <- 0
+        zeros <- nimNumeric(d2, value = 0)
+        
+        proposalMean <- sqrt(1-sigma^2)
+        gradCurrent <- numeric(d2)
+        gradProposed <- numeric(d2)
+        ## checks
+        if(!isTRUE(nimbleOptions('enableDerivs')))   stop('must enable NIMBLE derivatives, set nimbleOptions(enableDerivs = TRUE)', call. = FALSE)
+        if(!isTRUE(model$modelDef[['buildDerivs']])) stop('must set buildDerivs = TRUE when building model',  call. = FALSE)
+    },
+    run = function() {
+        current <- my_parameterTransform$transform(values(model, targetNodes))
+        oldLogDetJacobian <- my_parameterTransform$logDetJacobian(current)
+
+        if(timesRan == 0) {
+            ## reduce all pre-allocated vectors to correct size (d)
+            means <<- current  # Initialize at initial value, not zero.
+            gradCurrent <<- gradCurrent[1:d]
+            gradProposed <<- gradProposed[1:d]
+            zeros <<- zeros[1:d]
+            sdValues <<- sdValues[1:d]
+            propVar <<- propVar[1:d]
+        }
+       
+        gradCurrent <<- gradient(current)
+        z <- sample()
+
+        if(diagonal) {
+            z <- sdValues * z
+            noflipProb <- expit(gradCurrent*z)
+            noflip <- 2 * (runif(d) < noflipProb) - 1
+            diff <- noflip * z
+            proposal <- current + diff
+        } else {
+            noflipProb <- expit((U%*%gradCurrent)[,1]*z)
+            noflip <- 2 * (runif(d) < noflipProb) - 1
+            diff <- noflip * z
+            proposal <- current + (L %*% diff)[,1]
+        }
+
+        values(model, targetNodes) <<- my_parameterTransform$inverseTransform(proposal)
+        gradProposed <<- gradient(proposal)
+        newLogDetJacobian <- my_parameterTransform$logDetJacobian(proposal)
+        lpD <- model$calculateDiff(calcNodes) + newLogDetJacobian - oldLogDetJacobian + calculateLogHastingsRatio(diff)
+        jump <- decide(lpD)
+
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(min(1,exp(lpD)))
+    },
+    methods = list(
+        sample = function() {
+            if(bimodal) {
+                ## Per Sam Livingstone (and straightforward to verify)
+                ## explicit bimodal here is equivalent in distribution to unimodal after
+                ## passing through Barker flipping step in `$run`.
+                ## sign <- 2*(runif(d) > 0.5) -1
+                ## return(scale * (rnorm(d, 0, sigma) + sign*proposalMean))
+                return(scale * rnorm(d, proposalMean, sigma))
+            } else return(scale * rnorm(d, 0, 1))
+            returnType(double(1))
+        },
+        jacobian = function() {
+            ## Not currently used now that parameter transform is in place.
+            ## Could consider using in simplified case where no transformations need be done
+            ## as it would be a bit faster.
+            derivsOutput <- nimDerivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
+            return(derivsOutput$jacobian[1, 1:d])
+            returnType(double(1))
+        },
+        gradient_aux = function(values = double(1)) {
+            derivsOutput <- nimDerivs(calcLogProb(values), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
+            returnType(double(1))
+            return(derivsOutput$jacobian[1, 1:d])
+        },
+        gradient = function(values = double(1)) {
+            derivsOutput <- nimDerivs(gradient_aux(values), order = 0, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
+            returnType(double(1))
+            return(derivsOutput$value)
+        },
+        inverseTransformStoreCalculate = function(values = double(1)) {
+            values(model, targetNodes) <<- my_parameterTransform$inverseTransform(values)
+            lp <- model$calculate(calcNodes)
+            returnType(double())
+            return(lp)
+        },
+        calcLogProb = function(values = double(1)) {
+            ans <- inverseTransformStoreCalculate(values) + my_parameterTransform$logDetJacobian(values)  
+            returnType(double())
+            return(ans)
+        },       
+        calculateLogHastingsRatio = function(diff = double(1)) {
+            if(diagonal) { 
+                beta1 <- gradProposed * diff
+                beta2 <- - gradCurrent * diff
+            } else {
+                beta1 <- (U %*% gradProposed)[,1] * diff
+                beta2 <- - (U %*% gradCurrent)[,1] * diff
+
+            }
+            result <- sum(pmax(beta2, zeros) - pmax(beta1, zeros)) +
+                sum(log1p(exp(-abs(beta2))) - log1p(exp(-abs(beta1))))
+            ## (nimble issue 1488)
+            ## There is some sort of Eigen compilation failure if try to implement
+            ## the above directly as:
+#            return(sum(
+#                -(pmax(beta1, zeros)+log1p(exp(-abs(beta1)))) +
+#                 (pmax(beta2, zeros)+log1p(exp(-abs(beta2)))) ))
+            return(result)
+            returnType(double())
+        },
+        adaptiveProcedure = function(acceptProb = double()) {
+            if(is.nan(acceptProb))
+                acceptProb <- 0
+            timesRan <<- timesRan + 1
+            timesRanInWindow <<- timesRanInWindow + 1
+            gammaValue <- (timesRan+2)^(-adaptFactorExponent)  # +2 follows usage in Giacomo Zanella's code.
+            current <- my_parameterTransform$transform(values(model, targetNodes))
+            scale <<- sqrt(exp( 2*log(scale) + gammaValue*(acceptProb-targetAcceptanceRate) ))
+            means <<- means + gammaValue * (current - means)
+            if(diagonal) {
+                propVar <<- propVar + gammaValue * ((current-means)^2 - propVar)
+                sdValues <<- sqrt(propVar)
+            } else {
+                if(timesRan <= initWindowSize) {  
+                    ## Only adapt diagonal for initial window.
+                    for(i in 1:d) { ## TODO: diag(x) <- diag(x) doesn't work, right?
+                        ## TODO: It would be more efficient to combine propCov terms.
+                        propCov[i,i] <<- propCov[i,i] + gammaValue * ((current[i]-means[i])^2 - propCov[i,i])
+                        U[i,i] <<- sqrt(propCov[i,i])
+                        L[i,i] <<- U[i,i]
+                    }
+                    timesRanInWindow <<- 0
+                }
+                if(timesRan > initWindowSize) {
+                    empirSamp[timesRanInWindow, 1:d] <<- current - means
+                    ## Should we learn something about covariance from initWindow samples? (E.g., as in Haario et al. 2001.)
+                    if(timesRanInWindow %% adaptIntervalDense == 0) {
+                        if(invariantWeight) {  # Set up weights so that roughly unaffected by adaptation interval.
+                            wgt <- (1-gammaValue)^adaptIntervalDense
+                            propCov <<- wgt * propCov + ((1-wgt)/adaptIntervalDense) * t(empirSamp) %*% empirSamp 
+                        } else {
+                            ## Analogous to RW_block. This would seemingly downweight empirical too much,
+                            ## but it seems to work rather better in practice.
+                            propCov <<- propCov + gammaValue * ((t(empirSamp) %*% empirSamp)/adaptIntervalDense - propCov)
+                        }
+                        U <<- chol(propCov)
+                        L <<- t(U)
+                        timesRanInWindow <<- 0
+                    }
+                }
+            }
+         },
+        reset = function() {
+            timesRan <<- 0
+            timesRanInWindow <<- 0
+            scale <<- scaleOriginal
+            propVar <<- propVarOriginal
+            propCov <<- propCovOriginal
+            means <<- numeric(d)
+            sdValues <<- sqrt(propVar)
+            U <<- chol(propCov)
+            L <<- t(U)
+            empirSamp <<- matrix(0, nrow = adaptIntervalDense, ncol = d)
+        }
+    ),
+    buildDerivs = list(
+        inverseTransformStoreCalculate = list(),
+        calcLogProb = list(),
+        gradient_aux = list()
+    )
+)
+
 
     
 #' MCMC Sampling Algorithms
@@ -3285,7 +3526,7 @@ sampler_polyagamma <- nimbleFunction(
 #'
 #' The RW sampler cannot be used with options log=TRUE and reflective=TRUE, i.e. it cannot do reflective sampling on a log scale.
 #'
-#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
+#' After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
 #'
 #' @section RW_block sampler:
 #'
@@ -3302,11 +3543,29 @@ sampler_polyagamma <- nimbleFunction(
 #' \item tries. The number of times this sampler will repeatedly operate on each MCMC iteration.  Each try consists of a new proposed transition and an accept/reject decision of this proposal.  Specifying tries > 1 can help increase the overall sampler acceptance rate and therefore chain mixing. (default = 1)
 #' }
 #'
-#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
+#' After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
 #'
 #' Operating analogous to the setScale method, the RW_block sampler also has a setPropCov method.  This method accepts a single matrix-valued argument, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal covariance.
 #'
 #' Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases. 
+#'
+#' @section Barker proposal sampler
+#'
+#' The Barker proposal sampler implements a (multivariate) gradient-based sampling scheme, following the work of Livingstone and Zaanella (2022) and Vogrinc et al. (2023).
+#' The Barker sampler accepts the following control list elements:
+#'
+#' \itemize{
+#' \item scale. An optional multiplier, to scale the step-size of the proposal steps. If adaptation is turned off, this uniquely determines the step-size (default = 1)
+#' \item sigma. Sigma in the bimodal proposal.
+#' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog step-size (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
+#' }
+#' 
+#' TODO: finish/correct this list
+#'
+#' TODO: finish roxygen
+#' TODO: add citations to ref list
+#' 
 #'
 #' @section RW_llFunction sampler:
 #'
@@ -3633,7 +3892,7 @@ sampler_polyagamma <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky 
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky sampler_barker barker
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
