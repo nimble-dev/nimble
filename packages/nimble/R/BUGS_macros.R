@@ -3,12 +3,12 @@
 #' 
 #' A model macro expands one line of code in a nimbleModel into one or
 #' more new lines.  This supports compact programming by defining
-#' re-usable modules.  \code{model_macro_builder} takes as input a
+#' re-usable modules.  \code{buildMacro} takes as input a
 #' function that constructs new lines of model code from the original
 #' line of code.  It returns a function suitable for internal use by
 #' \code{nimbleModel} that arranges arguments for input function.  Macros
 #' are an experimental feature and are available only after setting
-#' \code{nimbleOptions(enableModelMacros = TRUE)}.
+#' \code{nimbleOptions(enableMacros = TRUE)}.
 #'
 #' @param fun A function written to construct new lines of model code (see below).
 #'
@@ -91,13 +91,13 @@
 #' @export
 #' 
 #' @examples
-#' nimbleOptions(enableModelMacros = TRUE)
+#' nimbleOptions(enableMacros = TRUE)
 #' nimbleOptions(enableMacroComments = FALSE)
 #' nimbleOptions(verbose = FALSE)
 #' 
 #' ## Example 1: Say one is tired of writing "for" loops.
 #' ## This macro will generate a "for" loop with dnorm declarations
-#' all_dnorm <- model_macro_builder(
+#' all_dnorm <- buildMacro(
 #'     function(stoch, LHS, RHSvar, start, end, sd = 1, modelInfo, .env) {
 #'         newCode <- substitute(
 #'             for(i in START:END) {
@@ -133,7 +133,7 @@
 #' 
 #' ## Example 2: Say one is tired of writing priors.
 #' ## This macro will generate a set of priors in one statement
-#' flat_normal_priors <- model_macro_builder(
+#' flat_normal_priors <- buildMacro(
 #'     function(..., modelInfo, .env) {
 #'         allVars <- list(...)
 #'         priorDeclarations <- lapply(allVars,
@@ -165,7 +165,7 @@
 #' ## }
 #'
 #' ## Example 3: Macro that modifies constants
-#' new_constant <- model_macro_builder(
+#' new_constant <- buildMacro(
 #'    function(stoch, LHS, RHS, modelInfo, .env) {
 #'      # number of elements
 #'      n <- as.numeric(length(modelInfo$constants[[deparse(LHS)]]))
@@ -192,7 +192,7 @@
 #' mod <- nimbleModel(code = code, constants=const)
 #' mod$getCode()
 #' mod$getConstants() # new constant is here
-model_macro_builder <- function(fun,
+buildMacro <- function(fun,
                                 use3pieces = TRUE,
                                 unpackArgs = TRUE ) {
     if(use3pieces) {
@@ -620,7 +620,7 @@ checkMacroPars <- function(parameters, startCode, endCode){
 #' @export
 #'
 #' @examples
-#' nimbleOptions(enableModelMacros = TRUE)
+#' nimbleOptions(enableMacros = TRUE)
 #' nimbleOptions(enableMacroComments = FALSE)
 #' nimbleOptions(verbose = FALSE)
 #'
