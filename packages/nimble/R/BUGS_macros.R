@@ -8,7 +8,7 @@
 #' line of code.  It returns a function suitable for internal use by
 #' \code{nimbleModel} that arranges arguments for input function.  Macros
 #' are an experimental feature and are available only after setting
-#' \code{nimbleOptions(enableModelMacros = TRUE)}.
+#' \code{nimbleOptions(enableMacros = TRUE)}.
 #'
 #' @param fun A function written to construct new lines of model code (see below).
 #'
@@ -91,7 +91,7 @@
 #' @export
 #' 
 #' @examples
-#' nimbleOptions(enableModelMacros = TRUE)
+#' nimbleOptions(enableMacros = TRUE)
 #' nimbleOptions(enableMacroComments = FALSE)
 #' nimbleOptions(verbose = FALSE)
 #' 
@@ -620,7 +620,7 @@ checkMacroPars <- function(parameters, startCode, endCode){
 #' @export
 #'
 #' @examples
-#' nimbleOptions(enableModelMacros = TRUE)
+#' nimbleOptions(enableMacros = TRUE)
 #' nimbleOptions(enableMacroComments = FALSE)
 #' nimbleOptions(verbose = FALSE)
 #'
