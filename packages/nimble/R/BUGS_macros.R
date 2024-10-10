@@ -308,6 +308,10 @@ processMacrosInternal <- function(code,
                                         #    if(exists(possibleMacroName, envir = env)) {
                                         #        possibleMacro <- get(possibleMacroName, envir = env)
     if(inherits(possibleMacro, "model_macro")) {
+      nm <- possibleMacroName
+      if(grepl("::", nm))
+          nm <- sub(".*:", "", nm)
+      messageIfVerbose("  [Note] Processing model macro `", nm, "`.")
       expandedInfo <- try(possibleMacro$process(code,
                                                 modelInfo=modelInfo,
                                                 .env = env
