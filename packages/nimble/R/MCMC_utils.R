@@ -473,7 +473,7 @@ mcmc_determineCalcAndCopyNodes <- function(model, target) {
 
 
 
-AD_checkTarget <- function(model, targetNodes, samplerType) {
+mcmc_checkTargetAD <- function(model, targetNodes, samplerType) {
     ## Check validity of AD-based samplers for target nodes.
     ## Checks for:
     ## - target with discrete or truncated distribution

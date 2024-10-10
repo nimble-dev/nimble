@@ -3259,7 +3259,7 @@ sampler_barker <- nimbleFunction(
         calcNodes <- model$getDependencies(targetNodes)
 
         ## check validity of target and dependent nodes (early, before parameterTransform is specialized)
-        AD_checkTarget(model, targetNodes, 'Barker')
+        mcmc_checkTargetAD(model, targetNodes, 'Barker')
         ## processing of bounds and transformations
         my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
         d <- my_parameterTransform$getTransformedLength()
