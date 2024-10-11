@@ -3237,19 +3237,18 @@ sampler_barker <- nimbleFunction(
         scale <- extractControlElement(control, 'scale', 1)     # global scale, adapted during iterations.
         sigma <- extractControlElement(control, 'sigma', 0.1)   # sd for default bimodal proposal distribution.
         adaptive <- extractControlElement(control, 'adaptive', TRUE)
-        adaptInterval <- extractControlElement(control, 'adaptInterval', 1)
+        adaptInterval <- extractControlElement(control, 'adaptInterval', 1)  # interval for global scale and when diagonal proposal used.
         adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.6) # Per Livingstone & Zanella 2022.
-        diagonal <- extractControlElement(control, 'diagonal', TRUE)
-        adaptIntervalDense <- extractControlElement(control, 'adaptIntervalDense', 1) # interval when dense proposal used.
-        propVar <- extractControlElement(control, 'propVar', 1)
+        adaptCov <- extractControlElement(control, 'adaptCov', TRUE)
+        adaptIntervalCov <- extractControlElement(control, 'adaptIntervalCov', 10) # interval when full dense covariance proposal used.
         propCov <- extractControlElement(control, 'propCov', 1)
         bimodal <- extractControlElement(control, 'bimodal', TRUE) # Use bimodal proposal, following Vogrinc et al. 2023.
         targetAcceptanceRate <- extractControlElement(control, 'targetAcceptanceRate', 0.574) # Per Vogrinc et al. 2023.
-        initWindowSize <- extractControlElement(control, 'initWindowSize', 100) # Window for initial diagonal-only adaptation.
+        adaptDelayCov <- extractControlElement(control, 'adaptDelayCov', 100) # Window for initial diagonal-only adaptation.
         ## Set adaptation weighting to be roughly invariant to change in adaptation interval length.
         invariantWeight <- extractControlElement(control, 'invariantWeight', FALSE)  
         
-        ## TODO: deal with case where non-diagonal, initWindowSize > 0 and propCov is provided.
+        ## TODO: deal with case where non-diagonal, adaptDelayCov > 0 and propCov is provided.
         if(adaptInterval != 1)
             stop("sampler_barker: values of `adaptInterval` other than one are not yet implemented")
         
@@ -3268,34 +3267,38 @@ sampler_barker <- nimbleFunction(
         derivsInfo_return <- makeModelDerivsInfo(model, targetNodes, calcNodes)
         nimDerivs_updateNodes   <- derivsInfo_return$updateNodes
         nimDerivs_constantNodes <- derivsInfo_return$constantNodes
-        
-        if(length(propVar) == 1)
-            propVar <- nimNumeric(d, value = propVar)
-        if(length(propVar) != d)
-            stop("sampler_barker: `propVar` must be a scalar or vector of length equal to number of target elements")
-        if(length(propVar) == 1)
-            propVar <- c(propVar, 0)
-        
+
+        if(adaptCov) {
+            if(is.null(dim(propCov))) 
+                if(length(propCov) == 1) {
+                    propCov <- diag(rep(propCov, d))
+                } else {
+                    if(length(propCov) != d)
+                        stop("sampler_barker: `propCov` must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix")
+                    propCov <- diag(propCov)
+                }
+            if(dim(propCov) != c(d, d))
+                stop("sampler_barker: `propCov` must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix")
+        } else {
+            if(length(propVar) == 1) {
+                propVar <- nimNumeric(d2, value = propVar)
+            } 
+            if(length(propVar) != d2)
+                stop("sampler_barker: `propCov` must be a scalar or vector of length equal to number of target elements when using diagonal proposal covariance")
+            propCov <- diag(2)
+        }
+
+        propCovOriginal <- propCov
+        U <- chol(propCov)
+        L <- t(U)
+
         scaleOriginal <- scale
         propVarOriginal <- propVar
         
         means <- numeric(d2)
         sdValues <- sqrt(propVar)
-
-        ## TODO: if diagonal, perhaps make this a small dummy object.
-        if(is.null(dim(propCov))) 
-            if(length(propCov) == 1) {
-                propCov <- diag(rep(propCov, d))
-            } else {
-                if(length(propCov) != d)
-                    stop("sampler_barker: `propCov` must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix")
-                propCov <- diag(propCov)
-            }
-        propCovOriginal <- propCov
-        U <- chol(propCov)
-        L <- t(U)
         
-        empirSamp <- matrix(0, nrow = adaptIntervalDense, ncol = d)
+        empirSamp <- matrix(0, nrow = adaptIntervalCov, ncol = d)
         timesRan <- 0
         timesRanInWindow <- 0
         zeros <- nimNumeric(d2, value = 0)
@@ -3324,7 +3327,7 @@ sampler_barker <- nimbleFunction(
         gradCurrent <<- gradient(current)
         z <- sample()
 
-        if(diagonal) {
+        if(adaptCov) {
             z <- sdValues * z
             noflipProb <- expit(gradCurrent*z)
             noflip <- 2 * (runif(d) < noflipProb) - 1
@@ -3389,7 +3392,7 @@ sampler_barker <- nimbleFunction(
             return(ans)
         },       
         calculateLogHastingsRatio = function(diff = double(1)) {
-            if(diagonal) { 
+            if(adaptCov) { 
                 beta1 <- gradProposed * diff
                 beta2 <- - gradCurrent * diff
             } else {
@@ -3417,31 +3420,30 @@ sampler_barker <- nimbleFunction(
             current <- my_parameterTransform$transform(values(model, targetNodes))
             scale <<- sqrt(exp( 2*log(scale) + gammaValue*(acceptProb-targetAcceptanceRate) ))
             means <<- means + gammaValue * (current - means)
-            if(diagonal) {
-                propVar <<- propVar + gammaValue * ((current-means)^2 - propVar)
+            if(adaptCov) {
+                propVar <<- (1-gammaValue) * propVar + gammaValue * ((current-means)^2)
                 sdValues <<- sqrt(propVar)
             } else {
-                if(timesRan <= initWindowSize) {  
+                if(timesRan <= adaptDelayCov) {  
                     ## Only adapt diagonal for initial window.
                     for(i in 1:d) { ## TODO: diag(x) <- diag(x) doesn't work, right?
-                        ## TODO: It would be more efficient to combine propCov terms.
                         propCov[i,i] <<- propCov[i,i] + gammaValue * ((current[i]-means[i])^2 - propCov[i,i])
                         U[i,i] <<- sqrt(propCov[i,i])
                         L[i,i] <<- U[i,i]
                     }
                     timesRanInWindow <<- 0
                 }
-                if(timesRan > initWindowSize) {
+                if(timesRan > adaptDelayCov) {
                     empirSamp[timesRanInWindow, 1:d] <<- current - means
                     ## Should we learn something about covariance from initWindow samples? (E.g., as in Haario et al. 2001.)
-                    if(timesRanInWindow %% adaptIntervalDense == 0) {
+                    if(timesRanInWindow %% adaptIntervalCov == 0) {
                         if(invariantWeight) {  # Set up weights so that roughly unaffected by adaptation interval.
-                            wgt <- (1-gammaValue)^adaptIntervalDense
-                            propCov <<- wgt * propCov + ((1-wgt)/adaptIntervalDense) * t(empirSamp) %*% empirSamp 
+                            wgt <- (1-gammaValue)^adaptIntervalCov
+                            propCov <<- wgt * propCov + ((1-wgt)/adaptIntervalCov) * t(empirSamp) %*% empirSamp 
                         } else {
                             ## Analogous to RW_block. This would seemingly downweight empirical too much,
                             ## but it seems to work rather better in practice.
-                            propCov <<- propCov + gammaValue * ((t(empirSamp) %*% empirSamp)/adaptIntervalDense - propCov)
+                            propCov <<- (1-gammaValue) * propCov + gammaValue * ((t(empirSamp) %*% empirSamp)/adaptIntervalCov)
                         }
                         U <<- chol(propCov)
                         L <<- t(U)
@@ -3460,7 +3462,7 @@ sampler_barker <- nimbleFunction(
             sdValues <<- sqrt(propVar)
             U <<- chol(propCov)
             L <<- t(U)
-            empirSamp <<- matrix(0, nrow = adaptIntervalDense, ncol = d)
+            empirSamp <<- matrix(0, nrow = adaptIntervalCov, ncol = d)
         }
     ),
     buildDerivs = list(
