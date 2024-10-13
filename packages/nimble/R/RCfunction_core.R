@@ -242,7 +242,9 @@ nf_checkDSLcode_derivs <- function(code, args, calls_not_allowed) {
                      c(all.vars(code), args))
     problem_calls <- calls[ calls %in% calls_not_allowed ]
     if(length(problem_calls)) {
-        message("  [Note] Detected use of function(s) that are not supported for derivative tracking in a function or method for which `buildDerivs` has been requested: ", paste(unique(problem_calls), collapse = ", "), ".")
+            problem_calls <- paste(paste0("`", unique(problem_calls), "`", collapse = ", "))
+            messageIfVerbose("  [Note] There is no support for derivatives of ", problem_calls, ". Be sure that arguments to the function are either not of the type `double` or are in the `ignore` list of the `buildDerivs` argument to the nimbleFunction call.")
+        
     }
     NULL
 }
