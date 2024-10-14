@@ -18,7 +18,7 @@
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
 #'
-#' @param setSeed Logical or numeric argument.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain, and if \code{FALSE}, the random number seed is never set or modified.  The case of providing a single numeric value for this argument is not supported, except in the case when \code{nchains = 1}.  Default value is \code{FALSE}.
+#' @param setSeed Logical or numeric argument.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain, and if \code{FALSE}, the random number seed is never set or modified.  The case of providing a single numeric value for this argument is not supported, except in the case when \code{nchains = 1}.  If the same starting seed is desired for each chain, use \code{setSeed = rep(seed, nchains)}.  Default value is \code{FALSE}.
 #'
 #' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is defined by the nimble package option MCMCprogressBar.
 #'
