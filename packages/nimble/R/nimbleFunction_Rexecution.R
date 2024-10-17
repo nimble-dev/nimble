@@ -1418,7 +1418,7 @@ nimOptim <- function(par, fn, gr = "NULL", he = "NULL", ..., method = "Nelder-Me
 
 # nimble_custom_optim_ function is called only from C++
 custom_optim <- function(method, par, lower, upper, control,
-                         hessian, use_gr, use_he, extptr,...) {
+                         hessian, use_gr, use_he, extptr, ...) {
     
   fnsym <- nimbleUserNamespace$sessionSpecificDll$CALL_NimOptimProblem_fn # getNativeSymbolInfo("CALL_NimOptimProblem_fn")
   fn <- function(p) eval(call('.Call', fnsym, p, extptr))
@@ -1454,12 +1454,20 @@ custom_optim_inner <- function(method, par, fn, gr, he, lower, upper, control,
   resultRaw <- try(optimizer(par, fn, gr = gr, he = he, lower = lower,
                              upper = upper, control = control, hessian=hessian))
   ##  }
-  if(inherits(resultRaw, "try-error")) stop("problem with optimizer ", method)
-
   result <- list()
-  for(name in c("par", "value", "convergence", "counts", "message", "hessian")) {
-    result[[name]] <- resultRaw[[name]]
-    attributes(result[[name]]) <- NULL
+  if(inherits(resultRaw, "try-error")) {
+    # stop("problem with optimizer ", method)
+    result[['par']] = par
+    result[['value']] = NaN
+    result[['convergence']] = 1
+    result[['counts']] = 0
+    result[['message']] = ''
+    result[['hessian']] = matrix(nrow = 0, ncol = 0)
+  } else {
+    for(name in c("par", "value", "convergence", "counts", "message", "hessian")) {
+      result[[name]] <- resultRaw[[name]]
+      attributes(result[[name]]) <- NULL
+    }
   }
   result
 }
