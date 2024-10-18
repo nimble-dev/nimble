@@ -2208,7 +2208,8 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     calcNodes <- calcNodesDefault
   }
   if(!paramProvided) {
-    possibleNewParamNodes <- model$getParents(calcNodes, self=FALSE, stochOnly=TRUE)
+    possibleNewParamNodes <- model$getParents(calcNodes, self=FALSE, stochOnly=TRUE, includeData=FALSE)
+    # includeData=FALSE as data nodes cannot be parameters
     # self=FALSE doesn't omit if one node is a parent of another, so we have to do the next step
     possibleNewParamNodes <- setdiff(possibleNewParamNodes, calcNodesDefault)
     paramNodes <- unique(c(paramNodes, possibleNewParamNodes))
