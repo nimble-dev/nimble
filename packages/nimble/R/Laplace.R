@@ -370,6 +370,31 @@ buildOneAGHQuad1D <- nimbleFunction(
       return(ans$value)
       returnType(double(1))
     },
+    # Hessian of the joint log-likelihood (p fixed) w.r.t. transformed random effects: used only for inner optimization
+    # This is being added to experiment with Newton's methods for inner optimization. If this approach provides good
+    # numerical behavior, we can revisit the efficiency of how to get derivatives, such as getting gradient and hessian together
+    # or whether it is better to keep them separate, as both may not always be jointly requested.
+    he_inner_logLik_internal = function(reTransform = double(1)) {
+      ans <- derivs(inner_logLik(reTransform), wrt = re_indices_inner, order = 2, model = model,
+                    updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+      res <- ans$hessian[,,1]
+      return(res)
+      returnType(double(2))
+    },
+    he_inner_logLik_internal_as_vec = function(reTransform = double(1)) {
+      ans <- he_inner_logLik_internal(reTransform)
+      res <- nimNumeric(value = ans)
+      return(res)
+      returnType(double(1))
+    },
+    # Double taping for possible efficiency
+    he_inner_logLik = function(reTransform = double(1)) {
+      ans <- derivs(he_inner_logLik_internal_as_vec(reTransform), wrt = re_indices_inner, order = 0, model = model,
+                    updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+      res <- matrix(value = ans$value, nrow = length(reTransform), ncol = length(reTransform))
+      return(res)
+      returnType(double(2))
+    },
     ## Solve the inner optimization for Laplace approximation
     max_inner_logLik = function(p = double(1)) {
       values(model, paramNodes) <<- p
@@ -383,7 +408,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         optRes$convergence <- -1
         return(optRes)
       }
-      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod_, control = optimControl_)
+      optRes <- optim(reInitTrans, inner_logLik, gr = gr_inner_logLik, he = he_inner_logLik, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
         print("  [Warning] `optim` did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
@@ -409,7 +434,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         optRes$convergence <- -1
         return(optRes)
       }
-      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod_, control = optimControl_)
+      optRes <- optim(reInitTrans, inner_logLik, gr = gr_inner_logLik_internal, he = he_inner_logLik_internal, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
         print("Warning: optim did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
@@ -921,6 +946,8 @@ buildOneAGHQuad1D <- nimbleFunction(
                      negHess                                 = list(),
                      logdetNegHess                           = list(), 
                      gr_inner_logLik_internal                = list(),
+                     he_inner_logLik_internal                = list(),
+                     he_inner_logLik_internal_as_vec         = list(),
                      gr_joint_logLik_wrt_p_internal          = list(),
                      gr_joint_logLik_wrt_re_internal         = list(),
                      hess_joint_logLik_wrt_p_wrt_re_internal = list(),
@@ -1204,6 +1231,31 @@ buildOneAGHQuad <- nimbleFunction(
       return(ans$value)
       returnType(double(1))
     },
+    # Hessian of the joint log-likelihood (p fixed) w.r.t. transformed random effects: used only for inner optimization
+    # This is being added to experiment with Newton's methods for inner optimization. If this approach provides good
+    # numerical behavior, we can revisit the efficiency of how to get derivatives, such as getting gradient and hessian together
+    # or whether it is better to keep them separate, as both may not always be jointly requested.
+    he_inner_logLik_internal = function(reTransform = double(1)) {
+      ans <- derivs(inner_logLik(reTransform), wrt = reTrans_indices_inner, order = 2, model = model,
+                    updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+      res <- ans$hessian[,,1]
+      return(res)
+      returnType(double(2))
+    },
+    he_inner_logLik_internal_as_vec = function(reTransform = double(1)) {
+      ans <- he_inner_logLik_internal(reTransform)
+      res <- nimNumeric(value = ans, length = nreTrans * nreTrans)
+      return(res)
+      returnType(double(1))
+    },
+    # Double taping for possible efficiency
+    he_inner_logLik = function(reTransform = double(1)) {
+      ans <- derivs(he_inner_logLik_internal_as_vec(reTransform), wrt = reTrans_indices_inner, order = 0, model = model,
+                    updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+      res <- matrix(value = ans$value, nrow = length(reTransform), ncol = length(reTransform))
+      return(res)
+      returnType(double(2))
+    },
     negHess_inner_logLik_internal = function(reTransform = double(1)) {
       ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = reTrans_indices_inner, order = 1, model = model,
                     updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
@@ -1244,7 +1296,7 @@ buildOneAGHQuad <- nimbleFunction(
         gr_inner_logLik_first <<- FALSE
         gr_inner_logLik_force_update <<- FALSE
       }
-      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik, method = optimMethod_, control = optimControl_)
+      optRes <- optim(reInitTrans, inner_logLik, gr = gr_inner_logLik, he = he_inner_logLik, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
         print("  [Warning] `optim` did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
@@ -1263,7 +1315,7 @@ buildOneAGHQuad <- nimbleFunction(
         optRes$convergence <- -1
         return(optRes)
       }
-      optRes <- optim(reInitTrans, inner_logLik, gr_inner_logLik_internal, method = optimMethod_, control = optimControl_)
+      optRes <- optim(reInitTrans, inner_logLik, gr = gr_inner_logLik_internal, he = he_inner_logLik_internal, method = optimMethod_, control = optimControl_)
       if(optRes$convergence != 0 & warn_optim){
         print("  [Warning] `optim` did not converge for the inner optimization of AGHQ or Laplace approximation")
       }
@@ -1732,6 +1784,8 @@ buildOneAGHQuad <- nimbleFunction(
                      cholNegHessian                          = list(),
                      logdetNegHess                           = list(), 
                      gr_inner_logLik_internal                = list(),
+                     he_inner_logLik_internal                = list(),
+                     he_inner_logLik_internal_as_vec         = list(),
                      gr_joint_logLik_wrt_p_internal          = list(),
                      gr_joint_logLik_wrt_re_internal         = list(),
                      hess_joint_logLik_wrt_p_wrt_re_internal = list(),
@@ -2154,7 +2208,8 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     calcNodes <- calcNodesDefault
   }
   if(!paramProvided) {
-    possibleNewParamNodes <- model$getParents(calcNodes, self=FALSE, stochOnly=TRUE)
+    possibleNewParamNodes <- model$getParents(calcNodes, self=FALSE, stochOnly=TRUE, includeData=FALSE)
+    # includeData=FALSE as data nodes cannot be parameters
     # self=FALSE doesn't omit if one node is a parent of another, so we have to do the next step
     possibleNewParamNodes <- setdiff(possibleNewParamNodes, calcNodesDefault)
     paramNodes <- unique(c(paramNodes, possibleNewParamNodes))

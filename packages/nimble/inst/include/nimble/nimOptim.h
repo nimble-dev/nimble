@@ -242,7 +242,7 @@ class NimOptimProblem_Fun_Grad_Hess : public NimOptimProblem_Fun_Grad<Fn, Gr> {
   protected:
   virtual void hessian_callback() {
     const int n = NimOptimProblem::par_.dimSize(0);
-    NimOptimProblem::ans_hessian_ = he_();
+    NimOptimProblem::ans_hessian_ = he_(NimOptimProblem::par_);
     double* parscale = NimOptimProblem::working_parscale.getPtr();
     for(int i = 0; i < n; ++i) {
       for(int j = 0; j < n; ++j) {
