@@ -492,9 +492,9 @@ CRP_nonconjugate <- nimbleFunction(
       if(j == 0) {   ## reset to stored values (for case of new cluster not opened)
         values(model, marginalizedNodes[ ((savedIdx-1)*M+1):(savedIdx*M) ]) <<- saved[1:len]
       } else {  ## sample from prior
-          savedIdx <<- j  
-          saved[1:len] <<- values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ])
-          model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+        savedIdx <<- j  
+        saved[1:len] <<- values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+        model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
       }
     }
   )
