@@ -314,3 +314,26 @@ It is vital when using this approach to understand clearly how an algorithm will
 
 One can also register a distribution in a nimbleFunction object manually, for the reasons given above. The name of the distribution is simply the string "my_linear_reg$dcalc", to use the current example.
 
+## User-defined model macros {#sec:user-macros}
+
+As discussed in Section \@ref(sec:macros), users can use macros that provide a succinct syntax for expressing components of a model. The `nimbleMacros` package provides an initial set of macros, focused on the components of generalized linear (mixed) models.
+
+In addition, NIMBLE users can write their own macros for use in model code.
+
+As a toy example, suppose you wanted to create a macro called `MYDIST`, which creates a normal distribution with mean 0 and provided standard deviation. The macro would look like this in the NIMBLE model code:
+
+```{r, eval=FALSE}
+y ~ MYDIST(sdev = 2)
+```
+
+Note that by convention, we define the macro name in all capital letters.
+
+We want the final, processed output to look like:
+
+```{r, eval=FALSE}
+y ~ dnorm(0, sd = 2)
+```
+
+One would then need to create the `MYDIST` macro using `buildMacro`.
+
+See the [vignette for the `nimbleMacros` package](https://cran.r-project.org/web/packages/nimbleMacros) and `help(buildMacro)` for more information about how to use `buildMacro` to create a new macro.
