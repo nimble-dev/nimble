@@ -492,9 +492,9 @@ CRP_nonconjugate <- nimbleFunction(
       if(j == 0) {   ## reset to stored values (for case of new cluster not opened)
         values(model, marginalizedNodes[ ((savedIdx-1)*M+1):(savedIdx*M) ]) <<- saved[1:len]
       } else {  ## sample from prior
-        savedIdx <<- j  
-        saved[1:len] <<- values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ])
-        model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+          savedIdx <<- j  
+          saved[1:len] <<- values(model, marginalizedNodes[ ((j-1)*M+1):(j*M) ])
+          model$simulate(marginalizedNodes[ ((j-1)*M+1):(j*M) ])
       }
     }
   )
@@ -1594,7 +1594,6 @@ sampler_CRP <- nimbleFunction(
   
   
   run = function() {
-    
     conc <- model$getParam(target, 'conc')
     helperFunctions[[1]]$storeParams()
     
@@ -1677,6 +1676,14 @@ sampler_CRP <- nimbleFunction(
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # <<- probability of sampling a new label, only k components because xi_i is a singleton
         
         ## Sample new cluster.
+        whichNaN <- is.nan(curLogProb[1:k])
+        if(any(whichNaN))
+            curLogProb[whichNaN] <<- -Inf
+        whichInf <- curLogProb[1:k] == Inf
+        if(any(whichInf)) {
+            curLogProb[whichInf] <<- 0
+            curLogProb[!whichInf] <<- -Inf
+        }
         index <- rcat( n=1, exp(curLogProb[1:k]-max(curLogProb[1:k])) )
         if(index == k) {
           newLab <- xi[i] 
@@ -1714,6 +1721,14 @@ sampler_CRP <- nimbleFunction(
         }
         
         # sample an index from 1 to (k+1)
+        whichNaN <- is.nan(curLogProb[1:(k+1)])
+        if(any(whichNaN))
+            curLogProb[whichNaN] <<- -Inf
+        whichInf <- curLogProb[1:(k+1)] == Inf
+        if(any(whichInf)) {
+            curLogProb[whichInf] <<- 0
+            curLogProb[!whichInf] <<- -Inf
+         }
         index <- rcat( n=1, exp(curLogProb[1:(k+1)]-max(curLogProb[1:(k+1)])) )
         if(index == (k+1)) {
           newLab <- kNew
