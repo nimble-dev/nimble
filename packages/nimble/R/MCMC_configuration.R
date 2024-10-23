@@ -375,6 +375,14 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
+                      if(model$isMixedData(node)) {
+                            if(nodeDist == 'dmnorm') {
+                              thisControlList <- c(controlDefaultsArg, multivariateNodesAsScalars = multivariateNodesAsScalars)
+                              addSampler(target = node, type = 'partial_mvn', control = thisControlList) ; next
+                            }
+                        } else {
+                            stop(paste0('The node ', node, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
+                      }
                         if(useConjugacy) {
                             conjugacyResult <- conjugacyResultsAll[[node]]
                             if(!is.null(conjugacyResult)) {
