@@ -3249,7 +3249,7 @@ sampler_barker <- nimbleFunction(
         ## Set adaptation weighting to be roughly invariant to change in adaptation interval length.
         ## On examples, not using this and having adaptIntervalCov=10 seemed to generally work well/best.
         invariantWeight <- extractControlElement(control, 'invariantWeight', FALSE) 
-        
+
         if(adaptInterval != 1)
             stop("sampler_barker: values of `adaptInterval` other than one are not yet implemented")
         if(adaptCov && adaptScaleOnly)
@@ -3287,8 +3287,10 @@ sampler_barker <- nimbleFunction(
                         propCov <- diag(propCov)
                     }
             }
-            if(dim(propCov) != c(d, d))
-                stop("sampler_barker: `propCov` must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix, in the transformed parameter space")
+            if(!inherits(propCov, 'matrix'))        stop('sampler_barker: propCov must be a matrix')
+            if(!inherits(propCov[1,1], 'numeric'))  stop('sampler_barker: propCov matrix must be numeric')
+            if(!all(dim(propCov) == d))             stop('sampler_barker: must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix, in the transformed parameter space')
+            if(!isSymmetric(propCov))               stop('sampler_barker: propCov matrix must be symmetric')
         } else {
             if(is.character(propCov)) {
                 if(propCov == 'identity') propVar <- nimNumeric(d2, value = 1) else stop("sampler_barker: unrecognized `propCov` control list argument")
@@ -3465,7 +3467,26 @@ sampler_barker <- nimbleFunction(
                     }
                 }
             }
-         },
+        },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+        },
+        setPropVar = function(newPropVar = double(1)) {
+            if(!adaptCov) {
+                propVar        <<- newPropVar
+                propVarOriginal <<- newPropVar
+                sdValues <<- sqrt(propVar)
+            } else stop("sampler_barker: to set the full proposal covariance when adapting the full covariance, use `setPropCov`")
+        },
+        setPropCov = function(newPropCov = double(2)) {
+            if(adaptCov) {
+                propCov         <<- newPropCov
+                propCovOriginal <<- newPropCov
+                U <<- chol(propCov)
+                L <<- t(U)
+            } else stop("sampler_barker: to set the proposal variances when not adapting the full covariance, use `setPropVar`")
+        },
         reset = function() {
             timesRan <<- 0
             timesRanInWindow <<- 0
@@ -3567,7 +3588,7 @@ sampler_barker <- nimbleFunction(
 #'
 #' @section Barker proposal sampler
 #'
-#' The Barker proposal sampler implements a (multivariate) gradient-based sampling scheme, following the work of Livingstone and Zanella (2022) and Vogrinc et al. (2023). This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. The sampler uses an gradient-based adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution, which can use a full proposal covariance matrix (recommended for most problems) or a diagonal matrix.
+#' The Barker proposal sampler implements a (multivariate) gradient-based sampling scheme, following the work of Livingstone and Zanella (2022) and Vogrinc et al. (2023). This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. The sampler uses an gradient-based adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution, which can use a full proposal covariance matrix (recommended for most problems) or a diagonal matrix. To use the Barker sampler, you must set \code{buildDerivs = TRUE} when creating your model via \code{nimbleModel}.
 #'
 #' The Barker sampler accepts the following control list elements:
 #'
@@ -3598,7 +3619,10 @@ sampler_barker <- nimbleFunction(
 #'
 #' To use this sampler instead of `RW_block` as the default multivariate sampler for continuous distributions, set \code{nimbleOptions(MCMCuseBarkerAsDefaultMV = TRUE)}
 #'
+#' After an MCMC algorithm has been configured and built, the value of the global scale of a Barker sampler can be modified using the \code{setScale method} of the sampler object.  This use the scalar argument to will modify the current value of the scale, as well as modifying the initial (pre-adaptation) value which the scale is reset to, at the onset of a new MCMC chain.
 #'
+#' Operating analogous to the \code{setScale} method, the Barker sampler also has a \code(setPropVar) (for when \code{adaptCov = FALSE}) and \code{setPropCov} (for when \code{adaptCov = TRUE}). These method accept a single vector- and matrix-valued argument, respectively, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal variances or covariance, respectively.
+#' 
 #' @section RW_llFunction sampler:
 #'
 #' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010).  The RW_llFunction sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
