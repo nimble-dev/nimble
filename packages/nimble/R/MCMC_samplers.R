@@ -912,15 +912,15 @@ sampler_slice <- nimbleFunction(
         x1 <- L + runif(1, 0, 1) * (R - L)
         lp <- setAndCalculateTarget(x1)
         numContractions <- 0
-        while((is.nan(lp) | lp < u) &    # must be is.nan()
-              (R-L)/(abs(R)+abs(L)+eps) > eps &
+        while((is.nan(lp) | lp < u)             &    # must be is.nan()
+              (R-L)/(abs(R)+abs(L)+eps) > eps   &
               numContractions < maxContractions &
-              (!discrete | (R-x0)>0.99 | (x0-L)>0.99)) { # last condition is FALSE is it is  discrete node and both R and L are within 1 of x0, meaning that only x0 can be chosen
+              (!discrete | (R-x0)>0.99 | (x0-L)>0.99)) { # last condition is FALSE if it's a discrete node, and both R and L are within 1 of x0, meaning that only x0 can be chosen
             ## The checks for R-L small and max number of contractions are for cases where model is in
             ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
             ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
             if(x1 < x0) { L <- x1
-                      } else      { R <- x1 }
+            } else      { R <- x1 }
             x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
             lp <- setAndCalculateTarget(x1)
             numContractions <- numContractions + 1
@@ -928,11 +928,11 @@ sampler_slice <- nimbleFunction(
         reject <- FALSE
         if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
             if(maxContractionsWarning)
-              cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
+                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
             reject <- TRUE
         }
         if(!(!discrete | (R-x0)>0.99 | (x0-L)>0.99))
-          reject <- TRUE
+            reject <- TRUE
         if(reject) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
