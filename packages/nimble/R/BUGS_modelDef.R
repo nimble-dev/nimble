@@ -151,7 +151,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.
     setUserEnv(userEnv = userEnv)                           ## set userEnv field of modelDef object
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
-    if(getNimbleOption("enableModelMacros")){
+    if(getNimbleOption("enableMacros")) {
       # Stuff to do if macros are enabled
       # Bundle key model info
       modelInfo <- list(constants = constants, dimensions = dimensions)
