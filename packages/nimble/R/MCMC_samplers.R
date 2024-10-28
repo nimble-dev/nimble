@@ -3234,21 +3234,21 @@ sampler_barker <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        scale <- extractControlElement(control, 'scale', 1)     # global scale, adapted during iterations.
-        sigma <- extractControlElement(control, 'sigma', 0.1)   # sd for default bimodal proposal distribution.
-        adaptive <- extractControlElement(control, 'adaptive', TRUE)
-        adaptiveScaleOnly <- extractControlElement(control, 'adaptScaleOnly', FALSE)
-        adaptInterval <- extractControlElement(control, 'adaptInterval', 1)  # interval for global scale and when diagonal proposal used.
-        adaptFactorExponent <- extractControlElement(control, 'adaptFactorExponent', 0.6) # Per Livingstone & Zanella 2022.
-        adaptCov <- extractControlElement(control, 'adaptCov', TRUE)
-        adaptIntervalCov <- extractControlElement(control, 'adaptIntervalCov', 10) # interval when full dense covariance proposal used.
-        propCov <- extractControlElement(control, 'propCov', "identity")  # Scalar or vector proposal variance(s) or full proposal covariance.
-        bimodal <- extractControlElement(control, 'bimodal', TRUE) # Use bimodal proposal, following Vogrinc et al. 2023.
-        targetAcceptanceRate <- extractControlElement(control, 'targetAcceptanceRate', 0.574) # Per Vogrinc et al. 2023.
-        adaptDelayCov <- extractControlElement(control, 'adaptDelayCov', 100) # Window for initial diagonal-only adaptation.
+        scale                <- extractControlElement(control, 'scale',                1         )  # global scale, adapted during iterations.
+        sigma                <- extractControlElement(control, 'sigma',                0.1       )  # sd for default bimodal proposal distribution.
+        adaptive             <- extractControlElement(control, 'adaptive',             TRUE      )
+        adaptiveScaleOnly    <- extractControlElement(control, 'adaptScaleOnly',       FALSE     )
+        adaptInterval        <- extractControlElement(control, 'adaptInterval',        1         )  # interval for global scale and when diagonal proposal used.
+        adaptFactorExponent  <- extractControlElement(control, 'adaptFactorExponent',  0.6       )  # Per Livingstone & Zanella 2022.
+        adaptCov             <- extractControlElement(control, 'adaptCov',             TRUE      )
+        adaptIntervalCov     <- extractControlElement(control, 'adaptIntervalCov',     10        )  # interval when full dense covariance proposal used.
+        propCov              <- extractControlElement(control, 'propCov',              'identity')  # Scalar or vector proposal variance(s) or full proposal covariance.
+        bimodal              <- extractControlElement(control, 'bimodal',              TRUE      )  # Use bimodal proposal, following Vogrinc et al. 2023.
+        targetAcceptanceRate <- extractControlElement(control, 'targetAcceptanceRate', 0.574     )  # Per Vogrinc et al. 2023.
+        adaptDelayCov        <- extractControlElement(control, 'adaptDelayCov',        100       )  # Window for initial diagonal-only adaptation.
         ## Set adaptation weighting to be roughly invariant to change in adaptation interval length.
         ## On examples, not using this and having adaptIntervalCov=10 seemed to generally work well/best.
-        invariantWeight <- extractControlElement(control, 'invariantWeight', FALSE) 
+        invariantWeight      <- extractControlElement(control, 'invariantWeight',      FALSE     )
 
         if(adaptInterval != 1)
             stop("sampler_barker: values of `adaptInterval` other than one are not yet implemented")
