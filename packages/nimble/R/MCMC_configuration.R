@@ -406,8 +406,9 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice', control = controlDefaultsArg)
                                 else          addSampler(target = scalarNode, type = 'RW',    control = controlDefaultsArg)    };     next }
                         if(getNimbleOption('MCMCuseBarkerAsDefaultMV')) {
-                            addSampler(target = node, type = 'barker', silent = TRUE, control = controlDefaultsArg);     next }
-                        } else addSampler(target = node, type = 'RW_block', silent = TRUE, control = controlDefaultsArg);     next }
+                               addSampler(target = node, type = 'barker',   silent = TRUE, control = controlDefaultsArg);     next }
+                        else { addSampler(target = node, type = 'RW_block', silent = TRUE, control = controlDefaultsArg);     next }
+                    }
                     
                     if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW',    control = controlDefaultsArg);     next }
                     if(onlySlice)             { addSampler(target = node, type = 'slice', control = controlDefaultsArg);     next }
@@ -649,7 +650,7 @@ The second usage of \'multivariateNodesAsScalars\' occurs when \'default\' is TR
                 }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(thisSamplerName == 'RW_block' && !silent) {
-                    messageIfVerbose('  [Note] Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes assigned to RW_block are not on a similar scale, we recommend providing an informed value for the \"propCov\" control list argument, or using the `barker` sampler instead.')
+                    messageIfVerbose('  [Note] Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes assigned to RW_block are not on a similar scale, we recommend providing an informed value for the \"propCov\" control list argument, or using the \"barker\" sampler instead.')
                 }
                 if(thisSamplerName %in% c("RW_PF", "RW_PF_block")) {
                     if (!("nimbleSMC" %in% (installed.packages()[,"Package"]))) {
