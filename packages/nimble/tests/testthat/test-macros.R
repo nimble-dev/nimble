@@ -12,7 +12,7 @@ test_that('Macro expansion 1',
 {
     ## This converts a ~ testMacro(b)
     ## to inputs as (stoch = TRUE, LHS = a, b)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, .env) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -76,7 +76,7 @@ test_that('Macro expansion 1 with expression to get macro',
     ## This converts a ~ testMacro(b)
     ## to inputs as (stoch = TRUE, LHS = a, b)
   my_env <- new.env()
-  testMacro <- nimble:::model_macro_builder(
+  testMacro <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, .env) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -131,7 +131,7 @@ test_that('Macro expansion 2',
 {
     ## Like testMacro above but with unpackArgs = FALSE.
     ## This takes a ~ testMacro(b) with arguments (stoch = TRUE, LHS = a, RHS = b)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(stoch, LHS, RHS, modelInfo, .env) {
             if(RHS[[1]] != "testMacro")
                 stop("Problem with how testMacro was called")
@@ -173,7 +173,7 @@ test_that('Macro expansion 3',
     ## Like expansion 1, but with multiple named arguments.
     ## This takes a ~ testMacro(newVar = b, newIndex = 3)
     ## as arguments (stoch = TRUE, LHS = a, newVar = b, newIndex = 3)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(stoch, LHS, newIndex, newVar, modelInfo, .env) {
         RHS <- substitute(
             X[I],
@@ -218,7 +218,7 @@ test_that('Macro expansion 4',
     ## This takes a ~ testMacro(b) as a single argument,
     ## (code = a ~ testMacro(b)).
     ## It does not even need to be in a line with '~' or '<-'.
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(code, modelInfo, .env) {
             code[[3]][[1]] <- as.name('dnorm')
             list(code = code, modelInfo=modelInfo)
@@ -254,7 +254,7 @@ test_that('Macro expansion 5',
     ## This takes a line of code split into arguments.
     ## It is designed for a line without '~' or '<-'.
     ## It takes testMacro(arg1, arg2, arg3)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(arg1, arg2, arg3, modelInfo, .env) {
             code <- substitute(A <- B + C, list(A = arg1, B = arg2, C = arg3))
             list(code = code, modelInfo = modelInfo)
@@ -286,7 +286,7 @@ test_that('Macro expansion 5',
 
 test_that('Macro expansion 6 (recursive macro expansion)',
 {
-    testMacroInner <- nimble:::model_macro_builder(
+    testMacroInner <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, ...) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -302,7 +302,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
     
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
-    testMacroOuter <- nimble:::model_macro_builder(
+    testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, ...) {
             code[[3]][[1]] <- as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
@@ -337,7 +337,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
 test_that('Macro expansion 6b (recursive macro expansion with calls to find macros)',
 {
   inner.env <- new.env()
-  inner.env$testMacroInner <- nimble:::model_macro_builder(
+  inner.env$testMacroInner <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, ...) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -354,7 +354,7 @@ test_that('Macro expansion 6b (recursive macro expansion with calls to find macr
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
   outer.env <- new.env()
-  outer.env$testMacroOuter <- nimble:::model_macro_builder(
+  outer.env$testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, ...) {
             code[[3]][[1]] <- quote(inner.env$testMacroInner) #as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
@@ -393,7 +393,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
     ## test of recursive expansion:
     ## This a ~ testMacroInner(b)
     ## with inputs as (stoch = TRUE, LHS = a, b)
-    testMacroInner <- nimble:::model_macro_builder(
+    testMacroInner <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, ...) {
             stop()
             ans <- substitute(
@@ -409,7 +409,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
 #    temporarilyAssignInGlobalEnv(testMacroInner)
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
-    testMacroOuter <- nimble:::model_macro_builder(
+    testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, .env) {
             code[[3]][[1]] <- as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
@@ -467,7 +467,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
 test_that('duplicate variables from macro expansion error-trapped correctly',
 {
     ## from roxygen example
-    flat_normal_priors <- nimble:::model_macro_builder(
+    flat_normal_priors <- nimble:::buildMacro(
         function(..., modelInfo) {
           allVars <- list(...)
           allVars <- allVars[ !(names(allVars) %in% (c('.constants','.env'))) ]
@@ -495,7 +495,7 @@ test_that('duplicate variables from macro expansion error-trapped correctly',
 
 test_that('duplicate nested indices from macro expansion error-trapped correctly',
 {
-    all_dnorm <- nimble:::model_macro_builder(
+    all_dnorm <- nimble:::buildMacro(
         function(stoch, LHS, RHSvar, start, end, sd = 1, modelInfo, ...) {
             newCode <- substitute(
                 for(i in START:END) {
@@ -542,7 +542,7 @@ test_that('constants and env are accessed correctly, even in recursion',
   testEnv$var_in_env <- 5
   # temporarilyAssignInGlobalEnv(testEnv)
 
-  testMacroInner <- nimble:::model_macro_builder(
+  testMacroInner <- nimble:::buildMacro(
     function(stoch, LHS, RHSarg, modelInfo, .env) {
       constant_of_interest <- modelInfo$constants$constant_of_interest
       var_in_env <- eval(quote(var_in_env), envir = .env)
@@ -563,7 +563,7 @@ test_that('constants and env are accessed correctly, even in recursion',
 
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
-  testMacroOuter <- nimble:::model_macro_builder(
+  testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, .env) {
             code[[3]][[1]] <- as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
