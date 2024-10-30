@@ -1004,10 +1004,10 @@ sampler_slice_noncentered <- nimbleFunction(
         maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
         maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
         maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
+        noncenteredEffects     <- extractControlElement(control, 'noncenteredEffects',     '')
+        noncenteredParam       <- extractControlElement(control, 'noncenteredParam',       0)
         ## sampler_slice_noncentered is used by sampler_noncentered to do joint, noncentered sampling of
         ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
-        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', '')
-        noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
         noncenteredLen <- length(model$expandNodeNames(noncenteredEffects))
         noncenteredMean <- rep(0, noncenteredLen)
         noncenteredEffects0 <- rep(0, noncenteredLen)
