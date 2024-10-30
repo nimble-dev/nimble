@@ -670,7 +670,7 @@ test_that("optim() with gradient minimizes with fnscale = 1 and maximizes when f
     )
     nimGr <- nimbleFunction(
         run = function(par = double(1)) {
-            return(sum(par) * exp(-sum(par ^ 2) / 2) * (rep(1, length(par)) - par))
+            return(exp(-sum(par^2)/2) * (1 - par * sum(par)))
             returnType(double(1))
         }
     )
