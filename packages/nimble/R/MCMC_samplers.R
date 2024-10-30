@@ -872,7 +872,6 @@ sampler_slice <- nimbleFunction(
         maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
         maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
         maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
-        eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
@@ -886,7 +885,8 @@ sampler_slice <- nimbleFunction(
         if(getNimbleOption('MCMCsaveHistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
-        discrete      <- model$isDiscrete(target)
+        discrete <- model$isDiscrete(target)
+        eps <- 1e-15
         ## checks
         if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
     },
@@ -916,23 +916,22 @@ sampler_slice <- nimbleFunction(
               (R-L)/(abs(R)+abs(L)+eps) > eps   &
               numContractions < maxContractions &
               (!discrete | (R-x0)>0.99 | (x0-L)>0.99)) { # last condition is FALSE if it's a discrete node, and both R and L are within 1 of x0, meaning that only x0 can be chosen
-            ## The checks for R-L small and max number of contractions are for cases where model is in
-            ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
-            ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
-            if(x1 < x0) { L <- x1
-            } else      { R <- x1 }
-            x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
-            lp <- setAndCalculateTarget(x1)
-            numContractions <- numContractions + 1
-        }
+                  ## The checks for R-L small and max number of contractions are for cases where model is in
+                  ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
+                  ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
+                  if(x1 < x0) { L <- x1
+                  } else      { R <- x1 }
+                  x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
+                  lp <- setAndCalculateTarget(x1)
+                  numContractions <- numContractions + 1
+              }
         reject <- FALSE
         if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
             if(maxContractionsWarning)
                 cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
             reject <- TRUE
         }
-        if(!(!discrete | (R-x0)>0.99 | (x0-L)>0.99))
-            reject <- TRUE
+        if(!(!discrete | (R-x0)>0.99 | (x0-L)>0.99))   reject <- TRUE
         if(reject) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
@@ -987,7 +986,7 @@ sampler_slice <- nimbleFunction(
             timesAdapted <<- 0
             sumJumps     <<- 0
             if(saveMCMChistory) {
-                widthHistory  <<- c(0, 0)    ## widthHistory
+                widthHistory <<- c(0, 0)    ## widthHistory
             }
         }
     )
@@ -1005,21 +1004,16 @@ sampler_slice_noncentered <- nimbleFunction(
         maxSteps               <- extractControlElement(control, 'sliceMaxSteps',          100)
         maxContractions        <- extractControlElement(control, 'maxContractions',        1000)
         maxContractionsWarning <- extractControlElement(control, 'maxContractionsWarning', TRUE)
-        eps <- 1e-15
-
         ## sampler_slice_noncentered is used by sampler_noncentered to do joint, noncentered sampling of
         ## target and dependent (random) effects, a version of the ASIS/interweaving sampler of Yu and Meng (2011).
-        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', "")
+        noncenteredEffects <- extractControlElement(control, 'noncenteredEffects', '')
         noncenteredParam <- extractControlElement(control, 'noncenteredParam', 0)
-
         noncenteredLen <- length(model$expandNodeNames(noncenteredEffects))
         noncenteredMean <- rep(0, noncenteredLen)
         noncenteredEffects0 <- rep(0, noncenteredLen)
         ccList <- mcmc_determineCalcAndCopyNodes(model, c(target, noncenteredEffects))
-
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        
         calcNodes <- ccList$calcNodes; calcNodesNoSelf <- c(ccList$calcNodesNoSelf, noncenteredEffects); copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
         widthOriginal <- width
@@ -1030,12 +1024,11 @@ sampler_slice_noncentered <- nimbleFunction(
         if(getNimbleOption('MCMCsaveHistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
-        discrete      <- model$isDiscrete(target)
-
+        discrete <- model$isDiscrete(target)
+        eps <- 1e-15
         x0 <- 0
-
         ## checks
-        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
+        if(length(targetAsScalar) > 1)     stop('cannot use noncentered slice sampler on more than one target node')
     },
     run = function() {
         u <- model$getLogProb(calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
@@ -1060,19 +1053,27 @@ sampler_slice_noncentered <- nimbleFunction(
         x1 <- L + runif(1, 0, 1) * (R - L)
         lp <- setAndCalculateTarget(x1)
         numContractions <- 0
-        while((is.nan(lp) | lp < u) & (R-L)/(abs(R)+abs(L)+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
-            ## The checks for R-L small and max number of contractions are for cases where model is in
-            ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
-            ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
-            if(x1 < x0) { L <- x1
-                      } else      { R <- x1 }
-            x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
-            lp <- setAndCalculateTarget(x1)
-            numContractions <- numContractions + 1
-        }
+        while((is.nan(lp) | lp < u)             &   # must be is.nan()
+              (R-L)/(abs(R)+abs(L)+eps) > eps   &
+              numContractions < maxContractions &
+              (!discrete | (R-x0)>0.99 | (x0-L)>0.99)) { # last condition is FALSE if it's a discrete node, and both R and L are within 1 of x0, meaning that only x0 can be chosen
+                  ## The checks for R-L small and max number of contractions are for cases where model is in
+                  ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
+                  ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
+                  if(x1 < x0) { L <- x1
+                  } else      { R <- x1 }
+                  x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
+                  lp <- setAndCalculateTarget(x1)
+                  numContractions <- numContractions + 1
+              }
+        reject <- FALSE
         if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
             if(maxContractionsWarning)
-                cat("Warning: slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
+                cat("Warning: noncentered slice sampler reached maximum number of contractions for '", target, "'. Current parameter value is ", x0, ".\n")
+            reject <- TRUE
+        }
+        if(!(!discrete | (R-x0)>0.99 | (x0-L)>0.99))   reject <- TRUE
+        if(reject) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -1142,7 +1143,7 @@ sampler_slice_noncentered <- nimbleFunction(
             timesAdapted <<- 0
             sumJumps     <<- 0
             if(saveMCMChistory) {
-                widthHistory  <<- c(0, 0)    ## widthHistory
+                widthHistory <<- c(0, 0)    ## widthHistory
             }
         }
     )
