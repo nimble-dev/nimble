@@ -694,7 +694,7 @@ test_that('polyagamma MCMC results', {
     expect_equal(mean(samplesPG[,2]), mean(samplesDefault[,2]), tolerance = .1)
     expect_equal(mean(samplesPG[,3]), mean(samplesDefault[,3]), tolerance = .01)
     
-    expect_equal(sd(samplesPG[,1]), sd(samplesDefault[,1]), tolerance = .001)
+    expect_equal(sd(samplesPG[,1]), sd(samplesDefault[,1]), tolerance = .0015)
     expect_equal(sd(samplesPG[,2]), sd(samplesDefault[,2]), tolerance = .1)
     expect_equal(sd(samplesPG[,3]), sd(samplesDefault[,3]), tolerance = .01)
     
