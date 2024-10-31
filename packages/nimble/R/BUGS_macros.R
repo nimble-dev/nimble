@@ -379,6 +379,11 @@ processMacrosInternal <- function(code,
       curPars <- modelInfo$parameters
       expandedInfo$modelInfo$parameters <- c(curPars, newPars)
 
+      # Just in case nMacros is missing, set to 0
+      if(is.null(expandedInfo$modelInfo$nMacros)) expandedInfo$modelInfo$nMacros <- 0
+      # Increment number of macros run
+      expandedInfo$modelInfo$nMacros <- expandedInfo$modelInfo$nMacros + 1
+
       ## Return object is a list so we can possibly extract other
       ## content in the future.  We recurse on the returned code
       ## to expand macros that it might contain.
@@ -407,18 +412,27 @@ codeProcessModelMacros <- function(code, modelInfo, env){
   modelInfo$indexCreator <- macroIndexCreator
   # No macro generated parameters before any macros run, so parameters = empty list
   modelInfo$parameters <- list()
+  # Initialize number of macros that ran to 0
+  modelInfo$nMacros <- 0
   # Recursively step through the code expanding macros
   # and adding information to modelInfo such as updated constants and
   # parameter names
   macroOutput <- processMacrosInternal(code=code, modelInfo=modelInfo, env=env)
-  # Clean up extra brackets in output code
-  macroOutput$code <- removeExtraBrackets(macroOutput$code)
-  # Convert factors in constants to numeric
-  macroOutput$modelInfo$constants <- convertFactorConstantsToNumeric(macroOutput$modelInfo$constants)  
-  # Remove intermediate parameters from list of generated parameters
-  # and check for duplicates
-  macroOutput$modelInfo$parameters <- checkMacroPars(macroOutput$modelInfo$parameters,
-                                                     code, macroOutput$code)
+
+  # Do post-processing on code if at least one macro was run
+  if(macroOutput$modelInfo$nMacros > 0){
+    # Clean up extra brackets in output code
+    macroOutput$code <- removeExtraBrackets(macroOutput$code)
+    # Convert factors in constants to numeric
+    macroOutput$modelInfo$constants <- convertFactorConstantsToNumeric(macroOutput$modelInfo$constants)  
+    # Remove intermediate parameters from list of generated parameters
+    # and check for duplicates
+    macroOutput$modelInfo$parameters <- checkMacroPars(macroOutput$modelInfo$parameters,
+                                                       code, macroOutput$code)
+  }
+  # Remove nMacros from modelInfo just in case (not sure this is necessary)
+  macroOutput$modelInfo$nMacros <- NULL
+
   list(code = macroOutput$code, modelInfo = macroOutput$modelInfo)
 }
 

@@ -26,10 +26,15 @@ test_that('Macro expansion 1',
     )
  #   temporarilyAssignInGlobalEnv(testMacro)
     
-    expect_identical(
-        nimble:::processMacrosInternal(
+    process_macro <- nimble:::processMacrosInternal(
             quote(x[1] ~ testMacro(y[1])),
-        modelInfo = list())$code,
+        modelInfo = list(nMacros=0))
+
+    # Check that nMacros incremented
+    expect_equal(process_macro$modelInfo$nMacros, 1)
+
+    expect_identical(
+        process_macro$code,
         quote(x[1] ~ dnorm(y[1], 1))
     )
     
@@ -636,9 +641,20 @@ test_that("macros can add constants", {
 test_that("codeProcessModelMacros converts factors to numeric", {
   inp_constants <- list(y = rnorm(3), x = factor(c("a","b","c")))
 
+  testMacro <- list(process = function(code, modelInfo, .env){
+      code[[3]] <- quote(dnorm(0, sd = 1))
+      modelInfo$constants$b <- 2
+      list(code = code, modelInfo=modelInfo)
+    }
+  )
+  class(testMacro) <- "model_macro"
+
+  # needed since this test creates macro manually
+  temporarilyAssignInGlobalEnv(testMacro)
+
   code <- nimbleCode({
     for (i in 1:3){
-      y[i] ~ dnorm(x[i], sd = 1)
+      y[i] ~ testMacro()
     }
   })
   
@@ -649,6 +665,20 @@ test_that("codeProcessModelMacros converts factors to numeric", {
     as.numeric(inp_constants$x)
   )
 
+  # In this case there is no macro in the code, so the constants should not
+  # be automatically converted from factor to numeric
+  code <- nimbleCode({
+    for (i in 1:3){
+      y[i] ~ dnorm(x[i], sd = 1)
+    }
+  })
+  
+  mod <- nimble:::codeProcessModelMacros(code, modelInfo=list(constants=inp_constants), env=parent.frame())
+
+  expect_equal(
+    mod$modelInfo$constants$x,
+    inp_constants$x
+  )
 })
 
 test_that("convertFactorConstantsToNumeric converts factors to numeric", {
@@ -977,6 +1007,74 @@ test_that("removeExtraBrackets cleans up output from processMacrosInternal",{
     }
     })
   )
+
+  # Check that removeExtraBrackets is applied correctly by codeProcessModelMacros
+  testMacro <- list(process = function(code, modelInfo, .env){
+      code[[3]] <- quote(dnorm(0, sd = 1))
+      modelInfo$constants$b <- 2
+      list(code = code, modelInfo=modelInfo)
+    }
+  )
+  class(testMacro) <- "model_macro"
+
+  # needed since this test creates macro manually
+  temporarilyAssignInGlobalEnv(testMacro)
+
+  code <- nimbleCode({
+  {
+    alpha <- 1
+    for (i in 1:n){
+      {
+        for (j in 1:k){
+          z <- testMacro()
+          {
+          y <- 1
+          }
+        }
+      }
+    }
+  }
+  })
+
+  minfo <- list()
+  
+  expect_equal(
+    nimble:::codeProcessModelMacros(code, minfo, env=environment())$code,
+    quote({
+      alpha <- 1
+      for (i in 1:n){
+        for (j in 1:k){
+          z <- dnorm(0, sd = 1)
+          y <- 1
+        }
+      }
+    })
+  )
+
+  # Now make sure removeExtraBrackets is NOT applied when there is no
+  # macro in the code
+  code <- nimbleCode({
+  {
+    alpha <- 1
+    for (i in 1:n){
+      {
+        for (j in 1:k){
+          z <- 1
+          {
+          y <- 1
+          }
+        }
+      }
+    }
+  }
+  })
+
+  minfo <- list()
+  
+  expect_equal(
+    nimble:::codeProcessModelMacros(code, minfo, env=environment())$code,
+    code)
+
 })
 
 test_that("comments are added to macro output if enableMacroComments = TRUE",{
