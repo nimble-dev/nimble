@@ -777,7 +777,12 @@ removeExtraBracketsInternal <- function(code){
     if(is.list(x)){
       x <- removeExtraBracketsInternal(x)
     } else if(x[[1]] == "for"){
-      x[[4]] <- removeExtraBrackets(x[[4]])
+      if(x[[4]][[1]] == "for"){
+        # Handle for loop with no { situation
+        x[[4]][[4]] <- removeExtraBrackets(x[[4]][[4]])
+      } else {
+        x[[4]] <- removeExtraBrackets(x[[4]])
+      }
     }
     x
   }))
