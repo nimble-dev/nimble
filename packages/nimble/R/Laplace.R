@@ -383,7 +383,7 @@ buildOneAGHQuad1D <- nimbleFunction(
     },
     he_inner_logLik_internal_as_vec = function(reTransform = double(1)) {
       ans <- he_inner_logLik_internal(reTransform)
-      res <- nimNumeric(value = ans)
+      res <- nimNumeric(value = ans, length = length(reTransform)*length(reTransform))
       return(res)
       returnType(double(1))
     },
