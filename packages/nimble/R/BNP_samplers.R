@@ -1679,7 +1679,7 @@ sampler_CRP <- nimbleFunction(
         whichNaN <- is.nan(curLogProb[1:k])
         if(any(whichNaN))
             curLogProb[whichNaN] <<- -Inf
-        if(all(currLogProb[1:k] == -Inf))
+        if(all(curLogProb[1:k] == -Inf))
             stop('CRP_sampler: sampler encountered case where the log probability density values corresponding to all potential cluster memberships are negative infinity. This is likely caused by numerical overflow or underflow. You might consider using the stickbreaking representation rather than the CRP.')
         whichInf <- curLogProb[1:k] == Inf
         if(any(whichInf)) {
@@ -1728,7 +1728,7 @@ sampler_CRP <- nimbleFunction(
         whichNaN <- is.nan(curLogProb[1:(k+1)])
         if(any(whichNaN))
             curLogProb[whichNaN] <<- -Inf
-        if(all(currLogProb[1:(k+1)] == -Inf))
+        if(all(curLogProb[1:(k+1)] == -Inf))
             stop('CRP_sampler: sampler encountered case where the log probability density values corresponding to all potential cluster memberships are negative infinity. This is likely caused by numerical overflow or underflow. You might consider using the stickbreaking representation rather than the CRP.')
         whichInf <- curLogProb[1:(k+1)] == Inf
         if(any(whichInf)) {

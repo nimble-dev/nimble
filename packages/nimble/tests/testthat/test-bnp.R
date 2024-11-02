@@ -8237,6 +8237,88 @@ test_that("Only cluster hyperparameter dependents (cluster node parameters) in u
 
 })
 
+test_that("Underflow leading to numerical problems handled", {
+    set.seed(1)
+
+    code <- nimbleCode({
+        z[1:N] ~ dCRP(conc = gamma, size = N)
+        
+        for(c in 1:K) {
+            lambda[c] ~ dexp(1.0)
+            alpha[c] ~ dexp(lambda[c])
+            mu[c] ~ dexp(1.0)
+
+                                        #for(k in 1:2)
+                                        #    mu_vec[c,k] <- mu[c]
+            mu_vec[c,1:2] <- rep(mu[c], times=2)
+            
+            beta[c,1:2] ~ ddirch(mu_vec[c,1:2])
+        }
+        
+        for (i in 1:N) {
+            ab[i,1:2] <- alpha[z[i]]*beta[z[i],1:2]
+            theta[i,1:2] ~ ddirch(ab[i,1:2])
+            y[i,1:2] ~ dmulti(prob=theta[i,1:2], size=n_i[i])
+        }
+    })
+
+    y <- matrix(c(1,2,2,1,1,1), ncol = 2)
+    n <- c(2,3,3)
+    N <- nrow(y)
+    
+    consts <- list(N = N,
+                   K = N,
+                   gamma = 1)
+    data <- list(y = y, n_i = n)
+
+    inits <- list(lambda = rep(rexp(n=1, rate=1), N),
+                  mu = rep(rexp(n=1, rate=1), N),
+                  z = rep(1, N))
+    inits$alpha <- rep(rexp(n=1, rate=inits$lambda), N)
+    inits$mu_vec <- matrix(rep(inits$mu[1], N*2), nrow = N, ncol = 2)
+    inits$beta <-  matrix(rep(rdirch(n=1, alpha=rep(inits$mu[1], 2)), N), nrow = N, ncol = 2, byrow=TRUE)
+    inits$theta <- matrix(rep(rdirch(n=1, alpha=inits$alpha[1]*inits$beta[1,]), N), nrow = N, ncol = 2, byrow=TRUE)
+
+    m <- nimbleModel(code, constants = consts, data = data, inits =inits)
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m)
+    cmcmc <- compileNimble(mcmc,project = m)
+    expect_silent(cmcmc$run(50000))   # Before CRP robustification, this would seg fault.
+
+    
+    ## Error trap multiple -Inf values.
+
+    y <- cbind(c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,2,2,3,3,3,2,15,39,62,82,106,2,10,23,27,31,36,2,4,6,9,11,1,8,14,17,22,1,1,1,1,2,2,2,2,2,2,2,3,3,4,1,5,6,11),
+               c(5,9,11,16,16,3,4,6,6,6,1,1,1,1,1,1,2,1,1,1,1,1,1,0,2,2,2,2,1,5,11,12,13,16,1,18,27,31,33,44,1,5,9,11,15,17,1,3,3,4,5,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+    n <- c(5,9,11,16,16,3,4,6,6,6,1,1,1,1,1,1,2,1,1,1,1,1,1,1,3,3,3,3,2,7,13,15,16,19,3,33,66,93,115,150,3,15,32,38,46,53,3,7,9,13,16,2,9,15,18,23,1,1,1,1,2,2,2,2,2,2,2,3,3,4,1,5,6,11)
+
+    N <- nrow(y)
+    
+    consts <- list(N = N,
+                   K = N,
+                   gamma = 1)
+    data <- list(y = y, n_i = n)
+
+    inits <- list(lambda = rep(rexp(n=1, rate=1), N),
+                  mu = rep(rexp(n=1, rate=1), N),
+                  z = rep(1, N))
+    inits$alpha <- rep(rexp(n=1, rate=inits$lambda), N)
+    inits$mu_vec <- matrix(rep(inits$mu[1], N*2), nrow = N, ncol = 2)
+    inits$beta <-  matrix(rep(rdirch(n=1, alpha=rep(inits$mu[1], 2)), N), nrow = N, ncol = 2, byrow=TRUE)
+    inits$theta <- matrix(rep(rdirch(n=1, alpha=inits$alpha[1]*inits$beta[1,]), N), nrow = N, ncol = 2, byrow=TRUE)
+
+    m <- nimbleModel(code, constants = consts, data = data, inits =inits)
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m)
+    cmcmc <- compileNimble(mcmc,project = m)
+    set.seed(1)
+    expect_output(cmcmc$run(1000), "sampler encountered values of infinity")   # Before CRP robustification, this would seg fault.
+})
+
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
