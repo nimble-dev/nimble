@@ -684,6 +684,7 @@ sampler_RW_block <- nimbleFunction(
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))               stop('propCov matrix must be symmetric')
+        if(adaptInterval < 2)                   stop('sampler_RW_block: `adaptInterval` must be at least 2')
     },
     run = function() {
         for(i in 1:tries) {
@@ -1299,6 +1300,7 @@ sampler_AF_slice <- nimbleFunction(
         if(!inherits(widthVec, 'numeric') && !inherits(widthVec, 'integer'))
             stop('sliceWidths must be a numeric vector')
         if(length(widthVec) != d)          stop('sliceWidths must have length = ', d)
+        if(adaptFactorInterval < 2)        stop('sampler_AF_slice: `adaptFactorInterval` must be at least 2')
     },
     run = function() {
         maxContractionsReached <- FALSE
@@ -1576,8 +1578,9 @@ sampler_RW_llFunction_block <- nimbleFunction(
         ## checks
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
-        if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
-        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+        if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')
+        if(!isSymmetric(propCov))               stop('propCov matrix must be symmetric')
+        if(adaptInterval < 2)                   stop('sampler_RW_llFunction_block: `adaptInterval` must be at least 2')
     },
     run = function() {
         modelLP0 <- llFunction$run()
@@ -1818,6 +1821,7 @@ sampler_RW_wishart <- nimbleFunction(
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric')
         if(!all(dim(propCov) == nTheta))      stop('propCov matrix must have dimension ', d, 'x', d)
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+        if(adaptInterval < 2)                   stop('sampler_RW_wishart: `adaptInterval` must be at least 2')
     },
     run = function() {
         currentValue <<- model[[target]]
@@ -2102,6 +2106,7 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         if(dist != 'dlkj_corr_cholesky') stop('RW_block_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
         if(d < 3)                        stop('RW_block_lkj_corr_cholesky sampler requires target node dimension to be at least 3x3.')
         if(adaptFactorExponent < 0)      stop('Cannot use RW_block_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
+        if(adaptInterval < 2)            stop('sampler_RW_block_lkj_corr_cholesky: `adaptInterval` must be at least 2')
 
     },
     run = function() {
