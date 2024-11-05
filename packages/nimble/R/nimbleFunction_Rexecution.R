@@ -1279,12 +1279,15 @@ nimRound <- round
 #' \code{hessian} (which may be NULL). If \code{hessian=TRUE} but the function
 #' does not return a matrix in the \code{hessian} element of its return list,
 #' \code{nimOptim} will fill in that element using finite differences of the
-#' gradient.
+#' gradient. In general the function will be a wrapper around the actual
+#' R optimization function.
 #'
 #' The \code{control} list passed from a nimbleFunction to the
 #' optimization function will include a minimum of options, including
-#' \code{abstol}, \code{reltol}, \code{maxit}, and \code{trace}. Other options
-#' for a specific method may be set within the custom optimization function but
+#' \code{abstol}, \code{reltol}, \code{maxit}, and \code{trace}. This means
+#' that the user's R (wrapper) function must map between those minimum options
+#' and the equivalent inputs to the optimization function. Other options
+#' for a specific method may be set within the R (wrapper) function but
 #' cannot be passed from \code{nimOptim}.
 #'
 #'  The elements \code{parscale} and \code{fnscale} in \code{control} are used in
@@ -1293,11 +1296,12 @@ nimRound <- round
 #' for it to minimize \code{fn(par)/fnscale} in the parameter space
 #' \code{par/parscale}.
 #'
-#' An optimizer \code{fun} may be registered by
-#' \code{nimOptimMethod("method_name", fun)}, and then "\code{method_name}" can
-#' be used as the \code{method} argument to \code{nimOptim} to use \code{fun}.
-#' An optimizer may be found by \code{nimOptimMethod("method_name")} and may be
-#' removed by \code{nimOptimMethod("method_name", NULL)}.
+#' To use the optimizer with \code{nimOptim}, an optimizer \code{fun} must be
+#' registered by \code{nimOptimMethod("method_name", fun)}, and then
+#' "\code{method_name}" can be used as the \code{method} argument to
+#' \code{nimOptim} to use \code{fun}. An optimizer may be found by
+#' \code{nimOptimMethod("method_name")} and may be removed by
+#' \code{nimOptimMethod("method_name", NULL)}.
 #'
 #' Support for \code{method="nlminb"} is provided in this way, and can be
 #' studied as an example via \code{nimOptimMethod("nlminb")}.
@@ -1452,7 +1456,8 @@ custom_optim_inner <- function(method, par, fn, gr, he, lower, upper, control,
   optimizer <- nimOptimMethod(method)
   if(is.null(optimizer)) stop("optimizer ", method, " not found. See help(nimOptimMethod).")
   resultRaw <- try(optimizer(par, fn, gr = gr, he = he, lower = lower,
-                             upper = upper, control = control, hessian=hessian))
+                             upper = upper, control = control, hessian=hessian),
+                             silent = TRUE)
   ##  }
   result <- list()
   if(inherits(resultRaw, "try-error")) {
