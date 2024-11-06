@@ -75,8 +75,8 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
 setup_OneAGHQuad <- function(model, paramNodes, randomEffectsNodes, calcNodes, control) {
   # common setup steps for 1D and >1D cases
   optimControl_ <- extractControlElement(control, 'optimControl', nimOptimDefaultControl())
-  optimMethod_ <- extractControlElement(control, 'optimMethod', 'BFGS')
-  optimStart_ <- extractControlElement(control, 'optimStart', 'constant')
+  optimMethod_ <- extractControlElement(control, 'optimMethod', 'nlminb')
+  optimStart_ <- extractControlElement(control, 'optimStart', 'last.best')
   optimStartValues_ <- extractControlElement(control, 'optimStartValues', 0)
   nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
 
