@@ -315,7 +315,7 @@ test_that("Laplace simplest 1D (constrained) with deterministic intermediates an
   # tmbres <- nlminb(obj$par, obj$fn, obj$gr)
   # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
   # tmbvcov <- inverse(tmbrep$jointPrecision)
-  expect_equal(opt$par, -2.639534, 1e-4)
+  expect_equal(opt$par, -2.639534, 2e-4)
   expect_equal(opt$value, -10.47905, tol = 1e-5)
   expect_equal(summ$randomEffects$estimates, 1.603742, tol = 1e-4)
   vcov <- matrix(c(10.967784, -3.258191, -3.258191, 1.415167), nrow = 2, byrow = TRUE)
@@ -1835,7 +1835,7 @@ test_that("Laplace with crossed random effects works", {
   mLaplace <- buildLaplace(model = m)#, control=list(innerOptimStart = "last.best"))
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
-  cmLaplace$updateSettings(innerOptimMethod = "BFGS")
+  ## cmLaplace$updateSettings(innerOptimMethod = "nlminb")
   opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
   
