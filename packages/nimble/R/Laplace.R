@@ -2105,8 +2105,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
       messageIfVerbose("  [Warning] There are some random effects (latent states) in the model that look\n",
                        "            like they should be included in `randomEffectsNodes` for Laplace or AGHQ approximation\n",
-                       "            for the provided (or default) `paramNodes`:\n",
-                       "            ", errorNodes, "\n",
+                       "            for the provided (or default) `paramNodes`: ", errorNodes, ".\n",
                        "            To silence this warning, include `check = FALSE` in the control list\n",
                        "            to `buildLaplace` or as an argument to `setupMargNodes`.")
     }
@@ -2127,8 +2126,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         if(length(reCheck) > 4) errorNodes <- paste(errorNodes, "...")
         messageIfVerbose("  [Warning] There are some `randomEffectsNodes` provided that look like\n",
                          "            they are not needed for Laplace or AGHQ approximation for the\n",
-                         "            provided (or default) `paramNodes`:\n",
-                         "            ", errorNodes, "\n",
+                         "            provided (or default) `paramNodes`: ", errorNodes, ".\n",
                          "            To silence this warning, include `check = FALSE` in the control list\n",
                          "            to `buildLaplace` or as an argument to `setupMargNodes`.")
       }
@@ -2152,8 +2150,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       if(length(calcCheck) > 4) errorNodes <- paste(errorNodes, "...")
       messageIfVerbose("  [Warning] There are some model nodes that look like they should be\n",
                        "            included in the `calcNodes` for Laplace or AGHQ approximation because\n",
-                       "            they are dependencies of some `randomEffectsNodes`:\n",
-                       "            ", errorNodes, "\n",
+                       "            they are dependencies of some `randomEffectsNodes`: ", errorNodes, ".\n",
                        "            To silence this warning, include `check = FALSE` in the control list\n",
                        "            to `buildLaplace` or as an argument to `setupMargNodes`.")
     }
@@ -2181,10 +2178,9 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     if(length(errorNodes)){
       outErrorNodes <- paste0(head(errorNodes, n = 4), sep = "", collapse = ", ")
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
-      messageIfVerbose("  [Warning] There are some calcNodes provided that look like\n",
+      messageIfVerbose("  [Warning] There are some `calcNodes` provided that look like\n",
                        "            they are not needed for Laplace or AGHQ approximation over\n",
-                       "            the provided (or default) `randomEffectsNodes`:\n",
-                       "            ", outErrorNodes, "\n",
+                       "            the provided (or default) `randomEffectsNodes`: ", outErrorNodes, ".\n",
                        "            To silence this warning, include `check = FALSE` in the control list\n",
                        "            to `buildLaplace` or as an argument to `setupMargNodes`.")
     }
@@ -2235,8 +2231,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         if(lengthMissingStochNodes > 4) errorNodes <- paste(errorNodes, "...")
         messageIfVerbose("  [Warning] There are some model nodes (stochastic) that look like they should be\n",
                          "            included in the `calcNodesOther` for parts of the likelihood calculation\n",
-                         "            outside of Laplace or AGHQ approximation:\n",
-                         "            ", errorNodes, "\n",
+                         "            outside of Laplace or AGHQ approximation: ", errorNodes, ".\n",
                          "            To silence this warning, include `check = FALSE` in the control list\n",
                          "            to `buildLaplace` or as an argument to `setupMargNodes`.")
       }
@@ -2268,8 +2263,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       if(length(errorNodes) > 4) outErrorNodes <- paste(outErrorNodes, "...")
       messageIfVerbose("  [Warning] There are some nodes provided in `calcNodesOther` that look like\n",
                        "            they are not needed for parts of the likelihood calculation\n",
-                       "            outside of Laplace or AGHQ approximation:\n",
-                       "            ", outErrorNodes, "\n",
+                       "            outside of Laplace or AGHQ approximation: ", outErrorNodes, ".\n",
                        "            To silence this warning, include `check = FALSE` in the control list\n",
                        "            to `buildLaplace` or as an argument to `setupMargNodes`.")
     }
