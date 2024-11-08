@@ -55,7 +55,7 @@ decideAndJump <- nimbleFunction(
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
-        logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
+        logMHR <- checkLogProb(modelLP1 - modelLP0 - propLP1 + propLP0)
         jump <- decide(logMHR)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
@@ -71,8 +71,18 @@ decideAndJump <- nimbleFunction(
     }
 )
 
-
-
+checkLogProb <- nimbleFunction(
+    name = "isValidLogProb"
+    run = function(logProb = double()) {
+        if(is.na(logProb))
+            return(-Inf)
+        if(logProb == Inf)
+            print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
+        return(logProb)
+        returnType(double())
+            
+    }
+)
 
 
 #' Creates a nimbleFunction for setting the value of a scalar model node,
