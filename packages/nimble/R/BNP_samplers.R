@@ -1411,8 +1411,11 @@ sampler_CRP <- nimbleFunction(
     ## Check that no use of multiple clustering variables, such as 'thetaTilde[xi[i], eta[j]]'.
     ## It's likely that if we set the non-conjugate sampler and turn off wrapping omits sampling of empty clusters
     ## (which is not set up correctly for this case), that the existing code would give correct sampling.
-    if(any(clusterVarInfo$multipleStochIndexes))
-        stop("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", safeDeparse(clusterVarInfo$indexExpr[[1]]), ". NIMBLE's CRP sampling is not yet set up to handle this case. Please contact the NIMBLE development team if you are interested in this functionality.")
+    forceNonconjugate <- FALSE
+    if(any(clusterVarInfo$multipleStochIndexes)) {
+        messageIfVerbose("sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", safeDeparse(clusterVarInfo$indexExpr[[1]]), ". This use case is experimental, so please check your results carefully.")
+        forceNonconjugate <- TRUE
+    }
 
     ## Check there is at least one or more "observation" per random index.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
@@ -1468,7 +1471,7 @@ sampler_CRP <- nimbleFunction(
         conjugacyResult <- checkCRPconjugacy(model, target) 
     } else conjugacyResult <- NULL
     
-    if(is.null(conjugacyResult)) {
+    if(is.null(conjugacyResult) || forceNonconjugate) {
       sampler <- 'CRP_nonconjugate'
     } else 
       sampler <- switch(conjugacyResult,
