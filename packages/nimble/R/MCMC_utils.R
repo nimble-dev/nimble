@@ -72,7 +72,7 @@ decideAndJump <- nimbleFunction(
 )
 
 checkLogProb <- nimbleFunction(
-    name = "isValidLogProb"
+    name = "checkLogProb",
     run = function(logProb = double()) {
         if(is.na(logProb))
             return(-Inf)
