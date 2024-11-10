@@ -3555,16 +3555,10 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
                     jointCovariance = FALSE) {
   if(missing(AGHQ)) stop('runAGHQ: must provide a NIMBLE Laplace or AGHQ algorithm')
   if(!identical(nfGetDefVar(AGHQ, 'name'), 'AGHQ'))
-<<<<<<< Updated upstream
     stop('runAGHQ: AGHQ or Laplace argument must be a NIMBLE Laplace or AGHQ algorithm (compiled or uncompiled) from `buildLaplace` or `buildAGHQ`.')
   if(!is.Cnf(AGHQ))
     messageIfVerbose('  [Warning] Running an uncompiled Laplace or AGHQ algorithm.\n',
                      '            Use `compileNimble()` for faster execution.')
-=======
-    stop('AGHQ or laplace argument must be a NIMBLE Laplace or AGHQ algorithm (compiled or uncompiled) from buildLaplace or buildAGHQ.')
-  if(!is.Cnf(AGHQ)) {
-    messageIfVerbose('  [Warning] Running an uncompiled Laplace or AGHQ algorithm.',
-                     ' Use compileNimble() for faster execution.')
     tmp <- AGHQ$gr_logLik_pTransformed
     tmp <- AGHQ$calcLogLik_pTransformed
     for(i in seq_along(AGHQ$AGHQuad_nfl)) {
@@ -3572,7 +3566,6 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
         tmp <- AGHQ$AGHQuad_nfl[[i]]$he_inner_logLik
     }
   }
->>>>>>> Stashed changes
 
   if(missing(pStart)) pStart <- Inf # code to use values in the model
 
