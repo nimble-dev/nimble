@@ -1413,7 +1413,7 @@ sampler_CRP <- nimbleFunction(
     ## (which is not set up correctly for this case), that the existing code would give correct sampling.
     forceNonconjugate <- FALSE
     if(any(clusterVarInfo$multipleStochIndexes)) {
-        messageIfVerbose("   [Warning] sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", safeDeparse(clusterVarInfo$indexExpr[[1]]), ". This use case is experimental, so please check your results carefully.")
+        messageIfVerbose("  [Warning] sampler_CRP: Detected use of multiple stochastic indexes of a variable: ", safeDeparse(clusterVarInfo$indexExpr[[1]]), ". This use case is experimental, so please check your results carefully.")
         forceNonconjugate <- TRUE
     }
 
