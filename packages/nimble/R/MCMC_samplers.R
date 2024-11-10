@@ -202,7 +202,7 @@ sampler_categorical <- nimbleFunction(
         if(maxLP == Inf)   cat("Warning: categorical sampler for '", target,
                                                "' encountered an invalid model density, and sampling results are likely invalid.\n")
         if(maxLP ==  -Inf) stop("in categorical sampler, all log probability density values are minus infinity and sampling cannot proceed")
-        infLogProb <- logProbs == Inf
+        infLogProbs <- logProbs == Inf
         logProbs <<- logProbs - maxLP
         logProbs[infLogProbs] <<- 0   ## Prevent NaN inputs into `rcat`.
         probs <<- exp(logProbs)
