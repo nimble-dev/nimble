@@ -1426,7 +1426,10 @@ sampler_CRP <- nimbleFunction(
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     min_nTilde <- nTilde[1]
     if(min_nTilde < n)
-      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.')
+      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters\n',
+                       '            is less than the number of potential clusters. The MCMC is not\n',
+                       '            strictly valid if it ever proposes more components than cluster\n',
+                       '            parameters exist; NIMBLE will warn you if this occurs.')
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
