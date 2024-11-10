@@ -457,9 +457,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     allClusterNodes <- lapply(clusterNodeInfo, function(x) x$clusterNodes)
                     allClusterNodesVec <- unlist(allClusterNodes)
                     for(k in seq_along(clusterNodeInfo)) {
-                        if(any(clusterNodeInfo[[k]]$multipleStochIndexes)) {
-                            wrap <- FALSE
-                        } else for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
+                        for(idx in seq_along(clusterNodeInfo[[k]]$clusterNodes)) {
                             clusterNodes <- clusterNodeInfo[[k]]$clusterNodes[[idx]]
                             clusterNodeParams <- model$getParents(clusterNodes, stochOnly = TRUE, includeData = FALSE)
                             clusterNodeParams <- clusterNodeParams[!clusterNodeParams %in% allClusterNodesVec]
