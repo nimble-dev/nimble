@@ -369,7 +369,7 @@ sampler_RW <- nimbleFunction(
             jump <- FALSE
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
-            logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
+            logMHR <- checkLogProb(logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale)
             jump <- decide(logMHR)
             if(jump) {
                 ##model$calculate(calcNodesPPomitted)
