@@ -1670,7 +1670,7 @@ sampler_CRP <- nimbleFunction(
         model[[target]][i] <<- xi[i] # <<- label of new component
         if(sampler == 'CRP_nonconjugate'){ # simulate tildeVars[xi[i]] # do this everytime there is a singleton so we ensure this comes always from the prior
           helperFunctions[[1]]$sample(i, model[[target]][i])
-          sampledNonConjugate <- TRUE  
+          sampledNonconjugate <- TRUE  
           if(nIntermClusNodesPerClusID > 0) {
             model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
           }
