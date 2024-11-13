@@ -191,7 +191,7 @@ sampler_categorical <- nimbleFunction(
             if(i != currentValue) {
                 model[[target]] <<- i
                 logProbPrior <- checkLogProb(model$calculate(target))
-                if(logProbPrior == -Inf) {
+                if(logProbPrior == -Inf | is.nan(logProbPrior)) {
                     logProbs[i] <<- -Inf
                 } else {
                     logProbs[i] <<- checkLogProb(logProbPrior + model$calculate(calcNodesNoSelf))
@@ -1501,6 +1501,9 @@ sampler_crossLevel <- nimbleFunction(
         for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP0 <- propLP0 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
         propValueVector <- topRWblockSamplerFunction$generateProposalVector()
         topLP <- checkLogProb(my_setAndCalculateTop$run(propValueVector))
+        if(is.na(topLP)) {
+            logMHR <- -Inf
+        } 
         if(topLP == -Inf) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         }
