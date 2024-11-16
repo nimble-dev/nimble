@@ -55,7 +55,8 @@ decideAndJump <- nimbleFunction(
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
-        logMHR <- checkLogProb(modelLP1 - modelLP0 - propLP1 + propLP0)
+        ## Check each one individually to catch case like `3 - Inf`.
+        logMHR <- checkLogProb(modelLP1) - checkLogProb(modelLP0) - checkLogProb(propLP1) + checkLogProb(propLP0)
         jump <- decide(logMHR)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)

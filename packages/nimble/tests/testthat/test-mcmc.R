@@ -2865,8 +2865,8 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(length(conf$getSamplers()) == 1)
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
-    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
-    expect_true(all(samples == 2))
+    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered a log probability density value of infinity')
+
     ##
     code <- nimbleCode({
         x ~ dcat(prob = a[1:3])
@@ -2882,8 +2882,7 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(length(conf$getSamplers()) == 1)
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
-    expect_output(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'encountered an invalid model density, and sampling results are likely invalid')
-    expect_true(all(samples == 2))
+    expect_error(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'all log probability density values are negative infinity')
 })
 
 test_that('prior_samples sampler operates correctly', {
