@@ -133,7 +133,7 @@ sampler_binary <- nimbleFunction(
         } else {
             otherLogProb <- otherLogProbPrior + model$calculate(calcNodesNoSelf)
         }
-        logProbDiff <- checkLogProb(currentLogProb - otherLogProb)
+        logProbDiff <- checkLogProb(currentLogProb) - checkLogProb(otherLogProb)
         acceptanceProb <- 1/(exp(logProbDiff) + 1)
         jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)  # `is.nan` probably not needed with use of `checkLogProb`.
         if(jump) {
@@ -191,10 +191,12 @@ sampler_categorical <- nimbleFunction(
             if(i != currentValue) {
                 model[[target]] <<- i
                 logProbPrior <- checkLogProb(model$calculate(target))
-                if(logProbPrior == -Inf | is.nan(logProbPrior)) {
+                if(is.nan(logProbPrior) | logProbPrior == -Inf) {
                     logProbs[i] <<- -Inf
                 } else {
                     logProbs[i] <<- checkLogProb(logProbPrior + model$calculate(calcNodesNoSelf))
+                    if(is.nan(logProbs[i]))
+                        logProbs[i] <<- -Inf
                 }
             }
         }

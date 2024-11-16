@@ -76,7 +76,7 @@ checkLogProb <- nimbleFunction(
     run = function(logProb = double()) {
        # if(is.na(logProb))
        #     return(-Inf)
-        if(logProb == Inf)
+        if(!is.na(logProb) & logProb == Inf)
             print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
         return(logProb)
         returnType(double())
