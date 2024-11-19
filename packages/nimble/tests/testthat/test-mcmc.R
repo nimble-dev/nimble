@@ -2882,7 +2882,7 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(length(conf$getSamplers()) == 1)
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
-    expect_error(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'all log probability density values are negative infinity')
+    expect_output(expect_error(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'all log probability density values are negative infinity'))  # Use of `expect_output` prevents warnings about NAs from going into gold file.
 })
 
 test_that('prior_samples sampler operates correctly', {
