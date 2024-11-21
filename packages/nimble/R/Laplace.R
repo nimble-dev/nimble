@@ -3799,10 +3799,10 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #'   \item \code{innerOptimMethod}. Optimization method to be used in
 #'         \code{nimOptim} for the inner optimization. See 'Details' of
 #'         \code{\link{nimOptim}}. Currently \code{nimOptim} in NIMBLE supports:
-#'         "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}",
-#'         "\code{nlminb}", and user-provided optimizers. By default, method
-#'         "\code{BFGS}" is used for both univariate and multivariate cases. For
-#'         \code{"nlminb"} or user-provided optimizers, only a subset of
+#'         \code{"Nelder-Mead"}", \code{"BFGS"}, \code{"CG"}, \code{"L-BFGS-B"},
+#'         \code{"nlminb"}, \code{"bobyqa"}, and user-provided optimizers. By default, method
+#'         \code{"BFGS"} is used for both univariate and multivariate cases. For
+#'         \code{"nlminb"}, \code{"bobyqa"}, or user-provided optimizers, only a subset of
 #'         elements of the \code{innerOptimControlList} are supported. (Note
 #'         that control over the outer optimization method is available as an
 #'         argument to `findMLE`). Choice of optimizers can be important and so
@@ -3929,20 +3929,20 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #'         random effects. Arguments include \code{pStart}: initial parameter
 #'         values (defaults to parameter values currently in the model);
 #'         \code{method}: (outer) optimization method to use in \code{nimOptim}
-#'         (defaults to "nlminb", although some problems may benefit from other
+#'         (defaults to \code{"nlminb"}, although some problems may benefit from other
 #'         choices); and \code{hessian}: whether to calculate and return the
 #'         Hessian matrix (defaults to \code{TRUE}, which is required for
-#'         subsequent use of `summary` method). Second derivatives in the
+#'         subsequent use of \code{summary} method). Second derivatives in the
 #'         Hessian are determined by finite differences of the gradients
 #'         obtained by automatic differentiation (AD). Return value is a
 #'         nimbleList of type \code{optimResultNimbleList}, similar to what is
 #'         returned by R's optim. See \code{help(nimOptim)}. Note that
-#'         parameters (`par`) are returned for the natural parameters, i.e. how
-#'         they are defined in the model. But the `hessian`, if requested, is
+#'         parameters (\code{par}) are returned for the natural parameters, i.e. how
+#'         they are defined in the model. But the \code{hessian}, if requested, is
 #'         computed for the parameters as transformed for optimization if
 #'         necessary. Hence one must be careful interpreting `hessian` if any
 #'         parameters have constraints, and the safest next step is to use the
-#'         `summary` method or `summaryLaplace` function.
+#'         \code{summary} method or \code{summaryLaplace} function.
 #'
 #' \item \code{summary(MLEoutput, originalScale, randomEffectsStdError,
 #'        jointCovariance)}. Summarize the maximum likelihood estimation

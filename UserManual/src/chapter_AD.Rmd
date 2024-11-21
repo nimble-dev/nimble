@@ -177,7 +177,7 @@ To change either the inner optimizer, one can use the `innerOptimMethod` element
 
 Once a Laplace approximation is built, one can use `updateSettings` to modify the choice of inner optimizer and various settings that control the behavior of the inner and outer optimizers (see `help(buildLaplace)` for details).
 
-By default, NIMBLE provides various optimization methods available through R's `optim()` as well as R's `nlminb` method. Users can also provide their own optimization function in R that they can then use with Laplace approximation. User optimization functions must have a particular set and order of arguments and must first be registered with NIMBLE via `nimOptimMethod`. See `help(nimOptim)` for more details.
+By default, NIMBLE provides various optimization methods available through R's `optim()` as well as R's `nlminb` method and the BOBYQA method from the `nloptr` package (by specifying `bobyqa`). Users can also provide their own optimization function in R that they can then use with Laplace approximation. User optimization functions must have a particular set and order of arguments and must first be registered with NIMBLE via `nimOptimMethod`. See `help(nimOptim)` for more details.
 
 Here's an example of setting up the Newton method optimizer from the `TMB` package as the inner optimizer for use with NIMBLE's Laplace approximation. (Note that NIMBLE and TMB have distinct AD systems and Laplace approximation implementations; here we simply use the `TMB::newton` optimization function.)
 

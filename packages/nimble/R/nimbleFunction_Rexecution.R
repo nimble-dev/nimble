@@ -1241,8 +1241,7 @@ nimRound <- round
 #'   (but not required) in "nlminb" or (optionally) user-provided methods.
 #' @param ... IGNORED
 #' @param method The method to be used. See `Details` section of
-#'   \code{\link{optim}}. One of: "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", or
-#'   "nlminb". Note that the R methods "SANN", "Brent" are not supported. It is
+#'   \code{\link{optim}}. One of: "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "nlminb", or "bobyqa". Note that the R methods "SANN", "Brent" are not supported. It is
 #'   also possible to provide a new method; see details.
 #' @param lower Vector or scalar of lower bounds for parameters.
 #' @param upper Vector or scalar of upper bounds for parameters.
@@ -1268,7 +1267,10 @@ nimRound <- round
 #'
 #' For \code{method="nlminb"}, a compiled nimbleFunction will run R's
 #' \code{nlminb} directly in R, with \code{fn}, \code{gr} (if provided) and
-#' \code{he} (if provided) that call back into compiled code.
+#' \code{he} (if provided) that call back into compiled code. For
+#' \code{method="bobyqa"}, a compiled nimbleFunction will run R's
+#' \code{nloptr::bobyqa} directly in R, with \code{fn} that calls back
+#' into compiled code.
 #'
 #' An experimental feature is the capability to provide one's own optimization
 #' method in R and register it for use by \code{nimOptim}. One must write a
