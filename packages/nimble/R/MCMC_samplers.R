@@ -3229,8 +3229,54 @@ sampler_polyagamma <- nimbleFunction(
     )
 )
 
+####################################################################
+### partially observed multivariate normal sampler #################
+####################################################################
 
+sampler_partial_mvn <- nimbleFunction(
+  name = 'sampler_partial_mvn',
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    ## control list extraction
+    multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', error = 'The control list must include the argument multivariateNodesAsScalars')
+    ## node list generation
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    partObsTru <- sapply(targetAsScalar, function(targetAsScalar) !eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
+    targetUnobservedComponents <- targetAsScalar[partObsTru]
     
+    ## nested function and function list definitions
+    samplerList <- nimbleFunctionList(sampler_BASE)
+    
+    if(multivariateNodesAsScalars) {
+      for(i in seq_along(targetUnobservedComponents)) {
+        samplerList[[i]] <- sampler_RW(model, mvSaved, targetUnobservedComponents[i], control)
+      }
+    } else {
+      if(length(targetUnobservedComponents) == 1) {
+        samplerList[[1]] <- sampler_RW(model, mvSaved, targetUnobservedComponents, control)
+      } else {
+        samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetUnobservedComponents, control)
+      }
+    }
+    ## checks
+    if (model$getDistribution(target) != "dmnorm")       stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
+    if (!model$isMixedData(target))                       stop(paste0('The target node ', target, ' is not partially observed.'))
+  },
+  
+  run = function() {
+    for (i in seq_along(samplerList)) {
+      samplerList[[i]]$run()
+    }
+  },
+  methods = list(
+    reset = function() {
+      for (i in seq_along(samplerList)) {
+        samplerList[[i]]$reset()
+      }
+    }
+  ) 
+)
+
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package.
