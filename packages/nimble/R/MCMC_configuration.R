@@ -378,7 +378,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                       if(model$isMixedData(node)) {
                             if(nodeDist == 'dmnorm') {
                               thisControlList <- c(controlDefaultsArg, multivariateNodesAsScalars = multivariateNodesAsScalars)
-                              addSampler(target = node, type = 'partial_mvn', control = thisControlList) ; next
+                              addSampler(target = node, type = 'partial_mvn', control = thisControlList, allowData = TRUE) ; next
                             }
                         } else {
                             stop(paste0('The node ', node, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
