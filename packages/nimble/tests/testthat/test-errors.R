@@ -111,5 +111,15 @@ test_that("Testing of error handling in indexing of undefined array", {
     expect_error(cnf <- compileNimble(mynf), info = "has 'x' been created")
 })
 
+
+test_that("Testing of error handling for undefined list", {
+    mynf <- nimbleFunction(
+        run = function() {
+            ll$x <- 5
+        })
+    
+    expect_error(cnf <- compileNimble(mynf), info = "has `ll` been created")
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
