@@ -125,9 +125,15 @@ nimOptimMethod("bobyqa",
                  invalid <- function(x) is.null(x) || is.na(x) || is.infinite(x)
                  if(invalid(control_bobyqa$xtol_rel)) control_bobyqa$xtol_rel <- 1e-6
                  if(invalid(control_bobyqa$maxeval)) control_bobyqa$maxeval <- 1000
-                 # NB: control$parscale and control$fnscale are applied internally
+                 # NB: control$parscale and control$fnscale are applied internally.
+                 p <- length(par)
+                 if(length(lower) != p)
+                     lower <- rep(lower, p)
+                 if(length(upper) != p)
+                     upper <- rep(upper, p)
                  if(!requireNamespace('nloptr')) stop("The `nloptr` package must be installed to use `bobyqa` for optimization")
-                 result <- nloptr::bobyqa(par, fn = fn, lower = lower, upper = upper, control=control_bobyqa)
+                   result <- nloptr::bobyqa(par, fn = fn, lower = lower, upper = upper,
+                                            control=control_bobyqa)
                  result$counts <- c(0, 0)
                  result
                }
