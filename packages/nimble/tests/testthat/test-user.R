@@ -1050,6 +1050,7 @@ test_that("conflicted nimbleFunction names trapped", {
             print(out)
         })
 
+    temporarilyAssignInGlobalEnv(log1p)
     expect_error(cnf <- compileNimble(nf), "conflicts with a function")
 
     ## lgamma -> lgammafn -> {lgamma, loggam}
@@ -1065,6 +1066,7 @@ test_that("conflicted nimbleFunction names trapped", {
             print(out)
         })
 
+    temporarilyAssignInGlobalEnv(lgamma)
     expect_error(cnf <- compileNimble(nf), "conflicts with a function")
 
     nf <- nimbleFunction(
@@ -1085,7 +1087,8 @@ test_that("conflicted nimbleFunction names trapped", {
             out = gamma(x)
             print(out)
         })
-    
+
+    temporarilyAssignInGlobalEnv(gamma)
     expect_error(cnf <- compileNimble(nf), "conflicts with a function")
 
     ## Use of conflicted name in nf with setup works fine.
