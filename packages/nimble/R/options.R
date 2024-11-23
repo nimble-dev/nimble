@@ -119,10 +119,12 @@ nimOptimMethod("nlminb",
 nimOptimMethod("bobyqa",
                function(par, fn, gr, he, lower, upper, control, hessian) {
                  control_bobyqa <- list(
-                     xtol_rel = control$reltol
+                     xtol_rel = control$reltol,
+                     maxeval = control$maxit  # Not exactly the same quantity, but seems ok to repurpose.
                  )
                  invalid <- function(x) is.null(x) || is.na(x) || is.infinite(x)
                  if(invalid(control_bobyqa$xtol_rel)) control_bobyqa$xtol_rel <- 1e-6
+                 if(invalid(control_bobyqa$maxeval)) control_bobyqa$maxeval <- 1000
                  # NB: control$parscale and control$fnscale are applied internally
                  if(!requireNamespace('nloptr')) stop("The `nloptr` package must be installed to use `bobyqa` for optimization")
                  result <- nloptr::bobyqa(par, fn = fn, lower = lower, upper = upper, control=control_bobyqa)
