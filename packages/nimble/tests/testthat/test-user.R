@@ -1052,6 +1052,21 @@ test_that("conflicted nimbleFunction names trapped", {
 
     expect_error(cnf <- compileNimble(nf), "conflicts with a function")
 
+    ## lgamma -> lgammafn -> {lgamma, loggam}
+    lgamma <- nimbleFunction(
+        run = function(x=double(0)) {
+            returnType(double(0))
+            return(9999)
+        })
+
+    nf <- nimbleFunction(
+        run = function(x=double(1)) {
+            out = lgamma(x)
+            print(out)
+        })
+
+    expect_error(cnf <- compileNimble(nf), "conflicts with a function")
+
     nf <- nimbleFunction(
         run = function(x=double(1)) {
             out = gamma(x)

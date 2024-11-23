@@ -263,9 +263,11 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
       ## Handle replacements such as `gamma` -> `gammafn`.  
       if(nm %in% specificCallReplacements)
           nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
-      objs <- getAnywhere(nm)$objs
-      if(any(sapply(objs, is.rcf)))
-          stop("The name of the nimbleFunction `", nm, "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
+      for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
+          objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
+          if(any(sapply(objs, is.rcf))) 
+              stop("The name of the nimbleFunction `", nm[i], "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
+      }
       if(.nimbleOptions$debugSizeProcessing) {
         browser()
         eval(
