@@ -258,6 +258,7 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
       return(invisible(NULL))
     }
     sizeCall <- sizeCalls[[code$name]]
+    if(exists('paciorek')) browser()
     if(!is.null(sizeCall)) {
       nm <- code$name
       ## Handle replacements such as `gamma` -> `gammafn`.  
