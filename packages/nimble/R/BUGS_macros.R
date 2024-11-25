@@ -299,7 +299,7 @@ processMacrosInternal <- function(code,
       possibleMacro <- get(possibleMacroName, envir = env)
     }
   } else {
-    possibleMacro <- try(eval(possibleMacroCode, envir = env))
+    possibleMacro <- try(eval(possibleMacroCode, envir = env), silent = TRUE)
     if(inherits(possibleMacro, "try-error")) {
       possibleMacro <- NULL
     }

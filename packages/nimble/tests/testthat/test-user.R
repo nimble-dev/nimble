@@ -1036,6 +1036,80 @@ test_that("user-defined in NF object example from User Manual works", {
   deregisterDistributions("my_linear_reg$dcalc")
 })
 
+
+test_that("conflicted nimbleFunction names trapped", {
+    log1p <- nimbleFunction(
+        run = function(x=double(0)) {
+            returnType(double(0))
+            return(9999)
+        })
+
+    nf <- nimbleFunction(
+        run = function(x=double(1)) {
+            out = log1p(x)
+            print(out)
+        })
+
+    temporarilyAssignInGlobalEnv(log1p)
+    expect_error(cnf <- compileNimble(nf), "conflicts with a function")
+
+    ## lgamma -> lgammafn -> {lgamma, loggam}
+    lgamma <- nimbleFunction(
+        run = function(x=double(0)) {
+            returnType(double(0))
+            return(9999)
+        })
+
+    nf <- nimbleFunction(
+        run = function(x=double(1)) {
+            out = lgamma(x)
+            print(out)
+        })
+
+    temporarilyAssignInGlobalEnv(lgamma)
+    expect_error(cnf <- compileNimble(nf), "conflicts with a function")
+
+    nf <- nimbleFunction(
+        run = function(x=double(1)) {
+            out = gamma(x)
+            print(out)
+        })
+    cnf <- compileNimble(nf)
+
+    gamma <- nimbleFunction(
+        run = function(x=double(0)) {
+            returnType(double(0))
+            return(9999)
+        })
+
+    nf <- nimbleFunction(
+        run = function(x=double(1)) {
+            out = gamma(x)
+            print(out)
+        })
+
+    temporarilyAssignInGlobalEnv(gamma)
+    expect_error(cnf <- compileNimble(nf), "conflicts with a function")
+
+    ## Use of conflicted name in nf with setup works fine.
+    nf <- nimbleFunction(
+        setup = function(){},
+        run = function() {
+            returnType(double(0))
+            return(exp(7))
+        },
+        methods = list(
+            exp = function(x=double(0)) {
+                returnType(double(0))
+                return(9999)
+            })
+    )
+    rnf <- nf()
+    cnf <- compileNimble(rnf)
+    expect_identical(cnf$run(), 9999)
+
+})
+
 nimbleOptions(allowNFobjInModel = currentOption)
 
 nimbleOptions(verbose = nimbleVerboseSetting)
