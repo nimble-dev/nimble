@@ -37,8 +37,12 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                 }
                 origMethods <<- nf_getMethodList(nfGenerator)
                 origMethodNames <- names(origMethods)
-                conflictedNames <- origMethodNames %in% names(nimble:::cppOutputCalls)
-                if(exists('paciorek')) browser()
+                conflictedNames <- origMethodNames %in% c(names(nimble:::cppOutputCalls), names(nimble:::specificCallReplacements),
+                                                          binaryOperators, unaryOperators,
+                                                          reductionUnaryOperators, matrixSquareReductionOperators,
+                                                          reductionBinaryOperators, nonNativeEigenCalls,
+                                                          matrixFlipOperators, matrixSquareOperators,
+                                                          nimbleListReturningOperators, matrixSolveOperators)
                 if(any(conflictedNames)) 
                     stop("The name of the nimbleFunction method `", paste0(origMethodNames[conflictedNames], collapse = '`,'), "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
                 RCfunProcs <<- list()
