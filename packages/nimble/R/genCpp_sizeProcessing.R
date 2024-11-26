@@ -261,9 +261,9 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
     if(!is.null(sizeCall)) {
       nm <- code$name
       ## Handle replacements such as `gamma` -> `gammafn`.  
-      if(nm %in% specificCallReplacements)
+      if(nm %in% specificCallReplacements) {
           nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
-      if(nm %in% nimKeyWords)
+      } else if(nm %in% nimKeyWords)
           nm <- names(nimKeyWords)[which(nm == nimKeyWords)]
       for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
           objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
