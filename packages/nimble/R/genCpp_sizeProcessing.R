@@ -85,6 +85,7 @@ sizeCalls <- c(
          nimArr_rcat = 'sizeScalarRecurse',
          nimArr_rinterval = 'sizeScalarRecurse',
          nimPrint = 'sizeforceEigenize',
+         nimCat = 'sizeforceEigenize',
          nimDerivs = 'sizeNimDerivs',
          nimDerivs_calculate = 'sizeNimDerivsCalculate',
          as.integer = 'sizeUnaryCwise', 

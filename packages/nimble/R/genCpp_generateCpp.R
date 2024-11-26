@@ -235,41 +235,13 @@ cppOutputReturn <- function(code, symTab) {
     cppOutputCallAsIs(code, symTab)
 }
 
-dereferenceListElements <- function(code, symTab) {
-    ## Handle direct myList$x access.
-    nfVars <- sapply(code$args, function(arg)
-        ifelse(is(arg, "exprClass") && exists('name', arg) && arg$name == "nfVar", TRUE, FALSE)
-        )
-    if(sum(nfVars))
-        for(idx in which(nfVars)) 
-            a1 <- insertExprClassLayer(code$args[[idx]], 1, 'cppPointerDereference',
-                                                   type = "nimbleList",
-                                                   nDim = NULL, 
-                                       sizeExprs = NULL)
-    ## Handle array indexing myList$x[...] access.
-    nfVars <- sapply(code$args, function(arg)
-        ifelse(is(arg, "exprClass") && exists('name', arg) && arg$name == "[" &&
-           is.list(arg$args) && is(arg$args[[1]], "exprClass") && exists('name', arg$args[[1]]) && arg$args[[1]]$name == "nfVar"  , TRUE, FALSE)
-        )
-    if(sum(nfVars))
-        for(idx in which(nfVars)) 
-            a1 <- insertExprClassLayer(code$args[[idx]]$args[[1]], 1, 'cppPointerDereference',
-                                                   type = "nimbleList",
-                                                   nDim = NULL, 
-                                       sizeExprs = NULL)
-    
-    return(code)
-}
-
 cppOutputCout <- function(code, symTab) {
-    code <- dereferenceListElements(code, symTab)
     if(is.null(getNimbleOption('digits'))) {
         paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
     } else paste0('_nimble_global_output.precision(', getNimbleOption('digits'), '); _nimble_global_output << fixed << ', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
 }
 
 cppOutputCoutNoNewline <- function(code, symTab) {
-    code <- dereferenceListElements(code, symTab)
     if(is.null(getNimbleOption('digits'))) {
         paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '; nimble_print_to_R(_nimble_global_output)')
     } else paste0('_nimble_global_output.precision(', getNimbleOption('digits'), '); _nimble_global_output << fixed << ', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '; nimble_print_to_R(_nimble_global_output)')
