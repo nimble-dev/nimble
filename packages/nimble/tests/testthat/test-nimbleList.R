@@ -1414,7 +1414,7 @@ test_that("Printing list information", {
     cmynf <- compileNimble(rmynf)
     expect_output(cmynf$run(), "x: 2")
     expect_output(cmynf$run(), "x2: 3")
-)
+})
 
 
 
