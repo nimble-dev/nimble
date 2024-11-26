@@ -1069,6 +1069,7 @@ test_that("conflicted nimbleFunction names trapped", {
     temporarilyAssignInGlobalEnv(lgamma)
     expect_error(cnf <- compileNimble(nf), "conflicts with a function")
 
+    ## Should work fine if no nf named `gamma` exists.
     nf <- nimbleFunction(
         run = function(x=double(1)) {
             out = gamma(x)
@@ -1091,7 +1092,7 @@ test_that("conflicted nimbleFunction names trapped", {
     temporarilyAssignInGlobalEnv(gamma)
     expect_error(cnf <- compileNimble(nf), "conflicts with a function")
 
-    ## Use of conflicted name in nf with setup works fine.
+    ## Use of conflicted nf method name.
     nf <- nimbleFunction(
         setup = function(){},
         run = function() {
@@ -1105,8 +1106,7 @@ test_that("conflicted nimbleFunction names trapped", {
             })
     )
     rnf <- nf()
-    cnf <- compileNimble(rnf)
-    expect_identical(cnf$run(), 9999)
+    expect_error(cnf <- compileNimble(nf), "conflicts with a function")
 
 })
 
