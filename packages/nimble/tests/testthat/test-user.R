@@ -1106,7 +1106,7 @@ test_that("conflicted nimbleFunction names trapped", {
             })
     )
     rnf <- nf()
-    expect_error(cnf <- compileNimble(nf), "conflicts with a function")
+    expect_error(cnf <- compileNimble(rnf), "conflicts with a function")
 
 })
 
