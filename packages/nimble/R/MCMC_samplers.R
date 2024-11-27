@@ -2927,12 +2927,12 @@ sampler_polyagamma <- nimbleFunction(
                 linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
                 linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
                 if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
-                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. ", checkMessage)
+                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
             }
             linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodes[1])
             linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
-            if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
-                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. ", checkMessage)
+            if(check && (length(intersect(probNodes[1], target)) || is.null(linkCheck) || linkCheck != 'multiplicative'))
+                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
         } else {
             ## Placeholders to allow compilation.
             ones <- rep(1, 2)
