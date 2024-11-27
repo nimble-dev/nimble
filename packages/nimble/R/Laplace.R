@@ -3318,8 +3318,7 @@ buildAGHQ <- nimbleFunction(
       ranres$names <- reNodesAsScalars_vec
       ans$params <- pres
       ans$randomEffects <- ranres
-      if(originalScale) ans$scale <- "original"
-      else ans$scale <- "transformed"
+      ans$originalScale <- originalScale
       return(ans)
       returnType(AGHQuad_summary())
     }
@@ -3400,16 +3399,16 @@ summaryLaplace <- function(laplace, MLEoutput,
   if(length(paramEsts) < length(paramNames)) paramNames <- paramNames[1:(length(paramNames)-1)]
   names(paramEsts) <- paramNames
   stdErrParams <- summary$params$stdErrors
-  paramsDF <- data.frame(estimate = paramEsts, se = stdErrParams, row.names = paramNames)
+  paramsDF <- data.frame(estimates = paramEsts, stdErrors = stdErrParams, row.names = paramNames)
 
   REnames <- summary$randomEffects$names
   REests <- summary$randomEffects$estimates
   if(length(REests) < length(REnames)) REnames <- REnames[1:(length(REnames)-1)]
   REstdErrs <- summary$randomEffects$stdErrors
   if(length(REstdErrs))
-    REDF <- data.frame(estimate = REests, se = REstdErrs, row.names = REnames)
+    REDF <- data.frame(estimates = REests, stdErrors = REstdErrs, row.names = REnames)
   else
-    REDF <- data.frame(estimate = REests, row.names = REnames)
+    REDF <- data.frame(estimates = REests, row.names = REnames)
 
   vcov <- summary$vcov
   if (dim(vcov)[1] == length(paramNames)) {
