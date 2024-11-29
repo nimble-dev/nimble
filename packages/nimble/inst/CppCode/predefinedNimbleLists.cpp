@@ -981,42 +981,42 @@ SEXP waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
 void AGHQuad_params::copyFromSEXP(SEXP S_nimList_) {
   SEXP S__dot_xData;
   SEXP S_names;
-  SEXP S_estimates;
-  SEXP S_stdErrors;
+  SEXP S_estimate;
+  SEXP S_stdError;
   R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_names =
           Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("names")));
-  PROTECT(S_estimates =
+  PROTECT(S_estimate =
           Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
-                            Rf_install("estimates")));
-  PROTECT(S_stdErrors =
+                            Rf_install("estimate")));
+  PROTECT(S_stdError =
           Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
-                            Rf_install("stdErrors")));
+                            Rf_install("stdError")));
   STRSEXP_2_vectorString(S_names, names);
-  SEXP_2_NimArr<1>(S_estimates, estimates);
-  SEXP_2_NimArr<1>(S_stdErrors, stdErrors);
+  SEXP_2_NimArr<1>(S_estimate, estimate);
+  SEXP_2_NimArr<1>(S_stdError, stdError);
   UNPROTECT(8);
 }
 
 SEXP AGHQuad_params::copyToSEXP() {
   SEXP S__dot_xData;
   SEXP S_names;
-  SEXP S_estimates;
-  SEXP S_stdErrors;
+  SEXP S_estimate;
+  SEXP S_stdError;
   if (!RCopiedFlag) {
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
     SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
     PROTECT(S_names = vectorString_2_STRSEXP(names));
-    PROTECT(S_estimates = NimArr_2_SEXP<1>(estimates));
-    PROTECT(S_stdErrors = NimArr_2_SEXP<1>(stdErrors));
+    PROTECT(S_estimate = NimArr_2_SEXP<1>(estimate));
+    PROTECT(S_stdError = NimArr_2_SEXP<1>(stdError));
     Rf_defineVar(Rf_install("names"), S_names,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("estimates"), S_estimates,
+    Rf_defineVar(Rf_install("estimate"), S_estimate,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("stdErrors"), S_stdErrors,
+    Rf_defineVar(Rf_install("stdError"), S_stdError,
                  PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
     UNPROTECT(8);
@@ -1045,16 +1045,16 @@ void AGHQuad_params::copyFromRobject(SEXP Robject) {
   STRSEXP_2_vectorString(PROTECT(Rf_findVarInFrame(S_xData,
                                                    Rf_install("names"))),
                          *static_cast< std::vector<string>* >(getObjectPtr(svarName)));
-  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("estimates");
-  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("stdErrors");
+  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("estimate");
+  COPY_NUMERIC_VECTOR_FROM_R_OBJECT("stdError");
   UNPROTECT(6);
 }
 AGHQuad_params::AGHQuad_params() {
   RCopiedFlag = false;
   RObjectPointer = NULL;
   namedObjects["names"] = &names;
-  namedObjects["estimates"] = &estimates;
-  namedObjects["stdErrors"] = &stdErrors;
+  namedObjects["estimate"] = &estimate;
+  namedObjects["stdError"] = &stdError;
   namedObjects["RObjectPointer"] = &RObjectPointer;
   namedObjects["RCopiedFlag"] = &RCopiedFlag;
 }
@@ -1109,7 +1109,7 @@ void AGHQuad_summary::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_params;
   SEXP S_randomEffects;
   SEXP S_vcov;
-  SEXP S_scale;
+  SEXP S_originalScale;
   R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
@@ -1122,15 +1122,15 @@ void AGHQuad_summary::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S_vcov =
           Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("vcov")));
-  PROTECT(S_scale =
+  PROTECT(S_originalScale =
           Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
-                            Rf_install("scale")));
+                            Rf_install("originalScale")));
   params = new AGHQuad_params;
   params->copyFromSEXP(S_params);
   randomEffects = new AGHQuad_params;
   randomEffects->copyFromSEXP(S_randomEffects);
   SEXP_2_NimArr<2>(S_vcov, vcov);
-  scale = STRSEXP_2_string(S_scale);
+  originalScale = SEXP_2_bool(S_originalScale);
   UNPROTECT(10);
 }
 
@@ -1139,7 +1139,7 @@ SEXP  AGHQuad_summary::copyToSEXP (  )  {
   SEXP S_params;
   SEXP S_randomEffects;
   SEXP S_vcov;
-  SEXP S_scale;
+  SEXP S_originalScale;
   if (!RCopiedFlag){
     PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
     SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
@@ -1148,11 +1148,11 @@ SEXP  AGHQuad_summary::copyToSEXP (  )  {
     if (!(*randomEffects).RObjectPointer) randomEffects->createNewSEXP();
     PROTECT(S_randomEffects = randomEffects->copyToSEXP());
     PROTECT(S_vcov = NimArr_2_SEXP<2>(vcov));
-    PROTECT(S_scale = string_2_STRSEXP(scale));
+    PROTECT(S_originalScale = bool_2_SEXP(originalScale));
     Rf_defineVar(Rf_install("params"), S_params, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("randomEffects"), S_randomEffects, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     Rf_defineVar(Rf_install("vcov"), S_vcov, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
-    Rf_defineVar(Rf_install("scale"), S_scale, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
+    Rf_defineVar(Rf_install("originalScale"), S_originalScale, PROTECT(GET_SLOT(RObjectPointer, S__dot_xData)));
     RCopiedFlag = true;
     UNPROTECT(10);
   }
@@ -1178,10 +1178,11 @@ void  AGHQuad_summary::resetFlags (  )  {
 void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
   std::cout<<"AGHQuad_summary::copyFromRobject"<<std::endl;
   SETUP_S_xData;
-  // Hand-coding: does this need more lines for params, randomEffects, and scale,
+  // Hand-coding: does this need more lines for params and randomEffects
   // or are those handled by direct copying calls from R (for cases not included in the
   // copyFromRobject scheme)?
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("vcov");
+  COPY_LOGICAL_SCALAR_FROM_R_OBJECT("originalScale");
   UNPROTECT(4);
 }
 AGHQuad_summary::AGHQuad_summary (  )  {
@@ -1192,7 +1193,7 @@ AGHQuad_summary::AGHQuad_summary (  )  {
   namedObjects["params"]=&params;
   namedObjects["randomEffects"]=&randomEffects;
   namedObjects["vcov"]=&vcov;
-  namedObjects["scale"]=&scale;
+  namedObjects["originalScale"]=&originalScale;
   namedObjects["RObjectPointer"]=&RObjectPointer;
   namedObjects["RCopiedFlag"]=&RCopiedFlag;
 }

@@ -149,8 +149,8 @@ extern "C" SEXP waicDetailsNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP inp
 class AGHQuad_params : public  NamedObjects, public pointedToBase {
  public:
   std::vector<string> names;
-  NimArr<1, double> estimates;
-  NimArr<1, double> stdErrors;
+  NimArr<1, double> estimate;
+  NimArr<1, double> stdError;
   SEXP RObjectPointer;
   bool RCopiedFlag;
   void copyFromSEXP(SEXP S_nimList_);
@@ -172,7 +172,7 @@ class AGHQuad_summary : public  NamedObjects, public pointedToBase {
   nimSmartPtr<AGHQuad_params> params;
   nimSmartPtr<AGHQuad_params> randomEffects;
   NimArr<2, double> vcov;
-  string scale;
+  bool originalScale;
 
   SEXP RObjectPointer;
   bool RCopiedFlag;
