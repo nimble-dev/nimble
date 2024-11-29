@@ -1396,6 +1396,28 @@ test_that("Invalids names of nimbleList elements", {
     expect_error(nimbleList(nimbleListTypes), "cannot be named")
 })
 
+test_that("Printing list information", {
+    mynf <- nimbleFunction(
+    setup = function() {
+        myList <- nimbleList(x = double())
+        myList2 <- nimbleList(x = double(1))
+    },
+    run = function() {
+        ll <- myList$new()
+        ll2 <- myList2$new()
+        ll$x <- 2
+        ll2$x <- c(1, 3, 5)
+        nimCat("x: ", ll$x, "\n")
+        nimCat("x2: ", ll2$x[2], "\n")
+    })
+    rmynf <- mynf()
+    cmynf <- compileNimble(rmynf)
+    expect_output(cmynf$run(), "x: 2")
+    expect_output(cmynf$run(), "x2: 3")
+})
+
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 
