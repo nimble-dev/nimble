@@ -85,6 +85,7 @@ sizeCalls <- c(
          nimArr_rcat = 'sizeScalarRecurse',
          nimArr_rinterval = 'sizeScalarRecurse',
          nimPrint = 'sizeforceEigenize',
+         nimCat = 'sizeforceEigenize',
          nimDerivs = 'sizeNimDerivs',
          nimDerivs_calculate = 'sizeNimDerivsCalculate',
          as.integer = 'sizeUnaryCwise', 
@@ -1165,6 +1166,8 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     if(code$args[[1]]$isName) {
         objectName <- code$args[[1]]$name
         symbolObject <- symTab$getSymbolObject(objectName, inherits = TRUE)
+        if(is.null(symbolObject))
+            stop(exprClassProcessingErrorMsg(code, paste0('has `', objectName, '` been created?')), call. = FALSE)
         objectType <- symbolObject$type
     } else { ## if there is nesting, A$B$C, figure out what to do
         objectType <- code$args[[1]]$type
