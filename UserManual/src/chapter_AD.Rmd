@@ -129,7 +129,7 @@ for the parameters and/or the random effects. The `summaryLaplace` function
 returns similar information but with names included in a more useful way. For example:
 
 ```{r eval=eval}
-Cglmm_laplace$summary(MLE)$randomEffects$estimates
+Cglmm_laplace$summary(MLE)$randomEffects$estimate
 summaryLaplace(Cglmm_laplace, MLE)$params
 ```
 

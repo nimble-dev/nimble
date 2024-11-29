@@ -3139,8 +3139,8 @@ buildAGHQ <- nimbleFunction(
       vcov_pTransform <- -inverse(MLEoutput$hessian)
       stdErr_pTransform <- sqrt(diag(vcov_pTransform))
       if(nre == 0) { ## No random effects
-        ranres$estimates <- numeric(0)
-        ranres$stdErrors <- numeric(0)
+        ranres$estimate <- numeric(0)
+        ranres$stdError <- numeric(0)
         if(originalScale){
           derivspInvTransform  <- derivs_pInverseTransform(pTransform, c(0, 1))
           JacobpInvTransform   <- derivspInvTransform$jacobian
@@ -3157,12 +3157,12 @@ buildAGHQ <- nimbleFunction(
             }
             ans$vcov <- matrix(nrow = 0, ncol = 0)
           }
-          pres$estimates <- p
-          pres$stdErrors <- stdErr_p
+          pres$estimate <- p
+          pres$stdError <- stdErr_p
         }
         else {
-          pres$estimates <- pTransform
-          pres$stdErrors <- stdErr_pTransform
+          pres$estimate <- pTransform
+          pres$stdError <- stdErr_pTransform
           if(jointCovariance) ans$vcov <- vcov_pTransform
           else ans$vcov <- matrix(0, nrow = 0, ncol = 0)
         }
@@ -3204,34 +3204,34 @@ buildAGHQ <- nimbleFunction(
             stdErr_p_re <- sqrt(diag(vcov))
             stdErr_p <- stdErr_p_re[1:npar]
             if(randomEffectsStdError){
-              ranres$stdErrors <- stdErr_p_re[(npar+1):ntot]
+              ranres$stdError <- stdErr_p_re[(npar+1):ntot]
             }
             else{
-              ranres$stdErrors <- numeric(0)
+              ranres$stdError <- numeric(0)
             }
             ans$vcov <- vcov
-            pres$estimates <- p
-            pres$stdErrors <- stdErr_p
-            ranres$estimates <- optre
+            pres$estimate <- p
+            pres$stdError <- stdErr_p
+            ranres$estimate <- optre
           }## End of if(originalScale)
           else { ## On transformed scale
             if(randomEffectsStdError){
               stdErr_reTransform <- sqrt(diag(vcov_Transform)[(npar+1):ntot])
-              ranres$stdErrors <- stdErr_reTransform
+              ranres$stdError <- stdErr_reTransform
             }
             else{
-              ranres$stdErrors <- numeric(0)
+              ranres$stdError <- numeric(0)
             }
             ans$vcov <- vcov_Transform
-            pres$estimates <- pTransform
-            pres$stdErrors <- sqrt(diag(vcov_Transform)[1:npar])
-            ranres$estimates <- optreTransform
+            pres$estimate <- pTransform
+            pres$stdError <- sqrt(diag(vcov_Transform)[1:npar])
+            ranres$estimate <- optreTransform
           }
         }## End of if(jointCovariance)
         else { ## Do not return joint covariance matrix
           if(originalScale){## On original scale
-            pres$estimates <- p
-            ranres$estimates <- optre
+            pres$estimate <- p
+            ranres$estimate <- optre
             if(randomEffectsStdError){
               ## Joint covariance matrix on transform scale
               inv_negHess <- inverse_negHess(p, optreTransform)
@@ -3265,8 +3265,8 @@ buildAGHQ <- nimbleFunction(
                 stdErr_re[i] <- sqrt(var_i)
               }
               stdErr_p <- sqrt(diag(vcov_p))
-              pres$stdErrors   <- stdErr_p
-              ranres$stdErrors <- stdErr_re
+              pres$stdError   <- stdErr_p
+              ranres$stdError <- stdErr_re
               ans$vcov <- vcov_p
             }## End of if(randomEffectsStdError)
             else { ## Do not calculate standard errors of random effects estimates
@@ -3280,15 +3280,15 @@ buildAGHQ <- nimbleFunction(
               #   stdErr_p[i] <- sqrt(var_p_i)
               # }
               stdErr_p <- sqrt(diag(vcov_p))
-              pres$stdErrors <- stdErr_p
-              ranres$stdErrors <- numeric(0)
+              pres$stdError <- stdErr_p
+              ranres$stdError <- numeric(0)
               ans$vcov <- vcov_p
             }
           }## End of if(originalScale)
           else {## On transformed scale
-            pres$estimates <- pTransform
-            pres$stdErrors <- stdErr_pTransform
-            ranres$estimates <- optreTransform
+            pres$estimate <- pTransform
+            pres$stdError <- stdErr_pTransform
+            ranres$estimate <- optreTransform
             ans$vcov <- vcov_pTransform
             if(randomEffectsStdError){
               inv_negHess <- inverse_negHess(p, optreTransform)
@@ -3306,10 +3306,10 @@ buildAGHQ <- nimbleFunction(
                 var_reTransform_i <- inv_negHess[i, i] + (JacobOptreWrtParams[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobOptreWrtParams[i,,drop=FALSE]))[1,1]
                 stdErr_reTransform[i] <- sqrt(var_reTransform_i)
               }
-              ranres$stdErrors <- stdErr_reTransform
+              ranres$stdError <- stdErr_reTransform
             }
             else{
-              ranres$stdErrors <- numeric(0)
+              ranres$stdError <- numeric(0)
             }
           }
         }
@@ -3395,20 +3395,20 @@ summaryLaplace <- function(laplace, MLEoutput,
                              randomEffectsStdError = randomEffectsStdError,
                              jointCovariance = jointCovariance)
   paramNames <- summary$params$names
-  paramEsts <- summary$params$estimates
+  paramEsts <- summary$params$estimate
   if(length(paramEsts) < length(paramNames)) paramNames <- paramNames[1:(length(paramNames)-1)]
   names(paramEsts) <- paramNames
-  stdErrParams <- summary$params$stdErrors
-  paramsDF <- data.frame(estimates = paramEsts, stdErrors = stdErrParams, row.names = paramNames)
+  stdErrParams <- summary$params$stdError
+  paramsDF <- data.frame(estimate = paramEsts, stdError = stdErrParams, row.names = paramNames)
 
   REnames <- summary$randomEffects$names
-  REests <- summary$randomEffects$estimates
+  REests <- summary$randomEffects$estimate
   if(length(REests) < length(REnames)) REnames <- REnames[1:(length(REnames)-1)]
-  REstdErrs <- summary$randomEffects$stdErrors
+  REstdErrs <- summary$randomEffects$stdError
   if(length(REstdErrs))
-    REDF <- data.frame(estimates = REests, stdErrors = REstdErrs, row.names = REnames)
+    REDF <- data.frame(estimate = REests, stdError = REstdErrs, row.names = REnames)
   else
-    REDF <- data.frame(estimates = REests, row.names = REnames)
+    REDF <- data.frame(estimate = REests, row.names = REnames)
 
   vcov <- summary$vcov
   if (dim(vcov)[1] == length(paramNames)) {

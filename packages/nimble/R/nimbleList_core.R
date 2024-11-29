@@ -533,8 +533,8 @@ optimControlNimbleList <- nimbleList(
 AGHQuad_params <- nimbleList(
   list(
     nimbleType('names','character', 1),
-    nimbleType('estimates', 'double', 1),
-    nimbleType('stdErrors', 'double', 1)
+    nimbleType('estimate', 'double', 1),
+    nimbleType('stdError', 'double', 1)
   ),
   name = "AGHQuad_params",
   predefined = TRUE
