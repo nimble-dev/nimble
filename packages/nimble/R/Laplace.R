@@ -2827,16 +2827,19 @@ buildAGHQ <- nimbleFunction(
       return(ans)
       returnType(double())
     },
-    ## Inverse transform parameters to original scale
-    pInverseTransform = function(pTransform = double(1)) {
-      p <- paramsTransform$inverseTransform(pTransform)
-      return(p)
+    ## Accessible transformations.
+    transformParams = function(p = double(1), trans = logical(0, default = FALSE)) {
+      if(trans)
+        pstar <- paramsTransform$inverseTransform(p)
+      else
+        pstar <- paramsTransform$tansform(p)
+      return(pstar)
       returnType(double(1))
     },
     ## Jacobian of the inverse transformation for parameters
     derivs_pInverseTransform = function(pTransform = double(1), order = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      ans <- derivs(pInverseTransform(pTransform), wrt = pTransform_indices, order = order)
+      ans <- derivs(pInverseTransform(pTransform, TRUE), wrt = pTransform_indices, order = order)
       return(ans)
       returnType(ADNimbleList())
     },
@@ -2904,6 +2907,16 @@ buildAGHQ <- nimbleFunction(
       returnType(double())
 			return(ans)
 		},
+    ## Penalized by priors log-likelihood (no jacobian)
+		calcPenalLogDens_pTransformed = function(pTransform = double(1)) {
+      p <- paramsTransform$inverseTransform(pTransform)
+      ans <- calcPostLogDens(pTransform, FALSE)
+      cache_outer_logLik(ans) ## Update internal cache w/ prior.
+
+      if(is.nan(ans) | is.na(ans)) ans <- -Inf
+      returnType(double())
+			return(ans)
+		},
     ## Gradient of log det jacobian for parameter transformations.
 		gr_logDetJacobian = function(pTransform = double(1))
 		{
@@ -2933,6 +2946,20 @@ buildAGHQ <- nimbleFunction(
 			return(ans)
 			returnType(double(1))
 		},
+    ## Gradient of prior penalized log likelihood on the transformed scale (no jacobians)
+		gr_penalLogDens_pTransformed = function(pTransform = double(1))
+		{
+			pDerivs <- derivs_pInverseTransform(pTransform, c(0, 1))
+			grLogLikTrans <- gr_logLik(pTransform, TRUE)
+
+			p <- pDerivs$value
+			grPrior <- gr_prior(p)
+			grPriorTrans <- (grPrior %*% pDerivs$jacobian)[1,]
+			
+			ans <- grLogLikTrans + grPriorTrans
+			return(ans)
+			returnType(double(1))
+		},
     ## For internal purposes of building the gradient
 		logDetJacobian = function(pTransform = double(1)){
 			ans <- paramsTransform$logDetJacobian(pTransform)
@@ -2944,6 +2971,21 @@ buildAGHQ <- nimbleFunction(
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE) ){
       mleRes <- optimize(pStart  = pStart,
+                       posterior = FALSE,
+                       jacobian = FALSE,
+                       method  = method,
+                       hessian = hessian,
+                       parscale = "real") 
+      return(mleRes)
+      returnType(optimResultNimbleList())
+    },
+    ## Calculate MLE of parameters    
+    findMAP = function(pStart  = double(1, default = Inf),
+                       method  = character(0, default = "BFGS"),
+                       hessian = logical(0, default = TRUE) ){
+      mleRes <- optimize(pStart  = pStart,
+                       posterior = TRUE,
+                       jacobian = TRUE,
                        method  = method,
                        hessian = hessian,
                        parscale = "real") 
@@ -2952,6 +2994,8 @@ buildAGHQ <- nimbleFunction(
     },
     ## General Maximization Function (Name check: optimize? @perry or Chris?)
     optimize = function(pStart  = double(1, default = Inf),
+                       posterior = logical(0, default = FALSE),
+                       jacobian = logical(0, default = TRUE),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE),
                        parscale = character(0, default = "transformed")) {
@@ -2973,7 +3017,15 @@ buildAGHQ <- nimbleFunction(
       ## In case bad start values are provided
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
      
-      optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outerOptimControl_, hessian = hessian)
+      ## Choose the MLE, or the MAP, or a penalized MLE (:= no Jacobian MAP).
+      if(!posterior){
+        optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outerOptimControl_, hessian = hessian)
+      }else{
+        if(jacobian) 
+          optRes <- optim(pStartTransform, calcPostLogDens_pTransformed, gr_postLogDens_pTransformed, method = method, control = outerOptimControl_, hessian = hessian)
+        else 
+          optRes <- optim(pStartTransform, calcPenalLogDens_pTransformed, gr_penalLogDens_pTransformed, method = method, control = outerOptimControl_, hessian = hessian)      
+      }
       
       if(optRes$convergence != 0) 
         print("  [Warning] `optim` has a non-zero convergence code: ", optRes$convergence, ".\n",
