@@ -3092,7 +3092,7 @@ buildAGHQ <- nimbleFunction(
     ## Optimized random effects given transformed parameter values
     optimRandomEffects = function(pTransform = double(1)){
       if(nre == 0) stop("No random effects in the model")
-      p <- pInverseTransform(pTransform)
+      p <- paramsTransform$inverseTransform(pTransform)
       raneff <- numeric(nre)
       tmp <- numeric(nre) ## Not sure this is needed. 
       tot <- 0
@@ -3375,7 +3375,7 @@ buildAGHQ <- nimbleFunction(
       returnType(AGHQuad_summary())
     }
   ),
-  buildDerivs = list(pInverseTransform  = list(),
+  buildDerivs = list(transformParams  = list(),
                      reInverseTransform = list(),
                      otherLogLik = list(),
                      gr_otherLogLik_internal = list(),
