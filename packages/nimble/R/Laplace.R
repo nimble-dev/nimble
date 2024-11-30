@@ -2832,7 +2832,7 @@ buildAGHQ <- nimbleFunction(
       if(trans)
         pstar <- paramsTransform$inverseTransform(p)
       else
-        pstar <- paramsTransform$tansform(p)
+        pstar <- paramsTransform$transform(p)
       return(pstar)
       returnType(double(1))
     },
@@ -2979,7 +2979,7 @@ buildAGHQ <- nimbleFunction(
       return(mleRes)
       returnType(optimResultNimbleList())
     },
-    ## Calculate MLE of parameters    
+    ## Calculate posterior mode of parameters    
     findMAP = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE) ){
@@ -2988,11 +2988,11 @@ buildAGHQ <- nimbleFunction(
                        jacobian = TRUE,
                        method  = method,
                        hessian = hessian,
-                       parscale = "real") 
+                       parscale = "real")
       return(mleRes)
       returnType(optimResultNimbleList())
     },
-    ## General Maximization Function (Name check: optimize? @perry or Chris?)
+    ## General Maximization Function
     optimize = function(pStart  = double(1, default = Inf),
                        posterior = logical(0, default = FALSE),
                        jacobian = logical(0, default = TRUE),
