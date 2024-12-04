@@ -2839,7 +2839,7 @@ buildAGHQ <- nimbleFunction(
     ## Jacobian of the inverse transformation for parameters
     derivs_pInverseTransform = function(pTransform = double(1), order = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      ans <- derivs(pInverseTransform(pTransform, TRUE), wrt = pTransform_indices, order = order)
+      ans <- derivs(transformParams(pTransform, TRUE), wrt = pTransform_indices, order = order)
       return(ans)
       returnType(ADNimbleList())
     },
