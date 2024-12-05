@@ -231,6 +231,8 @@ buildApproxPosterior <- nimbleFunction(
 		## Quadrature based marginal log-likelihood
 		## Probably not particularly accurate for CCD.
 		calcMarginalLogLikQuad = function(){
+      if(gridMethod == I_CCD) 
+        print("Warning:  CCD not theoretically supported to compute marginal. Switch to AGHQ if accuracy is required." )
       marg <- theta_grid_nfl[[gridMethod]]$quadSum()
 			returnType(double())
 			return(marg)
