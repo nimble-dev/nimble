@@ -26,11 +26,13 @@ GRID_BASE <- nimbleFunctionVirtual(
 		getLogDensity = function(i=integer()){
       returnType(double())
     },
-		# resetGrid = function(nQUpdate = integer(), keepInner = integer()){
-    # },
-		# getThetaModeIndex = function(){
-      # returnType(integer())
-    # },
+		setGridSize = function(nQUpdate = integer()){
+    },
+    skewGridPoints = function(skewSD = double(2)){
+    },
+		getModeIndex = function(){
+      returnType(integer())
+    },
 		getGridSize = function(){
       returnType(integer())
     },
@@ -53,7 +55,7 @@ logSumExp = nimbleFunction(
 #' @export
 buildAGHQGrid <- nimbleFunction(
   contains = GRID_BASE,
-	setup = function(d = 1, nQuad = 3, nre = 0){
+	setup = function(d = 1, nQuad = 3){
     
 		odd <- TRUE
     if(nQuad %% 2 == 0) odd <- FALSE
@@ -186,6 +188,7 @@ buildAGHQGrid <- nimbleFunction(
 			if(!gridBuilt) buildAGHQ()
       gridBuilt <<- TRUE
 		},
+    ## Should I update this to the logSumExp code from CCD grid?
     quadSum = function(){
       if(!odd) modeIndex <<- -1 ## Make sure it's negative.
       margDens <<- 0
@@ -249,6 +252,9 @@ buildAGHQGrid <- nimbleFunction(
         for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + backsolve(cholNegHess, zVals[i,])
       }
       logdetNegHessian <<- 2*sum(log(diag(cholNegHess)))
+    },
+    ## Do nonthing function:
+    skewGridPoints = function(skewSD = double(2)){
     },
 		getWeights = function(i=integer()){
       returnType(double())
@@ -400,7 +406,7 @@ NULL
 #' @export
 buildCCDGrid <- nimbleFunction(
   contains = GRID_BASE,
-	setup = function(d = 1, nQuad = 3, nre = 0){
+	setup = function(d = 1, nQuad = 3){
     if ((d > 120 | d < 1) & method == 1) stop("Dimension of Theta must be in [1,120]")	
     
 		## Walsh Index Assignments for Resolution V Fractional Factorials
@@ -583,6 +589,9 @@ buildCCDGrid <- nimbleFunction(
       }
       return(z)
     },
+    ## Do nothing function:
+    setGridSize = function(nQUpdate = integer()){
+    },
     ## Skew the CCD grid according to the +/- skewed std normal on each side of mode.
     ## Matches with INLA code base. f = 1 as far as I can tell.
     ## z_local[i] = f * design->experiment[k][i]
@@ -644,6 +653,65 @@ buildCCDGrid <- nimbleFunction(
 )## End of buildCCDGrid
 
 
+## Create a caching random effects system for simulating the posterior random effect distribution according to Stringer:
+## This requires the inner mode, the inner cholesky, the 
+
 ## Things I need to add for approx posterior
 ## save inner mode, save inner cholesky etc. for doing simulation of random-effects
 ## save outer mode and negHessian. 
+## Need wgt*density
+## and inner mode
+## and inner cholesky for each point:
+grid_inner_cache = nimbleFunction(
+  setup = function(nre = 0, nQuad = 0){
+    innerMode <- matrix(0, nrow = nQuad, ncol = nre)
+    innerNegHess <- array(0, c(nQuad, nre, nre))
+    if(nQuad < 1) wgts <- c(-1,-1)
+    else wgts <- numeric(nQuad)
+    
+    one_time_fixes_done <- FALSE
+  },
+  run = function(),
+  methods = list(
+    one_time_fixes = function(){
+      if(!one_time_fixes_done)
+        wgts <<- numeric(value = 0, length = nQuad)
+    },
+    ## Note to self, this wgt will be density*wgt, strictly for simulating.
+    cache_wgts = function(weight = double(), indx = integer()){
+      one_time_fixes()
+      wgts[indx] <<- weight
+    },
+    cache_inner_mode = function(mode = double(1), indx = integer()){
+      innerMode[indx,] <<- mode
+    },
+    cache_inner_negHess = function(negHess = double(2), indx = integer()){
+      innerNegHess[indx,,] <<- negHess
+    },
+    update_nQuad = function(nQuadUpdate = integer()){
+      nQuad <<- nQuadUpdate
+      wgts <<- numeric(value = 0, length = nQuad)
+      innerMode <<- matrix(0, nrow = nQuad, ncol = nre)
+      innerNegHess <<- array(0, c(nQuad, nre, nre))
+    },
+    simulate = function(n = integer()){
+      val <- matrix(0, nrow = n, ncol = nre)
+      simwgt <- wgts/sum(wgts)
+      for( i in 1:n ){
+        k <- rcat(1, prob = simwgt)
+        val[i,] <- rmnorm_chol(n=1, mean = innerMode[k,],  
+                                cholesky = innerNegHess[k,,], prec_param = TRUE)
+      }
+      returnType(double(2))
+      return(val)
+    }
+  )
+)
+
+wgts[i] <- exp(theta_grid_nfl[[gridMethod]]$getLogDensity(i))*theta_grid_nfl[[gridMethod]]$getWeights(i)
+			}
+      wgts <- wgts/sum(wgts)
+      for( i in 1:nsim ){
+        k <- rcat(1, prob = wgts)
+        post_sims[i,] <<- rmnorm_chol(n=1, mean = theta_grid_nfl[[gridMethod]]$getInnerModes(k), 
+                                    cholesky = theta_grid_nfl[[gridMethod]]$getInnerCholesky(k), prec_param = TRUE)
