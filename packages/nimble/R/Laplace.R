@@ -3990,7 +3990,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'   specified but can be achieved by choosing method "constant" with
 #'   \code{innerOptimStartValues=0}. Only provided options will be modified. The
 #'   exceptions are \code{innerOptimControl}, \code{outerOptimControl}, which
-#'   are replaced only \code{replace_innerOptimControl=TRUE} or
+#'   are replaced only when \code{replace_innerOptimControl=TRUE} or
 #'   \code{replace_outerOptimControl=TRUE}, respectively.
 #'
 #'   \item \code{getNodeNamesVec(returnParams)}. Return a vector (>1) of names
@@ -4155,7 +4155,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #' allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
 #'
 #' # Change the settings and also illustrate runLaplace
-#' CpumpLaplace$updateSettings(innerOptimMethod = "nlminb", outerOptimMethod = "nlminb")
+#' CpumpLaplace$updateSettings(innerOptimMethod = "nlminb")
 #' newres <- runLaplace(CpumpLaplace)
 #'
 #' # Illustrate use of the component log likelihood and gradient functions to
