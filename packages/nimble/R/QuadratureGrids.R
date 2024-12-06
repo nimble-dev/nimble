@@ -269,11 +269,11 @@ logSumExp = nimbleFunction(
 #' @export
 buildOuterQuad <- nimbleFunction(
   contains = OUTER_GRID_BASE,
-	setup = function(d = 1, nQuad = 3, nre = 0, quadrule = "AGHQ"){
+  setup = function(d = 1, nQuad = 3, nre = 0, quadrule = "AGHQ"){
     ## This may change depending on the actual dimension of the quad grid:
     nQ <- nQuad^2
     
-		zVals <- matrix(0, nrow = nQ, ncol = d)
+    zVals <- matrix(0, nrow = nQ, ncol = d)
     nodeVals <- matrix(0, nrow = nQ, ncol = d)
 
     if(!any(quadRule %in% c("AGHQ", "CCD"))) 
@@ -284,13 +284,13 @@ buildOuterQuad <- nimbleFunction(
     if(quadRule == "CCD")
       quadGrid <- quadRule_CCD(d)
 
-		## One time fixes for scalar / vector changes.
-		one_time_fixes_done <- FALSE
-		wgt <- numeric(nQ + gridFix)
-		logDensity <- numeric(nQ + gridFix)
- 		logdetNegHessian <- 0
+    ## One time fixes for scalar / vector changes.
+    one_time_fixes_done <- FALSE
+    wgt <- numeric(nQ + gridFix)
+    logDensity <- numeric(nQ + gridFix)
+    logdetNegHessian <- 0
     margDens <- 0
-    
+
     gridBuilt <- FALSE
 
     ## Transformation methods
@@ -302,32 +302,32 @@ buildOuterQuad <- nimbleFunction(
     cholNegHess_saved <- matrix(0, d, d)
     skewed <- FALSE
 
-		## AGHQ mode will be in the middle.
-		modeIndex <- -1
+    ## AGHQ mode will be in the middle.
+    modeIndex <- -1
     maxLogDensity <- 0
     
     ## Need to cache all inner mode and cholesky information for simulation purposes:
     innerCache <- grid_inner_cache(nre = nre, nQuad = nQ)
   },
-	run=function(){},
-	methods = list(
-		one_time_fixes = function() {
-			## Run this once after compiling; remove extraneous -1 if necessary
-			if(one_time_fixes_done) return()
-			if(nQ == 1) {
-				logDensity <<- numeric(length = 1, value = logDensity[1])
-				wgt <<- numeric(length = 1, value = wgt[1])
-			}
-			one_time_fixes_done <<- TRUE
-		},	
+  run=function(){},
+  methods = list(
+    one_time_fixes = function() {
+      ## Run this once after compiling; remove extraneous -1 if necessary
+      if(one_time_fixes_done) return()
+      if(nQ == 1) {
+        logDensity <<- numeric(length = 1, value = logDensity[1])
+        wgt <<- numeric(length = 1, value = wgt[1])
+      }
+      one_time_fixes_done <<- TRUE
+    },	
     ## Generalized buildGrid to also reset the grid.
-		buildGrid = function(nQuadUpdate = integer(0, default = -1)){
-			one_time_fixes()
+    buildGrid = function(nQuadUpdate = integer(0, default = -1)){
+      one_time_fixes()
       if(nQuadUpdate > 0 & quadRule == "AGHQ"){
         nQuad <<- nQuadUpdate
         nQ <<- nQuad^d
       }
-			if(!gridBuilt | nQuadUpdate > 0){
+      if(!gridBuilt | nQuadUpdate > 0){
         quadGrid$buildRule()
         zVals <<- quadGrid$getNodes()
         wgt <<- quadGrid$getWeights()
@@ -338,7 +338,7 @@ buildOuterQuad <- nimbleFunction(
         skewed <<- FALSE ## Make sure this is skewed again if redo grid.
         innerCache$update_nQuad(nQuadUpdate = nQ)
       }
-		},
+    },
     ## Should I update this to the logSumExp code from CCD grid?
     quadSum = function(){
       ans <- 0
@@ -349,11 +349,11 @@ buildOuterQuad <- nimbleFunction(
       returnType(double())
       return(ans)
     },
-		saveLogDens = function(i = integer(0, default = -1), logDens = double()){
+    saveLogDens = function(i = integer(0, default = -1), logDens = double()){
       if(i == -1){
         if(odd) logDensityWgt[modeIndex] <<- logDens + log(wgt[modeIndex])
         maxLogDensity <<- logDens
-			}else{
+      }else{
         logDensityWgt[i] <<- logDens + log(wgt[i])
       }
     },
@@ -425,37 +425,39 @@ buildOuterQuad <- nimbleFunction(
       }
     },
     cacheInnerValues = function(indx = integer(), logDensity = double(), mode = double(1), negHess = double(2)){
-      if(indx == -1){
+    if(indx == -1){
         if(modeIndex != -1) logDensityWgt[modeIndex] <<- logDensity + log(wgt[modeIndex])
         maxLogDensity <<- logDensity
-			}else{
+      }else{
         logDensityWgt[indx] <<- logDensity + log(wgt[indx])
       }
       innerCache$cache_inner_negHess(negHess, indx)
       innerCache$cache_wgts(logDensityWgt, indx)
       innerCache$cache_inner_mode(mode, indx)
-      
     },
-		getWeights = function(i=integer()){
+    getWeights = function(i=integer()){
       returnType(double())
-      if(i == -1 & odd)  return(wgt[modeIndex])
+      if(i == -1 & odd)
+        return(wgt[modeIndex])
       return(wgt[i])
     },
-		getAllWeights = function(){
+    getAllWeights = function(){
       returnType(double(1))
       return(wgt)
     },    
-		getNodesTransformed = function(i=integer()){
-      if(i == -1 & odd) return(nodeVals[modeIndex,])
+    getNodesTransformed = function(i=integer()){
+      if(i == -1 & odd) 
+        return(nodeVals[modeIndex,])
       returnType(double(1)); 
       return(nodeVals[i,])
     },
-		getAllNodesTransformed = function(){
+    getAllNodesTransformed = function(){
       returnType(double(2)); 
       return(nodeVals)
     },
-		getNodes = function(i=integer()){
-      if(i == -1 & odd) return(zVals[modeIndex,])
+    getNodes = function(i=integer()){
+      if(i == -1 & odd) 
+        return(zVals[modeIndex,])
       returnType(double(1)); 
       return(zVals[i,])
     },
@@ -463,9 +465,10 @@ buildOuterQuad <- nimbleFunction(
       returnType(double(2)); 
       return(zVals)
     },    
-		getLogDensity = function(i=integer()){
+    getLogDensity = function(i=integer()){
       returnType(double())
-      if(i == -1 & odd) return(logDensity[modeIndex])
+      if(i == -1 & odd) 
+        return(logDensity[modeIndex])
       return(logDensity[i])
     },
     getModeIndex = function(){
@@ -476,7 +479,7 @@ buildOuterQuad <- nimbleFunction(
       returnType(double())
       return(nQ)
     }
-	)
+  )
 )## End generic outer quadrature grid:
 
 #' Build Adaptive Gauss-Hermite Quadrature Grid
