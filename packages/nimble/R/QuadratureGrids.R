@@ -2,59 +2,35 @@
 OUTER_GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-		buildGrid = function(){
-    },
-    quadSum = function(){
-      returnType(double())
-    },
-		saveLogDens = function(i = integer(0), logDensity = double()){
-    },
-    setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
-    },
-    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
-    },
-		getWeights = function(i=integer()){
-      returnType(double())
-    },
-    getAllWeights = function(){
-      returnType(double(1))
-    },
-		getNodes = function(i=integer()){
-      returnType(double(1))
-    },
-    getNodesTransformed = function(i=integer()){
-      returnType(double(1))
-    },
-		getLogDensity = function(i=integer()){
-      returnType(double())
-    },
-    skewGridPoints = function(skewSD = double(2)){
-    },
-		getGridSize = function(){
-      returnType(integer())
-    },
-    buildGrid = function(){
-    },
-    z_to_theta = function(z = double(1)){
-      returnType(double(1))
-    },
-    theta_to_z = function(theta = double(1)){
-      returnType(double(1))
-    }    
-	)
+  buildGrid = function(){},
+  quadSum = function(){ returnType(double()) },
+  saveLogDens = function(i = integer(0), logDensity = double()){},
+  setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
+  transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
+  getWeights = function(i=integer()){ returnType(double()) },
+  getAllWeights = function(){ returnType(double(1)) },
+  getNodes = function(i=integer()){ returnType(double(1)) },
+  getNodesTransformed = function(i=integer()){ returnType(double(1)) }, 
+  getLogDensity = function(i=integer()){ returnType(double()) },
+  skewGridPoints = function(skewSD = double(2)){},
+  getGridSize = function(){returnType(integer())},
+  z_to_theta = function(z = double(1)){ returnType(double(1)) },
+  theta_to_z = function(theta = double(1)){ returnType(double(1)) }    
+ )
 )
 
 ## Write a basic quad rule:
 quadRule_AGHQ = nimbleFunction(
   setup = function(d = 1, nQuad = 1){
     odd <- TRUE
-    if(nQuad %% 2 == 0) odd <- FALSE
-      
-		if(nQuad > 35) {
-			print("We don't currently support more than 35 quadrature nodes per dimension. Setting nQuad to 35")
+    if(nQuad %% 2 == 0) 
+      odd <- FALSE
+
+    if(nQuad > 35) {
+      print("We don't currently support more than 35 quadrature nodes per dimension. Setting nQuad to 35")
       nQuad <- 35
-		}
- 
+    }
+
     one_time_fixes_done <- FALSE
     nQ <- nQuad^d
     wgt <- numeric(nQ)
@@ -63,16 +39,16 @@ quadRule_AGHQ = nimbleFunction(
     modeIndex <- -1
     ## Need to do a reverse for Eigen Vectors:
     inner_max <- 121
-		reverse <- inner_max:1    
+    reverse <- inner_max:1    
   },
   run = function(){},
   methods = list(
     one_time_fixes = function(){
-			if(one_time_fixes_done) return()
-			if(nQ == 1) {
-				wgt <<- numeric(length = 1, value = wgt[1])
-			}
-			one_time_fixes_done <<- TRUE
+      if(one_time_fixes_done) return()
+      if(nQ == 1) {
+        wgt <<- numeric(length = 1, value = wgt[1])
+      }
+      one_time_fixes_done <<- TRUE
     },
     buildAGHQOne = function(nQ1 = integer()){
       res <- matrix(0, nrow = nQ1, ncol = 2)
@@ -198,71 +174,71 @@ quadRule_CCD <- nimbleFunction(
 			23200, 24167, 25700, 26360, 26591, 26776, 28443, 28905,
 			29577, 32705)
 			
-		## Number of grid points for different dimensions of theta.
-		nCCD <- index; p <- 1
-		for (i in 1:length(index)) {
-			if (index[i]>=p) p <- p * 2
-			nCCD[i] <- p
-		}
-		nC <- nCCD[d] ## minimum 2. Note that if d = 1, INLA does a grid approximation instead of CCD. Should do same here.
+    ## Number of grid points for different dimensions of theta.
+    nCCD <- index; p <- 1
+    for (i in 1:length(index)) {
+      if (index[i]>=p) p <- p * 2
+      nCCD[i] <- p
+    }
+    nC <- nCCD[d] ## minimum 2. Note that if d = 1, INLA does a grid approximation instead of CCD. Should do same here.
     nQ <- nC + 2*d + 1
 		
     zVals <- matrix(0, nrow = nQ, ncol = d)
 
-		## One time fixes for scalar / vector changes.
-		wgt <- numeric(nQ)
+    ## One time fixes for scalar / vector changes.
+    wgt <- numeric(nQ)
 
-		## CCD mode index is 1 always.
-		modeIndex <- 1
+    ## CCD mode index is 1 always.
+    modeIndex <- 1
   },
 	run=function(){},
 	methods = list(
     ## Taken from Simon Wood's mgcv package.
-		## https://github.com/cran/mgcv/blob/master/R/inla.r
-		## However, we do scaled design following INLA such that z*zT = 1
-		## from https://github.com/hrue/r-inla/blob/devel/gmrflib/design.c
+    ## https://github.com/cran/mgcv/blob/master/R/inla.r
+    ## However, we do scaled design following INLA such that z*zT = 1
+    ## from https://github.com/hrue/r-inla/blob/devel/gmrflib/design.c
     ## Can't update nQuad here but makes it general.
-		buildRule = function(nQuadUpdate = integer(0, default = 0)){ 
-			## First point is mode.
-			design <- matrix(0, nQ, d)
-			for (i in 1:d) {
-				design[index[i]+2,i] <- 1
-				design[2:(nC+1),i] <- fwt(x = design[2:(nC+1),i], n = nC)
-			}
-			design <- design/sqrt(d)
-			
-			## Next are the star points on the axes. (scaled)
-			design[(nC+2):(nC + d + 1), 1:d] <- diag(d)*1
-			design[(nC + d + 2):(nC + 2*d + 1), 1:d] <- diag(d)*-1
+    buildRule = function(nQuadUpdate = integer(0, default = 0)){ 
+      ## First point is mode.
+      design <- matrix(0, nQ, d)
+      for (i in 1:d) {
+        design[index[i]+2,i] <- 1
+        design[2:(nC+1),i] <- fwt(x = design[2:(nC+1),i], n = nC)
+      }
+      design <- design/sqrt(d)
+      
+      ## Next are the star points on the axes. (scaled)
+      design[(nC+2):(nC + d + 1), 1:d] <- diag(d)*1
+      design[(nC + d + 2):(nC + 2*d + 1), 1:d] <- diag(d)*-1
 
-			## Weights as defined by Rue 2009. 
-			## Note that the paper weights are incorrect: https://groups.google.com/g/r-inla-discussion-group/c/sy2xYin7YJA
-			f0 <- 1.1
-			wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
-			wgt0 <- 1 - (nQ-1)*wgts
-			
-			zVals <<- design
+      ## Weights as defined by Rue 2009. 
+      ## Note that the paper weights are incorrect: https://groups.google.com/g/r-inla-discussion-group/c/sy2xYin7YJA
+      f0 <- 1.1
+      wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
+      wgt0 <- 1 - (nQ-1)*wgts
+      
+      zVals <<- design
       wgt[1] <<- wgt0
-			wgt[2:nQ] <<- rep(wgts, nQ-1)
-		},
+      wgt[2:nQ] <<- rep(wgts, nQ-1)
+    },
 		## fast Walsh transform taken from Wood MGCV inla.
-		fwt = function(x = double(1), n = integer()) {
-			lag <- 1
-			while (lag < n) {
-			offset <-  lag * 2
-			ngroups <- length(x)/offset
-				for (group in 0:(ngroups-1)) { ## vectorized
-					j <- 1:lag + group*offset
-					k <- j + lag
-					xj <- x[j]; xk <- x[k]
-					x[j] <- xj + xk
-					x[k] <- xj - xk
-				}
-			lag <- offset
-			} ## while lag
-			returnType(double(1))
-			return(x)
-		},
+    fwt = function(x = double(1), n = integer()) {
+      lag <- 1
+      while (lag < n) {
+        offset <-  lag * 2
+        ngroups <- length(x)/offset
+        for (group in 0:(ngroups-1)) { ## vectorized
+          j <- 1:lag + group*offset
+          k <- j + lag
+          xj <- x[j]; xk <- x[k]
+          x[j] <- xj + xk
+          x[k] <- xj - xk
+        }
+        lag <- offset
+      } ## while lag
+      returnType(double(1))
+      return(x)
+    },
     getNodes = function(){
       returnType(double(2))
       return(zVals)
