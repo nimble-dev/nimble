@@ -1,5 +1,5 @@
 ## Build a Grid Base to access all these functions in a nimble function list.
-GRID_BASE <- nimbleFunctionVirtual(
+OUTER_GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
 		buildGrid = function(){
@@ -47,7 +47,6 @@ GRID_BASE <- nimbleFunctionVirtual(
 ## Write a basic quad rule:
 quadRule_AGHQ = nimbleFunction(
   setup = function(d = 1, nQuad = 1){
-		
     odd <- TRUE
     if(nQuad %% 2 == 0) odd <- FALSE
       
@@ -293,7 +292,7 @@ logSumExp = nimbleFunction(
 
 #' @export
 buildOuterQuad <- nimbleFunction(
-  contains = GRID_BASE,
+  contains = OUTER_GRID_BASE,
 	setup = function(d = 1, nQuad = 3, nre = 0, quadrule = "AGHQ"){
     ## This may change depending on the actual dimension of the quad grid:
     nQ <- nQuad^2
