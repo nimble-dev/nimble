@@ -41,6 +41,231 @@ GRID_BASE <- nimbleFunctionVirtual(
 	)
 )
 
+## Write a basic quad rule:
+quadRule_AGHQ = nimbleFunction(
+  setup = function(d = 1, nQuad = 1){
+		
+    odd <- TRUE
+    if(nQuad %% 2 == 0) odd <- FALSE
+      
+		if(nQuad > 35) {
+			print("We don't currently support more than 35 quadrature nodes per dimension. Setting nQuad to 35")
+      nQuad <- 35
+		}
+ 
+    one_time_fixes_done <- FALSE
+    nQ <- nQuad^d
+    wgt <- numeric(nQ)
+    if(nQ == 1) wgt <- c(0, -1)
+    zVals <- matrix(0, nrow = nQ, ncol = d)
+    modeIndex <- -1
+    ## Need to do a reverse for Eigen Vectors:
+    inner_max <- 121
+		reverse <- inner_max:1    
+  },
+  run = function(){},
+  methods = list(
+    one_time_fixes = function(){
+			if(one_time_fixes_done) return()
+			if(nQ == 1) {
+				wgt <<- numeric(length = 1, value = wgt[1])
+			}
+			one_time_fixes_done <<- TRUE
+    },
+    buildAGHQOne = function(nQ1 = integer()){
+      res <- matrix(0, nrow = nQ1, ncol = 2)
+      if( nQ1 == 1 ){
+        ## Laplace Approximation:
+        res[,1] <- 0
+        res[,2] <- sqrt(2*pi)
+      }else{
+        i <- 1:(nQ1-1)
+        dv <- sqrt(i/2)
+        ## Recreate pracma::Diag for this problem.
+        y <- matrix(0, nrow = nQ1, ncol = nQ1)
+        y[1:(nQ1-1), 1:(nQ1-1) + 1] <- diag(dv)
+        y[1:(nQ1-1) + 1, 1:(nQ1-1)] <- diag(dv)
+        E <- eigen(y, symmetric = TRUE)
+        L <- E$values	# Always biggest to smallest.
+        V <- E$vectors
+        inds <- reverse[(inner_max-nQ1+1):inner_max]	## Hard coded to maximum 120.
+        x <- L[inds]
+        ## Make mode hard zero. We know nQ is odd and > 1.
+        if(odd) x[ceiling(nQ1 / 2 ) ] <- 0
+        V <- t(V[, inds])
+        ## Update nodes and weights in terms of z = x/sqrt(2) 
+        ## and include Gaussian kernel in weight to integrate an arbitrary function.
+        w <- V[, 1]^2  * sqrt(2*pi) * exp(x^2)
+        x <- sqrt(2) * x
+        res[,1] <- x
+        res[,2] <- w
+      }
+      returnType(double(2))
+      return(res)
+    },
+    buildRule = function(nQuadUpdate = integer(0, default = 0)){ 
+      one_time_fixes()
+      
+      if(nQuadUpdate > 0){
+        nQuad <<- nQuadUpdate
+        nQ <<- nQuad^d
+        zVals <<- matrix(0, nrow = nQ, ncol = d)
+      }
+
+      odd <<- TRUE
+      if(nQuad %% 2 == 0) odd <<- FALSE
+      
+      if( nQuad == 1 ){
+        ## Laplace Approximation:
+        zVals <<- matrix(0, nrow = nQuad, ncol = d)
+        wgt <<- numeric(value = exp(0.5 * d * log(2*pi)), length = nQ)
+        modeIndex <<- 1
+      }else{
+        nodes <- buildAGHQOne(nQuad)
+        ## If d = 1, then we are done.
+        if(d == 1){
+          zVals[,1] <<- nodes[,1]
+          wgt <<- nodes[,2]
+          if(odd) modeIndex <<- which(zVals[,1] == 0)[1]
+        }else{
+          ## Build the multivariate quadrature rule.
+          wgt <<- rep(1, nQ)
+          
+          ## A counter for when to swap.
+          swp <- numeric(value = 0, length = d)
+          for( ii in 1:d ) swp[ii] <- nQuad^(ii-1)
+
+          ## Repeat x for each dimension swp times.
+          for(j in 1:d ) {
+            indx <- 1
+            for( ii in 1:nQ ) {
+              zVals[ii, j] <<- nodes[indx,1]
+              wgt[ii] <<- wgt[ii]*nodes[indx,2]
+              k <- ii %% swp[j] 
+              if(k == 0) indx <- indx + 1
+              if(indx > nQuad) indx <- 1
+            }
+          }
+          ## Assuming mode index is the middle number.
+          if(odd) {
+            modeIndex <<- ceiling(nQ/2)
+            ## Just in case that goes horribly wrong...
+            if(sum(abs(zVals[modeIndex,])) != 0) {
+              for(ii in 1:nQ) {
+                if(sum(abs(zVals[ii,])) == 0) modeIndex <<- ii
+              }
+            }
+          }
+        }
+      }
+    },
+    getNodes = function(){
+      returnType(double(2))
+      return(zVals)
+    },
+    getWeights = function(){
+      returnType(double(1))
+      return(wgt)
+    }
+  )
+)
+
+quadRule_CCD <- nimbleFunction(
+	setup = function(d = 1){
+    if ((d > 120 | d < 1)) stop("Dimension of Theta must be in [1,120]")	
+    
+		## Walsh Index Assignments for Resolution V Fractional Factorials
+		index <- c(1, 2, 4, 8, 15, 16, 32, 51, 64, 85, 106, 128,
+			150, 171, 219, 237, 247, 256, 279, 297, 455, 512, 537,
+			557, 594, 643, 803, 863, 998, 1024, 1051, 1070, 1112,
+			1169, 1333, 1345, 1620, 1866, 2048, 2076, 2085, 2185,
+			2372, 2456, 2618, 2800, 2873, 3127, 3284, 3483, 3557,
+			3763, 4096, 4125, 4135, 4174, 4435, 4459, 4469, 4497,
+			4752, 5255, 5732, 5804, 5915, 6100, 6369, 6907, 7069,
+			8192, 8263, 8351, 8422, 8458, 8571, 8750, 8858, 9124,
+			9314, 9500, 10026, 10455, 10556, 11778, 11885, 11984,
+			13548, 14007, 14514, 14965, 15125, 15554, 16384, 16457,
+			16517, 16609, 16771, 16853, 17022, 17453, 17891, 18073,
+			18562, 18980, 19030, 19932, 20075, 20745, 21544, 22633,
+			23200, 24167, 25700, 26360, 26591, 26776, 28443, 28905,
+			29577, 32705)
+			
+		## Number of grid points for different dimensions of theta.
+		nCCD <- index; p <- 1
+		for (i in 1:length(index)) {
+			if (index[i]>=p) p <- p * 2
+			nCCD[i] <- p
+		}
+		nC <- nCCD[d] ## minimum 2. Note that if d = 1, INLA does a grid approximation instead of CCD. Should do same here.
+    nQ <- nC + 2*d + 1
+		
+    zVals <- matrix(0, nrow = nQ, ncol = d)
+
+		## One time fixes for scalar / vector changes.
+		wgt <- numeric(nQ)
+
+		## CCD mode index is 1 always.
+		modeIndex <- 1
+  },
+	run=function(){},
+	methods = list(
+    ## Taken from Simon Wood's mgcv package.
+		## https://github.com/cran/mgcv/blob/master/R/inla.r
+		## However, we do scaled design following INLA such that z*zT = 1
+		## from https://github.com/hrue/r-inla/blob/devel/gmrflib/design.c
+		buildRule = function(){
+			## First point is mode.
+			design <- matrix(0, nQ, d)
+			for (i in 1:d) {
+				design[index[i]+2,i] <- 1
+				design[2:(nC+1),i] <- fwt(x = design[2:(nC+1),i], n = nC)
+			}
+			design <- design/sqrt(d)
+			
+			## Next are the star points on the axes. (scaled)
+			design[(nC+2):(nC + d + 1), 1:d] <- diag(d)*1
+			design[(nC + d + 2):(nC + 2*d + 1), 1:d] <- diag(d)*-1
+
+			## Weights as defined by Rue 2009. 
+			## Note that the paper weights are incorrect: https://groups.google.com/g/r-inla-discussion-group/c/sy2xYin7YJA
+			f0 <- 1.1
+			wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
+			wgt0 <- 1 - (nQ-1)*wgts
+			
+			zVals <<- design
+      wgt[1] <<- wgt0
+			wgt[2:nQ] <<- rep(wgts, nQ-1)
+		},
+		## fast Walsh transform taken from Wood MGCV inla.
+		fwt = function(x = double(1), n = integer()) {
+			lag <- 1
+			while (lag < n) {
+			offset <-  lag * 2
+			ngroups <- length(x)/offset
+				for (group in 0:(ngroups-1)) { ## vectorized
+					j <- 1:lag + group*offset
+					k <- j + lag
+					xj <- x[j]; xk <- x[k]
+					x[j] <- xj + xk
+					x[k] <- xj - xk
+				}
+			lag <- offset
+			} ## while lag
+			returnType(double(1))
+			return(x)
+		},
+    getNodes = function(){
+      returnType(double(2))
+      return(zVals)
+    },
+    getWeights = function(){
+      returnType(double(1))
+      return(wgt)
+    }
+  )
+)
+
+
 ## Method for summing likelihoods on real scale with possible small values.
 ## Returns back on log scale.
 #' @export
@@ -89,7 +314,15 @@ buildAGHQGrid <- nimbleFunction(
     margDens <- 0
     
     gridBuilt <- FALSE
-   
+
+    ## Transformation methods
+    transformation <- "spectral"
+    transformationSet <- FALSE
+    calcEigen <- FALSE
+    ATransform <- matrix(0, d, d)
+    AInverseTransform <- matrix(0, d, d)
+    cholNegHess_saved <- matrix(0, d, d)
+
 		## AGHQ mode will be in the middle.
 		modeIndex <- -1
     maxLogDensity <- 0
@@ -237,22 +470,58 @@ buildAGHQGrid <- nimbleFunction(
       for( i in 1:nQ) nodeVals[i,] <<- inner_mode + SD*zVals[i,]
       logdetNegHessian <<- log(negHess[1,1])
     }, 
-    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
+    ## Set the transformation method to be used and compute Eigen Decomp if reqiured.
+    setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
+      cholNegHess_saved <<- cholNegHess
+      logdetNegHessian <<- 2*sum(log(diag(cholNegHess)))
       if(method == "spectral"){
-        ## Spectral transformation.
+        transformation <<- "spectral"      
         negHess <- t(cholNegHess) %*% cholNegHess
         eigenDecomp <- nimEigen(negHess)
-        ATransform <- matrix(0, nrow = d, ncol = d)   
         for( i in 1:d ){
-            ATransform[,i] <- eigenDecomp$vectors[,i]/sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
+            ATransform[,i] <<- eigenDecomp$vectors[,i]/sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
+            AInverseTransform[,i] <<- eigenDecomp$vectors[,i]*sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
         }
+        calcEigen <<- TRUE
+      }else{
+        transformation <<- "cholesky"
+      }
+      transformationSet <<- TRUE
+    },
+    ## Transform the quadrature grid:
+    ## Can change transformation type here.
+    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
+      if(!transformationSet | (!calcEigen & method == "spectral") ){
+        setTransformation(cholNegHess, inner_mode, method)
+      }
+      if(method == "spectral"){
+        transformation <<- "spectral"
         for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + (ATransform %*% zVals[i,])
       }else{
-        ## Cholesky transformation.
+        transformation <<- "cholesky"
         for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + backsolve(cholNegHess, zVals[i,])
       }
-      logdetNegHessian <<- 2*sum(log(diag(cholNegHess)))
     },
+    z_to_theta = function(z = double(1)){
+      returnType(double(1))
+      if(transformation == "spectral"){
+        theta <- (nodeVals[modeIndex,] + (ATransform %*% z))[,1]
+      }else{
+        ## Cholesky transformation.
+        theta <- nodeVals[modeIndex,] + backsolve(cholNegHess_saved, z)
+      }
+      return(theta)
+    },
+    theta_to_z = function(theta = double(1)){
+      returnType(double(1))
+      if(transformation == "spectral"){
+        z <- ((theta - nodeVals[modeIndex,]) %*% AInverseTransform)[1,]
+      }else{
+        ## Cholesky transformation.
+        z <- (cholNegHess_saved %*% (theta - nodeVals[modeIndex,]))[,1]
+      }
+      return(z)
+    },    
     ## Do nonthing function:
     skewGridPoints = function(skewSD = double(2)){
     },
@@ -407,7 +676,7 @@ NULL
 buildCCDGrid <- nimbleFunction(
   contains = GRID_BASE,
 	setup = function(d = 1, nQuad = 3){
-    if ((d > 120 | d < 1) & method == 1) stop("Dimension of Theta must be in [1,120]")	
+    if ((d > 120 | d < 1)) stop("Dimension of Theta must be in [1,120]")	
     
 		## Walsh Index Assignments for Resolution V Fractional Factorials
 		index <- c(1, 2, 4, 8, 15, 16, 32, 51, 64, 85, 106, 128,
@@ -449,8 +718,8 @@ buildCCDGrid <- nimbleFunction(
     
     gridBuilt <- FALSE
    
-		## AGHQ mode will be in the middle.
-		modeIndex <- -1
+		## CCD mode index is 1 always.
+		modeIndex <- 1
     maxLogDensity <- 0
     
     ## Transformation methods
@@ -509,7 +778,6 @@ buildCCDGrid <- nimbleFunction(
 		},  
 		## Doesn't default to building the grid.
 		buildGrid = function(){
-			one_time_fixes()
 			if(!gridBuilt) buildCCD()
       gridBuilt <<- TRUE
 		},
@@ -539,10 +807,11 @@ buildCCDGrid <- nimbleFunction(
       logdetNegHessian <<- log(negHess[1,1])
     },
     ## Set the transformation method to be used and compute Eigen Decomp if reqiured.
-    setTransformation <- function(cholNegHess = double(2), inner_mode = double(1), method = character()){
+    setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
       cholNegHess_saved <<- cholNegHess
       logdetNegHessian <<- 2*sum(log(diag(cholNegHess)))
       if(method == "spectral"){
+        transformation <<- "spectral"
         negHess <- t(cholNegHess) %*% cholNegHess
         eigenDecomp <- nimEigen(negHess)
         for( i in 1:d ){
@@ -551,7 +820,7 @@ buildCCDGrid <- nimbleFunction(
         }
         calcEigen <<- TRUE
       }else{
-        transform <<- "cholesky"
+        transformation <<- "cholesky"
       }
       transformationSet <<- TRUE
     },
@@ -581,16 +850,13 @@ buildCCDGrid <- nimbleFunction(
     },
     theta_to_z = function(theta = double(1)){
       returnType(double(1))
-      if(transform == "spectral"){
+      if(transformation == "spectral"){
         z <- ((theta - nodeVals[modeIndex,]) %*% AInverseTransform)[1,]
       }else{
         ## Cholesky transformation.
-        z <- (cholNegHess %*% (theta - nodeVals[modeIndex,]))[,1]
+        z <- (cholNegHess_saved %*% (theta - nodeVals[modeIndex,]))[,1]
       }
       return(z)
-    },
-    ## Do nothing function:
-    setGridSize = function(nQUpdate = integer()){
     },
     ## Skew the CCD grid according to the +/- skewed std normal on each side of mode.
     ## Matches with INLA code base. f = 1 as far as I can tell.
@@ -619,7 +885,7 @@ buildCCDGrid <- nimbleFunction(
       return(wgt)
     },
 		getNodesTransformed = function(i=integer()){
-      if(i == -1 & odd) return(nodeVals[modeIndex,])
+      if(i == -1) return(nodeVals[modeIndex,])
       returnType(double(1)); 
       return(nodeVals[i,])
     },
@@ -628,7 +894,7 @@ buildCCDGrid <- nimbleFunction(
       return(nodeVals)
     },
 		getNodes = function(i=integer()){
-      if(i == -1 & odd) return(zVals[modeIndex,])
+      if(i == -1) return(zVals[modeIndex,])
       returnType(double(1)); 
       return(zVals[i,])
     },
@@ -671,7 +937,7 @@ grid_inner_cache = nimbleFunction(
     
     one_time_fixes_done <- FALSE
   },
-  run = function(),
+  run = function(){},
   methods = list(
     one_time_fixes = function(){
       if(!one_time_fixes_done)
@@ -707,11 +973,3 @@ grid_inner_cache = nimbleFunction(
     }
   )
 )
-
-wgts[i] <- exp(theta_grid_nfl[[gridMethod]]$getLogDensity(i))*theta_grid_nfl[[gridMethod]]$getWeights(i)
-			}
-      wgts <- wgts/sum(wgts)
-      for( i in 1:nsim ){
-        k <- rcat(1, prob = wgts)
-        post_sims[i,] <<- rmnorm_chol(n=1, mean = theta_grid_nfl[[gridMethod]]$getInnerModes(k), 
-                                    cholesky = theta_grid_nfl[[gridMethod]]$getInnerCholesky(k), prec_param = TRUE)
