@@ -1,6 +1,5 @@
 
 
-
 ####################################################################
 ### virtual nimbleFunction template, included for ALL samplers #####
 ####################################################################
@@ -3237,7 +3236,7 @@ sampler_barker <- nimbleFunction(
         scale                <- extractControlElement(control, 'scale',                1         )  # global scale, adapted during iterations.
         sigma                <- extractControlElement(control, 'sigma',                0.1       )  # sd for default bimodal proposal distribution.
         adaptive             <- extractControlElement(control, 'adaptive',             TRUE      )
-        adaptiveScaleOnly    <- extractControlElement(control, 'adaptScaleOnly',       FALSE     )
+        adaptScaleOnly       <- extractControlElement(control, 'adaptScaleOnly',       FALSE     )
         adaptInterval        <- extractControlElement(control, 'adaptInterval',        1         )  # interval for global scale and when diagonal proposal used.
         adaptFactorExponent  <- extractControlElement(control, 'adaptFactorExponent',  0.6       )  # Per Livingstone & Zanella 2022.
         adaptCov             <- extractControlElement(control, 'adaptCov',             TRUE      )
@@ -3287,6 +3286,7 @@ sampler_barker <- nimbleFunction(
                         propCov <- diag(propCov)
                     }
             }
+            propVar <- nimNumeric(2) # Dummy object for compilation; not used.
             if(!inherits(propCov, 'matrix'))        stop('sampler_barker: propCov must be a matrix')
             if(!inherits(propCov[1,1], 'numeric'))  stop('sampler_barker: propCov matrix must be numeric')
             if(!all(dim(propCov) == d))             stop('sampler_barker: must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix, in the transformed parameter space')
@@ -3295,13 +3295,13 @@ sampler_barker <- nimbleFunction(
             if(is.character(propCov)) {
                 if(propCov == 'identity') propVar <- nimNumeric(d2, value = 1) else stop("sampler_barker: unrecognized `propCov` control list argument")
             } else {
-                if(length(propVar) == 1) {
-                    propVar <- nimNumeric(d2, value = propVar)
-                }
+                if(length(propCov) == 1) {
+                    propVar <- nimNumeric(d2, value = propCov)
+                } else propVar <- propCov
             }
-            if(length(propVar) != d2)
+            if(length(propVar) != d2 || !is.null(dim(propVar)))
                 stop("sampler_barker: `propCov` must be a scalar or vector of length equal to number of target elements, in the transformed parameter space, when using diagonal proposal covariance")
-            propCov <- diag(2)
+            propCov <- diag(2)  # Dummy object for compilation; not used.
         }
 
         propCovOriginal <- propCov
@@ -3439,7 +3439,8 @@ sampler_barker <- nimbleFunction(
             if(!adaptCov & !adaptScaleOnly) {
                 propVar <<- (1-gammaValue) * propVar + gammaValue * ((current-means)^2)
                 sdValues <<- sqrt(propVar)
-            } else {
+            }
+            if(adaptCov) {
                 if(timesRan <= adaptDelayCov) {  
                     ## Only adapt diagonal for initial window.
                     for(i in 1:d) { 
