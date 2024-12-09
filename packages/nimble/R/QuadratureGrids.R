@@ -2,7 +2,7 @@
 OUTER_GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-  buildGrid = function(){},
+  buildGrid = function(nQuadUpdate = integer(0, default = -1)){},
   quadSum = function(){ returnType(double()) },
   saveLogDens = function(i = integer(0), logDensity = double()){},
   setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
@@ -19,57 +19,43 @@ OUTER_GRID_BASE <- nimbleFunctionVirtual(
  )
 )
 
+## Nimble List Quadrature Data type: Returns where the mode is, wgts and nodes.
+quadGridListDef <- nimbleList(modeIndex = integer(0), wgts = double(1), nodes = double(2))
+
 ## Write a basic quad rule:
+## Maybe not cache here at all?
+## This will end up being in a different wrapper.
+## This avoids generating too much memory as this function gets called.
 quadRule_AGHQ = nimbleFunction(
-  setup = function(d = 1, nQuad = 1){
-    odd <- TRUE
-    if(nQuad %% 2 == 0) 
-      odd <- FALSE
-
-    if(nQuad > 35) {
-      print("We don't currently support more than 35 quadrature nodes per dimension. Setting nQuad to 35")
-      nQuad <- 35
-    }
-
-    one_time_fixes_done <- FALSE
-    nQ <- nQuad^d
-    wgt <- numeric(nQ)
-    if(nQ == 1) wgt <- c(0, -1)
-    zVals <- matrix(0, nrow = nQ, ncol = d)
-    modeIndex <- -1
-    ## Need to do a reverse for Eigen Vectors:
-    inner_max <- 121
-    reverse <- inner_max:1    
+  setup = function(d = 1){
   },
   run = function(){},
   methods = list(
-    one_time_fixes = function(){
-      if(one_time_fixes_done) return()
-      if(nQ == 1) {
-        wgt <<- numeric(length = 1, value = wgt[1])
-      }
-      one_time_fixes_done <<- TRUE
-    },
-    buildAGHQOne = function(nQ1 = integer()){
-      res <- matrix(0, nrow = nQ1, ncol = 2)
-      if( nQ1 == 1 ){
+    buildAGHQOne = function(nQuad = integer()){
+      odd <- TRUE
+      if(nQuad %% 2 == 0) 
+        odd <- FALSE
+
+      res <- matrix(0, nrow = nQuad, ncol = 2)
+      if( nQuad == 1 ){
         ## Laplace Approximation:
         res[,1] <- 0
         res[,2] <- sqrt(2*pi)
       }else{
-        i <- 1:(nQ1-1)
+        i <- 1:(nQuad-1)
         dv <- sqrt(i/2)
         ## Recreate pracma::Diag for this problem.
-        y <- matrix(0, nrow = nQ1, ncol = nQ1)
-        y[1:(nQ1-1), 1:(nQ1-1) + 1] <- diag(dv)
-        y[1:(nQ1-1) + 1, 1:(nQ1-1)] <- diag(dv)
+        y <- matrix(0, nrow = nQuad, ncol = nQuad)
+        y[1:(nQuad-1), 1:(nQuad-1) + 1] <- diag(dv)
+        y[1:(nQuad-1) + 1, 1:(nQuad-1)] <- diag(dv)
         E <- eigen(y, symmetric = TRUE)
         L <- E$values	# Always biggest to smallest.
         V <- E$vectors
-        inds <- reverse[(inner_max-nQ1+1):inner_max]	## Hard coded to maximum 120.
+        inds <- numeric(value = 0, length = nQuad)
+        for( j in seq_along(L) ) inds[j] <- nQuad-j+1 ## Is this an efficient way to do it?
         x <- L[inds]
         ## Make mode hard zero. We know nQ is odd and > 1.
-        if(odd) x[ceiling(nQ1 / 2 ) ] <- 0
+        if(odd) x[ceiling(nQuad / 2 ) ] <- 0
         V <- t(V[, inds])
         ## Update nodes and weights in terms of z = x/sqrt(2) 
         ## and include Gaussian kernel in weight to integrate an arbitrary function.
@@ -81,33 +67,34 @@ quadRule_AGHQ = nimbleFunction(
       returnType(double(2))
       return(res)
     },
-    buildRule = function(nQuadUpdate = integer(0, default = 0)){ 
-      one_time_fixes()
-      
-      if(nQuadUpdate > 0){
-        nQuad <<- nQuadUpdate
-        nQ <<- nQuad^d
-        zVals <<- matrix(0, nrow = nQ, ncol = d)
+    buildQuadRule = function(nQuad = integer(0, default = 0)){
+      if(nQuad > 35) {
+        print("We don't currently support more than 35 quadrature nodes per dimension. Setting nQuad to 35.")
+        nQuad <- 35
       }
 
-      odd <<- TRUE
-      if(nQuad %% 2 == 0) odd <<- FALSE
-      
+      odd <- TRUE
+      if(nQuad %% 2 == 0) 
+        odd <- FALSE
+
+      nQ <- nQuad^d
+      zVals <- matrix(0, nrow = nQ, ncol = d)
+      wgt <- numeric(value = 0, length = nQ)
+
       if( nQuad == 1 ){
         ## Laplace Approximation:
-        zVals <<- matrix(0, nrow = nQuad, ncol = d)
-        wgt <<- numeric(value = exp(0.5 * d * log(2*pi)), length = nQ)
-        modeIndex <<- 1
+        wgt <- numeric(value = exp(0.5 * d * log(2*pi)), length = nQ)
+        modeIndex <- 1
       }else{
         nodes <- buildAGHQOne(nQuad)
         ## If d = 1, then we are done.
         if(d == 1){
-          zVals[,1] <<- nodes[,1]
-          wgt <<- nodes[,2]
-          if(odd) modeIndex <<- which(zVals[,1] == 0)[1]
+          zVals[,1] <- nodes[,1]
+          wgt <- nodes[,2]
+          if(odd) modeIndex <- which(zVals[,1] == 0)[1]
         }else{
           ## Build the multivariate quadrature rule.
-          wgt <<- rep(1, nQ)
+          wgt <- rep(1, nQ)
           
           ## A counter for when to swap.
           swp <- numeric(value = 0, length = d)
@@ -117,8 +104,8 @@ quadRule_AGHQ = nimbleFunction(
           for(j in 1:d ) {
             indx <- 1
             for( ii in 1:nQ ) {
-              zVals[ii, j] <<- nodes[indx,1]
-              wgt[ii] <<- wgt[ii]*nodes[indx,2]
+              zVals[ii, j] <- nodes[indx,1]
+              wgt[ii] <- wgt[ii]*nodes[indx,2]
               k <- ii %% swp[j] 
               if(k == 0) indx <- indx + 1
               if(indx > nQuad) indx <- 1
@@ -126,34 +113,30 @@ quadRule_AGHQ = nimbleFunction(
           }
           ## Assuming mode index is the middle number.
           if(odd) {
-            modeIndex <<- ceiling(nQ/2)
+            modeIndex <- ceiling(nQ/2)
             ## Just in case that goes horribly wrong...
             if(sum(abs(zVals[modeIndex,])) != 0) {
               for(ii in 1:nQ) {
-                if(sum(abs(zVals[ii,])) == 0) modeIndex <<- ii
+                if(sum(abs(zVals[ii,])) == 0) modeIndex <- ii
               }
             }
           }
         }
-        if(!odd) 
-          modeIndex <<- -1  ## No mode is present.
+        if(!odd)
+          modeIndex <- -1  ## No mode is present.
       }
-    },
-    getNodes = function(){
-      returnType(double(2))
-      return(zVals)
-    },
-    getWeights = function(){
-      returnType(double(1))
-      return(wgt)
-    },
-    getModeIndex = function(){
-      returnType(integer())
-      return(modeIndex)
+      returnType(quadGridListDef())
+      output <- quadGridListDef$new()
+      output$modeIndex <- as.integer(modeIndex)
+      output$wgts <- wgt
+      output$nodes <- zVals
+      return(output)
     }
   )
 )
 
+## CCD Grid quadrature from Rue et al 2009, adapted based on some code from MGCV
+## for their approximate posterior methods.
 quadRule_CCD <- nimbleFunction(
 	setup = function(d = 1){
     if ((d > 120 | d < 1)) stop("Dimension of Theta must be in [1,120]")	
@@ -181,15 +164,7 @@ quadRule_CCD <- nimbleFunction(
       nCCD[i] <- p
     }
     nC <- nCCD[d] ## minimum 2. Note that if d = 1, INLA does a grid approximation instead of CCD. Should do same here.
-    nQ <- nC + 2*d + 1
-		
-    zVals <- matrix(0, nrow = nQ, ncol = d)
-
-    ## One time fixes for scalar / vector changes.
-    wgt <- numeric(nQ)
-
-    ## CCD mode index is 1 always.
-    modeIndex <- 1
+    nQ <- nC + 2*d + 1		
   },
 	run=function(){},
 	methods = list(
@@ -198,7 +173,7 @@ quadRule_CCD <- nimbleFunction(
     ## However, we do scaled design following INLA such that z*zT = 1
     ## from https://github.com/hrue/r-inla/blob/devel/gmrflib/design.c
     ## Can't update nQuad here but makes it general.
-    buildRule = function(nQuadUpdate = integer(0, default = 0)){ 
+    buildQuadRulebuildQuadRule = function(nQuad = integer(0, default = 0)){ 
       ## First point is mode.
       design <- matrix(0, nQ, d)
       for (i in 1:d) {
@@ -216,10 +191,18 @@ quadRule_CCD <- nimbleFunction(
       f0 <- 1.1
       wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
       wgt0 <- 1 - (nQ-1)*wgts
-      
-      zVals <<- design
-      wgt[1] <<- wgt0
-      wgt[2:nQ] <<- rep(wgts, nQ-1)
+
+      ## One time fixes for scalar / vector changes.
+      wgt <- numeric(value = 0, length = nQ)
+      wgt[1] <- wgt0
+      wgt[2:nQ] <- rep(wgts, nQ-1)
+
+      returnType(quadGridListDef())
+      output <- quadGridListDef$new()
+      output$modeIndex <- 1L
+      output$wgts <- wgt
+      output$nodes <- design
+      return(output)
     },
 		## fast Walsh transform taken from Wood MGCV inla.
     fwt = function(x = double(1), n = integer()) {
@@ -238,25 +221,29 @@ quadRule_CCD <- nimbleFunction(
       } ## while lag
       returnType(double(1))
       return(x)
-    },
-    getNodes = function(){
-      returnType(double(2))
-      return(zVals)
-    },
-    getWeights = function(){
-      returnType(double(1))
-      return(wgt)
-    },
-    getModeIndex = function(){
-      returnType(integer())
-      return(modeIndex)
     }
   )
 )
 
+quadRule_Custom <- nimbleFunction(
+	setup = function(d = 1){},
+  run = function{},
+  methods = list(
+    buildQuadRule(nQuad = integer(0, default = 0)){
+      ## This will be a place holder for something others may choose to add.
+      ## Can look for quadRule_Custom and check if it's implemented. If it is will try and use it...
+      returnType(quadGridListDef())
+      output <- quadGridListDef$new()
+      output$modeIndex <- 1L
+      output$wgts <- numeric(nQuad)
+      output$nodes <- matrix(0, nrow=nQuad, d)
+      return(output)
+    }
+  )
+)
 
 ## Method for summing likelihoods on real scale with possible small values.
-## Returns back on log scale.
+## Returns back on log scale. *** Chris please check if there is a better way I should do this...
 #' @export
 logSumExp = nimbleFunction(
   run = function(log1 = double(), log2 = double()){
@@ -266,10 +253,162 @@ logSumExp = nimbleFunction(
   return(ans)
 })
 
+buildInnerQuadGrid <- nimbleFunction(
+  setup = function(d = 1, nQuad = 3, quadRule = "AGHQ"){
+
+    if(quadRule == "AGHQ")
+      quadGrid <- quadRule_AGHQ(d)
+    else
+      stop("Can only use AGHQ for inner marginalization currently.")
+
+    ## nQ will be total number of quadrature nodes.
+    nQ <- nQuad^d	## Maybe dimension reduced if we prune.
+    zVals <- matrix(0, nrow = nQ, ncol = d)
+    nodeVals <- matrix(0, nrow = nQ, ncol = d)
+
+    ## One time fixes for scalar / vector changes.
+    one_time_fixes_done <- FALSE
+    wgt <- numeric(nQ)
+    logDensity <- numeric(nQ)
+    logdetNegHessian <- 0
+    margDens <- 0
+    if(nQ == 1)	{
+      wgt <- c(0, -1)
+      logDensity <- c(0,-1)
+    }
+    gridBuilt <- FALSE
+
+    ## AGHQ mode will be in the middle.
+    modeIndex <- -1
+    maxLogDensity <- 0    
+  },
+	run=function(){},
+	methods = list(
+    one_time_fixes = function() {
+      ## Run this once after compiling; remove extraneous -1 if necessary
+      if(one_time_fixes_done) return()
+      if(nQ == 1) {
+        logDensity <<- numeric(length = 1, value = logDensity[1])
+        wgt <<- numeric(length = 1, value = wgt[1])
+      }
+      one_time_fixes_done <<- TRUE
+    },
+    ## Doesn't default to building the grid.
+    buildGrid = function(nQuadUpdate = integer(0, default = -1)){
+      one_time_fixes()
+      if(nQuadUpdate > 0 & quadRule == "AGHQ"){
+        nQuad <<- nQuadUpdate
+        nQ <<- nQuad^d
+        gridBuilt <<- FALSE
+      }
+      if(!gridBuilt){
+        newgrid <- quadGrid$buildQuadRule()
+        zVals <<- newgrid$nodes
+        wgt <<- newgrid$wgts
+        modeIndex <<- newgrid$modeIndex
+        nQ <<- dim(wgt)[1]
+        nodeVals <<- matrix(0, nrow = nQ, ncol = d)
+        logDensity <<- numeric(value = 0, length = nQ)
+        gridBuilt <<- TRUE
+      }
+    },
+    quadSum = function(){
+      if(!odd) 
+        modeIndex <<- -1 ## Make sure it's negative.
+      margDens <<- 0
+      for( k in 1:nQ ){
+        if(k == modeIndex) margDens <<- margDens + wgt[k]
+        else margDens <<- margDens + exp(logDensity[k] - maxLogDensity)*wgt[k]
+      }
+      ans <- log(margDens) + maxLogDensity - 0.5 * logdetNegHessian
+      returnType(double())
+      return(ans)
+    },
+    ## Reset the sizes of the storage to change the grid if the user wants more/less AGHQ.
+    setGridSize = function(nQUpdate = integer()){
+      one_time_fixes()
+      buildGrid(nQuadUpdate)  ## Can delete this function once I update the Inner Marg functions.
+    },
+    saveLogDens = function(i = integer(0, default = -1), logDens = double()){
+      if(i == -1){
+        if(odd) logDensity[modeIndex] <<- logDens
+        maxLogDensity <<- logDens
+      }else{
+        logDensity[i] <<- logDens
+      }
+    },
+    transformGrid1D = function(negHess = double(2), inner_mode = double(1)){
+      SD <- 1/sqrt(negHess[1,1])
+      for( i in 1:nQ) nodeVals[i,] <<- inner_mode + SD*zVals[i,]
+      logdetNegHessian <<- log(negHess[1,1])
+    }, 
+    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
+      if(method == "spectral"){
+        ## Spectral transformation.
+        negHess <- t(cholNegHess) %*% cholNegHess
+        eigenDecomp <- nimEigen(negHess)
+        ATransform <- matrix(0, nrow = d, ncol = d)   
+        for( i in 1:d ){
+          ATransform[,i] <- eigenDecomp$vectors[,i]/sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
+        }
+        for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + (ATransform %*% zVals[i,])
+      }else{
+        ## Cholesky transformation.
+        for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + backsolve(cholNegHess, zVals[i,])
+      }
+      logdetNegHessian <<- 2*sum(log(diag(cholNegHess)))
+    },
+    getWeights = function(i=integer()){
+      returnType(double())
+      if(i == -1 & odd)  return(wgt[modeIndex])
+      return(wgt[i])
+    },
+    getAllWeights = function(){
+      returnType(double(1))
+      return(wgt)
+    },    
+    getNodesTransformed = function(i=integer()){
+      if(i == -1 & odd) return(nodeVals[modeIndex,])
+      returnType(double(1)); 
+      return(nodeVals[i,])
+    },
+    getAllNodesTransformed = function(){
+      returnType(double(2)); 
+      return(nodeVals)
+    },
+    getNodes = function(i=integer()){
+      if(i == -1 & odd) return(zVals[modeIndex,])
+      returnType(double(1)); 
+      return(zVals[i,])
+    },
+    getAllNodes = function(){
+      returnType(double(2)); 
+      return(zVals)
+    },    
+    getLogDensity = function(i=integer()){
+      returnType(double())
+      if(i == -1 & odd) return(logDensity[modeIndex])
+      return(logDensity[i])
+    },
+    getModeIndex = function(){
+      returnType(integer())
+      return(modeIndex)
+    },
+    getGridSize = function(){
+      returnType(double())
+      return(nQ)
+    }
+  )
+)## End of buildAGHQGrid
+
+
+## Main quadrature object to be used in INLA like code for outer integration
+## of hyperparameters.
+
 #' @export
-buildOuterQuad <- nimbleFunction(
+buildOuterQuadGrid <- nimbleFunction(
   contains = OUTER_GRID_BASE,
-  setup = function(d = 1, nQuad = 3, nre = 0, quadrule = "AGHQ"){
+  setup = function(d = 1, nQuad = 3, nre = 0, quadRule = "AGHQ"){
     ## This may change depending on the actual dimension of the quad grid:
     nQ <- nQuad^2
     
@@ -279,15 +418,19 @@ buildOuterQuad <- nimbleFunction(
     if(!any(quadRule %in% c("AGHQ", "CCD"))) 
       stop("Need to choose AGHQ or CCD as a quadrature rule.")
 
-    if(quadRule = "AGHQ")
+    if(quadRule == "AGHQ")
       quadGrid <- quadRule_AGHQ(d)
     if(quadRule == "CCD")
       quadGrid <- quadRule_CCD(d)
 
     ## One time fixes for scalar / vector changes.
     one_time_fixes_done <- FALSE
-    wgt <- numeric(nQ + gridFix)
-    logDensity <- numeric(nQ + gridFix)
+    wgt <- numeric(nQ)
+    logDensityWgt <- numeric(nQ)
+    if(nQ > 1){
+      wgt <- c(0,-1)
+      logDensityWgt <- c(0,-1)
+    }
     logdetNegHessian <- 0
     margDens <- 0
 
@@ -305,7 +448,7 @@ buildOuterQuad <- nimbleFunction(
     ## AGHQ mode will be in the middle.
     modeIndex <- -1
     maxLogDensity <- 0
-    
+
     ## Need to cache all inner mode and cholesky information for simulation purposes:
     innerCache <- grid_inner_cache(nre = nre, nQuad = nQ)
   },
@@ -315,7 +458,7 @@ buildOuterQuad <- nimbleFunction(
       ## Run this once after compiling; remove extraneous -1 if necessary
       if(one_time_fixes_done) return()
       if(nQ == 1) {
-        logDensity <<- numeric(length = 1, value = logDensity[1])
+        logDensityWgt <<- numeric(length = 1, value = logDensityWgt[1])
         wgt <<- numeric(length = 1, value = wgt[1])
       }
       one_time_fixes_done <<- TRUE
@@ -326,12 +469,13 @@ buildOuterQuad <- nimbleFunction(
       if(nQuadUpdate > 0 & quadRule == "AGHQ"){
         nQuad <<- nQuadUpdate
         nQ <<- nQuad^d
+        gridBuilt <<- FALSE
       }
-      if(!gridBuilt | nQuadUpdate > 0){
-        quadGrid$buildRule()
-        zVals <<- quadGrid$getNodes()
-        wgt <<- quadGrid$getWeights()
-        modeIndex <<- quadGrid$getModeIndex()
+      if(!gridBuilt){
+        newgrid <- quadGrid$buildQuadRule()
+        zVals <<- newgrid$nodes
+        wgt <<- newgrid$wgts
+        modeIndex <<- newgrid$modeIndex
         nQ <<- dim(wgt)[1]
         logDensityWgt <<- numeric(value = 0, length = nQ)
         gridBuilt <<- TRUE
@@ -351,7 +495,7 @@ buildOuterQuad <- nimbleFunction(
     },
     saveLogDens = function(i = integer(0, default = -1), logDens = double()){
       if(i == -1){
-        if(odd) logDensityWgt[modeIndex] <<- logDens + log(wgt[modeIndex])
+        if(modeIndex <= 0) logDensityWgt[modeIndex] <<- logDens + log(wgt[modeIndex])
         maxLogDensity <<- logDens
       }else{
         logDensityWgt[i] <<- logDens + log(wgt[i])
@@ -424,7 +568,8 @@ buildOuterQuad <- nimbleFunction(
         skewed <<- TRUE
       }
     },
-    cacheInnerValues = function(indx = integer(), logDensity = double(), mode = double(1), negHess = double(2)){
+    cacheInnerValues = function(indx = integer(), logDensity = double(), 
+                                mode = double(1), negHess = double(2)){
     if(indx == -1){
         if(modeIndex != -1) logDensityWgt[modeIndex] <<- logDensity + log(wgt[modeIndex])
         maxLogDensity <<- logDensity
@@ -432,12 +577,12 @@ buildOuterQuad <- nimbleFunction(
         logDensityWgt[indx] <<- logDensity + log(wgt[indx])
       }
       innerCache$cache_inner_negHess(negHess, indx)
-      innerCache$cache_wgts(logDensityWgt, indx)
+      innerCache$cache_wgts(logDensityWgt[indx], indx)
       innerCache$cache_inner_mode(mode, indx)
     },
     getWeights = function(i=integer()){
       returnType(double())
-      if(i == -1 & odd)
+      if(i == -1 & modeIndex > 0)
         return(wgt[modeIndex])
       return(wgt[i])
     },
@@ -446,7 +591,7 @@ buildOuterQuad <- nimbleFunction(
       return(wgt)
     },    
     getNodesTransformed = function(i=integer()){
-      if(i == -1 & odd) 
+      if(i == -1 & modeIndex > 0) 
         return(nodeVals[modeIndex,])
       returnType(double(1)); 
       return(nodeVals[i,])
@@ -456,7 +601,7 @@ buildOuterQuad <- nimbleFunction(
       return(nodeVals)
     },
     getNodes = function(i=integer()){
-      if(i == -1 & odd) 
+      if(i == -1 & modeIndex > 0) 
         return(zVals[modeIndex,])
       returnType(double(1)); 
       return(zVals[i,])
@@ -467,16 +612,16 @@ buildOuterQuad <- nimbleFunction(
     },    
     getLogDensity = function(i=integer()){
       returnType(double())
-      if(i == -1 & odd) 
-        return(logDensity[modeIndex])
-      return(logDensity[i])
+      if(i == -1 & modeIndex > 0) 
+        return(logDensityWgt[modeIndex])
+      return(logDensityWgt[i])
     },
     getModeIndex = function(){
       returnType(integer())
       return(modeIndex)
     },
     getGridSize = function(){
-      returnType(double())
+      returnType(integer())
       return(nQ)
     }
   )
@@ -610,7 +755,7 @@ grid_inner_cache = nimbleFunction(
         wgts <<- numeric(value = 0, length = nQuad)
     },
     ## Note to self, this wgt will be density*wgt, strictly for simulating.
-    cache_wgts = function(weight = double(), indx = integer()){
+    cache_wgts = function(weight = double(1), indx = integer()){
       one_time_fixes()
       wgts[indx] <<- weight
     },
