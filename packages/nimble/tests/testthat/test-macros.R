@@ -5,14 +5,14 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-nimbleOptions(enableModelMacros = TRUE)
+nimbleOptions(enableMacros = TRUE)
 nimbleOptions(enableMacroComments = FALSE)
 
 test_that('Macro expansion 1',
 {
     ## This converts a ~ testMacro(b)
     ## to inputs as (stoch = TRUE, LHS = a, b)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, .env) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -26,10 +26,15 @@ test_that('Macro expansion 1',
     )
  #   temporarilyAssignInGlobalEnv(testMacro)
     
-    expect_identical(
-        nimble:::processMacrosInternal(
+    process_macro <- nimble:::processMacrosInternal(
             quote(x[1] ~ testMacro(y[1])),
-        modelInfo = list())$code,
+        modelInfo = list(nMacros=0))
+
+    # Check that nMacros incremented
+    expect_equal(process_macro$modelInfo$nMacros, 1)
+
+    expect_identical(
+        process_macro$code,
         quote(x[1] ~ dnorm(y[1], 1))
     )
     
@@ -76,7 +81,7 @@ test_that('Macro expansion 1 with expression to get macro',
     ## This converts a ~ testMacro(b)
     ## to inputs as (stoch = TRUE, LHS = a, b)
   my_env <- new.env()
-  testMacro <- nimble:::model_macro_builder(
+  testMacro <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, .env) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -131,7 +136,7 @@ test_that('Macro expansion 2',
 {
     ## Like testMacro above but with unpackArgs = FALSE.
     ## This takes a ~ testMacro(b) with arguments (stoch = TRUE, LHS = a, RHS = b)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(stoch, LHS, RHS, modelInfo, .env) {
             if(RHS[[1]] != "testMacro")
                 stop("Problem with how testMacro was called")
@@ -173,7 +178,7 @@ test_that('Macro expansion 3',
     ## Like expansion 1, but with multiple named arguments.
     ## This takes a ~ testMacro(newVar = b, newIndex = 3)
     ## as arguments (stoch = TRUE, LHS = a, newVar = b, newIndex = 3)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(stoch, LHS, newIndex, newVar, modelInfo, .env) {
         RHS <- substitute(
             X[I],
@@ -218,7 +223,7 @@ test_that('Macro expansion 4',
     ## This takes a ~ testMacro(b) as a single argument,
     ## (code = a ~ testMacro(b)).
     ## It does not even need to be in a line with '~' or '<-'.
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(code, modelInfo, .env) {
             code[[3]][[1]] <- as.name('dnorm')
             list(code = code, modelInfo=modelInfo)
@@ -254,7 +259,7 @@ test_that('Macro expansion 5',
     ## This takes a line of code split into arguments.
     ## It is designed for a line without '~' or '<-'.
     ## It takes testMacro(arg1, arg2, arg3)
-    testMacro <- nimble:::model_macro_builder(
+    testMacro <- nimble:::buildMacro(
         function(arg1, arg2, arg3, modelInfo, .env) {
             code <- substitute(A <- B + C, list(A = arg1, B = arg2, C = arg3))
             list(code = code, modelInfo = modelInfo)
@@ -286,7 +291,7 @@ test_that('Macro expansion 5',
 
 test_that('Macro expansion 6 (recursive macro expansion)',
 {
-    testMacroInner <- nimble:::model_macro_builder(
+    testMacroInner <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, ...) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -302,7 +307,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
     
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
-    testMacroOuter <- nimble:::model_macro_builder(
+    testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, ...) {
             code[[3]][[1]] <- as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
@@ -337,7 +342,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
 test_that('Macro expansion 6b (recursive macro expansion with calls to find macros)',
 {
   inner.env <- new.env()
-  inner.env$testMacroInner <- nimble:::model_macro_builder(
+  inner.env$testMacroInner <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, ...) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -354,7 +359,7 @@ test_that('Macro expansion 6b (recursive macro expansion with calls to find macr
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
   outer.env <- new.env()
-  outer.env$testMacroOuter <- nimble:::model_macro_builder(
+  outer.env$testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, ...) {
             code[[3]][[1]] <- quote(inner.env$testMacroInner) #as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
@@ -393,7 +398,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
     ## test of recursive expansion:
     ## This a ~ testMacroInner(b)
     ## with inputs as (stoch = TRUE, LHS = a, b)
-    testMacroInner <- nimble:::model_macro_builder(
+    testMacroInner <- nimble:::buildMacro(
         function(stoch, LHS, RHSarg, modelInfo, ...) {
             stop()
             ans <- substitute(
@@ -409,7 +414,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
 #    temporarilyAssignInGlobalEnv(testMacroInner)
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
-    testMacroOuter <- nimble:::model_macro_builder(
+    testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, .env) {
             code[[3]][[1]] <- as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
@@ -467,7 +472,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
 test_that('duplicate variables from macro expansion error-trapped correctly',
 {
     ## from roxygen example
-    flat_normal_priors <- nimble:::model_macro_builder(
+    flat_normal_priors <- nimble:::buildMacro(
         function(..., modelInfo) {
           allVars <- list(...)
           allVars <- allVars[ !(names(allVars) %in% (c('.constants','.env'))) ]
@@ -495,7 +500,7 @@ test_that('duplicate variables from macro expansion error-trapped correctly',
 
 test_that('duplicate nested indices from macro expansion error-trapped correctly',
 {
-    all_dnorm <- nimble:::model_macro_builder(
+    all_dnorm <- nimble:::buildMacro(
         function(stoch, LHS, RHSvar, start, end, sd = 1, modelInfo, ...) {
             newCode <- substitute(
                 for(i in START:END) {
@@ -531,7 +536,7 @@ test_that('duplicate nested indices from macro expansion error-trapped correctly
         }
         )), regexp = 'Stopped after processing macros and if/then/else statements')
     )
-    expect_true(grepl("dnorm(mu[i], 1)", out[2], fixed=TRUE)) 
+    expect_true(grepl("dnorm(mu[i], 1)", out[3], fixed=TRUE)) 
 
     nimbleOptions(stop_after_processing_model_code = FALSE)
 })
@@ -542,7 +547,7 @@ test_that('constants and env are accessed correctly, even in recursion',
   testEnv$var_in_env <- 5
   # temporarilyAssignInGlobalEnv(testEnv)
 
-  testMacroInner <- nimble:::model_macro_builder(
+  testMacroInner <- nimble:::buildMacro(
     function(stoch, LHS, RHSarg, modelInfo, .env) {
       constant_of_interest <- modelInfo$constants$constant_of_interest
       var_in_env <- eval(quote(var_in_env), envir = .env)
@@ -563,7 +568,7 @@ test_that('constants and env are accessed correctly, even in recursion',
 
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
-  testMacroOuter <- nimble:::model_macro_builder(
+  testMacroOuter <- nimble:::buildMacro(
         function(code, modelInfo, .env) {
             code[[3]][[1]] <- as.name('testMacroInner')
             list(code = code, modelInfo = modelInfo)
@@ -636,9 +641,20 @@ test_that("macros can add constants", {
 test_that("codeProcessModelMacros converts factors to numeric", {
   inp_constants <- list(y = rnorm(3), x = factor(c("a","b","c")))
 
+  testMacro <- list(process = function(code, modelInfo, .env){
+      code[[3]] <- quote(dnorm(0, sd = 1))
+      modelInfo$constants$b <- 2
+      list(code = code, modelInfo=modelInfo)
+    }
+  )
+  class(testMacro) <- "model_macro"
+
+  # needed since this test creates macro manually
+  temporarilyAssignInGlobalEnv(testMacro)
+
   code <- nimbleCode({
     for (i in 1:3){
-      y[i] ~ dnorm(x[i], sd = 1)
+      y[i] ~ testMacro()
     }
   })
   
@@ -649,6 +665,20 @@ test_that("codeProcessModelMacros converts factors to numeric", {
     as.numeric(inp_constants$x)
   )
 
+  # In this case there is no macro in the code, so the constants should not
+  # be automatically converted from factor to numeric
+  code <- nimbleCode({
+    for (i in 1:3){
+      y[i] ~ dnorm(x[i], sd = 1)
+    }
+  })
+  
+  mod <- nimble:::codeProcessModelMacros(code, modelInfo=list(constants=inp_constants), env=parent.frame())
+
+  expect_equal(
+    mod$modelInfo$constants$x,
+    inp_constants$x
+  )
 })
 
 test_that("convertFactorConstantsToNumeric converts factors to numeric", {
@@ -904,6 +934,147 @@ test_that("removeExtraBrackets cleans up output from processMacrosInternal",{
     })
   )
 
+  # Check handling of for loops without { (issue #1503)
+  code = nimbleCode({
+                  for(j in 1:3)   # NOTE no bracket
+                    for(l in 1:2) {
+                    y[i,j,l] ~ dnorm(mu[1+k1[i], 2, k2[i]], var = s0)
+                    mu[i, j, l] ~ dnorm(0, 1)
+                }
+       })
+  expect_equal(
+    nimble:::removeExtraBrackets(code),
+    quote({
+    for (j in 1:3) for (l in 1:2) {
+        y[i, j, l] ~ dnorm(mu[1 + k1[i], 2, k2[i]], var = s0)
+        mu[i, j, l] ~ dnorm(0, 1)
+    }
+    })
+  )
+
+  code <- nimbleCode({
+    for (i in 1:2)
+      for (j in 1:3)
+        for (l in 1:2)
+          y[i,j,l] ~ dnorm()
+  })
+  expect_equal(
+    nimble:::removeExtraBrackets(code),
+    quote({
+      for (i in 1:2) for (j in 1:3) for (l in 1:2) y[i, j, l] ~ dnorm()
+    })
+  )
+
+  code <- nimbleCode({
+    for (i in 1:2) for (j in 1:3) for (l in 1:2) y[i,j,l] ~ dnorm()
+  })
+  expect_equal(
+    nimble:::removeExtraBrackets(code),
+    quote({
+      for (i in 1:2) for (j in 1:3) for (l in 1:2) y[i, j, l] ~ dnorm()
+    })
+  )
+
+  code <- nimbleCode({
+    for (i in 1:2) y[i] ~ dnorm()
+  })
+  expect_equal(
+    nimble:::removeExtraBrackets(code),
+    quote({
+      for (i in 1:2) y[i] ~ dnorm()
+    })
+  )
+
+  code = nimbleCode({
+                  {
+                  for(j in 1:3)   # NOTE no bracket
+                    for(l in 1:2) {
+                    y[i,j,l] ~ dnorm(mu[1+k1[i], 2, k2[i]], var = s0)
+                    { # random extra brackets
+                      y[1] <- 3 
+                    }
+                    mu[i, j, l] ~ dnorm(0, 1)
+                }
+                }
+       })
+  expect_equal(
+    nimble:::removeExtraBrackets(code),
+    quote({
+    for (j in 1:3) for (l in 1:2) {
+        y[i, j, l] ~ dnorm(mu[1 + k1[i], 2, k2[i]], var = s0)
+        y[1] <- 3
+        mu[i, j, l] ~ dnorm(0, 1)
+    }
+    })
+  )
+
+  # Check that removeExtraBrackets is applied correctly by codeProcessModelMacros
+  testMacro <- list(process = function(code, modelInfo, .env){
+      code[[3]] <- quote(dnorm(0, sd = 1))
+      modelInfo$constants$b <- 2
+      list(code = code, modelInfo=modelInfo)
+    }
+  )
+  class(testMacro) <- "model_macro"
+
+  # needed since this test creates macro manually
+  temporarilyAssignInGlobalEnv(testMacro)
+
+  code <- nimbleCode({
+  {
+    alpha <- 1
+    for (i in 1:n){
+      {
+        for (j in 1:k){
+          z <- testMacro()
+          {
+          y <- 1
+          }
+        }
+      }
+    }
+  }
+  })
+
+  minfo <- list()
+  
+  expect_equal(
+    nimble:::codeProcessModelMacros(code, minfo, env=environment())$code,
+    quote({
+      alpha <- 1
+      for (i in 1:n){
+        for (j in 1:k){
+          z <- dnorm(0, sd = 1)
+          y <- 1
+        }
+      }
+    })
+  )
+
+  # Now make sure removeExtraBrackets is NOT applied when there is no
+  # macro in the code
+  code <- nimbleCode({
+  {
+    alpha <- 1
+    for (i in 1:n){
+      {
+        for (j in 1:k){
+          z <- 1
+          {
+          y <- 1
+          }
+        }
+      }
+    }
+  }
+  })
+
+  minfo <- list()
+  
+  expect_equal(
+    nimble:::codeProcessModelMacros(code, minfo, env=environment())$code,
+    code)
+
 })
 
 test_that("comments are added to macro output if enableMacroComments = TRUE",{
@@ -1103,4 +1274,4 @@ test_that("message given if same parameter is generated by macros multiple times
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 
-nimbleOptions(enableModelMacros = FALSE)
+nimbleOptions(enableMacros = FALSE)

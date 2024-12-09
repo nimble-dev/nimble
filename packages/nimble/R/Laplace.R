@@ -235,7 +235,7 @@ buildOneAGHQuad1D <- nimbleFunction(
     converged <- 0
     
     ## Build AGHQ grid for 1D:
-    aghq_grid <- buildAGHQGrid(d = 1, nQuad = nQuad_)
+    AGHQuad_grid <- buildAGHQGrid(d = 1, nQuad = nQuad_)
     
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE    
@@ -323,7 +323,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        aghq_grid$setGridSize(nQUpdate = nQuad)
+        AGHQuad_grid$setGridSize(nQUpdate = nQuad)
         nQuad_ <<- nQuad
       }
       ## if(gridType != "") {
@@ -598,7 +598,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
       }else{
         ## AGHQ Approximation:
-        calcLogLik_AGHQ(p)
+        calcLogLik_AGHQuad(p)
       }
       logLik3_saved_value <<- logLik_saved_value
 
@@ -614,8 +614,8 @@ buildOneAGHQuad1D <- nimbleFunction(
         gr_sigmahatwrtp <<- -0.5*gr_logdetNegHess_wrt_p_v*sigma_hat
         gr_sigmahatwrtre <<- -0.5*gr_logdetNegHess_wrt_re_v*sigma_hat
         
-        gr_aghq_sum <- gr_AGHQ_nodes(p = p, method = 2) ## Use method 2 for these?
-        AGHQuad_saved_gr <<- gr_aghq_sum - 0.5 * (gr_logdetNegHess_wrt_p_v + gr_logdetNegHess_wrt_re_v * gr_rehatwrtp)
+        grp_AGHQuad_sum <- gr_AGHQuad_nodes(p = p, method = 2) ## Use method 2 for these?
+        AGHQuad_saved_gr <<- grp_AGHQuad_sum - 0.5 * (gr_logdetNegHess_wrt_p_v + gr_logdetNegHess_wrt_re_v * gr_rehatwrtp)
       }
       logLik3_saved_gr <<- AGHQuad_saved_gr
 
@@ -660,7 +660,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
       }else{
         ## Do Quadrature:
-        calcLogLik_AGHQ(p)
+        calcLogLik_AGHQuad(p)
       }
 
       if(logLik_saved_value > max_logLik) {
@@ -686,7 +686,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
       }else{
         ## Do Quadrature:
-        calcLogLik_AGHQ(p)
+        calcLogLik_AGHQuad(p)
       }
       
       if(logLik_saved_value > max_logLik) {
@@ -697,19 +697,19 @@ buildOneAGHQuad1D <- nimbleFunction(
       return(logLik_saved_value)
       returnType(double())
     },
-    calcLogLik_AGHQ = function(p = double(1)){
+    calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
-      aghq_grid$buildGrid()
-      nQ <- aghq_grid$getGridSize()
-      aghq_grid$transformGrid1D(negHess = saved_inner_negHess, inner_mode = max_inner_logLik_last_argmax)
-      modeIndex <- aghq_grid$getModeIndex() ## if even, this is -1
-      aghq_grid$saveLogDens( -1, max_inner_logLik_last_value ) ## Cache this value regardless of even or odd.
+      AGHQuad_grid$buildGrid()
+      nQ <- AGHQuad_grid$getGridSize()
+      AGHQuad_grid$transformGrid1D(negHess = saved_inner_negHess, inner_mode = max_inner_logLik_last_argmax)
+      modeIndex <- AGHQuad_grid$getModeIndex() ## if even, this is -1
+      AGHQuad_grid$saveLogDens( -1, max_inner_logLik_last_value ) ## Cache this value regardless of even or odd.
       for(i in 1:nQ) {
-        if(i != modeIndex) aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
+        if(i != modeIndex) AGHQuad_grid$saveLogDens(i, joint_logLik(p = p, reTransform = AGHQuad_grid$getNodesTransformed(i) ) )
       }
 
       ## Given all the saved values, weights and log density, do quadrature sum.
-      logLik_saved_value <<- aghq_grid$quadSum()
+      logLik_saved_value <<- AGHQuad_grid$quadSum()
       quadrature_previous_p <<- p ## Cache this to make sure you have it for 
     },
     ## Gradient of the Laplace approximation (version 2) w.r.t. parameters
@@ -740,8 +740,8 @@ buildOneAGHQuad1D <- nimbleFunction(
         gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
         gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
         ## Sum gradient of each node.
-        gr_aghq_sum <- gr_AGHQ_nodes(p = p, method = 2)
-        AGHQuad_saved_gr <<- gr_aghq_sum - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+        grp_AGHQuad_sum <- gr_AGHQuad_nodes(p = p, method = 2)
+        AGHQuad_saved_gr <<- grp_AGHQuad_sum - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
       }
       return(AGHQuad_saved_gr)
       returnType(double(1))
@@ -774,30 +774,30 @@ buildOneAGHQuad1D <- nimbleFunction(
         gr_sigmahatwrtp <<- -0.5*grlogdetNegHesswrtp*sigma_hat
         gr_sigmahatwrtre <<- -0.5*grlogdetNegHesswrtre*sigma_hat
         ## Sum gradient of each node.
-        gr_aghq_sum <- gr_AGHQ_nodes(p = p, method = 1)
-        AGHQuad_saved_gr <<- gr_aghq_sum - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
+        grp_AGHQuad_sum <- gr_AGHQuad_nodes(p = p, method = 1)
+        AGHQuad_saved_gr <<- grp_AGHQuad_sum - 0.5 * (grlogdetNegHesswrtp + grlogdetNegHesswrtre * gr_rehatwrtp)
       }
         
       return(AGHQuad_saved_gr)
       returnType(double(1))
     },
     ## Partial gradient of AGHQ nodes w respect to p.
-    gr_AGHQ_nodes = function(p = double(1), method = double()){
+    gr_AGHQuad_nodes = function(p = double(1), method = double()){
 
       ## Need to have quadrature sum for gradient:
       if(any(p != quadrature_previous_p)){
-        calcLogLik_AGHQ(p)
+        calcLogLik_AGHQuad(p)
       }
  
       ## Method 2 implies double taping.
-      modeIndex <- aghq_grid$getModeIndex()
-      nQ <- aghq_grid$getGridSize()
+      modeIndex <- AGHQuad_grid$getModeIndex()
+      nQ <- AGHQuad_grid$getGridSize()
       gr_margLogLik_wrt_p <- numeric(value = 0, length = dim(p)[1])
       wgts_lik <- numeric(value = 0, length = nQ)
       for(i in 1:nQ) {
-        z_node_i <- aghq_grid$getNodes(i)[1]
-        reTrans_i <- aghq_grid$getNodesTransformed(i)
-        wgts_lik[i] <- exp(aghq_grid$getLogDensity(i) - max_inner_logLik_last_value)*aghq_grid$getWeights(i)
+        z_node_i <- AGHQuad_grid$getNodes(i)[1]
+        reTrans_i <- AGHQuad_grid$getNodesTransformed(i)
+        wgts_lik[i] <- exp(AGHQuad_grid$getLogDensity(i) - max_inner_logLik_last_value)*AGHQuad_grid$getWeights(i)
         
         ## At the mode (z = 0, don't have additional z*sigma_hat gr complication).
 	      if( modeIndex == i ){
@@ -862,7 +862,7 @@ buildOneAGHQuad1D <- nimbleFunction(
     },
     ## Allow the user to explore using different sized quadrature grids.
     ## set_nQuad = function(nQUpdate = integer()){
-    ##   aghq_grid$setGridSize(nQUpdate = nQUpdate)
+    ##   AGHQuad_grid$setGridSize(nQUpdate = nQUpdate)
     ##   nQuad <<- nQUpdate
     ## },
     ## set_transformation = function(transformation = character()){}, ## Not applicable to 1 Dimension.
@@ -1061,7 +1061,7 @@ buildOneAGHQuad <- nimbleFunction(
     outer_param_max <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
 
     ## Build AGHQ grid:
-    aghq_grid <- buildAGHQGrid(d = nre, nQuad = nQuad_)
+    AGHQuad_grid <- buildAGHQGrid(d = nre, nQuad = nQuad_)
     transMethod <- extractControlElement(control, "gridType", "cholesky")
     
     converged <- 0
@@ -1143,7 +1143,7 @@ buildOneAGHQuad <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        aghq_grid$setGridSize(nQUpdate = nQuad)
+        AGHQuad_grid$setGridSize(nQUpdate = nQuad)
         nQuad_ <<- nQuad
       }
       if(gridType != "NULL") {
@@ -1482,7 +1482,7 @@ buildOneAGHQuad <- nimbleFunction(
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
       }else{
         ## AGHQ Approximation:
-        calcLogLik_AGHQ(p)
+        calcLogLik_AGHQuad(p)
       }
       logLik3_saved_value <<- logLik_saved_value
             
@@ -1545,7 +1545,7 @@ buildOneAGHQuad <- nimbleFunction(
       if(nQuad_ == 1){
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
       }else{
-        calcLogLik_AGHQ(p)
+        calcLogLik_AGHQuad(p)
       }
       if(logLik_saved_value > max_logLik) {
         max_logLik <<- logLik_saved_value
@@ -1572,7 +1572,7 @@ buildOneAGHQuad <- nimbleFunction(
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
       }else{
         ## AGHQ Approx
-        calcLogLik_AGHQ(p)
+        calcLogLik_AGHQuad(p)
       }
       if(logLik_saved_value > max_logLik) {
         max_logLik <<- logLik_saved_value
@@ -1581,19 +1581,19 @@ buildOneAGHQuad <- nimbleFunction(
       return(logLik_saved_value)
       returnType(double())
     },
-    calcLogLik_AGHQ = function(p = double(1)){
+    calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
-      aghq_grid$buildGrid()
-      aghq_grid$transformGrid(cholNegHess = saved_inner_negHess_chol, 
+      AGHQuad_grid$buildGrid()
+      AGHQuad_grid$transformGrid(cholNegHess = saved_inner_negHess_chol, 
                                     inner_mode = max_inner_logLik_last_argmax, method = transMethod)
-      modeIndex <- aghq_grid$getModeIndex()
-      nQ <- aghq_grid$getGridSize()
-      aghq_grid$saveLogDens(-1, max_inner_logLik_last_value )
+      modeIndex <- AGHQuad_grid$getModeIndex()
+      nQ <- AGHQuad_grid$getGridSize()
+      AGHQuad_grid$saveLogDens(-1, max_inner_logLik_last_value )
       for(i in 1:nQ) {
-        if(i != modeIndex) aghq_grid$saveLogDens(i, joint_logLik(p = p, reTransform = aghq_grid$getNodesTransformed(i) ) )
+        if(i != modeIndex) AGHQuad_grid$saveLogDens(i, joint_logLik(p = p, reTransform = AGHQuad_grid$getNodesTransformed(i) ) )
       }
       ## Given all the saved values, weights and log density, do quadrature sum.
-      logLik_saved_value <<- aghq_grid$quadSum()
+      logLik_saved_value <<- AGHQuad_grid$quadSum()
     },    
     ## Gradient of the Laplace approximation 2 w.r.t. parameters
     gr_logLik2 = function(p = double(1)){
@@ -1667,7 +1667,7 @@ buildOneAGHQuad <- nimbleFunction(
       max_outer_logLik <<- -Inf
     },
     ## set_nQuad = function(nQUpdate = integer()){
-    ##   aghq_grid$setGridSize(nQUpdate = nQUpdate)
+    ##   AGHQuad_grid$setGridSize(nQUpdate = nQUpdate)
     ##   nQuad <<- nQUpdate
     ## },
     ## Choose spectral vs cholesky.
@@ -3139,8 +3139,8 @@ buildAGHQ <- nimbleFunction(
       vcov_pTransform <- -inverse(MLEoutput$hessian)
       stdErr_pTransform <- sqrt(diag(vcov_pTransform))
       if(nre == 0) { ## No random effects
-        ranres$estimates <- numeric(0)
-        ranres$stdErrors <- numeric(0)
+        ranres$estimate <- numeric(0)
+        ranres$stdError <- numeric(0)
         if(originalScale){
           derivspInvTransform  <- derivs_pInverseTransform(pTransform, c(0, 1))
           JacobpInvTransform   <- derivspInvTransform$jacobian
@@ -3157,12 +3157,12 @@ buildAGHQ <- nimbleFunction(
             }
             ans$vcov <- matrix(nrow = 0, ncol = 0)
           }
-          pres$estimates <- p
-          pres$stdErrors <- stdErr_p
+          pres$estimate <- p
+          pres$stdError <- stdErr_p
         }
         else {
-          pres$estimates <- pTransform
-          pres$stdErrors <- stdErr_pTransform
+          pres$estimate <- pTransform
+          pres$stdError <- stdErr_pTransform
           if(jointCovariance) ans$vcov <- vcov_pTransform
           else ans$vcov <- matrix(0, nrow = 0, ncol = 0)
         }
@@ -3204,34 +3204,34 @@ buildAGHQ <- nimbleFunction(
             stdErr_p_re <- sqrt(diag(vcov))
             stdErr_p <- stdErr_p_re[1:npar]
             if(randomEffectsStdError){
-              ranres$stdErrors <- stdErr_p_re[(npar+1):ntot]
+              ranres$stdError <- stdErr_p_re[(npar+1):ntot]
             }
             else{
-              ranres$stdErrors <- numeric(0)
+              ranres$stdError <- numeric(0)
             }
             ans$vcov <- vcov
-            pres$estimates <- p
-            pres$stdErrors <- stdErr_p
-            ranres$estimates <- optre
+            pres$estimate <- p
+            pres$stdError <- stdErr_p
+            ranres$estimate <- optre
           }## End of if(originalScale)
           else { ## On transformed scale
             if(randomEffectsStdError){
               stdErr_reTransform <- sqrt(diag(vcov_Transform)[(npar+1):ntot])
-              ranres$stdErrors <- stdErr_reTransform
+              ranres$stdError <- stdErr_reTransform
             }
             else{
-              ranres$stdErrors <- numeric(0)
+              ranres$stdError <- numeric(0)
             }
             ans$vcov <- vcov_Transform
-            pres$estimates <- pTransform
-            pres$stdErrors <- sqrt(diag(vcov_Transform)[1:npar])
-            ranres$estimates <- optreTransform
+            pres$estimate <- pTransform
+            pres$stdError <- sqrt(diag(vcov_Transform)[1:npar])
+            ranres$estimate <- optreTransform
           }
         }## End of if(jointCovariance)
         else { ## Do not return joint covariance matrix
           if(originalScale){## On original scale
-            pres$estimates <- p
-            ranres$estimates <- optre
+            pres$estimate <- p
+            ranres$estimate <- optre
             if(randomEffectsStdError){
               ## Joint covariance matrix on transform scale
               inv_negHess <- inverse_negHess(p, optreTransform)
@@ -3265,8 +3265,8 @@ buildAGHQ <- nimbleFunction(
                 stdErr_re[i] <- sqrt(var_i)
               }
               stdErr_p <- sqrt(diag(vcov_p))
-              pres$stdErrors   <- stdErr_p
-              ranres$stdErrors <- stdErr_re
+              pres$stdError   <- stdErr_p
+              ranres$stdError <- stdErr_re
               ans$vcov <- vcov_p
             }## End of if(randomEffectsStdError)
             else { ## Do not calculate standard errors of random effects estimates
@@ -3280,15 +3280,15 @@ buildAGHQ <- nimbleFunction(
               #   stdErr_p[i] <- sqrt(var_p_i)
               # }
               stdErr_p <- sqrt(diag(vcov_p))
-              pres$stdErrors <- stdErr_p
-              ranres$stdErrors <- numeric(0)
+              pres$stdError <- stdErr_p
+              ranres$stdError <- numeric(0)
               ans$vcov <- vcov_p
             }
           }## End of if(originalScale)
           else {## On transformed scale
-            pres$estimates <- pTransform
-            pres$stdErrors <- stdErr_pTransform
-            ranres$estimates <- optreTransform
+            pres$estimate <- pTransform
+            pres$stdError <- stdErr_pTransform
+            ranres$estimate <- optreTransform
             ans$vcov <- vcov_pTransform
             if(randomEffectsStdError){
               inv_negHess <- inverse_negHess(p, optreTransform)
@@ -3306,10 +3306,10 @@ buildAGHQ <- nimbleFunction(
                 var_reTransform_i <- inv_negHess[i, i] + (JacobOptreWrtParams[i,,drop=FALSE] %*% vcov_pTransform %*% t(JacobOptreWrtParams[i,,drop=FALSE]))[1,1]
                 stdErr_reTransform[i] <- sqrt(var_reTransform_i)
               }
-              ranres$stdErrors <- stdErr_reTransform
+              ranres$stdError <- stdErr_reTransform
             }
             else{
-              ranres$stdErrors <- numeric(0)
+              ranres$stdError <- numeric(0)
             }
           }
         }
@@ -3318,8 +3318,7 @@ buildAGHQ <- nimbleFunction(
       ranres$names <- reNodesAsScalars_vec
       ans$params <- pres
       ans$randomEffects <- ranres
-      if(originalScale) ans$scale <- "original"
-      else ans$scale <- "transformed"
+      ans$originalScale <- originalScale
       return(ans)
       returnType(AGHQuad_summary())
     }
@@ -3396,18 +3395,18 @@ summaryLaplace <- function(laplace, MLEoutput,
                              randomEffectsStdError = randomEffectsStdError,
                              jointCovariance = jointCovariance)
   paramNames <- summary$params$names
-  paramEsts <- summary$params$estimates
+  paramEsts <- summary$params$estimate
   if(length(paramEsts) < length(paramNames)) paramNames <- paramNames[1:(length(paramNames)-1)]
   names(paramEsts) <- paramNames
-  stdErrParams <- summary$params$stdErrors
-  paramsDF <- data.frame(estimate = paramEsts, se = stdErrParams, row.names = paramNames)
+  stdErrParams <- summary$params$stdError
+  paramsDF <- data.frame(estimate = paramEsts, stdError = stdErrParams, row.names = paramNames)
 
   REnames <- summary$randomEffects$names
-  REests <- summary$randomEffects$estimates
+  REests <- summary$randomEffects$estimate
   if(length(REests) < length(REnames)) REnames <- REnames[1:(length(REnames)-1)]
-  REstdErrs <- summary$randomEffects$stdErrors
+  REstdErrs <- summary$randomEffects$stdError
   if(length(REstdErrs))
-    REDF <- data.frame(estimate = REests, se = REstdErrs, row.names = REnames)
+    REDF <- data.frame(estimate = REests, stdError = REstdErrs, row.names = REnames)
   else
     REDF <- data.frame(estimate = REests, row.names = REnames)
 

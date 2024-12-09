@@ -85,6 +85,7 @@ sizeCalls <- c(
          nimArr_rcat = 'sizeScalarRecurse',
          nimArr_rinterval = 'sizeScalarRecurse',
          nimPrint = 'sizeforceEigenize',
+         nimCat = 'sizeforceEigenize',
          nimDerivs = 'sizeNimDerivs',
          nimDerivs_calculate = 'sizeNimDerivsCalculate',
          as.integer = 'sizeUnaryCwise', 
@@ -259,6 +260,15 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
     }
     sizeCall <- sizeCalls[[code$name]]
     if(!is.null(sizeCall)) {
+      nm <- code$name
+      ## Handle replacements such as `gamma` -> `gammafn`.  
+      if(nm %in% specificCallReplacements)
+          nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
+      for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
+          objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
+          if(any(sapply(objs, is.rcf))) 
+              stop("The name of the nimbleFunction `", nm[i], "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
+      }
       if(.nimbleOptions$debugSizeProcessing) {
         browser()
         eval(
@@ -1156,6 +1166,8 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     if(code$args[[1]]$isName) {
         objectName <- code$args[[1]]$name
         symbolObject <- symTab$getSymbolObject(objectName, inherits = TRUE)
+        if(is.null(symbolObject))
+            stop(exprClassProcessingErrorMsg(code, paste0('has `', objectName, '` been created?')), call. = FALSE)
         objectType <- symbolObject$type
     } else { ## if there is nesting, A$B$C, figure out what to do
         objectType <- code$args[[1]]$type

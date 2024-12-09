@@ -541,6 +541,30 @@ test_that('range checking with dynamic indexing', {
     
 })
 
+test_that('detect non-scalar dynamic indexing with derivs', {
+    code <- nimbleCode({
+        y ~ dcat(p[z,1:2])
+        for(i in 1:5)
+            p[i,1:2] ~ ddirch(w[1:2])
+        z ~ dcat(q[1:5])
+        
+    })
+    expect_error(m <- nimbleModel(code, inits = list(z=1), buildDerivs=TRUE),
+                 "found dynamic indexing")
+    
+    code <- nimbleCode({
+        for(i in 1:10) {
+            y[i,1:3] ~ dmnorm(mu[1:3, z[i]], pr[1:3,1:3])
+            z[i] ~ dcat(q[1:4])
+        }
+        for(i in 1:4)
+            mu[1:3, i] ~ dmnorm(mn[1:3],pr[1:3,1:3])
+    })
+    expect_error(m <- nimbleModel(code, inits = list(z = rep(1, 10)), buildDerivs=TRUE),
+                 "found dynamic indexing")
+})
+
+
 
 if(FALSE) {
     ## Heisenbug here - running manually vs. via testthat causes different ordering of mixture components even though we are setting seed before each use of RNG; this test _does_ pass when run manually.
