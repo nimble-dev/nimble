@@ -1,31 +1,66 @@
-## Build a Grid Base to access all these functions in a nimble function list.
+## nimbleQuad Quadrature Rules
+
+## Outer level quadrature base class
 OUTER_GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-  buildGrid = function(nQuadUpdate = integer(0, default = -1)){},
-  quadSum = function(){ returnType(double()) },
-  saveLogDens = function(i = integer(0), logDensity = double()){},
-  setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
-  transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
-  getWeights = function(i=integer()){ returnType(double()) },
-  getAllWeights = function(){ returnType(double(1)) },
-  getNodes = function(i=integer()){ returnType(double(1)) },
-  getNodesTransformed = function(i=integer()){ returnType(double(1)) }, 
-  getLogDensity = function(i=integer()){ returnType(double()) },
-  skewGridPoints = function(skewSD = double(2)){},
-  getGridSize = function(){returnType(integer())},
-  z_to_theta = function(z = double(1)){ returnType(double(1)) },
-  theta_to_z = function(theta = double(1)){ returnType(double(1)) }    
+    buildGrid = function(nQuadUpdate = integer(0, default = -1)){},
+    quadSum = function(){ returnType(double()) },
+    saveLogDens = function(i = integer(0), logDensity = double()){},
+    setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
+    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
+    getWeights = function(i=integer()){ 
+      returnType(double()) 
+    },
+    getAllWeights = function(){ 
+      returnType(double(1)) 
+    },
+    getNodes = function(i=integer()){ 
+      returnType(double(1)) 
+    },
+    getNodesTransformed = function(i=integer()){ 
+      returnType(double(1)) 
+    }, 
+    getLogDensity = function(i=integer()){ 
+      returnType(double()) 
+    },
+    skewGridPoints = function(skewSD = double(2)){},
+    getGridSize = function(){
+      returnType(integer())
+    },
+    z_to_theta = function(z = double(1)){ 
+      returnType(double(1)) 
+    },
+    theta_to_z = function(theta = double(1)){ 
+      returnType(double(1)) 
+    }    
  )
 )
 
-## Nimble List Quadrature Data type: Returns where the mode is, wgts and nodes.
-quadGridListDef <- nimbleList(modeIndex = integer(0), wgts = double(1), nodes = double(2))
+#' Nimble List Quadrature Data type
+#'
+#' Creates a quadrature nimble list type to be used internally and for making new custom
+#' quadrature rules to marginalize random effects and for posterior approximations.  
+#'
+#' @details
+#' 
+#'
+#' List is generated with three data types. An integer that is the mode index `modeIndex` that indicates
+#' which quadrature node is the mode, values are all zero. A numeric vector, `wgts`, that is a weight for each
+#' quadrature node. A matrix, `nodes`, that are the quadrature nodes made by the rule that are of dimension `nQ` rows
+#' and `d` dimension columns.
+#'
+#' @author Paul van Dam-Bates
+#' @export
+quadGridListDef <- nimbleList(modeIndex = integer(0), 
+                              wgts = double(1), 
+                              nodes = double(2))
 
 ## Write a basic quad rule:
 ## Maybe not cache here at all?
 ## This will end up being in a different wrapper.
 ## This avoids generating too much memory as this function gets called.
+## *** Note to group ***, should we remove the input of d here?
 quadRule_AGHQ = nimbleFunction(
   setup = function(d = 1){
   },
@@ -173,7 +208,7 @@ quadRule_CCD <- nimbleFunction(
     ## However, we do scaled design following INLA such that z*zT = 1
     ## from https://github.com/hrue/r-inla/blob/devel/gmrflib/design.c
     ## Can't update nQuad here but makes it general.
-    buildQuadRulebuildQuadRule = function(nQuad = integer(0, default = 0)){ 
+    buildQuadRule = function(nQuad = integer(0, default = 0)){ 
       ## First point is mode.
       design <- matrix(0, nQ, d)
       for (i in 1:d) {
