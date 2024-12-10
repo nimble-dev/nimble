@@ -3159,6 +3159,151 @@ test_that('partial_mvn sampler was not given to non dmnorm distribution from mod
   expect_true(!any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn'), info="partial_mvn sampler assigned as sampler to non dmnorm node in model with dmnorm")
 })
 
+test_that('partial_mvn sampler was given to each dmnorm distribution', {
+  code <- nimbleCode({ for (i in 1:N){
+    theta[i] ~ dgamma(alpha,beta) 
+    lambda[i] <- theta[i]*t[i] 
+    x[i] ~ dpois(lambda[i])
+  }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1,1.0)
+    for(i in 1:5) {
+      mu[i] <- alpha+i
+      me[i] <- beta-i
+    }
+    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    z[1:5]~dmnorm(me[1:5], Sigmo[1:5,1:5])
+  })
+  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5), z=c(1:3, rep(NA,2)))
+  
+  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+  
+  conf <- configureMCMC(model, nodes = model$getNodeNames()[26:27])
+  
+  expect_true(sum(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn')==2, info= "partial_mvn sampler not assigned to each dmnorm distribution")
+})
+
+
+test_that('Values change at different rows for unobserved parts of partially observed node when multivariateNodesAsScalars = TRUE', {
+  Code <- nimbleCode({ for (i in 1:N){
+    theta[i] ~ dgamma(alpha,beta) 
+    lambda[i] <- theta[i]*t[i] 
+    x[i] ~ dpois(lambda[i])
+  }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1,1.0)
+    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+  })
+  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+  
+  Cmodel <- compileNimble(model)
+  
+  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = TRUE)
+  conf$addMonitors("y")
+  
+  modelMCMC <- buildMCMC(conf)
+  CmodelMCMC <- compileNimble(modelMCMC, project = model)
+  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+  
+  
+  onezro=apply(modrun[,3:5], 2, diff)!=0
+  
+  expect_true(any(apply(onezro, 1, function(x) any(x) && !all(x))), info= "Values of MCMC sampled nodes change at same time as other nodes")
+})
+
+test_that('Values change at same rows for unobserved parts of partially observed node when multivariateNodesAsScalars = FALSE', {
+  Code <- nimbleCode({ for (i in 1:N){
+    theta[i] ~ dgamma(alpha,beta) 
+    lambda[i] <- theta[i]*t[i] 
+    x[i] ~ dpois(lambda[i])
+  }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1,1.0)
+    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+  })
+  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+  
+  Cmodel <- compileNimble(model)
+  
+  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = FALSE)
+  conf$addMonitors("y")
+  
+  modelMCMC <- buildMCMC(conf)
+  CmodelMCMC <- compileNimble(modelMCMC, project = model)
+  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+  
+  onezro <- apply(modrun[,3:5], 2, diff)!=0
+  
+  expect_true(all(apply(onezro, 1, function(x) all(x) || all(!x))), info= "Values of MCMC sampled nodes change at same time as other nodes")
+})
+
+
+test_that('Values do not change for data when multivariateNodesAsScalars = TRUE', {
+  Code <- nimbleCode({ for (i in 1:N){
+    theta[i] ~ dgamma(alpha,beta) 
+    lambda[i] <- theta[i]*t[i] 
+    x[i] ~ dpois(lambda[i])
+  }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1,1.0)
+    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+  })
+  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+  
+  Cmodel <- compileNimble(model)
+  
+  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = TRUE)
+  conf$addMonitors("y")
+  
+  modelMCMC <- buildMCMC(conf)
+  CmodelMCMC <- compileNimble(modelMCMC, project = model)
+  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+  
+  onezro <- apply(modrun[,c(1,2,6,7)], 2, diff)!=0
+  
+  expect_true(all(apply(onezro, 1, function(x) !any(x))), info= "Values of data do not change when MCMC sampling")
+})
+
+
+test_that('Values do not change for data when multivariateNodesAsScalars = FALSE', {
+  Code <- nimbleCode({ for (i in 1:N){
+    theta[i] ~ dgamma(alpha,beta) 
+    lambda[i] <- theta[i]*t[i] 
+    x[i] ~ dpois(lambda[i])
+  }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1,1.0)
+    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+  })
+  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+  
+  Cmodel <- compileNimble(model)
+  
+  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = FALSE)
+  conf$addMonitors("y")
+  
+  modelMCMC <- buildMCMC(conf)
+  CmodelMCMC <- compileNimble(modelMCMC, project = model)
+  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+  
+  onezro <- apply(modrun[,c(1,2,6,7)], 2, diff)!=0
+  
+  expect_true(all(apply(onezro, 1, function(x) !any(x))), info= "Values of data do not change when MCMC sampling")
+})
+
 
 sink(NULL)
 
