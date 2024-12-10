@@ -422,6 +422,8 @@ buildOuterQuadGrid <- nimbleFunction(
       quadGrid <- quadRule_AGHQ(d)
     if(quadRule == "CCD")
       quadGrid <- quadRule_CCD(d)
+    # if(quadRule == "Custom")  ## To be discussed.
+      # quadGrid <- quadRule_Custom
 
     ## One time fixes for scalar / vector changes.
     one_time_fixes_done <- FALSE

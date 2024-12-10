@@ -2971,7 +2971,7 @@ buildAGHQ <- nimbleFunction(
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE) ){
       mleRes <- optimize(pStart  = pStart,
-                       posterior = FALSE,
+                       prior = FALSE,
                        jacobian = FALSE,
                        method  = method,
                        hessian = hessian,
@@ -2984,7 +2984,7 @@ buildAGHQ <- nimbleFunction(
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE) ){
       mleRes <- optimize(pStart  = pStart,
-                       posterior = TRUE,
+                       prior = TRUE,
                        jacobian = TRUE,
                        method  = method,
                        hessian = hessian,
@@ -2994,7 +2994,7 @@ buildAGHQ <- nimbleFunction(
     },
     ## General Maximization Function
     optimize = function(pStart  = double(1, default = Inf),
-                       posterior = logical(0, default = FALSE),
+                       prior = logical(0, default = FALSE),
                        jacobian = logical(0, default = TRUE),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE),
@@ -3018,7 +3018,7 @@ buildAGHQ <- nimbleFunction(
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
      
       ## Choose the MLE, or the MAP, or a penalized MLE (:= no Jacobian MAP).
-      if(!posterior){
+      if(!prior){
         optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outerOptimControl_, hessian = hessian)
       }else{
         if(jacobian) 
