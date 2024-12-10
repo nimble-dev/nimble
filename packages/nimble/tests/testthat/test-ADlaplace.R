@@ -1294,8 +1294,8 @@ test_that("simple LME with correlated intercept and slope works (and check with 
   expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 1e-4)
   expect_equal(nimsumm$randomEffects$estimate,
                CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-4)
-  expect_equal(nimsumm$randomEffects$se,
-               CrunLaplaceRes$summary$randomEffects$se, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$stdError,
+               CrunLaplaceRes$summary$randomEffects$stdError, tolerance = 1e-4)
 
 
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
@@ -1306,8 +1306,8 @@ test_that("simple LME with correlated intercept and slope works (and check with 
   expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 1e-4)
   expect_equal(nimsumm$randomEffects$estimate,
                CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-4)
-  expect_equal(nimsumm$randomEffects$se,
-               CrunLaplaceRes$summary$randomEffects$se, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$stdError,
+               CrunLaplaceRes$summary$randomEffects$stdError, tolerance = 1e-4)
 
 })
 
@@ -1363,7 +1363,7 @@ test_that("simple LME with correlated intercept and slope works through runLapla
   expect_equal(nimsumm$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
   sdparams <- nimsumm$params$estimate[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimsumm$params$se[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimsumm$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
   expect_equal(nimsumm$randomEffects$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 })
 
