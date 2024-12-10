@@ -543,11 +543,11 @@ test_that("AGHQ nQuad > 1 for simple LME with correlated intercept and slope wor
   nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
 
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
-  sdparams <- nimres$params$estimates[-c(4,5)]
+  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
+  sdparams <- nimres$params$estimate[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
-  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
+  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimres$randomEffects$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 
   cmLaplace$updateSettings(nQuad = 3)
   init_llh_3 <- cmLaplace$calcLogLik(pStart)
