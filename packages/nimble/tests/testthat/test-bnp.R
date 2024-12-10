@@ -1592,7 +1592,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors =  c('thetatilde', 'xi'))
-  expect_message(mMCMC <- buildMCMC(mConf), "The number of clusters")
+  expect_message(mMCMC <- buildMCMC(mConf), "less than the number of potential clusters")
   cMCMC <- compileNimble(mMCMC, project = m) 
   cMCMC$run(1)
   expect_error(getSamplesDPmeasure(cMCMC),
@@ -2248,7 +2248,7 @@ test_that("Testing conjugacy detection with models using CRP", {
                   inits = list(xi = rep(1,4), mu=rnorm(4)))
   conf <- configureMCMC(m)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_message(mcmc <- buildMCMC(conf), "sampler_CRP: The number of clusters based on the cluster parameters is less")
+  expect_message(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   ## dnorm_dnorm one more level of hierarchy
@@ -2896,7 +2896,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
-  expect_message(mcmc <- buildMCMC(conf), "sampler_CRP: The number of clusters based on the cluster parameters is less")
+  expect_message(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 2:(n-2), "]"))
   expect_equal(1, clusterNodeInfo$numIndexes)
@@ -2918,7 +2918,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
   crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
-  expect_message(mcmc <- buildMCMC(conf), "sampler_CRP: The number of clusters based on the cluster parameters is less")
+  expect_message(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
   expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 2:(n-2), "]"))
@@ -6486,8 +6486,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50)))
   conf <- configureMCMC(m)
-  expect_message(buildMCMC(conf),
-                 "sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters")
+  expect_message(buildMCMC(conf), "less than the number of potential clusters")
   
   ## multiple tilde parameters
   code = nimbleCode({
@@ -6503,8 +6502,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(50,1,1)))
   conf <- configureMCMC(m)
-  expect_message(buildMCMC(conf),
-                 "sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters")
+  expect_message(buildMCMC(conf), "less than the number of potential clusters")
   
   ## multiple tilde parameters, one is common for every observation
   code = nimbleCode({

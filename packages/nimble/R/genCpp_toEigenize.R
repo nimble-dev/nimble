@@ -32,7 +32,7 @@ toEigenizeMaybeCalls <- c('map',
                             'getPtr',
                             'startNimbleTimer'))
 
-toEigenizeUseRuleCalls <- c('nimPrint')
+toEigenizeUseRuleCalls <- c('nimPrint', 'nimCat')
 
 toEigenCalls <- c(
     makeCallList(binaryOperators, 'toEigenBinaryCwise'),             

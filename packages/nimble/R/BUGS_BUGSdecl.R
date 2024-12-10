@@ -743,6 +743,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             } 
         }
         if(indexingBracket) {
+            ## Detect dynamic indexing with non-scalar result and AD.
+            if(buildDerivs) 
+                if(detectNonscalarIndex(code) && any(sapply(code[3:length(code)], isDynamicIndex))) {
+                    code[3:length(code)] <- sapply(code[3:length(code)], stripDynamicallyIndexedWrapping)
+                    stop("found dynamic indexing in ", safeDeparse(code), " that would produce a non-scalar result. This is not supported with nimble's current automatic differentiation (AD) system. One can avoid use of AD via `buildDerivs=FALSE`. Alternatively, a work-around to allow use of AD is to construct the result using only scalar indexes, e.g., construct `ptmp[i, 1:3]` via `for(j in 1:3) ptmp[i, j] <- p[z[i], j]` to use in place of `p[z[i], 1:3]`")
+                }
             ## recurse on the index arguments
             contents <-
                 lapply(code[-c(1,2)],
@@ -917,7 +923,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 if(!exists(funName, envir))
                     stop("R function '", funName,"' in the code '", safeDeparse(code), "' does not exist.")
                 if(funName == ":") ## dynamic indexing in a vector of indices
-                    stop("Dynamic indexing found in a vector of indices, ", safeDeparse(code), ". Only scalar indices, such as 'idx' in 'x[idx]', can be dynamic. One can instead use dynamic indexing in a vector of indices inside a nimbleFunction.") 
+                    stop("Dynamic indexing found in a vector of indices, ", safeDeparse(code), ". Only scalar indices, such as 'idx' in 'x[idx]', can be dynamic. One can instead use dynamic indexing in a vector of indices inside a nimbleFunction. To use constant indices, provide their values in `constants`.") 
                 unreplaceable <-
                     sapply(contents[!contentsReplaceable],
                            function(x) as.character(x$code)

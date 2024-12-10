@@ -3,12 +3,12 @@
 #' 
 #' A model macro expands one line of code in a nimbleModel into one or
 #' more new lines.  This supports compact programming by defining
-#' re-usable modules.  \code{model_macro_builder} takes as input a
+#' re-usable modules.  \code{buildMacro} takes as input a
 #' function that constructs new lines of model code from the original
 #' line of code.  It returns a function suitable for internal use by
 #' \code{nimbleModel} that arranges arguments for input function.  Macros
 #' are an experimental feature and are available only after setting
-#' \code{nimbleOptions(enableModelMacros = TRUE)}.
+#' \code{nimbleOptions(enableMacros = TRUE)}.
 #'
 #' @param fun A function written to construct new lines of model code (see below).
 #'
@@ -91,13 +91,13 @@
 #' @export
 #' 
 #' @examples
-#' nimbleOptions(enableModelMacros = TRUE)
+#' nimbleOptions(enableMacros = TRUE)
 #' nimbleOptions(enableMacroComments = FALSE)
 #' nimbleOptions(verbose = FALSE)
 #' 
 #' ## Example 1: Say one is tired of writing "for" loops.
 #' ## This macro will generate a "for" loop with dnorm declarations
-#' all_dnorm <- model_macro_builder(
+#' all_dnorm <- buildMacro(
 #'     function(stoch, LHS, RHSvar, start, end, sd = 1, modelInfo, .env) {
 #'         newCode <- substitute(
 #'             for(i in START:END) {
@@ -133,7 +133,7 @@
 #' 
 #' ## Example 2: Say one is tired of writing priors.
 #' ## This macro will generate a set of priors in one statement
-#' flat_normal_priors <- model_macro_builder(
+#' flat_normal_priors <- buildMacro(
 #'     function(..., modelInfo, .env) {
 #'         allVars <- list(...)
 #'         priorDeclarations <- lapply(allVars,
@@ -165,7 +165,7 @@
 #' ## }
 #'
 #' ## Example 3: Macro that modifies constants
-#' new_constant <- model_macro_builder(
+#' new_constant <- buildMacro(
 #'    function(stoch, LHS, RHS, modelInfo, .env) {
 #'      # number of elements
 #'      n <- as.numeric(length(modelInfo$constants[[deparse(LHS)]]))
@@ -192,7 +192,7 @@
 #' mod <- nimbleModel(code = code, constants=const)
 #' mod$getCode()
 #' mod$getConstants() # new constant is here
-model_macro_builder <- function(fun,
+buildMacro <- function(fun,
                                 use3pieces = TRUE,
                                 unpackArgs = TRUE ) {
     if(use3pieces) {
@@ -299,7 +299,7 @@ processMacrosInternal <- function(code,
       possibleMacro <- get(possibleMacroName, envir = env)
     }
   } else {
-    possibleMacro <- try(eval(possibleMacroCode, envir = env))
+    possibleMacro <- try(eval(possibleMacroCode, envir = env), silent = TRUE)
     if(inherits(possibleMacro, "try-error")) {
       possibleMacro <- NULL
     }
@@ -308,6 +308,10 @@ processMacrosInternal <- function(code,
                                         #    if(exists(possibleMacroName, envir = env)) {
                                         #        possibleMacro <- get(possibleMacroName, envir = env)
     if(inherits(possibleMacro, "model_macro")) {
+      nm <- possibleMacroName
+      if(grepl("::", nm))
+          nm <- sub(".*:", "", nm)
+      messageIfVerbose("  [Note] Processing model macro `", nm, "`.")
       expandedInfo <- try(possibleMacro$process(code,
                                                 modelInfo=modelInfo,
                                                 .env = env
@@ -375,6 +379,11 @@ processMacrosInternal <- function(code,
       curPars <- modelInfo$parameters
       expandedInfo$modelInfo$parameters <- c(curPars, newPars)
 
+      # Just in case nMacros is missing, set to 0
+      if(is.null(expandedInfo$modelInfo$nMacros)) expandedInfo$modelInfo$nMacros <- 0
+      # Increment number of macros run
+      expandedInfo$modelInfo$nMacros <- expandedInfo$modelInfo$nMacros + 1
+
       ## Return object is a list so we can possibly extract other
       ## content in the future.  We recurse on the returned code
       ## to expand macros that it might contain.
@@ -403,18 +412,27 @@ codeProcessModelMacros <- function(code, modelInfo, env){
   modelInfo$indexCreator <- macroIndexCreator
   # No macro generated parameters before any macros run, so parameters = empty list
   modelInfo$parameters <- list()
+  # Initialize number of macros that ran to 0
+  modelInfo$nMacros <- 0
   # Recursively step through the code expanding macros
   # and adding information to modelInfo such as updated constants and
   # parameter names
   macroOutput <- processMacrosInternal(code=code, modelInfo=modelInfo, env=env)
-  # Clean up extra brackets in output code
-  macroOutput$code <- removeExtraBrackets(macroOutput$code)
-  # Convert factors in constants to numeric
-  macroOutput$modelInfo$constants <- convertFactorConstantsToNumeric(macroOutput$modelInfo$constants)  
-  # Remove intermediate parameters from list of generated parameters
-  # and check for duplicates
-  macroOutput$modelInfo$parameters <- checkMacroPars(macroOutput$modelInfo$parameters,
-                                                     code, macroOutput$code)
+
+  # Do post-processing on code if at least one macro was run
+  if(macroOutput$modelInfo$nMacros > 0){
+    # Clean up extra brackets in output code
+    macroOutput$code <- removeExtraBrackets(macroOutput$code)
+    # Convert factors in constants to numeric
+    macroOutput$modelInfo$constants <- convertFactorConstantsToNumeric(macroOutput$modelInfo$constants)  
+    # Remove intermediate parameters from list of generated parameters
+    # and check for duplicates
+    macroOutput$modelInfo$parameters <- checkMacroPars(macroOutput$modelInfo$parameters,
+                                                       code, macroOutput$code)
+  }
+  # Remove nMacros from modelInfo just in case (not sure this is necessary)
+  macroOutput$modelInfo$nMacros <- NULL
+
   list(code = macroOutput$code, modelInfo = macroOutput$modelInfo)
 }
 
@@ -620,7 +638,7 @@ checkMacroPars <- function(parameters, startCode, endCode){
 #' @export
 #'
 #' @examples
-#' nimbleOptions(enableModelMacros = TRUE)
+#' nimbleOptions(enableMacros = TRUE)
 #' nimbleOptions(enableMacroComments = FALSE)
 #' nimbleOptions(verbose = FALSE)
 #'
@@ -773,7 +791,12 @@ removeExtraBracketsInternal <- function(code){
     if(is.list(x)){
       x <- removeExtraBracketsInternal(x)
     } else if(x[[1]] == "for"){
-      x[[4]] <- removeExtraBrackets(x[[4]])
+      if(x[[4]][[1]] == "for"){
+        # Handle for loop with no { situation
+        x[[4]][[4]] <- removeExtraBrackets(x[[4]][[4]])
+      } else {
+        x[[4]] <- removeExtraBrackets(x[[4]])
+      }
     }
     x
   }))

@@ -1426,7 +1426,10 @@ sampler_CRP <- nimbleFunction(
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     min_nTilde <- nTilde[1]
     if(min_nTilde < n)
-      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.')
+      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters\n',
+                       '            is less than the number of potential clusters. The MCMC is not\n',
+                       '            strictly valid if it ever proposes more components than cluster\n',
+                       '            parameters exist; NIMBLE will warn you if this occurs.')
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
@@ -1639,7 +1642,7 @@ sampler_CRP <- nimbleFunction(
     
     
     for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
-      
+      sampledNonconjugate <- FALSE
       xi <- model[[target]]
       xiCounts[xi[i]] <- xiCounts[xi[i]] - 1
       
@@ -1666,6 +1669,7 @@ sampler_CRP <- nimbleFunction(
         model[[target]][i] <<- xi[i] # <<- label of new component
         if(sampler == 'CRP_nonconjugate'){ # simulate tildeVars[xi[i]] # do this everytime there is a singleton so we ensure this comes always from the prior
           helperFunctions[[1]]$sample(i, model[[target]][i])
+          sampledNonconjugate <- TRUE  
           if(nIntermClusNodesPerClusID > 0) {
             model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
           }
@@ -1713,6 +1717,7 @@ sampler_CRP <- nimbleFunction(
           model[[target]][i] <<- kNew 
           if(sampler == 'CRP_nonconjugate'){
             helperFunctions[[1]]$sample(i, model[[target]][i])
+            sampledNonconjugate <- TRUE  
             if(nIntermClusNodesPerClusID > 0) {
               model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
             }
@@ -1777,7 +1782,9 @@ sampler_CRP <- nimbleFunction(
       } else { # an existing label is sampled
         ## Reset to previous marginalized node value; we choose to store information on what elements to be restored in sample()
         ## but an alternative would be to have i=0 determine reset and pass j=kNew here.
-        if(sampler == 'CRP_nonconjugate')   
+        ## Check for `sampledNonconjugate` fixes issue 1513, to avoid resetting
+        ## if no sampling of marginalizedNodes done because at upper limit of number of clusters.  
+        if(sampler == 'CRP_nonconjugate' & sampledNonconjugate)   
           helperFunctions[[1]]$sample(i, 0)
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
