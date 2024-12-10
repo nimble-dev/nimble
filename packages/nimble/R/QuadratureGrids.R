@@ -1,40 +1,24 @@
-## nimbleQuad Quadrature Rules
+## nimbleQuad Quadrature Rules + Grids
 
-## Outer level quadrature base class
-OUTER_GRID_BASE <- nimbleFunctionVirtual(
+## Quadrature base class: Returns only quadrature grid on standard scale.
+GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-    buildGrid = function(nQuadUpdate = integer(0, default = -1)){},
-    quadSum = function(){ returnType(double()) },
-    saveLogDens = function(i = integer(0), logDensity = double()){},
-    setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
-    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){},
-    getWeights = function(i=integer()){ 
-      returnType(double()) 
+    buildGrid = function(){},
+    resetGrid = function(nQuadUpdate = integer(0, default = -1)){},
+    nodes = function(){
+      returnType(double(2))
     },
-    getAllWeights = function(){ 
-      returnType(double(1)) 
+    weights = function(){
+        returnType(double(1))
     },
-    getNodes = function(i=integer()){ 
-      returnType(double(1)) 
-    },
-    getNodesTransformed = function(i=integer()){ 
-      returnType(double(1)) 
-    }, 
-    getLogDensity = function(i=integer()){ 
-      returnType(double()) 
-    },
-    skewGridPoints = function(skewSD = double(2)){},
-    getGridSize = function(){
-      returnType(integer())
-    },
-    z_to_theta = function(z = double(1)){ 
-      returnType(double(1)) 
-    },
-    theta_to_z = function(theta = double(1)){ 
-      returnType(double(1)) 
-    }    
- )
+    nodei = function(indx = integer()){
+      returnType(double(1))
+    }
+    weighti = function(indx = integer()){
+      returnType(double())
+    }
+  )
 )
 
 #' Nimble List Quadrature Data type
@@ -282,8 +266,10 @@ quadRule_Custom <- nimbleFunction(
 #' @export
 logSumExp = nimbleFunction(
   run = function(log1 = double(), log2 = double()){
-  if(log1 > log2) ans <- log( 1 + exp(log2 - log1)) + log1
-  else ans <- log(1 + exp(log1 - log2)) + log2
+  if(log1 > log2) 
+    ans <- log( 1 + exp(log2 - log1)) + log1
+  else 
+    ans <- log(1 + exp(log1 - log2)) + log2
   returnType(double())
   return(ans)
 })
