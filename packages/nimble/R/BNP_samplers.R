@@ -1676,17 +1676,16 @@ sampler_CRP <- nimbleFunction(
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # <<- probability of sampling a new label, only k components because xi_i is a singleton
         
         ## Sample new cluster.
-        whichNaN <- is.nan(curLogProb[1:k])
-        if(any(whichNaN))
-            curLogProb[whichNaN] <<- -Inf
+        if(any_nan(curLogProb[1:k]))   
+            curLogProb[is.nan(curLogProb[1:k]] <<- -Inf
         if(all(curLogProb[1:k] == -Inf))
             stop('CRP_sampler: sampler encountered case where the log probability density values corresponding to all potential cluster memberships are negative infinity. This is likely caused by numerical overflow or underflow. You might consider using the stickbreaking representation rather than the CRP.')
-        whichInf <- curLogProb[1:k] == Inf
-        if(any(whichInf)) {
-            if(sum(whichInf) > 1)
+        isInf <- curLogProb[1:k] == Inf
+        if(any(isInf)) {
+            if(sum(isInf) > 1)
               nimCat('CRP_sampler: sampler encountered values of infinity for the log probability density corresponding to multiple potential cluster memberships. Results of sampling may not be valid.\n')
-            curLogProb[whichInf] <<- 0
-            curLogProb[!whichInf] <<- -Inf
+            curLogProb[isInf] <<- 0
+            curLogProb[!isInf] <<- -Inf
         }
         index <- rcat( n=1, exp(curLogProb[1:k]-max(curLogProb[1:k])) )
         if(index == k) {
@@ -1725,17 +1724,16 @@ sampler_CRP <- nimbleFunction(
         }
         
         # sample an index from 1 to (k+1)
-        whichNaN <- is.nan(curLogProb[1:(k+1)])
-        if(any(whichNaN))
-            curLogProb[whichNaN] <<- -Inf
+        if(any_nan(curLogProb[1:(k+1)]))
+            curLogProb[is.nan(curLogProb[1:(k+1)])] <<- -Inf
         if(all(curLogProb[1:(k+1)] == -Inf))
             stop('CRP_sampler: sampler encountered case where the log probability density values corresponding to all potential cluster memberships are negative infinity. This is likely caused by numerical overflow or underflow. You might consider using the stickbreaking representation rather than the CRP.')
-        whichInf <- curLogProb[1:(k+1)] == Inf
-        if(any(whichInf)) {
-            if(sum(whichInf) > 1)
+        isInf <- curLogProb[1:(k+1)] == Inf
+        if(any(isInf)) {
+            if(sum(isInf) > 1)
                nimCat('CRP_sampler: sampler encountered values of infinity for the log probability density corresponding to multiple potential cluster memberships. Results of sampling may not be valid.\n')
-            curLogProb[whichInf] <<- 0
-            curLogProb[!whichInf] <<- -Inf
+            curLogProb[isInf] <<- 0
+            curLogProb[!isInf] <<- -Inf
          }
         index <- rcat( n=1, exp(curLogProb[1:(k+1)]-max(curLogProb[1:(k+1)])) )
         if(index == (k+1)) {
