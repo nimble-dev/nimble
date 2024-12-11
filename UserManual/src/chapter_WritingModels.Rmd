@@ -614,14 +614,11 @@ The `nimbleMacros` package provides an initial set of macros, currently focused 
 
  - `LM`: specify a complete generalized linear model (GLM) or generalized linear mixed model (GLMM), using standard R and `lme4` model formula syntax,
  - `LINPRED`: specify a linear predictor using a standard R formula,
- - `FORLOOP`: specify a for loop by providing code with index ranges,
- - `LINPRED_PRIORS`: specify priors for the coefficients of a linear predictor.
+ - `FORLOOP`: specify a for loop by providing code with index ranges.
 
 These macros are discussed in detail in the [vignette for the `nimbleMacros` package](https://cran.r-project.org/web/packages/nimbleMacros) and in the documentation for each macro, e.g., `help(LINPRED)`.
 
 Here is a brief example of using the `LM` macro to set up a GLMM.
-
-And here is a brief example of using the `LINPRED` and `FORLOOP` macros to set up a regression structure.
 
 We'll consider the `Chick` example from the `lme4` package. We'll set up a NIMBLE model analogous to this mixed effects model specified with `lme4::lmer`:
 
@@ -634,8 +631,10 @@ with a linear effect of time and random intercepts for each chick.
 Here's the specification of the model code in nimble, using the `LM` macro:
 
 ```{r}
+library(nimbleMacros)
+
 code <- nimbleCode({
-  LM(weight ~ Time + (1|Chick))
+  LM(weight[1:N] ~ Time + (1|Chick))
 })
 
 chickConst <- list(Time = ChickWeight$Time, Chick = ChickWeight$Chick,
@@ -663,7 +662,7 @@ code <- nimbleCode({
   mu[1:N] <- LINPRED(~Time[1:N])
 
   weight[1:N] ~ FORLOOP(dnorm(mu[1:N], sd = sigma))
-  sigma ~ dhalfflat()
+  sigma ~ dunif(0, 100)
 })
 mod <- nimbleModel(code, constants = chickConst, data = chickData)
 mod$getCode()
