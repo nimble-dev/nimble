@@ -216,7 +216,8 @@ buildOneAGHQuad1D <- nimbleFunction(
 		saved_inner_negHess <- matrix(0, nrow = 1, ncol = 1)
 		## Cache log like saved value to keep track of 3 methods.
     logLik_saved_value <- -Inf
-    
+    logdetNegHessian <- 0
+
     ## Values to save when max inner log lik reached.
     max_outer_logLik <- -Inf
     outer_mode_inner_negHess <- matrix(0, nrow = 1, ncol = 1)
@@ -235,8 +236,17 @@ buildOneAGHQuad1D <- nimbleFunction(
     converged <- 0
     
     ## Build AGHQ grid for 1D:
-    AGHQuad_grid <- buildAGHQGrid(d = 1, nQuad = nQuad_)
-    
+    I_AGHQ <- 1
+    gridRule <- I_AGHQ
+    quadGrid_nfl <- nimbleFunctionList(GRID_BASE)
+    quadGrid_nfl[[I_AGHQ]] <- generateQuadGrid(d = 1, nQuad = nQuad_, quadRule = "AGHQ")
+    nodes <-  matrix(0, nrow = nQuad_, ncol = 1)
+    wgts <- numeric(nQuad_)
+    logDensity_quad <- numeric(nQuad_)
+    if(nQuad_ == 1) {
+      wgts <- c(0,-1)
+      logDensity_quad <- c(0,-1)
+    }
     ## The following is used to ensure the one_time_fixes are run when needed.
     one_time_fixes_done <- FALSE    
     
@@ -275,6 +285,10 @@ buildOneAGHQuad1D <- nimbleFunction(
         gr_QuadSum_value <<- fix_one_vec(gr_QuadSum_value)
         AGHQuad_saved_gr <<- fix_one_vec(AGHQuad_saved_gr)
         quadrature_previous_p <<- fix_one_vec(quadrature_previous_p)
+      }
+      if(nQuad_ == 1) {
+        wgts <<- fix_one_vec(wgts)
+        logDensity_quad <<- fix_one_vec(logDensity_quad)
       }
       reInit <- values(model, randomEffectsNodes)
       set_reInit(reInit)
@@ -323,7 +337,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        AGHQuad_grid$setGridSize(nQUpdate = nQuad)
+        quadGrid_nfl[[I_AGHQ]]$buildGrid(nQUpdate = nQuad)
         nQuad_ <<- nQuad
       }
       ## if(gridType != "") {
@@ -652,7 +666,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
       reTransform <- max_inner_logLik_last_argmax
       maxValue <- max_inner_logLik_last_value
-      logdetNegHessian <- logdetNegHess(p, reTransform)
+      logdetNegHessian <<- logdetNegHess(p, reTransform)
       saved_inner_negHess <<- matrix(exp(logdetNegHessian), nrow = 1, ncol = 1)
 
       if(nQuad_ == 1){
@@ -678,7 +692,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
       reTransform <- max_inner_logLik_last_argmax
       maxValue <- max_inner_logLik_last_value
-      logdetNegHessian <- logdetNegHess(p, reTransform)
+      logdetNegHessian <<- logdetNegHess(p, reTransform)
       saved_inner_negHess <<- matrix(exp(logdetNegHessian), nrow = 1, ncol = 1)
       
       if(nQuad_ == 1){
@@ -698,18 +712,29 @@ buildOneAGHQuad1D <- nimbleFunction(
       returnType(double())
     },
     calcLogLik_AGHQuad = function(p = double(1)){
-      ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
-      AGHQuad_grid$buildGrid()
-      nQ <- AGHQuad_grid$getGridSize()
-      AGHQuad_grid$transformGrid1D(negHess = saved_inner_negHess, inner_mode = max_inner_logLik_last_argmax)
-      modeIndex <- AGHQuad_grid$getModeIndex() ## if even, this is -1
-      AGHQuad_grid$saveLogDens( -1, max_inner_logLik_last_value ) ## Cache this value regardless of even or odd.
-      for(i in 1:nQ) {
-        if(i != modeIndex) AGHQuad_grid$saveLogDens(i, joint_logLik(p = p, reTransform = AGHQuad_grid$getNodesTransformed(i) ) )
-      }
+      ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, do quad sum.
+      quadGrid_nfl[[gridRule]]$buildGrid(nQuad_)
+      nQ <- quadGrid_nfl[[gridRule]]$gridSize()
+      SD <- 1/sqrt(saved_inner_negHess[1,1])
+      nodes <<- quadGrid_nfl[[gridRule]]$nodes()
+      wgts <<- quadGrid_nfl[[gridRule]]$weights()
+      logDensity_quad <<- numeric(value = 0, length = nQ)
 
+      modeIndex <- quadGrid_nfl[[gridRule]]$modeI ## if even, this is -1
+      ans <- 0
+      for(i in 1:nQ) {
+        if(i != modeIndex) {
+          nodes[i,] <<- max_inner_logLik_last_argmax + SD*nodes[i,]
+          logDensity_quad[i] <<- joint_logLik(p = p, reTransform = nodes[i,])
+          ans <- ans + exp(logDensity_quad[i] - max_inner_logLik_last_value)*wgts[i]
+        }else{
+          nodes[i,] <<- max_inner_logLik_last_argmax
+          logDensity_quad[i] <<- max_inner_logLik_last_value
+          ans <- ans + wgts[i]
+        }
+      }
       ## Given all the saved values, weights and log density, do quadrature sum.
-      logLik_saved_value <<- AGHQuad_grid$quadSum()
+      logLik_saved_value <<- log(ans) + max_inner_logLik_last_value - 0.5 * logdetNegHessian
       quadrature_previous_p <<- p ## Cache this to make sure you have it for 
     },
     ## Gradient of the Laplace approximation (version 2) w.r.t. parameters
@@ -790,32 +815,30 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
  
       ## Method 2 implies double taping.
-      modeIndex <- AGHQuad_grid$getModeIndex()
-      nQ <- AGHQuad_grid$getGridSize()
+      modeIndex <- quadGrid_nfl[[gridRule]]$modeI()
+      nQ <- quadGrid_nfl[[gridRule]]$gridSize()
       gr_margLogLik_wrt_p <- numeric(value = 0, length = dim(p)[1])
       wgts_lik <- numeric(value = 0, length = nQ)
       for(i in 1:nQ) {
-        z_node_i <- AGHQuad_grid$getNodes(i)[1]
-        reTrans_i <- AGHQuad_grid$getNodesTransformed(i)
-        wgts_lik[i] <- exp(AGHQuad_grid$getLogDensity(i) - max_inner_logLik_last_value)*AGHQuad_grid$getWeights(i)
+        wgts_lik[i] <- exp(logDensity_quad[i] - max_inner_logLik_last_value)*wgts[i]
         
         ## At the mode (z = 0, don't have additional z*sigma_hat gr complication).
 	      if( modeIndex == i ){
-          if( method == 2 ) gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p(p, reTrans_i)
-          else gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)
+          if( method == 2 ) gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p(p, nodes[i,])
+          else gr_jointlogLikwrtp <- gr_joint_logLik_wrt_p_internal(p, nodes[i,])
           gr_margLogLik_wrt_p <- gr_margLogLik_wrt_p + wgts_lik[i]*gr_jointlogLikwrtp
         }else{
           ## Chain Rule: dll/dre * ( dre_hat/dp + dsigma_hat/dp*z_i )
           ## dll/dp
           if(method == 2){
-            gr_logLikwrtrewrtre_i <- gr_joint_logLik_wrt_re(p, reTrans_i)[1]
-            gr_logLikewrtp_i <- gr_joint_logLik_wrt_p(p, reTrans_i)
+            gr_logLikwrtrewrtre_i <- gr_joint_logLik_wrt_re(p, nodes[i,])[1]
+            gr_logLikewrtp_i <- gr_joint_logLik_wrt_p(p, nodes[i,])
           }else{
-            gr_logLikwrtrewrtre_i <- gr_joint_logLik_wrt_re_internal(p, reTrans_i)[1]
-            gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, reTrans_i)
+            gr_logLikwrtrewrtre_i <- gr_joint_logLik_wrt_re_internal(p, nodes[i,])[1]
+            gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, nodes[i,])
           }
           gr_logLikwrtrewrtp_i <- gr_logLikwrtrewrtre_i *
-                            ( (1 + gr_sigmahatwrtre*z_node_i) * gr_rehatwrtp  +  gr_sigmahatwrtp*z_node_i )
+                            ( (1 + gr_sigmahatwrtre*quadGrid_nfl[[gridRule]]$node(i)) * gr_rehatwrtp  +  gr_sigmahatwrtp*quadGrid_nfl[[gridRule]]$node(i) )
           ## The weighted gradient for the ith sum.
           gr_margLogLik_wrt_p <- gr_margLogLik_wrt_p + wgts_lik[i]*( gr_logLikewrtp_i +  gr_logLikwrtrewrtp_i )
         }
@@ -1540,7 +1563,7 @@ buildOneAGHQuad <- nimbleFunction(
       maxValue <- max_inner_logLik_last_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
       saved_inner_negHess_chol <<- cholNegHessian(p, reTransform)
-      logdetNegHessian <- 2 * sum(log(diag(saved_inner_negHess_chol)))
+      logdetNegHessian <<- 2 * sum(log(diag(saved_inner_negHess_chol)))
 
       if(nQuad_ == 1){
         logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
@@ -1565,7 +1588,7 @@ buildOneAGHQuad <- nimbleFunction(
       maxValue <- max_inner_logLik_last_value
       if(maxValue == -Inf) return(-Inf) # This would mean inner optimization failed
       saved_inner_negHess_chol <<- cholNegHessian(p, reTransform)
-      logdetNegHessian <- 2 * sum(log(diag(saved_inner_negHess_chol)))
+      logdetNegHessian <<- 2 * sum(log(diag(saved_inner_negHess_chol)))
       
       if(nQuad_ == 1){
         ## Laplace Approx

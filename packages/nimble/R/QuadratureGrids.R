@@ -5,7 +5,6 @@ GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
     buildGrid = function(){},
-    resetGrid = function(nQuadUpdate = integer(0, default = -1)){},
     nodes = function(){
       returnType(double(2))
     },
@@ -16,6 +15,12 @@ GRID_BASE <- nimbleFunctionVirtual(
       returnType(double(1))
     }
     weighti = function(indx = integer()){
+      returnType(double())
+    },
+    gridSize = function(){
+      returnType(double())
+    },
+    modeI = function(){
       returnType(double())
     }
   )
@@ -274,34 +279,35 @@ logSumExp = nimbleFunction(
   return(ans)
 })
 
-buildInnerQuadGrid <- nimbleFunction(
+## Wrapper to make quadrature nodes accesible in a nimble function list.
+
+#' @export
+generateQuadGrid <- nimbleFunction(
+  contains "GRID_BASE",
   setup = function(d = 1, nQuad = 3, quadRule = "AGHQ"){
 
-    if(quadRule == "AGHQ")
+    if(quadRule == "AGHQ") {
       quadGrid <- quadRule_AGHQ(d)
-    else
-      stop("Can only use AGHQ for inner marginalization currently.")
-
+    }else{
+      if(quadRule == "CCD")
+        quadGrid <- quadRule_CCD(d)
+    }else{
+      stop("Only AGHQ or CCD rules are currently implemented. Custom grids will be included very soon.")
+    }
     ## nQ will be total number of quadrature nodes.
     nQ <- nQuad^d	## Maybe dimension reduced if we prune.
-    zVals <- matrix(0, nrow = nQ, ncol = d)
-    nodeVals <- matrix(0, nrow = nQ, ncol = d)
+    zNodes <- matrix(0, nrow = nQ, ncol = d)
 
     ## One time fixes for scalar / vector changes.
     one_time_fixes_done <- FALSE
-    wgt <- numeric(nQ)
-    logDensity <- numeric(nQ)
-    logdetNegHessian <- 0
-    margDens <- 0
+    wgts <- numeric(nQ)
     if(nQ == 1)	{
-      wgt <- c(0, -1)
-      logDensity <- c(0,-1)
+      wgts <- c(0, -1)
     }
     gridBuilt <- FALSE
 
     ## AGHQ mode will be in the middle.
     modeIndex <- -1
-    maxLogDensity <- 0    
   },
 	run=function(){},
 	methods = list(
@@ -309,346 +315,54 @@ buildInnerQuadGrid <- nimbleFunction(
       ## Run this once after compiling; remove extraneous -1 if necessary
       if(one_time_fixes_done) return()
       if(nQ == 1) {
-        logDensity <<- numeric(length = 1, value = logDensity[1])
-        wgt <<- numeric(length = 1, value = wgt[1])
+        wgts <<- numeric(length = 1, value = wgt[1])
       }
       one_time_fixes_done <<- TRUE
     },
     ## Doesn't default to building the grid.
     buildGrid = function(nQuadUpdate = integer(0, default = -1)){
       one_time_fixes()
-      if(nQuadUpdate > 0 & quadRule == "AGHQ"){
+      if( nQuadUpdate > 0 & nQuadUpdate != nQuad){
         nQuad <<- nQuadUpdate
-        nQ <<- nQuad^d
         gridBuilt <<- FALSE
       }
       if(!gridBuilt){
         newgrid <- quadGrid$buildQuadRule()
-        zVals <<- newgrid$nodes
-        wgt <<- newgrid$wgts
+        zNodes <<- newgrid$nodes
+        wgts <<- newgrid$wgts
         modeIndex <<- newgrid$modeIndex
         nQ <<- dim(wgt)[1]
-        nodeVals <<- matrix(0, nrow = nQ, ncol = d)
-        logDensity <<- numeric(value = 0, length = nQ)
         gridBuilt <<- TRUE
       }
     },
-    quadSum = function(){
-      if(!odd) 
-        modeIndex <<- -1 ## Make sure it's negative.
-      margDens <<- 0
-      for( k in 1:nQ ){
-        if(k == modeIndex) margDens <<- margDens + wgt[k]
-        else margDens <<- margDens + exp(logDensity[k] - maxLogDensity)*wgt[k]
-      }
-      ans <- log(margDens) + maxLogDensity - 0.5 * logdetNegHessian
+    weightsi = function(indx=integer()){
       returnType(double())
-      return(ans)
+      if(indx == -1 & modeIndex > 0)  return(wgts[modeIndex])
+      return(wgts[i])
     },
-    ## Reset the sizes of the storage to change the grid if the user wants more/less AGHQ.
-    setGridSize = function(nQUpdate = integer()){
-      one_time_fixes()
-      buildGrid(nQuadUpdate)  ## Can delete this function once I update the Inner Marg functions.
-    },
-    saveLogDens = function(i = integer(0, default = -1), logDens = double()){
-      if(i == -1){
-        if(odd) logDensity[modeIndex] <<- logDens
-        maxLogDensity <<- logDens
-      }else{
-        logDensity[i] <<- logDens
-      }
-    },
-    transformGrid1D = function(negHess = double(2), inner_mode = double(1)){
-      SD <- 1/sqrt(negHess[1,1])
-      for( i in 1:nQ) nodeVals[i,] <<- inner_mode + SD*zVals[i,]
-      logdetNegHessian <<- log(negHess[1,1])
-    }, 
-    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
-      if(method == "spectral"){
-        ## Spectral transformation.
-        negHess <- t(cholNegHess) %*% cholNegHess
-        eigenDecomp <- nimEigen(negHess)
-        ATransform <- matrix(0, nrow = d, ncol = d)   
-        for( i in 1:d ){
-          ATransform[,i] <- eigenDecomp$vectors[,i]/sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
-        }
-        for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + (ATransform %*% zVals[i,])
-      }else{
-        ## Cholesky transformation.
-        for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + backsolve(cholNegHess, zVals[i,])
-      }
-      logdetNegHessian <<- 2*sum(log(diag(cholNegHess)))
-    },
-    getWeights = function(i=integer()){
-      returnType(double())
-      if(i == -1 & odd)  return(wgt[modeIndex])
-      return(wgt[i])
-    },
-    getAllWeights = function(){
+    weights = function(){
       returnType(double(1))
-      return(wgt)
+      return(wgts)
     },    
-    getNodesTransformed = function(i=integer()){
-      if(i == -1 & odd) return(nodeVals[modeIndex,])
+    nodesi = function(indx=integer()){
+      if(i == -1 & modeIndex > 0) return(zNodes[modeIndex,])
       returnType(double(1)); 
-      return(nodeVals[i,])
+      return(zNodes[i,])
     },
-    getAllNodesTransformed = function(){
+    nodes = function(){
       returnType(double(2)); 
-      return(nodeVals)
+      return(zNodes)
     },
-    getNodes = function(i=integer()){
-      if(i == -1 & odd) return(zVals[modeIndex,])
-      returnType(double(1)); 
-      return(zVals[i,])
-    },
-    getAllNodes = function(){
-      returnType(double(2)); 
-      return(zVals)
-    },    
-    getLogDensity = function(i=integer()){
-      returnType(double())
-      if(i == -1 & odd) return(logDensity[modeIndex])
-      return(logDensity[i])
-    },
-    getModeIndex = function(){
-      returnType(integer())
-      return(modeIndex)
-    },
-    getGridSize = function(){
+    gridSize = function(){
       returnType(double())
       return(nQ)
+    },
+    modeI = function(){
+      returnType(double())
+      return(modeIndex)
     }
   )
 )## End of buildAGHQGrid
-
-
-## Main quadrature object to be used in INLA like code for outer integration
-## of hyperparameters.
-
-#' @export
-buildOuterQuadGrid <- nimbleFunction(
-  contains = OUTER_GRID_BASE,
-  setup = function(d = 1, nQuad = 3, nre = 0, quadRule = "AGHQ"){
-    ## This may change depending on the actual dimension of the quad grid:
-    nQ <- nQuad^2
-    
-    zVals <- matrix(0, nrow = nQ, ncol = d)
-    nodeVals <- matrix(0, nrow = nQ, ncol = d)
-
-    if(!any(quadRule %in% c("AGHQ", "CCD"))) 
-      stop("Need to choose AGHQ or CCD as a quadrature rule.")
-
-    if(quadRule == "AGHQ")
-      quadGrid <- quadRule_AGHQ(d)
-    if(quadRule == "CCD")
-      quadGrid <- quadRule_CCD(d)
-    # if(quadRule == "Custom")  ## To be discussed.
-      # quadGrid <- quadRule_Custom
-
-    ## One time fixes for scalar / vector changes.
-    one_time_fixes_done <- FALSE
-    wgt <- numeric(nQ)
-    logDensityWgt <- numeric(nQ)
-    if(nQ > 1){
-      wgt <- c(0,-1)
-      logDensityWgt <- c(0,-1)
-    }
-    logdetNegHessian <- 0
-    margDens <- 0
-
-    gridBuilt <- FALSE
-
-    ## Transformation methods
-    transformation <- "spectral"
-    transformationSet <- FALSE
-    calcEigen <- FALSE
-    ATransform <- matrix(0, d, d)
-    AInverseTransform <- matrix(0, d, d)
-    cholNegHess_saved <- matrix(0, d, d)
-    skewed <- FALSE
-
-    ## AGHQ mode will be in the middle.
-    modeIndex <- -1
-    maxLogDensity <- 0
-
-    ## Need to cache all inner mode and cholesky information for simulation purposes:
-    innerCache <- grid_inner_cache(nre = nre, nQuad = nQ)
-  },
-  run=function(){},
-  methods = list(
-    one_time_fixes = function() {
-      ## Run this once after compiling; remove extraneous -1 if necessary
-      if(one_time_fixes_done) return()
-      if(nQ == 1) {
-        logDensityWgt <<- numeric(length = 1, value = logDensityWgt[1])
-        wgt <<- numeric(length = 1, value = wgt[1])
-      }
-      one_time_fixes_done <<- TRUE
-    },	
-    ## Generalized buildGrid to also reset the grid.
-    buildGrid = function(nQuadUpdate = integer(0, default = -1)){
-      one_time_fixes()
-      if(nQuadUpdate > 0 & quadRule == "AGHQ"){
-        nQuad <<- nQuadUpdate
-        nQ <<- nQuad^d
-        gridBuilt <<- FALSE
-      }
-      if(!gridBuilt){
-        newgrid <- quadGrid$buildQuadRule()
-        zVals <<- newgrid$nodes
-        wgt <<- newgrid$wgts
-        modeIndex <<- newgrid$modeIndex
-        nQ <<- dim(wgt)[1]
-        logDensityWgt <<- numeric(value = 0, length = nQ)
-        gridBuilt <<- TRUE
-        skewed <<- FALSE ## Make sure this is skewed again if redo grid.
-        innerCache$update_nQuad(nQuadUpdate = nQ)
-      }
-    },
-    ## Should I update this to the logSumExp code from CCD grid?
-    quadSum = function(){
-      ans <- 0
-      for( k in 1:nQ ){
-        ans <- logSumExp(ans, logDensityWgt[k])  ## Most efficient sum?
-      }
-      ans <- ans - 0.5 * logdetNegHessian
-      returnType(double())
-      return(ans)
-    },
-    saveLogDens = function(i = integer(0, default = -1), logDens = double()){
-      if(i == -1){
-        if(modeIndex <= 0) logDensityWgt[modeIndex] <<- logDens + log(wgt[modeIndex])
-        maxLogDensity <<- logDens
-      }else{
-        logDensityWgt[i] <<- logDens + log(wgt[i])
-      }
-    },
-    ## Set the transformation method to be used and compute Eigen Decomp if reqiured.
-    setTransformation = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
-      cholNegHess_saved <<- cholNegHess
-      logdetNegHessian <<- 2*sum(log(diag(cholNegHess)))
-      if(method == "spectral"){
-        transformation <<- "spectral"      
-        negHess <- t(cholNegHess) %*% cholNegHess
-        eigenDecomp <- nimEigen(negHess)
-        for( i in 1:d ){
-            ATransform[,i] <<- eigenDecomp$vectors[,i]/sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
-            AInverseTransform[,i] <<- eigenDecomp$vectors[,i]*sqrt(eigenDecomp$values[i]) # eigenDecomp$vectors %*% diag(1/sqrt(eigenDecomp$values))
-        }
-        calcEigen <<- TRUE
-      }else{
-        transformation <<- "cholesky"
-      }
-      transformationSet <<- TRUE
-      skewed <<- FALSE  ## Need to make sure we can redo this.  
-    },
-    ## Transform the quadrature grid:
-    ## Can change transformation type here.
-    transformGrid = function(cholNegHess = double(2), inner_mode = double(1), method = character()){
-      if(!transformationSet | (!calcEigen & method == "spectral") ){
-        setTransformation(cholNegHess, inner_mode, method)
-      }
-      if(method == "spectral"){
-        transformation <<- "spectral"
-        for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + (ATransform %*% zVals[i,])
-      }else{
-        transformation <<- "cholesky"
-        for( i in 1:nQ) nodeVals[i, ] <<- inner_mode + backsolve(cholNegHess, zVals[i,])
-      }
-    },
-    z_to_theta = function(z = double(1)){
-      returnType(double(1))
-      if(transformation == "spectral"){
-        theta <- (nodeVals[modeIndex,] + (ATransform %*% z))[,1]
-      }else{
-        ## Cholesky transformation.
-        theta <- nodeVals[modeIndex,] + backsolve(cholNegHess_saved, z)
-      }
-      return(theta)
-    },
-    theta_to_z = function(theta = double(1)){
-      returnType(double(1))
-      if(transformation == "spectral"){
-        z <- ((theta - nodeVals[modeIndex,]) %*% AInverseTransform)[1,]
-      }else{
-        ## Cholesky transformation.
-        z <- (cholNegHess_saved %*% (theta - nodeVals[modeIndex,]))[,1]
-      }
-      return(z)
-    },    
-    ## Do nonthing function:
-    skewGridPoints = function(skewSD = double(2)){
-      if(quadRule == "CCD" & !skewed){
-        for( i in 1:nQ )
-        {
-        for( j in 1:d ){
-          sdAdj <- skewSD[j, 2]	# Positive Skew
-          if(zVals[i,j] <= 0) sdAdj <- skewSD[j, 1]	# Negative Skew
-            zVals[i, j] <<- zVals[i, j] * sdAdj
-          }
-        }
-        skewed <<- TRUE
-      }
-    },
-    cacheInnerValues = function(indx = integer(), logDensity = double(), 
-                                mode = double(1), negHess = double(2)){
-    if(indx == -1){
-        if(modeIndex != -1) logDensityWgt[modeIndex] <<- logDensity + log(wgt[modeIndex])
-        maxLogDensity <<- logDensity
-      }else{
-        logDensityWgt[indx] <<- logDensity + log(wgt[indx])
-      }
-      innerCache$cache_inner_negHess(negHess, indx)
-      innerCache$cache_wgts(logDensityWgt[indx], indx)
-      innerCache$cache_inner_mode(mode, indx)
-    },
-    getWeights = function(i=integer()){
-      returnType(double())
-      if(i == -1 & modeIndex > 0)
-        return(wgt[modeIndex])
-      return(wgt[i])
-    },
-    getAllWeights = function(){
-      returnType(double(1))
-      return(wgt)
-    },    
-    getNodesTransformed = function(i=integer()){
-      if(i == -1 & modeIndex > 0) 
-        return(nodeVals[modeIndex,])
-      returnType(double(1)); 
-      return(nodeVals[i,])
-    },
-    getAllNodesTransformed = function(){
-      returnType(double(2)); 
-      return(nodeVals)
-    },
-    getNodes = function(i=integer()){
-      if(i == -1 & modeIndex > 0) 
-        return(zVals[modeIndex,])
-      returnType(double(1)); 
-      return(zVals[i,])
-    },
-    getAllNodes = function(){
-      returnType(double(2)); 
-      return(zVals)
-    },    
-    getLogDensity = function(i=integer()){
-      returnType(double())
-      if(i == -1 & modeIndex > 0) 
-        return(logDensityWgt[modeIndex])
-      return(logDensityWgt[i])
-    },
-    getModeIndex = function(){
-      returnType(integer())
-      return(modeIndex)
-    },
-    getGridSize = function(){
-      returnType(integer())
-      return(nQ)
-    }
-  )
-)## End generic outer quadrature grid:
 
 #' Build Adaptive Gauss-Hermite Quadrature Grid
 #'
