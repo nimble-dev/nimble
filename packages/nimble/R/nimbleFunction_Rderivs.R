@@ -36,7 +36,7 @@ nimDerivs_dummy <- nimbleFunction(
 #' be issued.  Derivatives for matrix valued arguments will be returned in 
 #' column-major order.
 #' 
-#' @return a \code{nimbleList} with elements \code{value}, \code{jacobian},
+#' @return an \code{ADNimbleList} with elements \code{value}, \code{jacobian},
 #' and \code{hessian}.
 #'
 #' @aliases derivs AD

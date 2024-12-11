@@ -670,8 +670,11 @@ The second usage of \'multivariateNodesAsScalars\' occurs when \'default\' is TR
                     thisSamplerName <- name
                 } else {
                     typeArg <- substitute(type)
-                    if(is.name(typeArg)) {
-                        thisSamplerName <- gsub('^sampler_', '', deparse(typeArg))
+                    if(is.name(typeArg) || is.call(typeArg)) {
+                        thisSamplerName <- deparse(typeArg)
+                        if(grepl("::", thisSamplerName))
+                            thisSamplerName <- gsub('.*:', '', thisSamplerName)
+                        thisSamplerName <- gsub('^sampler_', '', thisSamplerName)
                     } else {
                         thisSamplerName <- 'custom_function'
                     }
