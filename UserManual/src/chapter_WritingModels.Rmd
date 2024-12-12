@@ -622,7 +622,7 @@ Here is a brief example of using the `LM` macro to set up a GLMM.
 
 We'll consider the `Chick` example from the `lme4` package. We'll set up a NIMBLE model analogous to this mixed effects model specified with `lme4::lmer`:
 
-```
+```{r, eval=FALSE}
 lmer(weight ~ Time + (1|Chick), data = ChickWeight)
 ```
 
