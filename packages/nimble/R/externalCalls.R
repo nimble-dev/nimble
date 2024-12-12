@@ -137,6 +137,8 @@ nimbleExternalCall <- function(prototype, returnType, Cfun, headerFile, oFile, w
     ## Stick the "oFile", with .cpp extension as a kluge, into the nfMethodRC
     if(grepl(" ", oFile)) warning("The space in the oFile name may cause a problem.")
     environment(ans)$nfMethodRCobject$externalCPPincludes <- oFile
+    ## Turn off `--preclean` as this can cause deletion of files created by Rcpp.
+    setNimbleOption('precleanCompilation', FALSE)
     return(ans)
 }
 
