@@ -775,15 +775,15 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #'
 #' @author Christopher Paciorek
 #' @export
-deregisterDistributions <- function(distributionsNames, userEnv = parent.frame()) {
-    if(!exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
+deregisterDistributions <- function(distributionsNames, userEnv = parent.frame(), warn = TRUE) {
+    if(warn && !exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
         warning("No user-supplied distributions are registered.")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) {
         distsMatched <- paste0(distributionsNames[matched], collapse = ', ')
         messageIfVerbose("Deregistering '", distsMatched, "' from user-registered distributions.")
     }
-    if(sum(!matched))
+    if(warn && sum(!matched))
         for(nm in distributionsNames[!matched]) {
             warning("Cannot deregister '", nm, "' as it is not registered as a user-defined distribution.")
         }
