@@ -145,7 +145,7 @@ modelDefClass <- setRefClass('modelDefClass',
 ##
 modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, data, userEnv, debug = FALSE) {
     scipen <- options("scipen")[[1]]
-    options(scipen = 1000000)
+    options(scipen = 9999)
     on.exit(options(scipen = scipen))
     if(debug) browser()
     checkUnusedConstants(code, constants)          ## Need to do check before we process if-then-else, or constants used for if-then-else would be flagged.

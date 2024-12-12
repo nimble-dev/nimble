@@ -119,7 +119,7 @@ addIndentToList <- function(x, indent) {
 ### Deparse from exprClass back to R code: not guaranteed to be identical, but valid.
 nimDeparse <- function(code, indent = '') {
     scipen <- options("scipen")[[1]]
-    options(scipen = 1000000)
+    options(scipen = 9999)
     on.exit(options(scipen = scipen))
     ## numeric case
     if(is.numeric(code) | is.logical(code)) return(code)
