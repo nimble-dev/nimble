@@ -342,7 +342,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        quadGrid_nfl[[I_AGHQ]]$buildGrid(nQUpdate = nQuad)
+        quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad)
         nQuad_ <<- nQuad
       }
       ## if(quadTransform != "") {
@@ -600,7 +600,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       # all "logLik" here is joint log likelihood (i.e. for p and re)
       gr_logLik_wrt_p <- numeric(value = ans$value[(ind):(ind + npar - 1)], length = npar)
       ind <- ind + npar
-      logdetNegHess_value <- ans$value[ind]
+      logdetNegHessian <<- ans$value[ind]
       ind <- ind + 1
       # chol_negHess <- matrix(ans$value[(ind):(ind + nre*nre - 1)], nrow = nre, ncol = nre)
       negHessValue <- ans$value[ind]
@@ -614,7 +614,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       
       if( nQuad_ == 1) {
         ## Laplace Approximation
-        logLik_saved_value <<- maxValue - 0.5 * logdetNegHess_value + 0.5 * 1 * log(2*pi)
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * 1 * log(2*pi)
       }else{
         ## AGHQ Approximation:
         calcLogLik_AGHQuad(p)
@@ -888,31 +888,6 @@ buildOneAGHQuad1D <- nimbleFunction(
     reset_outer_logLik = function(){
       max_outer_logLik <<- -Inf
     },
-    ## Allow the user to explore using different sized quadrature grids.
-    ## set_nQuad = function(nQUpdate = integer()){
-    ##   AGHQuad_grid$setGridSize(nQUpdate = nQUpdate)
-    ##   nQuad <<- nQUpdate
-    ## },
-    ## set_transformation = function(transformation = character()){}, ## Not applicable to 1 Dimension.
-    ## set_warning = function(warn = logical()){
-    ##   warn_optim <<- warn
-    ## },
-    ## Internal option to change initial values.
-    ## set_reInitMethod = function(method = character(), values = double(1)) {
-    ##   if(method == "last") startID <<- 1 # last
-    ##   else if(method == "last.best") startID <<- 2 # last.best
-    ##   else if(method == "constant") startID <<- 3 # use fixed vector optimStart provided at setup time
-    ##   else if(method == "random") startID <<- 4
-    ##   else if(method == "model") {
-    ##     startID <<- 3
-    ##     constant_init_par <<- reTrans$transform(values(model, randomEffectsNodes))
-    ##   } else {
-    ##     stop("invalid method for RE initialization")
-    ##   }
-    ##   if(startID <= 3) {
-    ##     constant_init_par <<- values
-    ##   }
-    ## },
     set_randomeffect_values = function(p = double(1)){
       foundIt <- FALSE
       ## Last value called:
@@ -1078,6 +1053,7 @@ buildOneAGHQuad <- nimbleFunction(
 		## Cache values for access in outer function:
 		saved_inner_negHess <- matrix(0, nrow = nre, ncol = nre)
 		saved_inner_negHess_chol <- matrix(0, nrow = nre, ncol = nre)
+    logdetNegHessian <- 0
     
     ## Cache log like saved value to keep track of 3 methods.
     logLik_saved_value <- -Inf
@@ -1088,7 +1064,7 @@ buildOneAGHQuad <- nimbleFunction(
     outer_mode_max_inner_logLik_last_argmax <- if(nreTrans > 1) numeric(nreTrans) else as.numeric(c(0, -1))
     outer_param_max <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
 
-    ## Build AGHQ grid for 1D:
+    ## Build AGHQ grid for any dimension:
     I_AGHQ <- 1
     gridRule <- I_AGHQ
     quadGrid_nfl <- nimbleFunctionList(GRID_BASE)
@@ -1505,7 +1481,7 @@ buildOneAGHQuad <- nimbleFunction(
       # all "logLik" here is joint log likelihood (i.e. for p and re)
       gr_logLik_wrt_p <- ans$value[(ind):(ind + npar - 1)]
       ind <- ind + npar
-      logdetNegHess_value <- ans$value[ind]
+      logdetNegHessian <<- ans$value[ind]
       ind <- ind + 1
       chol_negHess <- matrix(ans$value[(ind):(ind + nreTrans*nreTrans - 1)], nrow = nreTrans, ncol = nreTrans)
       saved_inner_negHess_chol <<- chol_negHess ## Method 3 doesn't cache neg Hessian.*** Should we calc here?
@@ -1518,7 +1494,7 @@ buildOneAGHQuad <- nimbleFunction(
       
       if( nQuad_ == 1) {
         ## Laplace Approximation
-        logLik_saved_value <<- maxValue - 0.5 * logdetNegHess_value + 0.5 * nreTrans * log(2*pi)
+        logLik_saved_value <<- maxValue - 0.5 * logdetNegHessian + 0.5 * nreTrans * log(2*pi)
       }else{
         ## AGHQ Approximation:
         calcLogLik_AGHQuad(p)
@@ -1620,26 +1596,25 @@ buildOneAGHQuad <- nimbleFunction(
       return(logLik_saved_value)
       returnType(double())
     },
-    transformNode_spectral = function(z = double(1), eigenvec = double(2), eigenval = double(1)){
-      theta <- numeric(value = 0, length = nreTrans)
-      for( i in 1:nreTrans ){
-        theta[i] <- mode[i] + sum(A[,i] * z) / sqrt(lambda[i])
+    transformNode = function(z = double(1), eigenvec = double(2), eigenval = double(1), method = character(0, "spectral")){
+      if(method == "spectral"){
+        theta <- numeric(value = 0, length = nreTrans)
+        for( i in 1:nreTrans ){
+          theta[i] <- mode[i] + sum(A[,i] * z) / sqrt(lambda[i])
+        }
+      }else{
+        theta <- max_inner_logLik_last_argmax + backsolve(saved_inner_negHess_chol, z)
       }
-      returnType(double(1))
-      return(theta)
-    },
-    transformNode_cholesky = function(z = double(1)){
-      theta <- max_inner_logLik_last_argmax + backsolve(saved_inner_negHess_chol, z)
       returnType(double(1))
       return(theta)
     },
     calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
-      quadGrid_nfl[[gridRule]]$buildGrid(nQuad_ = nQuadUpdate)
+      quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad_)
       modeIndex <- quadGrid_nfl[[gridRule]]$modeI()
 
       nQ <- quadGrid_nfl[[gridRule]]$gridSize()
-      nodes <<- quadGrid_nfl[[gridRule]]$nodes()
+      nodes <<- quadGrid_nfl[[gridRule]]$nodes()  ## On standard scale but will be transformed.
       wgts <<- quadGrid_nfl[[gridRule]]$weights()
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
@@ -1648,12 +1623,15 @@ buildOneAGHQuad <- nimbleFunction(
 				E <- eigen(negHess, symmetric = TRUE) ## Should be symmetric...
 				L <- E$values	# Always biggest to smallest.
 				V <- E$vectors
+      }else{
+        L <- numeric(0, length = 1)
+        V <- matrix(0, nrow = 1, ncol = 1)
       }
       ## **** Pick up here next Paul!!!
       ans <- 0
       for(i in 1:nQ) {
         if(i != modeIndex) {
-          nodes[i,] <<- max_inner_logLik_last_argmax + SD*nodes[i,]
+          nodes[i,] <<- transformNode(z = nodes[i,], eigenvec = V, eigenval = L, method = quadTransform_)
           logDensity_quad[i] <<- joint_logLik(p = p, reTransform = nodes[i,])
           ans <- ans + exp(logDensity_quad[i] - max_inner_logLik_last_value)*wgts[i]
         }else{
@@ -1664,17 +1642,7 @@ buildOneAGHQuad <- nimbleFunction(
       }
       ## Given all the saved values, weights and log density, do quadrature sum.
       logLik_saved_value <<- log(ans) + max_inner_logLik_last_value - 0.5 * logdetNegHessian
-      quadrature_previous_p <<- p ## Cache this to make sure you have it for 
     },
-
-      nQ <- AGHQuad_grid$getGridSize()
-      AGHQuad_grid$saveLogDens(-1, max_inner_logLik_last_value )
-      for(i in 1:nQ) {
-        if(i != modeIndex) AGHQuad_grid$saveLogDens(i, joint_logLik(p = p, reTransform = AGHQuad_grid$getNodesTransformed(i) ) )
-      }
-      ## Given all the saved values, weights and log density, do quadrature sum.
-      logLik_saved_value <<- AGHQuad_grid$quadSum()
-    },    
     ## Gradient of the Laplace approximation 2 w.r.t. parameters
     gr_logLik2 = function(p = double(1)){
       if(!one_time_fixes_done) one_time_fixes()
@@ -1746,35 +1714,6 @@ buildOneAGHQuad <- nimbleFunction(
     reset_outer_logLik = function(){
       max_outer_logLik <<- -Inf
     },
-    ## set_nQuad = function(nQUpdate = integer()){
-    ##   AGHQuad_grid$setGridSize(nQUpdate = nQUpdate)
-    ##   nQuad <<- nQUpdate
-    ## },
-    ## Choose spectral vs cholesky.
-    ## set_transformation = function(transformation = character()){
-    ##   quadTransform_ <<- transformation
-    ## },
-    ## set_warning = function(warn = logical()){
-    ##   warn_optim <<- warn
-    ## },
-    ## set_reInitMethod = function(method = character(), values = double(1)) {
-    ##   if(method == "last") startID <<- 1 # last
-    ##   else if(method == "last.best") startID <<- 2 # last.best
-    ##   else if(method == "constant") startID <<- 3 # use fixed vector optimStart provided at setup time
-    ##   else if(method == "random") startID <<- 4
-    ##   else if(method == "model") {
-    ##     startID <<- 3
-    ##     constant_init_par <<- reTrans$transform(values(model, randomEffectsNodes))
-    ##   } else {
-    ##     stop("invalid method for RE initialization")
-    ##   }
-    ##   if(startID <= 3) {
-    ##     constant_init_par <<- values
-    ##     if(length(values) == 1)
-    ##       if(nreTrans > 1)
-    ##         constant_init_par <<- rep(values, nreTrans)
-    ##   }
-    ## },
     set_randomeffect_values = function(p = double(1)){
       foundIt <- FALSE
       ## Last value called:
@@ -2725,49 +2664,6 @@ buildAGHQ <- nimbleFunction(
         outerOptimControl_ <<- outerOptimControl
       }
     },
-    ## setMethod = function(method = integer()) {
-    ##   if(nre == 0) print("AGHQuad or Laplace approximation is not needed for the given model: no random effects")
-    ##   if(!any(c(1, 2, 3) == method)) stop("Choose a valid method ID from 1, 2, and 3")
-    ##   methodID <<- method
-    ## },
-    ## getMethod = function() {
-    ##   return(methodID)
-    ##   returnType(integer())
-    ## },
-    ## Let the user experiment with different quadrature grids:
-    ## setQuadSize = function(nQUpdate = integer()){
-    ##   nQuad0 <- nQuad_
-    ##   if(nQUpdate < 1) stop("Choose a positive number of grid points.")
-    ##   if(nQUpdate > 35) stop("Currently only a maximum of 35 quadrature points are allowed.")
-    ##   nQuad_ <<- nQUpdate
-    ##   for(i in seq_along(AGHQuad_nfl)) {
-    ##     if( lenInternalRENodeSets[i]^nQuad_ > 50000 ){
-    ##       nQuad_ <<- nQuad0
-    ##       stop("You have exceeded the maximum quadrature grid of 50,000 points.")
-    ##     }
-    ##     AGHQuad_nfl[[i]]$set_nQuad(nQuad_)
-    ##   }
-    ## },
-    ## setAGHQTransformation = function(method = character()){
-    ##   if(method != "spectral" & method != "cholesky") stop("Must choose either cholesky or spectral.")
-    ##   for(i in seq_along(AGHQuad_nfl)) AGHQuad_nfl[[i]]$set_transformation(transformation = method)
-    ## },
-    ## setInnerOptimInits = function(method = character(0), values = double(1)){
-    ##   full_values <- length(values) > 1
-    ##   if(full_values)
-    ##     if(length(values) != nre)
-    ##       stop("values may be empty, or have length = 1 or to the total number of scalar random effects.")
-    ##   if(length(values) == 0) values <- c(0)
-    ##   if(!full_values) these_values <- values
-    ##   iStart <- 1
-    ##   for(i in seq_along(AGHQuad_nfl)) {
-    ##     if(full_values) {
-    ##       these_values <- values[ iStart:(iStart + lenInternalRENodeSets[i] - 1) ]
-    ##       iStart <- iStart + lenInternalRENodeSets[i]
-    ##     }
-    ##     AGHQuad_nfl[[i]]$set_reInitMethod(method, these_values)
-    ##   }
-    ## },
     one_time_fixes = function() {
       if(one_time_fixes_done) return()
       if(pTransform_length == 1){

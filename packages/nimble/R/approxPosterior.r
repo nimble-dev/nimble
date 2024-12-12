@@ -1,9 +1,11 @@
 ## Code to approximate the posterior distribution built on top of inner Laplace.
 ## Will start to build the buildApproxPosterior functionality from the other branch here 
 ## as discussed with Chris P.
+## Note that we will separate fixed effects that are normally distributed from the hyperparameters.
+## * diff from Laplace.
 buildApproxPosterior <- nimbleFunction(
   name = 'ApproxPost',
-  setup = function(model, hyperParamNodes, randomEffectsNodes, calcNodes,
+  setup = function(model, hyperParamNodes, fixedEffectsNodes, randomEffectsNodes, calcNodes,
                    calcNodesOther, control = list()) {
     split <- extractControlElement(control, 'split', TRUE)
     check <- extractControlElement(control, 'check', TRUE)

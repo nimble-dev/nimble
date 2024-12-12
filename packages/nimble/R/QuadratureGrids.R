@@ -4,7 +4,7 @@
 GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-    buildGrid = function(){},
+    buildGrid = function(nQuadUpdate = integer()){},
     nodes = function(){
       returnType(double(2))
     },
@@ -13,7 +13,7 @@ GRID_BASE <- nimbleFunctionVirtual(
     },
     nodei = function(indx = integer()){
       returnType(double(1))
-    }
+    },
     weighti = function(indx = integer()){
       returnType(double())
     },
@@ -93,10 +93,13 @@ quadRule_AGHQ = nimbleFunction(
     },
     buildQuadRule = function(nQuad = integer(0, default = 0)){
       if(nQuad > 35) {
-        print("We don't currently support more than 35 quadrature nodes per dimension. Setting nQuad to 35.")
+        print("Warning:  More than 35 quadrature nodes per dimension is not supported. Setting nQuad to 35.")
         nQuad <- 35
       }
-
+      if(nQuad == 0) {
+        print("Warning:  No default number of quadrature points given. Assuming nQuad = 3 per dimension.")
+        nQuad <- 3
+      }
       odd <- TRUE
       if(nQuad %% 2 == 0) 
         odd <- FALSE
@@ -251,9 +254,9 @@ quadRule_CCD <- nimbleFunction(
 
 quadRule_Custom <- nimbleFunction(
 	setup = function(d = 1){},
-  run = function{},
+  run = function(){},
   methods = list(
-    buildQuadRule(nQuad = integer(0, default = 0)){
+    buildQuadRule = function(nQuad = integer(0, default = 0)){
       ## This will be a place holder for something others may choose to add.
       ## Can look for quadRule_Custom and check if it's implemented. If it is will try and use it...
       returnType(quadGridListDef())
@@ -283,7 +286,7 @@ logSumExp = nimbleFunction(
 ## Wrapper to make quadrature nodes accesible in a nimble function list.
 #' @export
 generateQuadGrid <- nimbleFunction(
-  contains "GRID_BASE",
+  contains = GRID_BASE,
   setup = function(d = 1, nQuad = 3, quadRule = "AGHQ"){
 
     if(quadRule == "AGHQ") {
@@ -291,8 +294,8 @@ generateQuadGrid <- nimbleFunction(
     }else{
       if(quadRule == "CCD")
         quadGrid <- quadRule_CCD(d)
-    }else{
-      stop("Only AGHQ or CCD rules are currently implemented. Custom grids will be included very soon.")
+      else
+        stop("Error:  Only AGHQ or CCD rules are currently implemented.")
     }
     ## nQ will be total number of quadrature nodes.
     nQ <- nQuad^d	## Maybe dimension reduced if we prune.
@@ -315,7 +318,7 @@ generateQuadGrid <- nimbleFunction(
       ## Run this once after compiling; remove extraneous -1 if necessary
       if(one_time_fixes_done) return()
       if(nQ == 1) {
-        wgts <<- numeric(length = 1, value = wgt[1])
+        wgts <<- numeric(length = 1, value = wgts[1])
       }
       one_time_fixes_done <<- TRUE
     },
@@ -327,27 +330,27 @@ generateQuadGrid <- nimbleFunction(
         gridBuilt <<- FALSE
       }
       if(!gridBuilt){
-        newgrid <- quadGrid$buildQuadRule()
+        newgrid <- quadGrid$buildQuadRule(nQuad)
         zNodes <<- newgrid$nodes
         wgts <<- newgrid$wgts
         modeIndex <<- newgrid$modeIndex
-        nQ <<- dim(wgt)[1]
+        nQ <<- dim(wgts)[1]
         gridBuilt <<- TRUE
       }
     },
-    weightsi = function(indx=integer()){
+    weighti = function(indx=integer()){
       returnType(double())
       if(indx == -1 & modeIndex > 0)  return(wgts[modeIndex])
-      return(wgts[i])
+      return(wgts[indx])
     },
     weights = function(){
       returnType(double(1))
       return(wgts)
     },    
-    nodesi = function(indx=integer()){
-      if(i == -1 & modeIndex > 0) return(zNodes[modeIndex,])
+    nodei = function(indx=integer()){
+      if(indx == -1 & modeIndex > 0) return(zNodes[modeIndex,])
       returnType(double(1)); 
-      return(zNodes[i,])
+      return(zNodes[indx,])
     },
     nodes = function(){
       returnType(double(2)); 
