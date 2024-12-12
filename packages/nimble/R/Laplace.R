@@ -718,14 +718,14 @@ buildOneAGHQuad1D <- nimbleFunction(
     },
     calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, do quad sum.
-      quadGrid_nfl[[gridRule]]$buildGrid(nQuad_)
+      quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad_)
       nQ <- quadGrid_nfl[[gridRule]]$gridSize()
       SD <- 1/sqrt(saved_inner_negHess[1,1])
       nodes <<- quadGrid_nfl[[gridRule]]$nodes()
       wgts <<- quadGrid_nfl[[gridRule]]$weights()
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
-      modeIndex <- quadGrid_nfl[[gridRule]]$modeI ## if even, this is -1
+      modeIndex <- quadGrid_nfl[[gridRule]]$modeI() ## if even, this is -1
       ans <- 0
       for(i in 1:nQ) {
         if(i != modeIndex) {
@@ -1093,8 +1093,8 @@ buildOneAGHQuad <- nimbleFunction(
     gridRule <- I_AGHQ
     quadGrid_nfl <- nimbleFunctionList(GRID_BASE)
     ## This is set up to add other quad grids in the future. quadRule := "AGHQ" to start.
-    quadGrid_nfl[[I_AGHQ]] <- generateQuadGrid(d = 1, nQuad = nQuad_, quadRule = "AGHQ")
-    nodes <-  matrix(0, nrow = nQuad_, ncol = 1)
+    quadGrid_nfl[[I_AGHQ]] <- generateQuadGrid(d = nreTrans, nQuad = nQuad_, quadRule = "AGHQ")
+    nodes <-  matrix(0, nrow = nQuad_, ncol = nreTrans)
     wgts <- numeric(nQuad_)
     logDensity_quad <- numeric(nQuad_)
     if(nQuad_ == 1) {
@@ -1102,7 +1102,7 @@ buildOneAGHQuad <- nimbleFunction(
       logDensity_quad <- c(0,-1)
     }
     quadTransform_ <- extractControlElement(control, "quadTransform", "cholesky")
-    
+        
     converged <- 0
     warn_optim <- extractControlElement(control, 'optimWarning', FALSE) ## Warn about inner optimization issues
   },
@@ -1182,7 +1182,7 @@ buildOneAGHQuad <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        AGHQuad_grid$setGridSize(nQUpdate = nQuad)
+        quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad)
         nQuad_ <<- nQuad
       }
       if(quadTransform != "NULL") {
@@ -1620,12 +1620,53 @@ buildOneAGHQuad <- nimbleFunction(
       return(logLik_saved_value)
       returnType(double())
     },
+    transformNode_spectral = function(z = double(1), eigenvec = double(2), eigenval = double(1)){
+      theta <- numeric(value = 0, length = nreTrans)
+      for( i in 1:nreTrans ){
+        theta[i] <- mode[i] + sum(A[,i] * z) / sqrt(lambda[i])
+      }
+      returnType(double(1))
+      return(theta)
+    },
+    transformNode_cholesky = function(z = double(1)){
+      theta <- max_inner_logLik_last_argmax + backsolve(saved_inner_negHess_chol, z)
+      returnType(double(1))
+      return(theta)
+    },
     calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
-      AGHQuad_grid$buildGrid()
-      AGHQuad_grid$transformGrid(cholNegHess = saved_inner_negHess_chol, 
-                                    inner_mode = max_inner_logLik_last_argmax, method = quadTransform_)
-      modeIndex <- AGHQuad_grid$getModeIndex()
+      quadGrid_nfl[[gridRule]]$buildGrid(nQuad_ = nQuadUpdate)
+      modeIndex <- quadGrid_nfl[[gridRule]]$modeI()
+
+      nQ <- quadGrid_nfl[[gridRule]]$gridSize()
+      nodes <<- quadGrid_nfl[[gridRule]]$nodes()
+      wgts <<- quadGrid_nfl[[gridRule]]$weights()
+      logDensity_quad <<- numeric(value = 0, length = nQ)
+
+      if(quadTransform_ == "spectral"){
+        negHess <- t(saved_inner_negHess_chol) %*% saved_inner_negHess_chol ## negHess isn't always computed.
+				E <- eigen(negHess, symmetric = TRUE) ## Should be symmetric...
+				L <- E$values	# Always biggest to smallest.
+				V <- E$vectors
+      }
+      ## **** Pick up here next Paul!!!
+      ans <- 0
+      for(i in 1:nQ) {
+        if(i != modeIndex) {
+          nodes[i,] <<- max_inner_logLik_last_argmax + SD*nodes[i,]
+          logDensity_quad[i] <<- joint_logLik(p = p, reTransform = nodes[i,])
+          ans <- ans + exp(logDensity_quad[i] - max_inner_logLik_last_value)*wgts[i]
+        }else{
+          nodes[i,] <<- max_inner_logLik_last_argmax
+          logDensity_quad[i] <<- max_inner_logLik_last_value
+          ans <- ans + wgts[i]
+        }
+      }
+      ## Given all the saved values, weights and log density, do quadrature sum.
+      logLik_saved_value <<- log(ans) + max_inner_logLik_last_value - 0.5 * logdetNegHessian
+      quadrature_previous_p <<- p ## Cache this to make sure you have it for 
+    },
+
       nQ <- AGHQuad_grid$getGridSize()
       AGHQuad_grid$saveLogDens(-1, max_inner_logLik_last_value )
       for(i in 1:nQ) {
