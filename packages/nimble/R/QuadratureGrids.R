@@ -267,7 +267,7 @@ quadRule_Custom <- nimbleFunction(
 )
 
 ## Method for summing likelihoods on real scale with possible small values.
-## Returns back on log scale. *** Chris please check if there is a better way I should do this...
+## Returns back on log scale.
 #' @export
 logSumExp = nimbleFunction(
   run = function(log1 = double(), log2 = double()){
@@ -277,10 +277,10 @@ logSumExp = nimbleFunction(
     ans <- log(1 + exp(log1 - log2)) + log2
   returnType(double())
   return(ans)
-})
+  }, buildDerivs = list(run = list())
+)
 
 ## Wrapper to make quadrature nodes accesible in a nimble function list.
-
 #' @export
 generateQuadGrid <- nimbleFunction(
   contains "GRID_BASE",

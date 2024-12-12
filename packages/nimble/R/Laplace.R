@@ -59,7 +59,7 @@ AGHQuad_BASE <- nimbleFunctionVirtual(
                                optimWarning = integer(0, default = -1),
                                useInnerCache = integer(0, default=-1),
                                nQuad = integer(0, default=-1),
-                               gridType = character(0, default="NULL"),
+                               quadTransform = character(0, default="NULL"),
                                optimControl = optimControlNimbleList(default=nimOptimDefaultControl()),
                                replace_optimControl = logical(0, default=FALSE)) {
     },
@@ -102,6 +102,8 @@ setup_OneAGHQuad <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(npar > 1) p_indices <- as.numeric(1:npar)
   else p_indices <- as.numeric(c(1, -1))
 
+  quadRule <- extractControlElement(control, 'innerQuadRule', 'AGHQ')
+
   list(optimControl_=optimControl_,
        optimMethod_=optimMethod_,
        optimStart_=optimStart_,
@@ -113,7 +115,8 @@ setup_OneAGHQuad <- function(model, paramNodes, randomEffectsNodes, calcNodes,
        wrtNodes = wrtNodes,
        reTrans = reTrans,
        npar = npar,
-       p_indices = p_indices
+       p_indices = p_indices,
+       quadRule = quadRule
        )
 }
 
@@ -150,7 +153,8 @@ buildOneAGHQuad1D <- nimbleFunction(
     reTrans  <-  S$reTrans
     npar  <-  S$npar
     p_indices  <-  S$p_indices
-
+    quadRule_ <- S$quadRule
+    
     ## nre  <- length(model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE))
     if(length(nre) != 1) stop("Number of random effects for buildOneAGHQuad1D or buildOneLaplace1D must be 1.")
     ## Check and add necessary upstream deterministic nodes into calcNodes
@@ -239,6 +243,7 @@ buildOneAGHQuad1D <- nimbleFunction(
     I_AGHQ <- 1
     gridRule <- I_AGHQ
     quadGrid_nfl <- nimbleFunctionList(GRID_BASE)
+    ## This is set up to add other quad grids in the future. quadRule := "AGHQ" to start.
     quadGrid_nfl[[I_AGHQ]] <- generateQuadGrid(d = 1, nQuad = nQuad_, quadRule = "AGHQ")
     nodes <-  matrix(0, nrow = nQuad_, ncol = 1)
     wgts <- numeric(nQuad_)
@@ -300,7 +305,7 @@ buildOneAGHQuad1D <- nimbleFunction(
                                optimWarning = integer(0, default = -1),
                                useInnerCache = integer(0, default=-1),
                                nQuad = integer(0, default=-1),
-                               gridType = character(0, default="NULL"),
+                               quadTransform = character(0, default="NULL"),
                                optimControl = optimControlNimbleList(default=nimOptimDefaultControl()),
                                replace_optimControl = logical(0, default=FALSE)) {
       # Checking should have been done already. Or, if this is being called directly,
@@ -340,8 +345,8 @@ buildOneAGHQuad1D <- nimbleFunction(
         quadGrid_nfl[[I_AGHQ]]$buildGrid(nQUpdate = nQuad)
         nQuad_ <<- nQuad
       }
-      ## if(gridType != "") {
-      ##   transMethod <<- gridType
+      ## if(quadTransform != "") {
+      ##   quadTransform_ <<- quadTransform
       ## }
       if(replace_optimControl) {
         optimControl_ <<- optimControl
@@ -1083,9 +1088,20 @@ buildOneAGHQuad <- nimbleFunction(
     outer_mode_max_inner_logLik_last_argmax <- if(nreTrans > 1) numeric(nreTrans) else as.numeric(c(0, -1))
     outer_param_max <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
 
-    ## Build AGHQ grid:
-    AGHQuad_grid <- buildAGHQGrid(d = nre, nQuad = nQuad_)
-    transMethod <- extractControlElement(control, "gridType", "cholesky")
+    ## Build AGHQ grid for 1D:
+    I_AGHQ <- 1
+    gridRule <- I_AGHQ
+    quadGrid_nfl <- nimbleFunctionList(GRID_BASE)
+    ## This is set up to add other quad grids in the future. quadRule := "AGHQ" to start.
+    quadGrid_nfl[[I_AGHQ]] <- generateQuadGrid(d = 1, nQuad = nQuad_, quadRule = "AGHQ")
+    nodes <-  matrix(0, nrow = nQuad_, ncol = 1)
+    wgts <- numeric(nQuad_)
+    logDensity_quad <- numeric(nQuad_)
+    if(nQuad_ == 1) {
+      wgts <- c(0,-1)
+      logDensity_quad <- c(0,-1)
+    }
+    quadTransform_ <- extractControlElement(control, "quadTransform", "cholesky")
     
     converged <- 0
     warn_optim <- extractControlElement(control, 'optimWarning', FALSE) ## Warn about inner optimization issues
@@ -1129,7 +1145,7 @@ buildOneAGHQuad <- nimbleFunction(
                                optimWarning = integer(0, default = -1),
                                useInnerCache = integer(0, default=-1),
                                nQuad = integer(0, default=-1),
-                               gridType = character(0, default="NULL"),
+                               quadTransform = character(0, default="NULL"),
                                optimControl = optimControlNimbleList(default=nimOptimDefaultControl()),
                                replace_optimControl = logical(0, default=FALSE)) {
       # Checking should have been done already. Or, if this is being called directly,
@@ -1169,8 +1185,8 @@ buildOneAGHQuad <- nimbleFunction(
         AGHQuad_grid$setGridSize(nQUpdate = nQuad)
         nQuad_ <<- nQuad
       }
-      if(gridType != "NULL") {
-        transMethod <<- gridType
+      if(quadTransform != "NULL") {
+        quadTransform_ <<- quadTransform
       }
       if(replace_optimControl) {
         optimControl_ <<- optimControl
@@ -1608,7 +1624,7 @@ buildOneAGHQuad <- nimbleFunction(
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
       AGHQuad_grid$buildGrid()
       AGHQuad_grid$transformGrid(cholNegHess = saved_inner_negHess_chol, 
-                                    inner_mode = max_inner_logLik_last_argmax, method = transMethod)
+                                    inner_mode = max_inner_logLik_last_argmax, method = quadTransform_)
       modeIndex <- AGHQuad_grid$getModeIndex()
       nQ <- AGHQuad_grid$getGridSize()
       AGHQuad_grid$saveLogDens(-1, max_inner_logLik_last_value )
@@ -1695,7 +1711,7 @@ buildOneAGHQuad <- nimbleFunction(
     ## },
     ## Choose spectral vs cholesky.
     ## set_transformation = function(transformation = character()){
-    ##   transMethod <<- transformation
+    ##   quadTransform_ <<- transformation
     ## },
     ## set_warning = function(warn = logical()){
     ##   warn_optim <<- warn
@@ -2425,13 +2441,13 @@ buildAGHQ <- nimbleFunction(
     scalarRENodes <- model$expandNodeNames(randomEffectsNodes, returnScalarComponents = TRUE)
     nre <- length(scalarRENodes)
     multiSetsCheck <- FALSE ## AGHQ vs Laplace Check in findMLE.
-    gridType <- extractControlElement(control, "gridType", "cholesky")
+    quadTransform <- extractControlElement(control, "quadTransform", "cholesky")
     innerControlList <- list(optimControl=innerOptimControl_,
                              optimMethod=innerOptimMethod,
                              optimStart=innerOptimStart,
                              optimStartValues=innerOptimStartValues,
                              optimWarning=innerOptimWarning,
-                             gridType=gridType)
+                             quadTransform=quadTransform)
     if(nre > 0){
       ## Record the order of random effects processed internally
       internalRandomEffectsNodes <- NULL
@@ -2598,7 +2614,7 @@ buildAGHQ <- nimbleFunction(
                                innerOptimWarning = integer(0, default = -1),
                                useInnerCache = integer(0, default=-1),
                                nQuad = integer(0, default=-1),
-                               gridType = character(0, default="NULL"),
+                               quadTransform = character(0, default="NULL"),
                                innerOptimControl = optimControlNimbleList(default=nimOptimDefaultControl()),
                                replace_innerOptimControl = logical(0, default=FALSE),
                                outerOptimControl = optimControlNimbleList(default=nimOptimDefaultControl()),
@@ -2636,9 +2652,9 @@ buildAGHQ <- nimbleFunction(
         if(!any(c(1, 2, 3) == computeMethod))
           stop("computeMethod must be 1, 2, or 3")
       }
-      if(gridType != "NULL") {
-        if(gridType != "spectral" & gridType != "cholesky")
-          stop("gridType must be either cholesky or spectral.")
+      if(quadTransform != "NULL") {
+        if(quadTransform != "spectral" & quadTransform != "cholesky")
+          stop("quadTransform must be either cholesky or spectral.")
       }
       # actions
       one_time_fixes()
@@ -2656,7 +2672,7 @@ buildAGHQ <- nimbleFunction(
                                          optimWarning = innerOptimWarning,
                                          useInnerCache = useInnerCache,
                                          nQuad = nQuad_,
-                                         gridType = gridType,
+                                         quadTransform = quadTransform,
                                          optimControl = innerOptimControl,
                                          replace_optimControl = replace_innerOptimControl)
       }
@@ -3927,7 +3943,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'   (much) slower than subsequent Laplace approximations. Further details are
 #'   not provided at this time.
 #'
-#'  \item \code{gridType} (relevant only \code{nQuad>1}). For multivariate AGHQ,
+#'  \item \code{quadTransform} (relevant only \code{nQuad>1}). For multivariate AGHQ,
 #'  a grid must be constructed based on the Hessian at the inner mode. Options
 #'  include "cholesky" (default) and "spectral" (i.e., eigenvectors and
 #'  eigenvalues) for the corresponding matrix decompositions on which the grid
@@ -4060,7 +4076,7 @@ runAGHQ <- function(AGHQ, pStart, method = "BFGS",
 #'   can be later changed. Options that can be changed include:
 #'   \code{innerOptimMethod}, \code{innerOptimStart},
 #'   \code{innerOptimStartValues}, \code{useInnerCache}, \code{nQuad},
-#'   \code{gridType}, \code{innerOptimControl}, \code{outerOptimControl}, and
+#'   \code{quadTransform}, \code{innerOptimControl}, \code{outerOptimControl}, and
 #'   \code{computeMethod}. For \code{innerOptimStart}, method "zero" cannot be
 #'   specified but can be achieved by choosing method "constant" with
 #'   \code{innerOptimStartValues=0}. Only provided options will be modified. The
