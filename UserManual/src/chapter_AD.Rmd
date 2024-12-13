@@ -101,37 +101,23 @@ Cmodel <- compileNimble(model)
 
 ## How to use Laplace approximation and adaptive Gauss-Hermite quadrature  {#sec:AD-laplace}
 
-Next we will show how to use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above. Laplace approximation is equivalent to first-order adaptive Gauss-Hermite quadrature, which is also available, although here we will focus on Laplace approximation only. What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation (used for finding the MLE efficiently) uses third derivatives. These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
+Next we will show how to use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above. Laplace approximation is equivalent to first-order adaptive Gauss-Hermite quadrature, which is also available (via `buildAGHQ` and `runAGHQ`), although here we will focus on Laplace approximation only. In this context, Laplace approximation approximates the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation (used for finding the MLE efficiently) uses third derivatives. These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
 
 To create a Laplace approximation specialized to the parameters of interest for this model, we use the nimbleFunction `buildLaplace`. For many models, the setup code in `buildLaplace` will automatically determine the random effects to be integrated over and the associated nodes to calculate. In fact, if you omit the parameter nodes, it will assume that all top-level nodes in the model should be treated as parameters. If fine-grained control is needed, these various sets of nodes can be input directly into `buildLaplace`. To see what default handling of nodes is being done for your model, use `setupMargNodes` with the same node inputs as `buildLaplace`.
 
 ```{r eval=eval}
-glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'))
+glmm_laplace <- buildLaplace(model, paramNodes = c('intercept','beta','sigma'))
 Cglmm_laplace <- compileNimble(glmm_laplace, project = model)
 ```
 
-Now we are ready to use some of the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood. Here we will show detailed steps for using the Laplace approximation, but see `help(runLaplace)` to combine the basic steps into one call.
+With the compiled Laplace approximation, we can now find the MLE and related information such as standard errors.
 
 ```{r eval=eval}
-# Get the Laplace approximation for one set of parameter values.
-Cglmm_laplace$calcLaplace(c(0, 0, 1)) 
-Cglmm_laplace$gr_Laplace(c(0, 0, 1)) # Get the corresponding gradient.
-MLE <- Cglmm_laplace$findMLE(c(0, 0, 1)) # Find the (approximate) MLE.
-MLE$par     # MLE parameter values
-MLE$value   # MLE log likelihood value
+results <- runLaplace(Cglmm_laplace)
+results$summary
 ```
 
-The final outputs show the MLE for `intercept`, `beta`, and `sigma`, followed by the maximum (approximate) likelihood.
-
-More information about the MLE can be obtained in two ways. The `summary` method
-can give estimated random effects and standard errors as well as the variance-covariance matrix
-for the parameters and/or the random effects. The `summaryLaplace` function
-returns similar information but with names included in a more useful way. For example:
-
-```{r eval=eval}
-Cglmm_laplace$summary(MLE)$randomEffects$estimate
-summaryLaplace(Cglmm_laplace, MLE)$params
-```
+One of output elements is the maximized log likelihood (`logLik`), which is useful for model comparison.
 
 `buildLaplace` actually offers several choices in how computations are done, differing in how they use *double taping* for derivatives or not. In some cases one or another choice might be more efficient. See `help(buildLaplace)` if you want to explore it further.
 
@@ -149,6 +135,77 @@ logLik(tmb_fit)
 ```
 
 The results match within numerical tolerance typical of optimization problems. Specifically, the coefficients for `(Intercept)` and `X` match nimble's `Intercept` and `beta`, the random effects standard deviation for `group` matches nimble's `sigma`, and the standard errors match.
+
+
+### Using the Laplace approximation methods directly
+
+If one wants finer grain control over using the approximation, one can use the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood. Here we'll show some of these steps.
+
+```{r eval=eval}
+# Get the Laplace approximation for one set of parameter values.
+Cglmm_laplace$calcLaplace(c(0, 0, 1)) 
+Cglmm_laplace$gr_Laplace(c(0, 0, 1)) # Get the corresponding gradient.
+MLE <- Cglmm_laplace$findMLE(c(0, 0, 1)) # Find the (approximate) MLE.
+MLE$par     # MLE parameter values
+MLE$value   # MLE log likelihood value
+```
+
+The final outputs show the MLE for `intercept`, `beta`, and `sigma`, followed by the maximum (approximate) likelihood.
+
+More information about the MLE can be obtained in two ways. The `summary` method
+can give estimated random effects and standard errors as well as the variance-covariance matrix
+for the parameters and/or the random effects. The `summaryLaplace` function
+returns similar information but with names included in a more useful way. Here is some example code (results not shown):
+
+```{r eval=eval}
+Cglmm_laplace$summary(MLE)$randomEffects$estimate
+summaryLaplace(Cglmm_laplace, MLE)$params
+```
+
+### Changing the optimization methods
+
+When finding the MLE via Laplace approximation or adaptive Gauss-Hermite quadrature (AGHQ), there are two numerical optimizations: (1) maximizing the joint log-likelihood of random effects and data given a set of parameter values to construct the approximation to the marginal log-likelihood at the given parameter values, and (2) maximizing the approximation to the marginal log-likelihood over the parameter values. Optimization (1) is the "inner" optimization and optimization (2) is the "outer" optimization.
+
+Finding the MLE via Laplace approximation may be sensitive to the optimization methods used, in particular the choice of optimizer for the inner optimization, and the "BFGS" optimizer available through `optim()` may not perform well for inner optimization. 
+
+As of version 1.3.0, the default choices for both the inner and outer optimization use R's `nlminb` optimizer. 
+Users can choose a different optimizer for both of the optimizations.
+
+To change the outer optimizer, one can use the `method` argument to `runLaplace` (and to the `findMLE` method).
+
+To change either the inner optimizer, one can use the `innerOptimMethod` element of the `control` list argument to `buildLaplace`. One can modify various settings that control the behavior of the inner and outer optimizers via `control` as well. See `help(buildLaplace)` for more details.
+
+Once a Laplace approximation is built, one can use `updateSettings` to modify the choice of inner optimizer and various settings that control the behavior of the inner and outer optimizers (see `help(buildLaplace)` for details).
+
+By default, NIMBLE provides various optimization methods available through R's `optim()` as well as R's `nlminb` method and the BOBYQA method from the `nloptr` package (by specifying `bobyqa`). Users can also provide their own optimization function in R that they can then use with Laplace approximation. User optimization functions must have a particular set and order of arguments and must first be registered with NIMBLE via `nimOptimMethod`. See `help(nimOptim)` for more details.
+
+Here's an example of setting up the Newton method optimizer from the `TMB` package as the inner optimizer for use with NIMBLE's Laplace approximation. (Note that NIMBLE and TMB have distinct AD systems and Laplace approximation implementations; here we simply use the `TMB::newton` optimization function.)
+
+```{r eval=FALSE}
+## Create an R wrapper function that has the interface needed for NIMBLE and wraps the optimizer of interest.
+nimbleTMBnewton <- function(par, fn, gr, he, lower, upper, control, hessian) {
+  he_matrix <- function(p) Matrix(he(p), doDiag = FALSE, sparse = TRUE) # Needs to be of class `dsCMatrix`.
+  res <- newton(par, fn, gr, he_matrix,
+                trace = control$trace, maxit = control$maxit, tol = control$reltol)
+                ## Additional arguments (e.g., `alpha` and `tol10`) can be hard-coded in `newton()` call.
+  ans <- list( # What is handled in the return is fairly particular, so often needs conversion from a given method such as TMB::newton.
+    par = res$par,
+    value = res$value,
+    counts = c(0, 0, 0), # Counts of fn, gr, and he calls, but these are not counted by TMB::newton.
+    evaluations = res$iterations,
+    hessian = NULL, # TMB::newton gives a `dsCMatrix` but we need a base R matrix.
+    message = "ran by TMB::newton",
+    convergence = 0 # TMB::newton does not return a convergence code so give 0 (i.e., converged).
+  )
+  return(ans)
+}
+## Register the optimizer with NIMBLE.
+nimOptimMethod("nimbleTMBnewton", nimbleTMBnewton)
+
+## Use the optimizer for the inner optimization when finding the Laplace MLE.
+glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'),
+                  control = list(innerOptimMethod = "nimbleTMBnewton")
+```
 
 ## How to support derivatives in user-defined functions and distributions {#sec:AD-user-def}
 

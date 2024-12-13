@@ -116,6 +116,29 @@ nimOptimMethod("nlminb",
                }
                )
 
+nimOptimMethod("bobyqa",
+               function(par, fn, gr, he, lower, upper, control, hessian) {
+                 control_bobyqa <- list(
+                     xtol_rel = control$reltol,
+                     maxeval = control$maxit  # Not exactly the same quantity, but seems ok to repurpose.
+                 )
+                 invalid <- function(x) is.null(x) || is.na(x) || is.infinite(x)
+                 if(invalid(control_bobyqa$xtol_rel)) control_bobyqa$xtol_rel <- 1e-6
+                 if(invalid(control_bobyqa$maxeval)) control_bobyqa$maxeval <- 1000
+                 # NB: control$parscale and control$fnscale are applied internally.
+                 p <- length(par)
+                 if(length(lower) != p)
+                     lower <- rep(lower, p)
+                 if(length(upper) != p)
+                     upper <- rep(upper, p)
+                 if(!requireNamespace('nloptr')) stop("The `nloptr` package must be installed to use `bobyqa` for optimization")
+                   result <- nloptr::bobyqa(par, fn = fn, lower = lower, upper = upper,
+                                            control=control_bobyqa)
+                 result$counts <- c(0, 0)
+                 result
+               }
+               )
+
 # options used for NIMBLE package
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
@@ -192,6 +215,7 @@ nimOptimMethod("nlminb",
         MCMCwarnUnsampledStochasticNodes = TRUE,
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
+        MCMCuseBarkerAsDefaultMV = FALSE, 
         useClearCompiledInADTesting = TRUE,
         unsupportedDerivativeHandling = 'error', # default is error, other options are 'warn' and 'ignore'. Handled in updateADproxyModelMethods in cppDefs_nimbleFunction.R
         errorIfMissingNFVariable = TRUE,

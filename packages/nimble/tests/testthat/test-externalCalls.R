@@ -155,3 +155,5 @@ test_that('external calls 3', {
 })
 
 options(warn = RwarnLevel)
+## Reset the option that `nimbleExternalCall` sets to `FALSE`.
+nimbleOptions(precleanCompilation = TRUE)
