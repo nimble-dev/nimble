@@ -680,7 +680,7 @@ sampler_RW_block <- nimbleFunction(
         ## checks
         if(any(model$isDiscrete(target)))       warning('cannot use RW_block sampler on discrete-valued target')  # This will become an error once we fix the designation of distributions in nimbleSCR to not be discrete.
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
-        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
+        if(storage.mode(propCov) != 'double')   stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))               stop('propCov matrix must be symmetric')
         if(adaptInterval < 2)                   stop('sampler_RW_block: `adaptInterval` must be at least 2')
@@ -3344,7 +3344,6 @@ sampler_barker <- nimbleFunction(
             sdValues <<- sdValues[1:d]
             propVar <<- propVar[1:d]
         }
-       
         gradCurrent <<- gradient(current)
         z <- sample()
 
@@ -3362,6 +3361,7 @@ sampler_barker <- nimbleFunction(
         }
 
         values(model, targetNodes) <<- my_parameterTransform$inverseTransform(proposal)
+
         gradProposed <<- gradient(proposal)
         newLogDetJacobian <- my_parameterTransform$logDetJacobian(proposal)
         lpD <- model$calculateDiff(calcNodes) + newLogDetJacobian - oldLogDetJacobian + calculateLogHastingsRatio(diff)
