@@ -3,7 +3,8 @@
 
 toEigenizeNoCalls <- c('dim',
                        'run.time',
-                       'nimOptimDefaultControl')
+                       'nimOptimDefaultControl',
+                       'checkLogProbWarn')
 
 toEigenizeYesCalls <- c(paste0('nimDiagonal', c('D','I','B')),
                         'diagonal',
@@ -23,6 +24,7 @@ toEigenizeYesCalls <- c(paste0('nimDiagonal', c('D','I','B')),
 
 toEigenizeMaybeCalls <- c('map',
                           c('decide',
+                            'checkLogProb',
                             'size',
                             'getsize',
                             'getNodeFunctionIndexedInfo',

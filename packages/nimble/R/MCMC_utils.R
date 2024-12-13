@@ -72,18 +72,26 @@ decideAndJump <- nimbleFunction(
     }
 )
 
-checkLogProb <- nimbleFunction(
-    name = "checkLogProb",
-    run = function(logProb = double()) {
-        if(is.na(logProb))
-            return(-Inf)
-        if(logProb == Inf)
-            print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
-        return(logProb)
-        returnType(double())
+checkLogProb <- function(logProb) {
+   if(is.na(logProb))
+       return(-Inf)
+   if(logProb == Inf)
+         print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
+   return(logProb)
+}
+
+## checkLogProb <- nimbleFunction(
+##     name = "checkLogProb",
+##     run = function(logProb = double()) {
+##         if(is.na(logProb))
+##             return(-Inf)
+##         if(logProb == Inf)
+##             print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
+##         return(logProb)
+##         returnType(double())
             
-    }
-)
+##     }
+## )
 
 
 #' Creates a nimbleFunction for setting the value of a scalar model node,

@@ -75,6 +75,8 @@ fxnsNotAllowedInAD <- c(
                        'invwish_chol', 'car_normal','car_proper','multi','dirch') ),
   'getLogProb',
   'decide',
+  'checkLogProb',
+  'checkLogProbWarn',
   'rankSample',
   'any_na', 
   'any_nan',

@@ -162,6 +162,11 @@ class nimbleTimerClass_ {
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
 
+void checkLogProbWarn();
+
+static inline double checkLogProb(double logProb) { if(ISNAN(logProb))  return(-std::numeric_limits<double>::infinity()); if(logProb == std::numeric_limits<double>::infinity()) checkLogProbWarn(); return(logProb);}
+
+
 void nimStop(string msg);
 void nimStop();
 

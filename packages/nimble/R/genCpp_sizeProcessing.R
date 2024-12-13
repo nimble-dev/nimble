@@ -138,6 +138,8 @@ sizeCalls <- c(
                    'nimArr_rmulti',
                    'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
     makeCallList(c('decide',
+                   'checkLogProb',
+                   'checkLogProbWarn',
                    'size',
                    'getsize',
                    'getNodeFunctionIndexedInfo',
@@ -154,6 +156,7 @@ sizeCalls <- c(
     ADbreak = 'sizeADbreak')
 
 scalarOutputTypes <- list(decide = 'logical',
+                          checkLogProb = 'double',
                           size = 'integer',
                           nimAnyNA = 'logical',
                           nimAnyNaN = 'logical',
