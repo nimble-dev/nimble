@@ -3364,7 +3364,8 @@ sampler_barker <- nimbleFunction(
 
         gradProposed <<- gradient(proposal)
         newLogDetJacobian <- my_parameterTransform$logDetJacobian(proposal)
-        lpD <- model$calculateDiff(calcNodes) + newLogDetJacobian - oldLogDetJacobian + calculateLogHastingsRatio(diff)
+        lpD <- checkLogProb(model$calculateDiff(calcNodes)) + checkLogProb(newLogDetJacobian) -
+            checkLogProb(oldLogDetJacobian) + checkLogProb(calculateLogHastingsRatio(diff))
         jump <- decide(lpD)
 
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
