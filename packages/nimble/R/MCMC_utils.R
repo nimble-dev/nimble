@@ -11,9 +11,9 @@
 #' @export
 decide <- function(logMetropolisRatio) {
     if(is.na(logMetropolisRatio)) return(FALSE)
-  if(logMetropolisRatio > 0) return(TRUE)
-  if(runif(1,0,1) < exp(logMetropolisRatio)) return(TRUE)
-  return(FALSE)
+    if(logMetropolisRatio > 0) return(TRUE)
+    if(runif(1,0,1) < exp(logMetropolisRatio)) return(TRUE)
+    return(FALSE)
 }
 
 #NOTE: DETAILS(WAS BLANK) REMOVED
@@ -55,7 +55,8 @@ decideAndJump <- nimbleFunction(
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
-        logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
+        ## Check each one individually to catch case like `3 - Inf`.
+        logMHR <- checkLogProb(modelLP1) - checkLogProb(modelLP0) - checkLogProb(propLP1) + checkLogProb(propLP0)
         jump <- decide(logMHR)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
@@ -71,8 +72,26 @@ decideAndJump <- nimbleFunction(
     }
 )
 
+checkLogProb <- function(logProb) {
+   if(is.na(logProb))
+       return(-Inf)
+   if(logProb == Inf)
+         print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
+   return(logProb)
+}
 
-
+## checkLogProb <- nimbleFunction(
+##     name = "checkLogProb",
+##     run = function(logProb = double()) {
+##         if(is.na(logProb))
+##             return(-Inf)
+##         if(logProb == Inf)
+##             print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
+##         return(logProb)
+##         returnType(double())
+            
+##     }
+## )
 
 
 #' Creates a nimbleFunction for setting the value of a scalar model node,

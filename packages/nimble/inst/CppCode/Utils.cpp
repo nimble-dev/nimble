@@ -21,6 +21,7 @@
 
 #include<limits>
 #include "nimble/Utils.h"
+#include "nimble/RcppNimbleUtils.h"
 
 // A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
 int floorOrEquivalent(double x) {
@@ -60,6 +61,11 @@ bool decide(double lMHr) { // simple function accept or reject based on log Metr
   if(lMHr > 0) return(true);
   if(runif(0,1) < exp(lMHr)) return(true);
   return(false);
+}
+
+void checkLogProbWarn() {
+  _nimble_global_output<<"MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.\n";
+  nimble_print_to_R(_nimble_global_output);
 }
 
 void nimStop(string msg) {NIMERROR("%s", msg.c_str());}
