@@ -452,9 +452,8 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   m$calculate()  
 
   cm <- compileNimble(m)	  
-  mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mQuad$updateSettings(innerOptimMethod = "nlminb")
+  mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-12)))
+  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-12)))
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
@@ -472,9 +471,9 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   mleLME4_nquad21 <- c( 3.5136587320416126, 0.4568722479747411)
   mleLME4_laplace <- c( 3.5136586190857675, 0.4568710881066258)
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
-  mleLaplace <- cmLaplace$findMLE(method="BFGS")$par
+  mleLaplace <- cmLaplace$findMLE()$par
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
-  mleQuad <- cmQuad$findMLE(method="BFGS")$par
+  mleQuad <- cmQuad$findMLE()$par
 
 	## Compare the marginal log likelihood for the laplace method.
   logLikLaplace <- cmLaplace$calcLogLik( mleLME4_laplace )
@@ -487,10 +486,10 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   expect_equal(mleQuad, mleLaplace, tol = 1e-5)
   
   ## Compare MLE after running twice.
-  mleLaplace2 <- cmLaplace$findMLE(method="BFGS")$par
-  mleQuad2 <- cmQuad$findMLE(method="BFGS")$par
+  mleLaplace2 <- cmLaplace$findMLE()$par
+  mleQuad2 <- cmQuad$findMLE()$par
   expect_equal(mleLaplace, mleLaplace2, tol = 1e-5)
-  expect_equal(mleQuad, mleQuad2, tol = 1e-8)
+  expect_equal(mleQuad, mleQuad2, tol = 1e-5)
 })
 
 
