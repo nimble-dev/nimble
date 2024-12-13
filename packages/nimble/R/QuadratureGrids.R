@@ -1,5 +1,5 @@
-## nimbleQuad Quadrature Rules + Grids
-
+## nimbleQuad Quadrature Rules + Grids - Rules are choosing between AGHQ and CCD etc.
+## Grids are implementations of the rule to generate the actual nodes and weights.
 QUAD_RULE_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
@@ -13,7 +13,7 @@ QUAD_RULE_BASE <- nimbleFunctionVirtual(
 QUAD_GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-    buildGrid = function(nQuadUpdate = integer()){},
+    buildGrid = function(nQuadUpdate = integer(0, default = -1)){},
     nodes = function(){
       returnType(double(2))
     },
@@ -303,6 +303,8 @@ generateQuadGrid <- nimbleFunction(
     if(!quadRule %in% c("AGHQ", "CCD", "Custom"))
       stop("Error:  Only AGHQ or CCD rules are currently implemented.")
  
+    quadGridList_internal <- quadGridListDef
+ 
     quadGridList <- nimbleFunctionList(QUAD_RULE_BASE)
     if(quadRule == "AGHQ") {
       quadGridList[[1]] <- quadRule_AGHQ(d)
@@ -345,6 +347,7 @@ generateQuadGrid <- nimbleFunction(
         gridBuilt <<- FALSE
       }
       if(!gridBuilt){
+        newgrid <- quadGridList_internal$new()
         newgrid <- quadGridList[[1]]$buildQuadRule(nQuad = nQuad)
         zNodes <<- newgrid$nodes
         wgts <<- newgrid$wgts
