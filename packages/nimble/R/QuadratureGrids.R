@@ -1,7 +1,16 @@
 ## nimbleQuad Quadrature Rules + Grids
 
+QUAD_RULE_BASE <- nimbleFunctionVirtual(
+  run = function() {},
+  methods = list(
+    buildQuadRule = function(nQuad = integer(0, default = 0)){
+      returnType(quadGridListDef())
+    }
+  )
+)
+
 ## Quadrature base class: Returns only quadrature grid on standard scale.
-GRID_BASE <- nimbleFunctionVirtual(
+QUAD_GRID_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
     buildGrid = function(nQuadUpdate = integer()){},
@@ -9,7 +18,7 @@ GRID_BASE <- nimbleFunctionVirtual(
       returnType(double(2))
     },
     weights = function(){
-        returnType(double(1))
+      returnType(double(1))
     },
     nodei = function(indx = integer()){
       returnType(double(1))
@@ -51,8 +60,8 @@ quadGridListDef <- nimbleList(modeIndex = integer(0),
 ## This avoids generating too much memory as this function gets called.
 ## *** Note to group ***, should we remove the input of d here?
 quadRule_AGHQ = nimbleFunction(
-  setup = function(d = 1){
-  },
+  contains = QUAD_RULE_BASE,
+  setup = function(d = 1){},
   run = function(){},
   methods = list(
     buildAGHQOne = function(nQuad = integer()){
@@ -165,6 +174,7 @@ quadRule_AGHQ = nimbleFunction(
 ## CCD Grid quadrature from Rue et al 2009, adapted based on some code from MGCV
 ## for their approximate posterior methods.
 quadRule_CCD <- nimbleFunction(
+  contains = QUAD_RULE_BASE,
 	setup = function(d = 1){
     if ((d > 120 | d < 1)) stop("Dimension of Theta must be in [1,120]")	
     
@@ -253,6 +263,7 @@ quadRule_CCD <- nimbleFunction(
 )
 
 quadRule_Custom <- nimbleFunction(
+  contains = QUAD_RULE_BASE,
 	setup = function(d = 1){},
   run = function(){},
   methods = list(
@@ -286,17 +297,20 @@ logSumExp = nimbleFunction(
 ## Wrapper to make quadrature nodes accesible in a nimble function list.
 #' @export
 generateQuadGrid <- nimbleFunction(
-  contains = GRID_BASE,
+  contains = QUAD_GRID_BASE,
   setup = function(d = 1, nQuad = 3, quadRule = "AGHQ"){
-
+    ## Can list all possible quad rules here and set it.
+    if(!quadRule %in% c("AGHQ", "CCD", "Custom"))
+      stop("Error:  Only AGHQ or CCD rules are currently implemented.")
+ 
+    quadGridList <- nimbleFunctionList(QUAD_RULE_BASE)
     if(quadRule == "AGHQ") {
-      quadGrid <- quadRule_AGHQ(d)
-    }else{
-      if(quadRule == "CCD")
-        quadGrid <- quadRule_CCD(d)
-      else
-        stop("Error:  Only AGHQ or CCD rules are currently implemented.")
+      quadGridList[[1]] <- quadRule_AGHQ(d)
     }
+    if(quadRule == "CCD") {
+      quadGridList[[1]] <- quadRule_CCD(d)
+    }
+
     ## nQ will be total number of quadrature nodes.
     nQ <- nQuad^d	## Maybe dimension reduced if we prune.
     zNodes <- matrix(0, nrow = nQ, ncol = d)
@@ -308,6 +322,7 @@ generateQuadGrid <- nimbleFunction(
       wgts <- c(0, -1)
     }
     gridBuilt <- FALSE
+    nQuad <- as.integer(nQuad)
 
     ## AGHQ mode will be in the middle.
     modeIndex <- -1
@@ -330,7 +345,7 @@ generateQuadGrid <- nimbleFunction(
         gridBuilt <<- FALSE
       }
       if(!gridBuilt){
-        newgrid <- quadGrid$buildQuadRule(nQuad)
+        newgrid <- quadGridList[[1]]$buildQuadRule(nQuad = nQuad)
         zNodes <<- newgrid$nodes
         wgts <<- newgrid$wgts
         modeIndex <<- newgrid$modeIndex
