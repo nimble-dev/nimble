@@ -2402,8 +2402,13 @@ buildAGHQ <- nimbleFunction(
        ((control$innerOptimMethod %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")) ||
         control$innerOptimMethod %in% ls(nimbleUserNamespace$.optimizers))){  # .optimizers by default contains 'nlminb'.
       innerOptimMethod <- control$innerOptimMethod
-    }
-    else innerOptimMethod <- "nlminb"
+    } else innerOptimMethod <- "nlminb"
+
+    if(!is.null(control$outerOptimMethod) &&
+       ((control$outerOptimMethod %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")) ||
+        control$outerOptimMethod %in% ls(nimbleUserNamespace$.optimizers))){  # .optimizers by default contains 'nlminb'.
+      outerOptimMethod_ <- control$outerOptimMethod
+    } else outerOptimMethod_ <- "nlminb"
 
     innerOptimStart <- extractControlElement(control, "innerOptimStart", "last.best")
     if(!is.character(innerOptimStart) |
@@ -2610,6 +2615,7 @@ buildAGHQ <- nimbleFunction(
                               nQuad = integer(0, default=-1),
                               gridType = character(0, default="NULL"),
                               innerOptimControl = optimControlNimbleList(default=nimOptimDefaultControl()),
+                              outerOptimMethod = character(0, default="NULL"),
                               replace_innerOptimControl = logical(0, default=FALSE),
                               outerOptimControl = optimControlNimbleList(default=nimOptimDefaultControl()),
                               replace_outerOptimControl = logical(0, default=FALSE),
@@ -2674,6 +2680,8 @@ buildAGHQ <- nimbleFunction(
         outerOptimControl$fnscale <- -1
         outerOptimControl_ <<- outerOptimControl
       }
+      if(outerOptimMethod != "NULL")
+        outerOptimMethod_ <<- outerOptimMethod
     },
     ## setMethod = function(method = integer()) {
     ##   if(nre == 0) print("AGHQuad or Laplace approximation is not needed for the given model: no random effects")
@@ -2966,10 +2974,8 @@ buildAGHQ <- nimbleFunction(
     },
     ## Calculate MLE of parameters    
     findMLE = function(pStart  = double(1, default = Inf),
-                       method  = character(0, default = "nlminb"),
                        hessian = logical(0, default = TRUE) ){
       mleRes <- optimize(pStart  = pStart,
-                         method  = method,
                          hessian = hessian,
                          parscale = "real")
       return(mleRes)
@@ -2977,7 +2983,6 @@ buildAGHQ <- nimbleFunction(
     },
     ## General Maximization Function 
     optimize = function(pStart  = double(1, default = Inf),
-                        method  = character(0, default = "nlminb"),
                         hessian = logical(0, default = TRUE),
                         parscale = character(0, default = "transformed")) {
       if(!one_time_fixes_done) one_time_fixes() ## Otherwise summary will look bad.
@@ -2998,7 +3003,7 @@ buildAGHQ <- nimbleFunction(
       ## In case bad start values are provided
       if(any_na(pStartTransform) | any_nan(pStartTransform) | any(abs(pStartTransform)==Inf)) pStartTransform <- rep(0, pTransform_length)
 
-      optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = method, control = outerOptimControl_, hessian = hessian)
+      optRes <- optim(pStartTransform, calcLogLik_pTransformed, gr_logLik_pTransformed, method = outerOptimMethod_, control = outerOptimControl_, hessian = hessian)
       
       if(optRes$convergence != 0) 
         print("  [Warning] `optim` has a non-zero convergence code: ", optRes$convergence, ".\n",
@@ -3474,13 +3479,9 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #'
 #' @param AGHQ Same as \code{laplace}.
 #'
-#' @param method Optimization method for outer optimization. See \code{method}
-#'   argument to \code{findMLE} method in \code{\link{buildLaplace}}.
-#'
 #' @param pStart Initial values for parameters to begin optimization search for
 #'   the maximum likelihood estimates. If omitted, the values currently in the
 #'   (compiled or uncompiled) model object will be used.
-#'
 #'
 #' @param originalScale If \code{TRUE}, return all results on the original scale
 #'   of the parameters and/or random effects as written in the model. Otherwise,
@@ -3537,18 +3538,18 @@ summaryAGHQ <- function(AGHQ, MLEoutput,
 #' requested.
 #'
 #' @export
-runLaplace <- function(laplace, pStart, method = "nlminb",
+runLaplace <- function(laplace, pStart, 
                        originalScale = TRUE,
                        randomEffectsStdError = TRUE,
                        jointCovariance = FALSE) {
   if(missing(pStart)) pStart <- Inf # code to use values in model
-  runAGHQ(AGHQ = laplace, pStart, method, originalScale, randomEffectsStdError,
+  runAGHQ(AGHQ = laplace, pStart, originalScale, randomEffectsStdError,
             jointCovariance)
 }
 
 #' @rdname runLaplace
 #' @export
-runAGHQ <- function(AGHQ, pStart, method = "nlminb",
+runAGHQ <- function(AGHQ, pStart, 
                     originalScale = TRUE,
                     randomEffectsStdError = TRUE,
                     jointCovariance = FALSE) {
@@ -3568,7 +3569,7 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 
   if(missing(pStart)) pStart <- Inf # code to use values in the model
 
-  opt <- try(AGHQ$findMLE(pStart = pStart, method = method, hessian = TRUE))
+  opt <- try(AGHQ$findMLE(pStart = pStart, hessian = TRUE))
   if(inherits(opt, "try-error"))
     stop("method findMLE had an error.")
 
@@ -3807,7 +3808,7 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #'         \code{\link{nimOptim}}. Currently \code{nimOptim} in NIMBLE supports:
 #'         \code{"Nelder-Mead"}", \code{"BFGS"}, \code{"CG"}, \code{"L-BFGS-B"},
 #'         \code{"nlminb"}, \code{"bobyqa"}, and user-provided optimizers. By default, method
-#'         \code{"BFGS"} is used for both univariate and multivariate cases. For
+#'         \code{"nlminb"} is used for both univariate and multivariate cases. For
 #'         \code{"nlminb"}, \code{"bobyqa"}, or user-provided optimizers, only a subset of
 #'         elements of the \code{innerOptimControlList} are supported. (Note
 #'         that control over the outer optimization method is available as an
@@ -3873,7 +3874,20 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #'    are used again (e.g., in a gradient call). This should generally not be
 #'    modified.
 #'
-#'   \item \code{outerOptimControl}. A list of control parameters for maximizing
+#'   \item \code{outerOptimMethod}. Optimization method to be used in
+#'         \code{nimOptim} for the outer optimization. See 'Details' of
+#'         \code{\link{nimOptim}}. Currently \code{nimOptim} in NIMBLE supports:
+#'         \code{"Nelder-Mead"}", \code{"BFGS"}, \code{"CG"}, \code{"L-BFGS-B"},
+#'         \code{"nlminb"}, \code{"bobyqa"}, and user-provided optimizers. By default, method
+#'         \code{"nlminb"} is used for both univariate and multivariate cases,
+#'         although some problems may benefit from other choices. For
+#'         \code{"nlminb"}, \code{"bobyqa"}, or user-provided optimizers, only a subset of
+#'         elements of the \code{innerOptimControlList} are supported. (Note
+#'         that control over the outer optimization method is available as an
+#'         argument to `findMLE`). Choice of optimizers can be important and so
+#'         can be worth exploring.
+#'
+#' \item \code{outerOptimControl}. A list of control parameters for maximizing
 #'         the Laplace log-likelihood using \code{nimOptim}. See 'Details' of
 #'         \code{\link{nimOptim}} for further information.
 #'
@@ -3928,15 +3942,13 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #'        requires that the approximation be Laplace (i.e \code{nQuad} is 1),
 #'        and results in an error otherwise.
 #'
-#' \item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
+#' \item \code{findMLE(pStart, hessian)}. Find the maximum likelihood
 #'         estimates of parameters using the approximated marginal likelihood.
 #'         This can be used if \code{nQuad} is 1 (Laplace case) or if
 #'         \code{nQuad>1} and all marginalizations involve only univariate
-#'         random effects. Arguments include \code{pStart}: initial parameter
+#'         random effects. Arguments are \code{pStart}: initial parameter
 #'         values (defaults to parameter values currently in the model);
-#'         \code{method}: (outer) optimization method to use in \code{nimOptim}
-#'         (defaults to \code{"nlminb"}, although some problems may benefit from other
-#'         choices); and \code{hessian}: whether to calculate and return the
+#'          and \code{hessian}: whether to calculate and return the
 #'         Hessian matrix (defaults to \code{TRUE}, which is required for
 #'         subsequent use of \code{summary} method). Second derivatives in the
 #'         Hessian are determined by finite differences of the gradients
@@ -4020,8 +4032,9 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #'   can be later changed. Options that can be changed include:
 #'   \code{innerOptimMethod}, \code{innerOptimStart},
 #'   \code{innerOptimStartValues}, \code{useInnerCache}, \code{nQuad},
-#'   \code{gridType}, \code{innerOptimControl}, \code{outerOptimControl}, and
-#'   \code{computeMethod}. For \code{innerOptimStart}, method "zero" cannot be
+#'   \code{gridType}, \code{innerOptimControl}, \code{outerOptimMethod},
+#'   \code{outerOptimControl}, and \code{computeMethod}.
+#'   For \code{innerOptimStart}, method "zero" cannot be
 #'   specified but can be achieved by choosing method "constant" with
 #'   \code{innerOptimStartValues=0}. Only provided options will be modified. The
 #'   exceptions are \code{innerOptimControl}, \code{outerOptimControl}, which
@@ -4190,7 +4203,8 @@ runAGHQ <- function(AGHQ, pStart, method = "nlminb",
 #' allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
 #'
 #' # Change the settings and also illustrate runLaplace
-#' CpumpLaplace$updateSettings(innerOptimMethod = "nlminb")
+#' CpumpLaplace$updateSettings(innerOptimControl = list(maxit = 1000),
+#'                             replace_innerOptimControl)
 #' newres <- runLaplace(CpumpLaplace)
 #'
 #' # Illustrate use of the component log likelihood and gradient functions to

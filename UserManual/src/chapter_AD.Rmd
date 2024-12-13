@@ -171,11 +171,9 @@ Finding the MLE via Laplace approximation may be sensitive to the optimization m
 As of version 1.3.0, the default choices for both the inner and outer optimization use R's `nlminb` optimizer. 
 Users can choose a different optimizer for both of the optimizations.
 
-To change the outer optimizer, one can use the `method` argument to `runLaplace` (and to the `findMLE` method).
+To change the inner or outer optimizers, one can use the `innerOptimMethod` and `outerOptimMethod` elements of the `control` list argument to `buildLaplace`. One can modify various settings that control the behavior of the inner and outer optimizers via `control` as well. See `help(buildLaplace)` for more details.
 
-To change either the inner optimizer, one can use the `innerOptimMethod` element of the `control` list argument to `buildLaplace`. One can modify various settings that control the behavior of the inner and outer optimizers via `control` as well. See `help(buildLaplace)` for more details.
-
-Once a Laplace approximation is built, one can use `updateSettings` to modify the choice of inner optimizer and various settings that control the behavior of the inner and outer optimizers (see `help(buildLaplace)` for details).
+Once a Laplace approximation is built, one can use `updateSettings` to modify the choices of optimizers and various settings that control the behavior of the inner and outer optimizers (see `help(buildLaplace)` for details).
 
 By default, NIMBLE provides various optimization methods available through R's `optim()` as well as R's `nlminb` method and the BOBYQA method from the `nloptr` package (by specifying `bobyqa`). Users can also provide their own optimization function in R that they can then use with Laplace approximation. User optimization functions must have a particular set and order of arguments and must first be registered with NIMBLE via `nimOptimMethod`. See `help(nimOptim)` for more details.
 
