@@ -41,11 +41,11 @@ Alternatively, \code{paramNodes} can be a list in the format returned by
 ignored).}
 
 \item{randomEffectsNodes}{a character vector of names of continuous
-unobserved (latent) nodes to marginalize (integrate) over using Laplace
+unobserved (latent) nodes to marginalize (integrate) over using Laplace/AGHQ
 approximation; defaults are provided by \code{\link{setupMargNodes}}.}
 
 \item{calcNodes}{a character vector of names of nodes for calculating the
-integrand for Laplace approximation; defaults are provided by
+integrand for Laplace/AGHQ approximation; defaults are provided by
 \code{\link{setupMargNodes}}. There may be deterministic nodes between
 \code{paramNodes} and \code{calcNodes}. These will be included in
 calculations automatically and thus do not need to be included in
@@ -61,7 +61,7 @@ nodes between \code{paramNodes} and \code{calcNodesOther}. These will be
 included in calculations automatically and thus do not need to be included
 in \code{calcNodesOther} (but there is no problem if they are).}
 
-\item{control}{a named list for providing additional settings used in Laplace
+\item{control}{a named list for providing additional settings used in Laplace/AGHQ
 approximation. See \code{control} section below. Most of these can be
 updated later with the `updateSettings` method.}
 
@@ -74,10 +74,10 @@ of nodes will be (number of dimensions)^nQuad.}
 \description{
 Build a Laplace or AGHQ approximation algorithm for a given NIMBLE model.
 }
-\section{\code{buildLaplace}}{
+\section{\code{buildLaplace} and \code{buildAGHQ}}{
 
 
-\code{buildLaplace} creates an object that can run Laplace approximation and
+\code{buildLaplace} creates an object that can run Laplace approximation
   for a given model or part of a model. \code{buildAGHQ} creates an object
   that can run adaptive Gauss-Hermite quadrature (AGHQ, sometimes called
   "adaptive Gaussian quadrature") for a given model or part of a model.
@@ -223,7 +223,7 @@ to construct the approximation to the marginal log-likelihood at the given
 parameter value; (2) maximizing the approximation to the marginal
 log-likelihood over the parameters. In what follows, the prefix 'inner'
 refers to optimization (1) and 'outer' refers to optimization (2). Currently
-both optimizations default to using method \code{"BFGS"}. However, one can
+both optimizations default to using method \code{"nlminb"}. However, one can
 use other optimizers or simply run optimization (2) manually from R; see the
 example below. In some problems, choice of inner and/or outer optimizer can
 make a big difference for obtaining accurate results, especially for standard
@@ -265,10 +265,10 @@ elements of the list. Most (or all) of these can be updated later using the
   \item \code{innerOptimMethod}. Optimization method to be used in
         \code{nimOptim} for the inner optimization. See 'Details' of
         \code{\link{nimOptim}}. Currently \code{nimOptim} in NIMBLE supports:
-        "\code{Nelder-Mead}", "\code{BFGS}", "\code{CG}", "\code{L-BFGS-B}",
-        "\code{nlminb}", and user-provided optimizers. By default, method
-        "\code{BFGS}" is used for both univariate and multivariate cases. For
-        \code{"nlminb"} or user-provided optimizers, only a subset of
+        \code{"Nelder-Mead"}", \code{"BFGS"}, \code{"CG"}, \code{"L-BFGS-B"},
+        \code{"nlminb"}, \code{"bobyqa"}, and user-provided optimizers. By default, method
+        \code{"nlminb"} is used for both univariate and multivariate cases. For
+        \code{"nlminb"}, \code{"bobyqa"}, or user-provided optimizers, only a subset of
         elements of the \code{innerOptimControlList} are supported. (Note
         that control over the outer optimization method is available as an
         argument to `findMLE`). Choice of optimizers can be important and so
@@ -279,13 +279,13 @@ elements of the list. Most (or all) of these can be updated later using the
 
 \itemize{
 
-\item \code{"zero"} (default): use all zeros;
+\item \code{"last.best"} (default): use optimized random effects values corresponding to
+        the best outer optimization (i.e. the largest marginal log likelihood value) so far
+        for each conditionally independent part of the approximation;
 
 \item \code{"last"}: use the result of the last inner optimization;
 
-\item \code{"last.best"}: use the result of the best inner
-        optimization so far for each conditionally independent part of the
-        approximation;
+\item \code{"zero"}: use all zeros;
 
 \item \code{"constant"}: always use the same values, determined by
         \code{innerOptimStartValues};
@@ -333,7 +333,20 @@ elements of the list. Most (or all) of these can be updated later using the
    are used again (e.g., in a gradient call). This should generally not be
    modified.
 
-  \item \code{outerOptimControl}. A list of control parameters for maximizing
+  \item \code{outerOptimMethod}. Optimization method to be used in
+        \code{nimOptim} for the outer optimization. See 'Details' of
+        \code{\link{nimOptim}}. Currently \code{nimOptim} in NIMBLE supports:
+        \code{"Nelder-Mead"}", \code{"BFGS"}, \code{"CG"}, \code{"L-BFGS-B"},
+        \code{"nlminb"}, \code{"bobyqa"}, and user-provided optimizers. By default, method
+        \code{"nlminb"} is used for both univariate and multivariate cases,
+        although some problems may benefit from other choices. For
+        \code{"nlminb"}, \code{"bobyqa"}, or user-provided optimizers, only a subset of
+        elements of the \code{innerOptimControlList} are supported. (Note
+        that control over the outer optimization method is available as an
+        argument to `findMLE`). Choice of optimizers can be important and so
+        can be worth exploring.
+
+\item \code{outerOptimControl}. A list of control parameters for maximizing
         the Laplace log-likelihood using \code{nimOptim}. See 'Details' of
         \code{\link{nimOptim}} for further information.
 
@@ -359,7 +372,7 @@ elements of the list. Most (or all) of these can be updated later using the
 \section{Available methods}{
 
 
-The object returned by \code{buildLaplace} is a nimbleFunction object with
+The object returned by \code{buildLaplace} or \code{buildAGHQ} is a nimbleFunction object with
 numerous methods (functions). Here these are described in three tiers of user
 relevance.
 }
@@ -392,27 +405,25 @@ The most relevant methods to a user are:
        requires that the approximation be Laplace (i.e \code{nQuad} is 1),
        and results in an error otherwise.
 
-\item \code{findMLE(pStart, method, hessian)}. Find the maximum likelihood
+\item \code{findMLE(pStart, hessian)}. Find the maximum likelihood
         estimates of parameters using the approximated marginal likelihood.
         This can be used if \code{nQuad} is 1 (Laplace case) or if
         \code{nQuad>1} and all marginalizations involve only univariate
-        random effects. Arguments include \code{pStart}: initial parameter
+        random effects. Arguments are \code{pStart}: initial parameter
         values (defaults to parameter values currently in the model);
-        \code{method}: (outer) optimization method to use in \code{nimOptim}
-        (defaults to "BFGS", although some problems may benefit from other
-        choices); and \code{hessian}: whether to calculate and return the
+         and \code{hessian}: whether to calculate and return the
         Hessian matrix (defaults to \code{TRUE}, which is required for
-        subsequent use of `summary` method). Second derivatives in the
+        subsequent use of \code{summary} method). Second derivatives in the
         Hessian are determined by finite differences of the gradients
         obtained by automatic differentiation (AD). Return value is a
         nimbleList of type \code{optimResultNimbleList}, similar to what is
         returned by R's optim. See \code{help(nimOptim)}. Note that
-        parameters (`par`) are returned for the natural parameters, i.e. how
-        they are defined in the model. But the `hessian`, if requested, is
+        parameters (\code{par}) are returned for the natural parameters, i.e. how
+        they are defined in the model. But the \code{hessian}, if requested, is
         computed for the parameters as transformed for optimization if
         necessary. Hence one must be careful interpreting `hessian` if any
         parameters have constraints, and the safest next step is to use the
-        `summary` method or `summaryLaplace` function.
+        \code{summary} method or \code{summaryLaplace} function.
 
 \item \code{summary(MLEoutput, originalScale, randomEffectsStdError,
        jointCovariance)}. Summarize the maximum likelihood estimation
@@ -435,7 +446,7 @@ In more detail, \code{summary} accepts the following optional arguments:
 
           \item \code{randomEffectsStdError}. Logical. If TRUE, standard
           errors of random effects will be calculated.
-          Defaults to FALSE.
+          Defaults to TRUE.
 
           \item \code{jointCovariance}. Logical. If TRUE, the joint
           variance-covariance matrix of the parameters and the random effects
@@ -475,7 +486,7 @@ In more detail, \code{summary} accepts the following optional arguments:
 \section{Methods for more advanced uses}{
 
 
-Additional methods to access or control more details of the Laplace
+Additional methods to access or control more details of the Laplace/AGHQ
 approximation include:
 
 \itemize{
@@ -485,12 +496,13 @@ approximation include:
   can be later changed. Options that can be changed include:
   \code{innerOptimMethod}, \code{innerOptimStart},
   \code{innerOptimStartValues}, \code{useInnerCache}, \code{nQuad},
-  \code{gridType}, \code{innerOptimControl}, \code{outerOptimControl}, and
-  \code{computeMethod}. For \code{innerOptimStart}, method "zero" cannot be
+  \code{gridType}, \code{innerOptimControl}, \code{outerOptimMethod},
+  \code{outerOptimControl}, and \code{computeMethod}.
+  For \code{innerOptimStart}, method "zero" cannot be
   specified but can be achieved by choosing method "constant" with
   \code{innerOptimStartValues=0}. Only provided options will be modified. The
   exceptions are \code{innerOptimControl}, \code{outerOptimControl}, which
-  are replaced only \code{replace_innerOptimControl=TRUE} or
+  are replaced only when \code{replace_innerOptimControl=TRUE} or
   \code{replace_outerOptimControl=TRUE}, respectively.
 
   \item \code{getNodeNamesVec(returnParams)}. Return a vector (>1) of names
@@ -652,7 +664,8 @@ MLEres <- CpumpLaplace$findMLE()
 allres <- CpumpLaplace$summary(MLEres, randomEffectsStdError = TRUE)
 
 # Change the settings and also illustrate runLaplace
-CpumpLaplace$updateSettings(innerOptimMethod = "nlminb", outerOptimMethod = "nlminb")
+CpumpLaplace$updateSettings(innerOptimControl = list(maxit = 1000),
+                            replace_innerOptimControl)
 newres <- runLaplace(CpumpLaplace)
 
 # Illustrate use of the component log likelihood and gradient functions to

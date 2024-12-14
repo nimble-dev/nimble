@@ -306,7 +306,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
     buildDerivs = TRUE)
   
   cm <- compileNimble(m)
-  mQuad <- buildAGHQ(model = m, nQuad = 5, control=list(innerOptimeMethod="nlminb"))
+  mQuad <- buildAGHQ(model = m, nQuad = 5, control=list(innerOptimMethod="nlminb"))
   cmQuad <- compileNimble(mQuad, project = m)
 
   ## Check gradient and marginalization accuracy.
@@ -337,7 +337,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
   mle.par <- exp(mle.tru$par)
   
   ## Check with 5 quad points.
-  mle.quad <- cmQuad$findMLE(pStart = c(10,2), method="nlminb")
+  mle.quad <- cmQuad$findMLE(pStart = c(10,2))
   expect_equal(mle.quad$par, mle.par, tol = 1e-02)
   expect_equal(mle.quad$value, mle.tru$value, tol = 1e-03)
   
@@ -345,7 +345,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
   cmQuad$updateSettings(nQuad=35)
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mle.quad35 <- cmQuad$findMLE(pStart = c(10,2), method="nlminb")
+  mle.quad35 <- cmQuad$findMLE(pStart = c(10,2))
   expect_equal(mle.quad35$par, mle.par, tol = 1e-04)
   expect_equal(mle.quad35$value, mle.tru$value, tol = 1e-08)
 })
@@ -379,7 +379,7 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   # N.B. It is not clear that setting reltol values less than sqrt(.Machine$double.eps) is useful, so we may want to update this:
   mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
   mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mQuad$updateSettings(innerOptimMethod="nlminb")
+  mQuad$updateSettings(innerOptimMethod="nlminb", outerOptimMethod="BFGS")
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
@@ -400,10 +400,10 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   # But with BFGS we get lots of warnings about uncached inner optimization
   mleLME4 <- c( 3.5679609790094040, 1.4736809813876610, 0.3925194078627622 )
   mleTMB <-  c( 3.5679629394855974, 1.4736809255475793, 0.3925215998142128 )
-  mleLaplace <- cmLaplace$findMLE(method="BFGS")$par
+  mleLaplace <- cmLaplace$findMLE()$par
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mleQuad <- cmQuad$findMLE(method = "BFGS")$par
+  mleQuad <- cmQuad$findMLE()$par
 
   expect_equal(mleLaplace, mleLME4, tol = 1e-7)
   expect_equal(mleQuad, mleLME4, tol = 1e-7)
@@ -418,10 +418,10 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   ## Compare MLE after running twice.
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mleLaplace2 <- cmLaplace$findMLE(method="BFGS")$par
+  mleLaplace2 <- cmLaplace$findMLE()$par
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mleQuad2 <- cmQuad$findMLE(method="BFGS")$par
+  mleQuad2 <- cmQuad$findMLE()$par
   expect_equal(mleLaplace, mleLaplace2, tol = 1e-6) # 1e-8
   expect_equal(mleQuad, mleQuad2, tol = 1e-8)
 

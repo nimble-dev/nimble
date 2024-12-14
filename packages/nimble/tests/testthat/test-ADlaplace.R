@@ -1210,10 +1210,11 @@ test_that("simple LME case works", {
   library(lme4)
   manual_fit <- lmer(y ~ x + (1 + x || g), REML = FALSE)
 
-  mLaplace <- buildLaplace(model = m, control=list(innerOptimMethod="BFGS"))
+  mLaplace <- buildLaplace(model = m, control=list(innerOptimMethod="BFGS",
+                                                   outerOptimMethod="BFGS"))
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
-  opt <- cmLaplace$findMLE(method="BFGS")
+  opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
   lme4res <- summary(manual_fit)
   expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-5)

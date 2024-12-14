@@ -9,7 +9,7 @@ summaryLaplace(
   laplace,
   MLEoutput,
   originalScale = TRUE,
-  randomEffectsStdError = FALSE,
+  randomEffectsStdError = TRUE,
   jointCovariance = FALSE
 )
 
@@ -17,7 +17,7 @@ summaryAGHQ(
   AGHQ,
   MLEoutput,
   originalScale = TRUE,
-  randomEffectsStdError = FALSE,
+  randomEffectsStdError = TRUE,
   jointCovariance = FALSE
 )
 }
@@ -37,14 +37,14 @@ parameterization in the model code (TRUE) or the potentially transformed
 parameterization used internally by the Laplace approximation (FALSE).
 Transformations are used for any parameters and/or random effects that have
 constrained ranges of valid values, so that in the transformed parameter
-space there are no constraints.}
+space there are no constraints. (default = TRUE)}
 
 \item{randomEffectsStdError}{If TRUE, calculate the standard error of the
-estimates of random effects values.}
+estimates of random effects values. (default = TRUE)}
 
 \item{jointCovariance}{If TRUE, calculate the joint covariance matrix of
 the parameters and random effects together. If FALSE, calculate the 
-covariance matrix of the parameters.}
+covariance matrix of the parameters. (default = FALSE)}
 
 \item{AGHQ}{Same as \code{laplace}. Note that `buildLaplace` and
 `buildAGHQ` create the same kind of algorithm object that can be used

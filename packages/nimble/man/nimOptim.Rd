@@ -34,8 +34,7 @@ derivatives will be used.}
 \item{...}{IGNORED}
 
 \item{method}{The method to be used. See `Details` section of
-\code{\link{optim}}. One of: "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", or
-"nlminb". Note that the R methods "SANN", "Brent" are not supported. It is
+\code{\link{optim}}. One of: "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "nlminb", or "bobyqa". Note that the R methods "SANN", "Brent" are not supported. It is
 also possible to provide a new method; see details.}
 
 \item{lower}{Vector or scalar of lower bounds for parameters.}
@@ -73,7 +72,10 @@ Note that if a gradient function (\code{gr}) is not provided, \code{optim}
 
 For \code{method="nlminb"}, a compiled nimbleFunction will run R's
 \code{nlminb} directly in R, with \code{fn}, \code{gr} (if provided) and
-\code{he} (if provided) that call back into compiled code.
+\code{he} (if provided) that call back into compiled code. For
+\code{method="bobyqa"}, a compiled nimbleFunction will run R's
+\code{nloptr::bobyqa} directly in R, with \code{fn} that calls back
+into compiled code.
 
 An experimental feature is the capability to provide one's own optimization
 method in R and register it for use by \code{nimOptim}. One must write a
@@ -84,12 +86,15 @@ must return a list with elements \code{par}, \code{value},
 \code{hessian} (which may be NULL). If \code{hessian=TRUE} but the function
 does not return a matrix in the \code{hessian} element of its return list,
 \code{nimOptim} will fill in that element using finite differences of the
-gradient.
+gradient. In general the function will be a wrapper around the actual
+R optimization function.
 
 The \code{control} list passed from a nimbleFunction to the
 optimization function will include a minimum of options, including
-\code{abstol}, \code{reltol}, \code{maxit}, and \code{trace}. Other options
-for a specific method may be set within the custom optimization function but
+\code{abstol}, \code{reltol}, \code{maxit}, and \code{trace}. This means
+that the user's R (wrapper) function must map between those minimum options
+and the equivalent inputs to the optimization function. Other options
+for a specific method may be set within the R (wrapper) function but
 cannot be passed from \code{nimOptim}.
 
  The elements \code{parscale} and \code{fnscale} in \code{control} are used in
@@ -98,11 +103,12 @@ the method is expected to do minimization and \code{nimOptim} will arrange
 for it to minimize \code{fn(par)/fnscale} in the parameter space
 \code{par/parscale}.
 
-An optimizer \code{fun} may be registered by
-\code{nimOptimMethod("method_name", fun)}, and then "\code{method_name}" can
-be used as the \code{method} argument to \code{nimOptim} to use \code{fun}.
-An optimizer may be found by \code{nimOptimMethod("method_name")} and may be
-removed by \code{nimOptimMethod("method_name", NULL)}.
+To use the optimizer with \code{nimOptim}, an optimizer \code{fun} must be
+registered by \code{nimOptimMethod("method_name", fun)}, and then
+"\code{method_name}" can be used as the \code{method} argument to
+\code{nimOptim} to use \code{fun}. An optimizer may be found by
+\code{nimOptimMethod("method_name")} and may be removed by
+\code{nimOptimMethod("method_name", NULL)}.
 
 Support for \code{method="nlminb"} is provided in this way, and can be
 studied as an example via \code{nimOptimMethod("nlminb")}.
