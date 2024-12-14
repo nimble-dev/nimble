@@ -378,7 +378,8 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   cm <- compileNimble(m)
   # N.B. It is not clear that setting reltol values less than sqrt(.Machine$double.eps) is useful, so we may want to update this:
   mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
+  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16),
+                                                             outerOptimMethod = 'BFGS'))
   mQuad$updateSettings(innerOptimMethod="nlminb", outerOptimMethod="BFGS")
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
