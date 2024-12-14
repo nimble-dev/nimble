@@ -202,7 +202,7 @@ nimOptimMethod("nimbleTMBnewton", nimbleTMBnewton)
 
 ## Use the optimizer for the inner optimization when finding the Laplace MLE.
 glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'),
-                  control = list(innerOptimMethod = "nimbleTMBnewton")
+                  control = list(innerOptimMethod = "nimbleTMBnewton"))
 ```
 
 ## How to support derivatives in user-defined functions and distributions {#sec:AD-user-def}

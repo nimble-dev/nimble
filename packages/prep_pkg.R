@@ -160,7 +160,7 @@ importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
                  "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile, integrate, optimHess",
-                 "utils, head",
+                 "utils, head, getAnywhere",
                  "parallel, mclapply",
                  "pracma, hessian",
                  "numDeriv, genD, grad, jacobian"

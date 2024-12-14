@@ -772,7 +772,8 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #'
 #' @param distributionsNames a character vector giving the names of the distributions to be deregistered.
 #' @param userEnv environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.
-#'
+#' @param warn logical indicating whether to warn if trying to deregister a distribution that is not registered (default = \code{TRUE}).
+#' 
 #' @author Christopher Paciorek
 #' @export
 deregisterDistributions <- function(distributionsNames, userEnv = parent.frame(), warn = TRUE) {
