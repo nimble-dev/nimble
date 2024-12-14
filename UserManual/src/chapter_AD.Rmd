@@ -892,7 +892,7 @@ logLikelihood_nf <- nimbleFunction(
       return(transformer$transform(p))
       returnType(double(1))
     },
-    inverse = function(ptrans = double(1)) { # ... and its inverse.
+    inverseTransform = function(ptrans = double(1)) { # ... and its inverse.
       return(transformer$inverseTransform(ptrans))
       returnType(double(1))
     }
@@ -915,7 +915,7 @@ Now let's see how the parameter transformation works for this model. For `beta`,
 ```{r eval=eval}
 Cll_glm$transform(c(0.2, 1))
 # The inverse transformation goes back to the original parameters, within rounding:
-Cll_glm$inverse(c(-1.386294, 1)) 
+Cll_glm$inverseTransform(c(-1.386294, 1)) 
 ```
 
 Now we are ready to use the methods provided in `Cll_glm` in a call to R's `optim` to find the MLE.
@@ -943,8 +943,8 @@ logLik(glm_fit)
 We see that the coefficient for `X` matches `beta` (within numerical tolerance), and the maximum log likelihoods match. To understand the intercept, we need to be careful about the parameter transformation used in nimble. The inverse transformation will give `p`, and the log of that should match the intercept estimated by `glm.`
 
 ```{r eval=eval}
-Cll_glm$inverse(MLE$par)
-log(Cll_glm$inverse(MLE$par)[1]) # This should match glm's intercept
+Cll_glm$inverseTransform(MLE$par)
+log(Cll_glm$inverseTransform(MLE$par)[1]) # This should match glm's intercept
 ```
 
 It looks like it worked.
