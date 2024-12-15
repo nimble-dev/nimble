@@ -316,7 +316,7 @@ One can also register a distribution in a nimbleFunction object manually, for th
 
 ## User-defined model macros {#sec:user-macros}
 
-As discussed in Section \@ref(sec:macros), users can use macros that provide a succinct syntax for expressing components of a model. The `nimbleMacros` package provides an initial set of macros, focused on the components of generalized linear (mixed) models.
+As discussed in Section \@ref(subsec:macros), users can use macros that provide a succinct syntax for expressing components of a model. The `nimbleMacros` package provides an initial set of macros, focused on the components of generalized linear (mixed) models.
 
 In addition, NIMBLE users can write their own macros for use in model code.
 

@@ -180,20 +180,31 @@ By default, NIMBLE provides various optimization methods available through R's `
 Here's an example of setting up the Newton method optimizer from the `TMB` package as the inner optimizer for use with NIMBLE's Laplace approximation. (Note that NIMBLE and TMB have distinct AD systems and Laplace approximation implementations; here we simply use the `TMB::newton` optimization function.)
 
 ```{r eval=FALSE}
-## Create an R wrapper function that has the interface needed for NIMBLE and wraps the optimizer of interest.
+library(TMB)
+library(Matrix)
+
+## Create an R wrapper function that has the interface needed for NIMBLE
+## and wraps the optimizer of interest.
 nimbleTMBnewton <- function(par, fn, gr, he, lower, upper, control, hessian) {
-  he_matrix <- function(p) Matrix(he(p), doDiag = FALSE, sparse = TRUE) # Needs to be of class `dsCMatrix`.
+  ## Wrap `he` as return value needs to be of class `dsCMatrix`.
+  he_matrix <- function(p) Matrix(he(p), doDiag = FALSE, sparse = TRUE) 
+  invalid <- function(x) is.null(x) || is.na(x) || is.infinite(x)
+  if(invalid(control$trace)) control$trace <- 1
+  if(invalid(control$maxit)) control$maxit <- 100
+  if(invalid(control$reltol)) control$reltol <- 1e-8
   res <- newton(par, fn, gr, he_matrix,
                 trace = control$trace, maxit = control$maxit, tol = control$reltol)
-                ## Additional arguments (e.g., `alpha` and `tol10`) can be hard-coded in `newton()` call.
-  ans <- list( # What is handled in the return is fairly particular, so often needs conversion from a given method such as TMB::newton.
+  ## Additional arguments (e.g., `alpha` and `tol10`) can be hard-coded in `newton()` call.
+  ans <- list(
+    ## What is handled in the return is fairly particular, so often needs conversion
+    ## from a given method such as TMB::newton.
     par = res$par,
     value = res$value,
-    counts = c(0, 0, 0), # Counts of fn, gr, and he calls, but these are not counted by TMB::newton.
+    counts = c(0, 0, 0), # Counts of fn/gr/he calls, but these are not counted by TMB::newton.
     evaluations = res$iterations,
     hessian = NULL, # TMB::newton gives a `dsCMatrix` but we need a base R matrix.
     message = "ran by TMB::newton",
-    convergence = 0 # TMB::newton does not return a convergence code so give 0 (i.e., converged).
+    convergence = 0 # TMB::newton does not return a convergence code so give 0 (converged).
   )
   return(ans)
 }

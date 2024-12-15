@@ -883,12 +883,13 @@ If `fixedValue` is given when using `indicatorNodes` the values provided in `fix
 
 
 NIMBLE provides a variety of other commonly-used samplers, some for general-purpose use and some for specialized use with particular distributions or situations. Some that are worth particular consideration are:
-  0. the Hamiltonian Monte Carlo (HMC) sampler in the `nimbleHMC` package,
-  1. the slice sampler for sampling scalar parameters in place of the default `RW` (Metropolis) sampler,
-  2. the Barker sampler for sampling multiple parameters in place of the default `RW_block` (block Metropolis) sampler,
-  3. the noncentered sampler (`noncentered`) for jointly sampling random effects with their hyperparameters,
-  4. the Pólya-gamma sampler (`polyagamma`) for sampling regression coefficients in logistic regression specifications, and
-  5. the reversible-jump sampler for selection of coefficients in regression specifications.
+
+  1. the Hamiltonian Monte Carlo (HMC) sampler in the `nimbleHMC` package,
+  2. the slice sampler for sampling scalar parameters in place of the default `RW` (Metropolis) sampler,
+  3. the Barker sampler for sampling multiple parameters in place of the default `RW_block` (block Metropolis) sampler,
+  4. the noncentered sampler (`noncentered`) for jointly sampling random effects with their hyperparameters,
+  5. the Pólya-gamma sampler (`polyagamma`) for sampling regression coefficients in logistic regression specifications, and
+  6. the reversible-jump sampler for selection of coefficients in regression specifications.
 
 Most documentation of MCMC samplers provided with NIMBLE can be found by invoking `help(samplers)` in R.
 
