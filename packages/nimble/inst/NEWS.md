@@ -8,15 +8,16 @@ gradient information and may improve adaptation behavior, including
 better mixing when parameter are on different scales or the initial
 proposal scale is too large (PR #1492).
 
-- Improve Laplace/AGHQ approximation in various ways, including use of
-nlminb for both inner and outer optimization (for better
-optimization performance), improving messaging and output naming,
-returning the log-likelihood and degrees of freedom for model selection
-calculations, and unifying control of optimization method and
-control at the build stage and through `updateSettings` (PR #1496).
+- Improve Laplace/AGHQ implementation in various ways, including use 
+of nlminb for both inner and outer optimization (for better
+optimization performance), improved messaging and output naming,
+returning the log-likelihood and degrees of freedom for model 
+selection calculations, and unified control of optimization method and
+other controls at either the build stage or through the `updateSettings` 
+method (PR #1496).
 
-- Add BOBYQA as an optimization method available through `nimOptim`
-(PR #1496).
+- Add BOBYQA as an optimization method available through `nimOptim`, 
+registered via `nimOptimMethod` (PR #1496).
 
 - Prevent use of nimbleFunction method names and nimbleFunction
 names that conflict with names in the nimble language (DSL) (PRs #1517
@@ -49,11 +50,11 @@ that a distribution being deregistered does not exist.
 ## BUG FIXES
 
 - Fix bug in caching values in `sampler_CRP` when maximum number of
-clusters exceeded that would cause incorrect sampling (albeit with the
-user having been warned that they should increase the maximum number
+clusters is exceeded, which would have caused incorrect sampling (albeit 
+with the user having been warned that they should increase the maximum number
 of clusters) (PR #1513).
 
-- Fix issue preventing use of nimbleList elements in with `nimCat` (PR
+- Fix issue preventing use of nimbleList elements in `nimCat` (PR
 #1518).
 
 - Prevent adaptation interval of one for various block samplers for
@@ -69,7 +70,7 @@ which an interval of one leads to an error.
 which are partially observed (whose elements are partially but not
 entirely data) (PR #1489).
   
-- Turn of the use of `--preclean` during C++ compilation when
+- Turn off the use of `--preclean` during C++ compilation when
 `nimbleExternalCall` is invoked to avoid removing .o files that
 might have been created by `Rcpp` (PR #1520).
 
