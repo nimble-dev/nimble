@@ -3,7 +3,7 @@
 QUAD_RULE_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
-    buildQuadRule = function(nQuad = integer(0, default = 0)){
+    makeGrid = function(nQuad = integer(0, default = 0)){
       returnType(quadGridListDef())
     }
   )
@@ -53,6 +53,16 @@ QUAD_GRID_BASE <- nimbleFunctionVirtual(
 quadGridListDef <- nimbleList(modeIndex = integer(0), 
                               wgts = double(1), 
                               nodes = double(2))
+#' @export
+# quadGridListDef <- nimbleList(
+  # list(
+    # nimbleType('modeIndex','integer', 0),
+    # nimbleType('wgts', 'double', 1),
+    # nimbleType('nodes', 'double', 2)
+  # ),
+  # name = "quadGridListDef",
+  # predefined = TRUE
+# )
 
 ## Write a basic quad rule:
 ## Maybe not cache here at all?
@@ -100,7 +110,7 @@ quadRule_AGHQ = nimbleFunction(
       returnType(double(2))
       return(res)
     },
-    buildQuadRule = function(nQuad = integer(0, default = 0)){
+    makeGrid = function(nQuad = integer(0, default = 0)){
       if(nQuad > 35) {
         print("Warning:  More than 35 quadrature nodes per dimension is not supported. Setting nQuad to 35.")
         nQuad <- 35
@@ -210,7 +220,7 @@ quadRule_CCD <- nimbleFunction(
     ## However, we do scaled design following INLA such that z*zT = 1
     ## from https://github.com/hrue/r-inla/blob/devel/gmrflib/design.c
     ## Can't update nQuad here but makes it general.
-    buildQuadRule = function(nQuad = integer(0, default = 0)){ 
+    makeGrid = function(nQuad = integer(0, default = 0)){ 
       ## First point is mode.
       design <- matrix(0, nQ, d)
       for (i in 1:d) {
@@ -267,7 +277,7 @@ quadRule_Custom <- nimbleFunction(
 	setup = function(d = 1){},
   run = function(){},
   methods = list(
-    buildQuadRule = function(nQuad = integer(0, default = 0)){
+    makeGrid = function(nQuad = integer(0, default = 0)){
       ## This will be a place holder for something others may choose to add.
       ## Can look for quadRule_Custom and check if it's implemented. If it is will try and use it...
       returnType(quadGridListDef())
@@ -296,7 +306,7 @@ logSumExp = nimbleFunction(
 
 ## Wrapper to make quadrature nodes accesible in a nimble function list.
 #' @export
-generateQuadGrid <- nimbleFunction(
+buildQuadGrid <- nimbleFunction(
   contains = QUAD_GRID_BASE,
   setup = function(d = 1, nQuad = 3, quadRule = "AGHQ"){
     ## Can list all possible quad rules here and set it.
@@ -305,12 +315,12 @@ generateQuadGrid <- nimbleFunction(
  
     quadGridList_internal <- quadGridListDef
  
-    quadGridList <- nimbleFunctionList(QUAD_RULE_BASE)
+    quadRuleList <- nimbleFunctionList(QUAD_RULE_BASE)
     if(quadRule == "AGHQ") {
-      quadGridList[[1]] <- quadRule_AGHQ(d)
+      quadRuleList[[1]] <- quadRule_AGHQ(d)
     }
     if(quadRule == "CCD") {
-      quadGridList[[1]] <- quadRule_CCD(d)
+      quadRuleList[[1]] <- quadRule_CCD(d)
     }
 
     ## nQ will be total number of quadrature nodes.
@@ -348,7 +358,7 @@ generateQuadGrid <- nimbleFunction(
       }
       if(!gridBuilt){
         newgrid <- quadGridList_internal$new()
-        newgrid <- quadGridList[[1]]$buildQuadRule(nQuad = nQuad)
+        newgrid <- quadRuleList[[1]]$makeGrid(nQuad = nQuad)
         zNodes <<- newgrid$nodes
         wgts <<- newgrid$wgts
         modeIndex <<- newgrid$modeIndex

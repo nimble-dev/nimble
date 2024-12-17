@@ -240,11 +240,10 @@ buildOneAGHQuad1D <- nimbleFunction(
     converged <- 0
     
     ## Build AGHQ grid for 1D:
-    I_AGHQ <- 1
-    gridRule <- I_AGHQ
+    I_GRID <- 1
     quadGrid_nfl <- nimbleFunctionList(QUAD_GRID_BASE)
     ## This is set up to add other quad grids in the future. quadRule := "AGHQ" to start.
-    quadGrid_nfl[[I_AGHQ]] <- generateQuadGrid(d = 1, nQuad = nQuad_, quadRule = quadRule_)
+    quadGrid_nfl[[I_GRID]] <- buildQuadGrid(d = 1, nQuad = nQuad_, quadRule = quadRule_)
     nodes <-  matrix(0, nrow = nQuad_, ncol = 1)
     wgts <- numeric(nQuad_)
     logDensity_quad <- numeric(nQuad_)
@@ -342,7 +341,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad)
+        quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad)
         nQuad_ <<- nQuad
       }
       ## if(quadTransform != "") {
@@ -718,14 +717,14 @@ buildOneAGHQuad1D <- nimbleFunction(
     },
     calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, do quad sum.
-      quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad_)
-      nQ <- quadGrid_nfl[[gridRule]]$gridSize()
+      quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad_)
+      nQ <- quadGrid_nfl[[I_GRID]]$gridSize()
       SD <- 1/sqrt(saved_inner_negHess[1,1])
-      nodes <<- quadGrid_nfl[[gridRule]]$nodes()
-      wgts <<- quadGrid_nfl[[gridRule]]$weights()
+      nodes <<- quadGrid_nfl[[I_GRID]]$nodes()
+      wgts <<- quadGrid_nfl[[I_GRID]]$weights()
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
-      modeIndex <- quadGrid_nfl[[gridRule]]$modeI() ## if even, this is -1
+      modeIndex <- quadGrid_nfl[[I_GRID]]$modeI() ## if even, this is -1
       ans <- 0
       for(i in 1:nQ) {
         if(i != modeIndex) {
@@ -820,8 +819,8 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
  
       ## Method 2 implies double taping.
-      modeIndex <- quadGrid_nfl[[gridRule]]$modeI()
-      nQ <- quadGrid_nfl[[gridRule]]$gridSize()
+      modeIndex <- quadGrid_nfl[[I_GRID]]$modeI()
+      nQ <- quadGrid_nfl[[I_GRID]]$gridSize()
       gr_margLogLik_wrt_p <- numeric(value = 0, length = dim(p)[1])
       wgts_lik <- numeric(value = 0, length = nQ)
       for(i in 1:nQ) {
@@ -843,7 +842,7 @@ buildOneAGHQuad1D <- nimbleFunction(
             gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, nodes[i,])
           }
           gr_logLikwrtrewrtp_i <- gr_logLikwrtrewrtre_i *
-                            ( (1 + gr_sigmahatwrtre*quadGrid_nfl[[gridRule]]$nodei(i)[1]) * gr_rehatwrtp  +  gr_sigmahatwrtp*quadGrid_nfl[[gridRule]]$nodei(i)[1] )
+                            ( (1 + gr_sigmahatwrtre*quadGrid_nfl[[I_GRID]]$nodei(i)[1]) * gr_rehatwrtp  +  gr_sigmahatwrtp*quadGrid_nfl[[I_GRID]]$nodei(i)[1] )
           ## The weighted gradient for the ith sum.
           gr_margLogLik_wrt_p <- gr_margLogLik_wrt_p + wgts_lik[i]*( gr_logLikewrtp_i +  gr_logLikwrtrewrtp_i )
         }
@@ -1066,11 +1065,10 @@ buildOneAGHQuad <- nimbleFunction(
     outer_param_max <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
 
     ## Build AGHQ grid for any dimension:
-    I_AGHQ <- 1
-    gridRule <- I_AGHQ
+    I_GRID <- 1
     quadGrid_nfl <- nimbleFunctionList(QUAD_GRID_BASE)
     ## This is set up to add other quad grids in the future. quadRule := "AGHQ" to start.
-    quadGrid_nfl[[gridRule]] <- generateQuadGrid(d = nreTrans, nQuad = nQuad_, quadRule = quadRule_)
+    quadGrid_nfl[[I_GRID]] <- buildQuadGrid(d = nreTrans, nQuad = nQuad_, quadRule = quadRule_)
     nodes <-  matrix(0, nrow = nQuad_, ncol = nreTrans)
     wgts <- numeric(nQuad_)
     logDensity_quad <- numeric(nQuad_)
@@ -1159,7 +1157,7 @@ buildOneAGHQuad <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad)
+        quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad)
         nQuad_ <<- nQuad
       }
       if(quadTransform != "NULL") {
@@ -1611,12 +1609,12 @@ buildOneAGHQuad <- nimbleFunction(
     },
     calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
-      quadGrid_nfl[[gridRule]]$buildGrid(nQuadUpdate = nQuad_)
-      modeIndex <- quadGrid_nfl[[gridRule]]$modeI()
+      quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad_)
+      modeIndex <- quadGrid_nfl[[I_GRID]]$modeI()
 
-      nQ <- quadGrid_nfl[[gridRule]]$gridSize()
-      nodes <<- quadGrid_nfl[[gridRule]]$nodes()  ## On standard scale but will be transformed.
-      wgts <<- quadGrid_nfl[[gridRule]]$weights()
+      nQ <- quadGrid_nfl[[I_GRID]]$gridSize()
+      nodes <<- quadGrid_nfl[[I_GRID]]$nodes()  ## On standard scale but will be transformed.
+      wgts <<- quadGrid_nfl[[I_GRID]]$weights()
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
       if(quadTransform_ == "spectral"){
@@ -2804,19 +2802,16 @@ buildAGHQ <- nimbleFunction(
       return(ans)
       returnType(double())
     },
-    ## Accessible transformations.
-    transformParams = function(p = double(1), trans = logical(0, default = FALSE)) {
-      if(trans)
-        pstar <- paramsTransform$inverseTransform(p)
-      else
-        pstar <- paramsTransform$transform(p)
-      return(pstar)
+    ## Inverse transform parameters to original scale
+    pInverseTransform = function(pTransform = double(1)) {
+      p <- paramsTransform$inverseTransform(pTransform)
+      return(p)
       returnType(double(1))
     },
     ## Jacobian of the inverse transformation for parameters
     derivs_pInverseTransform = function(pTransform = double(1), order = double(1)) {
       if(!one_time_fixes_done) one_time_fixes()
-      ans <- derivs(transformParams(pTransform, TRUE), wrt = pTransform_indices, order = order)
+      ans <- derivs(pInverseTransform(pTransform), wrt = pTransform_indices, order = order)
       return(ans)
       returnType(ADNimbleList())
     },
@@ -3352,7 +3347,7 @@ buildAGHQ <- nimbleFunction(
       returnType(AGHQuad_summary())
     }
   ),
-  buildDerivs = list(transformParams  = list(),
+  buildDerivs = list(pInverseTransform  = list(),
                      reInverseTransform = list(),
                      otherLogLik = list(),
                      gr_otherLogLik_internal = list(),
