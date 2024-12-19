@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 9 Spatial models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 9 Spatial models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -160,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.3.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -225,6 +225,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.2.5" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-lang-fxns"><i class="fa fa-check"></i><b>5.2.5</b> Available BUGS language functions</a></li>
 <li class="chapter" data-level="5.2.6" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-link"><i class="fa fa-check"></i><b>5.2.6</b> Available link functions</a></li>
 <li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
+<li class="chapter" data-level="5.2.8" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:macros"><i class="fa fa-check"></i><b>5.2.8</b> Model macros</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a>
@@ -371,6 +372,7 @@ div.csl-indent {
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
 <li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
+<li class="chapter" data-level="12.4" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-macros"><i class="fa fa-check"></i><b>12.4</b> User-defined model macros</a></li>
 </ul></li>
 <li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
 <ul>
@@ -448,7 +450,11 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a>
+<ul>
+<li class="chapter" data-level="16.2.1" data-path="cha-AD.html"><a href="cha-AD.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>16.2.1</b> Using the Laplace approximation methods directly</a></li>
+<li class="chapter" data-level="16.2.2" data-path="cha-AD.html"><a href="cha-AD.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>16.2.2</b> Changing the optimization methods</a></li>
+</ul></li>
 <li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
@@ -534,23 +540,23 @@ compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name 
 <h3><span class="header-section-number">9.1.2</span> Example<a href="cha-spatial.html#example" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>Here we provide an example model using the intrinsic Gaussian <code>dcar_normal</code> distribution. The CAR process values are used in a spatially-dependent Poisson regression.</p>
 <p>To mimic the behavior of WinBUGS, we specify <code>zero_mean = 1</code> to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term <code>alpha</code> in the model. Note that we do not necessarily recommend imposing this constraint, per the discussion earlier in this chapter.</p>
-<div class="sourceCode" id="cb224"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb224-1"><a href="cha-spatial.html#cb224-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb224-2"><a href="cha-spatial.html#cb224-2" tabindex="-1"></a>    alpha <span class="sc">~</span> <span class="fu">dflat</span>()</span>
-<span id="cb224-3"><a href="cha-spatial.html#cb224-3" tabindex="-1"></a>    beta <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</span>
-<span id="cb224-4"><a href="cha-spatial.html#cb224-4" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</span>
-<span id="cb224-5"><a href="cha-spatial.html#cb224-5" tabindex="-1"></a>    s[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dcar_normal</span>(adj[<span class="dv">1</span><span class="sc">:</span>L], weights[<span class="dv">1</span><span class="sc">:</span>L], num[<span class="dv">1</span><span class="sc">:</span>N], tau, <span class="at">zero_mean =</span> <span class="dv">1</span>)</span>
-<span id="cb224-6"><a href="cha-spatial.html#cb224-6" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb224-7"><a href="cha-spatial.html#cb224-7" tabindex="-1"></a>        <span class="fu">log</span>(lambda[i]) <span class="ot">&lt;-</span> alpha <span class="sc">+</span> beta<span class="sc">*</span>x[i] <span class="sc">+</span> s[i]</span>
-<span id="cb224-8"><a href="cha-spatial.html#cb224-8" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dpois</span>(lambda[i])</span>
-<span id="cb224-9"><a href="cha-spatial.html#cb224-9" tabindex="-1"></a>    }</span>
-<span id="cb224-10"><a href="cha-spatial.html#cb224-10" tabindex="-1"></a>})</span>
-<span id="cb224-11"><a href="cha-spatial.html#cb224-11" tabindex="-1"></a></span>
-<span id="cb224-12"><a href="cha-spatial.html#cb224-12" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="dv">8</span></span>
-<span id="cb224-13"><a href="cha-spatial.html#cb224-13" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">4</span>, <span class="at">L =</span> L, <span class="at">num =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="at">weights =</span> <span class="fu">rep</span>(<span class="dv">1</span>, L),</span>
-<span id="cb224-14"><a href="cha-spatial.html#cb224-14" tabindex="-1"></a>                  <span class="at">adj =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="at">x =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))</span>
-<span id="cb224-15"><a href="cha-spatial.html#cb224-15" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))</span>
-<span id="cb224-16"><a href="cha-spatial.html#cb224-16" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">beta =</span> <span class="dv">0</span>, <span class="at">tau =</span> <span class="dv">1</span>, <span class="at">s =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
-<span id="cb224-17"><a href="cha-spatial.html#cb224-17" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span></code></pre></div>
+<div class="sourceCode" id="cb231"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb231-1"><a href="cha-spatial.html#cb231-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb231-2"><a href="cha-spatial.html#cb231-2" tabindex="-1"></a>    alpha <span class="sc">~</span> <span class="fu">dflat</span>()</span>
+<span id="cb231-3"><a href="cha-spatial.html#cb231-3" tabindex="-1"></a>    beta <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</span>
+<span id="cb231-4"><a href="cha-spatial.html#cb231-4" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</span>
+<span id="cb231-5"><a href="cha-spatial.html#cb231-5" tabindex="-1"></a>    s[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dcar_normal</span>(adj[<span class="dv">1</span><span class="sc">:</span>L], weights[<span class="dv">1</span><span class="sc">:</span>L], num[<span class="dv">1</span><span class="sc">:</span>N], tau, <span class="at">zero_mean =</span> <span class="dv">1</span>)</span>
+<span id="cb231-6"><a href="cha-spatial.html#cb231-6" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb231-7"><a href="cha-spatial.html#cb231-7" tabindex="-1"></a>        <span class="fu">log</span>(lambda[i]) <span class="ot">&lt;-</span> alpha <span class="sc">+</span> beta<span class="sc">*</span>x[i] <span class="sc">+</span> s[i]</span>
+<span id="cb231-8"><a href="cha-spatial.html#cb231-8" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dpois</span>(lambda[i])</span>
+<span id="cb231-9"><a href="cha-spatial.html#cb231-9" tabindex="-1"></a>    }</span>
+<span id="cb231-10"><a href="cha-spatial.html#cb231-10" tabindex="-1"></a>})</span>
+<span id="cb231-11"><a href="cha-spatial.html#cb231-11" tabindex="-1"></a></span>
+<span id="cb231-12"><a href="cha-spatial.html#cb231-12" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="dv">8</span></span>
+<span id="cb231-13"><a href="cha-spatial.html#cb231-13" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">4</span>, <span class="at">L =</span> L, <span class="at">num =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="at">weights =</span> <span class="fu">rep</span>(<span class="dv">1</span>, L),</span>
+<span id="cb231-14"><a href="cha-spatial.html#cb231-14" tabindex="-1"></a>                  <span class="at">adj =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>), <span class="at">x =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">8</span>))</span>
+<span id="cb231-15"><a href="cha-spatial.html#cb231-15" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">7</span>, <span class="dv">12</span>))</span>
+<span id="cb231-16"><a href="cha-spatial.html#cb231-16" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">beta =</span> <span class="dv">0</span>, <span class="at">tau =</span> <span class="dv">1</span>, <span class="at">s =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb231-17"><a href="cha-spatial.html#cb231-17" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span></code></pre></div>
 <p>The resulting model may be carried through to MCMC sampling.
 NIMBLE will assign a specialized sampler to the update the elements of the CAR process.
 See Chapter <a href="cha-mcmc.html#cha-mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section
@@ -597,45 +603,45 @@ compatibility with existing WinBUGS code. NIMBLE also provides the WinBUGS name 
 <div id="example-1" class="section level3 hasAnchor" number="9.2.2">
 <h3><span class="header-section-number">9.2.2</span> Example<a href="cha-spatial.html#example-1" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>We provide two example models using the proper Gaussian <code>dcar_proper</code> distribution. In both, the CAR process values are used in a spatially-dependent logistic regression to model binary presence/absence data. In the first example, the <code>C</code> and <code>M</code> parameters are omitted, which uses weights equal to one for all neighbor relationships. In the second example, symmetric unnormalized weights are specified, and <code>as.carCM</code> is used to construct the <code>C</code> and <code>M</code> parameters to the <code>dcar_proper</code> distribution.</p>
-<div class="sourceCode" id="cb225"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb225-1"><a href="cha-spatial.html#cb225-1" tabindex="-1"></a><span class="co"># omitting C and M sets all non-zero weights to one</span></span>
-<span id="cb225-2"><a href="cha-spatial.html#cb225-2" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb225-3"><a href="cha-spatial.html#cb225-3" tabindex="-1"></a>    mu0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</span>
-<span id="cb225-4"><a href="cha-spatial.html#cb225-4" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</span>
-<span id="cb225-5"><a href="cha-spatial.html#cb225-5" tabindex="-1"></a>    gamma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb225-6"><a href="cha-spatial.html#cb225-6" tabindex="-1"></a>    s[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dcar_proper</span>(mu[<span class="dv">1</span><span class="sc">:</span>N], <span class="at">adj=</span>adj[<span class="dv">1</span><span class="sc">:</span>L], <span class="at">num=</span>num[<span class="dv">1</span><span class="sc">:</span>N], <span class="at">tau=</span>tau, </span>
-<span id="cb225-7"><a href="cha-spatial.html#cb225-7" tabindex="-1"></a>                         <span class="at">gamma=</span>gamma)</span>
-<span id="cb225-8"><a href="cha-spatial.html#cb225-8" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb225-9"><a href="cha-spatial.html#cb225-9" tabindex="-1"></a>        mu[i] <span class="ot">&lt;-</span> mu0</span>
-<span id="cb225-10"><a href="cha-spatial.html#cb225-10" tabindex="-1"></a>        <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> s[i]</span>
-<span id="cb225-11"><a href="cha-spatial.html#cb225-11" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dbern</span>(p[i])</span>
-<span id="cb225-12"><a href="cha-spatial.html#cb225-12" tabindex="-1"></a>    }</span>
-<span id="cb225-13"><a href="cha-spatial.html#cb225-13" tabindex="-1"></a>})</span>
-<span id="cb225-14"><a href="cha-spatial.html#cb225-14" tabindex="-1"></a></span>
-<span id="cb225-15"><a href="cha-spatial.html#cb225-15" tabindex="-1"></a>adj <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>)</span>
-<span id="cb225-16"><a href="cha-spatial.html#cb225-16" tabindex="-1"></a>num <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span>
-<span id="cb225-17"><a href="cha-spatial.html#cb225-17" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">adj =</span> adj, <span class="at">num =</span> num, <span class="at">N =</span> <span class="dv">4</span>, <span class="at">L =</span> <span class="dv">6</span>)</span>
-<span id="cb225-18"><a href="cha-spatial.html#cb225-18" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
-<span id="cb225-19"><a href="cha-spatial.html#cb225-19" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">mu0 =</span> <span class="dv">0</span>, <span class="at">tau =</span> <span class="dv">1</span>, <span class="at">gamma =</span> <span class="dv">0</span>, <span class="at">s =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</span>
-<span id="cb225-20"><a href="cha-spatial.html#cb225-20" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span>
-<span id="cb225-21"><a href="cha-spatial.html#cb225-21" tabindex="-1"></a></span>
-<span id="cb225-22"><a href="cha-spatial.html#cb225-22" tabindex="-1"></a><span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span></span>
-<span id="cb225-23"><a href="cha-spatial.html#cb225-23" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb225-24"><a href="cha-spatial.html#cb225-24" tabindex="-1"></a>    mu0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</span>
-<span id="cb225-25"><a href="cha-spatial.html#cb225-25" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</span>
-<span id="cb225-26"><a href="cha-spatial.html#cb225-26" tabindex="-1"></a>    gamma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb225-27"><a href="cha-spatial.html#cb225-27" tabindex="-1"></a>    s[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dcar_proper</span>(mu[<span class="dv">1</span><span class="sc">:</span>N], C[<span class="dv">1</span><span class="sc">:</span>L], adj[<span class="dv">1</span><span class="sc">:</span>L], num[<span class="dv">1</span><span class="sc">:</span>N], M[<span class="dv">1</span><span class="sc">:</span>N], tau, </span>
-<span id="cb225-28"><a href="cha-spatial.html#cb225-28" tabindex="-1"></a>                         gamma)</span>
-<span id="cb225-29"><a href="cha-spatial.html#cb225-29" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb225-30"><a href="cha-spatial.html#cb225-30" tabindex="-1"></a>        mu[i] <span class="ot">&lt;-</span> mu0</span>
-<span id="cb225-31"><a href="cha-spatial.html#cb225-31" tabindex="-1"></a>        <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> s[i]</span>
-<span id="cb225-32"><a href="cha-spatial.html#cb225-32" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dbern</span>(p[i])</span>
-<span id="cb225-33"><a href="cha-spatial.html#cb225-33" tabindex="-1"></a>    }</span>
-<span id="cb225-34"><a href="cha-spatial.html#cb225-34" tabindex="-1"></a>})</span>
-<span id="cb225-35"><a href="cha-spatial.html#cb225-35" tabindex="-1"></a></span>
-<span id="cb225-36"><a href="cha-spatial.html#cb225-36" tabindex="-1"></a>weights <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)</span>
-<span id="cb225-37"><a href="cha-spatial.html#cb225-37" tabindex="-1"></a>CM <span class="ot">&lt;-</span> <span class="fu">as.carCM</span>(adj, weights, num)</span>
-<span id="cb225-38"><a href="cha-spatial.html#cb225-38" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">C =</span> CM<span class="sc">$</span>C, <span class="at">adj =</span> adj, <span class="at">num =</span> num, <span class="at">M =</span> CM<span class="sc">$</span>M, <span class="at">N =</span> <span class="dv">4</span>, <span class="at">L =</span> <span class="dv">6</span>)</span>
-<span id="cb225-39"><a href="cha-spatial.html#cb225-39" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span></code></pre></div>
+<div class="sourceCode" id="cb232"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb232-1"><a href="cha-spatial.html#cb232-1" tabindex="-1"></a><span class="co"># omitting C and M sets all non-zero weights to one</span></span>
+<span id="cb232-2"><a href="cha-spatial.html#cb232-2" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb232-3"><a href="cha-spatial.html#cb232-3" tabindex="-1"></a>    mu0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</span>
+<span id="cb232-4"><a href="cha-spatial.html#cb232-4" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</span>
+<span id="cb232-5"><a href="cha-spatial.html#cb232-5" tabindex="-1"></a>    gamma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb232-6"><a href="cha-spatial.html#cb232-6" tabindex="-1"></a>    s[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dcar_proper</span>(mu[<span class="dv">1</span><span class="sc">:</span>N], <span class="at">adj=</span>adj[<span class="dv">1</span><span class="sc">:</span>L], <span class="at">num=</span>num[<span class="dv">1</span><span class="sc">:</span>N], <span class="at">tau=</span>tau, </span>
+<span id="cb232-7"><a href="cha-spatial.html#cb232-7" tabindex="-1"></a>                         <span class="at">gamma=</span>gamma)</span>
+<span id="cb232-8"><a href="cha-spatial.html#cb232-8" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb232-9"><a href="cha-spatial.html#cb232-9" tabindex="-1"></a>        mu[i] <span class="ot">&lt;-</span> mu0</span>
+<span id="cb232-10"><a href="cha-spatial.html#cb232-10" tabindex="-1"></a>        <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> s[i]</span>
+<span id="cb232-11"><a href="cha-spatial.html#cb232-11" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dbern</span>(p[i])</span>
+<span id="cb232-12"><a href="cha-spatial.html#cb232-12" tabindex="-1"></a>    }</span>
+<span id="cb232-13"><a href="cha-spatial.html#cb232-13" tabindex="-1"></a>})</span>
+<span id="cb232-14"><a href="cha-spatial.html#cb232-14" tabindex="-1"></a></span>
+<span id="cb232-15"><a href="cha-spatial.html#cb232-15" tabindex="-1"></a>adj <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>)</span>
+<span id="cb232-16"><a href="cha-spatial.html#cb232-16" tabindex="-1"></a>num <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>)</span>
+<span id="cb232-17"><a href="cha-spatial.html#cb232-17" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">adj =</span> adj, <span class="at">num =</span> num, <span class="at">N =</span> <span class="dv">4</span>, <span class="at">L =</span> <span class="dv">6</span>)</span>
+<span id="cb232-18"><a href="cha-spatial.html#cb232-18" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb232-19"><a href="cha-spatial.html#cb232-19" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">mu0 =</span> <span class="dv">0</span>, <span class="at">tau =</span> <span class="dv">1</span>, <span class="at">gamma =</span> <span class="dv">0</span>, <span class="at">s =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</span>
+<span id="cb232-20"><a href="cha-spatial.html#cb232-20" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span>
+<span id="cb232-21"><a href="cha-spatial.html#cb232-21" tabindex="-1"></a></span>
+<span id="cb232-22"><a href="cha-spatial.html#cb232-22" tabindex="-1"></a><span class="co"># specify symmetric unnormalized weights, use as.carCM to generate C and M</span></span>
+<span id="cb232-23"><a href="cha-spatial.html#cb232-23" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb232-24"><a href="cha-spatial.html#cb232-24" tabindex="-1"></a>    mu0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.0001</span>)</span>
+<span id="cb232-25"><a href="cha-spatial.html#cb232-25" tabindex="-1"></a>    tau <span class="sc">~</span> <span class="fu">dgamma</span>(<span class="fl">0.001</span>, <span class="fl">0.001</span>)</span>
+<span id="cb232-26"><a href="cha-spatial.html#cb232-26" tabindex="-1"></a>    gamma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb232-27"><a href="cha-spatial.html#cb232-27" tabindex="-1"></a>    s[<span class="dv">1</span><span class="sc">:</span>N] <span class="sc">~</span> <span class="fu">dcar_proper</span>(mu[<span class="dv">1</span><span class="sc">:</span>N], C[<span class="dv">1</span><span class="sc">:</span>L], adj[<span class="dv">1</span><span class="sc">:</span>L], num[<span class="dv">1</span><span class="sc">:</span>N], M[<span class="dv">1</span><span class="sc">:</span>N], tau, </span>
+<span id="cb232-28"><a href="cha-spatial.html#cb232-28" tabindex="-1"></a>                         gamma)</span>
+<span id="cb232-29"><a href="cha-spatial.html#cb232-29" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb232-30"><a href="cha-spatial.html#cb232-30" tabindex="-1"></a>        mu[i] <span class="ot">&lt;-</span> mu0</span>
+<span id="cb232-31"><a href="cha-spatial.html#cb232-31" tabindex="-1"></a>        <span class="fu">logit</span>(p[i]) <span class="ot">&lt;-</span> s[i]</span>
+<span id="cb232-32"><a href="cha-spatial.html#cb232-32" tabindex="-1"></a>        y[i] <span class="sc">~</span> <span class="fu">dbern</span>(p[i])</span>
+<span id="cb232-33"><a href="cha-spatial.html#cb232-33" tabindex="-1"></a>    }</span>
+<span id="cb232-34"><a href="cha-spatial.html#cb232-34" tabindex="-1"></a>})</span>
+<span id="cb232-35"><a href="cha-spatial.html#cb232-35" tabindex="-1"></a></span>
+<span id="cb232-36"><a href="cha-spatial.html#cb232-36" tabindex="-1"></a>weights <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">4</span>)</span>
+<span id="cb232-37"><a href="cha-spatial.html#cb232-37" tabindex="-1"></a>CM <span class="ot">&lt;-</span> <span class="fu">as.carCM</span>(adj, weights, num)</span>
+<span id="cb232-38"><a href="cha-spatial.html#cb232-38" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">C =</span> CM<span class="sc">$</span>C, <span class="at">adj =</span> adj, <span class="at">num =</span> num, <span class="at">M =</span> CM<span class="sc">$</span>M, <span class="at">N =</span> <span class="dv">4</span>, <span class="at">L =</span> <span class="dv">6</span>)</span>
+<span id="cb232-39"><a href="cha-spatial.html#cb232-39" tabindex="-1"></a>Rmodel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, constants, data, inits)</span></code></pre></div>
 <p>Each of the resulting models may be carried through to MCMC sampling.
 NIMBLE will assign a specialized sampler to update the elements of the CAR process.
 See Chapter <a href="cha-mcmc.html#cha-mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section

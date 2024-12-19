@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 12 Creating user-defined distributions and functions for models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 12 Creating user-defined distributions and functions for models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -160,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.3.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -225,6 +225,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.2.5" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-lang-fxns"><i class="fa fa-check"></i><b>5.2.5</b> Available BUGS language functions</a></li>
 <li class="chapter" data-level="5.2.6" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-link"><i class="fa fa-check"></i><b>5.2.6</b> Available link functions</a></li>
 <li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
+<li class="chapter" data-level="5.2.8" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:macros"><i class="fa fa-check"></i><b>5.2.8</b> Model macros</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a>
@@ -371,6 +372,7 @@ div.csl-indent {
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
 <li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
+<li class="chapter" data-level="12.4" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-macros"><i class="fa fa-check"></i><b>12.4</b> User-defined model macros</a></li>
 </ul></li>
 <li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
 <ul>
@@ -448,7 +450,11 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a>
+<ul>
+<li class="chapter" data-level="16.2.1" data-path="cha-AD.html"><a href="cha-AD.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>16.2.1</b> Using the Laplace approximation methods directly</a></li>
+<li class="chapter" data-level="16.2.2" data-path="cha-AD.html"><a href="cha-AD.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>16.2.2</b> Changing the optimization methods</a></li>
+</ul></li>
 <li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
@@ -494,28 +500,28 @@ div.csl-indent {
 <p>As of version 1.2.0, NIMBLE also supports using more advanced nimbleFunctions, those with <code>setup</code> code and possibly multiple methods (see Chapter <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>), to provide functions and/or distributions for use in models. This allows the functions and/or distributions to store information internally. See section <a href="cha-user-defined.html#sec:adv-user-def">12.3</a> below.</p>
 <p>Note that NIMBLE generally expects user-defined distributions or functions to be defined in the global environment.
 If you define them in a function (which would generally be the case if you are using them in the context of parallelization), one approach would be to assign them to the global environment in your function:</p>
-<div class="sourceCode" id="cb243"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb243-1"><a href="cha-user-defined.html#cb243-1" tabindex="-1"></a><span class="do">## for a user-defined function</span></span>
-<span id="cb243-2"><a href="cha-user-defined.html#cb243-2" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;myfun&#39;</span>, myfun, <span class="at">envir =</span> .GlobalEnv)</span>
-<span id="cb243-3"><a href="cha-user-defined.html#cb243-3" tabindex="-1"></a><span class="do">## for a user-defined distribution</span></span>
-<span id="cb243-4"><a href="cha-user-defined.html#cb243-4" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;dfoo&#39;</span>, dfoo, <span class="at">envir =</span> .GlobalEnv)</span>
-<span id="cb243-5"><a href="cha-user-defined.html#cb243-5" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;rfoo&#39;</span>, rfoo, <span class="at">envir =</span> .GlobalEnv)</span>
-<span id="cb243-6"><a href="cha-user-defined.html#cb243-6" tabindex="-1"></a><span class="do">## similarly for &#39;p&#39; and &#39;q&#39; functions if you define them</span></span></code></pre></div>
+<div class="sourceCode" id="cb250"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb250-1"><a href="cha-user-defined.html#cb250-1" tabindex="-1"></a><span class="do">## for a user-defined function</span></span>
+<span id="cb250-2"><a href="cha-user-defined.html#cb250-2" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;myfun&#39;</span>, myfun, <span class="at">envir =</span> .GlobalEnv)</span>
+<span id="cb250-3"><a href="cha-user-defined.html#cb250-3" tabindex="-1"></a><span class="do">## for a user-defined distribution</span></span>
+<span id="cb250-4"><a href="cha-user-defined.html#cb250-4" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;dfoo&#39;</span>, dfoo, <span class="at">envir =</span> .GlobalEnv)</span>
+<span id="cb250-5"><a href="cha-user-defined.html#cb250-5" tabindex="-1"></a><span class="fu">assign</span>(<span class="st">&#39;rfoo&#39;</span>, rfoo, <span class="at">envir =</span> .GlobalEnv)</span>
+<span id="cb250-6"><a href="cha-user-defined.html#cb250-6" tabindex="-1"></a><span class="do">## similarly for &#39;p&#39; and &#39;q&#39; functions if you define them</span></span></code></pre></div>
 <div id="sec:user-functions" class="section level2 hasAnchor" number="12.1">
 <h2><span class="header-section-number">12.1</span> User-defined functions<a href="cha-user-defined.html#sec:user-functions" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>To provide a new function for use in BUGS code, simply create a nimbleFunction as discussed in Chapter <a href="cha-RCfunctions.html#cha-RCfunctions">11</a>. Then use it in your BUGS code. That’s it.</p>
 <p>Writing nimbleFunctions requires that you declare the dimensionality of arguments and the returned object (Section <a href="cha-RCfunctions.html#sec:decl-argum-return">11.4</a>). Make sure that the dimensionality specified in your nimbleFunction matches how you use it in BUGS code. For example, if you define scalar parameters in your BUGS code you will want to define nimbleFunctions that take scalar arguments. Here is an example that returns twice its input argument:</p>
-<div class="sourceCode" id="cb244"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb244-1"><a href="cha-user-defined.html#cb244-1" tabindex="-1"></a>timesTwo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(    </span>
-<span id="cb244-2"><a href="cha-user-defined.html#cb244-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">0</span>)) {</span>
-<span id="cb244-3"><a href="cha-user-defined.html#cb244-3" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
-<span id="cb244-4"><a href="cha-user-defined.html#cb244-4" tabindex="-1"></a>        <span class="fu">return</span>(<span class="dv">2</span><span class="sc">*</span>x)</span>
-<span id="cb244-5"><a href="cha-user-defined.html#cb244-5" tabindex="-1"></a>    })</span>
-<span id="cb244-6"><a href="cha-user-defined.html#cb244-6" tabindex="-1"></a></span>
-<span id="cb244-7"><a href="cha-user-defined.html#cb244-7" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb244-8"><a href="cha-user-defined.html#cb244-8" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
-<span id="cb244-9"><a href="cha-user-defined.html#cb244-9" tabindex="-1"></a>        mu[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb244-10"><a href="cha-user-defined.html#cb244-10" tabindex="-1"></a>        mu_times_two[i] <span class="ot">&lt;-</span> <span class="fu">timesTwo</span>(mu[i])</span>
-<span id="cb244-11"><a href="cha-user-defined.html#cb244-11" tabindex="-1"></a>    }</span>
-<span id="cb244-12"><a href="cha-user-defined.html#cb244-12" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb251"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb251-1"><a href="cha-user-defined.html#cb251-1" tabindex="-1"></a>timesTwo <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(    </span>
+<span id="cb251-2"><a href="cha-user-defined.html#cb251-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">0</span>)) {</span>
+<span id="cb251-3"><a href="cha-user-defined.html#cb251-3" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb251-4"><a href="cha-user-defined.html#cb251-4" tabindex="-1"></a>        <span class="fu">return</span>(<span class="dv">2</span><span class="sc">*</span>x)</span>
+<span id="cb251-5"><a href="cha-user-defined.html#cb251-5" tabindex="-1"></a>    })</span>
+<span id="cb251-6"><a href="cha-user-defined.html#cb251-6" tabindex="-1"></a></span>
+<span id="cb251-7"><a href="cha-user-defined.html#cb251-7" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb251-8"><a href="cha-user-defined.html#cb251-8" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb251-9"><a href="cha-user-defined.html#cb251-9" tabindex="-1"></a>        mu[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb251-10"><a href="cha-user-defined.html#cb251-10" tabindex="-1"></a>        mu_times_two[i] <span class="ot">&lt;-</span> <span class="fu">timesTwo</span>(mu[i])</span>
+<span id="cb251-11"><a href="cha-user-defined.html#cb251-11" tabindex="-1"></a>    }</span>
+<span id="cb251-12"><a href="cha-user-defined.html#cb251-12" tabindex="-1"></a>})</span></code></pre></div>
 <p>The <code>x = double(0)</code> argument and <code>returnType(double(0))</code>
 establish that the input and output will both be zero-dimensional
 (scalar) numbers.</p>
@@ -523,18 +529,18 @@ establish that the input and output will both be zero-dimensional
 more dimensions. Here is an example that takes a vector
 (1-dimensional) as input and returns a vector with twice the input
 values:</p>
-<div class="sourceCode" id="cb245"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb245-1"><a href="cha-user-defined.html#cb245-1" tabindex="-1"></a>vectorTimesTwo  <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(    </span>
-<span id="cb245-2"><a href="cha-user-defined.html#cb245-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
-<span id="cb245-3"><a href="cha-user-defined.html#cb245-3" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
-<span id="cb245-4"><a href="cha-user-defined.html#cb245-4" tabindex="-1"></a>        <span class="fu">return</span>(<span class="dv">2</span><span class="sc">*</span>x)</span>
-<span id="cb245-5"><a href="cha-user-defined.html#cb245-5" tabindex="-1"></a>    }</span>
-<span id="cb245-6"><a href="cha-user-defined.html#cb245-6" tabindex="-1"></a>    )</span>
-<span id="cb245-7"><a href="cha-user-defined.html#cb245-7" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb245-8"><a href="cha-user-defined.html#cb245-8" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
-<span id="cb245-9"><a href="cha-user-defined.html#cb245-9" tabindex="-1"></a>        mu[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb245-10"><a href="cha-user-defined.html#cb245-10" tabindex="-1"></a>    }</span>
-<span id="cb245-11"><a href="cha-user-defined.html#cb245-11" tabindex="-1"></a>    mu_times_two[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">vectorTimesTwo</span>(mu[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>])</span>
-<span id="cb245-12"><a href="cha-user-defined.html#cb245-12" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb252"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb252-1"><a href="cha-user-defined.html#cb252-1" tabindex="-1"></a>vectorTimesTwo  <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(    </span>
+<span id="cb252-2"><a href="cha-user-defined.html#cb252-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>)) {</span>
+<span id="cb252-3"><a href="cha-user-defined.html#cb252-3" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb252-4"><a href="cha-user-defined.html#cb252-4" tabindex="-1"></a>        <span class="fu">return</span>(<span class="dv">2</span><span class="sc">*</span>x)</span>
+<span id="cb252-5"><a href="cha-user-defined.html#cb252-5" tabindex="-1"></a>    }</span>
+<span id="cb252-6"><a href="cha-user-defined.html#cb252-6" tabindex="-1"></a>    )</span>
+<span id="cb252-7"><a href="cha-user-defined.html#cb252-7" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb252-8"><a href="cha-user-defined.html#cb252-8" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb252-9"><a href="cha-user-defined.html#cb252-9" tabindex="-1"></a>        mu[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb252-10"><a href="cha-user-defined.html#cb252-10" tabindex="-1"></a>    }</span>
+<span id="cb252-11"><a href="cha-user-defined.html#cb252-11" tabindex="-1"></a>    mu_times_two[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">vectorTimesTwo</span>(mu[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>])</span>
+<span id="cb252-12"><a href="cha-user-defined.html#cb252-12" tabindex="-1"></a>})</span></code></pre></div>
 <p>There is a subtle difference between the <code>mu_times_two</code> variables in the two examples. In the first example, there are individual nodes for each <code>mu_times_two[i]</code>. In the second example, there is a single multivariate node, <code>mu_times_two[1:3]</code>. Each implementation could be more efficient for different needs. For example, suppose an algorithm modifies the value of <code>mu[2]</code> and then updates nodes that depend on it. In the first example, <code>mu_times_two[2]</code> would be updated. In the second example <code>mu_times_two[1:3]</code> would be updated because it is a single, vector node.</p>
 <p>At present in compiled use of a model, you cannot provide a scalar argument where the user-defined nimbleFunction expects a vector; unlike in R, scalars are not simply vectors of length 1.</p>
 </div>
@@ -557,76 +563,76 @@ parameterizations, but only if you explicitly register the distribution.</p>
 <p>Here is an extended example of providing a univariate exponential
 distribution (solely for illustration as this is already provided by NIMBLE) and a
 multivariate Dirichlet-multinomial distribution.</p>
-<div class="sourceCode" id="cb246"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb246-1"><a href="cha-user-defined.html#cb246-1" tabindex="-1"></a>dmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb246-2"><a href="cha-user-defined.html#cb246-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
-<span id="cb246-3"><a href="cha-user-defined.html#cb246-3" tabindex="-1"></a>        <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
-<span id="cb246-4"><a href="cha-user-defined.html#cb246-4" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
-<span id="cb246-5"><a href="cha-user-defined.html#cb246-5" tabindex="-1"></a>        logProb <span class="ot">&lt;-</span> <span class="fu">log</span>(rate) <span class="sc">-</span> x<span class="sc">*</span>rate</span>
-<span id="cb246-6"><a href="cha-user-defined.html#cb246-6" tabindex="-1"></a>        <span class="cf">if</span>(log) <span class="fu">return</span>(logProb)</span>
-<span id="cb246-7"><a href="cha-user-defined.html#cb246-7" tabindex="-1"></a>        <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">exp</span>(logProb)) </span>
-<span id="cb246-8"><a href="cha-user-defined.html#cb246-8" tabindex="-1"></a>    })</span>
-<span id="cb246-9"><a href="cha-user-defined.html#cb246-9" tabindex="-1"></a></span>
-<span id="cb246-10"><a href="cha-user-defined.html#cb246-10" tabindex="-1"></a>rmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb246-11"><a href="cha-user-defined.html#cb246-11" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">n =</span> <span class="fu">integer</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>)) {</span>
-<span id="cb246-12"><a href="cha-user-defined.html#cb246-12" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
-<span id="cb246-13"><a href="cha-user-defined.html#cb246-13" tabindex="-1"></a>        <span class="cf">if</span>(n <span class="sc">!=</span> <span class="dv">1</span>) <span class="fu">print</span>(<span class="st">&quot;rmyexp only allows n = 1; using n = 1.&quot;</span>)</span>
-<span id="cb246-14"><a href="cha-user-defined.html#cb246-14" tabindex="-1"></a>        dev <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb246-15"><a href="cha-user-defined.html#cb246-15" tabindex="-1"></a>        <span class="fu">return</span>(<span class="sc">-</span><span class="fu">log</span>(<span class="dv">1</span><span class="sc">-</span>dev) <span class="sc">/</span> rate)</span>
-<span id="cb246-16"><a href="cha-user-defined.html#cb246-16" tabindex="-1"></a>    })</span>
-<span id="cb246-17"><a href="cha-user-defined.html#cb246-17" tabindex="-1"></a></span>
-<span id="cb246-18"><a href="cha-user-defined.html#cb246-18" tabindex="-1"></a>pmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb246-19"><a href="cha-user-defined.html#cb246-19" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">q =</span> <span class="fu">double</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
-<span id="cb246-20"><a href="cha-user-defined.html#cb246-20" tabindex="-1"></a>        <span class="at">lower.tail =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
-<span id="cb246-21"><a href="cha-user-defined.html#cb246-21" tabindex="-1"></a>        <span class="at">log.p =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
-<span id="cb246-22"><a href="cha-user-defined.html#cb246-22" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
-<span id="cb246-23"><a href="cha-user-defined.html#cb246-23" tabindex="-1"></a>        <span class="cf">if</span>(<span class="sc">!</span>lower.tail) { </span>
-<span id="cb246-24"><a href="cha-user-defined.html#cb246-24" tabindex="-1"></a>            logp <span class="ot">&lt;-</span> <span class="sc">-</span>rate <span class="sc">*</span> q</span>
-<span id="cb246-25"><a href="cha-user-defined.html#cb246-25" tabindex="-1"></a>            <span class="cf">if</span>(log.p) <span class="fu">return</span>(logp)</span>
-<span id="cb246-26"><a href="cha-user-defined.html#cb246-26" tabindex="-1"></a>            <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">exp</span>(logp))</span>
-<span id="cb246-27"><a href="cha-user-defined.html#cb246-27" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
-<span id="cb246-28"><a href="cha-user-defined.html#cb246-28" tabindex="-1"></a>            p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">exp</span>(<span class="sc">-</span>rate <span class="sc">*</span> q)</span>
-<span id="cb246-29"><a href="cha-user-defined.html#cb246-29" tabindex="-1"></a>            <span class="cf">if</span>(<span class="sc">!</span>log.p) <span class="fu">return</span>(p)</span>
-<span id="cb246-30"><a href="cha-user-defined.html#cb246-30" tabindex="-1"></a>            <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">log</span>(p))</span>
-<span id="cb246-31"><a href="cha-user-defined.html#cb246-31" tabindex="-1"></a>        }</span>
-<span id="cb246-32"><a href="cha-user-defined.html#cb246-32" tabindex="-1"></a>    })</span>
-<span id="cb246-33"><a href="cha-user-defined.html#cb246-33" tabindex="-1"></a></span>
-<span id="cb246-34"><a href="cha-user-defined.html#cb246-34" tabindex="-1"></a>qmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb246-35"><a href="cha-user-defined.html#cb246-35" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">p =</span> <span class="fu">double</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
-<span id="cb246-36"><a href="cha-user-defined.html#cb246-36" tabindex="-1"></a>        <span class="at">lower.tail =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
-<span id="cb246-37"><a href="cha-user-defined.html#cb246-37" tabindex="-1"></a>        <span class="at">log.p =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
-<span id="cb246-38"><a href="cha-user-defined.html#cb246-38" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
-<span id="cb246-39"><a href="cha-user-defined.html#cb246-39" tabindex="-1"></a>        <span class="cf">if</span>(log.p) p <span class="ot">&lt;-</span> <span class="fu">exp</span>(p)</span>
-<span id="cb246-40"><a href="cha-user-defined.html#cb246-40" tabindex="-1"></a>        <span class="cf">if</span>(<span class="sc">!</span>lower.tail) p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> p</span>
-<span id="cb246-41"><a href="cha-user-defined.html#cb246-41" tabindex="-1"></a>        <span class="fu">return</span>(<span class="sc">-</span><span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> p) <span class="sc">/</span> rate)</span>
-<span id="cb246-42"><a href="cha-user-defined.html#cb246-42" tabindex="-1"></a>    })</span>
-<span id="cb246-43"><a href="cha-user-defined.html#cb246-43" tabindex="-1"></a></span>
-<span id="cb246-44"><a href="cha-user-defined.html#cb246-44" tabindex="-1"></a>ddirchmulti <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb246-45"><a href="cha-user-defined.html#cb246-45" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">alpha =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">size =</span> <span class="fu">double</span>(<span class="dv">0</span>), </span>
-<span id="cb246-46"><a href="cha-user-defined.html#cb246-46" tabindex="-1"></a>        <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
-<span id="cb246-47"><a href="cha-user-defined.html#cb246-47" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
-<span id="cb246-48"><a href="cha-user-defined.html#cb246-48" tabindex="-1"></a>        logProb <span class="ot">&lt;-</span> <span class="fu">lgamma</span>(size<span class="sc">+</span><span class="dv">1</span>) <span class="sc">-</span> <span class="fu">sum</span>(<span class="fu">lgamma</span>(x<span class="sc">+</span><span class="dv">1</span>)) <span class="sc">+</span> <span class="fu">lgamma</span>(<span class="fu">sum</span>(alpha)) <span class="sc">-</span></span>
-<span id="cb246-49"><a href="cha-user-defined.html#cb246-49" tabindex="-1"></a>            <span class="fu">sum</span>(<span class="fu">lgamma</span>(alpha)) <span class="sc">+</span> <span class="fu">sum</span>(<span class="fu">lgamma</span>(alpha <span class="sc">+</span> x)) <span class="sc">-</span></span>
-<span id="cb246-50"><a href="cha-user-defined.html#cb246-50" tabindex="-1"></a>            <span class="fu">lgamma</span>(<span class="fu">sum</span>(alpha) <span class="sc">+</span> size)</span>
-<span id="cb246-51"><a href="cha-user-defined.html#cb246-51" tabindex="-1"></a>        <span class="cf">if</span>(log) <span class="fu">return</span>(logProb)</span>
-<span id="cb246-52"><a href="cha-user-defined.html#cb246-52" tabindex="-1"></a>        <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">exp</span>(logProb))</span>
-<span id="cb246-53"><a href="cha-user-defined.html#cb246-53" tabindex="-1"></a>    })</span>
-<span id="cb246-54"><a href="cha-user-defined.html#cb246-54" tabindex="-1"></a></span>
-<span id="cb246-55"><a href="cha-user-defined.html#cb246-55" tabindex="-1"></a>rdirchmulti <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb246-56"><a href="cha-user-defined.html#cb246-56" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">n =</span> <span class="fu">integer</span>(<span class="dv">0</span>), <span class="at">alpha =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">size =</span> <span class="fu">double</span>(<span class="dv">0</span>)) {</span>
-<span id="cb246-57"><a href="cha-user-defined.html#cb246-57" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
-<span id="cb246-58"><a href="cha-user-defined.html#cb246-58" tabindex="-1"></a>        <span class="cf">if</span>(n <span class="sc">!=</span> <span class="dv">1</span>) <span class="fu">print</span>(<span class="st">&quot;rdirchmulti only allows n = 1; using n = 1.&quot;</span>)</span>
-<span id="cb246-59"><a href="cha-user-defined.html#cb246-59" tabindex="-1"></a>        p <span class="ot">&lt;-</span> <span class="fu">rdirch</span>(<span class="dv">1</span>, alpha)</span>
-<span id="cb246-60"><a href="cha-user-defined.html#cb246-60" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">rmulti</span>(<span class="dv">1</span>, <span class="at">size =</span> size, <span class="at">prob =</span> p))</span>
-<span id="cb246-61"><a href="cha-user-defined.html#cb246-61" tabindex="-1"></a>    })</span>
-<span id="cb246-62"><a href="cha-user-defined.html#cb246-62" tabindex="-1"></a></span>
-<span id="cb246-63"><a href="cha-user-defined.html#cb246-63" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb246-64"><a href="cha-user-defined.html#cb246-64" tabindex="-1"></a>     y[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K], n)</span>
-<span id="cb246-65"><a href="cha-user-defined.html#cb246-65" tabindex="-1"></a>     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) {</span>
-<span id="cb246-66"><a href="cha-user-defined.html#cb246-66" tabindex="-1"></a>         alpha[i] <span class="sc">~</span> <span class="fu">dmyexp</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>)</span>
-<span id="cb246-67"><a href="cha-user-defined.html#cb246-67" tabindex="-1"></a>      }</span>
-<span id="cb246-68"><a href="cha-user-defined.html#cb246-68" tabindex="-1"></a>     })</span>
-<span id="cb246-69"><a href="cha-user-defined.html#cb246-69" tabindex="-1"></a></span>
-<span id="cb246-70"><a href="cha-user-defined.html#cb246-70" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">K =</span> <span class="dv">5</span>, <span class="at">n =</span> <span class="dv">10</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb253"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb253-1"><a href="cha-user-defined.html#cb253-1" tabindex="-1"></a>dmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb253-2"><a href="cha-user-defined.html#cb253-2" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
+<span id="cb253-3"><a href="cha-user-defined.html#cb253-3" tabindex="-1"></a>        <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
+<span id="cb253-4"><a href="cha-user-defined.html#cb253-4" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb253-5"><a href="cha-user-defined.html#cb253-5" tabindex="-1"></a>        logProb <span class="ot">&lt;-</span> <span class="fu">log</span>(rate) <span class="sc">-</span> x<span class="sc">*</span>rate</span>
+<span id="cb253-6"><a href="cha-user-defined.html#cb253-6" tabindex="-1"></a>        <span class="cf">if</span>(log) <span class="fu">return</span>(logProb)</span>
+<span id="cb253-7"><a href="cha-user-defined.html#cb253-7" tabindex="-1"></a>        <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">exp</span>(logProb)) </span>
+<span id="cb253-8"><a href="cha-user-defined.html#cb253-8" tabindex="-1"></a>    })</span>
+<span id="cb253-9"><a href="cha-user-defined.html#cb253-9" tabindex="-1"></a></span>
+<span id="cb253-10"><a href="cha-user-defined.html#cb253-10" tabindex="-1"></a>rmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb253-11"><a href="cha-user-defined.html#cb253-11" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">n =</span> <span class="fu">integer</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>)) {</span>
+<span id="cb253-12"><a href="cha-user-defined.html#cb253-12" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb253-13"><a href="cha-user-defined.html#cb253-13" tabindex="-1"></a>        <span class="cf">if</span>(n <span class="sc">!=</span> <span class="dv">1</span>) <span class="fu">print</span>(<span class="st">&quot;rmyexp only allows n = 1; using n = 1.&quot;</span>)</span>
+<span id="cb253-14"><a href="cha-user-defined.html#cb253-14" tabindex="-1"></a>        dev <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb253-15"><a href="cha-user-defined.html#cb253-15" tabindex="-1"></a>        <span class="fu">return</span>(<span class="sc">-</span><span class="fu">log</span>(<span class="dv">1</span><span class="sc">-</span>dev) <span class="sc">/</span> rate)</span>
+<span id="cb253-16"><a href="cha-user-defined.html#cb253-16" tabindex="-1"></a>    })</span>
+<span id="cb253-17"><a href="cha-user-defined.html#cb253-17" tabindex="-1"></a></span>
+<span id="cb253-18"><a href="cha-user-defined.html#cb253-18" tabindex="-1"></a>pmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb253-19"><a href="cha-user-defined.html#cb253-19" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">q =</span> <span class="fu">double</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
+<span id="cb253-20"><a href="cha-user-defined.html#cb253-20" tabindex="-1"></a>        <span class="at">lower.tail =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
+<span id="cb253-21"><a href="cha-user-defined.html#cb253-21" tabindex="-1"></a>        <span class="at">log.p =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
+<span id="cb253-22"><a href="cha-user-defined.html#cb253-22" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb253-23"><a href="cha-user-defined.html#cb253-23" tabindex="-1"></a>        <span class="cf">if</span>(<span class="sc">!</span>lower.tail) { </span>
+<span id="cb253-24"><a href="cha-user-defined.html#cb253-24" tabindex="-1"></a>            logp <span class="ot">&lt;-</span> <span class="sc">-</span>rate <span class="sc">*</span> q</span>
+<span id="cb253-25"><a href="cha-user-defined.html#cb253-25" tabindex="-1"></a>            <span class="cf">if</span>(log.p) <span class="fu">return</span>(logp)</span>
+<span id="cb253-26"><a href="cha-user-defined.html#cb253-26" tabindex="-1"></a>            <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">exp</span>(logp))</span>
+<span id="cb253-27"><a href="cha-user-defined.html#cb253-27" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
+<span id="cb253-28"><a href="cha-user-defined.html#cb253-28" tabindex="-1"></a>            p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">exp</span>(<span class="sc">-</span>rate <span class="sc">*</span> q)</span>
+<span id="cb253-29"><a href="cha-user-defined.html#cb253-29" tabindex="-1"></a>            <span class="cf">if</span>(<span class="sc">!</span>log.p) <span class="fu">return</span>(p)</span>
+<span id="cb253-30"><a href="cha-user-defined.html#cb253-30" tabindex="-1"></a>            <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">log</span>(p))</span>
+<span id="cb253-31"><a href="cha-user-defined.html#cb253-31" tabindex="-1"></a>        }</span>
+<span id="cb253-32"><a href="cha-user-defined.html#cb253-32" tabindex="-1"></a>    })</span>
+<span id="cb253-33"><a href="cha-user-defined.html#cb253-33" tabindex="-1"></a></span>
+<span id="cb253-34"><a href="cha-user-defined.html#cb253-34" tabindex="-1"></a>qmyexp <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb253-35"><a href="cha-user-defined.html#cb253-35" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">p =</span> <span class="fu">double</span>(<span class="dv">0</span>), <span class="at">rate =</span> <span class="fu">double</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
+<span id="cb253-36"><a href="cha-user-defined.html#cb253-36" tabindex="-1"></a>        <span class="at">lower.tail =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">1</span>), </span>
+<span id="cb253-37"><a href="cha-user-defined.html#cb253-37" tabindex="-1"></a>        <span class="at">log.p =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
+<span id="cb253-38"><a href="cha-user-defined.html#cb253-38" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb253-39"><a href="cha-user-defined.html#cb253-39" tabindex="-1"></a>        <span class="cf">if</span>(log.p) p <span class="ot">&lt;-</span> <span class="fu">exp</span>(p)</span>
+<span id="cb253-40"><a href="cha-user-defined.html#cb253-40" tabindex="-1"></a>        <span class="cf">if</span>(<span class="sc">!</span>lower.tail) p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> p</span>
+<span id="cb253-41"><a href="cha-user-defined.html#cb253-41" tabindex="-1"></a>        <span class="fu">return</span>(<span class="sc">-</span><span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> p) <span class="sc">/</span> rate)</span>
+<span id="cb253-42"><a href="cha-user-defined.html#cb253-42" tabindex="-1"></a>    })</span>
+<span id="cb253-43"><a href="cha-user-defined.html#cb253-43" tabindex="-1"></a></span>
+<span id="cb253-44"><a href="cha-user-defined.html#cb253-44" tabindex="-1"></a>ddirchmulti <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb253-45"><a href="cha-user-defined.html#cb253-45" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">alpha =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">size =</span> <span class="fu">double</span>(<span class="dv">0</span>), </span>
+<span id="cb253-46"><a href="cha-user-defined.html#cb253-46" tabindex="-1"></a>        <span class="at">log =</span> <span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default =</span> <span class="dv">0</span>)) {</span>
+<span id="cb253-47"><a href="cha-user-defined.html#cb253-47" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">0</span>))</span>
+<span id="cb253-48"><a href="cha-user-defined.html#cb253-48" tabindex="-1"></a>        logProb <span class="ot">&lt;-</span> <span class="fu">lgamma</span>(size<span class="sc">+</span><span class="dv">1</span>) <span class="sc">-</span> <span class="fu">sum</span>(<span class="fu">lgamma</span>(x<span class="sc">+</span><span class="dv">1</span>)) <span class="sc">+</span> <span class="fu">lgamma</span>(<span class="fu">sum</span>(alpha)) <span class="sc">-</span></span>
+<span id="cb253-49"><a href="cha-user-defined.html#cb253-49" tabindex="-1"></a>            <span class="fu">sum</span>(<span class="fu">lgamma</span>(alpha)) <span class="sc">+</span> <span class="fu">sum</span>(<span class="fu">lgamma</span>(alpha <span class="sc">+</span> x)) <span class="sc">-</span></span>
+<span id="cb253-50"><a href="cha-user-defined.html#cb253-50" tabindex="-1"></a>            <span class="fu">lgamma</span>(<span class="fu">sum</span>(alpha) <span class="sc">+</span> size)</span>
+<span id="cb253-51"><a href="cha-user-defined.html#cb253-51" tabindex="-1"></a>        <span class="cf">if</span>(log) <span class="fu">return</span>(logProb)</span>
+<span id="cb253-52"><a href="cha-user-defined.html#cb253-52" tabindex="-1"></a>        <span class="cf">else</span> <span class="fu">return</span>(<span class="fu">exp</span>(logProb))</span>
+<span id="cb253-53"><a href="cha-user-defined.html#cb253-53" tabindex="-1"></a>    })</span>
+<span id="cb253-54"><a href="cha-user-defined.html#cb253-54" tabindex="-1"></a></span>
+<span id="cb253-55"><a href="cha-user-defined.html#cb253-55" tabindex="-1"></a>rdirchmulti <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb253-56"><a href="cha-user-defined.html#cb253-56" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">n =</span> <span class="fu">integer</span>(<span class="dv">0</span>), <span class="at">alpha =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">size =</span> <span class="fu">double</span>(<span class="dv">0</span>)) {</span>
+<span id="cb253-57"><a href="cha-user-defined.html#cb253-57" tabindex="-1"></a>        <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">1</span>))</span>
+<span id="cb253-58"><a href="cha-user-defined.html#cb253-58" tabindex="-1"></a>        <span class="cf">if</span>(n <span class="sc">!=</span> <span class="dv">1</span>) <span class="fu">print</span>(<span class="st">&quot;rdirchmulti only allows n = 1; using n = 1.&quot;</span>)</span>
+<span id="cb253-59"><a href="cha-user-defined.html#cb253-59" tabindex="-1"></a>        p <span class="ot">&lt;-</span> <span class="fu">rdirch</span>(<span class="dv">1</span>, alpha)</span>
+<span id="cb253-60"><a href="cha-user-defined.html#cb253-60" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">rmulti</span>(<span class="dv">1</span>, <span class="at">size =</span> size, <span class="at">prob =</span> p))</span>
+<span id="cb253-61"><a href="cha-user-defined.html#cb253-61" tabindex="-1"></a>    })</span>
+<span id="cb253-62"><a href="cha-user-defined.html#cb253-62" tabindex="-1"></a></span>
+<span id="cb253-63"><a href="cha-user-defined.html#cb253-63" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb253-64"><a href="cha-user-defined.html#cb253-64" tabindex="-1"></a>     y[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K], n)</span>
+<span id="cb253-65"><a href="cha-user-defined.html#cb253-65" tabindex="-1"></a>     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) {</span>
+<span id="cb253-66"><a href="cha-user-defined.html#cb253-66" tabindex="-1"></a>         alpha[i] <span class="sc">~</span> <span class="fu">dmyexp</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>)</span>
+<span id="cb253-67"><a href="cha-user-defined.html#cb253-67" tabindex="-1"></a>      }</span>
+<span id="cb253-68"><a href="cha-user-defined.html#cb253-68" tabindex="-1"></a>     })</span>
+<span id="cb253-69"><a href="cha-user-defined.html#cb253-69" tabindex="-1"></a></span>
+<span id="cb253-70"><a href="cha-user-defined.html#cb253-70" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">K =</span> <span class="dv">5</span>, <span class="at">n =</span> <span class="dv">10</span>))</span></code></pre></div>
 <p>The distribution-related functions should take as input the parameters
 for a single parameterization, which will be the canonical
 parameterization that NIMBLE will use.</p>
@@ -662,25 +668,25 @@ functions, be sure to specify <code>pqAvail = TRUE</code> when you call
 to provide an alternative parameterization (scale instead of rate) and to provide the range
 for the user-defined exponential distribution. We can then use
 the alternative parameterization in our BUGS code.</p>
-<div class="sourceCode" id="cb247"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb247-1"><a href="cha-user-defined.html#cb247-1" tabindex="-1"></a><span class="fu">registerDistributions</span>(<span class="fu">list</span>(</span>
-<span id="cb247-2"><a href="cha-user-defined.html#cb247-2" tabindex="-1"></a>    <span class="at">dmyexp =</span> <span class="fu">list</span>(</span>
-<span id="cb247-3"><a href="cha-user-defined.html#cb247-3" tabindex="-1"></a>        <span class="at">BUGSdist =</span> <span class="st">&quot;dmyexp(rate, scale)&quot;</span>,</span>
-<span id="cb247-4"><a href="cha-user-defined.html#cb247-4" tabindex="-1"></a>        <span class="at">Rdist =</span> <span class="st">&quot;dmyexp(rate = 1/scale)&quot;</span>,</span>
-<span id="cb247-5"><a href="cha-user-defined.html#cb247-5" tabindex="-1"></a>        <span class="at">altParams =</span> <span class="fu">c</span>(<span class="st">&quot;scale = 1/rate&quot;</span>, <span class="st">&quot;mean = 1/rate&quot;</span>),</span>
-<span id="cb247-6"><a href="cha-user-defined.html#cb247-6" tabindex="-1"></a>        <span class="at">pqAvail =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb247-7"><a href="cha-user-defined.html#cb247-7" tabindex="-1"></a>        <span class="at">range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="cn">Inf</span>)</span>
-<span id="cb247-8"><a href="cha-user-defined.html#cb247-8" tabindex="-1"></a>        )</span>
-<span id="cb247-9"><a href="cha-user-defined.html#cb247-9" tabindex="-1"></a>    ))</span>
-<span id="cb247-10"><a href="cha-user-defined.html#cb247-10" tabindex="-1"></a></span>
-<span id="cb247-11"><a href="cha-user-defined.html#cb247-11" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb247-12"><a href="cha-user-defined.html#cb247-12" tabindex="-1"></a>     y[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K], n)</span>
-<span id="cb247-13"><a href="cha-user-defined.html#cb247-13" tabindex="-1"></a>     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) {</span>
-<span id="cb247-14"><a href="cha-user-defined.html#cb247-14" tabindex="-1"></a>         alpha[i] <span class="sc">~</span> <span class="fu">T</span>(<span class="fu">dmyexp</span>(<span class="at">scale =</span> <span class="dv">3</span>), <span class="dv">0</span>, <span class="dv">100</span>)</span>
-<span id="cb247-15"><a href="cha-user-defined.html#cb247-15" tabindex="-1"></a>      }</span>
-<span id="cb247-16"><a href="cha-user-defined.html#cb247-16" tabindex="-1"></a>     })</span>
-<span id="cb247-17"><a href="cha-user-defined.html#cb247-17" tabindex="-1"></a></span>
-<span id="cb247-18"><a href="cha-user-defined.html#cb247-18" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">K =</span> <span class="dv">5</span>, <span class="at">n =</span> <span class="dv">10</span>), </span>
-<span id="cb247-19"><a href="cha-user-defined.html#cb247-19" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">5</span>)))</span></code></pre></div>
+<div class="sourceCode" id="cb254"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb254-1"><a href="cha-user-defined.html#cb254-1" tabindex="-1"></a><span class="fu">registerDistributions</span>(<span class="fu">list</span>(</span>
+<span id="cb254-2"><a href="cha-user-defined.html#cb254-2" tabindex="-1"></a>    <span class="at">dmyexp =</span> <span class="fu">list</span>(</span>
+<span id="cb254-3"><a href="cha-user-defined.html#cb254-3" tabindex="-1"></a>        <span class="at">BUGSdist =</span> <span class="st">&quot;dmyexp(rate, scale)&quot;</span>,</span>
+<span id="cb254-4"><a href="cha-user-defined.html#cb254-4" tabindex="-1"></a>        <span class="at">Rdist =</span> <span class="st">&quot;dmyexp(rate = 1/scale)&quot;</span>,</span>
+<span id="cb254-5"><a href="cha-user-defined.html#cb254-5" tabindex="-1"></a>        <span class="at">altParams =</span> <span class="fu">c</span>(<span class="st">&quot;scale = 1/rate&quot;</span>, <span class="st">&quot;mean = 1/rate&quot;</span>),</span>
+<span id="cb254-6"><a href="cha-user-defined.html#cb254-6" tabindex="-1"></a>        <span class="at">pqAvail =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb254-7"><a href="cha-user-defined.html#cb254-7" tabindex="-1"></a>        <span class="at">range =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="cn">Inf</span>)</span>
+<span id="cb254-8"><a href="cha-user-defined.html#cb254-8" tabindex="-1"></a>        )</span>
+<span id="cb254-9"><a href="cha-user-defined.html#cb254-9" tabindex="-1"></a>    ))</span>
+<span id="cb254-10"><a href="cha-user-defined.html#cb254-10" tabindex="-1"></a></span>
+<span id="cb254-11"><a href="cha-user-defined.html#cb254-11" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb254-12"><a href="cha-user-defined.html#cb254-12" tabindex="-1"></a>     y[<span class="dv">1</span><span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">ddirchmulti</span>(alpha[<span class="dv">1</span><span class="sc">:</span>K], n)</span>
+<span id="cb254-13"><a href="cha-user-defined.html#cb254-13" tabindex="-1"></a>     <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) {</span>
+<span id="cb254-14"><a href="cha-user-defined.html#cb254-14" tabindex="-1"></a>         alpha[i] <span class="sc">~</span> <span class="fu">T</span>(<span class="fu">dmyexp</span>(<span class="at">scale =</span> <span class="dv">3</span>), <span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb254-15"><a href="cha-user-defined.html#cb254-15" tabindex="-1"></a>      }</span>
+<span id="cb254-16"><a href="cha-user-defined.html#cb254-16" tabindex="-1"></a>     })</span>
+<span id="cb254-17"><a href="cha-user-defined.html#cb254-17" tabindex="-1"></a></span>
+<span id="cb254-18"><a href="cha-user-defined.html#cb254-18" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">K =</span> <span class="dv">5</span>, <span class="at">n =</span> <span class="dv">10</span>), </span>
+<span id="cb254-19"><a href="cha-user-defined.html#cb254-19" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">5</span>)))</span></code></pre></div>
 <p>There are a few rules for how you specify the information about a
 distribution that you provide to <code>registerDistributions</code>:</p>
 <ul>
@@ -704,49 +710,61 @@ fully explained because the NIMBLE programming concepts are covered in Chapter
 <a href="cha-progr-with-models.html#cha-progr-with-models">15</a>. After studying that chapter, the example here
 should make more sense.</p>
 <p>As a toy example, consider this basic linear regression model with one explanatory variable:</p>
-<div class="sourceCode" id="cb248"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb248-1"><a href="cha-user-defined.html#cb248-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb248-2"><a href="cha-user-defined.html#cb248-2" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb248-3"><a href="cha-user-defined.html#cb248-3" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb248-4"><a href="cha-user-defined.html#cb248-4" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
-<span id="cb248-5"><a href="cha-user-defined.html#cb248-5" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
-<span id="cb248-6"><a href="cha-user-defined.html#cb248-6" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(beta0 <span class="sc">+</span> beta1<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb248-7"><a href="cha-user-defined.html#cb248-7" tabindex="-1"></a>  }</span>
-<span id="cb248-8"><a href="cha-user-defined.html#cb248-8" tabindex="-1"></a>})</span>
-<span id="cb248-9"><a href="cha-user-defined.html#cb248-9" tabindex="-1"></a><span class="co"># Simulate some data:</span></span>
-<span id="cb248-10"><a href="cha-user-defined.html#cb248-10" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">10</span>)</span>
-<span id="cb248-11"><a href="cha-user-defined.html#cb248-11" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>, <span class="dv">3</span> <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> x, <span class="at">sd =</span> <span class="fl">0.2</span>)</span>
-<span id="cb248-12"><a href="cha-user-defined.html#cb248-12" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">10</span>, <span class="at">x =</span> x), </span>
-<span id="cb248-13"><a href="cha-user-defined.html#cb248-13" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y),</span>
-<span id="cb248-14"><a href="cha-user-defined.html#cb248-14" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0=</span><span class="fl">3.1</span>,<span class="at">beta1=</span><span class="fl">0.4</span>,<span class="at">sigma=</span><span class="fl">0.3</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb255"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb255-1"><a href="cha-user-defined.html#cb255-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb255-2"><a href="cha-user-defined.html#cb255-2" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb255-3"><a href="cha-user-defined.html#cb255-3" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb255-4"><a href="cha-user-defined.html#cb255-4" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
+<span id="cb255-5"><a href="cha-user-defined.html#cb255-5" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb255-6"><a href="cha-user-defined.html#cb255-6" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(beta0 <span class="sc">+</span> beta1<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb255-7"><a href="cha-user-defined.html#cb255-7" tabindex="-1"></a>  }</span>
+<span id="cb255-8"><a href="cha-user-defined.html#cb255-8" tabindex="-1"></a>})</span>
+<span id="cb255-9"><a href="cha-user-defined.html#cb255-9" tabindex="-1"></a><span class="co"># Simulate some data:</span></span>
+<span id="cb255-10"><a href="cha-user-defined.html#cb255-10" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">10</span>)</span>
+<span id="cb255-11"><a href="cha-user-defined.html#cb255-11" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>, <span class="dv">3</span> <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> x, <span class="at">sd =</span> <span class="fl">0.2</span>)</span>
+<span id="cb255-12"><a href="cha-user-defined.html#cb255-12" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">10</span>, <span class="at">x =</span> x), </span>
+<span id="cb255-13"><a href="cha-user-defined.html#cb255-13" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y),</span>
+<span id="cb255-14"><a href="cha-user-defined.html#cb255-14" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0=</span><span class="fl">3.1</span>,<span class="at">beta1=</span><span class="fl">0.4</span>,<span class="at">sigma=</span><span class="fl">0.3</span>))</span></code></pre></div>
 <p>Now suppose we want to rewrite this model in an equivalent way by providing a “distribution” that actually contains all the steps to calculate the log likelihood for the linear regression internally (for all of <code>y[1:10]</code> at once), including that it contains the explanatory variable <code>x</code>. We could do that as follows:</p>
-<div class="sourceCode" id="cb249"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb249-1"><a href="cha-user-defined.html#cb249-1" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">allowNFobjInModel=</span><span class="cn">TRUE</span>) <span class="co"># This option should be TRUE by default,</span></span>
-<span id="cb249-2"><a href="cha-user-defined.html#cb249-2" tabindex="-1"></a>                                        <span class="co"># but we include this step to be sure.</span></span>
-<span id="cb249-3"><a href="cha-user-defined.html#cb249-3" tabindex="-1"></a>linear_reg <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb249-4"><a href="cha-user-defined.html#cb249-4" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(predictor) {}, <span class="co"># Call x &quot;predictor&quot; here for clarity</span></span>
-<span id="cb249-5"><a href="cha-user-defined.html#cb249-5" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
-<span id="cb249-6"><a href="cha-user-defined.html#cb249-6" tabindex="-1"></a>    <span class="at">dcalc =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="co"># Note that this will be y!</span></span>
-<span id="cb249-7"><a href="cha-user-defined.html#cb249-7" tabindex="-1"></a>                     <span class="at">beta0=</span><span class="fu">double</span>(), <span class="at">beta1=</span><span class="fu">double</span>(), <span class="at">sigma=</span><span class="fu">double</span>(),</span>
-<span id="cb249-8"><a href="cha-user-defined.html#cb249-8" tabindex="-1"></a>                     <span class="at">log=</span><span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default=</span><span class="dv">0</span>)) {</span>
-<span id="cb249-9"><a href="cha-user-defined.html#cb249-9" tabindex="-1"></a>      llh <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">dnorm</span>(x, beta0<span class="sc">+</span>beta1<span class="sc">*</span>predictor, <span class="at">sd=</span>sigma, <span class="at">log=</span><span class="cn">TRUE</span>))</span>
-<span id="cb249-10"><a href="cha-user-defined.html#cb249-10" tabindex="-1"></a>      <span class="cf">if</span>(log) <span class="fu">return</span>(llh)</span>
-<span id="cb249-11"><a href="cha-user-defined.html#cb249-11" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">exp</span>(llh))</span>
-<span id="cb249-12"><a href="cha-user-defined.html#cb249-12" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb249-13"><a href="cha-user-defined.html#cb249-13" tabindex="-1"></a>    }))</span>
-<span id="cb249-14"><a href="cha-user-defined.html#cb249-14" tabindex="-1"></a>my_linear_reg <span class="ot">&lt;-</span> <span class="fu">linear_reg</span>(x)</span>
-<span id="cb249-15"><a href="cha-user-defined.html#cb249-15" tabindex="-1"></a>code2 <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb249-16"><a href="cha-user-defined.html#cb249-16" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb249-17"><a href="cha-user-defined.html#cb249-17" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb249-18"><a href="cha-user-defined.html#cb249-18" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
-<span id="cb249-19"><a href="cha-user-defined.html#cb249-19" tabindex="-1"></a>  y[<span class="dv">1</span><span class="sc">:</span>n] <span class="sc">~</span> my_linear_reg<span class="sc">$</span><span class="fu">dcalc</span>(beta0, beta1, sigma)</span>
-<span id="cb249-20"><a href="cha-user-defined.html#cb249-20" tabindex="-1"></a>})</span>
-<span id="cb249-21"><a href="cha-user-defined.html#cb249-21" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code2, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">10</span>), </span>
-<span id="cb249-22"><a href="cha-user-defined.html#cb249-22" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y),</span>
-<span id="cb249-23"><a href="cha-user-defined.html#cb249-23" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0=</span><span class="fl">3.1</span>,<span class="at">beta1=</span><span class="fl">0.4</span>,<span class="at">sigma=</span><span class="fl">0.3</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb256"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb256-1"><a href="cha-user-defined.html#cb256-1" tabindex="-1"></a><span class="fu">nimbleOptions</span>(<span class="at">allowNFobjInModel=</span><span class="cn">TRUE</span>) <span class="co"># This option should be TRUE by default,</span></span>
+<span id="cb256-2"><a href="cha-user-defined.html#cb256-2" tabindex="-1"></a>                                        <span class="co"># but we include this step to be sure.</span></span>
+<span id="cb256-3"><a href="cha-user-defined.html#cb256-3" tabindex="-1"></a>linear_reg <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb256-4"><a href="cha-user-defined.html#cb256-4" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(predictor) {}, <span class="co"># Call x &quot;predictor&quot; here for clarity</span></span>
+<span id="cb256-5"><a href="cha-user-defined.html#cb256-5" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb256-6"><a href="cha-user-defined.html#cb256-6" tabindex="-1"></a>    <span class="at">dcalc =</span> <span class="cf">function</span>(<span class="at">x =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="co"># Note that this will be y!</span></span>
+<span id="cb256-7"><a href="cha-user-defined.html#cb256-7" tabindex="-1"></a>                     <span class="at">beta0=</span><span class="fu">double</span>(), <span class="at">beta1=</span><span class="fu">double</span>(), <span class="at">sigma=</span><span class="fu">double</span>(),</span>
+<span id="cb256-8"><a href="cha-user-defined.html#cb256-8" tabindex="-1"></a>                     <span class="at">log=</span><span class="fu">integer</span>(<span class="dv">0</span>, <span class="at">default=</span><span class="dv">0</span>)) {</span>
+<span id="cb256-9"><a href="cha-user-defined.html#cb256-9" tabindex="-1"></a>      llh <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">dnorm</span>(x, beta0<span class="sc">+</span>beta1<span class="sc">*</span>predictor, <span class="at">sd=</span>sigma, <span class="at">log=</span><span class="cn">TRUE</span>))</span>
+<span id="cb256-10"><a href="cha-user-defined.html#cb256-10" tabindex="-1"></a>      <span class="cf">if</span>(log) <span class="fu">return</span>(llh)</span>
+<span id="cb256-11"><a href="cha-user-defined.html#cb256-11" tabindex="-1"></a>      <span class="fu">return</span>(<span class="fu">exp</span>(llh))</span>
+<span id="cb256-12"><a href="cha-user-defined.html#cb256-12" tabindex="-1"></a>      <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb256-13"><a href="cha-user-defined.html#cb256-13" tabindex="-1"></a>    }))</span>
+<span id="cb256-14"><a href="cha-user-defined.html#cb256-14" tabindex="-1"></a>my_linear_reg <span class="ot">&lt;-</span> <span class="fu">linear_reg</span>(x)</span>
+<span id="cb256-15"><a href="cha-user-defined.html#cb256-15" tabindex="-1"></a>code2 <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb256-16"><a href="cha-user-defined.html#cb256-16" tabindex="-1"></a>  beta0 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb256-17"><a href="cha-user-defined.html#cb256-17" tabindex="-1"></a>  beta1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb256-18"><a href="cha-user-defined.html#cb256-18" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
+<span id="cb256-19"><a href="cha-user-defined.html#cb256-19" tabindex="-1"></a>  y[<span class="dv">1</span><span class="sc">:</span>n] <span class="sc">~</span> my_linear_reg<span class="sc">$</span><span class="fu">dcalc</span>(beta0, beta1, sigma)</span>
+<span id="cb256-20"><a href="cha-user-defined.html#cb256-20" tabindex="-1"></a>})</span>
+<span id="cb256-21"><a href="cha-user-defined.html#cb256-21" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code2, <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">10</span>), </span>
+<span id="cb256-22"><a href="cha-user-defined.html#cb256-22" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y),</span>
+<span id="cb256-23"><a href="cha-user-defined.html#cb256-23" tabindex="-1"></a>                     <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">beta0=</span><span class="fl">3.1</span>,<span class="at">beta1=</span><span class="fl">0.4</span>,<span class="at">sigma=</span><span class="fl">0.3</span>))</span></code></pre></div>
 <p>What is going on, and why would one even think of doing it this way? <code>linear_reg</code> here is defined as a nimbleFunction to create objects that will hold values of <code>x</code> internally and use them when the <code>dcalc</code> function (or “method”) is called. <code>my_linear_reg</code> is one instance of <code>linear_reg</code> that holds the specific values of <code>x</code> provided. The method <code>dcalc</code> has the format (arguments, return type, and prefix “d”) of a user-defined distribution, so it can be used that way via <code>my_linear_reg$dcalc</code>. One can provide a corresponding <code>rcalc</code> method, but as above this is only required if it will actually be needed by an algorithm. The suffix “calc” could be replaced with anything, but a user-defined distribution must have the prefix “d” (and can even be named just “<code>d</code>”), and a corresponding simulation must begin with “r”. Any method in an object like <code>my_linear_reg</code> can be used as a user-defined function, and the same nimbleFunction (<code>linear_reg</code>) can define multiple user-defined functions and/or distributions.</p>
 <p>(Note the deliberate illustration of a potential confusion: The random variable argument to a user-defined distribution is always named “<code>x</code>”, which in this example will get the values of <code>y[1:10]</code>.)</p>
 <p>Now, <em>why</em> would one want to do this? There are several reasons. First, sometimes instead of a short vector like <code>x</code>, there may be quite large data objects involved in some calculation. It can be wasteful (of time and memory when building and compiling models) to provide large objects in models for the sole purpose of passing them to user-defined functions or distributions. It can work well to access them internally as shown with <code>x</code> in this example. One can also consider caching intermediate values from costly calculations or other tricks to speed up calculations.</p>
 <p>It is vital when using this approach to understand clearly how an algorithm will use a model, and there is potential to create problems. For example, NIMBLE’s MCMC system uses a set of samplers, each of which assumes the model is fully up-to-date when it begins its operations. “Up-to-date” means that model variables all have the correct current values and all deterministic and stochastic calculations are up-to-date with those values. Sometimes, samplers copy values around to achieve this. However, a sampler has no way to know what variables a nimbleFunction object (e.g. <code>my_linear_reg</code>) is managing internally, and thus has no way to keep them up to date, if necessary. Techniques such as caching or “memoization” should be careful in this regard.</p>
 <p>One can also register a distribution in a nimbleFunction object manually, for the reasons given above. The name of the distribution is simply the string “my_linear_reg$dcalc”, to use the current example.</p>
+</div>
+<div id="sec:user-macros" class="section level2 hasAnchor" number="12.4">
+<h2><span class="header-section-number">12.4</span> User-defined model macros<a href="cha-user-defined.html#sec:user-macros" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>As discussed in Section <a href="cha-writing-models.html#subsec:macros">5.2.8</a>, users can use macros that provide a succinct syntax for expressing components of a model. The <code>nimbleMacros</code> package provides an initial set of macros, focused on the components of generalized linear (mixed) models.</p>
+<p>In addition, NIMBLE users can write their own macros for use in model code.</p>
+<p>As a toy example, suppose you wanted to create a macro called <code>MYDIST</code>, which creates a normal distribution with mean 0 and provided standard deviation. The macro would look like this in the NIMBLE model code:</p>
+<div class="sourceCode" id="cb257"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb257-1"><a href="cha-user-defined.html#cb257-1" tabindex="-1"></a>y <span class="sc">~</span> <span class="fu">MYDIST</span>(<span class="at">sdev =</span> <span class="dv">2</span>)</span></code></pre></div>
+<p>Note that by convention, we define the macro name in all capital letters.</p>
+<p>We want the final, processed output to look like:</p>
+<div class="sourceCode" id="cb258"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb258-1"><a href="cha-user-defined.html#cb258-1" tabindex="-1"></a>y <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span></code></pre></div>
+<p>One would then need to create the <code>MYDIST</code> macro using <code>buildMacro</code>.</p>
+<p>See the <a href="https://cran.r-project.org/web/packages/nimbleMacros">vignette for the <code>nimbleMacros</code> package</a> and <code>help(buildMacro)</code> for more information about how to use <code>buildMacro</code> to create a new macro.</p>
 
 </div>
 </div>

@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 4 Installing NIMBLE | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.36 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -160,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.2.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.3.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -225,6 +225,7 @@ div.csl-indent {
 <li class="chapter" data-level="5.2.5" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-lang-fxns"><i class="fa fa-check"></i><b>5.2.5</b> Available BUGS language functions</a></li>
 <li class="chapter" data-level="5.2.6" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-link"><i class="fa fa-check"></i><b>5.2.6</b> Available link functions</a></li>
 <li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
+<li class="chapter" data-level="5.2.8" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:macros"><i class="fa fa-check"></i><b>5.2.8</b> Model macros</a></li>
 </ul></li>
 </ul></li>
 <li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a>
@@ -371,6 +372,7 @@ div.csl-indent {
 <li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
 <li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
+<li class="chapter" data-level="12.4" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-macros"><i class="fa fa-check"></i><b>12.4</b> User-defined model macros</a></li>
 </ul></li>
 <li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
 <ul>
@@ -448,7 +450,11 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a>
+<ul>
+<li class="chapter" data-level="16.2.1" data-path="cha-AD.html"><a href="cha-AD.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>16.2.1</b> Using the Laplace approximation methods directly</a></li>
+<li class="chapter" data-level="16.2.2" data-path="cha-AD.html"><a href="cha-AD.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>16.2.2</b> Changing the optimization methods</a></li>
+</ul></li>
 <li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
 <li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
 <li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
