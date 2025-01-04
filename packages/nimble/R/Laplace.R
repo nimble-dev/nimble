@@ -2955,17 +2955,17 @@ buildAGHQ <- nimbleFunction(
     findMAP = function(pStart  = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE) ){
-      mleRes <- optimize(pStart  = pStart,
+      mapRes <- optimize(pStart  = pStart,
                        prior = TRUE,
                        jacobian = TRUE,
                        method  = method,
                        hessian = hessian,
                        parscale = "real")
-      return(mleRes)
+      return(mapRes)
       returnType(optimResultNimbleList())
     },
     ## General Maximization Function
-    optimize = function(pStart  = double(1, default = Inf),
+    optimize = function(pStart = double(1, default = Inf),
                        prior = logical(0, default = FALSE),
                        jacobian = logical(0, default = TRUE),
                        method  = character(0, default = "BFGS"),

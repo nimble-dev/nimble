@@ -367,28 +367,34 @@ buildQuadGrid <- nimbleFunction(
       }
     },
     weighti = function(indx=integer()){
+      if(!gridBuilt) buildGrid()
       returnType(double())
       if(indx == -1 & modeIndex > 0)  return(wgts[modeIndex])
       return(wgts[indx])
     },
     weights = function(){
+      if(!gridBuilt) buildGrid()
       returnType(double(1))
       return(wgts)
     },    
     nodei = function(indx=integer()){
+      if(!gridBuilt) buildGrid()    
       if(indx == -1 & modeIndex > 0) return(zNodes[modeIndex,])
       returnType(double(1)); 
       return(zNodes[indx,])
     },
     nodes = function(){
+      if(!gridBuilt) buildGrid()
       returnType(double(2)); 
       return(zNodes)
     },
     gridSize = function(){
+      if(!gridBuilt) buildGrid()    
       returnType(double())
       return(nQ)
     },
     modeI = function(){
+      if(!gridBuilt) buildGrid()
       returnType(double())
       return(modeIndex)
     }
@@ -501,31 +507,55 @@ NULL
 ## Create a caching random effects system for simulating the posterior random effect distribution according to Stringer:
 ## This requires the inner mode, the inner cholesky, the 
 
+INNER_CACHE_BASE <- nimbleFunctionVirtual(
+  run = function(){},
+  methods = list(
+    buildCache = function(nGridUpdate = integer()){},
+    cache_weights = function(weight = double(1), indx = integer()){},
+    cache_inner_mode = function(mode = double(1), indx = integer()){},
+    cache_inner_negHess = function(negHess = double(2), indx = integer()){},
+    weights = function(){
+      returnType(double(1))
+    },
+    simulate = function(n = integer()){
+      returnType(double(2))
+    }
+  )
+)
+
 ## Things I need to add for approx posterior
 ## save inner mode, save inner cholesky etc. for doing simulation of random-effects
 ## save outer mode and negHessian. 
 ## Need wgt*density
 ## and inner mode
 ## and inner cholesky for each point:
-grid_inner_cache = nimbleFunction(
-  setup = function(nre = 0, nQuad = 0){
-    innerMode <- matrix(0, nrow = nQuad, ncol = nre)
-    innerNegHess <- array(0, c(nQuad, nre, nre))
-    if(nQuad < 1) wgts <- c(-1,-1)
-    else wgts <- numeric(nQuad)
-    
-    one_time_fixes_done <- FALSE
+inner_cache_methods = nimbleFunction(
+  contains = INNER_CACHE_BASE,
+  setup = function(nre = 0, nGrid = 0){
+    innerMode <- matrix(0, nrow = 1, ncol = 1)
+    innerNegHess <- array(0, c(1, 1, 1))
+    wgts_dens <- c(1,-1)
+    cacheBuilt <- FALSE
   },
   run = function(){},
   methods = list(
-    one_time_fixes = function(){
-      if(!one_time_fixes_done)
-        wgts <<- numeric(value = 0, length = nQuad)
-    },
-    ## Note to self, this wgt will be density*wgt, strictly for simulating.
-    cache_wgts = function(weight = double(1), indx = integer()){
+    buildCache = function(nGridUpdate = integer(0, default = -1)){
       one_time_fixes()
-      wgts[indx] <<- weight
+
+      if( nGridUpdate > 0 & nGridUpdate != nGrid){
+        nGrid <<- nGridUpdate
+        cacheBuilt <<- FALSE
+      }
+      if(cacheBuilt){
+        nGrid <<- nGridUpdate
+        wgts <<- numeric(value = 0, length = nGrid)
+        innerMode <<- matrix(0, nrow = nGrid, ncol = nre)
+        innerNegHess <<- array(0, c(nGrid, nre, nre))
+      }
+    },    
+    ## Note to self, this wgt will be density*wgt, strictly for simulating.
+    cache_weights = function(weight = double(1), indx = integer()){
+      wgts_dens[indx] <<- weight
     },
     cache_inner_mode = function(mode = double(1), indx = integer()){
       innerMode[indx,] <<- mode
@@ -533,15 +563,13 @@ grid_inner_cache = nimbleFunction(
     cache_inner_negHess = function(negHess = double(2), indx = integer()){
       innerNegHess[indx,,] <<- negHess
     },
-    update_nQuad = function(nQuadUpdate = integer()){
-      nQuad <<- nQuadUpdate
-      wgts <<- numeric(value = 0, length = nQuad)
-      innerMode <<- matrix(0, nrow = nQuad, ncol = nre)
-      innerNegHess <<- array(0, c(nQuad, nre, nre))
+    weights = function(){
+      returnType(double(1))
+      return(wgts_dens)
     },
     simulate = function(n = integer()){
       val <- matrix(0, nrow = n, ncol = nre)
-      simwgt <- wgts/sum(wgts)
+      simwgt <- wgts_dens/sum(wgts_dens)
       for( i in 1:n ){
         k <- rcat(1, prob = simwgt)
         val[i,] <- rmnorm_chol(n=1, mean = innerMode[k,],  
