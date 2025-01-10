@@ -5,7 +5,7 @@
 ## * diff from Laplace.
 buildApproxPosterior <- nimbleFunction(
   name = 'ApproxPost',
-  setup = function(model, hyperParamNodes, fixedEffectsNodes, randomEffectsNodes, calcNodes,
+  setup = function(model, hyperParamNodes, fixedEffectsNodes, randomEffectsNodes, calcNodes,  ## *** Figure out latent nodes.
                    calcNodesOther, control = list()) {
     split <- extractControlElement(control, 'split', TRUE)
     check <- extractControlElement(control, 'check', TRUE)
@@ -22,7 +22,7 @@ buildApproxPosterior <- nimbleFunction(
     ## zero makes sense but should test others on the AGHQ grid and see how they work.
     control$innerOptimStart <- extractControlElement(control, "innerOptimStart", "zero")
 
-    innerMethods <- buildAGHQ(model, nQuadInner, hyperParamNodes, randomEffectsNodes, 
+    innerMethods <- buildAGHQ(model, nQuadInner, hyperParamNodes, c(fixedEffectsNodes, randomEffectsNodes), 
                                  calcNodes, calcNodesOther, control)
     
     paramNodes <- innerMethods$paramNodes
@@ -168,6 +168,7 @@ buildApproxPosterior <- nimbleFunction(
         pTransformPostMode <<- numeric(length = 1, value = 1)
       one_time_fixes_done <<- TRUE
     },
+    ## *** Posterior mode for hyperparameters. findMAP
     posteriorMode = function(pStart = double(1, default = Inf),
                        method  = character(0, default = "BFGS"),
                        hessian = logical(0, default = TRUE),
@@ -210,14 +211,14 @@ buildApproxPosterior <- nimbleFunction(
     ## Transform from standard (z) to param transform (theta) scale.
     z_to_theta = function(z = double(1), method = character(0, default = "spectral")){
       if(quadTransform_ == "spectral"){
-        if(!calcEigen) 
+        if(!calcEigen)  ## *** eigenCached
           findEigen()
         theta <- numeric(value = 0, length = pTransform_length)
         for( i in 1:pTransform_length ){
-          theta[i] <- pTransformMode[i] + sum(eigenVecNegHess[,i] * z) / sqrt(eigenValNegHess[i])
+          theta[i] <- pTransformMode[i] + sum(eigenVecNegHess[,i] * z) / sqrt(eigenValNegHess[i]) ## *** cache as sqrt
         }
       }else{
-        if(!calcChol)
+        if(!calcChol) ## *** cholCached
           findCholesky()
         theta <- pTransformMode + backsolve(cholNegHess, z)
       }
@@ -243,7 +244,7 @@ buildApproxPosterior <- nimbleFunction(
     },
     calcSkewedSD = function() {
       ## Require the grid to have been built and the mode found.
-      buildHyperGrid()
+      buildHyperGrid() ## *** should be just CCD
       for( i in 1:pTransform_length){
         z <- numeric(value = 0, length = pTransform_length)
         z[i] <- -sqrt(2)
@@ -318,8 +319,9 @@ buildApproxPosterior <- nimbleFunction(
 			return(ans)
 		},
     ## Marginals AGHQ from Stringer et al.
-		findMarginalPosteriorDensity = function(pIndex = integer(), nQp = integer(0, default = 3), 
-                                            nQinner = integer(0, default = 3))
+    ## *** Investigate pruning for AGHQ.
+		findMarginalPosteriorDensity = function(pIndex = integer(), nQp = integer(0, default = 3), ## *** update naming of nQp -> nGrid.
+                                            nQinner = integer(0, default = 3))  ## *** update naming of nQinner -> nQuad.
 		{
       if( gridBuiltMarg == 0 ){
         theta_grid_marg$buildGrid()
@@ -363,7 +365,7 @@ buildApproxPosterior <- nimbleFunction(
               hessian = TRUE, buildGrid = 1)
         }
         theta_grid_marg$transformGrid(skewSD = skewedStdDev) # Won't Skew as this is AGHQ.
-        for( i in 1:nQinner ){
+        for( i in 1:nQinner ){  ## *** nQinner^d buggy code confuses Chris!!
           if( i != theta_grid_marg$getThetaModeIndex()) {
             theta_grid_marg$saveLogDens(i=i, logDensity = calcPostLogProb_pTransformedj(theta_grid_marg$getTheta(i)))
             ## If it didn't converge. Warn and save as -Inf

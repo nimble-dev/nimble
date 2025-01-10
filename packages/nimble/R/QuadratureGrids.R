@@ -306,6 +306,8 @@ logSumExp = nimbleFunction(
 
 ## Wrapper to make quadrature nodes accesible in a nimble function list.
 #' @export
+## *** Naming here to change...
+## *** configureQuadGrid
 buildQuadGrid <- nimbleFunction(
   contains = QUAD_GRID_BASE,
   setup = function(d = 1, nQuad = 3, quadRule = "AGHQ"){
@@ -356,9 +358,10 @@ buildQuadGrid <- nimbleFunction(
         nQuad <<- nQuadUpdate
         gridBuilt <<- FALSE
       }
+      ## *** make sure ccd doesn't actual have to recompute.
       if(!gridBuilt){
         newgrid <- quadGridList_internal$new()
-        newgrid <- quadRuleList[[1]]$makeGrid(nQuad = nQuad)
+        newgrid <- quadRuleList[[1]]$makeGrid(nQuad = nQuad)  ## *** buildGrid - does same thing.
         zNodes <<- newgrid$nodes
         wgts <<- newgrid$wgts
         modeIndex <<- newgrid$modeIndex

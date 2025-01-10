@@ -2880,7 +2880,7 @@ buildAGHQ <- nimbleFunction(
 			return(ans)
 		},
     ## Penalized by priors log-likelihood (no jacobian)
-		calcPenalLogDens_pTransformed = function(pTransform = double(1)) {
+		calcPenalLogDens_pTransformed = function(pTransform = double(1)) {  ## *** maybe make one with an argument.
       p <- paramsTransform$inverseTransform(pTransform)
       ans <- calcPostLogDens(pTransform, FALSE)
       cache_outer_logLik(ans) ## Update internal cache w/ prior.
@@ -2953,7 +2953,7 @@ buildAGHQ <- nimbleFunction(
     },
     ## Calculate posterior mode of parameters    
     findMAP = function(pStart  = double(1, default = Inf),
-                       method  = character(0, default = "BFGS"),
+                       method  = character(0, default = "BFGS"),  ##***nlminb change as default.
                        hessian = logical(0, default = TRUE) ){
       mapRes <- optimize(pStart  = pStart,
                        prior = TRUE,
