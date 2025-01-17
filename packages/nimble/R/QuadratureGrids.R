@@ -537,7 +537,7 @@ inner_cache_methods = nimbleFunction(
   setup = function(nre = 0, nGrid = 0){
     innerMode <- matrix(0, nrow = 1, ncol = 1)
     innerNegHess <- array(0, c(1, 1, 1))
-    wgts_dens <- c(1,-1)
+    wgtsDens <- c(1,-1)
     cacheBuilt <- FALSE
   },
   run = function(){},
@@ -558,7 +558,7 @@ inner_cache_methods = nimbleFunction(
     },    
     ## Note to self, this wgt will be density*wgt, strictly for simulating.
     cache_weights = function(weight = double(1), indx = integer()){
-      wgts_dens[indx] <<- weight
+      wgtsDens[indx] <<- weight
     },
     cache_inner_mode = function(mode = double(1), indx = integer()){
       innerMode[indx,] <<- mode
@@ -568,11 +568,11 @@ inner_cache_methods = nimbleFunction(
     },
     weights = function(){
       returnType(double(1))
-      return(wgts_dens)
+      return(wgtsDens)
     },
     simulate = function(n = integer()){
       val <- matrix(0, nrow = n, ncol = nre)
-      simwgt <- wgts_dens/sum(wgts_dens)
+      simwgt <- wgtsDens/sum(wgtsDens) ## Did log sum exp when doing input.
       for( i in 1:n ){
         k <- rcat(1, prob = simwgt)
         val[i,] <- rmnorm_chol(n=1, mean = innerMode[k,],  
