@@ -235,6 +235,8 @@ quadRule_CCD <- nimbleFunction(
 
       ## Weights as defined by Rue 2009. 
       ## Note that the paper weights are incorrect: https://groups.google.com/g/r-inla-discussion-group/c/sy2xYin7YJA
+      ## See https://github.com/hrue/r-inla/blob/devel/gmrflib/approx-inference.c#L1894
+      # w = 1.0 / ((design->nexperiments - 1.0) * (1.0 + exp(-0.5 * SQR(f)) * (SQR(f) / nhyper - 1.0)));
       f0 <- 1.1
       wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
       wgt0 <- 1 - (nQ-1)*wgts
@@ -536,7 +538,7 @@ inner_cache_methods = nimbleFunction(
   contains = INNER_CACHE_BASE,
   setup = function(nre = 0, nGrid = 0){
     innerMode <- matrix(0, nrow = 1, ncol = 1)
-    innerNegHess <- array(0, c(1, 1, 1))
+    innerNegHessChol <- array(0, c(1, 1, 1))
     wgtsDens <- c(1,-1)
     cacheBuilt <- FALSE
   },
@@ -563,8 +565,8 @@ inner_cache_methods = nimbleFunction(
     cache_inner_mode = function(mode = double(1), indx = integer()){
       innerMode[indx,] <<- mode
     },
-    cache_inner_negHess = function(negHess = double(2), indx = integer()){
-      innerNegHess[indx,,] <<- negHess
+    cache_inner_negHessChol = function(negHessChol = double(2), indx = integer()){
+      innerNegHessChol[indx,,] <<- negHessChol
     },
     weights = function(){
       returnType(double(1))
@@ -576,7 +578,7 @@ inner_cache_methods = nimbleFunction(
       for( i in 1:n ){
         k <- rcat(1, prob = simwgt)
         val[i,] <- rmnorm_chol(n=1, mean = innerMode[k,],  
-                                cholesky = innerNegHess[k,,], prec_param = TRUE)
+                                cholesky = innerNegHessChol[k,,], prec_param = TRUE)
       }
       returnType(double(2))
       return(val)
