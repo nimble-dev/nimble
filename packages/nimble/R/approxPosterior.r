@@ -143,7 +143,8 @@ buildApproxPosterior <- nimbleFunction(
     ## Some cached values for summary statistics and reporting:
     marg_P <- matrix(0, nrow=nzMargGrid, ncol = npar)
     marg_theta <- array(0, c(theta_length, nzMargGrid, 2) )
-    post_sims <- matrix(0, nrow=3, ncol = nre)  ## Just initialize it.
+    ## ***Do we want the simulations of the latent effects to be cached or just returned? @CJP?
+    post_sims <- matrix(0, nrow=3, ncol = nre)  
 
     ## Optim info:
     calcMode <- FALSE
@@ -152,6 +153,16 @@ buildApproxPosterior <- nimbleFunction(
     logPostProbMode <- 0
     logDetNegHessTheta <- 0
 		
+    ## Fixed values for AGHQ marginals:
+    theta_fixed <- 0
+    theta_fixed_index <- 0
+    other_theta_indices <- theta_indices    
+
+    ## Other cached values:
+    skewedSDCached <- FALSE
+    ## Must be cached for each grid: Up to 3 currently.
+    hyperGridCached <- c(FALSE,FALSE,FALSE)
+
     ## Indicator for removing the redundant index -1 in theta_indices
     one_time_fixes_done <- FALSE
   },
@@ -161,6 +172,7 @@ buildApproxPosterior <- nimbleFunction(
       if(one_time_fixes_done) return()
       if(theta_length == 1){
         theta_indices <<- numeric(length = 1, value = 1)
+        other_theta_indices <<- numeric(length = 1, value = 1)
         thetaMode <<- numeric(length = 1, value = 0)
         eigenValNegHess <<- numeric(length = 1, value = 0)
       }
@@ -170,64 +182,44 @@ buildApproxPosterior <- nimbleFunction(
     }, 
     ## *** Posterior mode for hyperparameters. findMAP
     posteriorMode = function(pStart = double(1, default = Inf),
-                       method  = character(0, default = "BFGS"),
+                       method  = character(0, default = "nlminb"),
                        hessian = logical(0, default = TRUE),
                        parscale = character(0, default = "transformed")){
       optRes <- innerMethods$optimize(pStart = pStart, prior = TRUE, jacobian = TRUE, 
           method  = method, hessian = TRUE, parscale = parscale)
       calcMode <<- TRUE
       thetaMode <<- optRes$par
-      thetaNegHess <<- optRes$hessian
+      thetaNegHess <<- -optRes$hessian
       logPostProbMode <<- optRes$value
+      covTheta <<- solve(thetaNegHess)
       return(optRes)
       returnType(optimResultNimbleList())
     },
-    calcPostLogProb_thetaj = function(theta = double(1), indexFixed = integer(0), thetaFixed = double()) {
+    calcPostLogProb_thetaj = function(theta = double(1)) {
       theta_star <- numeric(value = 0, length = theta_length)
-      theta_star[index_fixed] <- thetaFixed
-      theta_star[theta_indices != indexFixed] <- theta
+      theta_star[theta_fixed_index] <- theta_fixed
+      theta_star[other_theta_indices] <- theta
 
-      ans <- innerMethods::calcPostLogDens(theta, TRUE)
+      ans <- innerMethods::calcPostLogDens(theta_star, TRUE)
       returnType(double())
       return(ans)
     },
-    gr_postLogProb_pTransformedj = function(theta = double(1), indexFixed = integer(0), thetaFixed = double()) {
-
+    gr_postLogProb_pTransformedj = function(theta = double(1)) {
       theta_star <- numeric(value = 0, length = theta_length)
-      theta_star[index_fixed] <- thetaFixed
-      theta_star[theta_indices != indexFixed] <- theta
+      theta_star[theta_fixed_index] <- theta_fixed
+      theta_star[other_theta_indices] <- theta
 
-      ans <- innerMethods::gr_postLogDens_pTransformed(theta)
-      ansj <- ans[pTransform_indices != indexFixed]
+      ans <- innerMethods::gr_postLogDens_pTransformed(theta_star)
+      ansj <- ans[other_theta_indices]
       return(ansj)
       returnType(double(1))
     },
-    ## General Maximization Function
-    findPostModeFixed = function(thetaStart = double(1, default = Inf),
-                                 indexFixed = integer(0, default = 1),
-                                 thetaFixed = double(0, default = 0),
-                                 method  = character(0, default = "BFGS")) {
-      if(!one_time_fixes_done) one_time_fixes()
-      if(any(abs(thetaStart) == Inf)) 
-        thetaStart <- thetaMode[-indexFixed]
-
-      ## Reset log likelihood internally for cache.
-      reset_outer_inner_logLik()
-           
-      optRes <- optim(pStartTransform, calcPostLogProb_thetaj, gr_postLogProb_pTransformedj, 
-                      indexFixed = indedFixed, thetaFixed = thetaFixed, method = method, 
-                      control = outerOptimControl_, hessian = TRUE)
- 
-      ## Returns on transformed scale just like optim.
-      return(optRes)
-      returnType(optimResultNimbleList())
-    },    
     ## Build hyper quad grid and cache system.
     buildHyperGrid = function() {
 			theta_grid_nfl[[gridMethod]]$buildGrid(nQuadOuter)
       inner_grid_cache_nfl[[gridMethod]]$buildCache(nGridUpdate = theta_grid_nfl[[gridMethod]]$gridSize())
       if(calcMode)
-        posteriorMode(rep(Inf, npar), method = "BFGS", hessian = TRUE, parscale = "transformed") ## *** default is now nlminb
+        posteriorMode(rep(Inf, npar), method = "nlminb", hessian = TRUE, parscale = "transformed") ## *** default is now nlminb
 		},
 		changeHyperGrid = function(quadRule = character(0, default = "AGHQ"), 
                                nQuadUpdate = integer(0, default = 3)){
@@ -310,6 +302,7 @@ buildApproxPosterior <- nimbleFunction(
         skewedStdDev[i, 2] <<- sqrt(2 / (2.0 * (logPostProbMode-logDens2Pos))) 	## numerator (-sqrt(2)) ^2
         logSkewedWgt <<- skewedWgt + log(sum(skewedStdDev[i, ]/2))
       }
+      skewedSDCached <<- TRUE
     },
     getSkewedStdDev = function(){
       returnType(double(2))
@@ -317,11 +310,13 @@ buildApproxPosterior <- nimbleFunction(
     },
     ## INLA like function for approx marginal likelihood (based on skewed normal).
     calcMarginalLogLikApprox = function(){
+      if(!skewedSDCached)
+        calcSkewedSD()
       ## Line 2748 in r-inla/blob/devel/gmrflib/approx-inference.c
       ## Commit # ef4eb20
       # marg <- logPostProbMode + 0.5*theta_length*log(2*pi) -
         # 0.5*(logDetNegHessTheta) - sum(log(skewedStdDev[,1] * skewedStdDev[,2]))
-      ## *** What Paul thinks it should be. ***
+      ## *** What Paul thinks it should be. ***        
       marg <- logPostProbMode + 0.5*theta_length*log(2*pi) -
         0.5*(logDetNegHessTheta) + logSkewedWgt # sum(log((skewedStdDev[,1] + skewedStdDev[,2])/2))
       returnType(double())
@@ -334,6 +329,9 @@ buildApproxPosterior <- nimbleFunction(
       buildHyperGrid()
       setTransformations(transformMethod)
       nGrid <- theta_grid_marg_nfl[[gridMethod]]$gridSize()
+      
+      if(!skewedSDCached & skew)
+        calcSkewedSD()
 
       ans <- 0
       ## Now fill in the grid values.
@@ -378,6 +376,8 @@ buildApproxPosterior <- nimbleFunction(
 
       ## Marginal log posterior density, a normalizing constant for other methods.
       marginalPostDensity[gridMethod] <<- log(ans) + logPostProbMode - 0.5 * logDetNegHessTheta + adjLogWgt
+      
+      hyperGridCached[gridMethod] <<- TRUE
 		},
 		## Quadrature based marginal log-likelihood
 		## Probably not particularly accurate for CCD.
@@ -388,79 +388,106 @@ buildApproxPosterior <- nimbleFunction(
 			returnType(double())
 			return(marginalPostDensity[gridMethod])
 		},
-    ## *** PVDB WORKING IN THIS SECTION.
     ## Marginals AGHQ from Stringer et al.
     ## *** Investigate pruning for AGHQ.
     ## *** Is this a good name? Tooooo long.
-		findMarginalPosteriorDensity = function(pIndex = integer(), nGrid = integer(0, default = 3), ## *** update naming of nQp -> nGrid.
-                                            nQuad = integer(0, default = 3), gridTransformMethod = character(0, default = "spectral"))  ## *** update naming of nQinner -> nQuad.
+    ## *** Need to make this for theta 1D as well. No AGHQ needed in that case.
+		findMarginalPosteriorDensity = function(pIndex = integer(), 
+                                            nPts = integer(0, default = 3), ## *** update naming of nQp -> nGrid.
+                                            nQuad = integer(0, default = 3), 
+                                            gridTransformMethod = character(0, default = "spectral"))  ## *** update naming of nQinner -> nQuad.
 		{
       ## Build the quadrature grid points:
-      theta_grid_marg_nfl[[I_GRID]]$buildGrid() ## This is the n_theta - 1 grid
-      theta_grid_marg_nfl[[I_AGHQ_ONE]]$buildGrid() ## This is just to grab some aghq points in 1D.
+      theta_grid_marg_nfl[[I_GRID]]$buildGrid(nQuad) ## This is the n_theta - 1 grid
+      theta_grid_marg_nfl[[I_AGHQ_ONE]]$buildGrid(nPts) ## This is just to grab some aghq points in 1D.
+
+      nQuadGrid <- theta_grid_marg_nfl[[I_GRID]]$gridSize()
 
       if(calcMode)
-        posteriorMode(rep(Inf, npar), method = "BFGS", hessian = TRUE, parscale = "transformed") ## *** default is now nlminb
-
-      if(theta_grid_nfl[[gridMethod]]$calcCheck(0) == 0){
-        addModeGridInfo() ## If log dens at the mode hasn't been calculated. Do this to make sure covTheta gets calculated.
-      }
+        posteriorMode(rep(Inf, npar), method = "nlminb", hessian = TRUE, parscale = "transformed") ## *** default is now nlminb
       
       ## 1D quadrature to evaluate the theta on.
-      zwtheta <- theta_grid_marg$buildAGHQOne(nQp)	## nodes + weights
       stdDev <- sqrt(covTheta[pIndex, pIndex])
+      thetaPts <-  theta_grid_marg_nfl[[I_AGHQ_ONE]]$nodes()[,1]
+      thetaWgts <- theta_grid_marg_nfl[[I_AGHQ_ONE]]$weights()
       
-      # Get indices excluding pIndex.
-      inds <- theta_indices[theta_indices != pIndex]
+      # Initialize optimization at theta mode.
+      initTheta  <- thetaMode[inds]
+      Atransform_i <- matrix(0, nrow = theta_length-1, ncol = theta_length-1)
 
-      # Initial values really matter.
-      initPTransform  <- thetaMode[inds]
-      subsetNegHess <- negHessthetaMode[inds,inds] ## Can't passByMap
-      
-      res <- matrix(0, nrow = nQp, ncol = 3)
-      ## For each value of theta, we need to do AGHQ which means 
-      ## finding the mode of the other parameters.
-      for( j in 1:nQp ){
-        res[j,1] <- zwtheta[j,1]*stdDev + thetaMode[pIndex]
-        indexFix <<- pIndex               ## Need these values fixed for calcPostLogProb_pTransformedj.
-        pTransformFix <<- res[j,1] 
+      ## Set this as fixed for optimization.
+      theta_fixed_index <<- pIndex
+      other_theta_indices <<- theta_indices[theta_indices != pIndex]
 
-        ## If this is the mode then we know some information:
-        if(zwtheta[j,1] == 0){
-          theta_grid_marg$saveOptimInfo(pTransformMax = initPTransform, maxLogDens = logPostProbMode, negHessian = subsetNegHess)
+      ## Column 1 is chosen theta values, Column 2 is marginalized values, Column 3 is normalized marginal posterior.
+      ## This matches AGHQ output from Stringer paper.
+      res <- matrix(0, nrow = nPts, ncol = 3)
+      ## For each value of thetai, we need to do AGHQ which means 
+      ## finding the mode of the other parameters, transforming and computing.
+      ## *** More efficient but less accurate if we just use global mode...?
+      for( i in 1:nPts ){
+        res[i,1] <- thetaPts[i]*stdDev + thetaMode[pIndex]
+        theta_fixed <<- res[i,1]
+
+        ## If this is the mode then we know optim already:
+        if(theta_grid_marg_nfl[[I_AGHQ_ONE]]$modeI() == i){
+          theta_iMode <- initTheta
+          subsetNegHess <- thetaNegHess[inds,inds]
+          maxPostDensi <- logPostProbMode
         }else{
-          ## *** Need to make sure this converged. Extreme AGHQ points may be unlikely to.
-          findPostModeFixedj(pStartTransform = initPTransform, 
-              j=pIndex, pTransformFixed=res[j,1], method = "BFGS", 
-              hessian = TRUE, buildGrid = 1)
+          optRes <- optim(initTheta, calcPostLogProb_thetaj, gr_postLogProb_pTransformedj, 
+                          method = "nlminb", control = outerOptimControl_, hessian = TRUE)
+          subsetNegHess <- -optRes$hessian
+          theta_iMode <- optRes$par
+          maxPostDensi <- optRes$value
         }
-        theta_grid_marg$transformGrid(skewSD = skewedStdDev) # Won't Skew as this is AGHQ.
-        for( i in 1:nQinner ){  ## *** nQinner^d buggy code confuses Chris!!
-          if( i != theta_grid_marg$getThetaModeIndex()) {
-            theta_grid_marg$saveLogDens(i=i, logDensity = calcPostLogProb_pTransformedj(theta_grid_marg$getTheta(i)))
-            ## If it didn't converge. Warn and save as -Inf
-            # if(checkInnerConvergence() == 0) {
-              # print("Warning: Inner marginalization was not successful. Assuming log density = -Inf for that step." )
-              # theta_grid_marg$saveLogDens(i=i, logDensity = -Inf)
-            # }
+
+        if(gridTransformMethod == "spectral"){
+          E <- eigen(theta_iNegHess, symmetric = TRUE)
+          for( d in 1:theta_length ){
+            Atransform_i[,d] <- E$vectors[,d]/sqrt(E$values[d])
+          }
+          logDetNegHessThetai <- sum(log(E$values))
+        }else{
+          Atransform_i <- chol(theta_iNegHess)
+          logDetNegHessThetai <-  2 * sum(log(diag(Atransform_i)))
+        }
+        
+        logDensi <- 0
+        for( j in 1:nQuadGrid ){
+          if( j != theta_grid_marg_nfl[[I_GRID]]$modeI()) {
+            nodej <- theta_grid_marg_nfl[[I_GRID]]$nodei(indx = j)
+            otherTheta <- z_to_theta(z = nodej, postMode = theta_iMode, A = Atransform_i, method = gridTransformMethod)
+            postLogDensij <- calcPostLogProb_thetaj(otherTheta)
+            theta_grid_marg$saveLogDens(i=j, logDensity = calcPostLogProb_pTransformedj(theta_grid_marg$getTheta(j)))
+            logDensi <- logDensi + exp(postLogDensij - maxPostDensi)*theta_grid_marg_nfl[[I_GRID]]$weighti(indx = j)
+          }else{
+            logDensi <- logDensi + theta_grid_marg_nfl[[I_GRID]]$weighti(indx = j)
           }
         }
-        res[j,2] <- theta_grid_marg$quadSum()
+        res[i,2] <- log(logDensi) + maxPostDensi - 0.5 * 0.5*logDetNegHessThetai 
       }
-      # Because thetaj values are AGHQ, we can normalize to get the proper posterior prob.
-      margj <- sum(exp(res[,2] - logPostProbMode)*zwtheta[,2])
-      lognormconst <- log(margj) + logPostProbMode + log(stdDev)
+      ## Because thetai values are AGHQ, we can normalize to get the proper posterior prob.
+      ## This let's us get the marginal posterior via spline without any more normalizing.
+      margi <- sum(exp(res[,2] - logPostProbMode)*thetaWgts)
+      lognormconst <- log(margi) + logPostProbMode + log(stdDev)
       res[,3] <- res[,2] - lognormconst
+      ## *** Should I cache this?
       returnType(double(2))
       return(res)
 		},
-    ## This can't be until I've built the CCD grid. Needs addModeGridInfo() to be run
+    ## This can't be until I've built the CCD grid.
     ## so that we have covTheta.
     ## Should also ensure that if they plan to skew the grid that is also done.
 		findMarginalHyperIntFree = function(pIndex = integer())
 		{
+      ## Requires running `calcSkewedSD()` first.
+      if(!skewedSDCached)
+        calcSkewedSD()
+      
 			stdDev <- sqrt(covTheta[pIndex, pIndex])
-			thetai <- rep(0, theta_length)
+			thetai <- numeric(value = 0, length = theta_length)
+      setTransformations(transformMethod)
 
 			for( i in 1:nzMargGrid ){	# Known fixed # of points
 				thetai[pIndex] <- thetaMode[pIndex] + zMargGrid[i] * stdDev
@@ -473,7 +500,10 @@ buildApproxPosterior <- nimbleFunction(
 					}
 				}
 				## Calculate asymmetric Gaussian:
-				zi <- theta_grid_nfl[[gridMethod]]$theta_to_z(thetai)
+				zi <- theta_to_z(thetai, thetaMode, AinverseTransform, transformMethod)
+        
+        ## logDens = sum log(exp(-z^2/sigma_(+/-)))
+        ## *Not normalized. Can we noramlize analytically? ***CJP?
         logDens <- 0
 				for( j in 1:theta_length ){
 					side <- 2
@@ -482,13 +512,46 @@ buildApproxPosterior <- nimbleFunction(
 				}
         marg_theta[pIndex, i, 2] <<- logDens
 			}
-			## Note to self: Explore normalization... Should we use the spline? Can we know it analytically?
 			returnType(double(2))
-			return(marg_theta[pIndex,,])			
+			return(marg_theta[pIndex,,])
 		},
     marginalTransformedSplineDensity = function(pIndex = integer()) {
       returnType(double(2))
       return(marginalSplineR(marg_theta[pIndex, , 1], marg_theta[pIndex, , 2]))
+    },
+    simulateLatentEffects = function(n = integer()){
+      if(!hyperGridCached[gridMethod])
+        calcHyperGrid(skew = TRUE)
+
+      sims <- inner_grid_cache_nfl[[gridMethod]]$simulate(n)
+      returnType(double(2))
+      return(sims)
+    },
+    ## Simulation method for marginals of theta on the skewed multivariate normal.
+    simulateHyperParams = function(n = integer()){
+      sims <- matrix(0, nrow = n, ncol = theta_length)
+      if(!skewedSDCached)
+      calcSkewedSD()
+
+      setTransformations(transformMethod)
+
+      prob <- skewedStdDev[,2]/(skewedStdDev[,1] + skewedStdDev[,2])
+
+      for( i in 1:n ){
+        ## simulate z on the base scale
+        z <- abs(rnorm(theta_length, 0 , 1))
+        for( j in 1:theta_length ){
+          dir <- rbinom(1, 1, prob[j])  ## Skew z pos if 1, neg if 0.
+          if(dir == 1) 
+            z[j] <- skewedStdDev[j,2]*z[j]
+          else 
+            z[j] <- -skewedStdDev[j,1]*z[j]
+        }
+        ## Scale it based on method
+        sims[i,] <- z_to_theta(z, thetaMode, Atransform, transformMethod)
+        returnType(double(2))
+        return(sims)
+      }
     },
 		findApproxPosterior = function(){	
 			## Basic approx posterior steps:
@@ -496,21 +559,21 @@ buildApproxPosterior <- nimbleFunction(
 			
 			## 1) Find posterior mode + build hyperparameter grid.
 			## Values are saved to theta_grid_nfl and locally cached.
-			## Should think about initialization.
-			findPostMode(pStartTransform = rep(0, theta_length), method = "BFGS", hessian = TRUE, buildGrid = TRUE)
+			buildHyperGrid()
 
 			## 2) Calculate skew and if gridMethod == CCD, skew grid.
-			calcSkewedSD()	## Cache "skewedStdDev"
-			if(gridMethod == I_CCD) theta_grid_nfl[[I_CCD]]$transformGrid(skewSD = skewedStdDev)
+      if(!skewedSDCached)
+        calcSkewedSD()
 
 			## 3) Calculate the density on the grid points. Saves to theta_grid_nfl
 			## This is used for inference on the fixed and random-effects.
-			calcHyperGrid()
+			if(!hyperGridCached[gridMethod])
+        calcHyperGrid(skew = TRUE)
 			
 			## 4) Calculate Marginal log-Likelihood
 			## Based on asymmetric Gaussian assumption of the marginal of theta.
 			marginalAG <- calcMarginalLogLikApprox()
-			marginalQuad <- calcMarginalLogLikQuad()	## This one probably make sense only for AGHQ
+			marginalQuad <- calcMarginalLogLikQuad()	## This one probably make sense only for AGHQ.
 
 			## 5) Marginals for theta: 
       ## Automatically do integration free for now. Values are cached. 
@@ -521,10 +584,7 @@ buildApproxPosterior <- nimbleFunction(
       
 			## 6) Marginals for Fixed and Random-Effects: 
 			## Only simulation based. Will assume 10000? User can add more or do less after testing.
-      # simulateLatentEffects(10000) ## I've now added this into the caching system.
+      sims <- simulateLatentEffects(10000) ## I've now added this into the caching system.
 		}
-    ## Add posterior mode function: 
-    ## Add posterior mode function: for holding one fixed. Need to update the marginal likelihood func for that.
-  )  
   )
 )
