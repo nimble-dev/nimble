@@ -371,7 +371,7 @@ buildQuadGrid <- nimbleFunction(
         gridBuilt <<- TRUE
       }
     },
-    weighti = function(indx=integer()){
+    weighti = function(indx = integer()){
       if(!gridBuilt) buildGrid()
       returnType(double())
       if(indx == -1 & modeIndex > 0)  return(wgts[modeIndex])
@@ -382,7 +382,7 @@ buildQuadGrid <- nimbleFunction(
       returnType(double(1))
       return(wgts)
     },    
-    nodei = function(indx=integer()){
+    nodei = function(indx = integer()){
       if(!gridBuilt) buildGrid()    
       if(indx == -1 & modeIndex > 0) return(zNodes[modeIndex,])
       returnType(double(1)); 
@@ -516,9 +516,9 @@ INNER_CACHE_BASE <- nimbleFunctionVirtual(
   run = function(){},
   methods = list(
     buildCache = function(nGridUpdate = integer()){},
-    cache_weights = function(weight = double(1), indx = integer()){},
+    cache_weights = function(weight = double(), indx = integer()){},
     cache_inner_mode = function(mode = double(1), indx = integer()){},
-    cache_inner_negHess = function(negHess = double(2), indx = integer()){},
+    cache_inner_negHessChol = function(negHessChol = double(2), indx = integer()){},
     weights = function(){
       returnType(double(1))
     },
@@ -545,7 +545,6 @@ inner_cache_methods = nimbleFunction(
   run = function(){},
   methods = list(
     buildCache = function(nGridUpdate = integer(0, default = -1)){
-      one_time_fixes()
 
       if( nGridUpdate > 0 & nGridUpdate != nGrid){
         nGrid <<- nGridUpdate
@@ -553,13 +552,13 @@ inner_cache_methods = nimbleFunction(
       }
       if(cacheBuilt){
         nGrid <<- nGridUpdate
-        wgts <<- numeric(value = 0, length = nGrid)
+        wgtsDens <<- numeric(value = 0, length = nGrid)
         innerMode <<- matrix(0, nrow = nGrid, ncol = nre)
-        innerNegHess <<- array(0, c(nGrid, nre, nre))
+        innerNegHessChol <<- array(0, c(nGrid, nre, nre))
       }
     },    
     ## Note to self, this wgt will be density*wgt, strictly for simulating.
-    cache_weights = function(weight = double(1), indx = integer()){
+    cache_weights = function(weight = double(), indx = integer()){
       wgtsDens[indx] <<- weight
     },
     cache_inner_mode = function(mode = double(1), indx = integer()){
