@@ -238,15 +238,17 @@ quadRule_CCD <- nimbleFunction(
       ## See https://github.com/hrue/r-inla/blob/devel/gmrflib/approx-inference.c#L1894
       # w = 1.0 / ((design->nexperiments - 1.0) * (1.0 + exp(-0.5 * SQR(f)) * (SQR(f) / nhyper - 1.0)));
       f0 <- 1.1
-      # wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
-      # wgt0 <- 1 - (nQ-1)*wgts
-
+      ## From INLA: z_local[i] = f * design->experiment[k][i] where f = f0*sqrt(d)
+      design <- design*sqrt(d)*f0
+      
       ## Weights that actually make sense: 
       ## Including making the points at distance f0*sqrt(m) on the sphere:
       ## ***This part does not match INLA but the theory***
-      design <- design*sqrt(d)*f0
       wgts <- 1 / ((nQ - 1 ) * f0^2 * (2*pi)^(-d/2)*exp(-d*f0^2/2)) 
       wgt0 <- (2*pi)^(d/2)*(1 - f0^-2)
+      ## INLA Weights
+      # wgts <- 1 / ((nQ - 1 ) * ( 1 + exp(- (d * f0^2)/2) * (f0^2 - 1 )) ) 
+      # wgt0 <- 1 - (nQ-1)*wgts
 
       ## One time fixes for scalar / vector changes.
       wgt <- numeric(value = 0, length = nQ)
