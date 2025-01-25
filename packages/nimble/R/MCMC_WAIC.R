@@ -181,6 +181,8 @@ buildWAIC <- nimbleFunction(
             checkIts <- rep(0, 2)
             lengthConvCheck <- 1
         }
+
+        cat("Data nodes for WAIC are: ", dataNodes, "\n")
         
         logProbMat <- matrix(0, nrow = lengthConvCheck, ncol = nGroups)
         ## lppd stores
@@ -289,6 +291,7 @@ buildWAIC <- nimbleFunction(
                 badpWAIC <- length(which( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4 ))
                 if(badpWAIC) {  
                     cat("  [Warning] There are ", badpWAIC, " individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.\n" )
+                    cat("            The nodes with the large pWAIC values are: \n", which( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4), "\n.\n")
                 }
             }
             output <- waicNimbleList$new()
