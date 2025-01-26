@@ -1,6 +1,7 @@
 ## nimbleQuad Quadrature Rules + Grids - Rules are choosing between AGHQ and CCD etc.
 ## Grids are implementations of the rule to generate the actual nodes and weights.
 QUAD_RULE_BASE <- nimbleFunctionVirtual(
+  name = 'QUAD_RULE_BASE',
   run = function() {},
   methods = list(
     makeGrid = function(nQuad = integer(0, default = 0)){
@@ -11,6 +12,7 @@ QUAD_RULE_BASE <- nimbleFunctionVirtual(
 
 ## Quadrature base class: Returns only quadrature grid on standard scale.
 QUAD_GRID_BASE <- nimbleFunctionVirtual(
+  name = 'QUAD_GRID_BASE',
   run = function() {},
   methods = list(
     buildGrid = function(nQuadUpdate = integer(0, default = -1)){},
@@ -52,7 +54,8 @@ QUAD_GRID_BASE <- nimbleFunctionVirtual(
 #' @export
 quadGridListDef <- nimbleList(modeIndex = integer(0), 
                               wgts = double(1), 
-                              nodes = double(2))
+                              nodes = double(2),
+                              name = 'quadGridList')
 #' @export
 # quadGridListDef <- nimbleList(
   # list(
@@ -71,6 +74,7 @@ quadGridListDef <- nimbleList(modeIndex = integer(0),
 ## *** Note to group ***, should we remove the input of d here?
 quadRule_AGHQ = nimbleFunction(
   contains = QUAD_RULE_BASE,
+  name = 'quadRule_AGHQ',  
   setup = function(d = 1){},
   run = function(){},
   methods = list(
@@ -185,6 +189,7 @@ quadRule_AGHQ = nimbleFunction(
 ## for their approximate posterior methods.
 quadRule_CCD <- nimbleFunction(
   contains = QUAD_RULE_BASE,
+  name = 'quadRule_CCD',  
 	setup = function(d = 1){
     if ((d > 120 | d < 1)) stop("Dimension of Theta must be in [1,120]")	
     
@@ -285,6 +290,7 @@ quadRule_CCD <- nimbleFunction(
 
 quadRule_Custom <- nimbleFunction(
   contains = QUAD_RULE_BASE,
+  name = 'quadRule_Custom',  
 	setup = function(d = 1){},
   run = function(){},
   methods = list(
@@ -321,6 +327,7 @@ logSumExp = nimbleFunction(
 ## *** configureQuadGrid
 buildQuadGrid <- nimbleFunction(
   contains = QUAD_GRID_BASE,
+  name = 'quadGrid',  
   setup = function(d = 1, nQuad = 3, quadRule = "AGHQ"){
     ## Can list all possible quad rules here and set it.
     if(!quadRule %in% c("AGHQ", "CCD", "Custom"))
