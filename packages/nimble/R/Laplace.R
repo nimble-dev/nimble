@@ -102,7 +102,7 @@ setup_OneAGHQuad <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(npar > 1) p_indices <- as.numeric(1:npar)
   else p_indices <- as.numeric(c(1, -1))
 
-  quadRule <- extractControlElement(control, 'innerQuadRule', 'AGHQ')
+  quadRule <- extractControlElement(control, 'innerQuadRule', 'AGHQ') ##***CJP latentQuadRule?
 
   list(optimControl_=optimControl_,
        optimMethod_=optimMethod_,
@@ -240,10 +240,9 @@ buildOneAGHQuad1D <- nimbleFunction(
     converged <- 0
     
     ## Build AGHQ grid for 1D:
-    I_GRID <- 1
-    quadGrid_nfl <- nimbleFunctionList(QUAD_GRID_BASE)
     ## This is set up to add other quad grids in the future. quadRule := "AGHQ" to start.
-    quadGrid_nfl[[I_GRID]] <- buildQuadGrid(d = 1, nQuad = nQuad_, quadRule = quadRule_)
+    quadGrid <- configureQuadGrid(d = 1, nQuad_ = nQuad_, quadRule = quadRule_)
+
     nodes <-  matrix(0, nrow = nQuad_, ncol = 1)
     wgts <- numeric(nQuad_)
     logDensity_quad <- numeric(nQuad_)
@@ -341,7 +340,7 @@ buildOneAGHQuad1D <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad)
+        quadGrid$buildGrid(method = quadRule_, nQuad = nQuad)
         nQuad_ <<- nQuad
       }
       ## if(quadTransform != "") {
@@ -717,14 +716,14 @@ buildOneAGHQuad1D <- nimbleFunction(
     },
     calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, do quad sum.
-      quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad_)
-      nQ <- quadGrid_nfl[[I_GRID]]$gridSize()
+      quadGrid$buildGrid(method = quadRule_, nQuad = nQuad_)
+      nQ <- quadGrid$gridSize()
       SD <- 1/sqrt(saved_inner_negHess[1,1])
-      nodes <<- quadGrid_nfl[[I_GRID]]$nodes()
-      wgts <<- quadGrid_nfl[[I_GRID]]$weights()
+      nodes <<- quadGrid$nodes()
+      wgts <<- quadGrid$weights()
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
-      modeIndex <- quadGrid_nfl[[I_GRID]]$modeI() ## if even, this is -1
+      modeIndex <- quadGrid$modeI() ## if even, this is -1
       ans <- 0
       for(i in 1:nQ) {
         if(i != modeIndex) {
@@ -819,8 +818,8 @@ buildOneAGHQuad1D <- nimbleFunction(
       }
  
       ## Method 2 implies double taping.
-      modeIndex <- quadGrid_nfl[[I_GRID]]$modeI()
-      nQ <- quadGrid_nfl[[I_GRID]]$gridSize()
+      modeIndex <- quadGrid$modeI()
+      nQ <- quadGrid$gridSize()
       gr_margLogLik_wrt_p <- numeric(value = 0, length = dim(p)[1])
       wgts_lik <- numeric(value = 0, length = nQ)
       for(i in 1:nQ) {
@@ -842,7 +841,7 @@ buildOneAGHQuad1D <- nimbleFunction(
             gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, nodes[i,])
           }
           gr_logLikwrtrewrtp_i <- gr_logLikwrtrewrtre_i *
-                            ( (1 + gr_sigmahatwrtre*quadGrid_nfl[[I_GRID]]$nodei(i)[1]) * gr_rehatwrtp  +  gr_sigmahatwrtp*quadGrid_nfl[[I_GRID]]$nodei(i)[1] )
+                            ( (1 + gr_sigmahatwrtre*quadGrid$nodei(i)[1]) * gr_rehatwrtp  +  gr_sigmahatwrtp*quadGrid$nodei(i)[1] )
           ## The weighted gradient for the ith sum.
           gr_margLogLik_wrt_p <- gr_margLogLik_wrt_p + wgts_lik[i]*( gr_logLikewrtp_i +  gr_logLikwrtrewrtp_i )
         }
@@ -1064,11 +1063,9 @@ buildOneAGHQuad <- nimbleFunction(
     outer_mode_max_inner_logLik_last_argmax <- if(nreTrans > 1) numeric(nreTrans) else as.numeric(c(0, -1))
     outer_param_max <- if(npar > 1) rep(Inf, npar) else as.numeric(c(Inf, -1))
 
-    ## Build AGHQ grid for any dimension:
-    I_GRID <- 1
-    quadGrid_nfl <- nimbleFunctionList(QUAD_GRID_BASE)
+    ## Build Quadrature grid for any dimension:
     ## This is set up to add other quad grids in the future. quadRule := "AGHQ" to start.
-    quadGrid_nfl[[I_GRID]] <- buildQuadGrid(d = nreTrans, nQuad = nQuad_, quadRule = quadRule_)
+    quadGrid <- configureQuadGrid(d = nreTrans, nQuad_ = nQuad_, quadRule = quadRule_)
     nodes <-  matrix(0, nrow = nQuad_, ncol = nreTrans)
     wgts <- numeric(nQuad_)
     logDensity_quad <- numeric(nQuad_)
@@ -1157,7 +1154,7 @@ buildOneAGHQuad <- nimbleFunction(
         cache_inner_max <<- useInnerCache != 0
       }
       if(nQuad != -1) {
-        quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad)
+        quadGrid$buildGrid(method = quadRule_, nQuad = nQuad)
         nQuad_ <<- nQuad
       }
       if(quadTransform != "NULL") {
@@ -1609,12 +1606,12 @@ buildOneAGHQuad <- nimbleFunction(
     },
     calcLogLik_AGHQuad = function(p = double(1)){
       ## AGHQ Approximation:  3 steps. build grid (happens once), transform z to re, save log density.
-      quadGrid_nfl[[I_GRID]]$buildGrid(nQuadUpdate = nQuad_)
-      modeIndex <- quadGrid_nfl[[I_GRID]]$modeI()
+      quadGrid$buildGrid(method = quadRule_, nQuad = nQuad_)
+      modeIndex <- quadGrid$modeI()
 
-      nQ <- quadGrid_nfl[[I_GRID]]$gridSize()
-      nodes <<- quadGrid_nfl[[I_GRID]]$nodes()  ## On standard scale but will be transformed.
-      wgts <<- quadGrid_nfl[[I_GRID]]$weights()
+      nQ <- quadGrid$gridSize()
+      nodes <<- quadGrid$nodes()  ## On standard scale but will be transformed.
+      wgts <<- quadGrid$weights()
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
       if(quadTransform_ == "spectral"){
