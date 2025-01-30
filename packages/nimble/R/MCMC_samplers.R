@@ -3233,6 +3233,8 @@ sampler_polyagamma <- nimbleFunction(
 ### partially observed multivariate normal sampler #################
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_partial_mvn <- nimbleFunction(
   name = 'sampler_partial_mvn',
   contains = sampler_BASE,
