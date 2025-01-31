@@ -22,6 +22,14 @@ buildApproxPosterior <- nimbleFunction(
     ## zero makes sense but should test others on the AGHQ grid and see how they work.
     control$innerOptimStart <- extractControlElement(control, "innerOptimStart", "zero")
 
+    ## This ensures that all possible quadRule_X nimbleFunctions will be compiled.
+    ## Otherwise only those that are part of the nimbleFunctionList created in `buildAGHQ` for `innerMethods`
+    ## are compiled.
+    dummyGrid <- configureQuadGrid(d = 1, nQuad_ = 1, quadRule = "AGHQ",
+                                    control = list(quadRules = c("AGHQ","CCD","USER")))
+    ## This doesn't fix the issue, probably because setupOutputs are processed after objects actually used in methods.
+    ## setupOutputs(dummyGrid)  
+    
     innerMethods <- buildAGHQ(model, nQuadInner, hyperParamNodes, latentNodes, 
                                  calcNodes, calcNodesOther, control)
     
@@ -158,7 +166,11 @@ buildApproxPosterior <- nimbleFunction(
         if(length(p_indices) == 2){
           p_indices <<- numeric(length = 1, value = 1)
         }
-      }      
+      }
+      ## To ensure all quadRule_ are compiled.
+      ## by making sure `dummyGrid` is processed before `innerMethods`.
+      dummyGrid$buildGrid(method = 'AGHQ', nQuad = 1)  
+      
       if(nre == 1)
         # thetaMode <<- numeric(length = 1, value = 1)
       one_time_fixes_done <<- TRUE

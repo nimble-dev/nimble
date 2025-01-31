@@ -409,11 +409,11 @@ quadGridCache <- nimbleFunction(
 ##***CJP check better naming convention on nQuad_.
 #' @export
 configureQuadGrid <- nimbleFunction(
-  name = "quadGrid",
+  name = "quadGridClass",
   setup = function(d = 1, nQuad_ = 3, quadRule = "AGHQ", control = list()){
     ## Can list all possible quad rules here and set it.
     possibleRules <- c("AGHQ", "CCD", "USER")
-    
+
     quadRules <- extractControlElement(control, "quadRules", quadRule)
 
     if(!any(quadRule == quadRules))
@@ -452,10 +452,10 @@ configureQuadGrid <- nimbleFunction(
     }
     if(any(quadRules == "USER")) {
       I_USER <- which(quadRules == "USER")[1]
-      quadRule_nfl[[I_USR]] <- quadRule_USER(d)
+      quadRule_nfl[[I_USER]] <- quadRule_USER(d)
       quadGridCache_nfl[[I_USER]] <- quadGridCache()
-      if(quadRule == "CCD") 
-        I_RULE <- I_CCD      
+      if(quadRule == "USER") 
+        I_RULE <- I_USER   
     }
     
     modeIndex <- -1
