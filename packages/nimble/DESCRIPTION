@@ -149,5 +149,8 @@ Collate:
     registration.R
     nimble-package.r
     QuadratureGrids.R
+    approxPosterior.r
+    approxSummaries.R
+    QuadratureTransformations.r
     zzz.R
 RoxygenNote: 7.2.3
