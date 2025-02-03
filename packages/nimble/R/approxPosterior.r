@@ -11,7 +11,7 @@ buildApproxPosterior <- nimbleFunction(
     check <- extractControlElement(control, 'check', TRUE)
     innerOptimWarning <- extractControlElement(control, 'innerOptimWarning', FALSE)
     
-    hyperGrid <- extractControlElement(control, 'hyperGridRule', 'CCD')
+    hyperGridRule <- extractControlElement(control, 'hyperGridRule', 'CCD')     ## Default rule for outer grid.
     nQuadOuter <- extractControlElement(control, 'nQuadOuter', 3)
     nQuadInner <- extractControlElement(control, 'nQuadInner', 1)
     nQuadMarginal <- extractControlElement(control, 'nQuadOuterMarginalHyperparams', 3)
@@ -21,6 +21,12 @@ buildApproxPosterior <- nimbleFunction(
     ## Default starting value for Approx Posterior set here and passed to Laplace.
     ## zero makes sense but should test others on the AGHQ grid and see how they work.
     control$innerOptimStart <- extractControlElement(control, "innerOptimStart", "zero")
+
+    ## Configure all grids before calling AGHQ to make sure it builds correctly.
+    allGridRules <- c("CCD", "AGHQ", "USER")
+
+    ## Default to CCD
+    theta_grid <- configureQuadGrid(d = 1, nQuad_ = nQuadOuter, quadRule = hyperGridRule, control = list(quadRules = allGridRules))
 
     innerMethods <- buildAGHQ(model, nQuadInner, hyperParamNodes, latentNodes, 
                                  calcNodes, calcNodesOther, control)
@@ -53,15 +59,11 @@ buildApproxPosterior <- nimbleFunction(
     
     ## If we use this need to add to one time fixes.
     latentNodesAsScalars_vec <- innerMethods$reNodesAsScalars_vec   
-    
-    ## APPROX SPECIFIC SetUp
-    ## Automated transformation for parameters:
-    ## ***  Need to connect with Daniel and Chris about parameter transformations for marginals:
-    ## *** Key is to do regular transformations on the whole, but individual for the marginals.
+
     paramsTransform <- parameterTransform(model, paramNodes, control = list(allowDeterm = FALSE))
     theta_length <- paramsTransform$getTransformedLength()
     theta_indices <- innerMethods$pTransform_indices
-    
+        
     ## Indicator for removing the redundant index -1 in theta_indices
     one_time_fixes_done <- FALSE
     
@@ -69,29 +71,29 @@ buildApproxPosterior <- nimbleFunction(
     computeMethod_ <- extractControlElement(control, "computeMethod", 2)
     useInnerCache_ <- extractControlElement(control, "useInnerCache", TRUE)
    
-		## Define the hyperparameter grid:
-		## Probably need to say if(theta_length > 0) but surely that is implied...
+    ## For compilation have to set the dimension after setup.
+    theta_grid$setDim(ndim = theta_length)
     inner_grid_cache_nfl <- nimbleFunctionList(INNER_CACHE_BASE)
 
-    gridOptions <- c("CCD", "AGHQ", "USER")
-
-    ## Default to CCD
-    theta_grid <- configureQuadGrid(d = theta_length, nQuad_ = nQuadOuter, quadRule = "CCD", control = list(quadRules = c("CCD", "AGHQ")))
-		I_CCD <- 1
+    ## Make sure the grids match the theta_grid numbers.
+    I_GRID <- theta_grid$I_RULE
+		I_CCD <- theta_grid$I_CCD
     inner_grid_cache_nfl[[I_CCD]] <- inner_cache_methods(nre = 0, nGrid = 1)
-    I_AGHQ <- 2
+    I_AGHQ <- theta_grid$I_AGHQ
     inner_grid_cache_nfl[[I_AGHQ]] <- inner_cache_methods(nre = 0, nGrid = 1)
+
+    I_USER <- 1
+    if(any(allGridRules == "USER")) {
+      I_USER <- theta_grid$I_USER
+      inner_grid_cache_nfl[[I_USER]] <- inner_cache_methods(nre = 0, nGrid = 1)
+    }    
     
     ## Store the quadrature sums for each grid:
-    marginalPostDensity <- rep(-Inf, length(gridOptions))
-
-    ## Naming convention thought... hyperQuadRule?
-    ## gridRule?
-    I_GRID <- 1 #which(hyperGrid == gridOptions)
+    marginalPostDensity <- rep(-Inf, length(allGridRules))
     
 		## Build marginal AGHQ grid to compute the hyperparameter marginals (integrate over pT-1 theta values).
     theta_marg_grid <- configureQuadGrid(d = theta_length-1, nQuad_ = nQuadMarginal, quadRule = quadRuleMarginal)
-    theta_marg_grid1 <- configureQuadGrid(d = 1, nQuad_ = nQuadMarginal, quadRule = "AGHQ")
+    theta1_nodes <- matrix(0, nrow = 1, ncol = 2)
 
     ## Cached values for convenience:
     ## For marginal distributions in AGHQ over d-1.
@@ -159,8 +161,6 @@ buildApproxPosterior <- nimbleFunction(
           p_indices <<- numeric(length = 1, value = 1)
         }
       }      
-      if(nre == 1)
-        # thetaMode <<- numeric(length = 1, value = 1)
       one_time_fixes_done <<- TRUE
     }, 
     ## *** Posterior mode for hyperparameters. findMAP
@@ -208,7 +208,7 @@ buildApproxPosterior <- nimbleFunction(
 		},
 		changeHyperGrid = function(quadRule = character(0, default = "AGHQ"), 
                                nQuadUpdate = integer(0, default = 3)){
-      hyperGrid <<- quadRule
+      hyperGridRule <<- quadRule
       if(quadRule == "CCD")
         I_GRID <<- I_CCD
       else 
@@ -384,7 +384,10 @@ buildApproxPosterior <- nimbleFunction(
                                             gridTransformMethod = character(0, default = "spectral"))
 		{
       ## Build the quadrature grid points:
-      theta_marg_grid1$buildGrid(nQuad = nPts) ## This is just to grab some aghq points in 1D.
+      if(dim(theta1_nodes)[1] != nPts)
+        theta1_nodes <<- AGHQ1D(nQuad = nPts)
+
+      ## Grid for additional theta.
       theta_marg_grid$buildGrid(nQuad = nQuad) ## This is the n_theta - 1 grid
 
       nQuadGrid <- theta_marg_grid$gridSize()
@@ -394,8 +397,6 @@ buildApproxPosterior <- nimbleFunction(
       
       ## 1D quadrature to evaluate the theta on.
       stdDev <- sqrt(covTheta[pIndex, pIndex])
-      thetaPts <-  theta_marg_grid1$nodes()[,1]
-      thetaWgts <- theta_marg_grid1$weights()
       
       # Initialize optimization at theta mode.
       Atransform_i <- matrix(0, nrow = theta_length-1, ncol = theta_length-1)
@@ -412,11 +413,11 @@ buildApproxPosterior <- nimbleFunction(
       ## finding the mode of the other parameters, transforming and computing.
       ## *** More efficient but less accurate if we just use global mode...?
       for( i in 1:nPts ){
-        res[i,1] <- thetaPts[i]*stdDev + thetaMode[pIndex]
+        res[i,1] <- theta1_nodes[i,2]*stdDev + thetaMode[pIndex]
         theta_fixed <<- res[i,1]
 
         ## If this is the mode then we know optim already:
-        if(theta_marg_grid1$modeI() == i){
+        if(theta1_nodes[i,2] == 0){
           theta_iMode <- initTheta
           subsetNegHess <- thetaNegHess[other_theta_indices,other_theta_indices]
           maxPostDensi <- logPostProbMode
@@ -454,7 +455,7 @@ buildApproxPosterior <- nimbleFunction(
       }
       ## Because thetai values are AGHQ, we can normalize to get the proper posterior prob.
       ## This let's us get the marginal posterior via spline without any more normalizing.
-      margi <- sum(exp(res[,2] - logPostProbMode)*thetaWgts)
+      margi <- sum(exp(res[,2] - logPostProbMode)*theta1_nodes[,1])
       lognormconst <- log(margi) + logPostProbMode + log(stdDev)
       res[,3] <- res[,2] - lognormconst
       ## *** Should I cache this?

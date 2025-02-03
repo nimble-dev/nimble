@@ -4,7 +4,7 @@ QUAD_RULE_BASE <- nimbleFunctionVirtual(
   name = 'QUAD_RULE_BASE',
   run = function() {},
   methods = list(
-    buildGrid = function(nQuad = integer(0, default = 0)){
+    buildGrid = function(nQuad = integer(0, default = 0),  d = integer(0, default = 1)){
       returnType(quadGridListDef())
     }
   )
@@ -42,17 +42,12 @@ quadGridListDef <- nimbleList(modeIndex = integer(0),
   # predefined = TRUE
 # )
 
-## Write a basic quad rule:
-## Maybe not cache here at all?
-## This will end up being in a different wrapper.
-## This avoids generating too much memory as this function gets called.
-quadRule_AGHQ = nimbleFunction(
-  contains = QUAD_RULE_BASE,
-  name = 'quadRule_AGHQ',  
-  setup = function(d = 1){},
-  run = function(){},
-  methods = list(
-    buildAGHQOne = function(nQuad = integer()){
+## Stand alone simple 1D AGHQ function:
+## Note this is for convenience due to
+## Needing this for sparse grids too.
+## AGHQ for multivariate as we do now is the "product rule" version.
+AGHQ1D <- nimbleFunction(
+  run = function(nQuad = integer(0, default = 1)){
       odd <- TRUE
       if(nQuad %% 2 == 0) 
         odd <- FALSE
@@ -60,15 +55,20 @@ quadRule_AGHQ = nimbleFunction(
       res <- matrix(0, nrow = nQuad, ncol = 2)
       if( nQuad == 1 ){
         ## Laplace Approximation:
-        res[,1] <- 0
-        res[,2] <- sqrt(2*pi)
+        res[,2] <- 0
+        res[,1] <- sqrt(2*pi)
       }else{
         i <- 1:(nQuad-1)
         dv <- sqrt(i/2)
-        ## Recreate pracma::Diag for this problem.
+        ## Recreate pracma::Diag for this problem.        
+        if(nQuad == 2)
+          fill_diag <- matrix(dv,1,1)
+        else 
+          fill_diag <- diag(dv)
+
         y <- matrix(0, nrow = nQuad, ncol = nQuad)
-        y[1:(nQuad-1), 1:(nQuad-1) + 1] <- diag(dv)
-        y[1:(nQuad-1) + 1, 1:(nQuad-1)] <- diag(dv)
+        y[1:(nQuad-1), 1:(nQuad-1) + 1] <- fill_diag
+        y[1:(nQuad-1) + 1, 1:(nQuad-1)] <- fill_diag
         E <- eigen(y, symmetric = TRUE)
         L <- E$values	# Always biggest to smallest.
         V <- E$vectors
@@ -82,13 +82,25 @@ quadRule_AGHQ = nimbleFunction(
         ## and include Gaussian kernel in weight to integrate an arbitrary function.
         w <- V[, 1]^2  * sqrt(2*pi) * exp(x^2)
         x <- sqrt(2) * x
-        res[,1] <- x
-        res[,2] <- w
+        res[,1] <- w
+        res[,2] <- x
       }
       returnType(double(2))
-      return(res)
-    },
-    buildGrid = function(nQuad = integer(0, default = 0)){
+      return(res)    
+  }
+)
+
+## Write a basic quad rule:
+## Maybe not cache here at all?
+## This will end up being in a different wrapper.
+## This avoids generating too much memory as this function gets called.
+quadRule_AGHQ = nimbleFunction(
+  contains = QUAD_RULE_BASE,
+  name = 'quadRule_AGHQ',  
+  setup = function(){},
+  run = function(){},
+  methods = list(
+    buildGrid = function(nQuad = integer(0, default = 0), d = integer(0, default = 1)){
       if(nQuad > 35) {
         print("Warning:  More than 35 quadrature nodes per dimension is not supported. Setting nQuad to 35.")
         nQuad <- 35
@@ -110,11 +122,11 @@ quadRule_AGHQ = nimbleFunction(
         wgt <- numeric(value = exp(0.5 * d * log(2*pi)), length = nQ)
         modeIndex <- 1
       }else{
-        nodes <- buildAGHQOne(nQuad)
+        nodes <- AGHQ1D(nQuad)
         ## If d = 1, then we are done.
         if(d == 1){
-          zVals[,1] <- nodes[,1]
-          wgt <- nodes[,2]
+          zVals[,1] <- nodes[,2]
+          wgt <- nodes[,1]
           if(odd) modeIndex <- which(zVals[,1] == 0)[1]
         }else{
           ## Build the multivariate quadrature rule.
@@ -128,8 +140,8 @@ quadRule_AGHQ = nimbleFunction(
           for(j in 1:d ) {
             indx <- 1
             for( ii in 1:nQ ) {
-              zVals[ii, j] <- nodes[indx,1]
-              wgt[ii] <- wgt[ii]*nodes[indx,2]
+              zVals[ii, j] <- nodes[indx,2]
+              wgt[ii] <- wgt[ii]*nodes[indx,1]
               k <- ii %% swp[j] 
               if(k == 0) indx <- indx + 1
               if(indx > nQuad) indx <- 1
@@ -164,9 +176,7 @@ quadRule_AGHQ = nimbleFunction(
 quadRule_CCD <- nimbleFunction(
   contains = QUAD_RULE_BASE,
   name = 'quadRule_CCD',  
-	setup = function(d = 1){
-    if ((d > 120 | d < 1)) stop("Dimension of Theta must be in [1,120]")	
-    
+	setup = function(){    
 		## Walsh Index Assignments for Resolution V Fractional Factorials
 		index <- c(1, 2, 4, 8, 15, 16, 32, 51, 64, 85, 106, 128,
 			150, 171, 219, 237, 247, 256, 279, 297, 455, 512, 537,
@@ -183,14 +193,6 @@ quadRule_CCD <- nimbleFunction(
 			23200, 24167, 25700, 26360, 26591, 26776, 28443, 28905,
 			29577, 32705)
 			
-    ## Number of grid points for different dimensions of theta.
-    nCCD <- index; p <- 1
-    for (i in 1:length(index)) {
-      if (index[i]>=p) p <- p * 2
-      nCCD[i] <- p
-    }
-    nC <- nCCD[d] ## minimum 2. If 1, choose points c(0,-1,1) but they don't make sense.
-    nQ <- nC + 2*d + 1		
   },
 	run=function(){},
 	methods = list(
@@ -199,8 +201,19 @@ quadRule_CCD <- nimbleFunction(
     ## However, we do scaled design following INLA such that z*zT = 1
     ## from https://github.com/hrue/r-inla/blob/devel/gmrflib/design.c
     ## Can't update nQuad here but makes it general.
-    buildGrid = function(nQuad = integer(0, default = 0)){ 
-      ## First point is mode.
+    buildGrid = function(nQuad = integer(0, default = 0), d = integer(0, default = 1)){ 
+      if ((d > 120 | d < 1)) stop("Dimension of Theta must be in [1,120]")	
+
+      ## Number of grid points for different dimensions of theta.
+      nCCD <- index; p <- 1
+      for (i in seq_along(index)) {
+        if (index[i]>=p) p <- p * 2
+        nCCD[i] <- p
+      }
+      nC <- nCCD[d] ## minimum 2. If 1, choose points c(0,-1,1) but they don't make sense.
+      nQ <- nC + 2*d + 1
+
+      ## First point is mode.,
       design <- matrix(0, nQ, d)
       
       if(d > 1){
@@ -214,7 +227,7 @@ quadRule_CCD <- nimbleFunction(
         design[(nC + d + 2):(nC + 2*d + 1), 1:d] <- diag(d)*-1
       }else{
         design <- matrix(c(0,-1,1), nrow = 3, ncol = 1)
-        nQ <<- 3
+        nQ <- 3
       }
 
       ## Weights as defined by Rue 2009. 
@@ -267,13 +280,16 @@ quadRule_CCD <- nimbleFunction(
   )
 )
 
+permsR <- function(a){pracma::perms(a)}
+nimPerms <- nimbleRcall(function(a = double(1)){}, "permsR", returnType = double(2))
+
 quadRule_USER <- nimbleFunction(
   contains = QUAD_RULE_BASE,
   name = 'quadRule_Custom',  
-	setup = function(d = 1){},
+	setup = function(){},
   run = function(){},
   methods = list(
-    buildGrid = function(nQuad = integer(0, default = 0)){
+    buildGrid = function(nQuad = integer(0, default = 0), d = integer(0, default = 1)){
       ## This will be a place holder for something others may choose to add.
       ## Can look for quadRule_Custom and check if it's implemented. If it is will try and use it...
       returnType(quadGridListDef())
@@ -324,7 +340,7 @@ quadGridCache <- nimbleFunction(
     gridBuilt <- FALSE
     prune_ <- 0
     nQuad_ <- -1
-    numError <- 1e-10
+    numError <- 1e-10 ## ***CJP More precise?
     d <- 1
   },
   run = function(){},
@@ -362,7 +378,7 @@ quadGridCache <- nimbleFunction(
           }
           ## Leave 3 points in total.
           while(ntrim/nGrid_cached < prune & ntrim < nGrid_cached - 3) {
-            keep <- which(weights_adj > min(weights_adj) + numError)
+            keep <- which(weights_adj > min(weights_adj) + numError)  ## error check as weights might be equal but off by numerical.
             if(dim(keep)[1] > 0){
               weights_adj <- weights_adj[keep]
               weights_cached <<- weights_cached[keep]
@@ -409,7 +425,7 @@ quadGridCache <- nimbleFunction(
 ##***CJP check better naming convention on nQuad_.
 #' @export
 configureQuadGrid <- nimbleFunction(
-  name = "quadGrid",
+  name = "quadGridClass",
   setup = function(d = 1, nQuad_ = 3, quadRule = "AGHQ", control = list()){
     ## Can list all possible quad rules here and set it.
     possibleRules <- c("AGHQ", "CCD", "USER")
@@ -429,33 +445,26 @@ configureQuadGrid <- nimbleFunction(
     quadGridList_internal <- quadGridListDef
     quadGridCache_nfl <- nimbleFunctionList(QUAD_CACHE_BASE)
     quadRule_nfl <- nimbleFunctionList(QUAD_RULE_BASE)
-      
-    I_AGHQ <- I_CCD <- I_USER <- 1
-    I_RULE <- 1
     
-    ## Can I loop through these efficiently? I doubt it because I have different names for each function...
-    if(any(quadRules == "AGHQ")) {
-      I_AGHQ <- which(quadRules == "AGHQ")[1]
-      quadRule_nfl[[I_AGHQ]] <- quadRule_AGHQ(d)
-      quadGridCache_nfl[[I_AGHQ]] <- quadGridCache()
-      if(quadRule == "AGHQ") 
-        I_RULE <- I_AGHQ
-    }
-    if(any(quadRules == "CCD")) {
-      I_CCD <- which(quadRules == "CCD")[1]
-      quadRule_nfl[[I_CCD]] <- quadRule_CCD(d)
-      ccdNodes <- matrix(0, nrow = 1, ncol = d)
-      ccdWeights <- numeric(2)
-      quadGridCache_nfl[[I_CCD]] <- quadGridCache()
-      if(quadRule == "CCD") 
-        I_RULE <- I_CCD
-    }
-    if(any(quadRules == "USER")) {
-      I_USER <- which(quadRules == "USER")[1]
-      quadRule_nfl[[I_USR]] <- quadRule_USER(d)
-      quadGridCache_nfl[[I_USER]] <- quadGridCache()
-      if(quadRule == "CCD") 
-        I_RULE <- I_CCD      
+    I_AGHQ <- I_CCD <- I_USER <- 1
+    I_RULE <- which(quadRules == quadRule)[1]
+
+    ## Can I loop through these more efficiently?
+    ## I have different names for each function so probably not...
+    for( i in seq_along(quadRules) ){
+      if(quadRules[i] == "AGHQ") {
+        I_AGHQ <- i
+        quadRule_nfl[[i]] <- quadRule_AGHQ()
+      }
+      if(quadRules[i] == "CCD") {
+        I_CCD <- i
+        quadRule_nfl[[i]] <- quadRule_CCD()
+      }
+      if(quadRules[i] == "USER"){
+        I_USER <- i
+        quadRule_nfl[[i]] <- quadRule_USER()
+      }
+      quadGridCache_nfl[[i]] <- quadGridCache()      
     }
     
     modeIndex <- -1
@@ -472,7 +481,7 @@ configureQuadGrid <- nimbleFunction(
         nQuad_ <<- nQuad
       if( !quadGridCache_nfl[[I_RULE]]$checkGrid(nQuad_, prune_) | !gridBuilt) {
         newgrid <- quadGridList_internal$new()
-        newgrid <- quadRule_nfl[[I_RULE]]$buildGrid(nQuad = nQuad_)
+        newgrid <- quadRule_nfl[[I_RULE]]$buildGrid(nQuad = nQuad_, d = d)
         quadGridCache_nfl[[I_RULE]]$cacheQuadGrid(nQuad = nQuad_, nodes = newgrid$nodes, wgts = newgrid$wgts, modeIndex = newgrid$modeIndex)
         gridBuilt <<- TRUE
       }
@@ -507,6 +516,14 @@ configureQuadGrid <- nimbleFunction(
         I_RULE <<- I_CCD
       if(method == "USER")
         I_RULE <<- I_USER
+    },
+    setDim = function(ndim = integer(0, default = 1)){
+      if(ndim <= 0)
+        stop("Can't input negative dimensions")
+      else
+        d <<- ndim
+      ## Make sure the next grid gets built.
+      gridBuilt <<- FALSE  
     },
     weighti = function(indx = integer()){
       if(!gridBuilt) buildGrid()    
