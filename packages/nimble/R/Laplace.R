@@ -719,8 +719,8 @@ buildOneAGHQuad1D <- nimbleFunction(
       quadGrid$buildGrid(method = quadRule_, nQuad = nQuad_)
       nQ <- quadGrid$gridSize()
       SD <- 1/sqrt(saved_inner_negHess[1,1])
-      nodes <<- quadGrid$nodes()
-      wgts <<- quadGrid$weights()
+      nodes <<- quadGrid$nodes(0)
+      wgts <<- quadGrid$weights(0)
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
       modeIndex <- quadGrid$modeI() ## if even, this is -1
@@ -841,7 +841,7 @@ buildOneAGHQuad1D <- nimbleFunction(
             gr_logLikewrtp_i <- gr_joint_logLik_wrt_p_internal(p, nodes[i,])
           }
           gr_logLikwrtrewrtp_i <- gr_logLikwrtrewrtre_i *
-                            ( (1 + gr_sigmahatwrtre*quadGrid$nodei(i)[1]) * gr_rehatwrtp  +  gr_sigmahatwrtp*quadGrid$nodei(i)[1] )
+                            ( (1 + gr_sigmahatwrtre*quadGrid$nodes(i)[1,1]) * gr_rehatwrtp  +  gr_sigmahatwrtp*quadGrid$nodes(i)[1,1] )
           ## The weighted gradient for the ith sum.
           gr_margLogLik_wrt_p <- gr_margLogLik_wrt_p + wgts_lik[i]*( gr_logLikewrtp_i +  gr_logLikwrtrewrtp_i )
         }
@@ -1610,8 +1610,8 @@ buildOneAGHQuad <- nimbleFunction(
       modeIndex <- quadGrid$modeI()
 
       nQ <- quadGrid$gridSize()
-      nodes <<- quadGrid$nodes()  ## On standard scale but will be transformed.
-      wgts <<- quadGrid$weights()
+      nodes <<- quadGrid$nodes(0)  ## On standard scale but will be transformed.
+      wgts <<- quadGrid$weights(0)
       logDensity_quad <<- numeric(value = 0, length = nQ)
 
       if(quadTransform_ == "spectral"){

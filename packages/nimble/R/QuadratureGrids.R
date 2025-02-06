@@ -320,8 +320,8 @@ QUAD_CACHE_BASE <- nimbleFunctionVirtual(
   run = function() {},
   methods = list(
     cacheQuadGrid = function(nQuad = double(), nodes = double(2), wgts = double(1), modeIndex = integer()){},
-    nodes = function(){returnType(double(2))},
-    weights = function(){returnType(double(1))},
+    nodes = function(indx = integer(0, default = 0)){returnType(double(2))},
+    weights = function(indx = integer(0, default = 0)){returnType(double(1))},
     modeI = function(){returnType(integer())},
     gridSize = function(){returnType(integer())},
     checkGrid = function(nQuad = double(0, default = -1), prune = double(0, default = 0)){returnType(logical())},
@@ -402,12 +402,20 @@ quadGridCache <- nimbleFunction(
       }
       prune_ <<- prune
     },
-    nodes = function(){
+    nodes = function(indx = integer(0, default = 0)){
       returnType( double(2) )
+      if(indx > 0)
+        return(matrix(nodes_cached[indx, ], nrow = 1))
+      if(indx == -1 & modeIndex_cached > 0)
+        return(matrix(nodes_cached[modeIndex_cached,], nrow = 1))
       return(nodes_cached)
     },
-    weights = function(){
+    weights = function(indx = integer(0, default = 0)){
       returnType( double(1) )
+      if(indx > 0)
+        return(numeric(value = weights_cached[indx], length = 1))
+      if(indx == -1 & modeIndex_cached > 0)
+        return(numeric(value = weights_cached[modeIndex_cached], length = 1))
       return(weights_cached)
     },
     modeI = function(){
@@ -525,31 +533,19 @@ configureQuadGrid <- nimbleFunction(
       ## Make sure the next grid gets built.
       gridBuilt <<- FALSE  
     },
-    weighti = function(indx = integer()){
-      if(!gridBuilt) buildGrid()    
-      returnType(double())
+    weights = function(indx = integer(0, default = 0)){
+      if(!gridBuilt) buildGrid()   
       if(indx == -1 & modeIndex > 0)
-        return( quadGridCache_nfl[[I_RULE]]$weights()[modeIndex] )
-      return(quadGridCache_nfl[[I_RULE]]$weights()[indx])
-    },
-    weights = function(){
-      if(!gridBuilt) buildGrid()    
+        indx <- modeIndex      
       returnType(double(1))
-      wgts <- quadGridCache_nfl[[I_RULE]]$weights() 
-      return(wgts)
-    },    
-    nodei = function(indx = integer()){
-      if(!gridBuilt) buildGrid()    
-      if(indx == -1 & modeIndex > 0) 
-        return(quadGridCache_nfl[[I_RULE]]$nodes()[modeIndex,])
-      returnType(double(1)); 
-      return(quadGridCache_nfl[[I_RULE]]$nodes()[indx,])
+      return(quadGridCache_nfl[[I_RULE]]$weights(indx = indx))
     },
-    nodes = function(){
+    nodes = function(indx = integer(0, default = 0)){
       if(!gridBuilt) buildGrid()    
+      if(indx == -1 & modeIndex > 0)
+        indx <- modeIndex
       returnType(double(2)); 
-      gridnodes <- quadGridCache_nfl[[I_RULE]]$nodes()
-      return(gridnodes)
+      return(quadGridCache_nfl[[I_RULE]]$nodes(indx = indx))
     },
     gridSize = function(){
       if(!gridBuilt) buildGrid()    

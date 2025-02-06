@@ -23,16 +23,21 @@ buildApproxPosterior <- nimbleFunction(
     control$innerOptimStart <- extractControlElement(control, "innerOptimStart", "zero")
 
     ## Configure all grids before calling AGHQ to make sure it builds correctly.
+    ## DO NOT MOVE WHEN THIS IS CALLED
     allGridRules <- c("CCD", "AGHQ", "USER")
 
     ## Default to CCD
-    theta_grid <- configureQuadGrid(d = 1, nQuad_ = nQuadOuter, quadRule = hyperGridRule, control = list(quadRules = allGridRules))
+    theta_grid <- configureQuadGrid(d = 1, nQuad_ = nQuadOuter, quadRule = hyperGridRule, 
+                                    control = list(quadRules = allGridRules))
 
     innerMethods <- buildAGHQ(model, nQuadInner, hyperParamNodes, latentNodes, 
                                  calcNodes, calcNodesOther, control)
     
     ## Need to check this as it's is now computed in the "buildAGHQ" function:
     nre <- innerMethods$nre
+
+   ##*** Get from InnerMethods - lenInternalRENodeSets
+   ##*** Simulate from blockwise cholesky for latent effects.
 
     ## Outer optimization settings
     outerOptimControl_   <- nimOptimDefaultControl()
@@ -326,14 +331,14 @@ buildApproxPosterior <- nimbleFunction(
       for( i in 1:nGrid ){
         ## Operations at the mode:
         if(i == theta_grid$modeI()){
-          wgt <- theta_grid$weighti(indx = i)
+          wgt <- theta_grid$weights(indx = i)[1]
           inner_grid_cache_nfl[[I_GRID]]$cache_inner_mode(mode = innerMethods$get_inner_mode(atOuterMode = 1), indx = i)
           inner_grid_cache_nfl[[I_GRID]]$cache_inner_negHessChol(negHessChol = innerMethods$get_inner_cholesky(atOuterMode = 1), indx = i)
           inner_grid_cache_nfl[[I_GRID]]$cache_weights(weight = wgt, indx = i)
           ans <- ans + wgt
         }else{
-          wgt <- theta_grid$weighti(indx = i)
-          node <- theta_grid$nodei(indx = i)
+          wgt <- theta_grid$weights(indx = i)[1]
+          node <- theta_grid$nodes(indx = i)[1,]
           
           ## Skew the CCD values:
           if(skew){
@@ -443,12 +448,12 @@ buildApproxPosterior <- nimbleFunction(
         logDensi <- 0
         for( j in 1:nQuadGrid ){
           if( j != theta_marg_grid$modeI()) {
-            nodej <- theta_marg_grid$nodei(indx = j)
+            nodej <- theta_marg_grid$nodes(indx = j)[1,]
             otherTheta <- z_to_theta(z = nodej, postMode = theta_iMode, A = Atransform_i, method = gridTransformMethod)
             postLogDensij <- calcPostLogProb_thetaj(otherTheta)
-            logDensi <- logDensi + exp(postLogDensij - maxPostDensi)*theta_marg_grid$weighti(indx = j)
+            logDensi <- logDensi + exp(postLogDensij - maxPostDensi)*theta_marg_grid$weights(indx = j)[1]
           }else{
-            logDensi <- logDensi + theta_marg_grid$weighti(indx = j)
+            logDensi <- logDensi + theta_marg_grid$weights(indx = j)[1]
           }
         }
         res[i,2] <- log(logDensi) + maxPostDensi - 0.5 * 0.5*logDetNegHessThetai 
@@ -570,7 +575,7 @@ buildApproxPosterior <- nimbleFunction(
       
 			## 6) Marginals for Fixed and Random-Effects: 
 			## Only simulation based. Will assume 10000? User can add more or do less after testing.
-      sims <- simulateLatentEffects(10000) ## I've now added this into the caching system.
+      sims <- simulateLatentEffects(10000)
 		}
   )
 )
