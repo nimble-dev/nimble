@@ -36,7 +36,11 @@ buildApproxPosterior <- nimbleFunction(
     ## Need to check this as it's is now computed in the "buildAGHQ" function:
     nre <- innerMethods$nre
 
-   ##*** Get from InnerMethods - lenInternalRENodeSets
+   ## Simulate from conditionally independent sets.
+   ## Do this via number of sets and the length of each.
+   nInternalRESets <- length(innerMethods$AGHQuad_nfl)
+   lenInternalRENodeSets <- innerMethods$lenInternalRENodeSets
+   
    ##*** Simulate from blockwise cholesky for latent effects.
 
     ## Outer optimization settings
@@ -81,17 +85,18 @@ buildApproxPosterior <- nimbleFunction(
     inner_grid_cache_nfl <- nimbleFunctionList(INNER_CACHE_BASE)
 
     ## Make sure the grids match the theta_grid numbers.
+    ## Initialize them with nre = 0 in case they aren't used to not generate too much data.
     I_GRID <- theta_grid$I_RULE
 		I_CCD <- theta_grid$I_CCD
-    inner_grid_cache_nfl[[I_CCD]] <- inner_cache_methods(nre = 0, nGrid = 1)
+    inner_grid_cache_nfl[[I_CCD]] <- inner_cache_methods(nre = 0, nGrid = 1, condIndptSets = lenInternalRENodeSets, nCondIndptSets = nInternalRESets)
     I_AGHQ <- theta_grid$I_AGHQ
-    inner_grid_cache_nfl[[I_AGHQ]] <- inner_cache_methods(nre = 0, nGrid = 1)
+    inner_grid_cache_nfl[[I_AGHQ]] <- inner_cache_methods(nre = 0, nGrid = 1, condIndptSets = lenInternalRENodeSets, nCondIndptSets = nInternalRESets)
 
     I_USER <- 1
     if(any(allGridRules == "USER")) {
       I_USER <- theta_grid$I_USER
-      inner_grid_cache_nfl[[I_USER]] <- inner_cache_methods(nre = 0, nGrid = 1)
-    }    
+      inner_grid_cache_nfl[[I_USER]] <- inner_cache_methods(nre = 0, nGrid = 1, condIndptSets = lenInternalRENodeSets, nCondIndptSets = nInternalRESets)
+    }
     
     ## Store the quadrature sums for each grid:
     marginalPostDensity <- rep(-Inf, length(allGridRules))
@@ -207,7 +212,7 @@ buildApproxPosterior <- nimbleFunction(
       one_time_fixes()
 			theta_grid$buildGrid(method = quadRule, nQuad = nQuadOuter)
       nGrid <- theta_grid$gridSize()
-      inner_grid_cache_nfl[[I_GRID]]$buildCache(nGridUpdate = nGrid)
+      inner_grid_cache_nfl[[I_GRID]]$buildCache(nGridUpdate = nGrid, nLatentNodes = nre)
       if(calcMode)
         posteriorMode(rep(Inf, npar), method = "nlminb", hessian = TRUE, parscale = "transformed") ## *** default is now nlminb
 		},
@@ -510,6 +515,8 @@ buildApproxPosterior <- nimbleFunction(
       # returnType(double(2))
       # return(marginalSplineR(marg_theta[pIndex, , 1], marg_theta[pIndex, , 2]))
     # },
+    ## ***Note for CJP: The simulations now return the FIRST column as the theta index.
+    ## To be used as discussed.
     simulateLatentEffects = function(n = integer()){
       if(!hyperGridCached[I_GRID])
         calcHyperGrid(skew = TRUE)

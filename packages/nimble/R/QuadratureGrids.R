@@ -670,7 +670,7 @@ NULL
 INNER_CACHE_BASE <- nimbleFunctionVirtual(
   run = function(){},
   methods = list(
-    buildCache = function(nGridUpdate = integer()){},
+    buildCache = function(nGridUpdate = integer(), nLatentNodes = integer()){},
     cache_weights = function(weight = double(), indx = integer()){},
     cache_inner_mode = function(mode = double(1), indx = integer()){},
     cache_inner_negHessChol = function(negHessChol = double(2), indx = integer()){},
@@ -691,16 +691,30 @@ INNER_CACHE_BASE <- nimbleFunctionVirtual(
 ## and inner cholesky for each point:
 inner_cache_methods = nimbleFunction(
   contains = INNER_CACHE_BASE,
-  setup = function(nre = 0, nGrid = 0){
+  setup = function(nre = 0, nGrid = 0, condIndptSets = NULL, nCondIndptSets = 1){
     innerMode <- matrix(0, nrow = 1, ncol = 1)
     innerNegHessChol <- array(0, c(1, 1, 1))
     wgtsDens <- c(1,-1)
     cacheBuilt <- FALSE
+    if(is.null(condIndptSets)) {
+      condInptSets <- nre ## Assuming all one set.
+      nCondIndptSets <- 1 ## If NULL then this is not relevant.
+    }
+    if(length(condIndptSets) == 1){
+      condIndptSets <- c(condIndptSets, -1) ##  Make sure it's a vector.
+    }
   },
   run = function(){},
   methods = list(
-    buildCache = function(nGridUpdate = integer(0, default = -1)){
-
+    buildCache = function(nGridUpdate = integer(0, default = -1), nLatentNodes = integer()){
+      nre <<- nLatentNodes
+      ## If the cond indpt sets don't match up, don't use.
+      if(nre != sum(condIndptSets[1:nCondIndptSets])){
+        print("  Warning: Not able to simulate latent effects from conditionally independent sets.")
+        condIndptSets <<- numeric(value = nre, length = 1)
+        nCondIndptSets <<- 1
+      }      
+    
       if( nGridUpdate > 0 & nGridUpdate != nGrid){
         nGrid <<- nGridUpdate
         cacheBuilt <<- FALSE
@@ -710,6 +724,7 @@ inner_cache_methods = nimbleFunction(
         wgtsDens <<- numeric(value = 0, length = nGrid)
         innerMode <<- matrix(0, nrow = nGrid, ncol = nre)
         innerNegHessChol <<- array(0, c(nGrid, nre, nre))
+        cacheBuilt <<- TRUE
       }
     },    
     ## Note to self, this wgt will be density*wgt, strictly for simulating.
@@ -719,6 +734,7 @@ inner_cache_methods = nimbleFunction(
     cache_inner_mode = function(mode = double(1), indx = integer()){
       innerMode[indx,] <<- mode
     },
+    ## Note potentially storing a lot of zeros here. Could break it into a list of cond indpt sets.
     cache_inner_negHessChol = function(negHessChol = double(2), indx = integer()){
       innerNegHessChol[indx,,] <<- negHessChol
     },
@@ -726,13 +742,24 @@ inner_cache_methods = nimbleFunction(
       returnType(double(1))
       return(wgtsDens)
     },
+    ## Adding first column to be index for theta.
     simulate = function(n = integer()){
-      val <- matrix(0, nrow = n, ncol = nre)
+      val <- matrix(0, nrow = n, ncol = nre + 1)
       simwgt <- wgtsDens/sum(wgtsDens) ## Did log sum exp when doing input.
-      for( i in 1:n ){
+
+      ## Simulate theta points first. 
+      ## Seems efficient to separate to not initiate too many index vectors for cond indpt sets.
+      for( i in 1:n ) {
         k <- rcat(1, prob = simwgt)
-        val[i,] <- rmnorm_chol(n=1, mean = innerMode[k,],  
-                                cholesky = innerNegHessChol[k,,], prec_param = TRUE)
+        val[i, 1] <- k
+        jStart <- 1
+        for( j in 1:nCondIndptSets ){
+          val[i,(jStart+1):(jStart + condIndptSets[j])] <- rmnorm_chol(n=1, 
+                                  mean = innerMode[k,jStart:(jStart + condIndptSets[j] - 1)],  
+                                  cholesky = innerNegHessChol[k,jStart:(jStart + condIndptSets[j] - 1),jStart:(jStart + condIndptSets[j] - 1)], 
+                                  prec_param = TRUE)
+        }
+        jStart <- jStart + condIndptSets[j]
       }
       returnType(double(2))
       return(val)
