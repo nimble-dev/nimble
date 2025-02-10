@@ -143,11 +143,13 @@ Collate:
     BNP_distributions.R
     BNP_samplers.R
     NF_utils.R
+    quadratureGrids.R
+    approxPosterior.R
+    approxSummaries.R
     miscFunctions.R
     makevars.R
     setNimbleInternalFunctions.R
     registration.R
     nimble-package.r
-    QuadratureGrids.R
     zzz.R
 RoxygenNote: 7.2.3
