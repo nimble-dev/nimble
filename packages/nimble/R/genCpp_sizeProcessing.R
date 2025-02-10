@@ -139,6 +139,8 @@ sizeCalls <- c(
                    'nimArr_rmulti',
                    'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
     makeCallList(c('decide',
+                   'checkLogProb',
+                   'checkLogProbWarn',
                    'size',
                    'getsize',
                    'getNodeFunctionIndexedInfo',
@@ -155,6 +157,7 @@ sizeCalls <- c(
     ADbreak = 'sizeADbreak')
 
 scalarOutputTypes <- list(decide = 'logical',
+                          checkLogProb = 'double',
                           size = 'integer',
                           nimAnyNA = 'logical',
                           nimAnyNaN = 'logical',
@@ -262,8 +265,10 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
     if(!is.null(sizeCall)) {
       nm <- code$name
       ## Handle replacements such as `gamma` -> `gammafn`.  
-      if(nm %in% specificCallReplacements)
+      if(nm %in% specificCallReplacements) {
           nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
+      } else if(nm %in% nimKeyWords)
+          nm <- names(nimKeyWords)[which(nm == nimKeyWords)]
       for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
           objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
           if(any(sapply(objs, is.rcf))) 
@@ -1459,7 +1464,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newCode <- substitute(nfMethod(this, FUN), list(FUN = fnCode$name))
         newExpr <- RparseTree2ExprClasses(newCode)
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
-        setArg(code, 2, newExpr)
+        setArg(code, "fn", newExpr)
     } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
         fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
     } else {
@@ -1476,7 +1481,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newCode <- substitute(nfMethod(this, FUN), list(FUN = grCode$name))
         newExpr <- RparseTree2ExprClasses(newCode)
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
-        setArg(code, 3, newExpr)
+        setArg(code, "gr", newExpr)
     } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
         # Handle gr arguments that are RCfunctions.
         grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName
@@ -1494,7 +1499,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
         newCode <- substitute(nfMethod(this, FUN), list(FUN = heCode$name))
         newExpr <- RparseTree2ExprClasses(newCode)
         newExpr$args[[1]]$type <- symTab$getSymbolObject(".self", TRUE)$baseType
-        setArg(code, 3, newExpr)
+        setArg(code, "he", newExpr)
     } else if(exists(heCode$name) && is.rcf(get(heCode$name))) {
         # Handle he arguments that are RCfunctions.
         heCode$name <- environment(get(heCode$name))$nfMethodRCobject$uniqueName

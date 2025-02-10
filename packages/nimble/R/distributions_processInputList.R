@@ -772,18 +772,19 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #'
 #' @param distributionsNames a character vector giving the names of the distributions to be deregistered.
 #' @param userEnv environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.
-#'
+#' @param warn logical indicating whether to warn if trying to deregister a distribution that is not registered (default = \code{TRUE}).
+#' 
 #' @author Christopher Paciorek
 #' @export
-deregisterDistributions <- function(distributionsNames, userEnv = parent.frame()) {
-    if(!exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
+deregisterDistributions <- function(distributionsNames, userEnv = parent.frame(), warn = TRUE) {
+    if(warn && !exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
         warning("No user-supplied distributions are registered.")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) {
         distsMatched <- paste0(distributionsNames[matched], collapse = ', ')
         messageIfVerbose("Deregistering '", distsMatched, "' from user-registered distributions.")
     }
-    if(sum(!matched))
+    if(warn && sum(!matched))
         for(nm in distributionsNames[!matched]) {
             warning("Cannot deregister '", nm, "' as it is not registered as a user-defined distribution.")
         }

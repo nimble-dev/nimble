@@ -1,3 +1,79 @@
+#                            CHANGES IN VERSION 1.3.0 (December 2024)
+
+## USER LEVEL CHANGES
+
+- Provide the Barker proposal sampler as an alternative to the `RW_block`
+  (block Metropolis) sampler. The Barker sampler uses
+  gradient information and may improve adaptation behavior, including
+  better mixing when parameter are on different scales or the initial
+  proposal scale is too large (PR #1492).
+
+- Improve Laplace/AGHQ implementation in various ways, including use 
+  of nlminb for both inner and outer optimization (for better
+  optimization performance), improved messaging and output naming,
+  returning the log-likelihood and degrees of freedom for model 
+  selection calculations, and unified control of optimization method and
+  other controls at either the build stage or through the `updateSettings` 
+  method (PR #1496).
+
+- Add BOBYQA as an optimization method available through `nimOptim`, 
+  registered via `nimOptimMethod` (PR #1496).
+
+- Prevent use of nimbleFunction method names and nimbleFunction
+  names that conflict with names in the nimble language (DSL) (PRs #1517
+  and #1519).
+
+- More carefully check for and warn of cases of NaN and non-finite
+  log probability values in various samplers that in some cases may indicate invalid
+  MCMC sampling (PR #1512).
+
+- More carefully handle NaN and non-finite log probability values in
+  the CRP sampler, in particular error out if all values are minus
+  infinity and warning if multiple values are infinity (PR #1509).
+
+- Error trap cases of dynamic indices producing a non-scalar result in
+  AD-enabled models, and provide a suggested work-around (PR #1515).
+
+- Error trap use of non-existent nimbleList (PR #1518).
+
+- Prevent use of a single seed when running multiple chains via
+  `runMCMC` (PR #1494).
+
+- Improve messaging related to lack of derivative support for
+  functions (PR #1502).
+
+- Add information about model macros to the manual (PR #1499).
+
+- Add an argument to `deregisterDistributions` to turn off warning
+  that a distribution being deregistered does not exist.
+
+## BUG FIXES
+
+- Fix bug in caching values in `sampler_CRP` when maximum number of
+  clusters is exceeded, which would have caused incorrect sampling (albeit 
+  with the user having been warned that they should increase the maximum number
+  of clusters) (PR #1513).
+
+- Fix issue preventing use of nimbleList elements in `nimCat` (PR
+  #1518).
+
+- Prevent adaptation interval of one for various block samplers for
+  which an interval of one leads to an error. 
+
+- Allow `runLaplace` to use an uncompiled Laplace object (PR #1496).
+
+## DEVELOPER LEVEL CHANGES
+
+- Improve and provide additional infrastructure for model macros (PR #1502).
+
+- Add new model method, `MixedDataNodeNames` to retrieve node names
+  which are partially observed (whose elements are partially but not
+  entirely data) (PR #1489).
+  
+- Turn off the use of `--preclean` during C++ compilation when
+  `nimbleExternalCall` is invoked to avoid removing .o files that
+  might have been created by `Rcpp` (PR #1520).
+
 #                            CHANGES IN VERSION 1.2.1 (July 2024) 
 
 ## USER LEVEL CHANGES

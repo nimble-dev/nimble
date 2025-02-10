@@ -8,7 +8,6 @@
 runLaplace(
   laplace,
   pStart,
-  method = "BFGS",
   originalScale = TRUE,
   randomEffectsStdError = TRUE,
   jointCovariance = FALSE
@@ -17,7 +16,6 @@ runLaplace(
 runAGHQ(
   AGHQ,
   pStart,
-  method = "BFGS",
   originalScale = TRUE,
   randomEffectsStdError = TRUE,
   jointCovariance = FALSE
@@ -32,9 +30,6 @@ with `nQuad=1`.}
 \item{pStart}{Initial values for parameters to begin optimization search for
 the maximum likelihood estimates. If omitted, the values currently in the
 (compiled or uncompiled) model object will be used.}
-
-\item{method}{Optimization method for outer optimization. See \code{method}
-argument to \code{findMLE} method in \code{\link{buildLaplace}}.}
 
 \item{originalScale}{If \code{TRUE}, return all results on the original scale
 of the parameters and/or random effects as written in the model. Otherwise,

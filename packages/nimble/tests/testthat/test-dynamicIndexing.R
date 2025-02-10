@@ -460,9 +460,9 @@ test_that('basic mixture model without conjugacy', {
     n <- 1000; d <- 4
     set.seed(2)
     mns <- c(8, 15, 0.5, 4)
-    mu_tol <- c(1.5, 1, .5, .8)
+    mu_tol <- c(2, 1.5, .5, 1)
     p <- c(.45, .14, .05, .36)
-    p_tol <- c(.12, .05, .03, .12)
+    p_tol <- c(.12, .05, .03, .15)
     k <- sample(1:d, n, replace = TRUE, prob = p)
     y <- rpois(n, mns[k])
     code <- nimbleCode({

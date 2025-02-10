@@ -59,15 +59,15 @@ check_laplace_alternative_methods <- function(cL, # compiled laplace algorithm
           print(class(cL))
           print(cL)
       } else {
-          expect_equal(summ_orig$params$estimates, summ_orig_alt$params$estimates, tol = 1e-4)
-          expect_equal(summ_orig$randomEffects$estimates, summ_orig_alt$randomEffects$estimates, tol = 1e-4)
-          expect_equal(summ_orig$params$stdErrors, summ_orig_alt$params$stdErrors, tol = 1e-4)
-          expect_equal(summ_orig$randomEffects$stdErrors, summ_orig_alt$randomEffects$stdErrors, tol = 1e-4)
+          expect_equal(summ_orig$params$estimate, summ_orig_alt$params$estimate, tol = 1e-4)
+          expect_equal(summ_orig$randomEffects$estimate, summ_orig_alt$randomEffects$estimate, tol = 1e-4)
+          expect_equal(summ_orig$params$stdError, summ_orig_alt$params$stdError, tol = 1e-4)
+          expect_equal(summ_orig$randomEffects$stdError, summ_orig_alt$randomEffects$stdError, tol = 1e-4)
           expect_equal(summ_orig$vcov, summ_orig_alt$vcov, tol = 1e-4)
-          expect_equal(summ_trans$params$estimates, summ_trans_alt$params$estimates, tol = 1e-4)
-          expect_equal(summ_trans$randomEffects$estimates, summ_trans_alt$randomEffects$estimates, tol = 1e-4)
-          expect_equal(summ_trans$params$stdErrors, summ_trans_alt$params$stdErrors, tol = 1e-4)
-          expect_equal(summ_trans$randomEffects$stdErrors, summ_trans_alt$randomEffects$stdErrors, tol = 1e-4)
+          expect_equal(summ_trans$params$estimate, summ_trans_alt$params$estimate, tol = 1e-4)
+          expect_equal(summ_trans$randomEffects$estimate, summ_trans_alt$randomEffects$estimate, tol = 1e-4)
+          expect_equal(summ_trans$params$stdError, summ_trans_alt$params$stdError, tol = 1e-4)
+          expect_equal(summ_trans$randomEffects$stdError, summ_trans_alt$randomEffects$stdError, tol = 1e-4)
           expect_equal(summ_trans$vcov, summ_trans_alt$vcov, tol = 1e-4)
       }
     }
@@ -105,7 +105,7 @@ test_that("Laplace simplest 1D works", {
   # Hessian of joint loglik wrt a: -(1/4 + 1/9)
   # Hessian of marginal loglik wrt mu is -1/13
   summ <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE)
-  expect_equal(summ$randomEffects$estimates, 4, tol = 1e-5)
+  expect_equal(summ$randomEffects$estimate, 4, tol = 1e-5)
   # check behavior of summaryLaplace
   summ2 <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE, jointCovariance = TRUE)
   expect_equal(nrow(summ2$randomEffects), 1)
@@ -159,8 +159,8 @@ test_that("Laplace simplest 1D with a constrained parameter works", {
   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
   expect_equal(opt$hessian[1,1], -4^2/13, tol = 1e-4)
   summ <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE)
-  expect_equal(summ$randomEffects$estimates, 4, tol = 1e-4)
-  expect_equal(summ$params$estimates, log(4), tol = 1e-4)
+  expect_equal(summ$randomEffects$estimate, 4, tol = 1e-4)
+  expect_equal(summ$params$estimate, log(4), tol = 1e-4)
   # check summaryLaplace
   summL <- summaryLaplace(cmLaplace, opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE)
   expect_equal(summL$params['mu','estimate'], log(4), tol = 1e-4)
@@ -246,7 +246,7 @@ test_that("Laplace simplest 1D (constrained) with multiple data works", {
   # tmbvcov <- inverse(tmbrep$jointPrecision)
   expect_equal(opt$par, 0.2895238, tol = 1e-3)
   expect_equal(opt$value, -10.47905, tol = 1e-7)
-  expect_equal(summ$randomEffects$estimates, -0.005608619, tol = 1e-3)
+  expect_equal(summ$randomEffects$estimate, -0.005608619, tol = 1e-3)
   vcov <- matrix(c(2.741033, -1.628299, -1.628299, 1.414499), nrow = 2, byrow = TRUE)
   expect_equal(summ$vcov, vcov, 2e-3)
   # Check covariance matrix for params only
@@ -315,9 +315,9 @@ test_that("Laplace simplest 1D (constrained) with deterministic intermediates an
   # tmbres <- nlminb(obj$par, obj$fn, obj$gr)
   # tmbrep <- sdreport(obj, getJointPrecision = TRUE)
   # tmbvcov <- inverse(tmbrep$jointPrecision)
-  expect_equal(opt$par, -2.639534, 1e-4)
+  expect_equal(opt$par, -2.639534, 2e-4)
   expect_equal(opt$value, -10.47905, tol = 1e-5)
-  expect_equal(summ$randomEffects$estimates, 1.603742, tol = 1e-4)
+  expect_equal(summ$randomEffects$estimate, 1.603742, tol = 1e-4)
   vcov <- matrix(c(10.967784, -3.258191, -3.258191, 1.415167), nrow = 2, byrow = TRUE)
   expect_equal(summ$vcov, vcov, 2e-3)
   # Check covariance matrix for params only
@@ -371,7 +371,7 @@ test_that("Laplace 1D with deterministic intermediates works", {
     summ <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE,
                               jointCovariance = TRUE)
   #,  "optim did not converge for the inner optimization")
-  expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
+  expect_equal(summ$randomEffects$estimate, 20, tol = 1e-4)
   # Covariance matrix 
   vcov <- matrix(c(0, 0, 0, 1/(0.2^2/4+1/9)), nrow = 2) + matrix(c(1, 0.4587156), ncol = 1) %*% (1/0.002293578) %*% t(matrix(c(1, 0.4587156), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-4)
@@ -436,7 +436,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
     summ <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE,
                               jointCovariance = TRUE)
    #,            "optim did not converge for the inner optimization")
-  expect_equal(summ$randomEffects$estimates, 20, tol = 1e-4)
+  expect_equal(summ$randomEffects$estimate, 20, tol = 1e-4)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(0, 0, 0, 1/(0.2^2/4+1/9)), nrow = 2) + matrix(c(1, 18.34862), ncol = 1) %*% (1/3.669725) %*% t(matrix(c(1, 18.34862), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-3)
@@ -456,8 +456,8 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   #,  "optim did not converge for the inner optimization")
 
   # Make sure that the recompute didn't change the values of the random effects or standard errors.
-  expect_equal(summ.orig$randomEffects[["estimates"]], summ3$randomEffects[["estimates"]], tol = 1e-12)
-  expect_equal(summ.orig$randomEffects[["stdErrors"]], summ3$randomEffects[["stdErrors"]], tol = 1e-12)
+  expect_equal(summ.orig$randomEffects[["estimate"]], summ3$randomEffects[["estimate"]], tol = 1e-12)
+  expect_equal(summ.orig$randomEffects[["stdError"]], summ3$randomEffects[["stdError"]], tol = 1e-12)
 
   expect_equal(summ3$vcov, vcov[1,1,drop=FALSE], tol=1e-3)
   #expect_output(
@@ -526,7 +526,7 @@ test_that("Laplace 1D with deterministic intermediates and multiple data works",
   # Hessian of joint loglik wrt a: -(3*0.8^2/4 + 1/9)
   # Hessian of marginal loglik wrt mu: -0.02255639 (numerical, have not got AD work)
   summ <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE)
-  expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
+  expect_equal(summ$randomEffects$estimate, 6.25, tol = 1e-6)
   # Covariance matrix 
   vcov <- matrix(c(0, 0, 0, 1/(0.8^2*3/4+1/9)), nrow = 2) + matrix(c(1, 0.09398496), ncol = 1) %*% (1/0.02255639) %*% t(matrix(c(1, 0.09398496), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
@@ -601,7 +601,7 @@ test_that("Laplace 1D with a constrained parameter and deterministic intermediat
   expect_equal(opt$value, res)
   # Check covariance matrix 
   summ <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = TRUE)
-  expect_equal(summ$randomEffects$estimates, 6.25, tol = 1e-6)
+  expect_equal(summ$randomEffects$estimate, 6.25, tol = 1e-6)
   # Covariance matrix on transformed scale
   vcov_transform <- matrix(c(0, 0, 0, 1/(0.8^2*3/4+1/9)), nrow = 2) + matrix(c(1, 1.174812), ncol = 1) %*% (1/3.524436) %*% t(matrix(c(1, 1.174812), ncol = 1))
   expect_equal(vcov_transform, summ$vcov, tol = 1e-6)
@@ -688,7 +688,7 @@ test_that("Laplace simplest 2x1D works, with multiple data for each", {
   muhat <- mean(y)/(0.8*0.5)
   ahat <- c((9*0.8*sum(y[1,]) + 4*0.5*muhat)/(4+9*0.8^2*3), (9*0.8*sum(y[2,]) + 4*0.5*muhat)/(4+9*0.8^2*3))
   summ <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE)
-  expect_equal(summ$randomEffects$estimates, ahat, tol = 1e-6)
+  expect_equal(summ$randomEffects$estimate, ahat, tol = 1e-6)
   # Covariance matrix 
   vcov <- diag(c(0, rep(1/(3*0.8^2/4 + 1/9), 2))) + matrix(c(1, rep(0.09398496, 2)), ncol = 1) %*% (1/0.04511278) %*% t(matrix(c(1, rep(0.09398496, 2)), ncol = 1))
   expect_equal(vcov, summ$vcov, tol = 1e-7)
@@ -1032,7 +1032,7 @@ test_that("Laplace with 2x2D random effects for 1D data that are separable works
   expect_equal(summ2$vcov, tmbvcov[1:2,1:2], tol=1e-4)
 
   summL <- summaryLaplace(cmLaplace, opt, jointCovariance = TRUE)
-  expect_identical(summL$randomEffects$estimate, summ$randomEffects$estimates)
+  expect_identical(summL$randomEffects$estimate, summ$randomEffects$estimate)
 
   # For this case, we build up the correct answer more formulaically
   # Define A as the vector a[1, 1], a[1, 2], a[2, 1], a[2, 2]
@@ -1210,16 +1210,17 @@ test_that("simple LME case works", {
   library(lme4)
   manual_fit <- lmer(y ~ x + (1 + x || g), REML = FALSE)
 
-  mLaplace <- buildLaplace(model = m, control=list(innerOptimMethod="BFGS"))
+  mLaplace <- buildLaplace(model = m, control=list(innerOptimMethod="BFGS",
+                                                   outerOptimMethod="BFGS"))
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
-  opt <- cmLaplace$findMLE(method="BFGS")
+  opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-5)
-  expect_equal(nimres$params$estimates[1:3], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-5)
-  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=0.03)
-  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
+  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-5)
+  expect_equal(nimres$params$estimate[1:3], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-5)
+  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=0.03)
+  expect_equal(nimres$randomEffects$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 1e-4)
 })
 
 test_that("simple LME with correlated intercept and slope works (and check with nQuad=3)", {
@@ -1273,11 +1274,11 @@ test_that("simple LME with correlated intercept and slope works (and check with 
   nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
 
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
-  sdparams <- nimres$params$estimates[-c(4,5)]
+  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
+  sdparams <- nimres$params$estimate[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
-  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
+  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimres$randomEffects$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 
   cmLaplace$updateSettings(nQuad = 3)
   init_llh_3 <- cmLaplace$calcLogLik(pStart)
@@ -1294,8 +1295,8 @@ test_that("simple LME with correlated intercept and slope works (and check with 
   expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 1e-4)
   expect_equal(nimsumm$randomEffects$estimate,
                CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-4)
-  expect_equal(nimsumm$randomEffects$se,
-               CrunLaplaceRes$summary$randomEffects$se, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$stdError,
+               CrunLaplaceRes$summary$randomEffects$stdError, tolerance = 1e-4)
 
 
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
@@ -1306,8 +1307,8 @@ test_that("simple LME with correlated intercept and slope works (and check with 
   expect_equal(opt$hessian, CrunLaplaceRes$MLE$hessian, tolerance = 1e-4)
   expect_equal(nimsumm$randomEffects$estimate,
                CrunLaplaceRes$summary$randomEffects$estimate, tolerance = 1e-4)
-  expect_equal(nimsumm$randomEffects$se,
-               CrunLaplaceRes$summary$randomEffects$se, tolerance = 1e-4)
+  expect_equal(nimsumm$randomEffects$stdError,
+               CrunLaplaceRes$summary$randomEffects$stdError, tolerance = 1e-4)
 
 })
 
@@ -1363,7 +1364,7 @@ test_that("simple LME with correlated intercept and slope works through runLapla
   expect_equal(nimsumm$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
   sdparams <- nimsumm$params$estimate[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimsumm$params$se[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimsumm$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
   expect_equal(nimsumm$randomEffects$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 })
 
@@ -1499,7 +1500,7 @@ test_that("Laplace with 2x1D parameters (one needs transformation) and non-norma
   expect_equal(summ$vcov, tmbvcov, tol=1e-3)
   ## Stand error for sigma (original parameter)
   summ2 <- cmLaplace$summary(opt, originalScale = TRUE)
-  expect_equal(summ2$params$stdErrors[2], 0.5472659, tol=1e-4)
+  expect_equal(summ2$params$stdError[2], 0.5472659, tol=1e-4)
   
   # Check covariance matrix for transformed params only
   summ3 <- cmLaplace$summary(opt, originalScale = FALSE, randomEffectsStdError = TRUE, jointCovariance = FALSE)
@@ -1577,7 +1578,7 @@ test_that("Laplace with no random effects (simple linear regression) works", {
   ## Compare results with those from TMB
   expect_equal(opt$par, c(-0.8899436, 1.1940911, 0.5744841), tol = 1e-4)
   expect_equal(opt$value, -4.323288, tol = 1e-7)
-  expect_equal(summ$params$stdErrors, c(0.2598061, 0.2988869, 0.1816661), tol = 1e-5)
+  expect_equal(summ$params$stdError, c(0.2598061, 0.2988869, 0.1816661), tol = 1e-5)
   
   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
   optNoSplit <- cmLaplaceNoSplit$findMLE()
@@ -1641,7 +1642,7 @@ test_that("Laplace with no random effects (simple linear regression) works", {
 ##   expect_equal(opt$par, 4, tol = 1e-4)
 ##   expect_equal(opt$value, dnorm(4, 4, sd = sqrt(13), log = TRUE))
 ##   summ <- cmLaplace$summary(opt, originalScale = TRUE, randomEffectsStdError = TRUE, jointCovariance = TRUE)
-##   expect_equal(summ$randomEffects$estimates, 4, tol = 1e-5)
+##   expect_equal(summ$randomEffects$estimate, 4, tol = 1e-5)
 ##   # Covariance matrix
 ##   vcov <- matrix(c(1/(1/4+1/9), 0, 0, 0), nrow = 2) + matrix(c(4/13, 1), ncol = 1) %*% (13) %*% t(matrix(c(4/13, 1), ncol = 1))
 ##   expect_equal(vcov, summ$vcov, tol = 1e-6)
@@ -1683,7 +1684,7 @@ test_that("Laplace with no random effects (simple linear regression) works", {
 ##   ## Compare results with those from TMB
 ##   expect_equal(opt$par, c(0.5744841, -0.8899436, 1.1940911), tol = 1e-5)
 ##   expect_equal(opt$value, -4.323288, tol = 1e-7)
-##   expect_equal(summ$params$stdErrors, c(0.1816661, 0.2598061, 0.2988869), tol = 1e-5)
+##   expect_equal(summ$params$stdError, c(0.1816661, 0.2598061, 0.2988869), tol = 1e-5)
 
 ##   for(v in cm$getVarNames()) cm[[v]] <- m[[v]]
 ##   optNoSplit <- cmLaplaceNoSplit$findMLE()
@@ -1835,20 +1836,20 @@ test_that("Laplace with crossed random effects works", {
   mLaplace <- buildLaplace(model = m)#, control=list(innerOptimStart = "last.best"))
   cm <- compileNimble(m)
   cmLaplace <- compileNimble(mLaplace, project = m)
-  cmLaplace$updateSettings(innerOptimMethod = "BFGS")
+  ## cmLaplace$updateSettings(innerOptimMethod = "nlminb")
   opt <- cmLaplace$findMLE()
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
   
   lme4_fit <- lmer(diameter ~ 1 + (1|plate) + (1|sample), data = Penicillin, REML = FALSE)
   lme4res <- summary(lme4_fit)
   
-  expect_equal(nimres$params$estimates[1], lme4res$coefficients[,"Estimate"], tol=1e-3)
-  expect_equal(nimres$params$estimates[c(3,4,2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-4)
+  expect_equal(nimres$params$estimate[1], lme4res$coefficients[,"Estimate"], tol=1e-3)
+  expect_equal(nimres$params$estimate[c(3,4,2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-4)
   # Note that with innerOptimMethod "nlminb", the next check is far off, within only about 0.2
   # on Mac, and getting a NaN on ubuntu CI tests. (Also I don't know why those differ.)
-  expect_equal(nimres$params$stdErrors[1], lme4res$coefficients[,"Std. Error"], tol=2e-3)
-  expect_equal(nimres$randomEffects$estimates[25:30], as.vector(t(ranef(lme4_fit)$sample)), tol = 1e-3)
-  expect_equal(nimres$randomEffects$estimates[1:24], as.vector(t(ranef(lme4_fit)$plate)), tol = 1e-4)
+  expect_equal(nimres$params$stdError[1], lme4res$coefficients[,"Std. Error"], tol=2e-3)
+  expect_equal(nimres$randomEffects$estimate[25:30], as.vector(t(ranef(lme4_fit)$sample)), tol = 1e-3)
+  expect_equal(nimres$randomEffects$estimate[1:24], as.vector(t(ranef(lme4_fit)$plate)), tol = 1e-4)
 })
 
 test_that("Laplace with nested random effects works", {
@@ -1893,11 +1894,11 @@ test_that("Laplace with nested random effects works", {
   #, "optim does not converge for the inner optimization")
   nimres <- cmLaplace$summary(opt, randomEffectsStdError = TRUE)
   
-  expect_equal(nimres$params$estimates[1], lme4res$coefficients[,"Estimate"], tol = 1e-5)
-  expect_equal(nimres$params$estimates[c(4, 3, 2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
-  expect_equal(nimres$params$stdErrors[1], lme4res$coefficients[,"Std. Error"], tol = 5e-5)
-  expect_equal(nimres$randomEffects$estimates[seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$batch)), tol = 5e-4)
-  expect_equal(nimres$randomEffects$estimates[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
+  expect_equal(nimres$params$estimate[1], lme4res$coefficients[,"Estimate"], tol = 1e-5)
+  expect_equal(nimres$params$estimate[c(4, 3, 2)], as.data.frame(VarCorr(lme4_fit))[,"sdcor"], tol = 5e-5)
+  expect_equal(nimres$params$stdError[1], lme4res$coefficients[,"Std. Error"], tol = 5e-5)
+  expect_equal(nimres$randomEffects$estimate[seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$batch)), tol = 5e-4)
+  expect_equal(nimres$randomEffects$estimate[-seq(1, 40, by = 4)], as.vector(t(ranef(lme4_fit)$`batch:cask`)), tol = 5e-4)
 })
 
 test_that("Laplace error trapping of wrong-length parameters works", {

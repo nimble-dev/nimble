@@ -4,7 +4,7 @@
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 
 ## Test getConditionallyIndependentSets
 test_that("getConditionallyIndependentSets works in model with a couple of sets", {
@@ -51,10 +51,12 @@ test_that("getConditionallyIndependentSets works in model with a couple of sets"
   expect_identical(SMN$paramNodes, character())
   expect_identical(SMN$calcNodes, c("mu","x[1]","x[2]"))
 
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = character(),
-                                       randomEffectsNodes = "x[1]", calcNodes = c("x[1]", "y[1]")))
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("mu"),
-                                       randomEffectsNodes = "y[1]", calcNodes = c("y[1]", "z[1]")))
+  expect_message(SMN <- setupMargNodes(m, paramNodes = character(),
+                                      randomEffectsNodes = "x[1]", calcNodes = c("x[1]", "y[1]")),
+                "some `randomEffectsNodes` provided")
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("mu"),
+                                      randomEffectsNodes = "y[1]", calcNodes = c("y[1]", "z[1]")),
+                "included in `randomEffectsNodes`")
 
 })
 
@@ -73,10 +75,14 @@ test_that("setupMargNodes/GCIS works in model with an extra edge among random ef
   expect_identical(SMN$paramNodes, c("mu", "sigma"))
   expect_identical(SMN$randomEffectsNodes, c("x[1]", "x[2]", "y[1]", "y[2]"))
 
-  expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "z[1]"))
-  expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("y[1]", "z[1]")))
-  expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("x[1]","y[1]", "z[1]")))
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = "mu", randomEffectsNodes = "y[1]"))
+  expect_message(SMN <- setupMargNodes(m, randomEffectsNodes = "z[1]"),
+                 "some `randomEffectsNodes` provided")
+  expect_message(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("y[1]", "z[1]")),
+                 "included in `randomEffectsNodes`")
+  expect_message(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("x[1]","y[1]", "z[1]")),
+                 "included in `randomEffectsNodes`")
+  expect_message(SMN <- setupMargNodes(m, paramNodes = "mu", randomEffectsNodes = "y[1]"),
+                 "included in `randomEffectsNodes`")
   SMN <- setupMargNodes(m, paramNodes = "x[1]", randomEffectsNodes = "y[1]")
   expect_identical(SMN$calcNodes,c('y[1]','lifted_y_oBi_cB_plus_x_oBi_cB_L6[1]','z[1]'))
 })
@@ -104,7 +110,8 @@ test_that("setupMargNodes/GCIS works in model with an extra edge from param to r
   expect_identical(SMN$givenNodes, c('sigma','y[2]','x[2]','y[1]','z[1]','z[2]'))
 
   # Warning from missing deterministic nodes
-  expect_warning(SMN <- setupMargNodes(m, calcNodes = c("x[1]","x[2]","y[1]","y[2]","z[1]","z[2]")))
+  expect_message(SMN <- setupMargNodes(m, calcNodes = c("x[1]","x[2]","y[1]","y[2]","z[1]","z[2]")),
+                 "included in the `calcNodes`")
 
   SMN <- setupMargNodes(m, calcNodes = m$getDependencies('x',downstream=TRUE))
   expect_identical(SMN$paramNodes, c("mu","sigma"))
@@ -121,7 +128,7 @@ test_that("setupMargNodes/GCIS catches discrete randomEffectsNode", {
   })
   Rmodel <- nimbleModel(code, data = list(y = 1))
 
-  expect_warning(SMN <- setupMargNodes(Rmodel, 'p'))
+  expect_message(SMN <- setupMargNodes(Rmodel, 'p'), "discrete")
   expect_identical(SMN$randomEffectsNodes, c('re1','re3'))
 })
 
@@ -381,13 +388,16 @@ test_that("setupMargNodes/GCIS works with random effects without parameters", {
   expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
   expect_identical(SMN$paramNodes, c("P", "sigma"))
 
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P", "sigma"), randomEffectsNodes = 'RE',
-                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P"), randomEffectsNodes = 'RE',
-                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("P", "sigma"), randomEffectsNodes = 'RE',
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")),
+                 "included in the `calcNodes`")
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("P"), randomEffectsNodes = 'RE',
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")),
+                 "included in the `calcNodes`")
                                         # The next one can't really create meaningful results anyway.
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P"),
-                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("P"),
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")),
+                 "some `calcNodes` provided")
 })
 
 test_that("setupMargNodes works with determimistic node as parameter", {

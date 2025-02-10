@@ -174,7 +174,7 @@ The default sampler assigned to a stochastic node is determined by the following
   1. If the node follows a multinomial distribution, then a `RW_multinomial` sampler is assigned.  This is a discrete random-walk sampler in the space of multinomial outcomes.
   1. If a node follows a Dirichlet distribution, then a `RW_dirichlet` sampler is assigned.  This is a random walk sampler in the space of the simplex defined by the Dirichlet.
   1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of @Stan_Lang_2021.
-  1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997].
+  1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997]. As of NIMBLE version 1.3.0, one can instead use the `barker` sampler if one sets `nimbleOptions(MCMCuseBarkerAsDefaultMV = TRUE)`.
   1. If the node is binary-valued (strictly taking values 0 or 1), then a `binary` sampler is assigned.  This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.
   1. If the node is otherwise discrete-valued, then a `slice` sampler is assigned [@Neal2003].
   1. If none of the above criteria are satisfied, then a `RW` sampler is assigned.  This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.
@@ -880,8 +880,20 @@ If `fixedValue` is given when using `indicatorNodes` the values provided in `fix
 
 ## Samplers provided with NIMBLE {#sec:samplers-provided}
 
-Most documentation of MCMC samplers provided with NIMBLE can be found by invoking `help(samplers)` in R.  Here we provide additional explanation of conjugate samplers and how complete customization can be achieved by making a sampler use an arbitrary log-likelihood function, such as to build a particle MCMC algorithm.
 
+
+NIMBLE provides a variety of other commonly-used samplers, some for general-purpose use and some for specialized use with particular distributions or situations. Some that are worth particular consideration are:
+
+  1. the Hamiltonian Monte Carlo (HMC) sampler in the `nimbleHMC` package,
+  2. the slice sampler for sampling scalar parameters in place of the default `RW` (Metropolis) sampler,
+  3. the Barker sampler for sampling multiple parameters in place of the default `RW_block` (block Metropolis) sampler,
+  4. the noncentered sampler (`noncentered`) for jointly sampling random effects with their hyperparameters,
+  5. the Pólya-gamma sampler (`polyagamma`) for sampling regression coefficients in logistic regression specifications, and
+  6. the reversible-jump sampler for selection of coefficients in regression specifications.
+
+Most documentation of MCMC samplers provided with NIMBLE can be found by invoking `help(samplers)` in R.
+
+In the remainder of this section, we provide additional explanation of conjugate samplers, the HMC sampler in the `nimbleHMC` package, and how complete customization can be achieved by making a sampler use an arbitrary log-likelihood function, such as to build a particle MCMC algorithm.
 
 
 ### Conjugate ('Gibbs') samplers
@@ -1046,7 +1058,8 @@ In the example above, `sigma` is a parameter that must be non-negative. HMC work
 ### Particle filter samplers
 
 The `nimbleSMC` package provides samplers that perform particle MCMC, primarily intended for sampling top-level parameters in state-space or hidden Markov models of time-series data. This sampler is described in Section \@ref(sec:particle-mcmc).
-     
+
+
 ### Customized log-likelihood evaluations: *RW_llFunction sampler*
  
 Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm [@Andrieu_Doucet_Holenstein_2010].  The `RW_llFunction` sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).

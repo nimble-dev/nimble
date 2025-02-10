@@ -44,7 +44,7 @@ Some model macros will generate new parameters to be included in the
  to this stored list, or subsets of it (see arguments).
 }
 \examples{
-nimbleOptions(enableModelMacros = TRUE)
+nimbleOptions(enableMacros = TRUE)
 nimbleOptions(enableMacroComments = FALSE)
 nimbleOptions(verbose = FALSE)
 

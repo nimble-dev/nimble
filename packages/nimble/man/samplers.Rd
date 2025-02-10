@@ -49,6 +49,8 @@
 \alias{RW_PF_block}
 \alias{RW_lkj_corr_cholesky}
 \alias{RW_block_lkj_corr_cholesky}
+\alias{sampler_barker}
+\alias{barker}
 \alias{sampler_RJ_fixed_prior}
 \alias{sampler_RJ_indicator}
 \alias{sampler_RJ_toggled}
@@ -180,7 +182,7 @@ The RW sampler accepts the following control list elements:
 
 The RW sampler cannot be used with options log=TRUE and reflective=TRUE, i.e. it cannot do reflective sampling on a log scale.
 
-After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
+After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
 }
 
 \section{RW_block sampler}{
@@ -199,11 +201,50 @@ The RW_block sampler accepts the following control list elements:
 \item tries. The number of times this sampler will repeatedly operate on each MCMC iteration.  Each try consists of a new proposed transition and an accept/reject decision of this proposal.  Specifying tries > 1 can help increase the overall sampler acceptance rate and therefore chain mixing. (default = 1)
 }
 
-After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
+After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
 
 Operating analogous to the setScale method, the RW_block sampler also has a setPropCov method.  This method accepts a single matrix-valued argument, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal covariance.
 
 Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases.
+}
+
+\section{Barker proposal sampler}{
+
+
+The Barker proposal sampler implements a (multivariate) gradient-based sampling scheme, following the work of Livingstone and Zanella (2022) and Vogrinc et al. (2023). This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. The sampler uses an gradient-based adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution, which can use a full proposal covariance matrix (recommended for most problems) or a diagonal matrix. To use the Barker sampler, you must set \code{buildDerivs = TRUE} when creating your model via \code{nimbleModel}.
+
+The Barker sampler accepts the following control list elements:
+
+\itemize{
+\item \code{adaptive}. A logical argument, specifying whether the sampler should adapt the scalar global scale (a coefficient scaling the entire proposal covariance matrix) and (possibly) the multivariate normal proposal covariance matrix throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as \code{TRUE}. (default = TRUE)
+\item \code{adaptScaleOnly}. A logical argument, specifying whether adaption should be done only for the global scale and not for the covariance matrix.  This argument is only relevant when \code{adaptive = TRUE}. When \code{adaptScaleOnly = TRUE}, only the scale is adapted, tuned to achieve a theoretically good acceptance rate (specified by \code{targetAcceptanceRate}). (default = FALSE)
+\item \code{adaptCov}. A logical argument, specifying whether adaption should be done for the full proposal covariance matrix (\code{TRUE}) or only for the diagonal of the matrix (the proposal variances) (\code{FALSE}). This argument is only relevant when \code{adaptive = TRUE} and \code{adaptScaleOnly = FALSE}. The full covariance matrix or diagonal values are tuned to mimic the full covariance or the variances, respectively, of the empirical samples from the posterior.
+\item \code{scale}. Initial multiplier that scales the step-size of the proposal steps. If adaptation is turned off, this determines the step-size. (default = 1)
+\item \code{propCov}. Initial value for proposal covariance. This can be the string "identity" (indicating the identity matrix), a single number that scales the identity matrix, a vector of values that provides the diagonal values (variances) of the matrix (of length equal to the number of parameters in the transformed space), or a full proposal covariance matrix (with number of rows and columns equal to the number of parameters in the transformed space). (default = 1)
+\item \code{adaptInterval}. The interval on which to perform adaptation of the scale (and diagonal variance values when \code{adaptCov = FALSE}). At the moment only the value 1 is allowed.
+\item \code{adaptIntervalCov}. The interval on which to perform adaptation of the full proposal covariance. This only has effect when \code{adaptCov = TRUE}. The default of 10 was chosen based on performance on various examples but other values may improve mixing in specific cases. Note that if \code{invariantWeight = FALSE}, changing this value also has the effect of modifying the influence of the most recent set of empirical samples relative to the current proposal covariance. (default = 10)
+
+\item \code{adaptDelayCov}. The number of initial iterations in which the off-diagonal elements of the proposal covariance are not adapted. In experiments, adapting the full covariance from the first iteration can produce an algorithm that performs poorly as the covariances may be adapted while the chain is still burning in, during whih the samples are not reflective of the posterior. Only relevant if \code{adaptCov = TRUE}. The default of 100 was chosen based on performance on various examples but other values may improve mixing in specific cases. (default = 100)
+\item \code{adaptFactorExponent}. Exponent controlling the rate of decay of the scale adaptation factor. As suggested in Livingstone and Zanella (2022), the default is 0.6.
+\item \code{targetAcceptanceRate}. Acceptance rate targeted when adapting the global scale. As suggested in Vogrinc et al. (2023) the default is 0.574, as in the MALA algorithm.
+\item \code{bimodal}. A logical argument indicating whether to use the bimodal proposal of Vogrinc et al. (2023) (\code{TRUE}) or simply a normal distribution (\code{FALSE}). (default = TRUE)
+\item \code{sigma}. The value of \code{sigma} in the bimodal Barker proposal suggested in Vogrinc et al. (2023). Only used if \code{bimodal = TRUE}. (default = 0.1)
+\item \code{invariantWeight}. A logical argument indicating whether to modify the relative weight of the most recent set of empirical samples relative to the current proposal covariance such that changing \code{adaptIntervalCov} has little effect on the weighting. While in principle setting this to \code{TRUE} makes sense, in experiments this tended to make MCMC performance worse, so the default is \code{FALSE}.
+}
+
+The Barker proposal provides a gradient-based Metropolis-Hastings algorithm demonstrated to be more robust to tuning parameters than other gradient-based methods, in particular the Metropolis-adjusted Langevin algorithm (MALA). The approach tends to do a better job of adjusting to heterogeneity in the scaling of the target elements and to bad (particularly overly large) initial proposal variance(s) than random walk Metropolis-Hastings (i.e., the \code{RW_block} sampler).
+
+For some problems without strong dependence, adapting only the diagonal of the proposal covariance (\code{adaptCov = FALSE}) may perform well, but for most problems, use of the full proposal covariance matrix is expected to perform better. The implementation of the proposal covariance for the Barker proposal is derived based on the use of preconditioning to transform the parameters to be approximately linearly independent. This is equivalent to and implemented as a dense proposal covariance matrix.
+
+Adaptation of the full proposal covariance matrix (i.e., of the off-diagonal elements) starting from the first iteration of the MCMC can cause poor MCMC performance by adapting the covariances based on samples in which the MCMC is burning in, which can prevent the sampler from burning in and from finding a good proposal covariance in a reasonable number of iterations. For this reason, by default the sampler only adapts the global scale and proposal variances for the first \code{adaptDelayCov} iterations, defaulting to 100 iterations.
+
+The Barker proposal uses the gradient of the log posterior density with respect to the parameters, using nimble's automatic differentiation (AD) system. Given this, elements of the target vector that are constrained in some fashion (either by their prior or relative to other elements, such as sampling the elements of a Dirichlet-distributed vector or the elements of a positive definite matrix) are transformed to an unconstrained space using nimble's automatic parameter transformation system. Thus the proposal covariance is with respect to this transformed space.  
+
+To use this sampler instead of `RW_block` as the default multivariate sampler for continuous distributions, set \code{nimbleOptions(MCMCuseBarkerAsDefaultMV = TRUE)}
+
+After an MCMC algorithm has been configured and built, the value of the global scale of a Barker sampler can be modified using the \code{setScale method} of the sampler object.  This use the scalar argument to will modify the current value of the scale, as well as modifying the initial (pre-adaptation) value which the scale is reset to, at the onset of a new MCMC chain.
+
+Operating analogous to the \code{setScale} method, the Barker sampler also has a \code{setPropVar} (for when \code{adaptCov = FALSE}) and \code{setPropCov} (for when \code{adaptCov = TRUE}). These method accept a single vector- and matrix-valued argument, respectively, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal variances or covariance, respectively.
 }
 
 \section{RW_llFunction sampler}{
@@ -377,7 +418,7 @@ Note that this sampler is likely run much more slowly than the blocked sampler f
 \section{polyagamma sampler}{
 
 
-The polyagamma sampler uses Pólya-gamma data augmentation to do conjugate sampling for the parameters in the linear predictor of a logistic regression model (Polson et al., 2013), analogous to the Albert-Chib data augmentation scheme for probit regression. This sampler is not assigned as a default sampler by \code{configureMCMC} and so can only be used if manually added to an MCMC configuration.
+The polyagamma sampler uses \enc{Pólya}{Polya}-gamma data augmentation to do conjugate sampling for the parameters in the linear predictor of a logistic regression model (Polson et al., 2013), analogous to the Albert-Chib data augmentation scheme for probit regression. This sampler is not assigned as a default sampler by \code{configureMCMC} and so can only be used if manually added to an MCMC configuration.
 
 As an example, consider model code containing:
 \preformatted{for(i in 1:n) {
@@ -398,9 +439,9 @@ MCMCconf$addSampler(target = logistic_nodes, type = "polyagamma",
   control = list(fixedDesignColumns=TRUE))
 }
 
-As shown here, the stochastic dependencies (\code{y[i]} here) of the target nodes must follow \code{dbin} or \code{dbern} distributions. The logit transformation of their probability parameter must be a linear function (technically an affine function) of the target nodes, which themselves must have \code{dnorm} or \code{dmnorm} priors. Zero inflation to account for structural zeroes is also supported, allowed as discussed below. The stochastic dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the Pólya-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
+As shown here, the stochastic dependencies (\code{y[i]} here) of the target nodes must follow \code{dbin} or \code{dbern} distributions. The logit transformation of their probability parameter must be a linear function (technically an affine function) of the target nodes, which themselves must have \code{dnorm} or \code{dmnorm} priors. Zero inflation to account for structural zeroes is also supported, allowed as discussed below. The stochastic dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the \enc{Pólya}{Polya}-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
 
-Importantly, note that because the Pólya-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all parameter nodes involved in the linear predictor of the logistic regression, to avoid duplicative Pólya-gamma draws of the latent values. If there are stochastic indices (e.g., if \code{group[i]} above is stochastic), the Pólya-gamma sampler can still be used, but the stochastic nodes cannot be sampled by it and must have separate sampler(s). It is also possible in some models that regression parameters can be split into (conditionally independent) groups that can be sampled independently, e.g., if one has distinct logistic regression specifications for different sets of responses in the model.
+Importantly, note that because the \enc{Pólya}{Polya}-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all parameter nodes involved in the linear predictor of the logistic regression, to avoid duplicative \enc{Pólya}{Polya}-gamma draws of the latent values. If there are stochastic indices (e.g., if \code{group[i]} above is stochastic), the \enc{Pólya}{Polya}-gamma sampler can still be used, but the stochastic nodes cannot be sampled by it and must have separate sampler(s). It is also possible in some models that regression parameters can be split into (conditionally independent) groups that can be sampled independently, e.g., if one has distinct logistic regression specifications for different sets of responses in the model.
 
 Sampling involves use of the design matrix. The design matrix includes one column corresponding to each regression covariate as well as one columnar block corresponding to each random effect. In the example above, the columns would include a vector of ones (to multiply \code{beta0}), the vectors \code{x1} and \code{x2}, and a vector of indicators for each \code{u[j]} (with a 1 in row \code{i} if \code{group[i]} is \code{j}), resulting in \code{3+num_groups} columns. Note that the polyagamma sampler can determine the design matrix from the model, even when written as above such that the design matrix is not explicitly in the model code. It is also possible to write model code for the linear prediction using matrix multiplication and an explicit design matrix, but that is not necessary.
 
@@ -609,6 +650,8 @@ Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference u
 
 Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
 
+Livingstone, S. and Zanella G. (2022). The Barker proposal: combining robustness and efficiency in gradient-based MCMC. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 84(2): 496-523.
+
 Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
 
 Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
@@ -621,7 +664,7 @@ Neal, R. M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Ch
 
 Pitt, M. K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 
-Polson, N.G., Scott, J.G., and J. Windle. (2013). Bayesian inference for logistic models using Pólya-gamma latent variables. Journal of the American Statistical Association, 108(504), 1339–1349. https://doi.org/10.1080/01621459.2013.829001
+Polson, N.G., Scott, J.G., and J. Windle. (2013). Bayesian inference for logistic models using \enc{Pólya}{Polya}-gamma latent variables. Journal of the American Statistical Association, 108(504), 1339–1349. https://doi.org/10.1080/01621459.2013.829001
 
 Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
 
@@ -632,6 +675,8 @@ Stan Development Team (2020). \emph{Stan Language Reference Manual, Version 2.22
 Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
 
 van Dyk, D.A. and T. Park. (2008). Partially collapsed Gibbs Samplers. \emph{Journal of the American Statistical Association}, 103(482), 790-796.
+
+Vogrinc, J., Livingstone, S., and Zanella, G. (2023). Optimal design of the Barker proposal and other locally balanced Metropolis–Hastings algorithms. \emph{Biometrika},  110(3): 579-595.
 
 Yu, Y. and Meng, X. L. (2011). To center or not to center: That is not the question - An ancillarity-sufficiency interweaving strategy (ASIS) for boosting MCMC efficiency. Journal of Computational and Graphical Statistics, 20(3), 531–570. https://doi.org/10.1198/jcgs.2011.203main
 }

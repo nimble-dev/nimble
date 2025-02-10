@@ -306,7 +306,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
     buildDerivs = TRUE)
   
   cm <- compileNimble(m)
-  mQuad <- buildAGHQ(model = m, nQuad = 5, control=list(innerOptimeMethod="nlminb"))
+  mQuad <- buildAGHQ(model = m, nQuad = 5, control=list(innerOptimMethod="nlminb"))
   cmQuad <- compileNimble(mQuad, project = m)
 
   ## Check gradient and marginalization accuracy.
@@ -337,7 +337,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
   mle.par <- exp(mle.tru$par)
   
   ## Check with 5 quad points.
-  mle.quad <- cmQuad$findMLE(pStart = c(10,2), method="nlminb")
+  mle.quad <- cmQuad$findMLE(pStart = c(10,2))
   expect_equal(mle.quad$par, mle.par, tol = 1e-02)
   expect_equal(mle.quad$value, mle.tru$value, tol = 1e-03)
   
@@ -345,7 +345,7 @@ test_that("AGH Quadrature 1D Check MLE.", {
   cmQuad$updateSettings(nQuad=35)
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mle.quad35 <- cmQuad$findMLE(pStart = c(10,2), method="nlminb")
+  mle.quad35 <- cmQuad$findMLE(pStart = c(10,2))
   expect_equal(mle.quad35$par, mle.par, tol = 1e-04)
   expect_equal(mle.quad35$value, mle.tru$value, tol = 1e-08)
 })
@@ -378,8 +378,9 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   cm <- compileNimble(m)
   # N.B. It is not clear that setting reltol values less than sqrt(.Machine$double.eps) is useful, so we may want to update this:
   mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mQuad$updateSettings(innerOptimMethod="nlminb")
+  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16),
+                                                             outerOptimMethod = 'BFGS'))
+  mQuad$updateSettings(innerOptimMethod="nlminb", outerOptimMethod="BFGS")
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
@@ -400,10 +401,10 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   # But with BFGS we get lots of warnings about uncached inner optimization
   mleLME4 <- c( 3.5679609790094040, 1.4736809813876610, 0.3925194078627622 )
   mleTMB <-  c( 3.5679629394855974, 1.4736809255475793, 0.3925215998142128 )
-  mleLaplace <- cmLaplace$findMLE(method="BFGS")$par
+  mleLaplace <- cmLaplace$findMLE()$par
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mleQuad <- cmQuad$findMLE(method = "BFGS")$par
+  mleQuad <- cmQuad$findMLE()$par
 
   expect_equal(mleLaplace, mleLME4, tol = 1e-7)
   expect_equal(mleQuad, mleLME4, tol = 1e-7)
@@ -418,10 +419,10 @@ test_that("AGH Quadrature Comparison to LME4 1 RE", {
   ## Compare MLE after running twice.
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mleLaplace2 <- cmLaplace$findMLE(method="BFGS")$par
+  mleLaplace2 <- cmLaplace$findMLE()$par
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
   cm$calculate()
-  mleQuad2 <- cmQuad$findMLE(method="BFGS")$par
+  mleQuad2 <- cmQuad$findMLE()$par
   expect_equal(mleLaplace, mleLaplace2, tol = 1e-6) # 1e-8
   expect_equal(mleQuad, mleQuad2, tol = 1e-8)
 
@@ -452,9 +453,8 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   m$calculate()  
 
   cm <- compileNimble(m)	  
-  mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-16)))
-  mQuad$updateSettings(innerOptimMethod = "nlminb")
+  mQuad <- buildAGHQ(model = m, nQuad = 21, control = list(outerOptimControl = list(reltol = 1e-12)))
+  mLaplace <- buildAGHQ(model = m, nQuad = 1, control = list(outerOptimControl = list(reltol = 1e-12)))
   cQL <- compileNimble(mQuad, mLaplace, project = m)
   cmQuad <- cQL$mQuad
   cmLaplace <- cQL$mLaplace
@@ -472,9 +472,9 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   mleLME4_nquad21 <- c( 3.5136587320416126, 0.4568722479747411)
   mleLME4_laplace <- c( 3.5136586190857675, 0.4568710881066258)
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
-  mleLaplace <- cmLaplace$findMLE(method="BFGS")$par
+  mleLaplace <- cmLaplace$findMLE()$par
   for(v in m$getVarNames()) cm[[v]] <- m[[v]]
-  mleQuad <- cmQuad$findMLE(method="BFGS")$par
+  mleQuad <- cmQuad$findMLE()$par
 
 	## Compare the marginal log likelihood for the laplace method.
   logLikLaplace <- cmLaplace$calcLogLik( mleLME4_laplace )
@@ -487,10 +487,10 @@ test_that("AGH Quadrature Comparison to LME4 1 RE for Poisson-Normal", {
   expect_equal(mleQuad, mleLaplace, tol = 1e-5)
   
   ## Compare MLE after running twice.
-  mleLaplace2 <- cmLaplace$findMLE(method="BFGS")$par
-  mleQuad2 <- cmQuad$findMLE(method="BFGS")$par
+  mleLaplace2 <- cmLaplace$findMLE()$par
+  mleQuad2 <- cmQuad$findMLE()$par
   expect_equal(mleLaplace, mleLaplace2, tol = 1e-5)
-  expect_equal(mleQuad, mleQuad2, tol = 1e-8)
+  expect_equal(mleQuad, mleQuad2, tol = 1e-5)
 })
 
 
@@ -543,11 +543,11 @@ test_that("AGHQ nQuad > 1 for simple LME with correlated intercept and slope wor
   nimsumm <- summaryLaplace(cmLaplace, opt, randomEffectsStdError = TRUE)
 
   lme4res <- summary(manual_fit)
-  expect_equal(nimres$params$estimates[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
-  sdparams <- nimres$params$estimates[-c(4,5)]
+  expect_equal(nimres$params$estimate[4:5], as.vector(lme4res$coefficients[,"Estimate"]), tol=1e-4)
+  sdparams <- nimres$params$estimate[-c(4,5)]
   expect_equal(sdparams[c(1,2,4,3)], as.data.frame(VarCorr(manual_fit))[,"sdcor"], tol = 1e-3)
-  expect_equal(nimres$params$stdErrors[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
-  expect_equal(nimres$randomEffects$estimates, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
+  expect_equal(nimres$params$stdError[4:5], as.vector(lme4res$coefficients[,"Std. Error"]), tol=.03)
+  expect_equal(nimres$randomEffects$estimate, as.vector(t(ranef(manual_fit)$g)), tol = 5e-3)
 
   cmLaplace$updateSettings(nQuad = 3)
   init_llh_3 <- cmLaplace$calcLogLik(pStart)

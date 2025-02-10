@@ -31,7 +31,7 @@ include 0 (or in all cases when double-taping).}
 \item{...}{additional arguments intended for internal use only.}
 }
 \value{
-a \code{nimbleList} with elements \code{value}, \code{jacobian},
+an \code{ADNimbleList} with elements \code{value}, \code{jacobian},
 and \code{hessian}.
 }
 \description{
