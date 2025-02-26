@@ -97,7 +97,7 @@ parameterTransform <- nimbleFunction(
         ## 3: scalar interval-constrained (0, 1)
         ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
         ## 5: scalar interval-constrained (a, b)
-        ## 6: multivariate {normal, t, CAR}
+        ## 6: multivariate {normal, t, CAR} and multivariate user-defined distributions
         ## 7: multivariate {wishart, inverse-wishart}
         ## 8: multivariate dirichlet
         ## 9: LKJ 
@@ -179,7 +179,11 @@ parameterTransform <- nimbleFunction(
                     next }
                 stop(paste0('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
             } else {   ## multivariate
-                if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper')) {               ## 6: multivariate {normal, t, CAR}; also set for non-scalar determ nodes when allowDeterm is TRUE
+                if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper') ||    ## 6: multivariate {normal, t, CAR},
+                   isUserDefined(dist))                                              ##    all multivariate user-defined distributions,
+                {                                                                    ##    and non-scalar determ nodes when allowDeterm is TRUE
+                    if(isUserDefined(dist) & getNimbleOption('parameterTransformWarnUserDists'))
+                        message('  [Warning] `parameterTransform` system detected multivariate user-defined distribution ', dist, '. No transformation will be applied to any dimension of \'x\' values of ', dist, '. If some values of \'x\' are not valid in ', dist, ', you may encounter errors.  This warning can be disabled using nimbleOptions(parameterTransformWarnUserDists = FALSE)')
                     transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
