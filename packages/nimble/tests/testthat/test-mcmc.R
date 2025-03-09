@@ -3022,7 +3022,7 @@ test_that('assigning samplers to data and allowData argument', {
     expect_true(samps[[4]]$name == 'posterior_predictive')
 })
 
-test_that('partial_mvn sampler was given to dmnorm distribution', {
+test_that('partial_mvn sampler was given to dmnorm distribution when dependent on a node without being depended on by another node', {
   code <- nimbleCode({ for (i in 1:N){
     theta[i] ~ dgamma(alpha,beta) 
     lambda[i] <- theta[i]*t[i] 
@@ -3046,7 +3046,7 @@ test_that('partial_mvn sampler was given to dmnorm distribution', {
 })
 
 
-test_that('partial_mvn sampler was given to dmnorm distribution', {
+test_that('partial_mvn sampler was given to dmnorm distribution when not dependent on nodes in the model', {
   code <- nimbleCode({ for (i in 1:N){
     theta[i] ~ dnorm(alpha,beta) 
     lambda[i] <- theta[i]*t[i] 
@@ -3062,6 +3062,30 @@ test_that('partial_mvn sampler was given to dmnorm distribution', {
   model <- nimbleModel(code = code, name = "model", constants = consts, data = data)
   
   conf <- configureMCMC(model, nodes = 'y[1:10]')
+  
+  expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
+})
+
+test_that('partial_mvn sampler was given to dmnorm distribution when intermediate in a model', {
+  code <- nimbleCode({ for (i in 1:N){
+    theta[i] ~ dgamma(alpha,beta) 
+    lambda[i] <- theta[i]*t[i] 
+    x[i] ~ dpois(lambda[i])
+  }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1,1.0)
+    for(i in 1:5) {
+      mu[i] <- alpha+i
+    }
+    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    h[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
+  })
+  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+  
+  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+  
+  conf <- configureMCMC(model, nodes = 'y[1:5]')
   
   expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
 })
