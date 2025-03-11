@@ -1150,6 +1150,8 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
     ## prevents an infinite-recursion case, where structureExpr(EXPR) is repeatedly processed, indefinitely (DT Aug 2022):
     if(!is.null(prevExpr) && identical(expr, prevExpr)) return(expr)
     if(is.numeric(expr)) return(expr)     # return numeric
+    if(is.call(expr) && (expr[[1]] == '$'))             # expr extracting a field from some function (ex. eigen()$values)
+        return(as.call(c(cc_structureExprName, expr)))  # put 'expr' back in though shouldn't be needed downstream
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(getNimbleOption('allowDynamicIndexing')) {
             ## this deals with having mu[k[1]] (which won't pass through expandNodeNames), replacing k[1] with the index from targetNode
