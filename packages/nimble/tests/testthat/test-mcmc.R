@@ -3115,6 +3115,34 @@ test_that('partial_mvn sampler was given to each dmnorm distribution', {
   expect_true(sum(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn')==2, info= "partial_mvn sampler not assigned to each dmnorm distribution")
 })
 
+test_that('partial_mvn sampler was given to each partially obs dmnorm distribution when both are at intermediate level in a model', {
+  code <- nimbleCode({ for (i in 1:N){
+    theta[i] ~ dgamma(alpha,beta) 
+    lambda[i] <- theta[i]*t[i] 
+    x[i] ~ dpois(lambda[i])
+  }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1,1.0)
+    for(i in 1:5) {
+      mu[i] <- alpha+i
+      me[i] <- beta-i
+    }
+    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    z[1:5]~dmnorm(me[1:5], Sigmo[1:5,1:5])
+    
+    a[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
+    b[1:5]~dmvt(z[1:5], Sigmo[1:5,1:5], df = 10)
+  })
+  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5), z=c(1:3, rep(NA,2)))
+  
+  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+  
+  conf <- configureMCMC(model, nodes = model$getNodeNames()[26:27])
+  
+  expect_true(sum(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn')==2, info= "partial_mvn sampler not assigned to each dmnorm distribution")
+})
+
 test_that('partial_mvn sampler was not given to dmvt dist', {
   code <- nimbleCode({ for (i in 1:N){
     theta[i] ~ dgamma(alpha,beta) 
