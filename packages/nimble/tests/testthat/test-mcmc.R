@@ -3183,7 +3183,7 @@ test_that('an error is given when trying to assign a sampler to partially observ
   expect_error(configureMCMC(model, print = FALSE), info = "model with dmvt given a sampler for every node" )
 })
 
-test_that('trying to give a sampler to an observed node yields NA from configureMCMC', {
+test_that('trying to give a sampler to an observed node doesnt yield an error from configureMCMC', {
   code <- nimbleCode({ for (i in 1:N){
     theta[i] ~ dgamma(alpha,beta) 
     lambda[i] <- theta[i]*t[i] 
