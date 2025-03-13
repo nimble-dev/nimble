@@ -3158,6 +3158,7 @@ test_that('an error is given when trying to assign sampler to partially observed
   
   model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
   
+  expect_error(configureMCMC(model, nodes = 'y[1:5]', print = FALSE), info = "partially observed dmvt node given a sampler")
   expect_error(configureMCMC(model, print = FALSE), info = "model with partially observed dmvt given a sampler for every node" )
 })
 
