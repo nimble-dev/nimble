@@ -2825,6 +2825,9 @@ sampler_polyagamma <- nimbleFunction(
         
         ## This allows user to override error trapping for unusual model structures.
         check <- extractControlElement(control, 'check', TRUE)   
+        conjCheckAll <- extractControlElement(control, 'conjCheckAll', FALSE)  
+        ## If not checking, then need to be provided by user or set as empty.
+        inflationNodes <- model$expandNodeNames(control$inflationNodes)
 
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -2856,13 +2859,13 @@ sampler_polyagamma <- nimbleFunction(
         if(check) {
             if(!all(targetDists %in% c("dnorm", "dmnorm")))
                 stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors. ", checkMessage)
-            if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin")) ) 
+            if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin", "dnegbin")) ) 
                 stop("polyagamma sampler: response nodes must be distributed `dbern` or `dbin`. ", checkMessage)
             nodeIDs <- model$expandNodeNames(yNodes, returnType = 'ids')
-            if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)  # So that we can do conj checking only on one item.
-                stop("polyagamma sampler: response nodes should all be part of the same declaration. ", checkMessage)
+            if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1 & !conjCheckAll)  # So that we can do conj checking only on one item.
+                stop("polyagamma sampler: response nodes should all be part of the same declaration or declare conjCheckAll = TRUE. ", checkMessage)
         }
-            
+        
         probAndSizeNodes <- model$getParents(yNodes, immediateOnly = TRUE)
         depNodes <- model$getDependencies(target, self = TRUE)
         probNodes <- intersect(probAndSizeNodes, depNodes)  # These nodes may reflect zero-inflated probabilities.
@@ -2876,21 +2879,22 @@ sampler_polyagamma <- nimbleFunction(
 
         ## First we need some processing to make sure that we can simply check inflation based only on `probNodes[1]`,
         ## to avoid costly checking.
-        if(check) {
+        if( check ) {
+          if( length(inflationNodes) == 0 )
             inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
-            if(length(inflationNodes)) {
-                ## Check that inflation probabilities are directly specified as parents of `probNodes`
-                ## to avoid having to check multiple declarations. Seemingly anything otherwise would be
-                ## an unusual zero inflation construction.
-                inflationNodes <- setdiff(inflationNodes, nonTarget)
-                test <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, immediateOnly = TRUE)
-                test <- setdiff(test, nonTarget)
-                if(!identical(test, inflationNodes))  # So we need to only consider a single declaration.
-                    stop("polyagamma sampler: zero-inflation probabilities should be specified directly as Bernoulli or binomial (with `size=1`) random variables in the response node declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
-                nodeIDs <- model$expandNodeNames(probNodes, returnType = 'ids')
-                if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)  # If declaration of zero-inflation nodes occurs in one declaration, we can do conj checking only on one item.
-                    stop("polyagamma sampler: zero-inflation nodes should all be part of the same declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
-            }
+          if(length(inflationNodes)) {
+              ## Check that inflation probabilities are directly specified as parents of `probNodes`
+              ## to avoid having to check multiple declarations. Seemingly anything otherwise would be
+              ## an unusual zero inflation construction.
+              inflationNodes <- setdiff(inflationNodes, nonTarget)
+              test <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, immediateOnly = TRUE)
+              test <- setdiff(test, nonTarget)
+              if(!identical(test, inflationNodes))  # So we need to only consider a single declaration.
+                  stop("polyagamma sampler: zero-inflation probabilities should be specified directly as Bernoulli or binomial (with `size=1`) random variables in the response node declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
+              nodeIDs <- model$expandNodeNames(probNodes, returnType = 'ids')
+              if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)  # If declaration of zero-inflation nodes occurs in one declaration, we can do conj checking only on one item.
+                  stop("polyagamma sampler: zero-inflation nodes should all be part of the same declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
+          }
         }
         
         inflationStochNodesOne <- model$getParents(probNodes[1], omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
@@ -3022,6 +3026,22 @@ sampler_polyagamma <- nimbleFunction(
             fixedColumns <- rep(TRUE, nCoef)
         }
 
+        ## Conjugacy checking for each observation node: 
+        ## Make sure that we know what distribution it is and if the size is stochastic.
+        stochSizeID <- rep(stochSize, N)
+        stochSizeParents <- model$getParents(sizeNodes, stochOnly = TRUE, self = TRUE)
+        yDistNegBin <- (as.character(model$getDistribution(yNodes)) == "dnegbin")
+        stochDataID <- !model$isData(yNodes)
+        stochData <- any(stochDataID)
+        negBin <- any(yDistNegBin)
+        initializeData <- FALSE
+        
+        if( conjCheckAll & stochSize ){
+          for( i in seq_along(yNodes) ){
+            stochSizeID[i] <- length(intersect(model$getParents(yNodes[i]), stochSizeParents)) > 0
+          }
+        }
+        
         initializeSize <- TRUE
         initializeX <- TRUE
         pgSampler <- samplePolyaGamma()
@@ -3046,8 +3066,10 @@ sampler_polyagamma <- nimbleFunction(
         probNonZero <- rep(0, N)  ## Track ids where prob == 0 (zero inflated).
         n <- N  ## Number of active (non-zero-inflated) obs.
         
+        kappa <- numeric(N)
+        eta <- numeric(N)
         psi <- numeric(N)
-        size <- numeric(N)  
+        size <- numeric(N)
         sizeContig <- numeric(N)  
         
         ## Preallocate storage for sampling. Not clear how much some or all of this helps.
@@ -3060,15 +3082,12 @@ sampler_polyagamma <- nimbleFunction(
     run = function() {
         if(!one_time_fixes_done) one_time_fixes()
         
-        if(initializeSize | stochSize)
-            setSizeParam() 
-    
-        ## Get current values.
-        y <- values(model, yNodes)
-        if(singleSize) {
-            k <- y - size[1]*0.5
-        } else k <- y - size*0.5
-
+        ## Set up all the data:
+        if( initializeData )
+          setDataParams()
+        else
+          updateDataParams()        
+        
         start <- 1
         for( i in 1:nTarget ) {
             end <- start + nodeLengths[i] - 1
@@ -3088,16 +3107,16 @@ sampler_polyagamma <- nimbleFunction(
             ## `psi` already has non-zero-prob values in first n elements based on `setProbParam`.
             if(n > 0) {
                 if(singleSize) {
-                    w[1:n] <<- pgSampler$rpolyagamma(c(size[1]), psi[1:n])
+                    w[1:n] <<- pgSampler$rpolyagamma(c(eta[1]), psi[1:n])
                 } else {
-                    sizeContig[1:n] <<- size[probNonZero[1:n]] 
+                    sizeContig[1:n] <<- eta[probNonZero[1:n]] 
                     w[1:n] <<- pgSampler$rpolyagamma(sizeContig, psi[1:n])
                 }
             }
         } else {
             if(singleSize) {
-                w[1:N] <<- pgSampler$rpolyagamma(c(size[1]), psi)
-            } else w[1:N] <<- pgSampler$rpolyagamma(size, psi)  ## w|beta ~ pg(n, x %*% beta)
+                w[1:N] <<- pgSampler$rpolyagamma(c(eta[1]), psi)
+            } else w[1:N] <<- pgSampler$rpolyagamma(eta, psi)  ## w|beta ~ pg(n, x %*% beta)
         }
         
         ## Note that the calculations below involving X don't take advantage of sparsity, including with random intercepts or
@@ -3107,7 +3126,7 @@ sampler_polyagamma <- nimbleFunction(
         if(zeroInflated){
             if(n > 0) {
                 Xd[1:n,] <<- X[probNonZero[1:n],]
-                kpre[1:n] <<- k[probNonZero[1:n]]
+                kpre[1:n] <<- kappa[probNonZero[1:n]]
                 for( j in 1:nCoef ) {
                     XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
                     b[j] <<- sum(Xd[1:n,j] * kpre[1:n]) + sum(Q[j,] * mu)
@@ -3121,7 +3140,7 @@ sampler_polyagamma <- nimbleFunction(
         } else {
             for( j in 1:nCoef ){
                 XW[j,] <<-  X[,j]*w
-                b[j] <<- sum(X[,j] * k) + sum(Q[j,] * mu)
+                b[j] <<- sum(X[,j] * kappa) + sum(Q[j,] * mu)
             }
             Q1 <- XW %*% X + Q
         }
@@ -3144,7 +3163,7 @@ sampler_polyagamma <- nimbleFunction(
                 inflationDepsValuesSaved <- values(model, inflationNodesDeps)
                 values(model, inflationNodes) <<- ones
                 model$calculate(inflationNodesDeps)
-                ## Check for cases like `dbern(z[i]*3*p[i])`
+                ## Check for cases like `dbern(z[i]*3*p[i])` *** PVDB need to think about this one a bit more.
                 if(any(values(model, probNodes) != values(model, probNodesInflated)))
                     stop("Zero inflation not specified as multiplying by one or more Bernoulli variables")
             }
@@ -3168,24 +3187,49 @@ sampler_polyagamma <- nimbleFunction(
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             initializeX <<- FALSE
         },
-        setSizeParam = function() {
+        setDataParams = function() {
+          if( initializeData ){
+            y <- values(model, yNodes)
             for(i in 1:N) {
+              size <<- model$getParam(yNodes[i], 'size')
+              if( yDistNegBin[i] ){
+                eta[i] <<- size[i] + y[i]
+                kappa[i] <<- size[i] - eta[i]/2
+              }else{
+                eta[i] <<- size[i]
+                kappa[i] <<- y[i] - size[i]/2
+              }
+            }
+          }
+          singleSize <<- FALSE
+          if(!stochSize & !negBin) {
+              singleSize <<- TRUE
+              i <- 1
+              while(i <= N & singleSize) {
+                  if(size[i] != size[1]) {
+                      singleSize <<- FALSE
+                  }
+                  i <- i+1
+              }
+          }
+          initializeData <<- FALSE
+        },
+        updateDataParams = function() {
+          if( stochData | stochSize ) {
+            for( i in 1:N ) {
+              if( stochDataID[i] | stochSizeID[i] ){
+                yi <- values(model, yNodes[i])
                 size[i] <<- model$getParam(yNodes[i], 'size')
-            }
-            ## Not worth checking singleSize if it is stochastic and varies by observation. Perhaps worth considering if
-            ## size is constant across observations but stochastic. Not sure if there is a use case of that.
-            singleSize <<- FALSE
-            if(!stochSize & initializeSize) {
-                singleSize <<- TRUE
-                i <- 1
-                while(i <= N & singleSize) {
-                    if(size[i] != size[1]) {
-                        singleSize <<- FALSE
-                    }
-                    i <- i+1
+                if( yDistNegBin[i] ){
+                  eta[i] <<- size[i] + yi
+                  kappa[i] <<- size[i] - eta[i]/2
+                }else{
+                  eta[i] <<- size[i]
+                  kappa[i] <<- yi - size[i]/2
                 }
+              }
             }
-            initializeSize <<- FALSE
+          }
         },
         setProbParam = function() {
             ## Note that zero size cases are handled directly in PG sampling;
