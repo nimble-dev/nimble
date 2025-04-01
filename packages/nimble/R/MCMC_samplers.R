@@ -2957,7 +2957,7 @@ sampler_polyagamma <- nimbleFunction(
                     stop("polyagamma sampler: linear predictors should all be constructed in the same declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
                 nodesToCheck <- model$getParents(nodesToCheck, immediateOnly = TRUE)
             }
-             
+                        
             if(model$getValueExpr(probNodes[1])[[1]] != 'expit')  
                 stop("polyagamma sampler: target must be related to response via logit link. Also note that zero inflation cannot be specified directly in the declaration for the linear predictor to enable NIMBLE to efficiently check model validity. ", checkMessage)   ## `z[i]*expit(b0+b1*x[i])` would be harder to check for validity.
             linearityCheckExprRaw <- model$getValueExpr(probNodes[1])[[2]]
@@ -3069,7 +3069,6 @@ sampler_polyagamma <- nimbleFunction(
         kappa <- numeric(N)
         eta <- numeric(N)
         psi <- numeric(N)
-        size <- numeric(N)
         sizeContig <- numeric(N)  
         
         ## Preallocate storage for sampling. Not clear how much some or all of this helps.
@@ -3082,12 +3081,13 @@ sampler_polyagamma <- nimbleFunction(
     run = function() {
         if(!one_time_fixes_done) one_time_fixes()
         
-        ## Set up all the data:
-        if( initializeData )
+        ## Set up all the data: (size and kappa)
+        if( !initializeData )
           setDataParams()
         else
           updateDataParams()        
         
+        ## Get normal variances for target.
         start <- 1
         for( i in 1:nTarget ) {
             end <- start + nodeLengths[i] - 1
@@ -3188,44 +3188,45 @@ sampler_polyagamma <- nimbleFunction(
             initializeX <<- FALSE
         },
         setDataParams = function() {
-          if( initializeData ){
+          if( !initializeData ){
             y <- values(model, yNodes)
             for(i in 1:N) {
-              size <<- model$getParam(yNodes[i], 'size')
+              size <- model$getParam(yNodes[i], 'size')
               if( yDistNegBin[i] ){
-                eta[i] <<- size[i] + y[i]
-                kappa[i] <<- size[i] - eta[i]/2
+                eta[i] <<- size + y[i]
+                kappa[i] <<- size - eta[i]*0.5
               }else{
-                eta[i] <<- size[i]
-                kappa[i] <<- y[i] - size[i]/2
+                eta[i] <<- size
+                kappa[i] <<- y[i] - size*0.5
               }
             }
           }
           singleSize <<- FALSE
+          ## negative binomial size depends on observations.
           if(!stochSize & !negBin) {
               singleSize <<- TRUE
               i <- 1
               while(i <= N & singleSize) {
-                  if(size[i] != size[1]) {
+                  if(eta[i] != eta[1]) {
                       singleSize <<- FALSE
                   }
                   i <- i+1
               }
           }
-          initializeData <<- FALSE
+          initializeData <<- TRUE
         },
         updateDataParams = function() {
           if( stochData | stochSize ) {
+            y <- values(model, yNodes)
             for( i in 1:N ) {
               if( stochDataID[i] | stochSizeID[i] ){
-                yi <- values(model, yNodes[i])
-                size[i] <<- model$getParam(yNodes[i], 'size')
+                size <- model$getParam(yNodes[i], 'size')
                 if( yDistNegBin[i] ){
-                  eta[i] <<- size[i] + yi
-                  kappa[i] <<- size[i] - eta[i]/2
+                  eta[i] <<- size + y[i]
+                  kappa[i] <<- size - eta[i]*0.5
                 }else{
-                  eta[i] <<- size[i]
-                  kappa[i] <<- yi - size[i]/2
+                  eta[i] <<- size
+                  kappa[i] <<- y[i] - size*0.5
                 }
               }
             }
