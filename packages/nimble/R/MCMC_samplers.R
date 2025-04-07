@@ -2860,7 +2860,7 @@ sampler_polyagamma <- nimbleFunction(
             if(!all(targetDists %in% c("dnorm", "dmnorm")))
                 stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors. ", checkMessage)
             if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin", "dnegbin")) ) 
-                stop("polyagamma sampler: response nodes must be distributed `dbern` or `dbin`. ", checkMessage)
+                stop("polyagamma sampler: response nodes must be distributed `dbern` , `dbin` or `dnegbin`. ", checkMessage)
             nodeIDs <- model$expandNodeNames(yNodes, returnType = 'ids')
             if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1 & !conjCheckAll)  # So that we can do conj checking only on one item.
                 stop("polyagamma sampler: response nodes should all be part of the same declaration or declare conjCheckAll = TRUE. ", checkMessage)
@@ -2892,56 +2892,75 @@ sampler_polyagamma <- nimbleFunction(
               if(!identical(test, inflationNodes))  # So we need to only consider a single declaration.
                   stop("polyagamma sampler: zero-inflation probabilities should be specified directly as Bernoulli or binomial (with `size=1`) random variables in the response node declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
               nodeIDs <- model$expandNodeNames(probNodes, returnType = 'ids')
-              if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)  # If declaration of zero-inflation nodes occurs in one declaration, we can do conj checking only on one item.
-                  stop("polyagamma sampler: zero-inflation nodes should all be part of the same declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
+              if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1 & !conjCheckAll)  # If declaration of zero-inflation nodes occurs in one declaration, we can do conj checking only on one item.
+                  stop("polyagamma sampler: zero-inflation nodes should all be part of the same declaration to enable NIMBLE to efficiently check model validity. Set conjCheckAll = TRUE to check each one separately. ", checkMessage)
           }
         }
         
-        inflationStochNodesOne <- model$getParents(probNodes[1], omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
+        inflationStochNodesAll <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
         ## We ask user to provide non-target nodes in the linear predictor as otherwise hard to distinguish from zero-inflation nodes.
-        if(length(inflationStochNodesOne)) {
+        if(length(inflationStochNodesAll)) {
             zeroInflated <- TRUE
             ones <- rep(1, length(model$expandNodeNames(inflationNodes, returnScalarComponents = TRUE)))
             inflationNodesDeps <- model$getDependencies(inflationNodes, determOnly = TRUE, self = FALSE)
-            dists <- model$getDistribution(inflationStochNodesOne)
+
+            dists <- model$getDistribution(inflationStochNodesAll)
 
             if(check) {
                 if(!all(dists %in% c("dbern", "dbin")))
                     stop("polyagamma sampler: Invalid stochastic nodes found as parents of response. Any such nodes other than the target must specify zero inflation, and any non-target nodes in the linear predictor must be included in `control$nonTargetNodes`. ", checkMessage)
+                
                 binomDists <- dists == 'dbin'
                 if(any(binomDists)) {
-                    if(!all(sapply(inflationStochNodesOne[binomDists], function(x) model$getParamExpr(x, 'size') == 1)))
+                    if(!all(sapply(inflationStochNodesAll[binomDists], function(x) model$getParamExpr(x, 'size') == 1)))
                         stop("polyagamma sampler: Zero inflation nodes must be `dbern` or `dbin` with `size=1`. ", checkMessage)
                 }
             }
 
             probNodesInflated <- probNodes
-            probNodes <- intersect(model$getParents(probNodes, self = FALSE, immediateOnly = TRUE), depNodes)
+            ##*** PVDB noticed that if this is mixed type, we can end up with the target values here. Must be determ only.
+            probNodes <- intersect(model$getParents(probNodes, self = FALSE, immediateOnly = TRUE, determOnly = TRUE), depNodes) 
+            probNodesInflated <- setdiff(probNodesInflated, probNodes)  ## If a zero-inflated is used and same prob recycled elsewhere not zero inflated.
 
             ## Check probability is product of inflationNodes and non-inflated probability.
-            linearityCheckExprRaw <- model$getValueExpr(probNodesInflated[1])
-            for(node in inflationStochNodesOne) {
-                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
-                linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
-                linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
-                if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
-                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
+            ## Note it will check all if conjCheckAll == TRUE, o/w just check the first as before.
+            if( !conjCheckAll ) 
+              inflationStochNodesCheck <- model$getParents(probNodesInflated[1], omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
+            else
+              inflationStochNodesCheck <- inflationStochNodesAll
+
+            idx <- 1
+            while( length(inflationStochNodesCheck) > 0 & idx < length( probNodesInflated ) ) {
+              nodesToCheck <- model$getParents(probNodesInflated[idx], omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
+              linearityCheckExprRaw <- model$getValueExpr(probNodesInflated[idx])
+              for( node in nodesToCheck ) {
+                  linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
+                  linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
+                  linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
+                  if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
+                      stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
+              }
+              ## Ensure the probNode lines up with associated zero-inflated in mixed model.
+              probNodei <- intersect(model$getParents(probNodesInflated[idx], self = FALSE, immediateOnly = TRUE, determOnly = TRUE), probNodes) 
+              linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodei)
+              linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
+              if(check && (length(intersect(probNodes[i], target)) || is.null(linkCheck) || linkCheck != 'multiplicative'))
+                  stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
+
+              inflationStochNodesCheck <- setdiff(inflationStochNodesCheck, nodesCheck)
+              idx <- idx + 1
             }
-            linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodes[1])
-            linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
-            if(check && (length(intersect(probNodes[1], target)) || is.null(linkCheck) || linkCheck != 'multiplicative'))
-                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
-        } else {
-            ## Placeholders to allow compilation.
-            ones <- rep(1, 2)
-            inflationNodes <- probNodes[1]
-            inflationNodesDeps <- probNodes[1]
-            probNodesInflated <- probNodes[1]
-        }
+          } else {
+              ## Placeholders to allow compilation.
+              ones <- rep(1, 2)
+              inflationNodes <- probNodes[1]
+              inflationNodesDeps <- probNodes[1]
+              probNodesInflated <- probNodes[1]
+          }
         
 
         ## At this point, `probNodes` has the nodes for the non-inflated probabilities.
-
+          
         ## Conjugacy checking, part 3: Check linearity of target nodes in logit link.
         if(check) {
             ## In order to do conjugacy checking only on one item for efficiency, we need all `probNodes` and all
@@ -2957,16 +2976,20 @@ sampler_polyagamma <- nimbleFunction(
                     stop("polyagamma sampler: linear predictors should all be constructed in the same declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
                 nodesToCheck <- model$getParents(nodesToCheck, immediateOnly = TRUE)
             }
-                        
-            if(model$getValueExpr(probNodes[1])[[1]] != 'expit')  
-                stop("polyagamma sampler: target must be related to response via logit link. Also note that zero inflation cannot be specified directly in the declaration for the linear predictor to enable NIMBLE to efficiently check model validity. ", checkMessage)   ## `z[i]*expit(b0+b1*x[i])` would be harder to check for validity.
-            linearityCheckExprRaw <- model$getValueExpr(probNodes[1])[[2]]
-            for(node in targetAsScalar) {
-                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
-                linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
-                linkCheck <- cc_linkCheck(linearityCheck, "linear")
-                if(is.null(linkCheck) || !linkCheck %in% c('identity', 'additive', 'multiplicative', 'linear'))
-                    stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. ", checkMessage)
+            
+            ncheck <- 1
+            if( conjCheckAll ) ncheck <- length(probNodes)
+            for( i in 1:ncheck ){
+              if(model$getValueExpr(probNodes[i])[[1]] != 'expit')  
+                  stop("polyagamma sampler: target must be related to response via logit link. Also note that zero inflation cannot be specified directly in the declaration for the linear predictor to enable NIMBLE to efficiently check model validity. ", checkMessage)   ## `z[i]*expit(b0+b1*x[i])` would be harder to check for validity.
+              linearityCheckExprRaw <- model$getValueExpr(probNodes[1])[[2]]
+              for(node in targetAsScalar) {
+                  linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
+                  linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
+                  linkCheck <- cc_linkCheck(linearityCheck, "linear")
+                  if(is.null(linkCheck) || !linkCheck %in% c('identity', 'additive', 'multiplicative', 'linear'))
+                      stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. ", checkMessage)
+              }
             }
         }
       
@@ -3840,7 +3863,7 @@ sampler_barker <- nimbleFunction(
 #'   control = list(fixedDesignColumns=TRUE))
 #' }
 #' 
-#' As shown here, the stochastic dependencies (\code{y[i]} here) of the target nodes must follow \code{dbin} or \code{dbern} distributions. The logit transformation of their probability parameter must be a linear function (technically an affine function) of the target nodes, which themselves must have \code{dnorm} or \code{dmnorm} priors. Zero inflation to account for structural zeroes is also supported, allowed as discussed below. The stochastic dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the \enc{Pólya}{Polya}-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
+#' As shown here, the stochastic dependencies (\code{y[i]} here) of the target nodes must follow \code{dbin}, \code{dbern}, or \code{dnegbin} distributions. The logit transformation of their probability parameter must be a linear function (technically an affine function) of the target nodes, which themselves must have \code{dnorm} or \code{dmnorm} priors. Zero inflation to account for structural zeroes is also supported, allowed as discussed below. The stochastic dependencies will often but not always be the observations in the logistic regression and will be referred to as 'responses' henceforth. Internally, the sampler draws latent values from the \enc{Pólya}{Polya}-gamma distribution, one per response. These latent values are then used to draw from the multivariate normal conditional distribution of the target nodes.
 #'
 #' Importantly, note that because the \enc{Pólya}{Polya}-gamma draws are not retained when an iteration of the sampler finishes, one generally wants to apply the sampler to all parameter nodes involved in the linear predictor of the logistic regression, to avoid duplicative \enc{Pólya}{Polya}-gamma draws of the latent values. If there are stochastic indices (e.g., if \code{group[i]} above is stochastic), the \enc{Pólya}{Polya}-gamma sampler can still be used, but the stochastic nodes cannot be sampled by it and must have separate sampler(s). It is also possible in some models that regression parameters can be split into (conditionally independent) groups that can be sampled independently, e.g., if one has distinct logistic regression specifications for different sets of responses in the model.
 #' 
@@ -3862,6 +3885,7 @@ sampler_barker <- nimbleFunction(
 #' \item designMatrix. The full design matrix with rows corresponding to the ordering of the responses and columns ordered exactly as the ordering of target node elements given by \code{model$expandNodeNames(target, returnScalarComponents = TRUE)}, where \code{target} is the same as the \code{target} argument to \code{configureMCMC$addSampler} above. If provided, all columns are assumed to be fixed, ignoring the \code{fixedDesignColumns} control element.
 #' \item nonTargetNodes. Additional stochastic nodes involved in the linear predictor that are not to be sampled as part of the sampler. This must include any nodes specifying stochastic indexes (e.g., \code{"group"} if the \code{group[i]} values are stochastic) and any parameters considered known or that for any reason one does not want to sample. Providing \code{nonTargetNodes} is required in order to allow NIMBLE to check for the presence of zero inflation.  
 #' \item check. A logical value indicating whether NIMBLE should check various conditions required for validity of the sampler. This is provided for rare cases where the checking may be overly conservative and a user is sure that the sampler is valid and wants to override the checking. (default = TRUE)
+#' \item conjCheckAll. A logical value indiciating whether or not to do conjugacy checks for each observation. This is helpful if check = TRUE but multiple distributions are used (i.e. negative binomial and binomial).
 #' }
 #'
 #' @section noncentered sampler:

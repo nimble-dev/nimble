@@ -702,3 +702,71 @@ test_that('polyagamma MCMC results', {
 })
 
 
+test_that('polyagamma MCMC results negative binomial', {
+    
+    ## Compare to non-PG a simple negative binomial.
+    code <- nimbleCode({
+      ## Priors for mu
+      beta[1:np] ~ dmnorm(beta_mean[1:np], cov = beta_cov[1:np,1:np])
+      logit(v[1:n]) <- X[1:n, 1:np] %*% beta[1:np]
+      
+      for ( i in 1:n ) {
+        y[i] ~ dnegbin(size = 10, prob = v[i])
+      }
+    })
+
+    set.seed(1)
+    n    <- 100
+    np    <- 3
+    beta <- rnorm(np)
+    X    <- cbind(1, replicate(2, rnorm(n)))
+    eta  <- X %*% beta
+    prob <- apply(eta, 1, function(x) expit(x))
+    y <- rnbinom(n, prob = prob, size = 10)
+
+    constants = list(n = n, np = np, X = X, beta_mean = rep(0, 3), beta_cov = diag(3))
+    data = list(y = y)
+    inits = list( beta = rep(0, np) )
+
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler(type='polyagamma', target=c('beta'),
+                    control = list(fixedDesignColumns = TRUE))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesPG <- runMCMC(cmcmc, niter=1500, nburnin=100)
+
+    expect_equal(c('beta[1]'=-0.6194998, 'beta[2]'=0.1710832, 'beta[3]'=-0.8070547), colMeans(samplesPG), tolerance = 0.03)
+    expect_equal(c('beta[1]'=0.04151128, 'beta[2]'=0.04544329, 'beta[3]'=0.03977172), apply(samplesPG, 2, sd), tolerance = 0.003)
+
+    ## Now a mixed Binomial and Negative Binomial.
+    code <- nimbleCode({
+      ## Priors for mu
+      beta[1:np] ~ dmnorm(beta_mean[1:np], cov = beta_cov[1:np,1:np])
+      logit(v[1:n]) <- X[1:n, 1:np] %*% beta[1:np]
+      
+      for ( i in 1:n ) {
+        y[i] ~ dnegbin(size = 10, prob = v[i])
+        yb[i] ~ dbinom(size = 10, prob = v[i])
+      }
+    })
+
+    yb <- rbinom(n, size = 10, prob = prob)
+
+    constants = list(n = n, np = np, X = X, beta_mean = rep(0, 3), beta_cov = diag(3))
+    data = list(y = y, yb = yb)
+    inits = list( beta = rep(0, np) )
+
+    m <- nimbleModel(code, constants = constants, data = data, inits = inits)
+    conf <- configureMCMC(m, nodes = NULL)
+    conf$addSampler(type='polyagamma', target=c('beta'),
+                    control = list(fixedDesignColumns = TRUE, conjCheckAll = TRUE))
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    samplesPG <- runMCMC(cmcmc, niter=1500, nburnin=100)
+
+    expect_equal(c('beta[1]'=-0.6170280, 'beta[2]'=0.1802003, 'beta[3]'=-0.8103974), colMeans(samplesPG), tolerance = 0.03)
+    expect_equal(c('beta[1]'=0.03521898, 'beta[2]'=0.03917130, 'beta[3]'=0.03597605), apply(samplesPG, 2, sd), tolerance = 0.003)
+})
