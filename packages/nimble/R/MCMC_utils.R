@@ -551,6 +551,32 @@ mcmc_checkTargetAD <- function(model, targetNodes, samplerType) {
 }
 
 
+# This is function which builds a new MCMCconf from an old MCMCconf
+# This is required to be able to a new C-based MCMC without recompiling
+makeNewConfFromOldConf <- function(oldMCMCconf){
+    newMCMCconf <- configureMCMC(oldMCMCconf$model, nodes = NULL, print = FALSE)
+    newMCMCconf$monitors <- oldMCMCconf$monitors
+    newMCMCconf$monitors2 <- oldMCMCconf$monitors2
+    newMCMCconf$thin <- oldMCMCconf$thin
+    newMCMCconf$thin2 <- oldMCMCconf$thin2
+    newMCMCconf$samplerConfs <- oldMCMCconf$samplerConfs
+    newMCMCconf$samplerExecutionOrder <- oldMCMCconf$samplerExecutionOrder
+    newMCMCconf$controlDefaults <- oldMCMCconf$controlDefaults
+    ##newMCMCconf$namedSamplerLabelMaker <- oldMCMCconf$namedSamplerLabelMaker  ## usage long since deprecated (Dec 2020)
+    newMCMCconf$mvSamples1Conf <- oldMCMCconf$mvSamples1Conf
+    newMCMCconf$mvSamples2Conf <- oldMCMCconf$mvSamples2Conf
+    return(newMCMCconf)
+}
+
+
+newSpacesFunction <- function(m) {
+    log10max <- floor(log10(m))
+    function(i) paste0(rep(' ', log10max-floor(log10(i))), collapse = '')
+}
+
+
+
+
 
 
 
