@@ -11,16 +11,16 @@ samplerConf <- setRefClass(
     ),
     methods = list(
         initialize = function(name, samplerFunction, target, control, model) {
-            baseClassName <<- environment(environment(samplerFunction)$contains)$className
+            baseClassName <<- getBaseClassName(samplerFunction)   ## environment(environment(samplerFunction)$contains)$className
             if(is.null(baseClassName) || (baseClassName != 'sampler_BASE')) warning('MCMC sampler nimbleFunctions should inherit from (using "contains" argument) base class sampler_BASE.')
             setName(name)
-            setSamplerFunction(samplerFunction)
+            setFunction(samplerFunction)
             setTarget(target, model)
             setControl(control)
             if(name == 'crossLevel')   control <<- c(control, list(dependent_nodes = model$getDependencies(target, self = FALSE, stochOnly = TRUE)))  ## special case for printing dependents of crossLevel sampler (only)
         },
         setName = function(name) name <<- name,
-        setSamplerFunction = function(fun) samplerFunction <<- fun,
+        setFunction = function(f) samplerFunction <<- f,
         setTarget = function(target, model) {
             target <<- target
             targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE, sort = TRUE)
@@ -41,46 +41,56 @@ samplerConf <- setRefClass(
     )
 )
 
+## does the run method really need/want to accept 'iter' as an argument?
+##     run = function(iter = double())
+## do these need a 'reset' method?
+## should also send each derived function mvSamples2 (I suppose so)
+## this all makes the setup function prototype pretty onerous:
+##     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control)
+## if they manage their own 'results', I guess they get the niter, nburnin, thin, in order to setSize?
+##     before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double())
+## above, note that 'thin' is a length=2 vector, containing the thin intervals for both mvSamples and mvSamples2
+## what's the best way to extract the results?
+##    at present, using derivedFunctions[[i]]$getResults(), but no nested interface for this....
+## do derived functions also want an after_chain method?
+## 
 
 derivedConf <- setRefClass(
     Class = 'derivedConf',
     fields = list(
-        ##name            = 'ANY',
-        ##samplerFunction = 'ANY',
-        ##baseClassName   = 'ANY',
-        ##target          = 'ANY',
-        ##control         = 'ANY',
-        ##targetAsScalar  = 'ANY'
+        name            = 'ANY',
+        derivedFunction = 'ANY',
+        baseClassName   = 'ANY',
+        interval        = 'ANY',
+        control         = 'ANY'
     ),
     methods = list(
-        ##initialize = function(name, samplerFunction, target, control, model) {
-        ##    baseClassName <<- environment(environment(samplerFunction)$contains)$className
-        ##    if(is.null(baseClassName) || (baseClassName != 'sampler_BASE')) warning('MCMC sampler nimbleFunctions should inherit from (using "contains" argument) base class sampler_BASE.')
-        ##    setName(name)
-        ##    setSamplerFunction(samplerFunction)
-        ##    setTarget(target, model)
-        ##    setControl(control)
-        ##    if(name == 'crossLevel')   control <<- c(control, list(dependent_nodes = model$getDependencies(target, self = FALSE, stochOnly = TRUE)))  ## special case for printing dependents of crossLevel sampler (only)
-        ##},
-        ##setName = function(name) name <<- name,
-        ##setSamplerFunction = function(fun) samplerFunction <<- fun,
-        ##setTarget = function(target, model) {
-        ##    target <<- target
-        ##    targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE, sort = TRUE)
-        ##},
-        ##setControl = function(control) control <<- control,
-        ##buildSampler = function(model, mvSaved) {
-        ##    samplerFunction(model=model, mvSaved=mvSaved, target=target, control=control)
-        ##},
-        ##toStr = function(displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
-        ##    tempList <- list()
-        ##    tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
-        ##    infoList <- c(tempList, control)
-        ##    mcmc_listContentsToStr(infoList, displayControlDefaults, displayNonScalars, displayConjugateDependencies)
-        ##},
-        ##show = function() {
-        ##    cat(toStr())
-        ##}
+        initialize = function(name, derivedFunction, interval, control, model) {
+            baseClassName <<- getBaseClassName(derivedFunction)   ## environment(environment(derivedFunction)$contains)$className
+            if(is.null(baseClassName) || (baseClassName != 'derived_BASE')) warning('MCMC derived quantity nimbleFunctions should inherit from (using "contains" argument) base class derived_BASE')
+            setName(name)
+            setFunction(derivedFunction)
+            setInterval(interval)
+            setControl(control)
+        },
+        setName = function(name) name <<- name,
+        setFunction = function(f) derivedFunction <<- f,
+        setInterval = function(interval) interval <<- interval,
+        setControl = function(control) control <<- control,
+        buildDerived = function(model, mvSaved, mvSamples, mvSamples2) {
+            derivedFunction(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2, interval=interval, control=control)
+        },
+        toStr = function(displayNonScalars = FALSE) {
+            ###### THIS SHOULD BE UPDATED XXXXXXXXXXX
+            ##tempList <- list()
+            ##tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
+            ##infoList <- c(tempList, control)
+            ##mcmc_listContentsToStr(infoList, displayControlDefaults, displayNonScalars, displayConjugateDependencies)
+            return(paste0('interval = ', interval, ': ', name))
+        },
+        show = function() {
+            cat(toStr())
+        }
     )
 )
 
@@ -127,6 +137,7 @@ MCMCconf <- setRefClass(
         enableWAIC          = 'ANY',
         controlWAIC         = 'ANY',
         samplerConfs        = 'ANY',
+        derivedConfs        = 'ANY',
         samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
         unsampledNodes      = 'ANY',
@@ -206,6 +217,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             enableWAIC <<- enableWAIC
             controlWAIC <<- controlWAIC
             samplerConfs <<- list()
+            derivedConfs <<- list()
             samplerExecutionOrder <<- numeric()
             controlDefaults <<- list(...)
             ##namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')  ## usage long since deprecated (Dec 2020)
@@ -771,10 +783,10 @@ For internal use only
                 if(all(model$isData(targetOne)))   return()
                 if(any(model$isData(targetOne)))   targetOne <- filterOutDataNodes(targetOne)
             }
-            newSamplerInd <- length(samplerConfs) + 1
-            samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
-            samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
-            if(print) printSamplers(newSamplerInd)
+            newInd <- length(samplerConfs) + 1
+            samplerConfs[[newInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)
+            samplerExecutionOrder <<- c(samplerExecutionOrder, newInd)
+            if(print) printSamplers(newInd)
         },
 
         filterOutDataNodes = function(nodes) {
@@ -903,7 +915,7 @@ Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
 
-type: a character vector containing sampler type names.  Only samplers with one of these specified types, as printed by this printSamplers method, will be displayed.  Standard regular expression mathing using is also applied.
+type: A character vector containing sampler type names.  Only samplers with one of these specified types will be displayed.  Regular expression matching is also used.
 
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 
@@ -922,7 +934,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             if(!missing(type)) {
                 if(!is.character(type)) stop('type argument must have type character')
-                ## find sampler indices with 'name' matching anything in 'type' argument:
+                ## find indices with 'name' matching anything in 'type' argument:
                 typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(samplerConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
             }
@@ -942,7 +954,7 @@ byType: A logical argument, specifying whether the nodes being sampled should be
                     } else conjInfo <- "non-conjugate"
                     info <- paste0(info, ",  ", conjInfo)
                 }
-                cat(paste0(info, "\n"))
+                cat(paste0(info, '\n'))
             }
             if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
                 messageIfVerbose('\n  [Note] Samplers have a modified order of execution.')
@@ -1092,7 +1104,181 @@ The indices of execution specified in this numeric vector correspond to the enum
 '
             return(samplerExecutionOrder)
         },
-        
+
+        addDerivedQuantity = function(type,
+                                      interval = 1,
+                                      control = list(),
+                                      print = FALSE,
+                                      name,
+                                      ...) {
+            '
+Adds a derived quantity function to the MCMCconf object.
+
+Arguments:
+
+type: Character string, specifying the type of derived quantity function to add.  This character string should correspond to the name of a derived quantity nimbleFunction.  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this function.  This argument has no default value, and must be provided.
+
+interval: A numeric value, specifying the number of MCMC iterations between each time this derived quantity function will execute.  For example, if \'interval\' is 10, then this derived quantity function will execute at the end of MCMC sampling iterations 10, 20, 30, etc.  The default value is 1, meaning the derived quantity function will execute at the end of every MCMC sampling iteration.
+
+control: An optional list of control arguments to derived quantity function.
+
+print: Logical argument, specifying whether to print the details of newly added function.
+
+name: Optional character string name for the derived quantity function, which is used by the printDerivedQuantities method.  If \'name\' is not provided, the \'type\' argument is used to generate the name.
+
+...: Additional named arguments passed through ... will be used as additional control list elements.
+
+Details:
+
+Derived quantity functions are added to the end of the list for this MCMCconf object, and do not replace any existing functions.  Derived quantity functions can be removed using the removeDerivedQuantities method.
+
+Invisibly returns a list of the current derived quantity function configurations, which are derivedConf reference class objects.
+'
+            nameProvided <- !missing(name)
+            if(is.character(type)) {
+                thisDerivedName <- if(nameProvided) name else gsub('^derived_', '', type)   ## removes 'derived_' from beginning of name, if present
+                if(exists(type, inherits = TRUE) && is.nfGenerator(eval(as.name(type)))) {   ## try to find derived quantity function 'type'
+                    derivedFunction <- eval(as.name(type))
+                } else {
+                    derived_type <- paste0('derived_', type)   ## next, try to find derived quantity function 'derived_type'
+                    if(exists(derived_type) && is.nfGenerator(eval(as.name(derived_type)))) {   ## try to find derived quantity function 'derived_type'
+                        derivedFunction <- eval(as.name(derived_type))
+                    } else stop(paste0('cannot find derived quantity function \'', type, '\''))
+                }
+            } else if(is.function(type)) {
+                if(nameProvided) {
+                    thisDerivedName <- name
+                } else {
+                    typeArg <- substitute(type)
+                    if(is.name(typeArg) || is.call(typeArg)) {
+                        thisDerivedName <- deparse(typeArg)
+                        if(grepl("::", thisDerivedName))
+                            thisDerivedName <- gsub('.*:', '', thisDerivedName)
+                        thisDerivedName <- gsub('^derived_', '', thisDerivedName)
+                    } else {
+                        thisDerivedName <- 'custom_function'
+                    }
+                }
+                derivedFunction <- type
+            } else stop('derived quantity function type must be character name or a function')
+            if(!is.character(thisDerivedName)) stop('derived quantity function name should be a character string')
+            if(!is.function(derivedFunction)) stop('derived quantity function type does not specify a function')
+
+            if(!is.numeric(interval)) stop('derived quantity interval should be numeric type')
+            if(length(interval) != 1) stop('derived quantity interval should be a single number')
+            if(interval < 1) stop('derived quantity interval must be at least 1')
+            if(floor(interval) != interval) stop('derived quantity interval must be an integer')
+            
+            thisControlList <- c(control, list(...))
+            
+            addOneDerivedQuantity(thisDerivedName, derivedFunction, interval, thisControlList, print)
+            
+            return(invisible(derivedConfs))
+        },
+
+        addOneDerivedQuantity = function(thisDerivedName, derivedFunction, interval, thisControlList, print) {
+            '
+For internal use only
+'
+            newInd <- length(derivedConfs) + 1
+            derivedConfs[[newInd]] <<- derivedConf(name=thisDerivedName, derivedFunction=derivedFunction, interval=interval, control=thisControlList, model=model)
+            if(print) printDerivedQuantities(newInd)
+        },
+
+        removeDerivedQuantities = function(..., ind, print = FALSE) {
+            '
+Removes one or more derived quantity functions from an MCMCconf object.
+
+Arguments:
+
+...: Numeric indices, used to specify the indices of the derived quantity functions to remove.
+
+ind: A numeric vector specifying the indices of the derived quantity functions to remove.  If omitted, and no indices are provided via the ... argument, then all derived quantity functions are removed.
+
+print: A logical argument specifying whether to print the current list of derived quantity functions once the removal has been done (default FALSE).
+
+'
+            if(missing(ind)) {
+                ind <- list(...)
+                ind <- unname(unlist(ind))
+                if(is.null(ind))   ind <- seq_along(derivedConfs)
+            }
+            if(length(ind) > 0 && max(ind) > length(derivedConfs)) stop('MCMC configuration doesn\'t have that many derived quantity functions')
+            derivedConfs[ind] <<- NULL
+            if(print) printDerivedQuantities()
+            return(invisible(NULL))
+        },
+
+        removeDerivedQuantity = function(...) {
+            '
+Alias for removeDerivedQuantities method
+'
+            removeDerivedQuantities(...)
+        },
+
+        printDerivedQuantities = function(ind, type, displayNonScalars = FALSE) {
+            '
+Print the derived quantity functions
+
+Arguments:
+
+ind: A numeric vector, used to specify the indices of the derived quantity functions to print.  If omitted, then all derived quantity functions are printed.
+
+type: A character vector containing derived quantity function types.  Only derived quantity functions with one of these specified types will be displayed.  Regular expression matching is also used.
+
+displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
+'
+            if(missing(ind)) {
+                ind <- seq_along(derivedConfs)
+            }
+            if(length(ind) > 0 && max(ind) > length(derivedConfs)) stop('MCMC configuration doesn\'t have that many derived quantity functions')
+            if(!missing(type)) {
+                if(!is.character(type)) stop('type argument must have type character')
+                ## find indices with 'name' matching anything in 'type' argument:
+                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(derivedConfs, `[[`, 'name')))))
+                ind <- intersect(ind, typeInd)
+            }
+            makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
+            for(i in ind) {
+                info <- paste0('[', i, '] ', makeSpaces(i), derivedConfs[[i]]$toStr(displayNonScalars))
+                cat(paste0(info, '\n'))
+            }
+            return(invisible(NULL))
+        },
+
+        getDerivedQuantities = function(ind) {
+            '
+Returns a list of derivedConf objects.
+
+Arguments:
+
+ind: A numeric vector used to specify the indices of the derivedConf objects to return.  If omitted, then all derivedConf objects in this MCMC configuration object are returned.
+'
+            if(missing(ind))        ind <- seq_along(derivedConfs)
+            if(length(ind) > 0 && max(ind) > length(derivedConfs)) stop('MCMC configuration doesn\'t have that many derived quantity functions')
+            return(derivedConfs[ind])
+        },
+
+        getDerivedQuantityDefinition = function(ind, print = FALSE) {
+            '
+Returns the nimbleFunction definition of aa derived quantity function.
+
+Arguments:
+
+ind: A numeric index used to specify the index of the derived quantity function definition to return.  If more than one derived quantity function is specified, only the first is returned.
+
+Returns a list object, containing the setup function, run function, and additional member methods for the specified derived quantity nimbleFunction.
+'
+            if(length(ind) > 1) {
+                messageIfVerbose('  [Note] More than one ved quantity functio specified, only returning the first.')
+                ind <- ind[1]
+            }
+            if((ind <= 0) || (ind > length(derivedConfs))) stop('Invalid derived quantity function specified')
+            if(print) printDerivedQuantities(ind)
+            def <- getDefinition(derivedConfs[[ind]]$derivedFunction)
+            return(def)
+        },
+
         addMonitors = function(..., ind = 1, print = TRUE) {
             '
 Adds variables to the list of monitors.
@@ -1364,6 +1550,11 @@ See the initialize() function
             printMonitors()
             cat('===== Samplers =====\n')
             if(length(samplerConfs)) printSamplers(byType = TRUE) else cat('(no samplers assigned)\n')
+            if(length(derivedConfs)) {
+                cat('===== DerivedQ =====\n')
+                cat(paste0(length(derivedConfs), ' derived quantity functions\n'))     ## THIS COULD BE IMPROVED XXXXXXXXX
+                cat('use conf$printDerivedQuantities() for details\n')                 ## THIS COULD BE IMPROVED XXXXXXXXX
+            }
             printComments(...)
         }
     )

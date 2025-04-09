@@ -575,6 +575,11 @@ newSpacesFunction <- function(m) {
 }
 
 
+getBaseClassName <- function(nf) {
+    baseName <- environment(environment(nf)$contains)$className
+    if(is.null(baseName)) warning('cannot find base class name')
+    return(baseName)
+}
 
 
 

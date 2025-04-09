@@ -28,6 +28,8 @@
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
 #'
+#' @param derivedQuantities Logical argument.  When \code{TRUE}, a list containing the derivedQuantity results will be returned.  This list has length equal to the number of derived quantity functions, and each element is the results matrix corresponding to one derived quantity function.  In the case of multiple MCMC chains, a list (of length nchains) is returned consisting of one such list for each MCMC chain.
+#'
 #' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See \code{help(waic)}.
 #'
 #' @param perChainWAIC Logical argument. When \code{TRUE} and multiple chains are run, the WAIC for each chain is returned as a means of helping assess the stability of the WAIC estimate. Default value is \code{FALSE}.
@@ -93,6 +95,7 @@ runMCMC <- function(mcmc,
                     samples = TRUE,
                     samplesAsCodaMCMC = FALSE,
                     summary = FALSE,
+                    derivedQuantities = FALSE,
                     WAIC = FALSE,
                     perChainWAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
@@ -114,6 +117,7 @@ runMCMC <- function(mcmc,
     hasMonitors2 <- length(if(is.Cnf(mcmc)) mcmc$Robject$monitors2 else mcmc$monitors2) > 0
     samplesList  <- vector('list', nchains); names(samplesList)  <- paste0('chain', 1:nchains)
     samplesList2 <- vector('list', nchains); names(samplesList2) <- paste0('chain', 1:nchains)
+    derivedList  <- vector('list', nchains); names(derivedList)  <- paste0('chain', 1:nchains)
     thinToUseVec <- c(0, 0)
     thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
     thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
@@ -124,6 +128,7 @@ runMCMC <- function(mcmc,
     ## if(thinToUseVec[1] > 1 && nburnin > 0) message("runMCMC's handling of nburnin changed in nimble version 0.6-11. Previously, nburnin samples were discarded *post-thinning*.  Now nburnin samples are discarded *pre-thinning*.  The number of samples returned will be floor((niter-nburnin)/thin).")
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
+    numDerived <- mcmc$getNumDerived()
     for(i in 1:nchains) {
         messageIfVerbose('running chain ', i, '...')
         if(is.numeric(setSeed)) {
@@ -147,6 +152,9 @@ runMCMC <- function(mcmc,
             tmp <- as.matrix(mcmc$mvSamples2)
             if(!is.null(tmp))
                 samplesList2[[i]] <- tmp 
+        }
+        if(derivedQuantities && (numDerived>0)) {
+            derivedList[[i]] <- lapply(1:numDerived, function(ii) mcmc$getDerivedQuantityResults(ii))
         }
     }
     if(WAIC) {
@@ -184,6 +192,8 @@ runMCMC <- function(mcmc,
         if(hasMonitors2)
             if(length(samplesList2))
                 samplesList2 <- samplesList2[[1]] else samplesList2 <- NULL  ## returns matrix when nchains = 1
+        if(derivedQuantities)
+            derivedList <- derivedList[[1]] else derivedList <- NULL   ## returns matrix when nchains = 1
     }
     if(summary) {
         if(nchains == 1) {
@@ -204,6 +214,8 @@ runMCMC <- function(mcmc,
     if(samples) { retList$samples <- samplesList
                   if(hasMonitors2)   retList$samples2 <- samplesList2 }
     if(summary)   retList$summary <- summaryObject
+    if(derivedQuantities)
+                  retList$derived <- derivedList
     if(WAIC)      retList$WAIC    <- WAICvalue
     if(perChainWAIC) retList$perChainWAIC <- perChainWAICvalue
     if(length(retList) == 1) retList <- retList[[1]]

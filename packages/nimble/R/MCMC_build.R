@@ -180,16 +180,35 @@ buildMCMC <- nimbleFunction(
             for(i in seq_along(conf$samplerConfs))
                 samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
         }
+
+        ## construct mvSamples and mvSamples2
+        mvSamplesConf  <- conf$getMvSamplesConf(1)
+        mvSamples2Conf <- conf$getMvSamplesConf(2)
+        mvSamples <- modelValues(mvSamplesConf)
+        mvSamples2 <- modelValues(mvSamples2Conf)
+        
+        ## build derived quantity functions (and intervals)
+        derivedFunctions <- nimbleFunctionList(derived_BASE)
+        derivedIntervals <- numeric(length(conf$derivedConfs))
+        for(i in seq_along(conf$derivedConfs)) {
+            derivedFunctions[[i]] <- conf$derivedConfs[[i]]$buildDerived(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2)
+            derivedIntervals[i] <- conf$derivedConfs[[i]]$interval
+        }
+        numDerived <- length(conf$derivedConfs)
+
+        ## ###### DOESN'T LOOK LIKE THIS APPROACH WOULD WORK OUT    XXXXXXXXXXXXXXXXXXXXx
+        ## ###### ----> can't access nimbleList elements by (numeric) index (??)
+        ## ## build nimbleList for derived quantity return values
+        ## nlTypes <- if(length(conf$derivedConfs) > 0)
+        ##                lapply(seq_along(conf$derivedConfs), function(i) nimbleType(name=paste0('dq',i), type='double', dim=2)) else list()
+        ## nlDef <- nimbleList(nlTypes)
+        ## derivedResultsNL <- nlDef$new()
         
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
         monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
         thinFromConfVec <- c(conf$thin, conf$thin2)  ## vector
         thinToUseVec <- c(0, 0)                      ## vector, needs to member data
-        mvSamplesConf  <- conf$getMvSamplesConf(1)
-        mvSamples2Conf <- conf$getMvSamplesConf(2)
-        mvSamples <- modelValues(mvSamplesConf)
-        mvSamples2 <- modelValues(mvSamples2Conf)
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
@@ -243,7 +262,9 @@ buildMCMC <- nimbleFunction(
         if(reset) {
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
+            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$reset()
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter, nburnin, chain)
+            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter, nburnin, thinToUseVec, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -278,6 +299,7 @@ buildMCMC <- nimbleFunction(
         if(niter < 1) return()
         for(iter in 1:niter) {
             checkInterrupt()
+            ## execute samplerFunctions
             if(time) {
                 for(i in seq_along(samplerExecutionOrderToUse)) {
                     ind <- samplerExecutionOrderToUse[i]
@@ -291,6 +313,7 @@ buildMCMC <- nimbleFunction(
             }
             ## adding "accumulators" to MCMC
             ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+            ## save samples and WAIC calculations
             if(iter > nburnin) {
                 sampleNumber <- iter - nburnin
                 if(sampleNumber %% thinToUseVec[1] == 0) {
@@ -309,6 +332,13 @@ buildMCMC <- nimbleFunction(
                     }
                 }
             }
+            ## execute derivedFunctions
+            for(i in seq_along(derivedFunctions)) {
+                if(iter %% derivedIntervals[i] == 0) {
+                    derivedFunctions[[i]]$run(iter)
+                }
+            }
+            ## progress bar
             if(progressBar & (iter == progressBarNextFloor)) {
                 cat('-')
                 progressBarNext <- progressBarNext + progressBarIncrement
@@ -316,7 +346,9 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        ## after_chain methods
         for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$after_chain()
+        for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$after_chain()
         returnType(void())
     },
     methods = list(
@@ -324,7 +356,15 @@ buildMCMC <- nimbleFunction(
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
-        ## Old-style post-sampling WAIC calculation.
+        getNumDerived = function() {
+            returnType(double())
+            return(numDerived)
+        },
+        getDerivedQuantityResults = function(ind = double()) {
+            returnType(double(2))
+            return(derivedFunctions[[ind]]$getResults())
+        },
+        ## old-style post-sampling WAIC calculation
         calculateWAIC = function(nburnin = integer(default = 0)) {
             if(!enableWAIC) {
                 print('Error: One must set enableWAIC = TRUE in \'configureMCMC\' or \'buildMCMC\'. See \'help(configureMCMC)\' for additional information.')
