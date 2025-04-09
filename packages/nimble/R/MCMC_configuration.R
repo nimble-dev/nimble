@@ -42,6 +42,50 @@ samplerConf <- setRefClass(
 )
 
 
+derivedConf <- setRefClass(
+    Class = 'derivedConf',
+    fields = list(
+        ##name            = 'ANY',
+        ##samplerFunction = 'ANY',
+        ##baseClassName   = 'ANY',
+        ##target          = 'ANY',
+        ##control         = 'ANY',
+        ##targetAsScalar  = 'ANY'
+    ),
+    methods = list(
+        ##initialize = function(name, samplerFunction, target, control, model) {
+        ##    baseClassName <<- environment(environment(samplerFunction)$contains)$className
+        ##    if(is.null(baseClassName) || (baseClassName != 'sampler_BASE')) warning('MCMC sampler nimbleFunctions should inherit from (using "contains" argument) base class sampler_BASE.')
+        ##    setName(name)
+        ##    setSamplerFunction(samplerFunction)
+        ##    setTarget(target, model)
+        ##    setControl(control)
+        ##    if(name == 'crossLevel')   control <<- c(control, list(dependent_nodes = model$getDependencies(target, self = FALSE, stochOnly = TRUE)))  ## special case for printing dependents of crossLevel sampler (only)
+        ##},
+        ##setName = function(name) name <<- name,
+        ##setSamplerFunction = function(fun) samplerFunction <<- fun,
+        ##setTarget = function(target, model) {
+        ##    target <<- target
+        ##    targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE, sort = TRUE)
+        ##},
+        ##setControl = function(control) control <<- control,
+        ##buildSampler = function(model, mvSaved) {
+        ##    samplerFunction(model=model, mvSaved=mvSaved, target=target, control=control)
+        ##},
+        ##toStr = function(displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
+        ##    tempList <- list()
+        ##    tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
+        ##    infoList <- c(tempList, control)
+        ##    mcmc_listContentsToStr(infoList, displayControlDefaults, displayNonScalars, displayConjugateDependencies)
+        ##},
+        ##show = function() {
+        ##    cat(toStr())
+        ##}
+    )
+)
+
+
+
 ## NOTE: methods are documented as a "docstring" with each method - see 'removeSamplers' below. roxygen will automatically grab info from these docstrings and inject into the Rd in the Methods Section
 ## NOTE: including the name of the class in @aliases is important because by default we only get help("MCMCconf-class") and not help(MCMCconf)
 ## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
