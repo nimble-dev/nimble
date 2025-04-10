@@ -361,6 +361,10 @@ buildMCMC <- nimbleFunction(
             return(numDerived)
         },
         getDerivedQuantityResults = function(ind = double()) {
+            if(ind > numDerived) {
+                print('there aren\'t that many derived functions')
+                return(array(0, c(0,0)))
+            }
             returnType(double(2))
             return(derivedFunctions[[ind]]$getResults())
         },

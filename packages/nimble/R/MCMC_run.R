@@ -95,13 +95,13 @@ runMCMC <- function(mcmc,
                     samples = TRUE,
                     samplesAsCodaMCMC = FALSE,
                     summary = FALSE,
-                    derivedQuantities = FALSE,
+                    derivedQuantities = mcmc$getNumDerived() > 0,
                     WAIC = FALSE,
                     perChainWAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
     if(!identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) stop('mcmc argument must be a NIMBLE MCMC algorithm')
     if(!is.Cnf(mcmc)) messageIfVerbose('  [Warning] Running an uncompiled MCMC algorithm.  Use compileNimble() for faster execution.')
-    if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
+    if(!samples && !summary && !derivedQuantities && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, derivedQuantities = TRUE, or WAIC = TRUE')
     if(nchains < 1) stop('must have nchains > 0')
     if(!missing(inits)) {
         if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
