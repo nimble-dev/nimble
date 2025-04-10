@@ -1216,9 +1216,9 @@ Alias for removeDerivedQuantities method
             removeDerivedQuantities(...)
         },
 
-        printDerivedQuantities = function(ind, type, displayNonScalars = FALSE) {
+        printDerivedQuantities = function(ind, type, displayNonScalars = FALSE, byType = FALSE) {
             '
-Print the derived quantity functions
+Prints details of derived quantity functions.
 
 Arguments:
 
@@ -1227,6 +1227,8 @@ ind: A numeric vector, used to specify the indices of the derived quantity funct
 type: A character vector containing derived quantity function types.  Only derived quantity functions with one of these specified types will be displayed.  Regular expression matching is also used.
 
 displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
+
+byType: A logical argument, specifying whether a summary of the derived quantity functions should be printed, instead of the details of each individual function (default FALSE).
 '
             if(missing(ind)) {
                 ind <- seq_along(derivedConfs)
@@ -1238,12 +1240,28 @@ displayNonScalars: A logical argument, specifying whether to display the values 
                 typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(derivedConfs, `[[`, 'name')))))
                 ind <- intersect(ind, typeInd)
             }
+            if(byType) {
+                printDerivedQuantitiesByType(ind)
+                return(invisible(NULL))
+            }
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             for(i in ind) {
                 info <- paste0('[', i, '] ', makeSpaces(i), derivedConfs[[i]]$toStr(displayNonScalars))
                 cat(paste0(info, '\n'))
             }
             return(invisible(NULL))
+        },
+
+        printDerivedQuantitiesByType = function(ind) {
+            if(length(ind) == 0) return(invisible(NULL))
+            indent <- '  - '
+            derivedTypes <- unlist(lapply(ind, function(i) derivedConfs[[i]]$name))
+            derivedTypesTable <- table(derivedTypes)
+            for(i in seq_along(derivedTypesTable)) {
+                name <- names(derivedTypesTable)[i]
+                num <- as.numeric(derivedTypesTable)[i]
+                cat(paste0(indent, name, ' (', num, ')\n'))
+            }
         },
 
         getDerivedQuantities = function(ind) {
@@ -1552,8 +1570,7 @@ See the initialize() function
             if(length(samplerConfs)) printSamplers(byType = TRUE) else cat('(no samplers assigned)\n')
             if(length(derivedConfs)) {
                 cat('===== DerivedQ =====\n')
-                cat(paste0(length(derivedConfs), ' derived quantity functions\n'))     ## THIS COULD BE IMPROVED XXXXXXXXX
-                cat('use conf$printDerivedQuantities() for details\n')                 ## THIS COULD BE IMPROVED XXXXXXXXX
+                printDerivedQuantities(byType = TRUE)
             }
             printComments(...)
         }
