@@ -1,5 +1,4 @@
 
-
 ####################################################################
 ### virtual nimbleFunction template for all derived functions ######
 ####################################################################
@@ -34,12 +33,8 @@ derived_test <- nimbleFunction(
     name = 'derived_test',
     contains = derived_BASE,
     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
-        ## control list extraction
-        ## node list generation
-        ## numeric value generation
-        results <- matrix(0, nrow = 1, ncol = 1)
         count <- 1
-        ## checks
+        results <- array(0, c(1, 1))
     },
     run = function(iter = double()) {
         results[count, 1] <<- iter
@@ -61,6 +56,7 @@ derived_test <- nimbleFunction(
         }
     )
 )
+
 
 
 ####################################################################
@@ -96,7 +92,7 @@ derived_logProb <- nimbleFunction(
         ## numeric value generation
         count <- 1
         nResults <- length(nodeList)
-        results <- array(0, c(1,nResults))
+        results <- array(0, c(1, nResults))
         ## nested function and function list definitions
         getLogProbNFL <- nimbleFunctionList(getLogProb_virtual)
         for(i in seq_along(nodeList))   getLogProbNFL[[i]] <- getLogProbNF(model, nodeList[[i]])
@@ -125,9 +121,54 @@ derived_logProb <- nimbleFunction(
         },
         reset = function() {
             count <<- 1
-            results <<- array(0, c(1,nResults))
+            results <<- array(0, c(1, nResults))
         }
     )
 )
 
 
+
+####################################################################
+### derived: runningMean ###########################################
+####################################################################
+
+#' @rdname derived
+#' @export
+derived_runningMean <- nimbleFunction(
+    name = 'derived_runningMean',
+    contains = derived_BASE,
+    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+        ## control list extraction
+        nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+        ## node list generation
+        nodes <- model$expandNodeNames(nodes)
+        ## numeric value generation
+        count <- 1
+        nResults <- length(nodes)
+        results <- array(0, c(1, nResults))
+    },
+    run = function(iter = double()) {
+        if(nResults > 0) {
+            if(count == 1) {
+                results[count, 1:nResults] <<- values(model, nodes)
+            } else {
+                results[count, 1:nResults] <<- ((count-1)/count) * results[count-1, 1:nResults] + (1/count) * values(model, nodes)
+            }
+            count <<- count + 1
+        }
+    },
+    methods = list(
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+            nKeep <- floor(niter / interval)
+            setSize(results, nKeep, nResults)
+        },
+        getResults = function() {
+            returnType(double(2))
+            return(results)
+        },
+        reset = function() {
+            count <<- 1
+            results <<- array(0, c(1, nResults))
+        }
+    )
+)

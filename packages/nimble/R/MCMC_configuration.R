@@ -41,18 +41,27 @@ samplerConf <- setRefClass(
     )
 )
 
+## 
 ## does the run method really need/want to accept 'iter' as an argument?
 ##     run = function(iter = double())
+## 
 ## do these need a 'reset' method?
-## should also send each derived function mvSamples2 (I suppose so)
+## 
+## should also send each derived function mvSamples2 (I suppose?)
+## 
 ## this all makes the setup function prototype pretty onerous:
 ##     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control)
+## 
 ## if they manage their own 'results', I guess they get the niter, nburnin, thin, in order to setSize?
 ##     before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double())
+## 
 ## above, note that 'thin' is a length=2 vector, containing the thin intervals for both mvSamples and mvSamples2
-## what's the best way to extract the results?
-##    at present, using derivedFunctions[[i]]$getResults(), but no nested interface for this....
+## 
 ## do derived functions also want an after_chain method?
+## 
+## introduce some mechanism for *naming* the columns of the 'results' arrays ...??
+## 
+## 
 ## 
 
 derivedConf <- setRefClass(
