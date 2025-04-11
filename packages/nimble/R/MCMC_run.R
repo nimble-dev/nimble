@@ -153,8 +153,14 @@ runMCMC <- function(mcmc,
             if(!is.null(tmp))
                 samplesList2[[i]] <- tmp 
         }
+        browser()    ## XXXXXXXXXXXXXXXXXXXx
         if(derivedQuantities && (numDerived>0)) {
-            derivedList[[i]] <- lapply(1:numDerived, function(ii) mcmc$getDerivedQuantityResults(ii))
+            for(j in 1:numDerived) {
+                tempList <- mcmc$getDerivedQuantityResults(j)
+                print(mcmc$getDerivedQuantityNames(j))
+                derivedList[[i]] <- tempList
+            }
+            ##derivedList[[i]] <- lapply(1:numDerived, function(ii) mcmc$getDerivedQuantityResults(ii))    ## XXXXXXXXXXXXXXXXX
         }
     }
     if(WAIC) {

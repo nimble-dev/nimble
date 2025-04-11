@@ -1,6 +1,6 @@
 
 ####################################################################
-### virtual nimbleFunction template for all derived functions ######
+### virtual nimbleFunction template for all derived quantities #####
 ####################################################################
 
 #' @rdname derived
@@ -11,12 +11,14 @@ derived_BASE <- nimbleFunctionVirtual(
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) { },
         after_chain  = function() { },
-        getResults   = function() { returnType(double(2)) },
+        getResults   = function() { returnType(double(2))    },
+        getNames     = function() { returnType(character(1)) },
         reset        = function() { }
     ),
     methodControl = list(
         before_chain = list(required = FALSE),
         after_chain  = list(required = FALSE),
+        getNames     = list(required = FALSE),
         reset        = list(required = FALSE)
     )
 )
@@ -24,43 +26,7 @@ derived_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
-### derived: test ##################################################
-####################################################################
-
-#' @rdname derived
-#' @export
-derived_test <- nimbleFunction(
-    name = 'derived_test',
-    contains = derived_BASE,
-    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
-        count <- 1
-        results <- array(0, c(1, 1))
-    },
-    run = function(iter = double()) {
-        results[count, 1] <<- iter
-        count <<- count + 1
-    },
-    methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            nKeep <- floor(niter/interval)
-            setSize(results, nKeep, 1)
-        },
-        after_chain = function() { },
-        getResults = function() {
-            returnType(double(2))
-            return(results)
-        },
-        reset = function() {
-            results <<- results * 0
-            count <<- 1
-        }
-    )
-)
-
-
-
-####################################################################
-### derived: logProb ###############################################
+### derived quantity: logProb ######################################
 ####################################################################
 
 getLogProb_virtual <- nimbleFunctionVirtual(
@@ -129,7 +95,7 @@ derived_logProb <- nimbleFunction(
 
 
 ####################################################################
-### derived: runningMean ###########################################
+### derived quantity: runningMean ##################################
 ####################################################################
 
 #' @rdname derived
@@ -166,6 +132,10 @@ derived_runningMean <- nimbleFunction(
         getResults = function() {
             returnType(double(2))
             return(results)
+        },
+        getNames = function() {
+            returnType(character(1))
+            return(nodes)
         },
         reset = function() {
             count <<- 1

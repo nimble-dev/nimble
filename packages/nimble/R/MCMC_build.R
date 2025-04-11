@@ -195,6 +195,7 @@ buildMCMC <- nimbleFunction(
             derivedIntervals[i] <- conf$derivedConfs[[i]]$interval
         }
         numDerived <- length(conf$derivedConfs)
+        derivedNames <- character(2)    ## having as member data necessary for compilation
 
         ## ###### DOESN'T LOOK LIKE THIS APPROACH WOULD WORK OUT    XXXXXXXXXXXXXXXXXXXXx
         ## ###### ----> can't access nimbleList elements by (numeric) index (??)
@@ -367,6 +368,15 @@ buildMCMC <- nimbleFunction(
             }
             returnType(double(2))
             return(derivedFunctions[[ind]]$getResults())
+        },
+        getDerivedQuantityNames = function(ind = double()) {
+            ###if(ind > numDerived) {
+            ###    print('there aren\'t that many derived functions')
+            ###    return(character(1))
+            ###}     XXXXXX make this work, what's the right return value?
+            returnType(character(1))
+            derivedNames <<- derivedFunctions[[ind]]$getNames()
+            return(derivedNames)
         },
         ## old-style post-sampling WAIC calculation
         calculateWAIC = function(nburnin = integer(default = 0)) {
