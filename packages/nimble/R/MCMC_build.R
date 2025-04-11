@@ -368,10 +368,7 @@ buildMCMC <- nimbleFunction(
             return(derivedFunctions[[ind]]$getResults())
         },
         getDerivedQuantityNames = function(ind = double()) {
-            ###if(ind > numDerived) {
-            ###    print('there aren\'t that many derived functions')
-            ###    return(character(1))
-            ###}     XXXXXX make this work, what's the right return value?
+            if(ind > numDerived)   print('there aren\'t that many derived functions')
             returnType(character(1))
             derivedNames <<- derivedFunctions[[ind]]$getNames()
             return(derivedNames)
