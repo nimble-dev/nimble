@@ -3022,6 +3022,8 @@ sampler_polyagamma <- nimbleFunction(
         if(is.null(control$designMatrix)) {
             X <- matrix(0, nrow = N, ncol = nCoef)
             fixed <- FALSE
+            initializeX <- TRUE
+
             ## Do more on inferring fixed columns?
             ## Generally anything except effects that are stochastically indexed
             ## or where covariates are random (e.g., missing data).
@@ -3047,6 +3049,7 @@ sampler_polyagamma <- nimbleFunction(
                 stop("polyagamma sampler: number of rows of design matrix, ", nrow(X), ", doesn't match number of Bernoulli observations, ", N)
             fixed <- TRUE
             fixedColumns <- rep(TRUE, nCoef)
+            initializeX <- FALSE
         }
 
         ## Conjugacy checking for each observation node: 
@@ -3066,7 +3069,6 @@ sampler_polyagamma <- nimbleFunction(
         }
         
         initializeSize <- TRUE
-        initializeX <- TRUE
         pgSampler <- samplePolyaGamma()
 
         Q <- matrix(0, nrow = nCoef, ncol = nCoef)
