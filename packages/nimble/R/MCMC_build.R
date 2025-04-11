@@ -187,24 +187,21 @@ buildMCMC <- nimbleFunction(
         mvSamples <- modelValues(mvSamplesConf)
         mvSamples2 <- modelValues(mvSamples2Conf)
         
-        ## build derived quantity functions (and intervals)
+        ## build derived quantity function list and intervals
         derivedFunctions <- nimbleFunctionList(derived_BASE)
-        derivedIntervals <- numeric(length(conf$derivedConfs))
+        numDerived <- length(conf$derivedConfs)
+        derivedIntervals <- numeric(max(numDerived, 2))    ## force to be a vector
         for(i in seq_along(conf$derivedConfs)) {
             derivedFunctions[[i]] <- conf$derivedConfs[[i]]$buildDerived(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2)
             derivedIntervals[i] <- conf$derivedConfs[[i]]$interval
         }
-        numDerived <- length(conf$derivedConfs)
-        derivedNames <- character(2)    ## having as member data necessary for compilation
 
-        ## ###### DOESN'T LOOK LIKE THIS APPROACH WOULD WORK OUT    XXXXXXXXXXXXXXXXXXXXx
-        ## ###### ----> can't access nimbleList elements by (numeric) index (??)
-        ## ## build nimbleList for derived quantity return values
-        ## nlTypes <- if(length(conf$derivedConfs) > 0)
-        ##                lapply(seq_along(conf$derivedConfs), function(i) nimbleType(name=paste0('dq',i), type='double', dim=2)) else list()
-        ## nlDef <- nimbleList(nlTypes)
-        ## derivedResultsNL <- nlDef$new()
-        
+        ## for naming the derivedList return object from runMCMC
+        derivedTypes <- sapply(conf$derivedConfs, `[[`, 'name')
+        ## used for extracting names of derived quantities,
+        ## having as member data is necessary for compilation
+        derivedNames <- character(2)
+
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- mcmc_processMonitorNames(model, conf$monitors)
         monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
@@ -232,6 +229,7 @@ buildMCMC <- nimbleFunction(
             thinWAIC <- FALSE
             nburnin_extraWAIC <- 0
         }
+        setupOutputs(derivedTypes)
     },
     
     run = function(

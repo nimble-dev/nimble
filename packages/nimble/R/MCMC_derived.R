@@ -18,7 +18,6 @@ derived_BASE <- nimbleFunctionVirtual(
     methodControl = list(
         before_chain = list(required = FALSE),
         after_chain  = list(required = FALSE),
-        getNames     = list(required = FALSE),
         reset        = list(required = FALSE)
     )
 )
@@ -55,6 +54,11 @@ derived_logProb <- nimbleFunction(
         allBool <- sapply(nodeList, function(x) identical('.all', x))
         allInd <- if(length(allBool)) which(allBool) else numeric()
         for(ind in allInd)   nodeList[[ind]] <- model$getNodeNames(stochOnly = TRUE)
+        sumBool <- sapply(seq_along(nodeList), function(i) length(nodeList[[i]]) > 1 && !allBool[i])
+        sumIndex <- cumsum(sumBool)
+        names <- sapply(seq_along(nodeList),
+                        function(i) if(sumBool[i]) paste0('sum',sumIndex[i]) else if(allBool[i]) '_all_nodes_' else nodeList[[i]])
+        if(!length(names)) names <- character()
         ## numeric value generation
         count <- 1
         nResults <- length(nodeList)
@@ -79,16 +83,16 @@ derived_logProb <- nimbleFunction(
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults)
-        },
+            setSize(results, nKeep, nResults) },
         getResults = function() {
             returnType(double(2))
-            return(results)
-        },
+            return(results) },
+        getNames = function() {
+            returnType(character(1))
+            return(names) },
         reset = function() {
             count <<- 1
-            results <<- array(0, c(1, nResults))
-        }
+            results <<- array(0, c(1, nResults)) }
     )
 )
 
@@ -111,15 +115,16 @@ derived_runningMean <- nimbleFunction(
         ## numeric value generation
         count <- 1
         nResults <- length(nodes)
+        vals <- numeric(nResults)
         results <- array(0, c(1, nResults))
     },
     run = function(iter = double()) {
         if(nResults > 0) {
+            vals <<- values(model, nodes)
             if(count == 1) {
-                results[count, 1:nResults] <<- values(model, nodes)
+                results[count,] <<- vals
             } else {
-                ##results[count, 1:nResults] <<- ((count-1)/count) * results[count-1, 1:nResults] + (1/count) * values(model, nodes)
-                results[count, 1:nResults] <<- results[count-1, 1:nResults] + (1/count) * (values(model, nodes) - results[count-1, 1:nResults])  ## same as above
+                results[count,] <<- results[count-1,] + (1/count) * (vals - results[count-1,])
             }
             count <<- count + 1
         }
@@ -127,19 +132,76 @@ derived_runningMean <- nimbleFunction(
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults)
-        },
+            setSize(results, nKeep, nResults) },
         getResults = function() {
             returnType(double(2))
-            return(results)
-        },
+            return(results) },
         getNames = function() {
             returnType(character(1))
-            return(nodes)
-        },
+            return(nodes) },
         reset = function() {
             count <<- 1
-            results <<- array(0, c(1, nResults))
-        }
+            results <<- array(0, c(1, nResults)) }
     )
 )
+
+
+
+####################################################################
+### derived quantity: runningVariance ##############################
+####################################################################
+
+#' @rdname derived
+#' @export
+derived_runningVariance <- nimbleFunction(
+    name = 'derived_runningVariance',
+    contains = derived_BASE,
+    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+        ## control list extraction
+        nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+        ## node list generation
+        nodes <- model$expandNodeNames(nodes)
+        ## numeric value generation
+        count <- 1
+        nResults <- length(nodes)
+        vals <- numeric(nResults)
+        runMean <- array(0, c(1, nResults))
+        sumSqur <- array(0, c(1, nResults))
+        results <- array(0, c(1, nResults))
+    },
+    run = function(iter = double()) {
+        if(nResults > 0) {
+            vals <<- values(model, nodes)
+            if(count == 1) {
+                runMean[count,] <<- vals
+                sumSqur[count,] <<- rep(0,  nResults)
+                results[count,] <<- rep(NA, nResults)
+            } else {
+                ## Welford's algorithm for stable online variance
+                runMean[count,] <<- runMean[count-1,] + (1/count) * (vals - runMean[count-1,])
+                sumSqur[count,] <<- sumSqur[count-1,] + (vals - runMean[count-1,]) * (vals - runMean[count,])
+                results[count,] <<- sumSqur[count,] / (count-1)
+            }
+            count <<- count + 1
+        }
+    },
+    methods = list(
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+            nKeep <- floor(niter / interval)
+            setSize(runMean, nKeep, nResults)
+            setSize(sumSqur, nKeep, nResults)
+            setSize(results, nKeep, nResults) },
+        getResults = function() {
+            returnType(double(2))
+            return(results) },
+        getNames = function() {
+            returnType(character(1))
+            return(nodes) },
+        reset = function() {
+            count <<- 1
+            runMean <<- array(0, c(1, nResults))
+            sumSqur <<- array(0, c(1, nResults))
+            results <<- array(0, c(1, nResults)) }
+    )
+)
+

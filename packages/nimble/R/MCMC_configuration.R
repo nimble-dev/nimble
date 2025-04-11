@@ -36,7 +36,7 @@ samplerConf <- setRefClass(
             mcmc_listContentsToStr(infoList, displayControlDefaults, displayNonScalars, displayConjugateDependencies)
         },
         show = function() {
-            cat(toStr())
+            cat(toStr(), '\n')
         }
     )
 )
@@ -45,30 +45,19 @@ samplerConf <- setRefClass(
 ## does the run method really need/want to accept 'iter' as an argument?
 ##     run = function(iter = double())
 ## 
-## do these need a 'reset' method?
-## 
 ## should also send each derived function mvSamples2 (I suppose?)
 ## 
 ## this all makes the setup function prototype pretty onerous:
 ##     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control)
 ## 
-## if they manage their own 'results', I guess they get the niter, nburnin, thin, in order to setSize?
-##     before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double())
-## 
 ## above, note that 'thin' is a length=2 vector, containing the thin intervals for both mvSamples and mvSamples2
 ## 
-## do derived functions also want an after_chain method?
-## 
-## introduce some mechanism for *naming* the columns of the 'results' arrays ...??
+## cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## 
 ## 
 ## TODO:
-##  impement running variance
-##  conf$printDQ method: print the control arguments !!!! 
-##  (at least) think about names for quantities
+##  UPDATES TO FORMATTING of conf$printDQ():   logProb function (interval = 10),  nodeList = ....
 ##  XXXXXX serach codebase for XXXXXXX
-## 
-## 
 ## 
 ## 
 
@@ -98,15 +87,16 @@ derivedConf <- setRefClass(
             derivedFunction(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2, interval=interval, control=control)
         },
         toStr = function(displayNonScalars = FALSE) {
-            ###### THIS SHOULD BE UPDATED XXXXXXXXXXX
-            ##tempList <- list()
-            ##tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
-            ##infoList <- c(tempList, control)
-            ##mcmc_listContentsToStr(infoList, displayControlDefaults, displayNonScalars, displayConjugateDependencies)
-            return(paste0('interval = ', interval, ': ', name))
+            ##return(paste0('interval = ', interval, ': ', name))    ## original
+            s <- paste0('interval = ', interval, ': ', name)
+            if(length(control)) {
+                controlString <- mcmc_listContentsToStr(control, displayNonScalars = displayNonScalars, removeCfunctions = FALSE, removeLengthZero = FALSE)
+                if(nchar(controlString) > 0)   s <- paste0(s, ',  ', controlString)
+            }
+            return(s)
         },
         show = function() {
-            cat(toStr())
+            cat(toStr(), '\n')
         }
     )
 )
@@ -1271,13 +1261,12 @@ byType: A logical argument, specifying whether a summary of the derived quantity
 
         printDerivedQuantitiesByType = function(ind) {
             if(length(ind) == 0) return(invisible(NULL))
-            indent <- '  - '
-            derivedTypes <- unlist(lapply(ind, function(i) derivedConfs[[i]]$name))
+            derivedTypes <- sapply(ind, function(i) derivedConfs[[i]]$name)
             derivedTypesTable <- table(derivedTypes)
             for(i in seq_along(derivedTypesTable)) {
                 name <- names(derivedTypesTable)[i]
                 num <- as.numeric(derivedTypesTable)[i]
-                cat(paste0(indent, name, ' (', num, ')\n'))
+                cat(paste0('-  ', name, ' (', num, ')\n'))
             }
         },
 
