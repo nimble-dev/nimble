@@ -62,6 +62,14 @@ samplerConf <- setRefClass(
 ## introduce some mechanism for *naming* the columns of the 'results' arrays ...??
 ## 
 ## 
+## TODO:
+##  impement running variance
+##  conf$printDQ method: print the control arguments !!!! 
+##  (at least) think about names for quantities
+##  XXXXXX serach codebase for XXXXXXX
+## 
+## 
+## 
 ## 
 
 derivedConf <- setRefClass(
