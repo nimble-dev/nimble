@@ -152,7 +152,8 @@ derived_runningMean <- nimbleFunction(
             if(count == 1) {
                 results[count, 1:nResults] <<- values(model, nodes)
             } else {
-                results[count, 1:nResults] <<- ((count-1)/count) * results[count-1, 1:nResults] + (1/count) * values(model, nodes)
+                ##results[count, 1:nResults] <<- ((count-1)/count) * results[count-1, 1:nResults] + (1/count) * values(model, nodes)
+                results[count, 1:nResults] <<- results[count-1, 1:nResults] + (1/count) * (values(model, nodes) - results[count-1, 1:nResults])  ## same as above
             }
             count <<- count + 1
         }
