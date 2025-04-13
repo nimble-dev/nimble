@@ -157,7 +157,7 @@ derived_logProb <- nimbleFunction(
     contains = derived_BASE,
     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
         ## control list extraction
-        nodes  <- extractControlElement(control, 'nodes', defaultValue = '.all')
+        nodes  <- extractControlElement(control, 'nodes',    defaultValue = '.all')
         silent <- extractControlElement(control, 'silent',   defaultValue = FALSE)
         ## node list generation
         nodeList <- if(is.character(nodes)) list(nodes) else nodes

@@ -265,7 +265,13 @@ runMCMC <- function(mcmc,
 #' @param samplesAsCodaMCMC Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects.  This argument is only used when \code{samples} is \code{TRUE}.  Default value is \code{FALSE}.  See details.
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
-#'z
+#'
+#' @param mean Character or logical argument.  When a vector of node names is provided, the \code{runningMean} derived quantity function will be used to calculate the running mean for all node names specified.  If \code{TRUE}, the running mean will be calculated for nodes specified in \code{monitors}.
+#' 
+#' @param variance Character or logical argument.  When a vector of node names is provided, the \code{runningVariance} derived quantity function will be used to calculate the running variance for all node names specified.  If \code{TRUE}, the running variance will be calculated for nodes specified in \code{monitors}.
+#' 
+#' @param logProb When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be calculated.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.
+#' 
 #' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}. Note that the version of WAIC used is the default WAIC conditional on random effects/latent states and without any grouping of data nodes. See \code{help(waic)} for more details. If a different version of WAIC is desired, do not use \code{nimbleMCMC}. Instead, specify the \code{controlWAIC} argument to \code{configureMCMC} or \code{buildMCMC}, and then use \code{runMCMC}.
 #' 
 #' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.
@@ -328,6 +334,9 @@ nimbleMCMC <- function(code,
                        samples = TRUE,
                        samplesAsCodaMCMC = FALSE,
                        summary = FALSE,
+                       mean = FALSE,
+                       variance = FALSE,
+                       logProb = FALSE,
                        WAIC = FALSE) {
     #### process 'code' argument, to accept a filename, or a function
     ##if(is.character(code) || is.function(code)) {
@@ -343,7 +352,7 @@ nimbleMCMC <- function(code,
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
     Rmodel <- mcmc_createModelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check)
-    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC, print = FALSE)
+    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, mean = mean, variance = variance, logProb = logProb, enableWAIC = WAIC, print = FALSE)
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
     Cmcmc <- compiledList$Rmcmc

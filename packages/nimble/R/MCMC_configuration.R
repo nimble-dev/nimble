@@ -46,8 +46,7 @@ samplerConf <- setRefClass(
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## 
 ## TODO:
-## - add 'logProb' and 'runningStats' arguments to configureMCMC, and then nimbleMCMC
-## -  
+## - TESTING!
 ## -  
 ## -  
 ## -  
@@ -158,6 +157,7 @@ MCMCconf <- setRefClass(
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
+            mean = FALSE, variance = FALSE, logProb = FALSE,
             enableWAIC = getNimbleOption('MCMCenableWAIC'), controlWAIC = list(),
             print = TRUE, ...) {
             '
@@ -195,6 +195,12 @@ onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, the
 onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
+
+mean: Character or logical argument.  When a vector of node names is provided, the runningMean derived quantity function will be used to calculate the running mean for all node names specified.  If TRUE, the running mean will be calculated for nodes specified in monitors.
+
+variance: Character or logical argument.  When a vector of node names is provided, the runningVariance derived quantity function will be used to calculate the running variance for all node names specified.  If TRUE, the running variance will be calculated for nodes specified in monitors.
+
+logProb: When TRUE, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the logProb derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be calculated.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.
 
 enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions(\'MCMCenableWAIC\'), which in turn defaults to FALSE.  Setting nimbleOptions(\'MCMCenableWAIC\' = TRUE) will ensure that WAIC is enabled for all calls to \`configureMCMC\` and \`buildMCMC\`.
 
@@ -258,7 +264,14 @@ print: A logical argument specifying whether to print the montiors and samplers.
                               onlySlice = onlySlice,
                               multivariateNodesAsScalars = multivariateNodesAsScalars,
                               print = FALSE)
-
+            
+            if(isTRUE      (mean    ))   addDerivedQuantity('runningMean'    , control = list(nodes = monitors))
+            if(is.character(mean    ))   addDerivedQuantity('runningMean'    , control = list(nodes = mean    ))
+            if(isTRUE      (variance))   addDerivedQuantity('runningVariance', control = list(nodes = monitors))
+            if(is.character(variance))   addDerivedQuantity('runningVariance', control = list(nodes = variance))
+            if(isTRUE      (logProb ))   addDerivedQuantity('logProb'        , control = list(nodes = '.all'  ))
+            if(!isFALSE    (logProb ))   addDerivedQuantity('logProb'        , control = list(nodes = logProb ))
+            
             if(print)   show()    ##printSamplers()
         },
 
@@ -1608,6 +1621,9 @@ See the initialize() function
 #'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
+#'@param mean Character or logical argument.  When a vector of node names is provided, the \code{runningMean} derived quantity function will be used to calculate the running mean for all node names specified.  If \code{TRUE}, the running mean will be calculated for nodes specified in \code{monitors}.
+#'@param variance Character or logical argument.  When a vector of node names is provided, the \code{runningVariance} derived quantity function will be used to calculate the running variance for all node names specified.  If \code{TRUE}, the running variance will be calculated for nodes specified in \code{monitors}.
+#'@param logProb When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be calculated.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.
 #'@param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.
 #'@param controlWAIC A named list of inputs that control the behavior of the WAIC calculation. See \code{help(waic)}.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
@@ -1623,6 +1639,7 @@ configureMCMC <- function(model, nodes, control = list(),
                           useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                           onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
+                          mean = FALSE, variance = FALSE, logProb = FALSE,
                           enableWAIC = getNimbleOption('MCMCenableWAIC'), controlWAIC = list(),
                           print = getNimbleOption('verbose'),
                           autoBlock = FALSE, oldConf,
@@ -1649,6 +1666,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          useConjugacy = useConjugacy,
                          onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
+                         mean = mean, variance = variance, logProb = logProb,
                          enableWAIC = enableWAIC, controlWAIC = controlWAIC,
                          print = print, ...)
     return(invisible(thisConf))
