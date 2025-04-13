@@ -25,80 +25,6 @@ derived_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
-### derived quantity: logProb ######################################
-####################################################################
-
-getLogProb_virtual <- nimbleFunctionVirtual(
-    run = function() { returnType(double()) }
-)
-
-getLogProbNF <- nimbleFunction(
-    contains = getLogProb_virtual,
-    setup = function(model, nodes) {},
-    run = function() {
-        returnType(double())
-        return(model$getLogProb(nodes))
-    }
-)
-
-#' @rdname derived
-#' @export
-derived_logProb <- nimbleFunction(
-    name = 'derived_logProb',
-    contains = derived_BASE,
-    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
-        ## control list extraction
-        nodeList <- extractControlElement(control, 'nodeList', defaultValue = list('.all'))
-        silent   <- extractControlElement(control, 'silent',   defaultValue = FALSE)
-        ## node list generation
-        allBool <- sapply(nodeList, function(x) identical('.all', x))
-        allInd <- if(length(allBool)) which(allBool) else numeric()
-        for(ind in allInd)   nodeList[[ind]] <- model$getNodeNames(stochOnly = TRUE)
-        sumBool <- sapply(seq_along(nodeList), function(i) length(nodeList[[i]]) > 1 && !allBool[i])
-        sumIndex <- cumsum(sumBool)
-        names <- sapply(seq_along(nodeList),
-                        function(i) if(sumBool[i]) paste0('sum',sumIndex[i]) else if(allBool[i]) '_all_nodes_' else nodeList[[i]])
-        if(!length(names)) names <- character()
-        ## numeric value generation
-        count <- 1
-        nResults <- length(nodeList)
-        results <- array(0, c(1, nResults))
-        ## nested function and function list definitions
-        getLogProbNFL <- nimbleFunctionList(getLogProb_virtual)
-        for(i in seq_along(nodeList))   getLogProbNFL[[i]] <- getLogProbNF(model, nodeList[[i]])
-        ## checks
-        nodes <- unique(unlist(nodeList))
-        missingInd <- sapply(nodes, function(n) length(model$expandNodeNames(n)) == 0)
-        missingNodes <- nodes[missingInd]
-        if(length(missingNodes) && !silent)
-            warning('logProb derived quantity function is using node names which are not in the model: ',
-                    paste0(missingNodes, collapse=', '), call. = FALSE)
-    },
-    run = function(iter = double()) {
-        if(nResults > 0) {
-            for(i in 1:nResults)   results[count, i] <<- getLogProbNFL[[i]]$run()
-            count <<- count + 1
-        }
-    },
-    methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults) },
-        getResults = function() {
-            returnType(double(2))
-            return(results) },
-        getNames = function() {
-            returnType(character(1))
-            return(names) },
-        reset = function() {
-            count <<- 1
-            results <<- array(0, c(1, nResults)) }
-    )
-)
-
-
-
-####################################################################
 ### derived quantity: runningMean ##################################
 ####################################################################
 
@@ -201,6 +127,86 @@ derived_runningVariance <- nimbleFunction(
             count <<- 1
             runMean <<- array(0, c(1, nResults))
             sumSqur <<- array(0, c(1, nResults))
+            results <<- array(0, c(1, nResults)) }
+    )
+)
+
+
+
+####################################################################
+### derived quantity: logProb ######################################
+####################################################################
+
+getLogProb_virtual <- nimbleFunctionVirtual(
+    run = function() { returnType(double()) }
+)
+
+getLogProbNF <- nimbleFunction(
+    contains = getLogProb_virtual,
+    setup = function(model, nodes) {},
+    run = function() {
+        returnType(double())
+        return(model$getLogProb(nodes))
+    }
+)
+
+#' @rdname derived
+#' @export
+derived_logProb <- nimbleFunction(
+    name = 'derived_logProb',
+    contains = derived_BASE,
+    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+        ## control list extraction
+        nodes  <- extractControlElement(control, 'nodes', defaultValue = '.all')
+        silent <- extractControlElement(control, 'silent',   defaultValue = FALSE)
+        ## node list generation
+        nodeList <- if(is.character(nodes)) list(nodes) else nodes
+        names <- character(length(nodeList))
+        sumIndex <- 0
+        for(i in seq_along(nodeList)) {
+            if(identical(nodeList[[i]], '.all')) {
+                names[i] <- '_all_nodes_'
+                nodeList[[i]] <- model$getNodeNames(stochOnly = TRUE)
+                next }
+            if(length(nodeList[[i]]) > 1) {
+                sumIndex <- sumIndex + 1
+                names[i] <- paste0('sum', sumIndex)
+                next }
+            names[i] <- nodeList[[i]]
+        }
+        ## numeric value generation
+        count <- 1
+        nResults <- length(nodeList)
+        results <- array(0, c(1, nResults))
+        ## nested function and function list definitions
+        getLogProbNFL <- nimbleFunctionList(getLogProb_virtual)
+        for(i in seq_along(nodeList))   getLogProbNFL[[i]] <- getLogProbNF(model, nodeList[[i]])
+        ## checks
+        uniqueNodes <- unique(unlist(nodeList))
+        missingInd <- sapply(uniqueNodes, function(n) length(model$expandNodeNames(n)) == 0)
+        missingNodes <- uniqueNodes[missingInd]
+        if(length(missingNodes) && !silent)
+            warning('logProb derived quantity function is using node names which are not in the model: ',
+                    paste0(missingNodes, collapse=', '), call. = FALSE)
+    },
+    run = function(iter = double()) {
+        if(nResults > 0) {
+            for(i in 1:nResults)   results[count, i] <<- getLogProbNFL[[i]]$run()
+            count <<- count + 1
+        }
+    },
+    methods = list(
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+            nKeep <- floor(niter / interval)
+            setSize(results, nKeep, nResults) },
+        getResults = function() {
+            returnType(double(2))
+            return(results) },
+        getNames = function() {
+            returnType(character(1))
+            return(names) },
+        reset = function() {
+            count <<- 1
             results <<- array(0, c(1, nResults)) }
     )
 )

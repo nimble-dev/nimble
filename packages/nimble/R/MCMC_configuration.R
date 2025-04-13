@@ -42,24 +42,19 @@ samplerConf <- setRefClass(
 )
 
 ## 
-## does the run method really need/want to accept 'iter' as an argument?
-##     run = function(iter = double())
-## 
-## should also send each derived function mvSamples2 (I suppose?)
-## 
-## this all makes the setup function prototype pretty onerous:
-##     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control)
-## 
-## above, note that 'thin' is a length=2 vector, containing the thin intervals for both mvSamples and mvSamples2
-## 
-## cannot have "required = FALSE" NF methods, which return character() or character(1)
-## 
+## NOTE:
+## - cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## 
 ## TODO:
-##  UPDATES TO FORMATTING of conf$printDQ():   logProb function (interval = 10),  nodeList = ....
-##  XXXXXX serach codebase for XXXXXXX
+## - add 'logProb' and 'runningStats' arguments to configureMCMC, and then nimbleMCMC
+## -  
+## -  
+## -  
+## -  
+## -  
 ## 
 ## 
+
 
 derivedConf <- setRefClass(
     Class = 'derivedConf',
@@ -87,8 +82,7 @@ derivedConf <- setRefClass(
             derivedFunction(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2, interval=interval, control=control)
         },
         toStr = function(displayNonScalars = FALSE) {
-            ##return(paste0('interval = ', interval, ': ', name))    ## original
-            s <- paste0('interval = ', interval, ': ', name)
+            s <- paste0(name, ' function (interval = ', interval, ')')
             if(length(control)) {
                 controlString <- mcmc_listContentsToStr(control, displayNonScalars = displayNonScalars, removeCfunctions = FALSE, removeLengthZero = FALSE)
                 if(nchar(controlString) > 0)   s <- paste0(s, ',  ', controlString)
