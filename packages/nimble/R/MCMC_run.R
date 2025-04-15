@@ -155,7 +155,11 @@ runMCMC <- function(mcmc,
         }
         if(derivedQuantities && (numDerived>0)) {
             tempList <- lapply(1:numDerived, function(ii) mcmc$getDerivedQuantityResults(ii))
-            for(j in 1:numDerived)   colnames(tempList[[j]]) <- mcmc$getDerivedQuantityNames(j)
+            for(j in 1:numDerived) {
+                theseNames <- mcmc$getDerivedQuantityNames(j)
+                theseNames <- theseNames[1:ncol(tempList[[j]])]
+                colnames(tempList[[j]]) <- theseNames
+            }
             names(tempList) <- mcmc$derivedTypes
             derivedList[[i]] <- tempList
         }
@@ -266,9 +270,9 @@ runMCMC <- function(mcmc,
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
 #'
-#' @param mean Character or logical argument.  When a vector of node names is provided, the \code{runningMean} derived quantity function will be used to calculate the running mean for all node names specified.  If \code{TRUE}, the running mean will be calculated for nodes specified in \code{monitors}.
+#' @param mean Character or logical argument.  When a vector of node names is provided, the \code{mean} derived quantity function will be used to calculate the running mean for all node names specified.  If \code{TRUE}, the running mean will be calculated for nodes specified in \code{monitors}.
 #' 
-#' @param variance Character or logical argument.  When a vector of node names is provided, the \code{runningVariance} derived quantity function will be used to calculate the running variance for all node names specified.  If \code{TRUE}, the running variance will be calculated for nodes specified in \code{monitors}.
+#' @param variance Character or logical argument.  When a vector of node names is provided, the \code{variance} derived quantity function will be used to calculate the running variance for all node names specified.  If \code{TRUE}, the running variance will be calculated for nodes specified in \code{monitors}.
 #' 
 #' @param logProb When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be calculated.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.
 #' 

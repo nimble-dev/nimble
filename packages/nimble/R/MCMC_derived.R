@@ -25,13 +25,13 @@ derived_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
-### derived quantity: runningMean ##################################
+### derived quantity: mean #########################################
 ####################################################################
 
 #' @rdname derived
 #' @export
-derived_runningMean <- nimbleFunction(
-    name = 'derived_runningMean',
+derived_mean <- nimbleFunction(
+    name = 'derived_mean',
     contains = derived_BASE,
     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
         ## control list extraction
@@ -74,13 +74,13 @@ derived_runningMean <- nimbleFunction(
 
 
 ####################################################################
-### derived quantity: runningVariance ##############################
+### derived quantity: variance #####################################
 ####################################################################
 
 #' @rdname derived
 #' @export
-derived_runningVariance <- nimbleFunction(
-    name = 'derived_runningVariance',
+derived_variance <- nimbleFunction(
+    name = 'derived_variance',
     contains = derived_BASE,
     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
         ## control list extraction
@@ -174,6 +174,7 @@ derived_logProb <- nimbleFunction(
                 next }
             names[i] <- nodeList[[i]]
         }
+        if(length(names) == 1)   names <- c(names, '')
         ## numeric value generation
         count <- 1
         nResults <- length(nodeList)
