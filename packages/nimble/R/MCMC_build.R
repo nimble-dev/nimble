@@ -198,6 +198,7 @@ buildMCMC <- nimbleFunction(
 
         ## for naming the derivedList return object from runMCMC
         derivedTypes <- sapply(conf$derivedConfs, `[[`, 'name')
+        if(length(derivedTypes) == 0)  derivedTypes <- character()
         ## used for extracting names of derived quantities,
         ## having as member data is necessary for compilation
         derivedNames <- character(2)

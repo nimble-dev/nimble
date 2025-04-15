@@ -157,8 +157,7 @@ runMCMC <- function(mcmc,
             tempList <- lapply(1:numDerived, function(ii) mcmc$getDerivedQuantityResults(ii))
             for(j in 1:numDerived) {
                 theseNames <- mcmc$getDerivedQuantityNames(j)
-                theseNames <- theseNames[1:ncol(tempList[[j]])]
-                colnames(tempList[[j]]) <- theseNames
+                colnames(tempList[[j]]) <- theseNames[1:ncol(tempList[[j]])]
             }
             names(tempList) <- mcmc$derivedTypes
             derivedList[[i]] <- tempList

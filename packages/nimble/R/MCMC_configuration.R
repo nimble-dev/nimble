@@ -82,7 +82,7 @@ derivedConf <- setRefClass(
             derivedFunction(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2, interval=interval, control=control)
         },
         toStr = function(displayNonScalars = FALSE) {
-            s <- paste0(name, ' function,  interval = ', interval)
+            s <- paste0(name, ' function,  interval: ', interval)
             if(length(control)) {
                 controlString <- mcmc_listContentsToStr(control, displayNonScalars = displayNonScalars, removeCfunctions = FALSE, removeLengthZero = FALSE)
                 if(nchar(controlString) > 0)   s <- paste0(s, ',  ', controlString)
@@ -271,7 +271,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             if(isTRUE      (variance))   addDerivedQuantity('variance', control = list(nodes = monitors))
             if(is.character(variance))   addDerivedQuantity('variance', control = list(nodes = variance))
             if(isTRUE      (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = '.all'  ))
-            if(!isFALSE    (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = logProb ))
+            if(!is.logical (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = logProb ))
             
             if(print)   show()    ##printSamplers()
         },

@@ -38,10 +38,11 @@ derived_mean <- nimbleFunction(
         nodes <- extractControlElement(control, 'nodes', defaultValue = character())
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
+        names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         count <- 1
         nResults <- length(nodes)
-        vals <- numeric(nResults)
+        vals <- numeric(max(nResults, 2))    ## vector
         results <- array(0, c(1, nResults))
     },
     run = function(iter = double()) {
@@ -57,17 +58,22 @@ derived_mean <- nimbleFunction(
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+            setSize(vals, nResults)
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults) },
+            setSize(results, nKeep, nResults)
+        },
         getResults = function() {
             returnType(double(2))
-            return(results) },
+            return(results)
+        },
         getNames = function() {
             returnType(character(1))
-            return(nodes) },
+            return(names)
+        },
         reset = function() {
             count <<- 1
-            results <<- array(0, c(1, nResults)) }
+            results <<- array(0, c(1, nResults))
+        }
     )
 )
 
@@ -87,10 +93,11 @@ derived_variance <- nimbleFunction(
         nodes <- extractControlElement(control, 'nodes', defaultValue = character())
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
+        names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         count <- 1
         nResults <- length(nodes)
-        vals <- numeric(nResults)
+        vals <- numeric(max(nResults, 2))    ## vector
         runMean <- array(0, c(1, nResults))
         sumSqur <- array(0, c(1, nResults))
         results <- array(0, c(1, nResults))
@@ -113,21 +120,26 @@ derived_variance <- nimbleFunction(
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+            setSize(vals, nResults)
             nKeep <- floor(niter / interval)
             setSize(runMean, nKeep, nResults)
             setSize(sumSqur, nKeep, nResults)
-            setSize(results, nKeep, nResults) },
+            setSize(results, nKeep, nResults)
+        },
         getResults = function() {
             returnType(double(2))
-            return(results) },
+            return(results)
+        },
         getNames = function() {
             returnType(character(1))
-            return(nodes) },
+            return(names)
+        },
         reset = function() {
             count <<- 1
             runMean <<- array(0, c(1, nResults))
             sumSqur <<- array(0, c(1, nResults))
-            results <<- array(0, c(1, nResults)) }
+            results <<- array(0, c(1, nResults))
+        }
     )
 )
 
@@ -160,8 +172,8 @@ derived_logProb <- nimbleFunction(
         nodes  <- extractControlElement(control, 'nodes',    defaultValue = '.all')
         silent <- extractControlElement(control, 'silent',   defaultValue = FALSE)
         ## node list generation
-        nodeList <- if(is.character(nodes)) list(nodes) else nodes
-        names <- character(length(nodeList))
+        nodeList <- if(is.character(nodes)) as.list(model$expandNodeNames(nodes)) else nodes
+        names <- character(max(length(nodeList),2))                ## vector
         sumIndex <- 0
         for(i in seq_along(nodeList)) {
             if(identical(nodeList[[i]], '.all')) {
@@ -174,7 +186,6 @@ derived_logProb <- nimbleFunction(
                 next }
             names[i] <- nodeList[[i]]
         }
-        if(length(names) == 1)   names <- c(names, '')
         ## numeric value generation
         count <- 1
         nResults <- length(nodeList)
@@ -199,16 +210,20 @@ derived_logProb <- nimbleFunction(
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults) },
+            setSize(results, nKeep, nResults)
+        },
         getResults = function() {
             returnType(double(2))
-            return(results) },
+            return(results)
+        },
         getNames = function() {
             returnType(character(1))
-            return(names) },
+            return(names)
+        },
         reset = function() {
             count <<- 1
-            results <<- array(0, c(1, nResults)) }
+            results <<- array(0, c(1, nResults))
+        }
     )
 )
 
