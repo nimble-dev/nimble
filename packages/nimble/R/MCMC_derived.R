@@ -205,8 +205,8 @@ derived_logProb <- nimbleFunction(
         nodes  <- extractControlElement(control, 'nodes',    defaultValue = '.all')
         silent <- extractControlElement(control, 'silent',   defaultValue = FALSE)
         ## node list generation
-        nodeList <- if(is.character(nodes)) as.list(model$expandNodeNames(nodes)) else nodes
-        names <- character(max(length(nodeList),2))                ## vector
+        nodeList <- if(is.character(nodes)) as.list(nodes) else nodes
+        names <- character(max(length(nodeList),2))      ## vector
         sumIndex <- 0
         for(i in seq_along(nodeList)) {
             if(identical(nodeList[[i]], '.all')) {
