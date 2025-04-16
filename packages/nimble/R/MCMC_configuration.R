@@ -44,14 +44,9 @@ samplerConf <- setRefClass(
 ## 
 ## NOTE:
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
+## - do 'mean' and 'variance' operate using mdoel? or mvSamples??
 ## 
 ## TODO:
-## - derived quantites (for each type) with only ONE NODE
-##      - simulaneously (for each type) with both ONE node, and MULTIPLE nodes
-## - TESTING!
-## -  
-## -  
-## -  
 ## 
 ## 
 
@@ -1274,7 +1269,7 @@ byType: A logical argument, specifying whether a summary of the derived quantity
             for(i in seq_along(derivedTypesTable)) {
                 name <- names(derivedTypesTable)[i]
                 num <- as.numeric(derivedTypesTable)[i]
-                cat(paste0('-  ', name, ' (', num, ')\n'))
+                cat(paste0('- ', name, ' (', num, ')\n'))
             }
         },
 
