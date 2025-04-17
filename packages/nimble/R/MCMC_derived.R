@@ -30,52 +30,43 @@ derived_BASE <- nimbleFunctionVirtual(
 
 #' @rdname derived
 #' @export
+#' @rdname derived
+#' @export
 derived_mean <- nimbleFunction(
     name = 'derived_mean',
     contains = derived_BASE,
     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
         ## control list extraction
-        nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+        nodes           <- extractControlElement(control, 'nodes',           defaultValue = character())
+        frequencyRecord <- extractControlElement(control, 'frequencyRecord', defaultValue = 1)
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
-        burnin <- 0
-        thin1 <- 0
-        nextRow <- 1
-        nSamplesUsed <- 0
+        nextStorageRow <- 1
+        nextResultsRow <- 1
         nResults <- length(nodes)
-        thisMean <- numeric(max(nResults, 2))    ## vector
-        results     <- array(0, c(1, nResults))
-        tempStorage <- array(0, c(1, nResults))
+        thisMean <- array(0, c(1,               nResults))
+        storage  <- array(0, c(frequencyRecord, nResults))
+        results  <- array(0, c(1,               nResults))
     },
     run = function(iter = double()) {
-        if(iter < burnin) return()
-        if(nResults == 0) return()
-        nSamples <- floor((iter-burnin) / thin1)
-        nNewSamples <- nSamples - nSamplesUsed
-        if(nNewSamples == 0) return()
-        if(nextRow == 1)   setSize(tempStorage, nNewSamples, nResults)
-        for(i in 1:nNewSamples) {
-            nimCopy(from = mvSamples, to = model, row = nSamplesUsed+i, nodes = nodes)
-            tempStorage[i,] <<- values(model, nodes)
-        }
-        nimCopy(from = mvSaved, to = model, row = 1, nodes = nodes)
-        for(i in 1:nResults)   thisMean[i] <<- mean(tempStorage[,i])
-        if(nextRow == 1) {
-            results[nextRow,] <<- thisMean
+        if(nResults == 0)   return()
+        storage[nextStorageRow,] <<- values(model, nodes)
+        nextStorageRow <<- nextStorageRow + 1
+        if(nextStorageRow <= frequencyRecord)   return()
+        for(i in 1:nResults)   thisMean[1,i] <<- mean(storage[,i])
+        if(nextResultsRow == 1) {
+            results[nextResultsRow,] <<- thisMean[1,]
         } else {
-            results[nextRow,] <<- results[nextRow-1,] + (1/nextRow) * (thisMean - results[nextRow-1,])
+            results[nextResultsRow,] <<- results[nextResultsRow-1,] + (1/nextResultsRow) * (thisMean[1,] - results[nextResultsRow-1,])
         }
-        nextRow <<- nextRow + 1
-        nSamplesUsed <<- nSamples
+        nextStorageRow <<- 1
+        nextResultsRow <<- nextResultsRow + 1
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            burnin <<- nburnin
-            thin1 <<- thin[1]
-            setSize(thisMean, nResults)
-            nKeep <- floor((niter-nburnin) / interval)
+            nKeep <- floor(niter / (interval*frequencyRecord))
             setSize(results, nKeep, nResults)
         },
         getResults = function() {
@@ -87,11 +78,75 @@ derived_mean <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            nextRow <<- 1
-            nSamplesUsed <<- 0
+            nextResultsRow <<- 1
+            nextStorageRow <<- 1
         }
     )
 )
+
+#### implementation using values from mvSamples:
+##derived_mean <- nimbleFunction(
+##    name = 'derived_mean',
+##    contains = derived_BASE,
+##    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+##        ## control list extraction
+##        nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+##        ## node list generation
+##        nodes <- model$expandNodeNames(nodes)
+##        names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
+##        ## numeric value generation
+##        burnin <- 0
+##        thin1 <- 0
+##        nextRow <- 1
+##        nSamplesUsed <- 0
+##        nResults <- length(nodes)
+##        thisMean <- numeric(max(nResults, 2))    ## vector
+##        results     <- array(0, c(1, nResults))
+##        tempStorage <- array(0, c(1, nResults))
+##    },
+##    run = function(iter = double()) {
+##        if(iter < burnin) return()
+##        if(nResults == 0) return()
+##        nSamples <- floor((iter-burnin) / thin1)
+##        nNewSamples <- nSamples - nSamplesUsed
+##        if(nNewSamples == 0) return()
+##        if(nextRow == 1)   setSize(tempStorage, nNewSamples, nResults)
+##        for(i in 1:nNewSamples) {
+##            nimCopy(from = mvSamples, to = model, row = nSamplesUsed+i, nodes = nodes)
+##            tempStorage[i,] <<- values(model, nodes)
+##        }
+##        nimCopy(from = mvSaved, to = model, row = 1, nodes = nodes)
+##        for(i in 1:nResults)   thisMean[i] <<- mean(tempStorage[,i])
+##        if(nextRow == 1) {
+##            results[nextRow,] <<- thisMean
+##        } else {
+##            results[nextRow,] <<- results[nextRow-1,] + (1/nextRow) * (thisMean - results[nextRow-1,])
+##        }
+##        nextRow <<- nextRow + 1
+##        nSamplesUsed <<- nSamples
+##    },
+##    methods = list(
+##        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+##            burnin <<- nburnin
+##            thin1 <<- thin[1]
+##            setSize(thisMean, nResults)
+##            nKeep <- floor((niter-nburnin) / interval)
+##            setSize(results, nKeep, nResults)
+##        },
+##        getResults = function() {
+##            returnType(double(2))
+##            return(results)
+##        },
+##        getNames = function() {
+##            returnType(character(1))
+##            return(names)
+##        },
+##        reset = function() {
+##            nextRow <<- 1
+##            nSamplesUsed <<- 0
+##        }
+##    )
+##)
 
 
 
@@ -106,33 +161,32 @@ derived_variance <- nimbleFunction(
     contains = derived_BASE,
     setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
         ## control list extraction
-        nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+        nodes           <- extractControlElement(control, 'nodes',           defaultValue = character())
+        frequencyRecord <- extractControlElement(control, 'frequencyRecord', defaultValue = 1)
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
-        burnin <- 0
-        thin1 <- 0
-        nextRow <- 1
-        nSamplesUsed <- 0
+        nextStorageRow <- 1
+        nextResultsRow <- 1
+        nSamplesUsed   <- 0
         nResults <- length(nodes)
-        vals    <- numeric(max(nResults, 2))    ## vector
-        prvMean <- numeric(max(nResults, 2))    ## vector
-        newMean <- numeric(max(nResults, 2))    ## vector
-        sumSqur <- numeric(max(nResults, 2))    ## vector
-        results <- array(0, c(1, nResults))
+        vals     <- numeric(max(nResults, 2))    ## vector
+        prvMean  <- numeric(max(nResults, 2))    ## vector
+        newMean  <- numeric(max(nResults, 2))    ## vector
+        sumSqur  <- numeric(max(nResults, 2))    ## vector
+        storage  <- array(0, c(frequencyRecord, nResults))
+        results  <- array(0, c(1,               nResults))
     },
     run = function(iter = double()) {
-        if(iter < burnin) return()
-        if(nResults == 0) return()
-        nSamples <- floor((iter-burnin) / thin1)
-        nNewSamples <- nSamples - nSamplesUsed
-        if(nNewSamples == 0) return()
+        if(nResults == 0)   return()
+        storage[nextStorageRow,] <<- values(model, nodes)
+        nextStorageRow <<- nextStorageRow + 1
+        if(nextStorageRow <= frequencyRecord)   return()
         ## Welford's algorithm for stable online variance
-        for(i in 1:nNewSamples) {
-            nimCopy(from = mvSamples, to = model, row = nSamplesUsed+i, nodes = nodes)
-            vals <<- values(model, nodes)
-            if(i==1 & nSamplesUsed==0) {
+        for(i in 1:frequencyRecord) {
+            vals <<- storage[i,]
+            if(i==1 & nextResultsRow==1) {
                 newMean <<- vals
                 sumSqur <<- numeric(nResults)
                 next
@@ -141,24 +195,18 @@ derived_variance <- nimbleFunction(
             newMean <<- prvMean + (vals - prvMean) / (nSamplesUsed+i)
             sumSqur <<- sumSqur + (vals - prvMean) * (vals - newMean)
         }
-        if(nSamples == 1) {
+        nSamplesUsed <<- nSamplesUsed + frequencyRecord
+        if(nSamplesUsed == 1) {
             results[nextRow,] <<- rep(NA, nResults)
         } else {
-            results[nextRow,] <<- sumSqur / (nSamples-1)
+            results[nextRow,] <<- sumSqur / (nSamplesUsed-1)
         }
-        nextRow <<- nextRow + 1
-        nSamplesUsed <<- nSamples
-        nimCopy(from = mvSaved, to = model, row = 1, nodes = nodes)
+        nextStorageRow <<- 1
+        nextResultsRow <<- nextResultsRow + 1
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            burnin <<- nburnin
-            thin1 <<- thin[1]
-            setSize(vals,    nResults)
-            setSize(prvMean, nResults)
-            setSize(newMean, nResults)
-            setSize(sumSqur, nResults)
-            nKeep <- floor((niter-nburnin) / interval)
+            nKeep <- floor(niter / (interval*frequencyRecord))
             setSize(results, nKeep, nResults)
         },
         getResults = function() {
@@ -170,11 +218,92 @@ derived_variance <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            nextRow <<- 1
-            nSamplesUsed <<- 0
+            nextResultsRow <<- 1
+            nextStorageRow <<- 1
+            nSamplesUsed   <<- 0
+            setSize(vals,    nResults)
+            setSize(prvMean, nResults)
+            setSize(newMean, nResults)
+            setSize(sumSqur, nResults)
         }
     )
 )
+
+#### implementation using values from mvSamples:
+##derived_variance <- nimbleFunction(
+##    name = 'derived_variance',
+##    contains = derived_BASE,
+##    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+##        ## control list extraction
+##        nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+##        ## node list generation
+##        nodes <- model$expandNodeNames(nodes)
+##        names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
+##        ## numeric value generation
+##        burnin <- 0
+##        thin1 <- 0
+##        nextRow <- 1
+##        nSamplesUsed <- 0
+##        nResults <- length(nodes)
+##        vals    <- numeric(max(nResults, 2))    ## vector
+##        prvMean <- numeric(max(nResults, 2))    ## vector
+##        newMean <- numeric(max(nResults, 2))    ## vector
+##        sumSqur <- numeric(max(nResults, 2))    ## vector
+##        results <- array(0, c(1, nResults))
+##    },
+##    run = function(iter = double()) {
+##        if(iter < burnin) return()
+##        if(nResults == 0) return()
+##        nSamples <- floor((iter-burnin) / thin1)
+##        nNewSamples <- nSamples - nSamplesUsed
+##        if(nNewSamples == 0) return()
+##        ## Welford's algorithm for stable online variance
+##        for(i in 1:nNewSamples) {
+##            nimCopy(from = mvSamples, to = model, row = nSamplesUsed+i, nodes = nodes)
+##            vals <<- values(model, nodes)
+##            if(i==1 & nSamplesUsed==0) {
+##                newMean <<- vals
+##                sumSqur <<- numeric(nResults)
+##                next
+##            }
+##            prvMean <<- newMean
+##            newMean <<- prvMean + (vals - prvMean) / (nSamplesUsed+i)
+##            sumSqur <<- sumSqur + (vals - prvMean) * (vals - newMean)
+##        }
+##        if(nSamples == 1) {
+##            results[nextRow,] <<- rep(NA, nResults)
+##        } else {
+##            results[nextRow,] <<- sumSqur / (nSamples-1)
+##        }
+##        nextRow <<- nextRow + 1
+##        nSamplesUsed <<- nSamples
+##        nimCopy(from = mvSaved, to = model, row = 1, nodes = nodes)
+##    },
+##    methods = list(
+##        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+##            burnin <<- nburnin
+##            thin1 <<- thin[1]
+##            setSize(vals,    nResults)
+##            setSize(prvMean, nResults)
+##            setSize(newMean, nResults)
+##            setSize(sumSqur, nResults)
+##            nKeep <- floor((niter-nburnin) / interval)
+##            setSize(results, nKeep, nResults)
+##        },
+##        getResults = function() {
+##            returnType(double(2))
+##            return(results)
+##        },
+##        getNames = function() {
+##            returnType(character(1))
+##            return(names)
+##        },
+##        reset = function() {
+##            nextRow <<- 1
+##            nSamplesUsed <<- 0
+##        }
+##    )
+##)
 
 
 
