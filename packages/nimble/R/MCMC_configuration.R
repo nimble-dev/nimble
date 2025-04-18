@@ -49,7 +49,7 @@ samplerConf <- setRefClass(
 ##    - they have access internally to 'niter', and also 'iter' number in the run function,
 ##      so can easily do this internally
 ##    - will be more natural for all of the current functions
-## 
+## - .... incorporate PP nodes into this?  Offhand, this feels a little strange to me.
 ## 
 ## 
 ## TODO:
