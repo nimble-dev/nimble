@@ -45,6 +45,12 @@ samplerConf <- setRefClass(
 ## NOTE:
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## - do 'mean' and 'variance' operate using mdoel? or mvSamples??
+## - would prefer to eliminate the 'interval' for each derived function
+##    - they have access internally to 'niter', and also 'iter' number in the run function,
+##      so can easily do this internally
+##    - will be more natural for all of the current functions
+## 
+## 
 ## 
 ## TODO:
 ## 
