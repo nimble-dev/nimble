@@ -95,7 +95,7 @@ runMCMC <- function(mcmc,
                     samples = TRUE,
                     samplesAsCodaMCMC = FALSE,
                     summary = FALSE,
-                    derivedQuantities = mcmc$getNumDerived() > 0,
+                    derivedQuantities = (mcmc$getNumDerived()>0) && getNimbleOption('MCMCreturnDerivedQuantities'),
                     WAIC = FALSE,
                     perChainWAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
