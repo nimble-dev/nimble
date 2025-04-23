@@ -220,10 +220,9 @@ runMCMC <- function(mcmc,
     if(samples) { retList$samples <- samplesList
                   if(hasMonitors2)   retList$samples2 <- samplesList2 }
     if(summary)   retList$summary <- summaryObject
-    if(derivedQuantities)
-                  retList$derived <- derivedList
     if(WAIC)      retList$WAIC    <- WAICvalue
     if(perChainWAIC) retList$perChainWAIC <- perChainWAICvalue
+    if(derivedQuantities) retList$derived <- derivedList
     if(length(retList) == 1) retList <- retList[[1]]
     return(retList)
 }
