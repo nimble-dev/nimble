@@ -42,18 +42,23 @@ samplerConf <- setRefClass(
 )
 
 ## 
-## NOTE:
+## NOTES:
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
-## - do 'mean' and 'variance' operate using mdoel? or mvSamples??
-## - would prefer to eliminate the 'interval' for each derived function
-##    - they have access internally to 'niter', and also 'iter' number in the run function,
-##      so can easily do this internally
-##    - will be more natural for all of the current functions
-## - .... incorporate PP nodes into this?  Offhand, this feels a little strange to me.
-## 
+## - 
+## - 
 ## 
 ## TODO:
-## 
+## - setup arg list: (model, mcmc, control, interval??)
+## - change the runMCMC output position for "derived" to be #4
+## - add a nimbleOption to make it NEVER output DQ output (by default)
+## - DON'T STORE ALL stored up samples in mean/variance functions !!!!!!!
+## - make recording frequency accept "0", to conput record at the end !!!!!!
+## --- and, make "0" be the default value for recording frequency
+## - accept a *named list* for logProb "nodes" argument
+## - ... if possible: remove before_chain arguments: niter, nburnin, thin, nchains, etc.
+## - ..... add a "predictive nodes" DQ function .....
+## - 
+## - 
 ## 
 
 
