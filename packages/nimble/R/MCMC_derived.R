@@ -43,26 +43,22 @@ derived_mean <- nimbleFunction(
         nodes <- model$expandNodeNames(nodes)
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
-        nextStorageRow <- 1
+        nSamples <- 0
         nextResultsRow <- 1
         nResults <- length(nodes)
-        thisMean <- array(0, c(1,                  nResults))
-        storage  <- array(0, c(recordingFrequency, nResults))
-        results  <- array(0, c(1,                  nResults))
+        vals       <- numeric(max(nResults, 2))    ## vector
+        onlineMean <- numeric(max(nResults, 2))    ## vector
+        results <- array(0, c(1, nResults))
     },
     run = function(iter = double()) {
         if(nResults == 0)   return()
-        storage[nextStorageRow,] <<- values(model, nodes)
-        nextStorageRow <<- nextStorageRow + 1
-        if(nextStorageRow <= recordingFrequency)   return()
-        for(i in 1:nResults)   thisMean[1,i] <<- mean(storage[,i])
-        if(nextResultsRow == 1) {
-            results[nextResultsRow,] <<- thisMean[1,]
-        } else {
-            results[nextResultsRow,] <<- results[nextResultsRow-1,] + (1/nextResultsRow) * (thisMean[1,] - results[nextResultsRow-1,])
+        nSamples <<- nSamples + 1
+        vals <<- values(model, nodes)
+        onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
+        if(iter %% recordingFrequency == 0) {
+            results[nextResultsRow,] <<- onlineMean
+            nextResultsRow <<- nextResultsRow + 1
         }
-        nextStorageRow <<- 1
-        nextResultsRow <<- nextResultsRow + 1
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
@@ -78,8 +74,10 @@ derived_mean <- nimbleFunction(
             return(names)
         },
         reset = function() {
+            nSamples <<- 0
             nextResultsRow <<- 1
-            nextStorageRow <<- 1
+            vals       <<- numeric(nResults)
+            onlineMean <<- numeric(nResults)
         }
     )
 )
@@ -103,42 +101,36 @@ derived_variance <- nimbleFunction(
         nodes <- model$expandNodeNames(nodes)
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
-        nextStorageRow <- 1
+        nSamples <- 0
         nextResultsRow <- 1
-        nSamplesUsed   <- 0
         nResults <- length(nodes)
-        vals     <- numeric(max(nResults, 2))    ## vector
-        prvMean  <- numeric(max(nResults, 2))    ## vector
-        newMean  <- numeric(max(nResults, 2))    ## vector
-        sumSqur  <- numeric(max(nResults, 2))    ## vector
-        storage  <- array(0, c(recordingFrequency, nResults))
-        results  <- array(0, c(1,                  nResults))
+        vals    <- numeric(max(nResults, 2))                      ## vector
+        prvMean <- numeric(max(nResults, 2))                      ## vector
+        newMean <- numeric(max(nResults, 2))                      ## vector
+        sumSqur <- numeric(max(nResults, 2))                      ## vector
+        results <- array(0, c(1, nResults))
     },
     run = function(iter = double()) {
         if(nResults == 0)   return()
-        storage[nextStorageRow,] <<- values(model, nodes)
-        nextStorageRow <<- nextStorageRow + 1
-        if(nextStorageRow <= recordingFrequency)   return()
+        nSamples <<- nSamples + 1
+        vals <<- values(model, nodes)
         ## Welford's algorithm for stable online variance
-        for(i in 1:recordingFrequency) {
-            vals <<- storage[i,]
-            if(i==1 & nextResultsRow==1) {
-                newMean <<- vals
-                sumSqur <<- numeric(nResults)
-                next
-            }
+        if(nSamples == 1) {
+            newMean <<- vals
+            sumSqur <<- numeric(nResults)
+        } else {
             prvMean <<- newMean
-            newMean <<- prvMean + (vals - prvMean) / (nSamplesUsed+i)
+            newMean <<- prvMean + (vals - prvMean) / nSamples
             sumSqur <<- sumSqur + (vals - prvMean) * (vals - newMean)
         }
-        nSamplesUsed <<- nSamplesUsed + recordingFrequency
-        if(nSamplesUsed == 1) {
-            results[nextResultsRow,] <<- rep(NA, nResults)
-        } else {
-            results[nextResultsRow,] <<- sumSqur / (nSamplesUsed-1)
+        if(iter %% recordingFrequency == 0) {
+            if(nSamples == 1) {
+                results[nextResultsRow,] <<- rep(NA, nResults)
+            } else {
+                results[nextResultsRow,] <<- sumSqur / (nSamples-1)
+            }
+            nextResultsRow <<- nextResultsRow + 1
         }
-        nextStorageRow <<- 1
-        nextResultsRow <<- nextResultsRow + 1
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
@@ -154,9 +146,8 @@ derived_variance <- nimbleFunction(
             return(names)
         },
         reset = function() {
+            nSamples       <<- 0
             nextResultsRow <<- 1
-            nextStorageRow <<- 1
-            nSamplesUsed   <<- 0
             setSize(vals,    nResults)
             setSize(prvMean, nResults)
             setSize(newMean, nResults)

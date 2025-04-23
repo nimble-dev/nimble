@@ -327,7 +327,7 @@ buildMCMC <- nimbleFunction(
                 if(enableWAIC & onlineWAIC & iter > nburnin + nburnin_extraWAIC) {
                     if (!thinWAIC) {
                         waicFun[[1]]$updateStats()
-                    } else if (sampleNumber %% thinToUseVec[1] == 0){ 
+                    } else if (sampleNumber %% thinToUseVec[1] == 0) {
                         waicFun[[1]]$updateStats()
                     }
                 }
