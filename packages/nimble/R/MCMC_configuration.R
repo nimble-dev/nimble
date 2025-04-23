@@ -49,12 +49,12 @@ samplerConf <- setRefClass(
 ## CHANGES:
 ## - don't store up samples in mean/variance functions
 ## - new nimbleOption (MCMCreturnDerivedQuantities).  When TRUE (the default) derived quantity output will be returned by runMCMC when derived quantities are present.  When FALSE, derived quantity output will only be inluded in runMCMC output when expressly given the argument derivedQuantities = TRUE.
+## - derived quantities assumes final position in runMCMC return list
 ## 
 ## 
 ## 
 ## TODO:
 ## - setup arg list: (model, mcmc, control, interval??)
-## - change the runMCMC output position for "derived" to be #4
 ## - make recording frequency accept "0", to conput record at the end !!!!!!
 ## --- and, make "0" be the default value for recording frequency
 ## - accept a *named list* for logProb "nodes" argument
