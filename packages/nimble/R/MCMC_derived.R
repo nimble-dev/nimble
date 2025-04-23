@@ -44,6 +44,7 @@ derived_mean <- nimbleFunction(
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
+        saveFrequency <- 0
         nextResultsRow <- 1
         nResults <- length(nodes)
         vals       <- numeric(max(nResults, 2))    ## vector
@@ -55,14 +56,15 @@ derived_mean <- nimbleFunction(
         nSamples <<- nSamples + 1
         vals <<- values(model, nodes)
         onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
-        if(iter %% recordingFrequency == 0) {
+        if(iter %% saveFrequency == 0) {
             results[nextResultsRow,] <<- onlineMean
             nextResultsRow <<- nextResultsRow + 1
         }
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            nKeep <- floor(niter / (interval*recordingFrequency))
+            saveFrequency <<- interval * recordingFrequency
+            nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
         getResults = function() {
@@ -102,6 +104,7 @@ derived_variance <- nimbleFunction(
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
+        saveFrequency <- 0
         nextResultsRow <- 1
         nResults <- length(nodes)
         vals    <- numeric(max(nResults, 2))                      ## vector
@@ -123,7 +126,7 @@ derived_variance <- nimbleFunction(
             newMean <<- prvMean + (vals - prvMean) / nSamples
             sumSqur <<- sumSqur + (vals - prvMean) * (vals - newMean)
         }
-        if(iter %% recordingFrequency == 0) {
+        if(iter %% saveFrequency == 0) {
             if(nSamples == 1) {
                 results[nextResultsRow,] <<- rep(NA, nResults)
             } else {
@@ -134,7 +137,8 @@ derived_variance <- nimbleFunction(
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            nKeep <- floor(niter / (interval*recordingFrequency))
+            saveFrequency <<- interval * recordingFrequency
+            nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
         getResults = function() {
