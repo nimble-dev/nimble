@@ -45,13 +45,14 @@ samplerConf <- setRefClass(
 ## NOTES:
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## - 
-## - 
+## 
+## CHANGES:
+## - don't store up samples in mean/variance functions
 ## 
 ## TODO:
 ## - setup arg list: (model, mcmc, control, interval??)
 ## - change the runMCMC output position for "derived" to be #4
 ## - add a nimbleOption to make it NEVER output DQ output (by default)
-## - DON'T STORE ALL stored up samples in mean/variance functions !!!!!!!
 ## - make recording frequency accept "0", to conput record at the end !!!!!!
 ## --- and, make "0" be the default value for recording frequency
 ## - accept a *named list* for logProb "nodes" argument
