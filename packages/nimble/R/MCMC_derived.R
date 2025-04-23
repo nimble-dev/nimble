@@ -188,19 +188,26 @@ derived_logProb <- nimbleFunction(
         nodeList <- if(is.character(nodes)) {
                         as.list(unlist(lapply(nodes, function(n) if(n=='.all') '.all' else Rmodel$expandNodeNames(n))))
                         } else nodes
-        names <- character(max(length(nodeList),2))      ## vector
-        sumIndex <- 0
-        for(i in seq_along(nodeList)) {
-            if(identical(nodeList[[i]], '.all')) {
-                names[i] <- '_all_nodes_'
-                nodeList[[i]] <- model$getNodeNames(stochOnly = TRUE)
-                next }
-            if(length(nodeList[[i]]) > 1) {
-                sumIndex <- sumIndex + 1
-                names[i] <- paste0('sum', sumIndex)
-                next }
-            names[i] <- nodeList[[i]]
+        if(is.list(nodes) && !is.null(names(nodes))) {
+            ## use node list argument names to provide result names
+            names <- names(nodes)
+        } else {
+            ## otherwise, generate names vector automatically
+            names <- character(length(nodeList))
+            sumIndex <- 0
+            for(i in seq_along(nodeList)) {
+                if(identical(nodeList[[i]], '.all')) {
+                    names[i] <- '_all_nodes_'
+                    next }
+                if(length(nodeList[[i]]) > 1) {
+                    sumIndex <- sumIndex + 1
+                    names[i] <- paste0('sum', sumIndex)
+                    next }
+                names[i] <- nodeList[[i]]
+            }
         }
+        if(length(names) == 1)   names <- c(names, '')    ## vector
+        nodeList <- lapply(nodeList, function(x) if(identical(x,'.all')) model$getNodeNames(stochOnly=TRUE) else x)
         ## numeric value generation
         nextResultsRow <- 1
         nResults <- length(nodeList)
