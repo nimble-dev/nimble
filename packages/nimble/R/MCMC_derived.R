@@ -9,7 +9,7 @@ derived_BASE <- nimbleFunctionVirtual(
     name = 'derived_BASE',
     run = function(iter = double()) { },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) { },
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) { },
         after_chain  = function() { },
         getResults   = function() { returnType(double(2))    },
         getNames     = function() { returnType(character(1)) },
@@ -63,7 +63,7 @@ derived_mean <- nimbleFunction(
         }
     },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
@@ -137,7 +137,7 @@ derived_variance <- nimbleFunction(
         }
     },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
@@ -234,7 +234,7 @@ derived_logProb <- nimbleFunction(
         }
     },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
             setSize(results, nKeep, nResults)
         },
