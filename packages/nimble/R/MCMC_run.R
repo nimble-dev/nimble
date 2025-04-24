@@ -129,38 +129,46 @@ runMCMC <- function(mcmc,
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     numDerived <- mcmc$getNumDerived()
-    for(i in 1:nchains) {
-        messageIfVerbose('running chain ', i, '...')
+    for(chain in 1:nchains) {
+        messageIfVerbose('running chain ', chain, '...')
         if(is.numeric(setSeed)) {
             if(length(setSeed) != nchains) stop('setSeed argument has different length from nchains.')
-            set.seed(setSeed[i])
-        } else if(setSeed) set.seed(i)
+            set.seed(setSeed[chain])
+        } else if(setSeed) set.seed(chain)
         if(!missing(inits)) {
             if(is.function(inits)) {
                 theseInits <- inits()
             } else if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]])) {
-                theseInits <- inits[[i]]
+                theseInits <- inits[[chain]]
             } else theseInits <- inits
             model$setInits(theseInits)
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
-        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, resetWAIC = ifelse(i == 1, TRUE, FALSE), chain = i) #, samplerExecutionOrder = samplerExecutionOrderToUse)
+        mcmc$run(niter,
+                 nburnin = nburnin,
+                 thin = thinToUseVec[1],
+                 thin2 = thinToUseVec[2],
+                 progressBar = progressBar,
+                 resetWAIC = ifelse(chain == 1, TRUE, FALSE),
+                 chain = chain
+                 ## samplerExecutionOrder = samplerExecutionOrderToUse
+                 )
         tmp <- as.matrix(mcmc$mvSamples)
         if(!is.null(tmp))
-            samplesList[[i]] <- tmp 
+            samplesList[[chain]] <- tmp
         if(hasMonitors2) {
             tmp <- as.matrix(mcmc$mvSamples2)
             if(!is.null(tmp))
-                samplesList2[[i]] <- tmp 
+                samplesList2[[chain]] <- tmp
         }
         if(derivedQuantities && (numDerived>0)) {
-            tempList <- lapply(1:numDerived, function(ii) mcmc$getDerivedQuantityResults(ii))
-            for(j in 1:numDerived) {
-                theseNames <- mcmc$getDerivedQuantityNames(j)
-                colnames(tempList[[j]]) <- theseNames[1:ncol(tempList[[j]])]
+            tempList <- lapply(1:numDerived, function(i) mcmc$getDerivedQuantityResults(i))
+            for(i in 1:numDerived) {
+                theseNames <- mcmc$getDerivedQuantityNames(i)
+                colnames(tempList[[i]]) <- theseNames[1:ncol(tempList[[i]])]
             }
             names(tempList) <- mcmc$derivedTypes
-            derivedList[[i]] <- tempList
+            derivedList[[chain]] <- tempList
         }
     }
     if(WAIC) {
