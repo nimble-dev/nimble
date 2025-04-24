@@ -35,7 +35,7 @@ derived_BASE <- nimbleFunctionVirtual(
 derived_mean <- nimbleFunction(
     name = 'derived_mean',
     contains = derived_BASE,
-    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+    setup = function(model, mcmc, interval, control) {
         ## control list extraction
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 1)
@@ -95,7 +95,7 @@ derived_mean <- nimbleFunction(
 derived_variance <- nimbleFunction(
     name = 'derived_variance',
     contains = derived_BASE,
-    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+    setup = function(model, mcmc, interval, control) {
         ## control list extraction
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 1)
@@ -184,7 +184,7 @@ getLogProbNF <- nimbleFunction(
 derived_logProb <- nimbleFunction(
     name = 'derived_logProb',
     contains = derived_BASE,
-    setup = function(model, mvSaved, mvSamples, mvSamples2, interval, control) {
+    setup = function(model, mcmc, interval, control) {
         ## control list extraction
         nodes  <- extractControlElement(control, 'nodes',    defaultValue = '.all')
         silent <- extractControlElement(control, 'silent',   defaultValue = FALSE)

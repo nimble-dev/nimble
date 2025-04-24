@@ -47,7 +47,6 @@ samplerConf <- setRefClass(
 ## - 
 ## 
 ## TODO:
-## - setup arg list: (model, mcmc, control, interval??)
 ## - make recording frequency accept "0", to conput record at the end !!!!!!
 ## --- and, make "0" be the default value for recording frequency
 ## - ... add a "predictive nodes" DQ function .....
@@ -56,6 +55,7 @@ samplerConf <- setRefClass(
 ## 
 ## CHANGES:
 ## - (major) don't store up samples in mean/variance functions
+## - (major) setup arg list: (model, mcmc, interval, control).  Making this change required some care, since it's a catch-22 situation.  The setup function of buildMCMC builds the derivedQuantity functions, and hence calls their setup functions at the time of building them.  These setup functions (of teh derived quantity functions) now require the built (specialized) 'mcmc' function as an argument.  However, the specialized 'mcmc' algorithm object isn't available (it doesn't exist yet) until the call to buildMCMC finishes.  This was worked around using implementation internals of the nimbleFunction function itself and the underlying reference class object, and using on.exit() in the buildMCMC setup function.  This approach works, but should be looked at carefully.
 ## - new nimbleOption (MCMCreturnDerivedQuantities).  When TRUE (the default) derived quantity output will be returned by runMCMC when derived quantities are present.  When FALSE, derived quantity output will only be inluded in runMCMC output when expressly given the argument derivedQuantities = TRUE.
 ## - derived quantities assumes final position in runMCMC return list
 ## - if 'nodes' argument to logProb is a *named* list, then use these names for results
@@ -88,8 +88,8 @@ derivedConf <- setRefClass(
         setFunction = function(f) derivedFunction <<- f,
         setInterval = function(interval) interval <<- interval,
         setControl = function(control) control <<- control,
-        buildDerived = function(model, mvSaved, mvSamples, mvSamples2) {
-            derivedFunction(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2, interval=interval, control=control)
+        buildDerived = function(model, mcmc) {
+            derivedFunction(model=model, mcmc=mcmc, interval=interval, control=control)
         },
         toStr = function(displayNonScalars = FALSE) {
             s <- paste0('derived quantity: ', name, ',  interval: ', interval)

@@ -187,14 +187,23 @@ buildMCMC <- nimbleFunction(
         mvSamples <- modelValues(mvSamplesConf)
         mvSamples2 <- modelValues(mvSamples2Conf)
         
-        ## build derived quantity function list and intervals
+        ## build derived quantity intervals
         derivedFunctions <- nimbleFunctionList(derived_BASE)
         numDerived <- length(conf$derivedConfs)
         derivedIntervals <- numeric(max(numDerived, 2))    ## force to be a vector
         for(i in seq_along(conf$derivedConfs)) {
-            derivedFunctions[[i]] <- conf$derivedConfs[[i]]$buildDerived(model=model, mvSaved=mvSaved, mvSamples=mvSamples, mvSamples2=mvSamples2)
             derivedIntervals[i] <- conf$derivedConfs[[i]]$interval
         }
+
+        ## build derived quantity function list
+        derivedFunctions <- nimbleFunctionList(derived_BASE)
+        ## code below allows 'mcmc' to be a setup argument of derived quantity nimbleFunctions
+        on.exit({
+            for(i in seq_along(conf$derivedConfs)) {
+                derivedFunctions[[i]] <- conf$derivedConfs[[i]]$buildDerived(model=model, mcmc=nfRefClassObject)
+            }
+            nfRefClassObject[['derivedFunctions']] <- nf_preProcessMemberDataObject(get('derivedFunctions'))
+        }, add = TRUE)
 
         ## for naming the derivedList return object from runMCMC
         derivedTypes <- sapply(conf$derivedConfs, `[[`, 'name')
