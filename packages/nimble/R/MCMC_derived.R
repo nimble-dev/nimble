@@ -41,6 +41,7 @@ derived_mean <- nimbleFunction(
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 1)
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
+        ## names generation
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
@@ -101,6 +102,7 @@ derived_variance <- nimbleFunction(
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 1)
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
+        ## names generation
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
@@ -191,16 +193,17 @@ derived_logProb <- nimbleFunction(
         ## node list generation
         nodeList <- if(is.character(nodes)) {
                         as.list(unlist(lapply(nodes, function(n) if(n=='.all') '.all' else Rmodel$expandNodeNames(n))))
-                        } else nodes
+                    } else nodes
+        allBool <- sapply(nodeList, function(n) identical(n, '.all'))
+        nodeList <- lapply(nodeList, function(x) if(identical(x,'.all')) model$getNodeNames(stochOnly=TRUE) else x)
+        ## names generation
         if(is.list(nodes) && !is.null(names(nodes))) {
-            ## use node list argument names to provide result names
             names <- names(nodes)
         } else {
-            ## otherwise, generate names vector automatically
             names <- character(length(nodeList))
             sumIndex <- 0
             for(i in seq_along(nodeList)) {
-                if(identical(nodeList[[i]], '.all')) {
+                if(allBool[i]) {
                     names[i] <- '_all_nodes_'
                     next }
                 if(length(nodeList[[i]]) > 1) {
@@ -211,7 +214,6 @@ derived_logProb <- nimbleFunction(
             }
         }
         if(length(names) == 1)   names <- c(names, '')    ## vector
-        nodeList <- lapply(nodeList, function(x) if(identical(x,'.all')) model$getNodeNames(stochOnly=TRUE) else x)
         ## numeric value generation
         nextResultsRow <- 1
         nResults <- length(nodeList)
