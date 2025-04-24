@@ -49,7 +49,7 @@ samplerConf <- setRefClass(
 ## TODO:
 ## - make recording frequency accept "0", to conput record at the end !!!!!!
 ## --- and, make "0" be the default value for recording frequency
-## - ... add a "predictive nodes" DQ function .....
+## - add a "predictive nodes" derived quantity function
 ## - deal with burnin for saving of derived quantity values
 ## 
 ## 
