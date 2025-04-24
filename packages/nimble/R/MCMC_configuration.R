@@ -52,7 +52,6 @@ samplerConf <- setRefClass(
 ## --- and, make "0" be the default value for recording frequency
 ## - ... add a "predictive nodes" DQ function .....
 ## - deal with burnin for saving of derived quantity values
-## - FIX nchains vs. chain number argument to before_chain method
 ## 
 ## 
 ## CHANGES:
@@ -60,6 +59,7 @@ samplerConf <- setRefClass(
 ## - new nimbleOption (MCMCreturnDerivedQuantities).  When TRUE (the default) derived quantity output will be returned by runMCMC when derived quantities are present.  When FALSE, derived quantity output will only be inluded in runMCMC output when expressly given the argument derivedQuantities = TRUE.
 ## - derived quantities assumes final position in runMCMC return list
 ## - if 'nodes' argument to logProb is a *named* list, then use these names for results
+## - corrected name of 'nchains' argument to be 'chain' in before_chain method
 ## 
 ## 
 ## 
