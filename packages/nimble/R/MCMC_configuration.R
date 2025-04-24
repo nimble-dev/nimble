@@ -46,6 +46,15 @@ samplerConf <- setRefClass(
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## - 
 ## 
+## TODO:
+## - setup arg list: (model, mcmc, control, interval??)
+## - make recording frequency accept "0", to conput record at the end !!!!!!
+## --- and, make "0" be the default value for recording frequency
+## - ... add a "predictive nodes" DQ function .....
+## - deal with burnin for saving of derived quantity values
+## - FIX nchains vs. chain number argument to before_chain method
+## 
+## 
 ## CHANGES:
 ## - (major) don't store up samples in mean/variance functions
 ## - new nimbleOption (MCMCreturnDerivedQuantities).  When TRUE (the default) derived quantity output will be returned by runMCMC when derived quantities are present.  When FALSE, derived quantity output will only be inluded in runMCMC output when expressly given the argument derivedQuantities = TRUE.
@@ -54,13 +63,6 @@ samplerConf <- setRefClass(
 ## 
 ## 
 ## 
-## TODO:
-## - setup arg list: (model, mcmc, control, interval??)
-## - make recording frequency accept "0", to conput record at the end !!!!!!
-## --- and, make "0" be the default value for recording frequency
-## - ... add a "predictive nodes" DQ function .....
-## - deal with burnin for saving of derived quantity values
-## - FIX nchains vs. chain number argument to before_chain method
 ## 
 
 
