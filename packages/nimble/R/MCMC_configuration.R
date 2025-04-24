@@ -51,6 +51,9 @@ samplerConf <- setRefClass(
 ## --- and, make "0" be the default value for recording frequency
 ## - add a "predictive nodes" derived quantity function
 ## - deal with burnin for saving of derived quantity values
+## - Chris raised: derived quantities nf uses random numbers
+## - Chris raised: not firing the derived quantities during burnin, and iteration number passed into $run being the post-burnin iteration number.
+## 
 ## 
 ## 
 ## CHANGES:
