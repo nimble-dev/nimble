@@ -47,7 +47,7 @@ samplerConf <- setRefClass(
 ## - 
 ## 
 ## CHANGES:
-## - don't store up samples in mean/variance functions
+## - (major) don't store up samples in mean/variance functions
 ## - new nimbleOption (MCMCreturnDerivedQuantities).  When TRUE (the default) derived quantity output will be returned by runMCMC when derived quantities are present.  When FALSE, derived quantity output will only be inluded in runMCMC output when expressly given the argument derivedQuantities = TRUE.
 ## - derived quantities assumes final position in runMCMC return list
 ## - if 'nodes' argument to logProb is a *named* list, then use these names for results
@@ -58,10 +58,9 @@ samplerConf <- setRefClass(
 ## - setup arg list: (model, mcmc, control, interval??)
 ## - make recording frequency accept "0", to conput record at the end !!!!!!
 ## --- and, make "0" be the default value for recording frequency
-## - ... if possible: remove before_chain arguments: niter, nburnin, thin, nchains, etc.
 ## - ... add a "predictive nodes" DQ function .....
-## - 
-## - 
+## - deal with burnin for saving of derived quantity values
+## - FIX nchains vs. chain number argument to before_chain method
 ## 
 
 

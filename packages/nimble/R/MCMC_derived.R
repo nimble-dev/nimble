@@ -45,8 +45,8 @@ derived_mean <- nimbleFunction(
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
-        saveFrequency <- 0
         nextResultsRow <- 1
+        saveFrequency <- interval * recordingFrequency
         nResults <- length(nodes)
         vals       <- numeric(max(nResults, 2))    ## vector
         onlineMean <- numeric(max(nResults, 2))    ## vector
@@ -64,7 +64,6 @@ derived_mean <- nimbleFunction(
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            saveFrequency <<- interval * recordingFrequency
             nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
@@ -106,8 +105,8 @@ derived_variance <- nimbleFunction(
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
-        saveFrequency <- 0
         nextResultsRow <- 1
+        saveFrequency <- interval * recordingFrequency
         nResults <- length(nodes)
         vals    <- numeric(max(nResults, 2))                      ## vector
         prvMean <- numeric(max(nResults, 2))                      ## vector
@@ -139,7 +138,6 @@ derived_variance <- nimbleFunction(
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), nchains = double()) {
-            saveFrequency <<- interval * recordingFrequency
             nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
