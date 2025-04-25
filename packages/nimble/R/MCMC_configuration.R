@@ -44,10 +44,10 @@ samplerConf <- setRefClass(
 ## 
 ## NOTES:
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
+## - Ken is welcome to do as much testing as he's able - there will certainly be some bugs.
 ## - 
 ## 
 ## TODO:
-## - add a "predictive nodes" derived quantity function
 ## - deal with burnin for saving of derived quantity values
 ## - Chris raised: derived quantities nf uses random numbers
 ## - Chris raised: not firing the derived quantities during burnin, and iteration number passed into $run being the post-burnin iteration number.
@@ -58,6 +58,7 @@ samplerConf <- setRefClass(
 ## - (major) don't store up samples in mean/variance functions
 ## - (major) setup arg list: (model, mcmc, interval, control).  Making this change required some care, since it's a catch-22 situation.  The setup function of buildMCMC builds the derivedQuantity functions, and hence calls their setup functions at the time of building them.  These setup functions (of teh derived quantity functions) now require the built (specialized) 'mcmc' function as an argument.  However, the specialized 'mcmc' algorithm object isn't available (it doesn't exist yet) until the call to buildMCMC finishes.  This was worked around using implementation internals of the nimbleFunction function itself and the underlying reference class object, and using on.exit() in the buildMCMC setup function.  This approach works, but should be looked at carefully.
 ## - (major) recordingFrequency control argument for 'mean' and 'variance' functions now also accepts the value of 0 (which is now the default value).  When recordingFrequency=0, the value of the running statistic (mean or variance) is *only recorded once*, at the end of the final MCMC iteration of each chain.
+## - (major) added a "predictives" derived quantity function, with option "saveDeterm" (default TRUE)
 ##
 ## minor changes:
 ## - new nimbleOption (MCMCreturnDerivedQuantities).  When TRUE (the default) derived quantity output will be returned by runMCMC when derived quantities are present.  When FALSE, derived quantity output will only be inluded in runMCMC output when expressly given the argument derivedQuantities = TRUE.

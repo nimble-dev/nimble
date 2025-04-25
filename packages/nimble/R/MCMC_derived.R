@@ -30,8 +30,6 @@ derived_BASE <- nimbleFunctionVirtual(
 
 #' @rdname derived
 #' @export
-#' @rdname derived
-#' @export
 derived_mean <- nimbleFunction(
     name = 'derived_mean',
     contains = derived_BASE,
@@ -42,7 +40,7 @@ derived_mean <- nimbleFunction(
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
         ## names generation
-        names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
+        names <- if(length(nodes) < 2) c(nodes,'','') else nodes     ## vector
         ## numeric value generation
         nSamples <- 0
         nextResultsRow <- 1
@@ -112,7 +110,7 @@ derived_variance <- nimbleFunction(
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
         ## names generation
-        names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
+        names <- if(length(nodes) < 2) c(nodes,'','') else nodes  ## vector
         ## numeric value generation
         nSamples <- 0
         nextResultsRow <- 1
@@ -214,9 +212,9 @@ derived_logProb <- nimbleFunction(
         silent <- extractControlElement(control, 'silent',   defaultValue = FALSE)
         ## node list generation
         nodeList <- if(is.character(nodes)) {
-                        as.list(unlist(lapply(nodes, function(n) if(n=='.all') '.all' else Rmodel$expandNodeNames(n))))
+                        as.list(unlist(lapply(nodes, function(x) if(identical(x,'.all')) '.all' else model$expandNodeNames(x))))
                     } else nodes
-        allBool <- sapply(nodeList, function(n) identical(n, '.all'))
+        allBool <- sapply(nodeList, function(x) identical(x, '.all'))
         nodeList <- lapply(nodeList, function(x) if(identical(x,'.all')) model$getNodeNames(stochOnly=TRUE) else x)
         ## names generation
         if(is.list(nodes) && !is.null(names(nodes))) {
@@ -235,7 +233,7 @@ derived_logProb <- nimbleFunction(
                 names[i] <- nodeList[[i]]
             }
         }
-        if(length(names) == 1)   names <- c(names, '')    ## vector
+        if(length(names) < 2)   names <- c(names, '', '')     ## vector
         ## numeric value generation
         nextResultsRow <- 1
         nResults <- length(nodeList)
@@ -245,17 +243,70 @@ derived_logProb <- nimbleFunction(
         for(i in seq_along(nodeList))   getLogProbNFL[[i]] <- getLogProbNF(model, nodeList[[i]])
         ## checks
         uniqueNodes <- unique(unlist(nodeList))
-        missingInd <- sapply(uniqueNodes, function(n) length(model$expandNodeNames(n)) == 0)
+        missingInd <- sapply(uniqueNodes, function(x) length(model$expandNodeNames(x)) == 0)
         missingNodes <- uniqueNodes[missingInd]
         if(length(missingNodes) && !silent)
             warning('logProb derived quantity function is using node names which are not in the model: ',
                     paste0(missingNodes, collapse=', '), call. = FALSE)
     },
     run = function(iter = double()) {
-        if(nResults > 0) {
-            for(i in 1:nResults)   results[nextResultsRow, i] <<- getLogProbNFL[[i]]$run()
-            nextResultsRow <<- nextResultsRow + 1
+        if(nResults == 0)   return()
+        for(i in 1:nResults)   results[nextResultsRow, i] <<- getLogProbNFL[[i]]$run()
+        nextResultsRow <<- nextResultsRow + 1
+    },
+    methods = list(
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+            nKeep <- floor(niter / interval)
+            setSize(results, nKeep, nResults)
+        },
+        getResults = function() {
+            returnType(double(2))
+            return(results)
+        },
+        getNames = function() {
+            returnType(character(1))
+            return(names)
+        },
+        reset = function() {
+            nextResultsRow <<- 1
+            results <<- array(0, c(1, nResults))
         }
+    )
+)
+
+
+
+####################################################################
+### derived quantity: predictive ###################################
+####################################################################
+
+#' @rdname derived
+#' @export
+derived_predictive <- nimbleFunction(
+    name = 'derived_predictive',
+    contains = derived_BASE,
+    setup = function(model, mcmc, interval, control) {
+        ## control list extraction
+        nodes      <- extractControlElement(control, 'nodes',      defaultValue = character())
+        saveDeterm <- extractControlElement(control, 'saveDeterm', defaultValue = TRUE)
+        ## node list generation
+        simNodes  <- model$expandNodeNames(nodes)
+        calcNodes <- model$getDependencies(simNodes)
+        saveNodes <- if(saveDeterm) simNodes else simNodes[!model$isDeterm(simNodes)]
+        simNodes  <- model$topologicallySortNodes(simNodes)
+        ## names generation
+        names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
+        ## numeric value generation
+        nextResultsRow <- 1
+        nResults <- length(saveNodes)
+        results <- array(0, c(1, nResults))
+    },
+    run = function(iter = double()) {
+        if(nResults == 0)   return()
+        model$simulate(simNodes)
+        model$calculate(calcNodes)
+        results[nextResultsRow,] <<- values(model, saveNodes)
+        nextResultsRow <<- nextResultsRow + 1
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
@@ -283,14 +334,14 @@ derived_logProb <- nimbleFunction(
 #'
 #' Details of the NIMBLE MCMC engine handles derived quantities, which are deterministic functions that can be calaculated and recorded after each MCMC sampling iteration.
 #'
-#' @section Running Mean and Variance
+#' @section Mean and Variance
 #'
 #' The \code{mean} and \code{variance} derived quantity functions calculate the running mean and variance, respectively, for each node specified in the \code{nodes} argument.  If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between calculations of the statistic.  When the statistic is calculated, only the current value of each node is used to update the statistic.  For example, if \code{interval} is 2, then every other MCMC iteration is used to calculate an updated value of the statistic.
 #'
 #' The \code{mean} and \code{variance} derived quantity functions both accept the following control list elements:
 #' \itemize{
 #' \item nodes. The set of model nodes used for tracking the statistic.
-#' \item recordingFrequency. The frequency (number of calculations of the statistic) afer which the value of the statistic is saved.  For example, if \code{recordingFrequency} is 1, then the value of the statistic is saved after every update of its value.  But if \code{recordingFrequency} is 10, then the value of the statistic is only saved after every tenth update its value.  The dafault value of \code{recordingFrequency} is 0, which corresponds to a special case: the value of the statistic is only recorded a single time, which is on the final iteration of the MCMC chain.
+#' \item recordingFrequency. The frequency (number of calculations of the statistic) afer which the value of the statistic is saved.  For example, if \code{recordingFrequency} is 1, then the value of the statistic is saved after every update of its value.  But if \code{recordingFrequency} is 10, then the value of the statistic is only saved after every tenth update of its value.  The dafault value of \code{recordingFrequency} is 0, which corresponds to a special case: the value of the statistic is only recorded a single time, which is on the final iteration of the MCMC chain.
 #' }
 #'
 #' @section Model Log-Densities
@@ -300,6 +351,16 @@ derived_logProb <- nimbleFunction(
 #' The \code{logProb} derived quantity function accepts the following control list elements:
 #' \itemize{
 #' \item nodes. The \code{nodes} argument determines the individual nodes, or (summed) groups of nodes, for recording log-density values.  When provided as a character vector, the individual log-density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword \code{".all"} may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).
+#' }
+#'
+#' @section Posterior Predictive Nodes and Derived Quantities
+#'
+#' The \code{predictive} derived quantity function simulates the values of posterior predictive nodes in the model and stores these simulated values.  This may be useful when a model structure includes posterior predictive nodes (or deterministically defined posterior derived quantities), but for reasons of efficiency, these nodes may not undergo MCMC sampling.  In such cases, the \code{predictive} derived quantity function may be assigned to these nodes, and when executed it will simulate new values for these nodes and record the simulated values.  Optionally, the \code{predictive} function may also forgo saving the values of deterministic nodes and only save the values of simulated stochastic nodes.  This allows calculations to propogate through deterministic dependencies, without saving the values of the deterministic nodes.
+#'
+#' The \code{predictive} derived quantity function accepts the following control list elements:
+#' \itemize{
+#' \item nodes. The \code{nodes} argument defines the nodes which will be simulated.  By default, the \code{nodes} argument also defines the nodes for which values will be saved.
+#' \item saveDeterm. The \code{saveDeterm} argument determines whether values of deterministic nodes are also saved (in addition to stochastic nodes).  Using the default value of \code{TRUE}, deterministic nodes are both calculated and saved on every execution.  By specifying \code{FALSE}, calculations will propogate through deterministic nodes, but the value of these nodes will not be saved.
 #' }
 #'
 #' @name derived

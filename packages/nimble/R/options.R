@@ -196,13 +196,12 @@ nimOptimMethod("bobyqa",
         verbose = TRUE,
         verboseErrors = FALSE,
 
+        showCompilerOutput = FALSE,
+
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:
         ## buildConjugateSamplerFunctions()
-        verifyConjugatePosteriors = FALSE,
-
-        showCompilerOutput = FALSE,
-
+        MCMCverifyConjugatePosteriors = FALSE,
         MCMCprogressBar = TRUE,
         MCMCsaveHistory = FALSE,
         MCMCmultivariateNodesAsScalars = FALSE,
@@ -217,6 +216,7 @@ nimOptimMethod("bobyqa",
         MCMCenableWAIC = FALSE,
         MCMCuseBarkerAsDefaultMV = FALSE,
         MCMCreturnDerivedQuantities = TRUE,
+        
         useClearCompiledInADTesting = TRUE,
         unsupportedDerivativeHandling = 'error', # default is error, other options are 'warn' and 'ignore'. Handled in updateADproxyModelMethods in cppDefs_nimbleFunction.R
         errorIfMissingNFVariable = TRUE,
@@ -244,7 +244,7 @@ setNimbleOption <- function(name, value) {
 #' @export
 #' @return The value of the option.
 #' @examples
-#' getNimbleOption('verifyConjugatePosteriors')
+#' getNimbleOption('MCMCverifyConjugatePosteriors')
 getNimbleOption <- function(x) {
     option <- try(get(x, envir = .nimbleOptions), silent = TRUE)
     if(inherits(option, 'try-error'))
@@ -274,7 +274,7 @@ getNimbleOption <- function(x) {
 #'
 #' @examples
 #' # Set one option:
-#' nimbleOptions(verifyConjugatePosteriors = FALSE)
+#' nimbleOptions(MCMCverifyConjugatePosteriors = FALSE)
 #'
 #' # Compactly print all options:
 #' str(nimbleOptions(), max.level = 1)
