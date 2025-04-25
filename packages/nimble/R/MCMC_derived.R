@@ -38,15 +38,15 @@ derived_mean <- nimbleFunction(
     setup = function(model, mcmc, interval, control) {
         ## control list extraction
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
-        recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 1)
+        recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 0)
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
         ## names generation
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
+        saveFrequency <- 0
         nextResultsRow <- 1
-        saveFrequency <- interval * recordingFrequency
         nResults <- length(nodes)
         vals       <- numeric(max(nResults, 2))    ## vector
         onlineMean <- numeric(max(nResults, 2))    ## vector
@@ -64,6 +64,11 @@ derived_mean <- nimbleFunction(
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+            if(recordingFrequency == 0) {
+                saveFrequency <<- niter
+            } else {
+                saveFrequency <<- interval * recordingFrequency
+            }
             nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
@@ -98,15 +103,15 @@ derived_variance <- nimbleFunction(
     setup = function(model, mcmc, interval, control) {
         ## control list extraction
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
-        recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 1)
+        recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 0)
         ## node list generation
         nodes <- model$expandNodeNames(nodes)
         ## names generation
         names <- if(length(nodes) == 1) c(nodes,'') else nodes    ## vector
         ## numeric value generation
         nSamples <- 0
+        saveFrequency <- 0
         nextResultsRow <- 1
-        saveFrequency <- interval * recordingFrequency
         nResults <- length(nodes)
         vals    <- numeric(max(nResults, 2))                      ## vector
         prvMean <- numeric(max(nResults, 2))                      ## vector
@@ -138,6 +143,11 @@ derived_variance <- nimbleFunction(
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+            if(recordingFrequency == 0) {
+                saveFrequency <<- niter
+            } else {
+                saveFrequency <<- interval * recordingFrequency
+            }
             nKeep <- floor(niter / saveFrequency)
             setSize(results, nKeep, nResults)
         },
@@ -261,12 +271,12 @@ derived_logProb <- nimbleFunction(
 #'
 #' @section Running Mean and Variance
 #'
-#' The \code{mean} and \code{variance} derived quantity functions calculate the running mean and variance, respectively, for each node specified in the \code{nodes} argument.  If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between calculations of the running statistic.  When the statistic is calculated, only the current value of each node is used to update the statistic.  For example, if \code{interval} is 2, then every other MCMC iteration is used to calculate an updated value of the running statistic.
+#' The \code{mean} and \code{variance} derived quantity functions calculate the running mean and variance, respectively, for each node specified in the \code{nodes} argument.  If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between calculations of the statistic.  When the statistic is calculated, only the current value of each node is used to update the statistic.  For example, if \code{interval} is 2, then every other MCMC iteration is used to calculate an updated value of the statistic.
 #'
 #' The \code{mean} and \code{variance} derived quantity functions both accept the following control list elements:
 #' \itemize{
-#' \item nodes. The set of model nodes used for tracking the running statistic.
-#' \item recordingFrequency. The frequency (number of calculations of the running statistic) with which the value of the statistic is saved.  For example, itf \code{recordingFrequency} is 10, then the value of the running statistic is only saved after every tenth update of the running value.
+#' \item nodes. The set of model nodes used for tracking the statistic.
+#' \item recordingFrequency. The frequency (number of calculations of the statistic) afer which the value of the statistic is saved.  For example, if \code{recordingFrequency} is 1, then the value of the statistic is saved after every update of its value.  But if \code{recordingFrequency} is 10, then the value of the statistic is only saved after every tenth update its value.  The dafault value of \code{recordingFrequency} is 0, which corresponds to a special case: the value of the statistic is only recorded a single time, which is on the final iteration of the MCMC chain.
 #' }
 #'
 #' @section Model Log-Densities
