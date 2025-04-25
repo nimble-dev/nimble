@@ -45,12 +45,13 @@ samplerConf <- setRefClass(
 ## NOTES:
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## - Ken is welcome to do as much testing as he's able - there will certainly be some bugs.
-## - 
+## - For discussion: Chris's comment about derived quantities use of RNG
 ## 
 ## TODO:
-## - deal with burnin for saving of derived quantity values
-## - Chris raised: derived quantities nf uses random numbers
-## - Chris raised: not firing the derived quantities during burnin, and iteration number passed into $run being the post-burnin iteration number.
+## - add MCMC option: don't assign any samplers to PP nodes
+## - in 'predictive' function: use 'mcmc' to check if any of 'nodes' is a sampler 'target' (and issue a Note)
+## - not firing the derived quantities during burnin (nor saving anything)
+## - iteration number passed into $run being the post-burnin iteration number
 ## 
 ## 
 ## 
