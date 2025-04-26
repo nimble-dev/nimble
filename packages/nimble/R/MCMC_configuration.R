@@ -48,7 +48,6 @@ samplerConf <- setRefClass(
 ## - For discussion: Chris's comment about derived quantities use of RNG
 ## 
 ## TODO:
-## - add MCMC option: don't assign any samplers to PP nodes
 ## - in 'predictive' function: use 'mcmc' to check if any of 'nodes' is a sampler 'target' (and issue a Note)
 ## - not firing the derived quantities during burnin (nor saving anything)
 ## - iteration number passed into $run being the post-burnin iteration number
@@ -66,6 +65,7 @@ samplerConf <- setRefClass(
 ## - derived quantities assumes final position in runMCMC return list
 ## - if 'nodes' argument to logProb is a *named* list, then use these names for results
 ## - corrected name of 'nchains' argument to be 'chain' in before_chain method
+## - new MCMC option 'MCMCassignSamplersToPosteriorPredictiveNodes' default TRUE.  When FALSE, configureMCMC doesn't assign samplers (by default) to any PP nodes
 ## 
 ## 
 ## 
@@ -268,7 +268,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             }
             
             if(missing(nodes)) {
-                nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+                nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, includePredictive = getNimbleOption('MCMCassignSamplersToPosteriorPredictiveNodes'))
                 # Check of all(model$isStoch(nodes)) is not needed in this case
             } else if(is.null(nodes) || length(nodes)==0) {
                 nodes <- character(0)
@@ -330,7 +330,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 ## convert to node IDs:
                 nodeIDs <- model$expandNodeNames(nodes, returnType = 'ids')
                 nodeIDsOrig <- nodeIDs
-                
+
                 ## determine which posterior predictive nodes should be sampled with posterior_predictive sampler.
                 ## this requires some care, because it's only those nodes for which all
                 ## downstream dependents are also slated for sampling.

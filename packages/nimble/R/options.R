@@ -210,7 +210,8 @@ nimOptimMethod("bobyqa",
         MCMCorderPriorSamplesSamplersFirst = TRUE,
         MCMCorderPosteriorPredictiveSamplersLast = TRUE,
         MCMCusePredictiveDependenciesInCalculations = FALSE,
-        MCMCusePosteriorPredictiveSampler = TRUE,
+        MCMCassignSamplersToPosteriorPredictiveNodes = TRUE,  ## whether any samplers are assigned (by default) to PP nodes
+        MCMCusePosteriorPredictiveSampler = TRUE,             ## for PP nodes being sampled, use post_pred (or otherwise RW, etc)
         MCMCwarnUnsampledStochasticNodes = TRUE,
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
