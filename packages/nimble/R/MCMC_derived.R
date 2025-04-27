@@ -289,6 +289,7 @@ derived_predictive <- nimbleFunction(
         ## control list extraction
         nodes      <- extractControlElement(control, 'nodes',      defaultValue = character())
         saveDeterm <- extractControlElement(control, 'saveDeterm', defaultValue = TRUE)
+        silent     <- extractControlElement(control, 'silent',     defaultValue = FALSE)
         ## node list generation
         simNodes  <- model$expandNodeNames(nodes)
         calcNodes <- model$getDependencies(simNodes)
@@ -300,6 +301,21 @@ derived_predictive <- nimbleFunction(
         nextResultsRow <- 1
         nResults <- length(saveNodes)
         results <- array(0, c(1, nResults))
+        ## checks
+        sampledNodesList <- lapply(
+            mcmc$samplerFunctions$contentsList,
+            function(x) {
+                nodes <- character()
+                if('target'         %in% ls(x))   nodes <- c(nodes, x$target)
+                if('targetAsScalar' %in% ls(x))   nodes <- c(nodes, x$targetAsScalar)
+                if('simNodes'       %in% ls(x))   nodes <- c(nodes, x$simNodes)
+                return(nodes)
+            })
+        sampledNodes <- model$expandNodeNames(unlist(sampledNodesList))
+        otherwiseSampledSimNodes <- intersect(simNodes, sampledNodes)
+        if(length(otherwiseSampledSimNodes) & !silent)
+            message('  [Note] predictive derived quantity function is operating on nodes being updated by other MCMC samplers: ',
+                    paste0(otherwiseSampledSimNodes, collapse=', '))
     },
     run = function(iter = double()) {
         if(nResults == 0)   return()
@@ -351,6 +367,7 @@ derived_predictive <- nimbleFunction(
 #' The \code{logProb} derived quantity function accepts the following control list elements:
 #' \itemize{
 #' \item nodes. The \code{nodes} argument determines the individual nodes, or (summed) groups of nodes, for recording log-density values.  When provided as a character vector, the individual log-density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword \code{".all"} may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).
+#' \item silent.  By default, the \code{logProb} derived quantity function will issue a warning when the \code{nodes} argument includes node names which are not present in the model.  This warning may be suppressed by setting \code{silent} to \code{TRUE}.
 #' }
 #'
 #' @section Posterior Predictive Nodes and Derived Quantities
@@ -361,6 +378,7 @@ derived_predictive <- nimbleFunction(
 #' \itemize{
 #' \item nodes. The \code{nodes} argument defines the nodes which will be simulated.  By default, the \code{nodes} argument also defines the nodes for which values will be saved.
 #' \item saveDeterm. The \code{saveDeterm} argument determines whether values of deterministic nodes are also saved (in addition to stochastic nodes).  Using the default value of \code{TRUE}, deterministic nodes are both calculated and saved on every execution.  By specifying \code{FALSE}, calculations will propogate through deterministic nodes, but the value of these nodes will not be saved.
+#' \item silent.  By default, the \code{predictive} derived quantity function will issue a warning when the \code{nodes} argument includes node names which are being sampled by some sampler function in the MCMC.  This warning may be suppressed by setting \code{silent} to \code{TRUE}.
 #' }
 #'
 #' @name derived

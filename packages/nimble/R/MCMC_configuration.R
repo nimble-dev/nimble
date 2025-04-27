@@ -48,10 +48,8 @@ samplerConf <- setRefClass(
 ## - For discussion: Chris's comment about derived quantities use of RNG
 ## 
 ## TODO:
-## - in 'predictive' function: use 'mcmc' to check if any of 'nodes' is a sampler 'target' (and issue a Note)
 ## - not firing the derived quantities during burnin (nor saving anything)
 ## - iteration number passed into $run being the post-burnin iteration number
-## 
 ## 
 ## 
 ## CHANGES:
@@ -1343,7 +1341,7 @@ See the initialize() function
             '
             
             if(isMvSamplesReady(ind)){
-            	messageIfVerbose('   [Note] Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
+            	messageIfVerbose('  [Note] Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
             	if(ind == 1)
                     mvSamples1Conf <<- NULL
             	if(ind == 2)
@@ -1577,7 +1575,7 @@ See the initialize() function
                 msg <- paste0('  [Warning] No samplers assigned for ', numUnsampled, ' node', sTag)
                 if(includeConfGetUnsampledNodes)   msg <- paste0(msg, ', use conf$getUnsampledNodes() for node name', sTag)
                 msg <- paste0(msg, '.')
-                messageIfVerbose(msg)
+                message(msg)
             }
         },
 
