@@ -46,6 +46,7 @@ samplerConf <- setRefClass(
 ## - cannot have "required = FALSE" NF methods, which return character() or character(1)
 ## - Ken is welcome to do as much testing as he's able - there will certainly be some bugs.
 ## - For discussion: Chris's comment about derived quantities use of RNG
+## - WAIC - next project for me could be porting that into a derived quantity
 ## 
 ## TODO:
 ## 
