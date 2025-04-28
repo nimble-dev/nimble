@@ -9,7 +9,7 @@ derived_BASE <- nimbleFunctionVirtual(
     name = 'derived_BASE',
     run = function(iter = double()) { },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) { },
+        before_chain = function(niter = double(), chain = double()) { },
         after_chain  = function() { },
         getResults   = function() { returnType(double(2))    },
         getNames     = function() { returnType(character(1)) },
@@ -61,7 +61,7 @@ derived_mean <- nimbleFunction(
         }
     },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+        before_chain = function(niter = double(), chain = double()) {
             if(recordingFrequency == 0) {
                 nKeep <- 1
             } else {
@@ -145,7 +145,7 @@ derived_variance <- nimbleFunction(
         }
     },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+        before_chain = function(niter = double(), chain = double()) {
             if(recordingFrequency == 0) {
                 nKeep <- 1
             } else {
@@ -255,7 +255,7 @@ derived_logProb <- nimbleFunction(
         nextResultsRow <<- nextResultsRow + 1
     },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+        before_chain = function(niter = double(), chain = double()) {
             nKeep <- floor(niter / interval)
             setSize(results, nKeep, nResults)
         },
@@ -325,7 +325,7 @@ derived_predictive <- nimbleFunction(
         nextResultsRow <<- nextResultsRow + 1
     },
     methods = list(
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+        before_chain = function(niter = double(), chain = double()) {
             nKeep <- floor(niter / interval)
             setSize(results, nKeep, nResults)
         },

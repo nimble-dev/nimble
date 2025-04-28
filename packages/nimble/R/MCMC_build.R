@@ -30,7 +30,7 @@
 #'
 #' \code{initializeModel}: Boolean specifying whether to run the initializeModel routine on the underlying model object, prior to beginning MCMC sampling (default = TRUE).
 #' 
-#' \code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain and after_chain methods.  The value for this argument is specified automatically from invocation via runMCMC, and genernally need not be supplied when calling mcmc$run (default = 1).
+#' \code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain method.  The value for this argument is specified automatically from invocation via runMCMC, and need not be supplied when calling mcmc$run (default = 1).
 
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
@@ -273,7 +273,7 @@ buildMCMC <- nimbleFunction(
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$reset()
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter, nburnin, chain)
-            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter, nburnin, thinToUseVec, chain)
+            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter-nburnin,  chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
@@ -320,31 +320,30 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
-            ## adding "accumulators" to MCMC
-            ## https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-            ## save samples and WAIC calculations
             if(iter > nburnin) {
-                sampleNumber <- iter - nburnin
-                if(sampleNumber %% thinToUseVec[1] == 0) {
+                ## save samples
+                iterPostBurnin <- iter - nburnin
+                if(iterPostBurnin %% thinToUseVec[1] == 0) {
                     mvSamples_copyRow  <- mvSamples_copyRow  + 1
                     nimCopy(from = model, to = mvSamples,  row = mvSamples_copyRow,  nodes = monitors)
                 }
-                if(sampleNumber %% thinToUseVec[2] == 0) {
+                if(iterPostBurnin %% thinToUseVec[2] == 0) {
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
                 }
+                ## save WAIC
                 if(enableWAIC & onlineWAIC & iter > nburnin + nburnin_extraWAIC) {
                     if (!thinWAIC) {
                         waicFun[[1]]$updateStats()
-                    } else if (sampleNumber %% thinToUseVec[1] == 0) {
+                    } else if (iterPostBurnin %% thinToUseVec[1] == 0) {
                         waicFun[[1]]$updateStats()
                     }
                 }
-            }
-            ## execute derivedFunctions
-            for(i in seq_along(derivedFunctions)) {
-                if(iter %% derivedIntervals[i] == 0) {
-                    derivedFunctions[[i]]$run(iter)
+                ## execute derivedFunctions
+                for(i in seq_along(derivedFunctions)) {
+                    if(iterPostBurnin %% derivedIntervals[i] == 0) {
+                        derivedFunctions[[i]]$run(iterPostBurnin)
+                    }
                 }
             }
             ## progress bar
