@@ -47,7 +47,20 @@ samplerConf <- setRefClass(
 ## - WAIC - next project for me could be porting that into a derived quantity
 ## 
 ## TODO:
-## 
+## - changes in predictive sampler:
+## --- argument 'nodes' should be *what gets saved*.
+## --- default for 'nodes' is all terminal predictive nodes
+## --- or, providing nodes = '.all' means saving *all* PP nodes
+## --- then, the function *figures out* what needs to be simulated,
+## --- or, they override the 'simNodes' argument with what *they want simulated*
+## - new configureMCMC option (named what?),
+## --- default value is MCMCassignSamplersToPPNodes option,
+## --- and this new argument actually dictates the behavior of configureMCMC.
+## - reintroduce 'thin' and 'nburnin' arguments to before_chain method.
+## - change the 'iter' argument (of the run method) to be 'index', or 'timesRan',
+## --- which represents how many times this derived function has been called.
+## - make thin[1] (from the MCMC configuration) be the *default* value for the 'interval' of all derived functions.
+##
 ## CHANGES:
 ##
 ## minor changes:
