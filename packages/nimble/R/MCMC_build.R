@@ -342,7 +342,7 @@ buildMCMC <- nimbleFunction(
                 ## execute derivedFunctions
                 for(i in seq_along(derivedFunctions)) {
                     if(iterPostBurnin %% derivedIntervals[i] == 0) {
-                        derivedFunctions[[i]]$run(iterPostBurnin)
+                        derivedFunctions[[i]]$run( iterPostBurnin/derivedIntervals[i] )
                     }
                 }
             }

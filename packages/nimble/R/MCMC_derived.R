@@ -7,7 +7,7 @@
 #' @export
 derived_BASE <- nimbleFunctionVirtual(
     name = 'derived_BASE',
-    run = function(iter = double()) { },
+    run = function(index = double()) { },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) { },
         after_chain  = function() { },
@@ -43,21 +43,18 @@ derived_mean <- nimbleFunction(
         names <- if(length(nodes) < 2) c(nodes,'','') else nodes     ## vector
         ## numeric value generation
         nSamples <- 0
-        nextResultsRow <- 1
-        saveFrequency <- interval * recordingFrequency
         nResults <- length(nodes)
         vals       <- numeric(max(nResults, 2))    ## vector
         onlineMean <- numeric(max(nResults, 2))    ## vector
         results <- array(0, c(1, nResults))
     },
-    run = function(iter = double()) {
+    run = function(index = double()) {
         if(nResults == 0)   return()
         nSamples <<- nSamples + 1
         vals <<- values(model, nodes)
         onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
-        if(recordingFrequency != 0 & iter %% saveFrequency == 0) {
-            results[nextResultsRow,] <<- onlineMean
-            nextResultsRow <<- nextResultsRow + 1
+        if(recordingFrequency != 0 & index %% recordingFrequency == 0) {
+           results[index/recordingFrequency,] <<- onlineMean
         }
     },
     methods = list(
@@ -65,14 +62,13 @@ derived_mean <- nimbleFunction(
             if(recordingFrequency == 0) {
                 nKeep <- 1
             } else {
-                nKeep <- floor(niter / saveFrequency)
+                nKeep <- floor(niter / (interval * recordingFrequency))
             }
             setSize(results, nKeep, nResults)
         },
         after_chain = function() {
             if(recordingFrequency == 0) {
-                results[nextResultsRow,] <<- onlineMean
-                nextResultsRow <<- nextResultsRow + 1
+                results[1,] <<- onlineMean
             }
         },
         getResults = function() {
@@ -85,7 +81,6 @@ derived_mean <- nimbleFunction(
         },
         reset = function() {
             nSamples <<- 0
-            nextResultsRow <<- 1
             vals       <<- numeric(nResults)
             onlineMean <<- numeric(nResults)
         }
@@ -113,8 +108,6 @@ derived_variance <- nimbleFunction(
         names <- if(length(nodes) < 2) c(nodes,'','') else nodes  ## vector
         ## numeric value generation
         nSamples <- 0
-        nextResultsRow <- 1
-        saveFrequency <- interval * recordingFrequency
         nResults <- length(nodes)
         vals    <- numeric(max(nResults, 2))                      ## vector
         prvMean <- numeric(max(nResults, 2))                      ## vector
@@ -122,7 +115,7 @@ derived_variance <- nimbleFunction(
         sumSqur <- numeric(max(nResults, 2))                      ## vector
         results <- array(0, c(1, nResults))
     },
-    run = function(iter = double()) {
+    run = function(index = double()) {
         if(nResults == 0)   return()
         nSamples <<- nSamples + 1
         vals <<- values(model, nodes)
@@ -135,13 +128,12 @@ derived_variance <- nimbleFunction(
             newMean <<- prvMean + (vals - prvMean) / nSamples
             sumSqur <<- sumSqur + (vals - prvMean) * (vals - newMean)
         }
-        if(recordingFrequency != 0 & iter %% saveFrequency == 0) {
+        if(recordingFrequency != 0 & index %% recordingFrequency == 0) {
             if(nSamples == 1) {
-                results[nextResultsRow,] <<- rep(NA, nResults)
+                results[index/recordingFrequency,] <<- rep(NA, nResults)
             } else {
-                results[nextResultsRow,] <<- sumSqur / (nSamples-1)
+                results[index/recordingFrequency,] <<- sumSqur / (nSamples-1)
             }
-            nextResultsRow <<- nextResultsRow + 1
         }
     },
     methods = list(
@@ -149,18 +141,17 @@ derived_variance <- nimbleFunction(
             if(recordingFrequency == 0) {
                 nKeep <- 1
             } else {
-                nKeep <- floor(niter / saveFrequency)
+                nKeep <- floor(niter / (interval * recordingFrequency))
             }
             setSize(results, nKeep, nResults)
         },
         after_chain = function() {
             if(recordingFrequency == 0) {
                 if(nSamples == 1) {
-                    results[nextResultsRow,] <<- rep(NA, nResults)
+                    results[1,] <<- rep(NA, nResults)
                 } else {
-                    results[nextResultsRow,] <<- sumSqur / (nSamples-1)
+                    results[1,] <<- sumSqur / (nSamples-1)
                 }
-                nextResultsRow <<- nextResultsRow + 1
             }
         },
         getResults = function() {
@@ -173,7 +164,6 @@ derived_variance <- nimbleFunction(
         },
         reset = function() {
             nSamples       <<- 0
-            nextResultsRow <<- 1
             setSize(vals,    nResults)
             setSize(prvMean, nResults)
             setSize(newMean, nResults)
@@ -208,8 +198,8 @@ derived_logProb <- nimbleFunction(
     contains = derived_BASE,
     setup = function(model, mcmc, interval, control) {
         ## control list extraction
-        nodes  <- extractControlElement(control, 'nodes',    defaultValue = '.all')
-        silent <- extractControlElement(control, 'silent',   defaultValue = FALSE)
+        nodes  <- extractControlElement(control, 'nodes',  defaultValue = '.all')
+        silent <- extractControlElement(control, 'silent', defaultValue = FALSE)
         ## node list generation
         nodeList <- if(is.character(nodes)) {
                         as.list(unlist(lapply(nodes, function(x) if(identical(x,'.all')) '.all' else model$expandNodeNames(x))))
@@ -235,7 +225,6 @@ derived_logProb <- nimbleFunction(
         }
         if(length(names) < 2)   names <- c(names, '', '')     ## vector
         ## numeric value generation
-        nextResultsRow <- 1
         nResults <- length(nodeList)
         results <- array(0, c(1, nResults))
         ## nested function and function list definitions
@@ -249,10 +238,11 @@ derived_logProb <- nimbleFunction(
             warning('logProb derived quantity function is using node names which are not in the model: ',
                     paste0(missingNodes, collapse=', '), call. = FALSE)
     },
-    run = function(iter = double()) {
+    run = function(index = double()) {
         if(nResults == 0)   return()
-        for(i in 1:nResults)   results[nextResultsRow, i] <<- getLogProbNFL[[i]]$run()
-        nextResultsRow <<- nextResultsRow + 1
+        for(i in 1:nResults) {
+            results[index, i] <<- getLogProbNFL[[i]]$run()
+        }
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
@@ -268,7 +258,6 @@ derived_logProb <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            nextResultsRow <<- 1
             results <<- array(0, c(1, nResults))
         }
     )
@@ -299,7 +288,6 @@ derived_predictive <- nimbleFunction(
         ## names generation
         names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
         ## numeric value generation
-        nextResultsRow <- 1
         nResults <- length(saveNodes)
         results <- array(0, c(1, nResults))
         ## checks
@@ -318,12 +306,11 @@ derived_predictive <- nimbleFunction(
             message('  [Note] predictive derived quantity function is operating on nodes being updated by other MCMC samplers: ',
                     paste0(otherwiseSampledSimNodes, collapse=', '))
     },
-    run = function(iter = double()) {
+    run = function(index = double()) {
         if(nResults == 0)   return()
         model$simulate(simNodes)
         model$calculate(calcNodes)
-        results[nextResultsRow,] <<- values(model, saveNodes)
-        nextResultsRow <<- nextResultsRow + 1
+        results[index,] <<- values(model, saveNodes)
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
@@ -339,7 +326,6 @@ derived_predictive <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            nextResultsRow <<- 1
             results <<- array(0, c(1, nResults))
         }
     )

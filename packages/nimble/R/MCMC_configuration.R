@@ -53,7 +53,6 @@ samplerConf <- setRefClass(
 ## --- or, providing nodes = '.all' means saving *all* PP nodes
 ## --- then, the function *figures out* what needs to be simulated,
 ## --- or, they override the 'simNodes' argument with what *they want simulated*
-## - change the 'iter' argument (of the run method) to be 'index', or 'timesRan',
 ## --- which represents how many times this derived function has been called.
 ## - make thin[1] (from the MCMC configuration) be the *default* value for the 'interval' of all derived functions.
 ##
@@ -66,6 +65,9 @@ samplerConf <- setRefClass(
 ## --- the default value of samplerPredictiveNodes is given by nimbleOptions('MCMCassignSamplersToPosteriorPredictiveNodes')
 ## --- also noting that MCMCassignSamplersToPosteriorPredictiveNodes is *not* the longest package option name
 ## - added a new control argument 'sort' (with default = TRUE) to predictive derived quantity function.  This determines whether the simulation of nodes takes place in topologically-sorted order.
+## - changed the 'iter' argument (of the run method) to be `index
+## --- formally was the (post-burnin) iteration number
+## --- now, 'index' represents how many times this run method has been called.
 ## 
 ## 
 ## 
