@@ -289,12 +289,13 @@ derived_predictive <- nimbleFunction(
         ## control list extraction
         nodes      <- extractControlElement(control, 'nodes',      defaultValue = character())
         saveDeterm <- extractControlElement(control, 'saveDeterm', defaultValue = TRUE)
+        sort       <- extractControlElement(control, 'sort',       defaultValue = TRUE)
         silent     <- extractControlElement(control, 'silent',     defaultValue = FALSE)
         ## node list generation
         simNodes  <- model$expandNodeNames(nodes)
+        if(sort)   simNodes <- model$topologicallySortNodes(simNodes)
         calcNodes <- model$getDependencies(simNodes)
         saveNodes <- if(saveDeterm) simNodes else simNodes[!model$isDeterm(simNodes)]
-        simNodes  <- model$topologicallySortNodes(simNodes)
         ## names generation
         names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
         ## numeric value generation
@@ -378,6 +379,7 @@ derived_predictive <- nimbleFunction(
 #' \itemize{
 #' \item nodes. The \code{nodes} argument defines the nodes which will be simulated.  By default, the \code{nodes} argument also defines the nodes for which values will be saved.
 #' \item saveDeterm. The \code{saveDeterm} argument determines whether values of deterministic nodes are also saved (in addition to stochastic nodes).  Using the default value of \code{TRUE}, deterministic nodes are both calculated and saved on every execution.  By specifying \code{FALSE}, calculations will propogate through deterministic nodes, but the value of these nodes will not be saved.
+#' \item sort. The \code{sort} argument determines whether the simulation of \code{nodes} takes place in topological order.  This argument has a default value of \code{TRUE}.  When specified as \code{FALSE} the simulation of \code{nodes} will take place in the order in which they were specified in the \code{nodes} argument, which may not be in their natural order of dependency.
 #' \item silent.  By default, the \code{predictive} derived quantity function will issue a warning when the \code{nodes} argument includes node names which are being sampled by some sampler function in the MCMC.  This warning may be suppressed by setting \code{silent} to \code{TRUE}.
 #' }
 #'
