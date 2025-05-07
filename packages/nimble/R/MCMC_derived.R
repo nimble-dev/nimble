@@ -7,7 +7,7 @@
 #' @export
 derived_BASE <- nimbleFunctionVirtual(
     name = 'derived_BASE',
-    run = function(index = double()) { },
+    run = function(timesRan = double()) { },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) { },
         after_chain  = function() { },
@@ -48,13 +48,13 @@ derived_mean <- nimbleFunction(
         onlineMean <- numeric(max(nResults, 2))    ## vector
         results <- array(0, c(1, nResults))
     },
-    run = function(index = double()) {
+    run = function(timesRan = double()) {
         if(nResults == 0)   return()
         nSamples <<- nSamples + 1
         vals <<- values(model, nodes)
         onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
-        if(recordingFrequency != 0 & index %% recordingFrequency == 0) {
-           results[index/recordingFrequency,] <<- onlineMean
+        if(recordingFrequency != 0 & timesRan %% recordingFrequency == 0) {
+           results[timesRan/recordingFrequency,] <<- onlineMean
         }
     },
     methods = list(
@@ -115,7 +115,7 @@ derived_variance <- nimbleFunction(
         sumSqur <- numeric(max(nResults, 2))                      ## vector
         results <- array(0, c(1, nResults))
     },
-    run = function(index = double()) {
+    run = function(timesRan = double()) {
         if(nResults == 0)   return()
         nSamples <<- nSamples + 1
         vals <<- values(model, nodes)
@@ -128,11 +128,11 @@ derived_variance <- nimbleFunction(
             newMean <<- prvMean + (vals - prvMean) / nSamples
             sumSqur <<- sumSqur + (vals - prvMean) * (vals - newMean)
         }
-        if(recordingFrequency != 0 & index %% recordingFrequency == 0) {
+        if(recordingFrequency != 0 & timesRan %% recordingFrequency == 0) {
             if(nSamples == 1) {
-                results[index/recordingFrequency,] <<- rep(NA, nResults)
+                results[timesRan/recordingFrequency,] <<- rep(NA, nResults)
             } else {
-                results[index/recordingFrequency,] <<- sumSqur / (nSamples-1)
+                results[timesRan/recordingFrequency,] <<- sumSqur / (nSamples-1)
             }
         }
     },
@@ -238,10 +238,10 @@ derived_logProb <- nimbleFunction(
             warning('logProb derived quantity function is using node names which are not in the model: ',
                     paste0(missingNodes, collapse=', '), call. = FALSE)
     },
-    run = function(index = double()) {
+    run = function(timesRan = double()) {
         if(nResults == 0)   return()
         for(i in 1:nResults) {
-            results[index, i] <<- getLogProbNFL[[i]]$run()
+            results[timesRan, i] <<- getLogProbNFL[[i]]$run()
         }
     },
     methods = list(
@@ -306,11 +306,11 @@ derived_predictive <- nimbleFunction(
             message('  [Note] predictive derived quantity function is operating on nodes being updated by other MCMC samplers: ',
                     paste0(otherwiseSampledSimNodes, collapse=', '))
     },
-    run = function(index = double()) {
+    run = function(timesRan = double()) {
         if(nResults == 0)   return()
         model$simulate(simNodes)
         model$calculate(calcNodes)
-        results[index,] <<- values(model, saveNodes)
+        results[timesRan,] <<- values(model, saveNodes)
     },
     methods = list(
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
