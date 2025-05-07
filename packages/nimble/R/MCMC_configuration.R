@@ -53,17 +53,19 @@ samplerConf <- setRefClass(
 ## --- or, providing nodes = '.all' means saving *all* PP nodes
 ## --- then, the function *figures out* what needs to be simulated,
 ## --- or, they override the 'simNodes' argument with what *they want simulated*
-## - new configureMCMC option (named what?),
-## --- default value is MCMCassignSamplersToPPNodes option,
-## --- and this new argument actually dictates the behavior of configureMCMC.
 ## - change the 'iter' argument (of the run method) to be 'index', or 'timesRan',
 ## --- which represents how many times this derived function has been called.
 ## - make thin[1] (from the MCMC configuration) be the *default* value for the 'interval' of all derived functions.
+## - add control argument 'sort' (with default = TRUE) to predictive derived quantity function.
 ##
 ## CHANGES:
 ##
 ## minor changes:
 ## - reintroduced 'thin' and 'nburnin' arguments to before_chain method
+## - added a new argument 'samplerPredictiveNodes' to configureMCMC:
+## --- samplerPredictiveNodes dictates whether (the default behavior of) configureMCMC assigns samplers to posterior predictive nodes
+## --- the default value of samplerPredictiveNodes is given by nimbleOptions('MCMCassignSamplersToPosteriorPredictiveNodes')
+## --- also noting that MCMCassignSamplersToPosteriorPredictiveNodes is *not* the longest package option name
 ## 
 ## 
 ## 
@@ -171,6 +173,7 @@ MCMCconf <- setRefClass(
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
+            samplerPredictiveNodes = getNimbleOption('MCMCassignSamplersToPosteriorPredictiveNodes'),
             mean = FALSE, variance = FALSE, logProb = FALSE,
             enableWAIC = getNimbleOption('MCMCenableWAIC'), controlWAIC = list(),
             print = TRUE, ...) {
@@ -209,6 +212,8 @@ onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, the
 onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
+
+samplerPredictiveNodes: A logical argument.  When TRUE, samplers will be assigned by default to update posterior predictive model nodes.  When FALSE, no samplers will be assigned to predictive nodes.  The default value of this argument is given by the nimble option \'MCMCassignSamplersToPosteriorPredictiveNodes\', which itself has a default value of TRUE.
 
 mean: Character or logical argument.  When a vector of node names is provided, the \'mean\' derived quantity function will be used to calculate the running mean for all node names specified.  If TRUE, the running mean will be calculated for nodes specified in monitors.
 
@@ -265,7 +270,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
             }
             
             if(missing(nodes)) {
-                nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, includePredictive = getNimbleOption('MCMCassignSamplersToPosteriorPredictiveNodes'))
+                nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, includePredictive = samplerPredictiveNodes)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
             } else if(is.null(nodes) || length(nodes)==0) {
                 nodes <- character(0)
@@ -1635,6 +1640,7 @@ See the initialize() function
 #'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
+#'@param samplerPredictiveNodes A logical argument.  When TRUE, samplers will be assigned by default to update posterior predictive model nodes.  When FALSE, no samplers will be assigned to predictive nodes.  The default value of this argument is given by the nimble option \code{MCMCassignSamplersToPosteriorPredictiveNodes}, which itself has a default value of TRUE.
 #'@param mean Character or logical argument.  When a vector of node names is provided, the \code{mean} derived quantity function will be used to calculate the running mean for all node names specified.  If \code{TRUE}, the running mean will be calculated for nodes specified in \code{monitors}.
 #'@param variance Character or logical argument.  When a vector of node names is provided, the \code{variance} derived quantity function will be used to calculate the running variance for all node names specified.  If \code{TRUE}, the running variance will be calculated for nodes specified in \code{monitors}.
 #'@param logProb When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword \code{".all"} may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).
@@ -1653,6 +1659,7 @@ configureMCMC <- function(model, nodes, control = list(),
                           useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                           onlyRW = FALSE, onlySlice = FALSE,
                           multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
+                          samplerPredictiveNodes = getNimbleOption('MCMCassignSamplersToPosteriorPredictiveNodes'),
                           mean = FALSE, variance = FALSE, logProb = FALSE,
                           enableWAIC = getNimbleOption('MCMCenableWAIC'), controlWAIC = list(),
                           print = getNimbleOption('verbose'),
@@ -1680,6 +1687,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          useConjugacy = useConjugacy,
                          onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
+                         samplerPredictiveNodes = samplerPredictiveNodes,
                          mean = mean, variance = variance, logProb = logProb,
                          enableWAIC = enableWAIC, controlWAIC = controlWAIC,
                          print = print, ...)
