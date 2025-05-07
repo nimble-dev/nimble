@@ -42,6 +42,7 @@ samplerConf <- setRefClass(
 )
 
 
+
 ## NOTE: methods are documented as a "docstring" with each method - see 'removeSamplers' below. roxygen will automatically grab info from these docstrings and inject into the Rd in the Methods Section
 ## NOTE: including the name of the class in @aliases is important because by default we only get help("MCMCconf-class") and not help(MCMCconf)
 ## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
@@ -190,6 +191,11 @@ print: A logical argument specifying whether to print the montiors and samplers.
             if(missing(nodes)) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
+                # Check and adds any partially observed nodes
+                mixedDataNodeNames <- model$getMixedDataNodeNames()
+                if(length(mixedDataNodeNames)) {
+                    nodes <- model$topologicallySortNodes(c(nodes, mixedDataNodeNames))
+                }
             } else if(is.null(nodes) || length(nodes)==0) {
                 nodes <- character(0)
             } else   nodes <- filterOutDataNodes(nodes)   ## configureMCMC *never* assigns samplers to data nodes
@@ -369,6 +375,13 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
+                        if(model$isMixedData(node)) {
+                            if(nodeDist == 'dmnorm') {
+                                thisControlList <- c(controlDefaultsArg, multivariateNodesAsScalars = multivariateNodesAsScalars)
+                                addSampler(target = node, type = 'partial_mvn', control = thisControlList, allowData = TRUE) ; next
+                            }
+                            stop(paste0('The node ', node, ' is partially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
+                        } 
                         if(useConjugacy) {
                             conjugacyResult <- conjugacyResultsAll[[node]]
                             if(!is.null(conjugacyResult)) {
@@ -729,7 +742,9 @@ For internal use only
 
         filterOutDataNodes = function(nodes) {
             nodes <- model$expandNodeNames(nodes)
-            return(nodes[!model$isData(nodes)])
+            # We don't filter out partially observed data nodes
+            gIDs <- model$modelDef$nodeName2GraphIDs(nodes)
+            return(nodes[model$isDataFromGraphID(gIDs, includeMixed=TRUE) != 1])
         },
         
         removeSamplers = function(..., ind, print = FALSE) {

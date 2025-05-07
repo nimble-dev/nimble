@@ -3229,8 +3229,56 @@ sampler_polyagamma <- nimbleFunction(
     )
 )
 
+####################################################################
+### partially observed multivariate normal sampler #################
+####################################################################
 
+#' @rdname samplers
+#' @export
+sampler_partial_mvn <- nimbleFunction(
+  name = 'sampler_partial_mvn',
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    ## control list extraction
+    multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', error = 'The control list must include the argument multivariateNodesAsScalars')
+    ## node list generation
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    partObsTru <- sapply(targetAsScalar, function(targetAsScalar) !eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
+    targetUnobservedComponents <- targetAsScalar[partObsTru]
     
+    ## nested function and function list definitions
+    samplerList <- nimbleFunctionList(sampler_BASE)
+    
+    if(multivariateNodesAsScalars) {
+      for(i in seq_along(targetUnobservedComponents)) {
+        samplerList[[i]] <- sampler_RW(model, mvSaved, targetUnobservedComponents[i], control)
+      }
+    } else {
+      if(length(targetUnobservedComponents) == 1) {
+        samplerList[[1]] <- sampler_RW(model, mvSaved, targetUnobservedComponents, control)
+      } else {
+        samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetUnobservedComponents, control)
+      }
+    }
+    ## checks
+    if (model$getDistribution(target) != "dmnorm")       stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
+    if (!model$isMixedData(target))                       stop(paste0('The target node ', target, ' is not partially observed.'))
+  },
+  
+  run = function() {
+    for (i in seq_along(samplerList)) {
+      samplerList[[i]]$run()
+    }
+  },
+  methods = list(
+    reset = function() {
+      for (i in seq_along(samplerList)) {
+        samplerList[[i]]$reset()
+      }
+    }
+  ) 
+)
+
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package.
@@ -3618,6 +3666,15 @@ sampler_polyagamma <- nimbleFunction(
 #' The posterior_predictive sampler functions by simulating new values for all downstream (dependent) nodes using their conditional distributions, as well as updating the associated model probabilities.  A posterior_predictive sampler will automatically be assigned to all trailing non-data stochastic nodes in a model, or when possible, to any node at a point in the model after which all downstream (dependent) stochastic nodes are non-data.
 #'
 #' The posterior_predictive sampler accepts no control list arguments.
+#' 
+#' @section partial_mvn sampler:
+#'
+#' The partial_mvn sampler is designed to sample multivariate normal distributions that are partially observed.  That is, some dimensions of the target node are observed data values, some dimensions are not data. Sampling is accomplished using either univariate or multivariate random walk Metropolis Hastings of the unobserved dimensions, as determined by the \code{multivariateNodesAsScalars} argument.
+#'
+#' The \code{partial_mvn} sampler accepts the following control list elements:
+#' \itemize{
+#' \item multivariateNodesAsScalars. A logical argument, specifying whether the sampler should sample the unobserved parts of a partially observed node jointly or independently (default = FALSE).
+#' }
 #'
 #' @section RJ_fixed_prior sampler:
 #'
@@ -3633,7 +3690,7 @@ sampler_polyagamma <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky 
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky partial_mvn sampler_partial_mvn
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():

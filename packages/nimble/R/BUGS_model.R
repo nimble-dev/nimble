@@ -503,11 +503,16 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       multivariateStochBool <- sapply(modelDef$declInfo,
                                                                       function(di) di$type == 'stoch' && grepl(':', deparse(di$targetExpr)))
                                       multivariateStochIDs <- sapply(modelDef$declInfo[multivariateStochBool], `[[`, 'graphIDs')
+                                      if(length(multivariateStochIDs) == 0)   multivariateStochIDs <- numeric()   ## length=0 case, make a numeric vector
                                       isDataResult <- isDataFromGraphID(multivariateStochIDs, includeMixed = TRUE)    ## values are in {0, 1, 2}
                                       mixedDataIDs <- multivariateStochIDs[isDataResult == 2]
                                       if(returnType == 'ids')   return(mixedDataIDs)
                                       if(returnType == 'names') return(modelDef$maps$graphID_2_nodeName[mixedDataIDs])
                                       stop('returnType argument to getMixedDataNodeNames was invalid')
+                                  },
+                                  isMixedData = function(nodeNames) {
+                                      ids <- expandNodeNames(nodeNames, returnType = 'ids')
+                                      return(isDataFromGraphID(ids, includeMixed = TRUE) == 2)
                                   },
                                   safeUpdateValidValues = function(validValues, idsVec_only, idsVec_exclude) {
                                       if(!missing(idsVec_only) && !missing(idsVec_exclude)) stop()
