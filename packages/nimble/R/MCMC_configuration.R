@@ -65,9 +65,9 @@ samplerConf <- setRefClass(
 ## --- the default value of samplerPredictiveNodes is given by nimbleOptions('MCMCassignSamplersToPosteriorPredictiveNodes')
 ## --- also noting that MCMCassignSamplersToPosteriorPredictiveNodes is *not* the longest package option name
 ## - added a new control argument 'sort' (with default = TRUE) to predictive derived quantity function.  This determines whether the simulation of nodes takes place in topologically-sorted order.
-## - changed the 'iter' argument (of the run method) to be `index
-## --- formally was the (post-burnin) iteration number
-## --- now, 'index' represents how many times this run method has been called.
+## - changed the 'iter' argument (of the run method) to be 'timesRan'
+## --- formally, 'iter' was the (post-burnin) MCMC iteration number
+## --- now, the 'timesRan' argument represents how many times this run method has been called.
 ## 
 ## 
 ## 
