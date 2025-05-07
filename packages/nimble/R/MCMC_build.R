@@ -272,8 +272,8 @@ buildMCMC <- nimbleFunction(
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$reset()
-            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter, nburnin, chain)
-            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter-nburnin,  chain)
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter,          nburnin,               chain)
+            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter-nburnin,  nburnin, thinToUseVec, chain)
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
