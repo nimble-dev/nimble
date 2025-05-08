@@ -259,25 +259,32 @@ buildMCMC <- nimbleFunction(
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')
-        thinToUseVec <<- thinFromConfVec
-        if(thin  != -1)   thinToUseVec[1] <<- thin
-        if(thin2 != -1)   thinToUseVec[2] <<- thin2
-        for(iThin in 1:2) {
-            if(thinToUseVec[iThin] < 1)   stop('cannot use thin < 1')
-            if(thinToUseVec[iThin] != floor(thinToUseVec[iThin]))   stop('cannot use non-integer thin')
-        }
-        if(initializeModel)   my_initializeModel$run()
-        nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
-            samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
+            if(initializeModel)   my_initializeModel$run()
+            thinToUseVec <<- thinFromConfVec
+            if(thin  != -1)   thinToUseVec[1] <<- thin
+            if(thin2 != -1)   thinToUseVec[2] <<- thin2
+            for(iThin in 1:2) {
+                if(thinToUseVec[iThin] < 1)   stop('cannot use thin < 1')
+                if(thinToUseVec[iThin] != floor(thinToUseVec[iThin]))   stop('cannot use non-integer thin')
+            }
+            for(i in seq_along(derivedFunctions)) {
+                if(derivedIntervals[i] == 0) {
+                    derivedIntervals[i] <<- thinToUseVec[1]
+                    derivedFunctions[[i]]$set_interval(thinToUseVec[1])
+                }
+            }
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$reset()
-            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter,          nburnin,               chain)
-            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter-nburnin,  nburnin, thinToUseVec, chain)
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter,         nburnin,               chain)
+            for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter-nburnin, nburnin, thinToUseVec, chain)
+            samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
-            if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
+            if(nburnin !=  0)   stop('cannot specify nburnin when using reset = FALSE.')
+            if(thin    != -1)   stop('cannot specify thin when using reset = FALSE.')
+            if(thin2   != -1)   stop('cannot specify thin2 when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
             if (resetMV) {
                 mvSamples_copyRow  <- 0
@@ -287,8 +294,8 @@ buildMCMC <- nimbleFunction(
                 mvSamples2_copyRow <- getsize(mvSamples2)
             }
         }
-        if(onlineWAIC & resetWAIC)
-            waicFun[[1]]$reset()
+        nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
+        if(onlineWAIC & resetWAIC)   waicFun[[1]]$reset()
         resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
         resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:

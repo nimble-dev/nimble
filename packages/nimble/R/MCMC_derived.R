@@ -9,6 +9,7 @@ derived_BASE <- nimbleFunctionVirtual(
     name = 'derived_BASE',
     run = function(timesRan = double()) { },
     methods = list(
+        set_interval = function(newInterval = double()) { },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) { },
         after_chain  = function() { },
         getResults   = function() { returnType(double(2))    },
@@ -58,6 +59,9 @@ derived_mean <- nimbleFunction(
         }
     },
     methods = list(
+        set_interval = function(newInterval = double()) {
+            interval <<- newInterval
+        },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             if(recordingFrequency == 0) {
                 nKeep <- 1
@@ -137,6 +141,9 @@ derived_variance <- nimbleFunction(
         }
     },
     methods = list(
+        set_interval = function(newInterval = double()) {
+            interval <<- newInterval
+        },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             if(recordingFrequency == 0) {
                 nKeep <- 1
@@ -245,6 +252,9 @@ derived_logProb <- nimbleFunction(
         }
     },
     methods = list(
+        set_interval = function(newInterval = double()) {
+            interval <<- newInterval
+        },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
             setSize(results, nKeep, nResults)
@@ -313,6 +323,9 @@ derived_predictive <- nimbleFunction(
         results[timesRan,] <<- values(model, saveNodes)
     },
     methods = list(
+        set_interval = function(newInterval = double()) {
+            interval <<- newInterval
+        },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
             setSize(results, nKeep, nResults)
@@ -339,7 +352,7 @@ derived_predictive <- nimbleFunction(
 #'
 #' @section Mean and Variance
 #'
-#' The \code{mean} and \code{variance} derived quantity functions calculate the running mean and variance, respectively, for each node specified in the \code{nodes} argument.  If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between calculations of the statistic.  When the statistic is calculated, only the current value of each node is used to update the statistic.  For example, if \code{interval} is 2, then every other MCMC iteration is used to calculate an updated value of the statistic.
+#' The \code{mean} and \code{variance} derived quantity functions calculate the running mean and variance, respectively, for each node specified in the \code{nodes} argument.  If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between calculations of the statistic.  When the statistic is calculated, only the current value of each node is used to update the statistic.  For example, if \code{interval} is 2, then every other MCMC iteration is used to calculate an updated value of the statistic.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
 #'
 #' The \code{mean} and \code{variance} derived quantity functions both accept the following control list elements:
 #' \itemize{
@@ -349,7 +362,7 @@ derived_predictive <- nimbleFunction(
 #'
 #' @section Model Log-Densities
 #'
-#' The \code{logProb} derived quantity function calculates and records values of the log-density of individual nodes or (summed) groups of nodes.   If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between recordings of the log-density values.  For example, if \code{interval} is 2, then log-density values will be recorded upon every other MCMC iteration.
+#' The \code{logProb} derived quantity function calculates and records values of the log-density of individual nodes or (summed) groups of nodes.   If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between recordings of the log-density values.  For example, if \code{interval} is 2, then log-density values will be recorded upon every other MCMC iteration.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
 #'
 #' The \code{logProb} derived quantity function accepts the following control list elements:
 #' \itemize{
@@ -360,6 +373,8 @@ derived_predictive <- nimbleFunction(
 #' @section Posterior Predictive Nodes and Derived Quantities
 #'
 #' The \code{predictive} derived quantity function simulates the values of posterior predictive nodes in the model and stores these simulated values.  This may be useful when a model structure includes posterior predictive nodes (or deterministically defined posterior derived quantities), but for reasons of efficiency, these nodes may not undergo MCMC sampling.  In such cases, the \code{predictive} derived quantity function may be assigned to these nodes, and when executed it will simulate new values for these nodes and record the simulated values.  Optionally, the \code{predictive} function may also forgo saving the values of deterministic nodes and only save the values of simulated stochastic nodes.  This allows calculations to propogate through deterministic dependencies, without saving the values of the deterministic nodes.
+#'
+#' If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between operations of the \code{predictive} function.  For example, if \code{interval} is 2, then prediction and storing values takes place every other MCMC iteration.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
 #'
 #' The \code{predictive} derived quantity function accepts the following control list elements:
 #' \itemize{

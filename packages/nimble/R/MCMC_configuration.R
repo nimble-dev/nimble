@@ -54,10 +54,23 @@ samplerConf <- setRefClass(
 ## --- then, the function *figures out* what needs to be simulated,
 ## --- or, they override the 'simNodes' argument with what *they want simulated*
 ## --- which represents how many times this derived function has been called.
-## - make thin[1] (from the MCMC configuration) be the *default* value for the 'interval' of all derived functions.
 ##
 ## CHANGES:
-##
+## 
+## changes:
+## - changed the 'iter' argument (of the run method) to be 'timesRan'
+## --- formally, 'iter' was the (post-burnin) MCMC iteration number
+## --- now, the 'timesRan' argument represents how many times this run method has been called.
+## - made thin[1] (a runtime argument to mcmc$run be the *default* value for the execution 'interval' of all derived functions.
+## --- this required adding a new (madatory) member method to be defined for all derived functions:
+## --- set_interval = function(newInterval = double()) {
+## ---     interval <<- newInterval
+## --- }
+## --- The only alternative I found to this, would have been making the before_chain method *compulsory*, and furthermore that the before_chain method of every derived quantity begin with (or, at least include) code such as:
+## --- if(interval == 0)   interval <<- thin[1]
+## --- Neither of these two soltuions were ideal (e.g, frictionless from the perspective of a derived quantity function author), and I could find no other way for the the (compiled) mcmc$run function to modify member data insided the (nested, specialized, compiled) derived quantity function list.
+## 
+## 
 ## minor changes:
 ## - reintroduced 'thin' and 'nburnin' arguments to before_chain method
 ## - added a new argument 'samplerPredictiveNodes' to configureMCMC:
@@ -65,9 +78,6 @@ samplerConf <- setRefClass(
 ## --- the default value of samplerPredictiveNodes is given by nimbleOptions('MCMCassignSamplersToPosteriorPredictiveNodes')
 ## --- also noting that MCMCassignSamplersToPosteriorPredictiveNodes is *not* the longest package option name
 ## - added a new control argument 'sort' (with default = TRUE) to predictive derived quantity function.  This determines whether the simulation of nodes takes place in topologically-sorted order.
-## - changed the 'iter' argument (of the run method) to be 'timesRan'
-## --- formally, 'iter' was the (post-burnin) MCMC iteration number
-## --- now, the 'timesRan' argument represents how many times this run method has been called.
 ## 
 ## 
 ## 
@@ -99,7 +109,9 @@ derivedConf <- setRefClass(
             derivedFunction(model=model, mcmc=mcmc, interval=interval, control=control)
         },
         toStr = function(displayNonScalars = FALSE) {
-            s <- paste0('derived quantity: ', name, ',  interval: ', interval)
+            s <- paste0('derived quantity: ', name, ',  ')
+            intervalString <- paste0('execution interval: ', if(interval == 0) 'thin' else interval)
+            s <- paste0(s, intervalString)
             if(length(control)) {
                 controlString <- mcmc_listContentsToStr(control, displayNonScalars = displayNonScalars, removeCfunctions = FALSE, removeLengthZero = FALSE)
                 if(nchar(controlString) > 0)   s <- paste0(s, ',  ', controlString)
@@ -1141,7 +1153,7 @@ The indices of execution specified in this numeric vector correspond to the enum
         },
 
         addDerivedQuantity = function(type,
-                                      interval = 1,
+                                      interval = 0,
                                       control = list(),
                                       print = FALSE,
                                       name,
@@ -1153,7 +1165,7 @@ Arguments:
 
 type: Character string, specifying the type of derived quantity function to add.  This character string should correspond to the name of a derived quantity nimbleFunction.  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this function.  This argument has no default value, and must be provided.
 
-interval: A numeric value, specifying the number of MCMC iterations between each time this derived quantity function will execute.  For example, if \'interval\' is 10, then this derived quantity function will execute at the end of MCMC sampling iterations 10, 20, 30, etc.  The default value is 1, meaning the derived quantity function will execute at the end of every MCMC sampling iteration.
+interval: A numeric value, specifying the number of MCMC iterations between each time this derived quantity function will execute.  For example, if \'interval\' is 1, then this derived quantity function will execute at the end of every MCMC sampling iteration, and if \'interval\' is 10, then this derived quantity function will execute at the end of MCMC sampling iterations 10, 20, 30, etc.  If \'interval\' is omitted, then the default behavior (the default frequency of execution) will match the thinning interval (\'thin\') on which samples are saved.
 
 control: An optional list of control arguments to derived quantity function.
 
@@ -1201,7 +1213,7 @@ Invisibly returns a list of the current derived quantity function configurations
 
             if(!is.numeric(interval)) stop('derived quantity interval should be numeric type')
             if(length(interval) != 1) stop('derived quantity interval should be a single number')
-            if(interval < 1) stop('derived quantity interval must be at least 1')
+            if(interval < 0) stop('derived quantity interval must be at least 1')    ## interval = 0 corresponds to matching thin interval
             if(floor(interval) != interval) stop('derived quantity interval must be an integer')
             
             thisControlList <- c(control, list(...))
