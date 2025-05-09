@@ -47,17 +47,20 @@ samplerConf <- setRefClass(
 ## - WAIC - next project for me could be porting that into a derived quantity
 ## 
 ## TODO:
-## - changes in predictive sampler:
-## --- argument 'nodes' should be *what gets saved*.
-## --- default for 'nodes' is all terminal predictive nodes
-## --- or, providing nodes = '.all' means saving *all* PP nodes
-## --- then, the function *figures out* what needs to be simulated,
-## --- or, they override the 'simNodes' argument with what *they want simulated*
-## --- which represents how many times this derived function has been called.
 ##
 ## CHANGES:
-## 
+##
 ## changes:
+## - changes in predictive sampler:
+## --- argument 'nodes' now represents what nodes get saved
+## --- default for 'nodes' is all terminal (non-data) nodes
+## --- or, providing nodes = '.all' means saving *all* PP nodes
+## --- then, the function *figures out* what needs to be simulated,
+## --- ***this was not easy to do in full generality**, and assumes normal operation
+## --- of the MCMC, for updating the nodes which would be updated by a default MCMC
+## --- sampler assignment (with the exclusion of predictive nodes)
+## --- or, users can override the 'simNodes' argument with what *they want simulated*
+## --- also added a new control argument 'sort' (with default = TRUE) to predictive derived quantity function.  This determines whether the simulation of nodes takes place in topologically-sorted order.
 ## - changed the 'iter' argument (of the run method) to be 'timesRan'
 ## --- formally, 'iter' was the (post-burnin) MCMC iteration number
 ## --- now, the 'timesRan' argument represents how many times this run method has been called.
@@ -77,7 +80,6 @@ samplerConf <- setRefClass(
 ## --- samplerPredictiveNodes dictates whether (the default behavior of) configureMCMC assigns samplers to posterior predictive nodes
 ## --- the default value of samplerPredictiveNodes is given by nimbleOptions('MCMCassignSamplersToPosteriorPredictiveNodes')
 ## --- also noting that MCMCassignSamplersToPosteriorPredictiveNodes is *not* the longest package option name
-## - added a new control argument 'sort' (with default = TRUE) to predictive derived quantity function.  This determines whether the simulation of nodes takes place in topologically-sorted order.
 ## 
 ## 
 ## 

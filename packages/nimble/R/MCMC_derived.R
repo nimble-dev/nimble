@@ -286,21 +286,24 @@ derived_predictive <- nimbleFunction(
     contains = derived_BASE,
     setup = function(model, mcmc, interval, control) {
         ## control list extraction
-        nodes      <- extractControlElement(control, 'nodes',      defaultValue = character())
-        saveDeterm <- extractControlElement(control, 'saveDeterm', defaultValue = TRUE)
-        sort       <- extractControlElement(control, 'sort',       defaultValue = TRUE)
-        silent     <- extractControlElement(control, 'silent',     defaultValue = FALSE)
+        nodes    <- extractControlElement(control, 'nodes',    defaultValue = '.missing')
+        simNodes <- extractControlElement(control, 'simNodes', defaultValue = '.missing')
+        sort     <- extractControlElement(control, 'sort',     defaultValue = TRUE)
+        silent   <- extractControlElement(control, 'silent',   defaultValue = FALSE)
         ## node list generation
-        simNodes  <- model$expandNodeNames(nodes)
-        if(sort)   simNodes <- model$topologicallySortNodes(simNodes)
-        calcNodes <- model$getDependencies(simNodes)
-        saveNodes <- if(saveDeterm) simNodes else simNodes[!model$isDeterm(simNodes)]
-        ## names generation
-        names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
-        ## numeric value generation
-        nResults <- length(saveNodes)
-        results <- array(0, c(1, nResults))
-        ## checks
+        if(nodes == '.missing') {
+            saveNodes <- model$getNodeNames(endOnly = TRUE, includeData = FALSE)
+            isEnd <- sapply(saveNodes, function(x) length(model$getDependencies(x, self = FALSE)) == 0)
+            saveNodes <- saveNodes[isEnd]
+        } else if(nodes == '.all') {
+            saveNodes <- unique(c(
+                model$getNodeNames(predictiveOnly = TRUE),                 ## chains of predictive stochastic nodes
+                model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
+            ))
+            saveNodes <- model$topologicallySortNodes(saveNodes)
+        } else {
+            saveNodes <- model$expandNodeNames(nodes)
+        }
         sampledNodesList <- lapply(
             mcmc$samplerFunctions$contentsList,
             function(x) {
@@ -311,10 +314,32 @@ derived_predictive <- nimbleFunction(
                 return(nodes)
             })
         sampledNodes <- model$expandNodeNames(unlist(sampledNodesList))
+        if(simNodes == '.missing') {
+            ## figuring this case out was not easy -DT May 2025
+            upToDateNodes <- setdiff(     ## nodes which should be kept up-to-date by the MCMC
+                model$getNodeNames(includePredictive = FALSE),   ## all model nodes, excluding predictive stochastic nodes
+                model$getDependencies(model$getNodeNames(predictiveOnly = TRUE), downstream = TRUE)  ## all predictive stochastic nodes, and their deterministic dependencies
+            )
+            upToDateNodes <- unique(c(     ## now we add any predictive nodes, which might have samplers assigned
+                upToDateNodes,
+                model$getDependencies(sampledNodes)    ## includes deterministic dependencies
+            ))
+            saveNodesParents <- model$getParents(saveNodes, self = TRUE, upstream = TRUE)   ## everything upstream from (and including) saveNodes
+            simNodes <- setdiff(saveNodesParents, upToDateNodes)
+        }
+        if(sort)   simNodes <- model$topologicallySortNodes(simNodes)
+        calcNodes <- model$getDependencies(simNodes)
+        ## names generation
+        names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
+        ## numeric value generation
+        nResults <- length(saveNodes)
+        results <- array(0, c(1, nResults))
+        ## checks
         otherwiseSampledSimNodes <- intersect(simNodes, sampledNodes)
-        if(length(otherwiseSampledSimNodes) & !silent)
-            message('  [Note] predictive derived quantity function is operating on nodes being updated by other MCMC samplers: ',
+        if(length(otherwiseSampledSimNodes) & !silent) {
+            message('  [Warning] predictive derived quantity function is simulating nodes being updated by other MCMC samplers: ',
                     paste0(otherwiseSampledSimNodes, collapse=', '))
+        }
     },
     run = function(timesRan = double()) {
         if(nResults == 0)   return()
