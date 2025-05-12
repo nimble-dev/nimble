@@ -320,9 +320,13 @@ derived_predictive <- nimbleFunction(
                 model$getNodeNames(includePredictive = FALSE),   ## all model nodes, excluding predictive stochastic nodes
                 model$getDependencies(model$getNodeNames(predictiveOnly = TRUE), downstream = TRUE)  ## all predictive stochastic nodes, and their deterministic dependencies
             )
-            upToDateNodes <- unique(c(     ## now we add any predictive nodes, which might have samplers assigned
+            ## now we add any predictive nodes (and their deterministic dependencies), which might have samplers assigned
+            sampledNodeDeps <- model$getDependencies(sampledNodes)
+            sampledNodeDetermDeps <- sampledNodeDeps[model$isDeterm(sampledNodeDeps)]
+            upToDateNodes <- unique(c(
                 upToDateNodes,
-                model$getDependencies(sampledNodes)    ## includes deterministic dependencies
+                sampledNodes,             ## sampled stochastic nodes
+                sampledNodeDetermDeps     ## deterministic dependencies of sampled nodes
             ))
             saveNodesParents <- model$getParents(saveNodes, self = TRUE, upstream = TRUE)   ## everything upstream from (and including) saveNodes
             simNodes <- setdiff(saveNodesParents, upToDateNodes)
