@@ -291,13 +291,15 @@ derived_predictive <- nimbleFunction(
         sort     <- extractControlElement(control, 'sort',     defaultValue = TRUE)
         silent   <- extractControlElement(control, 'silent',   defaultValue = FALSE)
         ## node list generation
-        if(nodes == '.missing') {
+        ## all predictive stochastic nodes, and their deterministic dependencies
+        ppNodesAndDeps <- model$getDependencies(model$getNodeNames(predictiveOnly = TRUE), downstream = TRUE)
+        if(length(nodes) == 1 && nodes == '.missing') {
             saveNodes <- model$getNodeNames(endOnly = TRUE, includeData = FALSE)
             isEnd <- sapply(saveNodes, function(x) length(model$getDependencies(x, self = FALSE)) == 0)
             saveNodes <- saveNodes[isEnd]
-        } else if(nodes == '.all') {
+        } else if(length(nodes) == 1 && nodes == '.all') {
             saveNodes <- unique(c(
-                model$getNodeNames(predictiveOnly = TRUE),                 ## chains of predictive stochastic nodes
+                ppNodesAndDeps,                                            ## predictive stochastic nodes and deterministic dependencies
                 model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
             ))
             saveNodes <- model$topologicallySortNodes(saveNodes)
@@ -318,7 +320,7 @@ derived_predictive <- nimbleFunction(
             ## figuring this case out was not easy -DT May 2025
             upToDateNodes <- setdiff(     ## nodes which should be kept up-to-date by the MCMC
                 model$getNodeNames(includePredictive = FALSE),   ## all model nodes, excluding predictive stochastic nodes
-                model$getDependencies(model$getNodeNames(predictiveOnly = TRUE), downstream = TRUE)  ## all predictive stochastic nodes, and their deterministic dependencies
+                ppNodesAndDeps                                   ## predictive stochastic nodes and deterministic dependencies
             )
             ## now we add any predictive nodes (and their deterministic dependencies), which might have samplers assigned
             sampledNodeDeps <- model$getDependencies(sampledNodes)
@@ -344,6 +346,12 @@ derived_predictive <- nimbleFunction(
         if(length(otherwiseSampledSimNodes) & !silent) {
             message('  [Warning] predictive derived quantity function is simulating nodes being updated by other MCMC samplers: ',
                     paste0(otherwiseSampledSimNodes, collapse=', '))
+        }
+        stochSaveNodes <- saveNodes[model$isStoch(saveNodes)]
+        nonPPsaveNodes <- setdiff(stochSaveNodes, ppNodesAndDeps)
+        if(length(nonPPsaveNodes) & !silent) {
+            message('  [Warning] predictive derived quantity function is operating on non-posterior-predictive nodes: ',
+                    paste0(nonPPsaveNodes, collapse=', '))
         }
     },
     run = function(timesRan = double()) {
@@ -405,11 +413,11 @@ derived_predictive <- nimbleFunction(
 #'
 #' The \code{predictive} derived quantity function simulates the values of posterior predictive nodes in the model and stores these simulated values.  This may be useful when a model structure includes posterior predictive nodes (or deterministically defined posterior derived quantities), but for reasons of efficiency, these nodes may not undergo MCMC sampling.  In such cases, the \code{predictive} derived quantity function may be assigned to these nodes, and when executed it will simulate new values for these nodes and record the simulated values.
 #'
-#' If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between operations of the \code{predictive} function.  For example, if \code{interval} is 2, then prediction and storing values takes place every other MCMC iteration.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
+#' When added to an MCMC configuration object using the \code{addDerivedQuantity} method, a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between operations of the \code{predictive} function.  For example, if \code{interval} is 2, then prediction and storing values takes place every other MCMC iteration.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
 #'
 #' The \code{predictive} derived quantity function accepts the following control list elements:
 #' \itemize{
-#' \item nodes. The \code{nodes} argument defines the predictive nodes which will have their values recorded and returned.  The \code{predictive} function will automatically determine which nodes upstream of \code{nodes} need to be simulated, prior to storing the values of \code{nodes}.  If omitted,  the default set of \code{nodes} will be all terminal (non-data) model nodes.  In addition, by specifying the value \code{nodes = ".all"} will take \code{nodes} to be all predictive nodes in the model (all deterministic and stochastic nodes which have no downstream data dependencies).
+#' \item nodes. The \code{nodes} argument defines the predictive nodes which will have their values recorded and returned.  The \code{predictive} function will automatically determine which nodes upstream of \code{nodes} need to be simulated, prior to storing the values of \code{nodes}.  If omitted,  the default set of \code{nodes} will be all (non-data) terminal model nodes.  In addition, specifying the value \code{nodes = ".all"} will take \code{nodes} to be all predictive nodes in the model (all deterministic and stochastic nodes which have no downstream data dependencies).
 #' \item simNodes. The \code{simNodes} specifies the set of model nodes which will be simulated, prior to recording the values of \code{nodes}.  If ommited, which would be the usual case, \code{simNodes} will automatically represent the set of all model nodes which must be simulated in order to reach the predictive \code{nodes}.  By providing \code{simNodes}, more fine-grained control of the simulation process is possible, including omitting simulation of some nodes.
 #' \item sort. The \code{sort} argument determines whether the simulation of \code{simNodes} takes place in topological order.  This argument has a default value of \code{TRUE}.  When specified as \code{FALSE} the simulation of \code{simNodes} will take place in the order in which they were specified in the \code{simNodes} argument, which may not be in their natural order of dependency.
 #' \item silent.  By default, the \code{predictive} derived quantity function will issue a warning when the \code{simNodes} argument includes node names which are being updated by some sampler function in the MCMC.  This warning may be suppressed by setting \code{silent} to \code{TRUE}.
