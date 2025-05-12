@@ -333,6 +333,7 @@ derived_predictive <- nimbleFunction(
         }
         if(sort)   simNodes <- model$topologicallySortNodes(simNodes)
         calcNodes <- model$getDependencies(simNodes)
+        mvSaved <- mcmc$mvSaved
         ## names generation
         names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
         ## numeric value generation
@@ -350,6 +351,7 @@ derived_predictive <- nimbleFunction(
         model$simulate(simNodes)
         model$calculate(calcNodes)
         results[timesRan,] <<- values(model, saveNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
         set_interval = function(newInterval = double()) {
