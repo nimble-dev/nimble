@@ -41,48 +41,6 @@ samplerConf <- setRefClass(
     )
 )
 
-## 
-## NOTES:
-## - Ken is welcome to do as much testing as he's able - there will certainly be some bugs.
-## - WAIC - next project for me could be porting that into a derived quantity
-## 
-## TODO:
-##
-## CHANGES:
-##
-## changes:
-## - changes in predictive sampler:
-## --- argument 'nodes' now represents what nodes get saved
-## --- default for 'nodes' is all terminal (non-data) nodes
-## --- or, providing nodes = '.all' means saving *all* PP nodes
-## --- then, the function *figures out* what needs to be simulated,
-## --- ***this was not easy to do in full generality**, and assumes normal operation
-## --- of the MCMC, for updating the nodes which would be updated by a default MCMC
-## --- sampler assignment (with the exclusion of predictive nodes)
-## --- or, users can override the 'simNodes' argument with what *they want simulated*
-## --- also added a new control argument 'sort' (with default = TRUE) to predictive derived quantity function.  This determines whether the simulation of nodes takes place in topologically-sorted order.
-## - changed the 'iter' argument (of the run method) to be 'timesRan'
-## --- formally, 'iter' was the (post-burnin) MCMC iteration number
-## --- now, the 'timesRan' argument represents how many times this run method has been called.
-## - made thin[1] (a runtime argument to mcmc$run be the *default* value for the execution 'interval' of all derived functions.
-## --- this required adding a new (madatory) member method to be defined for all derived functions:
-## --- set_interval = function(newInterval = double()) {
-## ---     interval <<- newInterval
-## --- }
-## --- The only alternative I found to this, would have been making the before_chain method *compulsory*, and furthermore that the before_chain method of every derived quantity begin with (or, at least include) code such as:
-## --- if(interval == 0)   interval <<- thin[1]
-## --- Neither of these two soltuions were ideal (e.g, frictionless from the perspective of a derived quantity function author), and I could find no other way for the the (compiled) mcmc$run function to modify member data insided the (nested, specialized, compiled) derived quantity function list.
-## 
-## 
-## minor changes:
-## - reintroduced 'thin' and 'nburnin' arguments to before_chain method
-## - added a new argument 'samplePredictiveNodes' to configureMCMC:
-## --- samplePredictiveNodes dictates whether (the default behavior of) configureMCMC assigns samplers to posterior predictive nodes
-## --- the default value of samplePredictiveNodes is given by nimbleOptions('MCMCassignSamplersToPosteriorPredictiveNodes')
-## --- also noting that MCMCassignSamplersToPosteriorPredictiveNodes is *not* the longest package option name
-## 
-## 
-## 
 
 
 derivedConf <- setRefClass(
