@@ -202,7 +202,11 @@ buildMCMC <- nimbleFunction(
             for(i in seq_along(conf$derivedConfs)) {
                 derivedFunctions[[i]] <- conf$derivedConfs[[i]]$buildDerived(model=model, mcmc=nfRefClassObject)
             }
-            nfRefClassObject[['derivedFunctions']] <- nf_preProcessMemberDataObject(get('derivedFunctions'))
+            ## need to catch the case where buildMCMC errors out early,
+            ## prior to executing the final lines which actually create the nfRefClassObject object:
+            if(exists('nfRefClassObject', inherits = FALSE)) {
+                nfRefClassObject[['derivedFunctions']] <- nf_preProcessMemberDataObject(get('derivedFunctions'))
+            }
         }, add = TRUE)
 
         ## for naming the derivedList return object from runMCMC
