@@ -31,7 +31,7 @@ jobs:
           - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 2}
           - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 3}
           - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 4}
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", batch: 5}
+          - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 5}
 
 
     env:
