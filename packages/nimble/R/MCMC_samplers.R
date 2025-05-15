@@ -3759,12 +3759,12 @@ sampler_polyagamma_MH <- nimbleFunction(
         pgSample()
         
         sampleTarget(proposed = TRUE)
-        sampleTarget(proposed = FALSE)
-        
-        if(anyPois)
+        if(anyPois |  marginal_pg){
+          sampleTarget(proposed = FALSE)
           jump <- decide(logMHR)
-        else 
+        }else{
           jump <- TRUE
+        }
         
         if(jump){
           nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
