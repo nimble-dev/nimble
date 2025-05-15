@@ -2828,6 +2828,7 @@ sampler_polyagamma <- nimbleFunction(
         conjCheckAll <- extractControlElement(control, 'conjCheckAll', FALSE)  
         ## If not checking, then need to be provided by user or set as empty.
         inflationNodes <- model$expandNodeNames(control$inflationNodes)
+        infiniteOkay <-   extractControlElement(control, 'infiniteOkay', FALSE)
 
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -3192,7 +3193,7 @@ sampler_polyagamma <- nimbleFunction(
                 if(any(values(model, probNodes) != values(model, probNodesInflated)))
                     stop("Zero inflation not specified as multiplying by one or more Bernoulli variables")
             }
-            for(j in 1:nCoef) { 
+            for(j in 1:nCoef) {
                 if(initializeX | !fixedColumns[j]) {
                     bTemp[j] <<- 1
                     values(model, targetAsScalar) <<- bTemp
@@ -3204,6 +3205,15 @@ sampler_polyagamma <- nimbleFunction(
                     bTemp[j] <<- 0
                 }
             }
+            ## Check to see if covariates need to be scaled:
+            if(initializeX & !infiniteOkay) {
+              for(j in 1:nCoef){
+                if( any(X[, j] == Inf) ){ ## Could this ever be -Inf?
+                  cat("Warning: Infinite values constructed in the design matrix for covariate '", j, "'. Please consider scaling the covariate, providing the design matrix, or overriding this error with infiniteOkay = TRUE.\n")
+                }
+              }
+            }
+
             if(initializeX & zeroInflated) {
                 values(model, inflationNodes) <<- inflationValuesSaved
                 values(model, inflationNodesDeps) <<- inflationDepsValuesSaved
@@ -3297,6 +3307,696 @@ sampler_polyagamma <- nimbleFunction(
         }
     )
 )
+
+
+getParam_MIXED_BASE <- nimbleFunctionVirtual(
+  run = function() {},
+  methods = list(
+      getProb = function(index = integer(), linear = logical(0, default = FALSE)) { returnType(double()) },
+      getSize = function(index = integer()) { returnType(double()) }
+  )
+)
+
+getParam_pois <- nimbleFunction(
+    contains = getParam_MIXED_BASE,
+    setup = function(model, nodeNames, gNodes, max_dist = 5, max_r = 100) {
+        indexConvert <- cumsum(gNodes)
+        if(length(indexConvert) == 1)
+            indexConvert <- c(indexConvert, -1)
+      exp1 <- exp(1)
+      a1 <- 0.2787037037037037
+      a2 <- 0.311111111111111
+      b1 <- 0.0768518518518518
+      b2 <- 0.688888888888889
+    },
+    run = function() {},
+    methods = list(
+        getSize = function(index = integer()){
+            i <- indexConvert[index]
+            lambda <- model$getParam(nodeNames[i], "lambda")
+            if(lambda < 1){
+              r <- 1
+            }else{
+              logc <- lambda + log(max_dist^2+1)
+              r <- ceiling( lambda*logc/( logc + lambda*lamWapprox( -exp(-1/lambda*logc)*logc/lambda ) ) )
+              r <- min(r, max_r)
+            }
+            returnType(double())
+            return(r)
+        },
+        getProb = function(index = integer(), linear = logical(0, default = FALSE)){
+            i <- indexConvert[index]
+            value <- model$getParam(nodeNames[i], "lambda")
+            if(linear) 
+              return(log(value))
+            else 
+              return(value)
+            returnType(double())
+        },
+        ## Rough approx of negative branch of Lambert W.
+        lamWapprox = function( x = double() ){
+          p <- sqrt(2.0 * (exp1 * x + 1.0))
+          Numer <- (a1 * p + a2) * p - 1.0
+          Denom <- (b1 * p + b2) * p + 1.0
+          w <- Numer / Denom
+          returnType(double())
+          return(w)
+        }
+    )
+)
+
+getParam_bin <- nimbleFunction(
+    contains = getParam_MIXED_BASE,
+    setup = function(model, nodeNames, gNodes) {
+        indexConvert <- cumsum(gNodes)
+        if(length(indexConvert) == 1)
+            indexConvert <- c(indexConvert, -1)
+    },
+    run = function() {},
+    methods = list(
+        getSize = function(index = integer()){
+            return(model$getParam(nodeNames[i], "size"))
+            returnType(double())
+        },
+        getProb = function(index = integer(), linear = logical(0, default = FALSE)){
+            i <- indexConvert[index]
+            value <- model$getParam(nodeNames[i], "prob")
+            if(linear) 
+              return(logit(value))
+            else 
+              return(value)
+            returnType(double())
+        }
+    )
+)
+
+emptyParamMixed <- nimbleFunction(
+    contains = getParam_MIXED_BASE,
+    setup = function() {},
+    run = function() {},
+    methods = list(
+        getSize = function(index = integer()){
+            returnType(double())
+            return(0)
+        },
+        getProb = function(index = integer(), linear = logical(0, default = FALSE)){
+            returnType(double())
+            if(linear) 
+              return(0)
+            else
+              return(1)
+        }
+    )
+)
+
+## Polyagamma Sampler that may replace the above once complete:
+sampler_polyagamma_MH <- nimbleFunction(
+    name = 'sampler_polyagamma_MH',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        
+        ## This allows user to override error trapping for unusual model structures.
+        check <- extractControlElement(control, 'check', TRUE)   
+        conjCheckAll <- extractControlElement(control, 'conjCheckAll', FALSE)  
+        ## If not checking, then need to be provided by user or set as empty.
+        inflationNodes <- model$expandNodeNames(control$inflationNodes)
+        infiniteOkay <-   extractControlElement(control, 'infiniteOkay', FALSE)
+        
+        ## Poisson tuning
+        max_size <-   extractControlElement(control, 'max_size', 1e+7)
+        max_dist <-   extractControlElement(control, 'max_dist', 50)
+        # max_dist_burnin = 1e+6
+        marginal_pg <-   extractControlElement(control, 'marginal_polyagamma', FALSE)
+        
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetDists <- model$getDistribution(target)
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        nonTarget <- model$expandNodeNames(control$nonTargetNodes)
+        ccList <- mcmc_determineCalcAndCopyNodes(model, target)
+        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf;
+        copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
+
+        nTarget <- length(target)
+        nCoef <- length(targetAsScalar)
+     #   if(nCoef == 1)  ## We could/should relax this, though not clear how common it would be.
+     #       stop("polyagamma sampler not set up to handle a scalar target node")
+        nodeLengths <- sapply(target, function(x) length(model$expandNodeNames(x, returnScalarComponents = TRUE)))
+        
+        
+        if(is.null(control$response)) {
+            ## We don't need the user to provide the response and prefer they not, but leaving this flexibility for now.
+            yNodes <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
+        } else {
+            yNodes <- model$expandNodeNames(control$response)
+        }
+        N <- length(yNodes)
+
+        checkMessage <- "If your model is in a non-standard form and you are sure the P\u00f3lya-gamma sampler is appropriate, you can disable this check by setting the control argument `check=FALSE`."
+
+        ## Conjugacy checking, part 1.
+        if(check) {
+            if(!all(targetDists %in% c("dnorm", "dmnorm")))
+                stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors. ", checkMessage)
+            if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin", "dnegbin", "dpois")) ) 
+                stop("polyagamma sampler: response nodes must be distributed `dbern` , `dbin`, `dnegbin`, or `dpois`. ", checkMessage)
+            nodeIDs <- model$expandNodeNames(yNodes, returnType = 'ids')
+            if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1 & !conjCheckAll)  # So that we can do conj checking only on one item.
+                stop("polyagamma sampler: response nodes should all be part of the same declaration or declare conjCheckAll = TRUE. ", checkMessage)
+        }
+        
+        probAndSizeNodes <- model$getParents(yNodes, immediateOnly = TRUE)
+        depNodes <- model$getDependencies(target, self = TRUE)
+        probNodes <- intersect(probAndSizeNodes, depNodes)  # These nodes may reflect zero-inflated probabilities.
+        sizeNodes <- setdiff(probAndSizeNodes, probNodes)
+
+        zeroInflated <- FALSE
+        
+        ## Conjugacy checking, part 2.
+        ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
+        ## and that zero-inflation variable multiplies the baseline probability.
+
+        ## First we need some processing to make sure that we can simply check inflation based only on `probNodes[1]`,
+        ## to avoid costly checking.
+        if( check ) {
+          if( length(inflationNodes) == 0 )
+            inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
+          if(length(inflationNodes)) {
+              ## Check that inflation probabilities are directly specified as parents of `probNodes`
+              ## to avoid having to check multiple declarations. Seemingly anything otherwise would be
+              ## an unusual zero inflation construction.
+              inflationNodes <- setdiff(inflationNodes, nonTarget)
+              test <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, immediateOnly = TRUE)
+              test <- setdiff(test, nonTarget)
+              if(!identical(test, inflationNodes))  # So we need to only consider a single declaration.
+                  stop("polyagamma sampler: zero-inflation probabilities should be specified directly as Bernoulli or binomial (with `size=1`) random variables in the response node declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
+              nodeIDs <- model$expandNodeNames(probNodes, returnType = 'ids')
+              if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1 & !conjCheckAll)  # If declaration of zero-inflation nodes occurs in one declaration, we can do conj checking only on one item.
+                  stop("polyagamma sampler: zero-inflation nodes should all be part of the same declaration to enable NIMBLE to efficiently check model validity. Set conjCheckAll = TRUE to check each one separately. ", checkMessage)
+          }
+        }
+        
+        inflationStochNodesAll <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
+        ## We ask user to provide non-target nodes in the linear predictor as otherwise hard to distinguish from zero-inflation nodes.
+        if(length(inflationStochNodesAll)) {
+            zeroInflated <- TRUE
+            ones <- rep(1, length(model$expandNodeNames(inflationNodes, returnScalarComponents = TRUE)))
+            inflationNodesDeps <- model$getDependencies(inflationNodes, determOnly = TRUE, self = FALSE)
+
+            dists <- model$getDistribution(inflationStochNodesAll)
+
+            if(check) {
+                if(!all(dists %in% c("dbern", "dbin")))
+                    stop("polyagamma sampler: Invalid stochastic nodes found as parents of response. Any such nodes other than the target must specify zero inflation, and any non-target nodes in the linear predictor must be included in `control$nonTargetNodes`. ", checkMessage)
+                
+                binomDists <- dists == 'dbin'
+                if(any(binomDists)) {
+                    if(!all(sapply(inflationStochNodesAll[binomDists], function(x) model$getParamExpr(x, 'size') == 1)))
+                        stop("polyagamma sampler: Zero inflation nodes must be `dbern` or `dbin` with `size=1`. ", checkMessage)
+                }
+            }
+
+            probNodesInflated <- probNodes
+            ##*** PVDB noticed that if this is mixed type, we can end up with the target values here. Must be determ only.
+            probNodes <- intersect(model$getParents(probNodes, self = FALSE, immediateOnly = TRUE, determOnly = TRUE), depNodes) 
+            probNodesInflated <- setdiff(probNodesInflated, probNodes)  ## If a zero-inflated is used and same prob recycled elsewhere not zero inflated.
+
+            ## Check probability is product of inflationNodes and non-inflated probability.
+            ## Note it will check all if conjCheckAll == TRUE, o/w just check the first as before.
+            if( !conjCheckAll ) 
+              inflationStochNodesCheck <- model$getParents(probNodesInflated[1], omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
+            else
+              inflationStochNodesCheck <- inflationStochNodesAll
+
+            idx <- 1
+            while( length(inflationStochNodesCheck) > 0 & idx < length( probNodesInflated ) ) {
+              nodesToCheck <- model$getParents(probNodesInflated[idx], omit = c(target, nonTarget), stochOnly = TRUE, self = FALSE)
+              linearityCheckExprRaw <- model$getValueExpr(probNodesInflated[idx])
+              for( node in nodesToCheck ) {
+                  linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
+                  linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
+                  linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
+                  if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
+                      stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
+              }
+              ## Ensure the probNode lines up with associated zero-inflated in mixed model.
+              probNodei <- intersect(model$getParents(probNodesInflated[idx], self = FALSE, immediateOnly = TRUE, determOnly = TRUE), probNodes) 
+              linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodei)
+              linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
+              if(check && (length(intersect(probNodes[i], target)) || is.null(linkCheck) || linkCheck != 'multiplicative'))
+                  stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
+
+              inflationStochNodesCheck <- setdiff(inflationStochNodesCheck, nodesCheck)
+              idx <- idx + 1
+            }
+          } else {
+              ## Placeholders to allow compilation.
+              ones <- rep(1, 2)
+              inflationNodes <- probNodes[1]
+              inflationNodesDeps <- probNodes[1]
+              probNodesInflated <- probNodes[1]
+          }
+        
+
+        ## At this point, `probNodes` has the nodes for the non-inflated probabilities.
+          
+        ## Conjugacy checking, part 3: Check linearity of target nodes in logit link.
+        if(check) {
+            ## In order to do conjugacy checking only on one item for efficiency, we need all `probNodes` and all
+            ## nodes declared in the sequence leading to the target nodes declared in single declarations.
+            ## These checks see if anything more complicated is going on.
+            nodeIDs <- model$expandNodeNames(probNodes, returnType = 'ids')
+            if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)  
+                stop("polyagamma sampler: probabilities for all response nodes should all be constructed in the same declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
+            nodesToCheck <- model$getParents(probNodes, immediateOnly = TRUE)
+            while(!any(target %in% nodesToCheck)) {
+                nodeIDs <- model$expandNodeNames(nodesToCheck, returnType = 'ids')
+                if(length(unique(model$modelDef$maps$graphID_2_declID[nodeIDs])) > 1)  
+                    stop("polyagamma sampler: linear predictors should all be constructed in the same declaration to enable NIMBLE to efficiently check model validity. ", checkMessage)
+                nodesToCheck <- model$getParents(nodesToCheck, immediateOnly = TRUE)
+            }
+            
+            ncheck <- 1
+            if( conjCheckAll ) ncheck <- length(probNodes)
+            for( i in 1:ncheck ){
+              if(model$getValueExpr(probNodes[i])[[1]] != 'expit' & (model$getValueExpr(probNodes[i])[[1]] != 'exp' & as.character(model$getDistribution(yNodes[1])) == "dpois"))  
+                  stop("polyagamma sampler: target must be related to response via logit link. Also note that zero inflation cannot be specified directly in the declaration for the linear predictor to enable NIMBLE to efficiently check model validity. ", checkMessage)   ## `z[i]*expit(b0+b1*x[i])` would be harder to check for validity.
+              linearityCheckExprRaw <- model$getValueExpr(probNodes[1])[[2]]
+              for(node in targetAsScalar) {
+                  linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = node)
+                  linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
+                  linkCheck <- cc_linkCheck(linearityCheck, "linear")
+                  if(is.null(linkCheck) || !linkCheck %in% c('identity', 'additive', 'multiplicative', 'linear'))
+                      stop("polyagamma sampler: probability must be specified (via logit link) as a linear function of the target nodes. ", checkMessage)
+              }
+            }
+        }
+      
+        stochSize <- FALSE
+        if(length(sizeNodes) && length(model$getParents(sizeNodes, stochOnly = TRUE, self = TRUE)))  
+            stochSize <- TRUE  ## This assumes any RHSonly nodes will not change.
+
+        singleSize <- FALSE
+
+        dnormNodes <- targetDists == "dnorm"
+        dmnormNodes <- targetDists == "dmnorm"
+        n_dnorm <- sum(dnormNodes)
+        n_dmnorm <- sum(dmnormNodes)
+        
+        ## Build nimble function list allowing for both dnorm and dmnorm, as required for compilation to work.
+        getParam_nfl <- nimbleFunctionList(getParam_BASE)
+        if(n_dnorm > 0) {
+            getParam_nfl[[1]] <- gaussParam(model, target[dnormNodes], dnormNodes)
+        } else {
+            getParam_nfl[[1]] <- emptyParam()
+        }
+        if(n_dmnorm > 0) {
+            getParam_nfl[[2]] <- multiGaussParam(model, target[dmnormNodes], dmnormNodes)
+        } else{ 
+            getParam_nfl[[2]] <- emptyParam()
+        }
+        normTypes <- dnormNodes + 2 * dmnormNodes   # vector of values in {1,2} indicating dnorm or dmnorm
+        
+        ## Build design matrix, which account for all effects (fixed and random) in target.
+        if(is.null(control$designMatrix)) {
+            X <- matrix(0, nrow = N, ncol = nCoef)
+            fixed <- FALSE
+            initializeX <- TRUE
+
+            ## Do more on inferring fixed columns?
+            ## Generally anything except effects that are stochastically indexed
+            ## or where covariates are random (e.g., missing data).
+            ## If we can rule out stoch indexing for a model (using model$modelDef$varName$anyDynamicallyIndexed
+            ## for the variables contained in `target`, we can probably determine
+            ## which columns are fixed by inserting `.Machine$double.xmax` for parameters
+            ## (need to think about assuming RHSonly don't change - could ask user?) and figuring out where those are
+            ## in the `setDesignMatrix` processing (actually presumably a separate method called once).
+            if(is.null(control$fixedDesignColumns)) {  # User has specified which columns are fixed.
+                fixedColumns <- rep(FALSE, nCoef)
+            } else {
+                fixedColumns <- control$fixedDesignColumns
+                if(length(fixedColumns) == 1)
+                    fixedColumns <- rep(fixedColumns, nCoef)
+            }
+            if(all(fixedColumns)) 
+                fixed <- TRUE
+        } else {
+            X <- control$designMatrix
+            if(ncol(X) != nCoef)
+                stop("polyagamma sampler: number of columns of design matrix, ", ncol(X), ", doesn't match number of parameters being sampled, ", nCoef)
+            if(nrow(X) != N)
+                stop("polyagamma sampler: number of rows of design matrix, ", nrow(X), ", doesn't match number of Bernoulli observations, ", N)
+            fixed <- TRUE
+            fixedColumns <- rep(TRUE, nCoef)
+            initializeX <- FALSE
+        }
+
+        ## Conjugacy checking for each observation node: 
+        ## Make sure that we know what distribution it is and if the size is stochastic.
+        stochSizeID <- rep(stochSize, N)
+        stochSizeParents <- model$getParents(sizeNodes, stochOnly = TRUE, self = TRUE)
+        yDistNegBin <- (as.character(model$getDistribution(yNodes)) == "dnegbin")
+        yDistPois <- (as.character(model$getDistribution(yNodes)) == "dpois")
+
+        stochDataID <- !model$isData(yNodes)
+        stochData <- any(stochDataID)
+        anyNegBin <- any(yDistNegBin)
+        anyPois <- any(yDistPois)
+        initializeData <- FALSE
+        
+        if( conjCheckAll & stochSize ){
+          for( i in seq_along(yNodes) ){
+            stochSizeID[i] <- length(intersect(model$getParents(yNodes[i]), stochSizeParents)) > 0
+          }
+        }
+
+        getParamMixed_nfl <- nimbleFunctionList(getParam_MIXED_BASE)
+        whichPois <- which(yDistPois)
+        whichNotPois <- which(!yDistPois)
+        if(length(whichNotPois)) {
+            getParamMixed_nfl[[1]] <- getParam_bin(model, nodeNames = yNodes[whichNotPois], gNodes = !yDistPois)
+        } else {
+            getParamMixed_nfl[[1]] <- emptyParamMixed()
+        }
+        if(length(whichPois)) {
+            getParamMixed_nfl[[2]] <- getParam_pois(model, nodeNames = yNodes[whichPois], gNodes = yDistPois, max_dist = max_dist, max_r = max_size)
+        } else{ 
+            getParamMixed_nfl[[2]] <- emptyParamMixed()
+        }
+        binTypes <- yDistPois + 1   # vector of values in {1,2} indicating binomial / poisson
+
+        initializeSize <- TRUE
+        pgSampler <- samplePolyaGamma()
+
+        Q <- matrix(0, nrow = nCoef, ncol = nCoef)
+        mu <- numeric(nCoef)				
+        b <- rep(0, nCoef)
+        bTemp <- rep(0, nCoef)
+
+        ## MH version:
+        currentValue <- numeric(nCoef)
+        propValue <- numeric(nCoef)
+        logMHR <- 0
+
+        if(nCoef == 1) {
+            mu <- c(mu, -1)
+            b <- c(b, -1)
+            bTemp <- c(bTemp, -1)
+            fixedColumns <- c(fixedColumns, TRUE)
+            currentValue <- c(currentValue, -1)
+            propValue <- c(propValue, -1)
+        }
+        if(nTarget == 1) {
+            normTypes <- c(normTypes, -1)
+            nodeLengths <- c(nodeLengths, -1)
+        }
+        
+        
+        probNonZero <- rep(0, N)  ## Track ids where prob == 0 (zero inflated).
+        n <- N  ## Number of active (non-zero-inflated) obs.
+        
+        kappa <- numeric(N)
+        eta <- numeric(N)
+        psi <- numeric(N)
+        size <- numeric(N)
+        sizeContig <- numeric(N)  
+        
+        ## Preallocate storage for sampling. Not clear how much some or all of this helps.
+        XW <- matrix(0, nrow = nCoef, ncol = N)
+        Xd <- matrix(0, nrow = N, ncol = nCoef)
+        kpre <- numeric(N)
+        w <- numeric(N)
+        one_time_fixes_done <- FALSE        
+    },
+    run = function() {
+        if(!one_time_fixes_done) one_time_fixes()
+        
+        currentValue <<- values(model, targetAsScalar)
+        
+        ## Set up all the data: (size and kappa)
+        if( !initializeData )
+          setDataParams()
+        else
+          updateDataParams()        
+        
+        ## Get normal variances for target.
+        start <- 1
+        for( i in 1:nTarget ) {
+            end <- start + nodeLengths[i] - 1
+            Q[start:end,start:end] <<- getParam_nfl[[normTypes[i]]]$getPrecision(i)
+            mu[start:end] <<- getParam_nfl[[normTypes[i]]]$getMean(i)
+            start <- end + 1
+        }
+        
+        ## Build design matrix.
+        if(initializeX | !fixed)
+            setDesignMatrix()
+
+        ## Update psi = X %*% beta
+        setProbParam()
+        ## Sample polyagamma random variables
+        pgSample()
+        
+        sampleTarget(proposed = TRUE)
+        sampleTarget(proposed = FALSE)
+        
+        if(anyPois)
+          jump <- decide(logMHR)
+        else 
+          jump <- TRUE
+        
+        if(jump){
+          nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
+          nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+          nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+        }else{
+          nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+          nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+          nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+        }
+    },
+    methods = list(
+        setDesignMatrix = function() {
+            if(initializeX & zeroInflated) {
+                ## Temporarily remove zero inflation in order to fix design matrix.
+                ## This avoids repeated rounds of determining matrix values when
+                ## zero inflation not initialized all at values of one.
+                inflationValuesSaved <- values(model, inflationNodes)
+                inflationDepsValuesSaved <- values(model, inflationNodesDeps)
+                values(model, inflationNodes) <<- ones
+                model$calculate(inflationNodesDeps)
+                ## Check for cases like `dbern(z[i]*3*p[i])` *** PVDB need to think about this one a bit more.
+                if(any(values(model, probNodes) != values(model, probNodesInflated)))
+                    stop("Zero inflation not specified as multiplying by one or more Bernoulli variables")
+            }
+            for(j in 1:nCoef) {
+                if(initializeX | !fixedColumns[j]) {
+                    bTemp[j] <<- 1
+                    values(model, targetAsScalar) <<- bTemp
+                    model$calculate(copyNodesDeterm)
+                    ## With zero inflation accounted for above, we update every element of a given column.
+                    for(i in 1:N) {
+                      X[i, j] <<- getParamMixed_nfl[[binTypes[i]]]$getProb(index = i, linear = TRUE)
+                    }
+                    bTemp[j] <<- 0
+                }
+            }
+
+            ## Check to see if covariates need to be scaled:
+            if(initializeX & !infiniteOkay) {
+              for(j in 1:nCoef){
+                if( any(X[, j] == Inf) ){ ## Could this ever be -Inf?
+                  cat("Warning: Infinite values constructed in the design matrix for covariate '", j, "'. Please consider scaling the covariate, providing the design matrix, or overriding this error with infiniteOkay = TRUE.\n")
+                }
+              }
+            }
+
+            if(initializeX & zeroInflated) {
+                values(model, inflationNodes) <<- inflationValuesSaved
+                values(model, inflationNodesDeps) <<- inflationDepsValuesSaved
+            }
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            initializeX <<- FALSE
+        },
+        setDataParams = function() {
+          if( !initializeData ){
+            y <- values(model, yNodes)
+            for(i in 1:N) {
+              size[i] <<- getParamMixed_nfl[[binTypes[i]]]$getSize(i)
+              if( yDistNegBin[i] | yDistPois[i]){
+                eta[i] <<- size[i] + y[i]
+                  if(yDistNegBin[i])
+                    kappa[i] <<- size[i] - eta[i]*0.5
+                  else 
+                    kappa[i] <<- y[i] - eta[i]*0.5
+              }else{
+                eta[i] <<- size[i]
+                kappa[i] <<- y[i] - size[i]*0.5
+              }
+            }
+          }
+          singleSize <<- FALSE
+          ## negative binomial size depends on observations.
+          if(!stochSize & !anyNegBin) {
+              singleSize <<- TRUE
+              i <- 1
+              while(i <= N & singleSize) {
+                  if(eta[i] != eta[1]) {
+                      singleSize <<- FALSE
+                  }
+                  i <- i+1
+              }
+          }
+          initializeData <<- TRUE
+        },
+        updateDataParams = function() {
+          ## Poisson sizes change each time due to tuning
+          if( stochData | stochSize | anyPois ) {
+            y <- values(model, yNodes)
+            for( i in 1:N ) {
+              if( stochDataID[i] | stochSizeID[i] | yDistPois[i]){
+                size[i] <<- getParamMixed_nfl[[binTypes[i]]]$getSize(i)
+                if( yDistNegBin[i] | yDistPois[i] ){
+                  eta[i] <<- size[i] + y[i]
+                  if(yDistNegBin[i])
+                    kappa[i] <<- size[i] - eta[i]*0.5
+                  else 
+                    kappa[i] <<- y[i] - eta[i]*0.5
+                }else{
+                  eta[i] <<- size[i]
+                  kappa[i] <<- y[i] - size[i]*0.5
+                }
+              }
+            }
+          }
+        },
+        setProbParam = function() {
+            ## Note that zero size cases are handled directly in PG sampling;
+            ## assumption is that these will be rare so not worth finding them
+            ## here and treating as part of zero inflation.
+            if(zeroInflated) {
+                n <<- 0
+                for(i in 1:N) {
+                    probi <- getParamMixed_nfl[[binTypes[i]]]$getProb(index = i, linear = FALSE)
+                    if(probi > 0 ) {
+                        n <<- n + 1
+                        probNonZero[n] <<- i
+                        if(yDistPois[i])
+                          psi[n] <<- log(probi) - log(size[i])
+                        else
+                          psi[n] <<- logit(probi)
+                        size[n] <<- size[i]
+                    }
+                }
+            } else {  ## Avoid unneeded `if` condition evaluation above for efficiency.
+                for(i in 1:N) {
+                  psi[i] <<- getParamMixed_nfl[[binTypes[i]]]$getProb(index = i, linear = TRUE)
+                  if(yDistPois[i]) psi[i] <<- psi[i] - log(size[i])
+                }
+           }
+        },
+        pgSample = function(){
+          if(zeroInflated) {
+              ## `psi` already has non-zero-prob values in first n elements based on `setProbParam`.
+              if(n > 0) {
+                  if(singleSize) {
+                      if( marginal_pg )
+                        w[1:n] <<- eta[1]/(2*psi[1:n])*(exp(psi[1:n]) - 1)/(exp(psi[1:n]) + 1)
+                      else
+                        w[1:n] <<- pgSampler$rpolyagamma(c(eta[1]), psi[1:n])
+                  } else {
+                      sizeContig[1:n] <<- eta[probNonZero[1:n]] 
+                      if( marginal_pg ){
+                        w[1:n] <<- sizeContig[1:n]/(2*psi[1:n])*(exp(psi[1:n]) - 1)/(exp(psi[1:n]) + 1)
+                      }else{
+                        w[1:n] <<- pgSampler$rpolyagamma( sizeContig, psi[1:n] )
+                     }
+                  }
+              }
+          } else {
+            if(singleSize) {
+              if( marginal_pg )
+                w[1:N] <<- eta[1]/(2*psi[1:N])*(exp(psi[1:N]) - 1)/(exp(psi[1:N]) + 1)
+              else
+                w[1:N] <<- pgSampler$rpolyagamma(c(eta[1]), psi)
+            } else{
+                if( marginal_pg )
+                  w[1:N] <<- eta/(2*psi)*(exp(psi) - 1)/(exp(psi) + 1)
+                else
+                  w[1:N] <<- pgSampler$rpolyagamma(eta, psi)  ## w|beta ~ pg(n, x %*% beta)
+            }
+          }
+        },
+        sampleTarget = function(proposed = logical(0, default = TRUE)){
+          ## Note that the calculations below involving X don't take advantage of sparsity, including with random intercepts or
+          ## spatial processes. For the latter case, one would often have the relevant columns of X be the identity matrix.
+          ## We could ask user for this information or detect it and then fill in blocks of XtWX matrix, avoiding
+          ## matrix manipulations below for components of X.
+          if(zeroInflated){
+              if(n > 0) {
+                  Xd[1:n,] <<- X[probNonZero[1:n],]
+                  kpre[1:n] <<- kappa[probNonZero[1:n]]
+                  if(anyPois)
+                    kpre[1:n] <<- kpre[1:n] + log(size[probNonZero[1:n]])*w[probNonZero[1:n]]
+                  for( j in 1:nCoef ) {
+                      XW[j,1:n] <<-  Xd[1:n,j]*w[1:n]
+                      b[j] <<- sum(Xd[1:n,j] * kpre[1:n]) + sum(Q[j,] * mu)
+                  }
+                  Q1 <- XW[,1:n] %*% Xd[1:n,] + Q
+              } else {  ## No relevant observations, so drawing from prior.
+                  for( j in 1:nCoef ) 
+                      b[j] <<- sum(Q[j,]*mu)
+                  Q1 <- Q
+              }
+          } else {
+              for( j in 1:nCoef ){
+                  XW[j,] <<-  X[,j]*w
+                  if( anyPois )
+                    b[j] <<- sum(X[,j] * (kappa + log(size)*w)) + sum(Q[j,] * mu)
+                  else
+                    b[j] <<- sum(X[,j] * kappa) + sum(Q[j,] * mu)
+              }
+              Q1 <- XW %*% X + Q
+          }
+          UQ1 <- chol(Q1)
+          M <- backsolve( UQ1, forwardsolve(t(UQ1), b) )
+          
+          ## If proposed, update model
+          if(proposed){
+            values(model, targetAsScalar) <<- rmnorm_chol(n = 1, mean = M, cholesky = UQ1, prec_param = TRUE)
+            propValue <<- values(model, targetAsScalar)
+            logMHR <<- checkLogProb(model$calculateDiff(calcNodes))
+            if(anyPois)
+              logMHR <<- logMHR - dmnorm_chol(propValue, mean = M, cholesky = UQ1, prec_param = TRUE, log = TRUE)
+          }else{
+            ## Else this is the backward step:
+            logMHR <<- logMHR + dmnorm_chol(currentValue, mean = M, cholesky = UQ1, prec_param = TRUE, log = TRUE)
+          }
+        },
+        reset = function() { },
+        one_time_fixes = function() {
+            ## Run this once after compiling; remove extraneous -1 if necessary.
+            if(one_time_fixes_done) return()
+            mu <<- fix_one_vec(mu)
+            b <<- fix_one_vec(b)
+            bTemp <<- fix_one_vec(bTemp)
+            one_time_fixes_done <<- TRUE
+        },
+        fix_one_vec = function(x = double(1)) {
+            if(length(x) == 2) {
+                if(x[2] == -1) {
+                    ans <- numeric(length = 1, value = x[1])
+                    return(ans)
+                }
+            }
+            return(x)
+            returnType(double(1))
+        }
+    )
+)
+
 
 sampler_barker <- nimbleFunction(
     name = 'sampler_barker',
