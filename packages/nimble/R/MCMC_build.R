@@ -385,12 +385,12 @@ buildMCMC <- nimbleFunction(
                 return(array(0, c(0,0)))
             }
             returnType(double(2))
-            return(derivedFunctions[[ind]]$getResults())
+            return(derivedFunctions[[ind]]$get_results())
         },
         getDerivedQuantityNames = function(ind = double()) {
             if(ind > numDerived)   print('there aren\'t that many derived functions')
             returnType(character(1))
-            derivedNames <<- derivedFunctions[[ind]]$getNames()
+            derivedNames <<- derivedFunctions[[ind]]$get_names()
             return(derivedNames)
         },
         ## old-style post-sampling WAIC calculation

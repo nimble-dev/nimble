@@ -12,8 +12,8 @@ derived_BASE <- nimbleFunctionVirtual(
         set_interval = function(newInterval = double()) { },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) { },
         after_chain  = function() { },
-        getResults   = function() { returnType(double(2))    },
-        getNames     = function() { returnType(character(1)) },
+        get_results  = function() { returnType(double(2))    },
+        get_names    = function() { returnType(character(1)) },
         reset        = function() { }
     ),
     methodControl = list(
@@ -75,11 +75,11 @@ derived_mean <- nimbleFunction(
                 results[1,] <<- onlineMean
             }
         },
-        getResults = function() {
+        get_results = function() {
             returnType(double(2))
             return(results)
         },
-        getNames = function() {
+        get_names = function() {
             returnType(character(1))
             return(names)
         },
@@ -161,11 +161,11 @@ derived_variance <- nimbleFunction(
                 }
             }
         },
-        getResults = function() {
+        get_results = function() {
             returnType(double(2))
             return(results)
         },
-        getNames = function() {
+        get_names = function() {
             returnType(character(1))
             return(names)
         },
@@ -259,11 +259,11 @@ derived_logProb <- nimbleFunction(
             nKeep <- floor(niter / interval)
             setSize(results, nKeep, nResults)
         },
-        getResults = function() {
+        get_results = function() {
             returnType(double(2))
             return(results)
         },
-        getNames = function() {
+        get_names = function() {
             returnType(character(1))
             return(names)
         },
@@ -369,11 +369,11 @@ derived_predictive <- nimbleFunction(
             nKeep <- floor(niter / interval)
             setSize(results, nKeep, nResults)
         },
-        getResults = function() {
+        get_results = function() {
             returnType(double(2))
             return(results)
         },
-        getNames = function() {
+        get_names = function() {
             returnType(character(1))
             return(names)
         },
