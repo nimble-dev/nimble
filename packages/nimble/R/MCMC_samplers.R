@@ -3375,6 +3375,7 @@ getParam_bin <- nimbleFunction(
     run = function() {},
     methods = list(
         getSize = function(index = integer()){
+            i <- indexConvert[index]
             return(model$getParam(nodeNames[i], "size"))
             returnType(double())
         },
@@ -3656,13 +3657,22 @@ sampler_polyagamma_MH <- nimbleFunction(
         ## Make sure that we know what distribution it is and if the size is stochastic.
         stochSizeID <- rep(stochSize, N)
         stochSizeParents <- model$getParents(sizeNodes, stochOnly = TRUE, self = TRUE)
-        yDistNegBin <- (as.character(model$getDistribution(yNodes)) == "dnegbin")
-        yDistPois <- (as.character(model$getDistribution(yNodes)) == "dpois")
+
+        I_binom <- 1; I_negbin <- 2; I_pois <- 3; I_multi <- 4; I_cat <- 5
+        yDist <- rep(I_binom, N)
+        yDist[model$getDistribution(yNodes) == "dnegbin"] <- I_negbin
+        yDist[model$getDistribution(yNodes) == "dpois"] <- I_pois
+        yDist[model$getDistribution(yNodes) == "dmulti"] <- I_multi
+        yDist[model$getDistribution(yNodes) == "dcat"] <- I_cat
+        negBin <- any(yDist == I_negbin)
+
+        allBinom <- all(yDist == I_binom)
+        anyPois <- any(yDist == I_pois)
+        if(anyPois)
+          marginal_pg <- TRUE ## Must be true if Poisson likelihood.
 
         stochDataID <- !model$isData(yNodes)
         stochData <- any(stochDataID)
-        anyNegBin <- any(yDistNegBin)
-        anyPois <- any(yDistPois)
         initializeData <- FALSE
         
         if( conjCheckAll & stochSize ){
@@ -3672,19 +3682,18 @@ sampler_polyagamma_MH <- nimbleFunction(
         }
 
         getParamMixed_nfl <- nimbleFunctionList(getParam_MIXED_BASE)
-        whichPois <- which(yDistPois)
-        whichNotPois <- which(!yDistPois)
-        if(length(whichNotPois)) {
-            getParamMixed_nfl[[1]] <- getParam_bin(model, nodeNames = yNodes[whichNotPois], gNodes = !yDistPois)
+        yPoisObs <- (yDist == I_pois)
+        if(any(!yPoisObs)) {
+            getParamMixed_nfl[[1]] <- getParam_bin(model, nodeNames = yNodes[!yPoisObs], gNodes = !yPoisObs)
         } else {
             getParamMixed_nfl[[1]] <- emptyParamMixed()
         }
-        if(length(whichPois)) {
-            getParamMixed_nfl[[2]] <- getParam_pois(model, nodeNames = yNodes[whichPois], gNodes = yDistPois, max_dist = max_dist, max_r = max_size)
+        if(any(yPoisObs)) {
+            getParamMixed_nfl[[2]] <- getParam_pois(model, nodeNames = yNodes[yPoisObs], gNodes = yPoisObs, max_dist = max_dist, max_r = max_size)
         } else{ 
             getParamMixed_nfl[[2]] <- emptyParamMixed()
         }
-        binTypes <- yDistPois + 1   # vector of values in {1,2} indicating binomial / poisson
+        binTypes <- yPoisObs + 1   # vector of values in {1,2} indicating binomial / poisson
 
         initializeSize <- TRUE
         pgSampler <- samplePolyaGamma()
@@ -3720,6 +3729,7 @@ sampler_polyagamma_MH <- nimbleFunction(
         eta <- numeric(N)
         psi <- numeric(N)
         size <- numeric(N)
+        logC <- numeric(N)  ## This is where we will update for (kappa - logC) for Multinomial and Poisson.
         sizeContig <- numeric(N)  
         
         ## Preallocate storage for sampling. Not clear how much some or all of this helps.
@@ -3735,10 +3745,7 @@ sampler_polyagamma_MH <- nimbleFunction(
         currentValue <<- values(model, targetAsScalar)
         
         ## Set up all the data: (size and kappa)
-        if( !initializeData )
-          setDataParams()
-        else
-          updateDataParams()        
+        setDataParams()
         
         ## Get normal variances for target.
         start <- 1
@@ -3755,11 +3762,14 @@ sampler_polyagamma_MH <- nimbleFunction(
 
         ## Update psi = X %*% beta
         setProbParam()
+        
         ## Sample polyagamma random variables
         pgSample()
         
         sampleTarget(proposed = TRUE)
-        if(anyPois |  marginal_pg){
+
+        ## Calculate MH accept/reject and jump:
+        if( marginal_pg ){
           sampleTarget(proposed = FALSE)
           jump <- decide(logMHR)
         }else{
@@ -3821,56 +3831,37 @@ sampler_polyagamma_MH <- nimbleFunction(
             initializeX <<- FALSE
         },
         setDataParams = function() {
-          if( !initializeData ){
+          if( !initializeData | stochData | stochSize | anyPois ) {
             y <- values(model, yNodes)
             for(i in 1:N) {
-              size[i] <<- getParamMixed_nfl[[binTypes[i]]]$getSize(i)
-              if( yDistNegBin[i] | yDistPois[i]){
+              size[i] <<- getParamMixed_nfl[[binTypes[i]]]$getSize(index = i)
+              if( yDist[i] == I_negbin){
                 eta[i] <<- size[i] + y[i]
-                  if(yDistNegBin[i])
-                    kappa[i] <<- size[i] - eta[i]*0.5
-                  else 
-                    kappa[i] <<- y[i] - eta[i]*0.5
+                kappa[i] <<- size[i] - eta[i]*0.5
+              }else if(yDist[i] == I_pois){
+                eta[i] <<- size[i] + y[i]
+                kappa[i] <<- y[i] - eta[i]*0.5
               }else{
                 eta[i] <<- size[i]
                 kappa[i] <<- y[i] - size[i]*0.5
               }
             }
           }
-          singleSize <<- FALSE
-          ## negative binomial size depends on observations.
-          if(!stochSize & !anyNegBin) {
-              singleSize <<- TRUE
-              i <- 1
-              while(i <= N & singleSize) {
-                  if(eta[i] != eta[1]) {
-                      singleSize <<- FALSE
-                  }
-                  i <- i+1
-              }
-          }
-          initializeData <<- TRUE
-        },
-        updateDataParams = function() {
-          ## Poisson sizes change each time due to tuning
-          if( stochData | stochSize | anyPois ) {
-            y <- values(model, yNodes)
-            for( i in 1:N ) {
-              if( stochDataID[i] | stochSizeID[i] | yDistPois[i]){
-                size[i] <<- getParamMixed_nfl[[binTypes[i]]]$getSize(i)
-                if( yDistNegBin[i] | yDistPois[i] ){
-                  eta[i] <<- size[i] + y[i]
-                  if(yDistNegBin[i])
-                    kappa[i] <<- size[i] - eta[i]*0.5
-                  else 
-                    kappa[i] <<- y[i] - eta[i]*0.5
-                }else{
-                  eta[i] <<- size[i]
-                  kappa[i] <<- y[i] - size[i]*0.5
+          if( !initializeData ) {
+            singleSize <<- FALSE
+            ## negative binomial size depends on observations.
+            if(!stochSize & allBinom) {
+                singleSize <<- TRUE
+                i <- 1
+                while(i <= N & singleSize) {
+                    if(eta[i] != eta[1]) {
+                        singleSize <<- FALSE
+                    }
+                    i <- i+1
                 }
-              }
             }
           }
+          initializeData <<- TRUE
         },
         setProbParam = function() {
             ## Note that zero size cases are handled directly in PG sampling;
@@ -3883,17 +3874,18 @@ sampler_polyagamma_MH <- nimbleFunction(
                     if(probi > 0 ) {
                         n <<- n + 1
                         probNonZero[n] <<- i
-                        if(yDistPois[i])
+                        if(yDist[i] == I_pois)
                           psi[n] <<- log(probi) - log(size[i])
                         else
                           psi[n] <<- logit(probi)
+
                         size[n] <<- size[i]
                     }
                 }
             } else {  ## Avoid unneeded `if` condition evaluation above for efficiency.
                 for(i in 1:N) {
                   psi[i] <<- getParamMixed_nfl[[binTypes[i]]]$getProb(index = i, linear = TRUE)
-                  if(yDistPois[i]) psi[i] <<- psi[i] - log(size[i])
+                  if(yDist[i] == I_pois) psi[i] <<- psi[i] - log(size[i])
                 }
            }
         },
@@ -3968,7 +3960,7 @@ sampler_polyagamma_MH <- nimbleFunction(
             values(model, targetAsScalar) <<- rmnorm_chol(n = 1, mean = M, cholesky = UQ1, prec_param = TRUE)
             propValue <<- values(model, targetAsScalar)
             logMHR <<- checkLogProb(model$calculateDiff(calcNodes))
-            if(anyPois)
+            if( marginal_pg )
               logMHR <<- logMHR - dmnorm_chol(propValue, mean = M, cholesky = UQ1, prec_param = TRUE, log = TRUE)
           }else{
             ## Else this is the backward step:
