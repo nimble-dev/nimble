@@ -264,3 +264,147 @@ test_that("variance derived parameter", {
   expect_equivalent(out$derived$mean, mean(out$samples[,1]))
   expect_equivalent(out$derived$variance, var(out$samples[,1]))
 })
+
+test_that("logProb derived quantity", {
+
+  set.seed(1)
+  inits <- list(b=c(0, 0), sigma=1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=inits)
+  conf <- configureMCMC(mod, print=FALSE)
+
+  # Single node
+  conf$addDerivedQuantity("logProb", nodes="b[1]")
+  mcmc <- buildMCMC(conf)
+
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(dim(out$derived$logProb), c(10,1))
+  expect_equivalent(out$derived$logProb[10,"b[1]"], mod$logProb_b[1])
+ 
+  # non-scalar parameter
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  conf$addDerivedQuantity("logProb", nodes="b")
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(colnames(out$derived$logProb), c("b[1]", "b[2]"))
+  expect_equivalent(out$derived$logProb[10,], mod$logProb_b)
+
+  # Multiple parameters
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  conf$addDerivedQuantity("logProb", nodes=c("b[1]", "sigma"))
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(colnames(out$derived$logProb), c("b[1]", "sigma"))
+  expect_equivalent(out$derived$logProb[10,], c(mod$logProb_b[1], mod$logProb_sigma))
+
+  # Multiple parameters including non-scalars
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  conf$addDerivedQuantity("logProb", nodes=c("b", "sigma"))
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(colnames(out$derived$logProb), c("b[1]", "b[2]", "sigma"))
+  expect_equivalent(out$derived$logProb[10,], c(mod$logProb_b, mod$logProb_sigma))
+
+  # All parameters
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # TODO: I wonder if here .all should mean all parameters, but separate, not their sum?
+  # that seems to me to be more consistent with the overall notation
+  # i.e., if you put "b" here, not in a list, you get the separate values of b, not their sum
+  conf$addDerivedQuantity("logProb", nodes=".all")
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(colnames(out$derived$logProb), c("_all_nodes_"))
+  expect_equivalent(out$derived$logProb[10,1], sum(c(mod$logProb_b, mod$logProb_sigma, mod$logProb_y)))
+
+  # Functions of parameters
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # Here taking sum logprobs of b
+  conf$addDerivedQuantity("logProb", nodes=list("b", "sigma"))
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(colnames(out$derived$logProb), c("b", "sigma"))
+  expect_equivalent(out$derived$logProb[10,], c(sum(mod$logProb_b), mod$logProb_sigma))
+
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # Here taking sum of logprobs of b[1] and sigma
+  conf$addDerivedQuantity("logProb", nodes=list(c("b[1]", "sigma")))
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(colnames(out$derived$logProb), "sum1")
+  expect_equivalent(out$derived$logProb[10,1], sum(c(mod$logProb_b[1], mod$logProb_sigma)))
+
+  # Create name for sum
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # Here taking sum of logprobs of b[1] and sigma
+  conf$addDerivedQuantity("logProb", nodes=list(b_and_sigma=c("b[1]", "sigma")))
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(colnames(out$derived$logProb), "b_and_sigma")
+  expect_equivalent(out$derived$logProb[10,1], sum(c(mod$logProb_b[1], mod$logProb_sigma)))
+
+  # What happens if parameter doesn't exist?
+  # TODO: non-intuitive error here
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # alpha not in model
+  conf$addDerivedQuantity("logProb", nodes="alpha")
+  mcmc <- buildMCMC(conf)
+  expect_error(out <- runMCMC(mcmc, niter=10))
+
+  # What if an impossible index range is requested?
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # alpha not in model
+  conf$addDerivedQuantity("logProb", nodes="b[1:3]")
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  # The extra element of b is ignored
+  expect_equal(colnames(out$derived$logProb), c("b[1]", "b[2]"))
+
+  # Request only the non-existing index
+  # TODO: error here - should it be handled more explicitly?
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # alpha not in model
+  conf$addDerivedQuantity("logProb", nodes="b[3]")
+  mcmc <- buildMCMC(conf)
+  expect_error(out <- runMCMC(mcmc, niter=10))
+
+  # Change interval
+  set.seed(1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE)
+  # Here taking sum of logprobs of b[1] and sigma
+  conf$addDerivedQuantity("logProb", nodes="b[1]", interval=5)
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(dim(out$derived$logProb), c(2,1))
+})
