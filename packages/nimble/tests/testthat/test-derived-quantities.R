@@ -408,3 +408,95 @@ test_that("logProb derived quantity", {
   out <- runMCMC(mcmc, niter=10)
   expect_equal(dim(out$derived$logProb), c(2,1))
 })
+
+test_that("predictive derived quantity", {
+
+  code2 <- nimbleCode({
+    b[1] ~ dnorm(0, sd = 2)
+    b[2] ~ dnorm(0, sd = 2)
+    sigma ~ dunif(0, 2)
+    for (i in 1:n){
+      mu[i] <- b[1] + b[2]*x[i]
+      y[i] ~ dnorm(mu[i], sd = sigma)
+    }
+
+    bsq <- b[1]^2 # derived quantity
+    z ~ dnorm(bsq, sd = sigma) # posterior predictive node
+  })
+
+  # Simple example
+  set.seed(1)
+  mod <- nimbleModel(code2, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
+
+  conf$addDerivedQuantity("predictive", nodes=c("bsq", "z"))
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(dim(out$derived$predictive), c(10,2))
+  expect_equal(colnames(out$derived$predictive), c("bsq", "z"))
+
+  # Only the predictive node
+  set.seed(1)
+  mod <- nimbleModel(code2, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
+
+  conf$addDerivedQuantity("predictive", nodes="z")
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(dim(out$derived$predictive), c(10,1))
+  expect_equal(colnames(out$derived$predictive), "z")
+
+  # Change the interval
+  set.seed(1)
+  mod <- nimbleModel(code2, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
+
+  conf$addDerivedQuantity("predictive", nodes="z", interval=5)
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(dim(out$derived$predictive), c(2,1))
+  expect_equal(colnames(out$derived$predictive), "z")
+
+  # Set a non-predictive node
+  set.seed(1)
+  mod <- nimbleModel(code2, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
+
+  conf$addDerivedQuantity("predictive", nodes=c("b[1]", "z"))
+  # warning message here
+  expect_message(mcmc <- buildMCMC(conf))
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(dim(out$derived$predictive), c(10, 2))
+  expect_equal(colnames(out$derived$predictive), c("b[1]", "z"))
+
+  # Set .all
+  set.seed(1)
+  mod <- nimbleModel(code2, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
+
+  # TODO: should this return samples of both bsq and z? because it only returns z
+  # the vignette seems to imply both should be returned
+  conf$addDerivedQuantity("predictive", nodes=".all")
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(dim(out$derived$predictive), c(10,1))
+  expect_equal(colnames(out$derived$predictive), "z")
+
+  # Non-existing parameter
+  set.seed(1)
+  mod <- nimbleModel(code2, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=list(b=c(0,0), sigma=1))
+  conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
+  conf$addDerivedQuantity("predictive", nodes="alpha")
+  mcmc <- buildMCMC(conf)
+  # TODO: maybe error should be handled more explicitly here?
+  expect_error(out <- runMCMC(mcmc, niter=10))
+  expect_equal(dim(out$derived$predictive), c(10,1))
+  expect_equal(colnames(out$derived$predictive), "z")
+
+})
