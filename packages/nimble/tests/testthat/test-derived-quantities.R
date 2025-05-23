@@ -500,3 +500,129 @@ test_that("predictive derived quantity", {
   expect_equal(colnames(out$derived$predictive), "z")
 
 })
+
+test_that("user-facing mcmc configuration methods", {
+
+  set.seed(1)
+  inits <- list(b=c(0, 0), sigma=1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=inits)
+  conf <- configureMCMC(mod, print=FALSE)
+
+  # Add node
+  conf$addDerivedQuantity("logProb", nodes="b[1]")
+  mcmc <- buildMCMC(conf)
+
+  # Print
+  co <- capture.output(conf$printDerivedQuantities())
+  expect_equal(co, "[1] derived quantity: logProb,  execution interval: thin,  nodes: b[1]")
+  
+  # Get
+  conf$addDerivedQuantity("logProb", nodes="sigma")
+  dq <- conf$getDerivedQuantities()
+  expect_equal(length(dq), 2)
+  expect_is(dq[[1]], "derivedConf")
+
+  dqf <- conf$getDerivedQuantityDefinition(1)
+  expect_is(dqf, "list")
+
+  # Remove nodes
+  conf2 <- conf
+  conf2$removeDerivedQuantities()
+  co <- capture.output(conf2$printDerivedQuantities())
+  expect_equal(co, character(0))
+
+  # Remove nodes
+  conf2 <- conf
+  conf2$removeDerivedQuantity()
+  co <- capture.output(conf2$printDerivedQuantities())
+  expect_equal(co, character(0))
+})
+
+test_that("configureMCMC and nimbleMCMC derived quantity interface", {
+
+  set.seed(1)
+  inits <- list(b=c(0, 0), sigma=1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=inits)
+  conf <- configureMCMC(mod, print=FALSE, mean="b[1]", logProb="sigma")
+  co <- capture.output(conf$printDerivedQuantities())
+  expect_equal(co, c("[1] derived quantity: mean,  execution interval: thin,  nodes: b[1]",    
+                     "[2] derived quantity: logProb,  execution interval: thin,  nodes: sigma"))
+
+  # logprob=TRUE
+  set.seed(1)
+  inits <- list(b=c(0, 0), sigma=1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=inits)
+  conf <- configureMCMC(mod, print=FALSE, logProb=TRUE)
+  co <- capture.output(conf$printDerivedQuantities())
+  expect_equal(co, "[1] derived quantity: logProb,  execution interval: thin,  nodes: .all")    
+
+  # nimbleMCMC
+  mod <- nimbleMCMC(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                    mean="b[1]", logProb="sigma", nchain=1, niter=10, nburnin=0) 
+  expect_equal(names(mod$derived), c("mean", "logProb"))
+
+  mod <- nimbleMCMC(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                    logProb=TRUE, nchain=1, niter=10, nburnin=0) 
+  expect_equal(dim(mod$derived$logProb), c(10,1))
+})
+
+test_that("custom derived quantity nimbleFunction", {
+  # multiplies the specified nodes by some value multValue
+  test_derived <- nimbleFunction(
+    name = 'test_derived',
+    contains = derived_BASE,     ## all derived functions must contain (inherit from) the derived_BASE class
+    setup = function(model, mcmc, interval, control) {
+      nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+      multValue <- extractControlElement(control, 'multValue', defaultValue = 2)
+      ## node list generation
+      nodes <- model$expandNodeNames(nodes)
+      ## names generation
+      names <- if(length(nodes) < 2) c(nodes,'','') else nodes     ## vector
+      ## numeric value generation
+      nResults <- length(nodes)
+      vals <- numeric(max(nResults, 2))
+      results <- array(0, c(1, nResults))
+    },
+    run = function(timesRan = double()) {
+      if(nResults == 0)   return()
+      vals <<- values(model, nodes)
+      results[1,] <<- vals * multValue
+    },
+    methods = list(
+      set_interval = function(newInterval = double()) {
+        interval <<- newInterval
+      },
+      get_results = function() {
+        returnType(double(2))
+        return(results)
+      },
+      get_names = function() {
+        returnType(character(1))
+        return(names)
+      }
+    )
+  )
+
+  set.seed(1)
+  inits <- list(b=c(0, 0), sigma=1)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
+                     inits=inits)
+  conf <- configureMCMC(mod, print=FALSE)
+  conf$addDerivedQuantity("test_derived", nodes=c("b[1]", "sigma"), multValue=2)
+  mcmc <- buildMCMC(conf)
+  out <- runMCMC(mcmc, niter=10)
+
+  expect_equal(out$samples[10,c(1,3)]*2, out$derived$test_derived[1,])
+
+  # Check in C++
+  Cmod <- compileNimble(mod)
+  Cmcmc <- compileNimble(mcmc, project=mod)
+  out <- runMCMC(Cmcmc, niter=10)
+  expect_equal(out$samples[10,c(1,3)]*2, out$derived$test_derived[1,])
+
+  # check error when custom derived quantity function not defined
+  expect_error(conf$addDerivedQuantity("fake", nodes=c("b[1]", "sigma")))
+})
