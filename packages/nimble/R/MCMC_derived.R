@@ -46,15 +46,19 @@ derived_mean <- nimbleFunction(
         ## numeric value generation
         nSamples <- 0
         nResults <- length(nodes)
-        vals       <- numeric(max(nResults, 2))    ## vector
-        onlineMean <- numeric(max(nResults, 2))    ## vector
-        results <- array(0, c(1, nResults))
+        vals       <- rep(NA, max(nResults, 2))    ## vector
+        onlineMean <- rep(NA, max(nResults, 2))    ## vector
+        results <- array(NA, c(1, nResults))
     },
     run = function(timesRan = double()) {
         if(nResults == 0)   return()
         nSamples <<- nSamples + 1
         vals <<- values(model, nodes)
-        onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
+        if(nSamples == 1) {
+            onlineMean <<- vals
+        } else {
+            onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
+        }
         if(recordingFrequency != 0 & timesRan %% recordingFrequency == 0) {
            results[timesRan/recordingFrequency,] <<- onlineMean
         }
@@ -69,7 +73,7 @@ derived_mean <- nimbleFunction(
             } else {
                 nKeep <- floor(niter / (interval * recordingFrequency))
             }
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         after_chain = function() {
             if(recordingFrequency == 0) {
@@ -86,8 +90,8 @@ derived_mean <- nimbleFunction(
         },
         reset = function() {
             nSamples <<- 0
-            vals       <<- numeric(nResults)
-            onlineMean <<- numeric(nResults)
+            vals       <<- nimNumeric(nResults, value = NA)
+            onlineMean <<- nimNumeric(nResults, value = NA)
         }
     )
 )
@@ -115,11 +119,11 @@ derived_variance <- nimbleFunction(
         ## numeric value generation
         nSamples <- 0
         nResults <- length(nodes)
-        vals    <- numeric(max(nResults, 2))                      ## vector
-        prvMean <- numeric(max(nResults, 2))                      ## vector
-        newMean <- numeric(max(nResults, 2))                      ## vector
-        sumSqur <- numeric(max(nResults, 2))                      ## vector
-        results <- array(0, c(1, nResults))
+        vals    <- rep(NA, max(nResults, 2))          ## vector
+        prvMean <- rep(NA, max(nResults, 2))          ## vector
+        newMean <- rep(NA, max(nResults, 2))          ## vector
+        sumSqur <- rep(NA, max(nResults, 2))          ## vector
+        results <- array(NA, c(1, nResults))
     },
     run = function(timesRan = double()) {
         if(nResults == 0)   return()
@@ -128,7 +132,7 @@ derived_variance <- nimbleFunction(
         ## Welford's algorithm for stable online variance
         if(nSamples == 1) {
             newMean <<- vals
-            sumSqur <<- numeric(nResults)
+            sumSqur <<- nimNumeric(nResults)
         } else {
             prvMean <<- newMean
             newMean <<- prvMean + (vals - prvMean) / nSamples
@@ -152,7 +156,7 @@ derived_variance <- nimbleFunction(
             } else {
                 nKeep <- floor(niter / (interval * recordingFrequency))
             }
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         after_chain = function() {
             if(recordingFrequency == 0) {
@@ -172,11 +176,11 @@ derived_variance <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            nSamples       <<- 0
-            setSize(vals,    nResults)
-            setSize(prvMean, nResults)
-            setSize(newMean, nResults)
-            setSize(sumSqur, nResults)
+            nSamples <<- 0
+            vals     <<- nimNumeric(nResults, value = NA)
+            prvMean  <<- nimNumeric(nResults, value = NA)
+            newMean  <<- nimNumeric(nResults, value = NA)
+            sumSqur  <<- nimNumeric(nResults, value = NA)
         }
     )
 )
@@ -235,7 +239,7 @@ derived_logProb <- nimbleFunction(
         if(length(names) < 2)   names <- c(names, '', '')     ## vector
         ## numeric value generation
         nResults <- length(nodeList)
-        results <- array(0, c(1, nResults))
+        results <- array(NA, c(1, nResults))
         ## nested function and function list definitions
         getLogProbNFL <- nimbleFunctionList(getLogProb_virtual)
         for(i in seq_along(nodeList))   getLogProbNFL[[i]] <- getLogProbNF(model, nodeList[[i]])
@@ -259,7 +263,7 @@ derived_logProb <- nimbleFunction(
         },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         get_results = function() {
             returnType(double(2))
@@ -270,7 +274,7 @@ derived_logProb <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            results <<- array(0, c(1, nResults))
+            results <<- nimArray(NA, c(1, nResults))
         }
     )
 )
@@ -369,7 +373,7 @@ derived_predictive <- nimbleFunction(
         },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         get_results = function() {
             returnType(double(2))
@@ -380,7 +384,7 @@ derived_predictive <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            results <<- array(0, c(1, nResults))
+            results <<- nimArray(0, c(1, nResults))
         }
     )
 )
