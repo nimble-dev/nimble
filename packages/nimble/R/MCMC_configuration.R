@@ -258,12 +258,12 @@ print: A logical argument specifying whether to print the montiors and samplers.
                               multivariateNodesAsScalars = multivariateNodesAsScalars,
                               print = FALSE)
             
-            if(isTRUE      (mean    ))   addDerivedQuantity('mean'    , control = list(nodes = monitors    ))
-            if(is.character(mean    ))   addDerivedQuantity('mean'    , control = list(nodes = mean        ))
-            if(isTRUE      (variance))   addDerivedQuantity('variance', control = list(nodes = monitors    ))
-            if(is.character(variance))   addDerivedQuantity('variance', control = list(nodes = variance    ))
-            if(isTRUE      (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = list('.all')))
-            if(!is.logical (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = logProb     ))
+            if(isTRUE      (mean    ))   addDerivedQuantity('mean'    , control = list(nodes = monitors))
+            if(is.character(mean    ))   addDerivedQuantity('mean'    , control = list(nodes = mean    ))
+            if(isTRUE      (variance))   addDerivedQuantity('variance', control = list(nodes = monitors))
+            if(is.character(variance))   addDerivedQuantity('variance', control = list(nodes = variance))
+            if(isTRUE      (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = '.all'  ))
+            if(!is.logical (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = logProb ))
             
             if(print)   show()    ##printSamplers()
         },
