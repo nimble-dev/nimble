@@ -46,9 +46,9 @@ derived_mean <- nimbleFunction(
         ## numeric value generation
         nSamples <- 0
         nResults <- length(nodes)
-        vals       <- rep(NA, max(nResults, 2))    ## vector
-        onlineMean <- rep(NA, max(nResults, 2))    ## vector
-        results <- array(NA, c(1, nResults))
+        vals       <- numeric(max(nResults, 2))    ## vector
+        onlineMean <- numeric(max(nResults, 2))    ## vector
+        results <- array(0, c(1, nResults))
     },
     run = function(timesRan = double()) {
         if(nResults == 0)   return()
@@ -119,11 +119,11 @@ derived_variance <- nimbleFunction(
         ## numeric value generation
         nSamples <- 0
         nResults <- length(nodes)
-        vals    <- rep(NA, max(nResults, 2))          ## vector
-        prvMean <- rep(NA, max(nResults, 2))          ## vector
-        newMean <- rep(NA, max(nResults, 2))          ## vector
-        sumSqur <- rep(NA, max(nResults, 2))          ## vector
-        results <- array(NA, c(1, nResults))
+        vals    <- numeric(max(nResults, 2))          ## vector
+        prvMean <- numeric(max(nResults, 2))          ## vector
+        newMean <- numeric(max(nResults, 2))          ## vector
+        sumSqur <- numeric(max(nResults, 2))          ## vector
+        results <- array(0, c(1, nResults))
     },
     run = function(timesRan = double()) {
         if(nResults == 0)   return()
@@ -211,11 +211,11 @@ derived_logProb <- nimbleFunction(
     contains = derived_BASE,
     setup = function(model, mcmc, interval, control) {
         ## control list extraction
-        nodes  <- extractControlElement(control, 'nodes',  defaultValue = '.all')
+        nodes  <- extractControlElement(control, 'nodes',  defaultValue = list('.all'))
         silent <- extractControlElement(control, 'silent', defaultValue = FALSE)
         ## node list generation
         nodeList <- if(is.character(nodes)) {
-                        as.list(unlist(lapply(nodes, function(x) if(identical(x,'.all')) '.all' else model$expandNodeNames(x))))
+                        as.list(unlist(lapply(nodes, function(x) if(identical(x,'.all'))  model$getNodeNames(stochOnly=TRUE) else model$expandNodeNames(x))))
                     } else nodes
         allBool <- sapply(nodeList, function(x) identical(x, '.all'))
         nodeList <- lapply(nodeList, function(x) if(identical(x,'.all')) model$getNodeNames(stochOnly=TRUE) else x)
@@ -239,7 +239,7 @@ derived_logProb <- nimbleFunction(
         if(length(names) < 2)   names <- c(names, '', '')     ## vector
         ## numeric value generation
         nResults <- length(nodeList)
-        results <- array(NA, c(1, nResults))
+        results <- array(0, c(1, nResults))
         ## nested function and function list definitions
         getLogProbNFL <- nimbleFunctionList(getLogProb_virtual)
         for(i in seq_along(nodeList))   getLogProbNFL[[i]] <- getLogProbNF(model, nodeList[[i]])
