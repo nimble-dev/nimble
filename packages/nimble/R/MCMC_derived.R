@@ -211,11 +211,11 @@ derived_logProb <- nimbleFunction(
     contains = derived_BASE,
     setup = function(model, mcmc, interval, control) {
         ## control list extraction
-        nodes  <- extractControlElement(control, 'nodes',  defaultValue = list('.all'))
+        nodes  <- extractControlElement(control, 'nodes',  defaultValue = '.all')
         silent <- extractControlElement(control, 'silent', defaultValue = FALSE)
         ## node list generation
         nodeList <- if(is.character(nodes)) {
-                        as.list(unlist(lapply(nodes, function(x) if(identical(x,'.all'))  model$getNodeNames(stochOnly=TRUE) else model$expandNodeNames(x))))
+                        as.list(unlist(lapply(nodes, function(x) if(identical(x,'.all')) '.all' else model$expandNodeNames(x))))
                     } else nodes
         allBool <- sapply(nodeList, function(x) identical(x, '.all'))
         nodeList <- lapply(nodeList, function(x) if(identical(x,'.all')) model$getNodeNames(stochOnly=TRUE) else x)
@@ -304,10 +304,15 @@ derived_predictive <- nimbleFunction(
             isEnd <- sapply(saveNodes, function(x) length(model$getDependencies(x, self = FALSE)) == 0)
             saveNodes <- saveNodes[isEnd]
         } else if(length(nodes) == 1 && nodes == '.all') {
-            saveNodes <- unique(c(
-                ppNodesAndDeps,                                            ## predictive stochastic nodes and deterministic dependencies
-                model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
-            ))
+            ## this approach missed predicted deterministic nodes, which also have a stochastic dependency:
+            ##saveNodes <- unique(c(
+            ##    ppNodesAndDeps,                                            ## predictive stochastic nodes and deterministic dependencies
+            ##    model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
+            ##))
+            allModelNodes <- model$getNodeNames()
+            allNodeDownstreamDeps <- lapply(allModelNodes, function(x) model$getDependencies(x, downstream = TRUE))
+            haveDataDepsBool <- sapply(allNodeDownstreamDeps, function(x) any(model$isData(x)))
+            saveNodes <- allModelNodes[!haveDataDepsBool]
             saveNodes <- model$topologicallySortNodes(saveNodes)
         } else {
             saveNodes <- model$expandNodeNames(nodes)
