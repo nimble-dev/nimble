@@ -39,6 +39,7 @@ derived_mean <- nimbleFunction(
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 0)
         ## node list generation
+        if(is.list(nodes))   nodes <- unlist(nodes)
         nodes <- model$expandNodeNames(nodes)
         ## names generation
         names <- if(length(nodes) < 2) c(nodes,'','') else nodes     ## vector
@@ -53,7 +54,11 @@ derived_mean <- nimbleFunction(
         if(nResults == 0)   return()
         nSamples <<- nSamples + 1
         vals <<- values(model, nodes)
-        onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
+        if(nSamples == 1) {
+            onlineMean <<- vals
+        } else {
+            onlineMean <<- onlineMean + (vals - onlineMean) / nSamples
+        }
         if(recordingFrequency != 0 & timesRan %% recordingFrequency == 0) {
            results[timesRan/recordingFrequency,] <<- onlineMean
         }
@@ -68,7 +73,7 @@ derived_mean <- nimbleFunction(
             } else {
                 nKeep <- floor(niter / (interval * recordingFrequency))
             }
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         after_chain = function() {
             if(recordingFrequency == 0) {
@@ -85,8 +90,8 @@ derived_mean <- nimbleFunction(
         },
         reset = function() {
             nSamples <<- 0
-            vals       <<- numeric(nResults)
-            onlineMean <<- numeric(nResults)
+            vals       <<- nimNumeric(nResults, value = NA)
+            onlineMean <<- nimNumeric(nResults, value = NA)
         }
     )
 )
@@ -107,16 +112,17 @@ derived_variance <- nimbleFunction(
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 0)
         ## node list generation
+        if(is.list(nodes))   nodes <- unlist(nodes)
         nodes <- model$expandNodeNames(nodes)
         ## names generation
         names <- if(length(nodes) < 2) c(nodes,'','') else nodes  ## vector
         ## numeric value generation
         nSamples <- 0
         nResults <- length(nodes)
-        vals    <- numeric(max(nResults, 2))                      ## vector
-        prvMean <- numeric(max(nResults, 2))                      ## vector
-        newMean <- numeric(max(nResults, 2))                      ## vector
-        sumSqur <- numeric(max(nResults, 2))                      ## vector
+        vals    <- numeric(max(nResults, 2))          ## vector
+        prvMean <- numeric(max(nResults, 2))          ## vector
+        newMean <- numeric(max(nResults, 2))          ## vector
+        sumSqur <- numeric(max(nResults, 2))          ## vector
         results <- array(0, c(1, nResults))
     },
     run = function(timesRan = double()) {
@@ -126,7 +132,7 @@ derived_variance <- nimbleFunction(
         ## Welford's algorithm for stable online variance
         if(nSamples == 1) {
             newMean <<- vals
-            sumSqur <<- numeric(nResults)
+            sumSqur <<- nimNumeric(nResults)
         } else {
             prvMean <<- newMean
             newMean <<- prvMean + (vals - prvMean) / nSamples
@@ -150,7 +156,7 @@ derived_variance <- nimbleFunction(
             } else {
                 nKeep <- floor(niter / (interval * recordingFrequency))
             }
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         after_chain = function() {
             if(recordingFrequency == 0) {
@@ -170,11 +176,11 @@ derived_variance <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            nSamples       <<- 0
-            setSize(vals,    nResults)
-            setSize(prvMean, nResults)
-            setSize(newMean, nResults)
-            setSize(sumSqur, nResults)
+            nSamples <<- 0
+            vals     <<- nimNumeric(nResults, value = NA)
+            prvMean  <<- nimNumeric(nResults, value = NA)
+            newMean  <<- nimNumeric(nResults, value = NA)
+            sumSqur  <<- nimNumeric(nResults, value = NA)
         }
     )
 )
@@ -257,7 +263,7 @@ derived_logProb <- nimbleFunction(
         },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         get_results = function() {
             returnType(double(2))
@@ -268,7 +274,7 @@ derived_logProb <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            results <<- array(0, c(1, nResults))
+            results <<- nimArray(NA, c(1, nResults))
         }
     )
 )
@@ -298,10 +304,15 @@ derived_predictive <- nimbleFunction(
             isEnd <- sapply(saveNodes, function(x) length(model$getDependencies(x, self = FALSE)) == 0)
             saveNodes <- saveNodes[isEnd]
         } else if(length(nodes) == 1 && nodes == '.all') {
-            saveNodes <- unique(c(
-                ppNodesAndDeps,                                            ## predictive stochastic nodes and deterministic dependencies
-                model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
-            ))
+            ## this approach missed predicted deterministic nodes, which also have a stochastic dependency:
+            ##saveNodes <- unique(c(
+            ##    ppNodesAndDeps,                                            ## predictive stochastic nodes and deterministic dependencies
+            ##    model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
+            ##))
+            allModelNodes <- model$getNodeNames()
+            allNodeDownstreamDeps <- lapply(allModelNodes, function(x) model$getDependencies(x, downstream = TRUE))
+            haveDataDepsBool <- sapply(allNodeDownstreamDeps, function(x) any(model$isData(x)))
+            saveNodes <- allModelNodes[!haveDataDepsBool]
             saveNodes <- model$topologicallySortNodes(saveNodes)
         } else {
             saveNodes <- model$expandNodeNames(nodes)
@@ -367,7 +378,7 @@ derived_predictive <- nimbleFunction(
         },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
-            setSize(results, nKeep, nResults)
+            results <<- nimArray(NA, c(nKeep, nResults))
         },
         get_results = function() {
             returnType(double(2))
@@ -378,7 +389,7 @@ derived_predictive <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            results <<- array(0, c(1, nResults))
+            results <<- nimArray(0, c(1, nResults))
         }
     )
 )
