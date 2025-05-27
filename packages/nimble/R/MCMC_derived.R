@@ -39,6 +39,7 @@ derived_mean <- nimbleFunction(
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 0)
         ## node list generation
+        if(is.list(nodes))   nodes <- unlist(nodes)
         nodes <- model$expandNodeNames(nodes)
         ## names generation
         names <- if(length(nodes) < 2) c(nodes,'','') else nodes     ## vector
@@ -107,6 +108,7 @@ derived_variance <- nimbleFunction(
         nodes              <- extractControlElement(control, 'nodes',              defaultValue = character())
         recordingFrequency <- extractControlElement(control, 'recordingFrequency', defaultValue = 0)
         ## node list generation
+        if(is.list(nodes))   nodes <- unlist(nodes)
         nodes <- model$expandNodeNames(nodes)
         ## names generation
         names <- if(length(nodes) < 2) c(nodes,'','') else nodes  ## vector
