@@ -491,7 +491,6 @@ test_that("predictive derived quantity", {
   conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
   conf$addDerivedQuantity("predictive", nodes="alpha")
   mcmc <- buildMCMC(conf)
-  # TODO: maybe error should be handled more explicitly here?
   out <- runMCMC(mcmc, niter=10)
   expect_equal(out$derived$predictive, matrix(0, 10, 0))
 
