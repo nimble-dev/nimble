@@ -45,37 +45,37 @@ test_that("mean derived parameter", {
   expect_equal(out$derived$mean[1,],
              colMeans(out$samples[,1:2]))
 
-  # TODO: Combination of two separate parameters
-  # This is the same list syntax as with logprob
-  # but it doesn't seem to work here
-  # Instead sigma seems to be ignored
+  # Combination of two separate parameters
   conf <- configureMCMC(mod, print=FALSE)
   conf$addDerivedQuantity("mean", nodes=list(c("b[1]", "sigma")))
   mcmc <- buildMCMC(conf)
   set.seed(1)
   out <- runMCMC(mcmc, niter=10)
-  expect_false(unname(round(out$derived$mean[1,1], 4)) == round(mean(out$samples[,1]),4))
+  expect_equivalent(round(out$derived$mean[1,], 4), round(apply(out$samples[,c("b[1]", "sigma")], 2, mean),4))
 
   # What if the parameter doesn't exist in the model?
-  # TODO: issues with creating the output samples object 
+  # result is empty matrix
   conf <- configureMCMC(mod, print=FALSE)
   conf$addDerivedQuantity("mean", nodes=c("alpha"), interval=11)
   mcmc <- buildMCMC(conf)
   set.seed(1)
-  expect_no_error(runMCMC(mcmc, niter=10))
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(out$derived$mean, matrix(0, 1, 0))
   
-  # TODO: Same issue if parameter index is too big
+  # If parameter index is too big
   conf <- configureMCMC(mod, print=FALSE)
   conf$addDerivedQuantity("mean", nodes=c("b[3]"), interval=11)
   mcmc <- buildMCMC(conf)
   set.seed(1)
-  expect_no_error(runMCMC(mcmc, niter=10))
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(out$derived$mean, matrix(0, 1, 0))
 })
 
 test_that("interval and thinning rate for derived parameter", {
 
   # Changing interval
   # every other mcmc iteration will be used to calculate mean (starting with 2)
+  mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)))
   conf <- configureMCMC(mod, print=FALSE)
   conf$addDerivedQuantity("mean", nodes=c("b[1]"), interval=2)
   mcmc <- buildMCMC(conf)
@@ -94,13 +94,13 @@ test_that("interval and thinning rate for derived parameter", {
                   out$derived$mean[1,1])
 
   # What happens if interval is larger than sample?
-  # TODO: It seems to me like this should error or at least return NA or something, not 0
+  # output is NA
   conf <- configureMCMC(mod, print=FALSE)
   conf$addDerivedQuantity("mean", nodes=c("b[1]"), interval=11)
   mcmc <- buildMCMC(conf)
   set.seed(1)
   out <- runMCMC(mcmc, niter=10)
-  expect_false(out$derived$mean[1,1] == 0)
+  expect_true(is.na(out$derived$mean[1,1]))
 
   # How does interval interact with thinning rate?
   # First create unthinned samples for reference
@@ -202,7 +202,7 @@ test_that("recording frequency for derived parameters", {
     c(mean(out$samples[c(2,4),1]), mean(out$samples[c(2,4,6,8)])))
 
   # What if recording frequency is greater than number of iterations?
-  # TODO: is numeric(0) the desired output here?
+  # Output is numeric(0)
   conf <- configureMCMC(mod, thin = 1, print=FALSE)
   conf$addDerivedQuantity("mean", nodes=c("b[1]"), interval=1, recordingFrequency=11)
   mcmc <- buildMCMC(conf)
@@ -319,9 +319,7 @@ test_that("logProb derived quantity", {
   mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
                      inits=list(b=c(0,0), sigma=1))
   conf <- configureMCMC(mod, print=FALSE)
-  # TODO: I wonder if here .all should mean all parameters, but separate, not their sum?
-  # that seems to me to be more consistent with the overall notation
-  # i.e., if you put "b" here, not in a list, you get the separate values of b, not their sum
+  # Here .all means the sum of logprobs of all parameters
   conf$addDerivedQuantity("logProb", nodes=".all")
   mcmc <- buildMCMC(conf)
   out <- runMCMC(mcmc, niter=10)
@@ -363,8 +361,7 @@ test_that("logProb derived quantity", {
   expect_equal(colnames(out$derived$logProb), "b_and_sigma")
   expect_equivalent(out$derived$logProb[10,1], sum(c(mod$logProb_b[1], mod$logProb_sigma)))
 
-  # What happens if parameter doesn't exist?
-  # TODO: non-intuitive error here
+  # What happens if parameter doesn't exist? An empty matrix is returned
   set.seed(1)
   mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
                      inits=list(b=c(0,0), sigma=1))
@@ -372,7 +369,8 @@ test_that("logProb derived quantity", {
   # alpha not in model
   conf$addDerivedQuantity("logProb", nodes="alpha")
   mcmc <- buildMCMC(conf)
-  expect_error(out <- runMCMC(mcmc, niter=10))
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(out$derived$logProb, matrix(0, 10, 0))
 
   # What if an impossible index range is requested?
   set.seed(1)
@@ -386,8 +384,7 @@ test_that("logProb derived quantity", {
   # The extra element of b is ignored
   expect_equal(colnames(out$derived$logProb), c("b[1]", "b[2]"))
 
-  # Request only the non-existing index
-  # TODO: error here - should it be handled more explicitly?
+  # Request only the non-existing index - result is empty matrix
   set.seed(1)
   mod <- nimbleModel(code, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
                      inits=list(b=c(0,0), sigma=1))
@@ -395,7 +392,8 @@ test_that("logProb derived quantity", {
   # alpha not in model
   conf$addDerivedQuantity("logProb", nodes="b[3]")
   mcmc <- buildMCMC(conf)
-  expect_error(out <- runMCMC(mcmc, niter=10))
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(out$derived$logProb, matrix(0, 10, 0))
 
   # Change interval
   set.seed(1)
@@ -479,15 +477,14 @@ test_that("predictive derived quantity", {
                      inits=list(b=c(0,0), sigma=1))
   conf <- configureMCMC(mod, print=FALSE, samplePredictiveNodes=FALSE)
 
-  # TODO: should this return samples of both bsq and z? because it only returns z
-  # the vignette seems to imply both should be returned
+  # Check that samples of both bsq and z are returned when setting .all
   conf$addDerivedQuantity("predictive", nodes=".all")
   mcmc <- buildMCMC(conf)
   out <- runMCMC(mcmc, niter=10)
-  expect_equal(dim(out$derived$predictive), c(10,1))
-  expect_equal(colnames(out$derived$predictive), "z")
+  expect_equal(dim(out$derived$predictive), c(10,2))
+  expect_equal(colnames(out$derived$predictive), c("bsq", "z"))
 
-  # Non-existing parameter
+  # Non-existing parameter - empty matrix is returned
   set.seed(1)
   mod <- nimbleModel(code2, constants=list(n=10, x=rnorm(10)), data = list(y=rnorm(10)),
                      inits=list(b=c(0,0), sigma=1))
@@ -495,9 +492,8 @@ test_that("predictive derived quantity", {
   conf$addDerivedQuantity("predictive", nodes="alpha")
   mcmc <- buildMCMC(conf)
   # TODO: maybe error should be handled more explicitly here?
-  expect_error(out <- runMCMC(mcmc, niter=10))
-  expect_equal(dim(out$derived$predictive), c(10,1))
-  expect_equal(colnames(out$derived$predictive), "z")
+  out <- runMCMC(mcmc, niter=10)
+  expect_equal(out$derived$predictive, matrix(0, 10, 0))
 
 })
 
@@ -605,6 +601,7 @@ test_that("custom derived quantity nimbleFunction", {
       }
     )
   )
+  temporarilyAssignInGlobalEnv(test_derived)
 
   set.seed(1)
   inits <- list(b=c(0, 0), sigma=1)
