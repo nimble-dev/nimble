@@ -396,6 +396,132 @@ derived_predictive <- nimbleFunction(
 
 
 
+####################################################################
+### derived quantity: discrepancy ##################################
+####################################################################
+
+## We could for example write a derived quantity nimbleFunction not just for predictive quantities but for discrepancy measures (of current and predictive simulated values) and/or differences in discrepancy measures. In discussion with Daniel earlier today, he suggested I write out what the steps would be. I think they would be roughly:
+## 1. Define Theta as nodes sampled in MCMC that would be simulated for posterior predictive purposes. Define Omega as nodes NOT sampled in MCMC that would be simulated for posterior predictive purposes. For example, Theta could include model parameters being estimated and/or DATA VALUES, while Omega could include purely predictive nodes, such as summations over latent states.
+## 2. Using the current Theta values in the model, simulate any Omega if necessary.
+## 3. Calculate the discrepancy measure. (This is the discrepancy for the observed data).
+## 4. Simulate any Theta and/or Omega.
+## 5. Calculate the discrepancy measure. (This is the discrepancy for the simulated data).
+## 6. Calculate the discrepancy difference.
+## 7. Record the two discrepancy measures and/or difference for output.
+## 8. Use the mvSaved to restore the model to its previous state, before simulating any Theta and/or Omega.
+## Simulating over DATA values will be a point of discussion. No problem. It's not necessary. One can implement in alternative ways within the same scheme. Possibly calculation of the discrepancy measure for step (3) uses an actual data node and for step (5) uses a predictive data node within Omega.
+
+#' @rdname derived
+#' @export
+derived_discrepancy <- nimbleFunction(
+    name = 'derived_discrepancy',
+    contains = derived_BASE,
+    setup = function(model, mcmc, interval, control) {
+        ## control list extraction
+        nodes    <- extractControlElement(control, 'nodes',    defaultValue = '.missing')
+        simNodes <- extractControlElement(control, 'simNodes', defaultValue = '.missing')
+        sort     <- extractControlElement(control, 'sort',     defaultValue = TRUE)
+        silent   <- extractControlElement(control, 'silent',   defaultValue = FALSE)
+        ## node list generation
+        ## all predictive stochastic nodes, and their deterministic dependencies
+        ppNodesAndDeps <- model$getDependencies(model$getNodeNames(predictiveOnly = TRUE), downstream = TRUE)
+        if(length(nodes) == 1 && nodes == '.missing') {
+            saveNodes <- model$getNodeNames(endOnly = TRUE, includeData = FALSE)
+            isEnd <- sapply(saveNodes, function(x) length(model$getDependencies(x, self = FALSE)) == 0)
+            saveNodes <- saveNodes[isEnd]
+        } else if(length(nodes) == 1 && nodes == '.all') {
+            ## this approach missed predicted deterministic nodes, which also have a stochastic dependency:
+            ##saveNodes <- unique(c(
+            ##    ppNodesAndDeps,                                            ## predictive stochastic nodes and deterministic dependencies
+            ##    model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
+            ##))
+            allModelNodes <- model$getNodeNames()
+            allNodeDownstreamDeps <- lapply(allModelNodes, function(x) model$getDependencies(x, downstream = TRUE))
+            haveDataDepsBool <- sapply(allNodeDownstreamDeps, function(x) any(model$isData(x)))
+            saveNodes <- allModelNodes[!haveDataDepsBool]
+            saveNodes <- model$topologicallySortNodes(saveNodes)
+        } else {
+            saveNodes <- model$expandNodeNames(nodes)
+        }
+        sampledNodesList <- lapply(
+            mcmc$samplerFunctions$contentsList,
+            function(x) {
+                nodes <- character()
+                if('target'         %in% ls(x))   nodes <- c(nodes, x$target)
+                if('targetAsScalar' %in% ls(x))   nodes <- c(nodes, x$targetAsScalar)
+                if('simNodes'       %in% ls(x))   nodes <- c(nodes, x$simNodes)
+                return(nodes)
+            })
+        sampledNodes <- model$expandNodeNames(unlist(sampledNodesList))
+        if(simNodes == '.missing') {
+            ## figuring this case out was not easy -DT May 2025
+            upToDateNodes <- setdiff(     ## nodes which should be kept up-to-date by the MCMC
+                model$getNodeNames(includePredictive = FALSE),   ## all model nodes, excluding predictive stochastic nodes
+                ppNodesAndDeps                                   ## predictive stochastic nodes and deterministic dependencies
+            )
+            ## now we add any predictive nodes (and their deterministic dependencies), which might have samplers assigned
+            sampledNodeDeps <- model$getDependencies(sampledNodes)
+            sampledNodeDetermDeps <- sampledNodeDeps[model$isDeterm(sampledNodeDeps)]
+            upToDateNodes <- unique(c(
+                upToDateNodes,
+                sampledNodes,             ## sampled stochastic nodes
+                sampledNodeDetermDeps     ## deterministic dependencies of sampled nodes
+            ))
+            saveNodesParents <- model$getParents(saveNodes, self = TRUE, upstream = TRUE)   ## everything upstream from (and including) saveNodes
+            simNodes <- setdiff(saveNodesParents, upToDateNodes)
+        }
+        if(sort)   simNodes <- model$topologicallySortNodes(simNodes)
+        calcNodes <- model$getDependencies(simNodes)
+        mvSaved <- mcmc$mvSaved
+        ## names generation
+        names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
+        ## numeric value generation
+        nResults <- length(saveNodes)
+        results <- array(0, c(1, nResults))
+        ## checks
+        otherwiseSampledSimNodes <- intersect(simNodes, sampledNodes)
+        if(length(otherwiseSampledSimNodes) & !silent) {
+            message('  [Warning] predictive derived quantity function is simulating nodes being updated by other MCMC samplers: ',
+                    paste0(otherwiseSampledSimNodes, collapse=', '))
+        }
+        stochSaveNodes <- saveNodes[model$isStoch(saveNodes)]
+        nonPPsaveNodes <- setdiff(stochSaveNodes, ppNodesAndDeps)
+        if(length(nonPPsaveNodes) & !silent) {
+            message('  [Warning] predictive derived quantity function is operating on non-posterior-predictive nodes: ',
+                    paste0(nonPPsaveNodes, collapse=', '))
+        }
+    },
+    run = function(timesRan = double()) {
+        if(nResults == 0)   return()
+        model$simulate(simNodes)
+        model$calculate(calcNodes)
+        results[timesRan,] <<- values(model, saveNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        set_interval = function(newInterval = double()) {
+            interval <<- newInterval
+        },
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+            nKeep <- floor(niter / interval)
+            results <<- nimArray(NA, c(nKeep, nResults))
+        },
+        get_results = function() {
+            returnType(double(2))
+            return(results)
+        },
+        get_names = function() {
+            returnType(character(1))
+            return(names)
+        },
+        reset = function() {
+            results <<- nimArray(0, c(1, nResults))
+        }
+    )
+)
+
+
+
 #' MCMC Derived Quantities
 #'
 #' Details of the NIMBLE MCMC engine handles derived quantities, which are deterministic functions that can be calaculated and recorded after each MCMC sampling iteration.
