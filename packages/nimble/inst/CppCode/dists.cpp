@@ -28,6 +28,7 @@
 //#include "Utils.h" // moved to dists.h
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
+#include <nimble/EigenTypedefs.h>
 
 // Detects NA
 bool R_IsNA_ANY(double* P, int s) {
@@ -1211,6 +1212,254 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
   return ans;
 }
 
+// Drafted by GitHub copilot, modified by NIMBLE team.
+// Note that the matrix inverse elements are still only upper triangular,
+// i.e. all elements are returns but with zeros in the lower triangle.
+// I need to review what will really be needed.
+void chol_PDlogdet_internal(double *matPtr, double *ans, int n, bool is_precision) {
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> 
+        A(matPtr, n, n);
+
+    double logdet_cov = 0.0;
+
+    Eigen::MatrixXd chol;
+    chol = EIGEN_CHOL(A);
+    double half_logdet = 0.0;
+    for(int i = 0; i < n; ++i)
+      half_logdet += std::log(chol(i, i));
+
+    if(is_precision) {
+        // Precision matrix is input
+        logdet_cov = -2.0 * half_logdet;
+        for(int j = 0; j < n; ++j)
+          for(int i = 0; i < n; ++i)
+            ans[j * n + i] = A(i, j);
+    } else {
+        logdet_cov += 2.0 * half_logdet;
+        // Compute precision matrix
+        Eigen::MatrixXd Prec(n, n);
+        Prec = chol.template triangularView<Eigen::Upper>().solve(
+            Eigen::MatrixXd::Identity(n, n));
+        for(int j = 0; j < n; ++j)
+          for(int i = 0; i < n; ++i)
+            ans[j * n + i] = Prec(i, j);
+    }
+
+    // Last element is log(det(cov))
+    ans[n * n] = logdet_cov;
+}
+
+// Drafted by GitHub copilot, modified by NIMBLE team.
+// This function is the R interface for chol_PDlogdet.
+SEXP C_chol_PDlogdet(SEXP mat, SEXP is_precision) {
+    if(!Rf_isMatrix(mat) || !Rf_isReal(mat))
+        RBREAK("Error (C_chol_PDlogdet): 'mat' must be a real matrix.\n");
+    if(!Rf_isLogical(is_precision))
+        RBREAK("Error (C_chol_PDlogdet): 'is_precision' must be logical.\n");
+
+    int* dims = INTEGER(Rf_getAttrib(mat, R_DimSymbol));
+    if(dims[0] != dims[1])
+        RBREAK("Error (C_chol_PDlogdet): 'mat' must be a square matrix.\n");
+    int n = dims[0];
+
+    double* c_mat = REAL(mat);
+    bool c_is_precision = LOGICAL(is_precision)[0];
+
+    SEXP ans;
+    PROTECT(ans = Rf_allocVector(REALSXP, n * n + 1));
+    double* c_ans = REAL(ans);
+
+    chol_PDlogdet_internal(c_mat, c_ans, n, c_is_precision);
+
+    UNPROTECT(1);
+    return ans;
+}
+
+// ...existing code...
+// Begin multivariate normal version that uses pre-computed precision with (log(det(cov))) tacked on.
+// Drafted by GitHub copoilot, modified by NIMBLE team.
+double dmnorm_prec_ldet(double* x, double* mean, double* prec_ldet, int n, int give_log, int overwrite_inputs) {
+    // prec_ldet: length n*n+1, first n*n elements are precision matrix (column-major), last is log(det(cov))
+    double* xCopy;
+    double dens = -n * M_LN_SQRT_2PI;
+    int i, j;
+
+    if (R_IsNA_ANY(x, n) || R_IsNA_ANY(mean, n) || R_IsNA_ANY(prec_ldet, n*n+1))
+        return NA_REAL;
+    if (R_IsNaN_ANY(x, n) || R_IsNaN_ANY(mean, n) || R_IsNaN_ANY(prec_ldet, n*n+1))
+        return R_NaN;
+
+    if(!R_FINITE_ANY(x, n) || !R_FINITE_ANY(mean, n) || !R_FINITE_ANY(prec_ldet, n*n+1)) return R_D__0;
+
+    // Add log(det(cov)) term (note: it's log(det(cov)), not log(det(prec)))
+    dens -= 0.5 * prec_ldet[n*n];
+
+    // Compute (x - mean)
+    if(overwrite_inputs) {
+        xCopy = x;
+        for(i = 0; i < n; i++)
+            xCopy[i] -= mean[i];
+    } else {
+        xCopy = new double[n];
+        for(i = 0; i < n; i++)
+            xCopy[i] = x[i] - mean[i];
+    }
+
+    // First version from copilot did not use BLAS:
+    // Compute quadratic form: xCopy' * Prec * xCopy
+    // double quad = 0.0;
+    // for(i = 0; i < n; i++) {
+    //     double tmp = 0.0;
+    //     for(j = 0; j < n; j++) {
+    //         tmp += prec_ldet[j*n + i] * xCopy[j]; // column-major
+    //     }
+    //     quad += xCopy[i] * tmp;
+    // }
+
+    // I asked for a second version using BLAS:
+    // Use BLAS for quadratic form: y = Prec * xCopy, quad = xCopy' * y
+    double* y = new double[n];
+    double alpha = 1.0, beta = 0.0;
+    int inc1 = 1;
+    F77_CALL(dgemv)("N", &n, &n, &alpha, prec_ldet, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
+    double quad = F77_CALL(ddot)(&n, xCopy, &inc1, y, &inc1);
+    delete [] y;
+
+    dens += -0.5 * quad;
+
+    if(!overwrite_inputs)
+        delete [] xCopy;
+
+    return give_log ? dens : exp(dens);
+}
+
+// This one needed more human editing for the recycling rule portion.
+SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP prec_ldet, SEXP return_log) 
+// calculates mv normal density given precision matrix and log(det(cov))
+// prec_ldet should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))
+{
+  if(!Rf_isReal(x) || !Rf_isReal(mean))
+    RBREAK("Error (C_dmnorm_prec_ldet): 'x' and 'mean' should be real valued.\n");
+  if(!Rf_isReal(prec_ldet) || !Rf_isLogical(return_log))
+    RBREAK("Error (C_dmnorm_prec_ldet): invalid input type for one of the arguments.\n");
+
+  int n_x = LENGTH(x);
+  if(LENGTH(prec_ldet) != n_x*n_x + 1)
+    RBREAK("Error (C_dmnorm_prec_ldet): 'prec_ldet' must be length n*n+1.\n");
+
+  int give_log = (int) LOGICAL(return_log)[0];
+  double* c_x = REAL(x);
+  double* c_mean = REAL(mean);
+  double* c_prec_ldet = REAL(prec_ldet);
+
+  int n_mean = LENGTH(mean);
+
+  // recycling rule for the mean.
+  double* full_mean;
+  if(n_mean < n_x) {
+    full_mean = new double[n_x];
+    int i_mean = 0;
+    for(int i = 0; i < n_x; i++) {
+      full_mean[i] = c_mean[i_mean++];
+      if(i_mean == n_mean) i_mean = 0;
+    }
+  } else full_mean = c_mean;
+
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dmnorm_prec_ldet(c_x, full_mean, c_prec_ldet, n_x, give_log, 0);
+  if(n_mean < n_x)
+    delete [] full_mean;
+  UNPROTECT(1);
+  return ans;
+}
+
+// This one needed a fair bit of editing.
+void rmnorm_prec_ldet(double *ans, double* mean, double* prec_ldet, int n) {
+  // prec_ldet: length n*n+1, first n*n elements are precision matrix (column-major), last is log(det(cov))
+  // last element of prec_ldet is not used.
+  // Generate standard normal
+  if (ISNAN_ANY(mean, n) || ISNAN_ANY(prec_ldet, n*n) ) {
+    for(int j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+
+  if(!R_FINITE_ANY(prec_ldet, n*n)) { 
+    for(int j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+  
+  for(int i = 0; i < n; i++)
+  ans[i] = norm_rand();
+  
+  // Cholesky decomposition of precision matrix
+  double* chol_prec = new double[n*n];
+  for(int i = 0; i < n*n; i++)
+  chol_prec[i] = prec_ldet[i];
+  
+  char uplo = 'U';
+  int info(0);
+  F77_CALL(dpotrf)(&uplo, &n, chol_prec, &n, &info FCONE);
+  if (info != 0) {
+    Rf_error("Error in Cholesky decomposition in rnorm_prec_ldet: dpotrf returned info != %d", info);
+  }
+  // Solve U^T y = z (z = ans), then U x = y
+  char transPrec = 'N';
+  char diag = 'N';
+  int incx = 1;
+  int lda(n);
+  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, 
+    chol_prec, &lda, ans, &incx FCONE FCONE FCONE);
+    
+    // Add mean
+    for(int i = 0; i < n; i++)
+    ans[i] += mean[i];
+    
+    delete [] chol_prec;
+}
+
+// also substantial editing
+SEXP C_rmnorm_prec_ldet(SEXP mean, SEXP prec_ldet) 
+// generates single mv normal draw given precision matrix and log(det(cov))
+// prec_ldet should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))
+{
+if(!Rf_isReal(mean))
+    RBREAK("Error (C_rmnorm_prec_ldet): 'mean' should be real-valued\n");
+  if(!Rf_isReal(prec_ldet))
+    RBREAK("Error (C_rmnorm_prec_ldet): invalid input type for one of the arguments.\n");
+
+  int n_mean = LENGTH(mean);
+  int n_values = sqrt(LENGTH(prec_ldet) - 1);
+  
+  double* c_mean = REAL(mean);
+  double* c_prec_ldet = REAL(prec_ldet);
+  double* full_mean; 
+
+  // recycling rule for the mean.
+  if(n_mean < n_values) {
+    full_mean = new double[n_values];
+    int i_mean = 0;
+    for(int i = 0; i < n_values; i++) {
+      full_mean[i] = c_mean[i_mean++];
+      if(i_mean == n_mean) i_mean = 0;
+    }
+  } else full_mean = c_mean;
+
+  GetRNGstate(); 
+
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, n_mean));  
+  rmnorm_prec_ldet(REAL(ans), full_mean, c_prec_ldet, n_mean);
+
+  PutRNGstate();
+  if(n_mean < n_values) 
+    delete [] full_mean;
+  UNPROTECT(1);
+  return ans;
+}
+// ...existing code...
 // Begin multivariate t
 
 double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double prec_param, int give_log, int overwrite_inputs) {

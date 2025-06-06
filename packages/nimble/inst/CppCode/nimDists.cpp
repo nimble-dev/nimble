@@ -315,6 +315,85 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
   // }
 }
 
+// Drafted by GitHub copilot, modified by NIMBLE team.
+// Compute a vector of matrix inverse elements and log determinant of covariance matrix.
+// The input matrix can be either a precision matrix or a covariance matrix.
+// The output is a vector of size n*n + 1, where the first n*n elements are the precision matrix
+// in column-major order, and the last element is the log determinant of the covariance matrix.
+// The function uses Eigen for matrix operations and Cholesky decomposition.
+// The input matrix is expected to be symmetric and positive definite.
+// If the input is a precision matrix, it computes the Cholesky decomposition directly.
+// If the input is a covariance matrix, it computes the Cholesky decomposition of the covariance matrix,
+// then computes the precision matrix as the inverse of the covariance matrix.
+// The log determinant is computed based on the Cholesky decomposition.
+// The output is in the format needed for dmnorm_prec_ldet function.
+NimArr<1, double> chol_PDlogdet(NimArr<2, double> &mat, bool is_precision) {
+    int n = mat.dimSize(0);
+    NimArr<1, double> out;
+    out.setSize(n * n + 1);
+
+    NimArr<2, double> matCopy;
+    double* matPtr = nimArrCopyIfNeeded<2, double>(mat, matCopy).getPtr();
+
+    // Use the internal function for the actual computation
+    chol_PDlogdet_internal(matPtr, out.getPtr(), n, is_precision);
+
+    return out;
+}
+
+// drafted by GitHub copilot (begin)
+double nimArr_dmnorm_prec_ldet(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<1, double> &prec_ldet, int give_log, int overwrite_inputs) {
+    double *xptr, *meanptr, *prec_ldet_ptr;
+    NimArr<1, double> xCopy, meanCopy, prec_ldetCopy;
+    xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
+    int n = x.size();
+    meanptr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
+    if(mean.size() != n) {
+        _nimble_global_output<<"Error in nimArr_dmnorm_prec_ldet: mean and x are different sizes.\n";
+        nimble_print_to_R(_nimble_global_output);
+    }
+    prec_ldet_ptr = nimArrCopyIfNeeded<1, double>(prec_ldet, prec_ldetCopy).getPtr();
+    if(prec_ldet.size() != n*n + 1) {
+        _nimble_global_output<<"Error in nimArr_dmnorm_prec_ldet: prec_ldet size ("<<prec_ldet.size()<<") does not match n*n+1 ("<<(n*n+1)<<").\n";
+        nimble_print_to_R(_nimble_global_output);
+    }
+
+    double ans;
+    ans = dmnorm_prec_ldet(xptr, meanptr, prec_ldet_ptr, n, give_log, overwrite_inputs);
+    return(ans);
+}
+
+void nimArr_rmnorm_prec_ldet(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<1, double> &prec_ldet) {
+    NimArr<1, double> ansCopy, meanCopy, prec_ldetCopy;
+    double *ansPtr, *meanPtr, *prec_ldetPtr;
+
+    int n = mean.size();
+    if(!ans.isMap()) {
+        ans.setSize(n);
+    } else {
+        if(ans.size() != n) {
+            _nimble_global_output<<"Error in nimArr_rmnorm_prec_ldet: answer size ("<< ans.size() <<") does not match mean size ("<<n<<").\n";
+            nimble_print_to_R(_nimble_global_output);
+        }
+    }
+    if(prec_ldet.size() != n*n + 1) {
+        _nimble_global_output<<"Error in nimArr_rmnorm_prec_ldet: prec_ldet size ("<<prec_ldet.size()<<") does not match n*n+1 ("<<(n*n+1)<<").\n";
+        nimble_print_to_R(_nimble_global_output);
+    }
+    
+    ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
+    meanPtr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
+    prec_ldetPtr = nimArrCopyIfNeeded<1, double>(prec_ldet, prec_ldetCopy).getPtr();
+    
+    rmnorm_prec_ldet(ansPtr, meanPtr, prec_ldetPtr, n);
+
+    if(ansPtr != ans.getPtr()) {ans = ansCopy;}
+    // if(ans.isMap()) {
+    //   ans = ansCopy;
+    // }
+}
+// drafted by GitHub copilot (end)
+
 // Begin multivariate t
 
 double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<2, double> &chol, double df, double prec_param, int give_log, int overwrite_inputs) { 
