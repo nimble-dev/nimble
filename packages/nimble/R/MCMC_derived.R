@@ -400,17 +400,6 @@ derived_predictive <- nimbleFunction(
 ### derived quantity: discrepancy ##################################
 ####################################################################
 
-## We could for example write a derived quantity nimbleFunction not just for predictive quantities but for discrepancy measures (of current and predictive simulated values) and/or differences in discrepancy measures. In discussion with Daniel earlier today, he suggested I write out what the steps would be. I think they would be roughly:
-## 1. Define Theta as nodes sampled in MCMC that would be simulated for posterior predictive purposes. Define Omega as nodes NOT sampled in MCMC that would be simulated for posterior predictive purposes. For example, Theta could include model parameters being estimated and/or DATA VALUES, while Omega could include purely predictive nodes, such as summations over latent states.
-## 2. Using the current Theta values in the model, simulate any Omega if necessary.
-## 3. Calculate the discrepancy measure. (This is the discrepancy for the observed data).
-## 4. Simulate any Theta and/or Omega.
-## 5. Calculate the discrepancy measure. (This is the discrepancy for the simulated data).
-## 6. Calculate the discrepancy difference.
-## 7. Record the two discrepancy measures and/or difference for output.
-## 8. Use the mvSaved to restore the model to its previous state, before simulating any Theta and/or Omega.
-## Simulating over DATA values will be a point of discussion. No problem. It's not necessary. One can implement in alternative ways within the same scheme. Possibly calculation of the discrepancy measure for step (3) uses an actual data node and for step (5) uses a predictive data node within Omega.
-
 #' @rdname derived
 #' @export
 derived_discrepancy <- nimbleFunction(
@@ -418,85 +407,29 @@ derived_discrepancy <- nimbleFunction(
     contains = derived_BASE,
     setup = function(model, mcmc, interval, control) {
         ## control list extraction
-        nodes    <- extractControlElement(control, 'nodes',    defaultValue = '.missing')
-        simNodes <- extractControlElement(control, 'simNodes', defaultValue = '.missing')
-        sort     <- extractControlElement(control, 'sort',     defaultValue = TRUE)
-        silent   <- extractControlElement(control, 'silent',   defaultValue = FALSE)
+        simNodes            <- extractControlElement(control, 'simNodes',            defaultValue = character())
+        discrepancyNodes    <- extractControlElement(control, 'discrepancyNodes',    defaultValue = '.missing')
+        discrepancyFunction <- extractControlElement(control, 'discrepancyFunction', error = 'must provide discrepancyFunction control argument to discrepancy derived quantity')
         ## node list generation
-        ## all predictive stochastic nodes, and their deterministic dependencies
-        ppNodesAndDeps <- model$getDependencies(model$getNodeNames(predictiveOnly = TRUE), downstream = TRUE)
-        if(length(nodes) == 1 && nodes == '.missing') {
-            saveNodes <- model$getNodeNames(endOnly = TRUE, includeData = FALSE)
-            isEnd <- sapply(saveNodes, function(x) length(model$getDependencies(x, self = FALSE)) == 0)
-            saveNodes <- saveNodes[isEnd]
-        } else if(length(nodes) == 1 && nodes == '.all') {
-            ## this approach missed predicted deterministic nodes, which also have a stochastic dependency:
-            ##saveNodes <- unique(c(
-            ##    ppNodesAndDeps,                                            ## predictive stochastic nodes and deterministic dependencies
-            ##    model$getNodeNames(endOnly = TRUE, includeData = FALSE)    ## deterministic derived quantities
-            ##))
-            allModelNodes <- model$getNodeNames()
-            allNodeDownstreamDeps <- lapply(allModelNodes, function(x) model$getDependencies(x, downstream = TRUE))
-            haveDataDepsBool <- sapply(allNodeDownstreamDeps, function(x) any(model$isData(x)))
-            saveNodes <- allModelNodes[!haveDataDepsBool]
-            saveNodes <- model$topologicallySortNodes(saveNodes)
-        } else {
-            saveNodes <- model$expandNodeNames(nodes)
-        }
-        sampledNodesList <- lapply(
-            mcmc$samplerFunctions$contentsList,
-            function(x) {
-                nodes <- character()
-                if('target'         %in% ls(x))   nodes <- c(nodes, x$target)
-                if('targetAsScalar' %in% ls(x))   nodes <- c(nodes, x$targetAsScalar)
-                if('simNodes'       %in% ls(x))   nodes <- c(nodes, x$simNodes)
-                return(nodes)
-            })
-        sampledNodes <- model$expandNodeNames(unlist(sampledNodesList))
-        if(simNodes == '.missing') {
-            ## figuring this case out was not easy -DT May 2025
-            upToDateNodes <- setdiff(     ## nodes which should be kept up-to-date by the MCMC
-                model$getNodeNames(includePredictive = FALSE),   ## all model nodes, excluding predictive stochastic nodes
-                ppNodesAndDeps                                   ## predictive stochastic nodes and deterministic dependencies
-            )
-            ## now we add any predictive nodes (and their deterministic dependencies), which might have samplers assigned
-            sampledNodeDeps <- model$getDependencies(sampledNodes)
-            sampledNodeDetermDeps <- sampledNodeDeps[model$isDeterm(sampledNodeDeps)]
-            upToDateNodes <- unique(c(
-                upToDateNodes,
-                sampledNodes,             ## sampled stochastic nodes
-                sampledNodeDetermDeps     ## deterministic dependencies of sampled nodes
-            ))
-            saveNodesParents <- model$getParents(saveNodes, self = TRUE, upstream = TRUE)   ## everything upstream from (and including) saveNodes
-            simNodes <- setdiff(saveNodesParents, upToDateNodes)
-        }
-        if(sort)   simNodes <- model$topologicallySortNodes(simNodes)
-        calcNodes <- model$getDependencies(simNodes)
-        mvSaved <- mcmc$mvSaved
+        simNodes <- model$expandNodeNames(simNodes)
+        if(discrepancyNodes == '.missing')   discrepancyNodes <- model$getNodeNames(dataOnly = TRUE)
         ## names generation
-        names <- if(length(saveNodes) < 2) c(saveNodes,'','') else saveNodes     ## vector
+        names <- c('discrepancy_model', 'discrepancy_simulated', 'discrepancy_diff')
         ## numeric value generation
-        nResults <- length(saveNodes)
-        results <- array(0, c(1, nResults))
+        results <- array(0, c(1, 3))
+        ## nested function and function list definitions
+        mvSaved <- mcmc$mvSaved
         ## checks
-        otherwiseSampledSimNodes <- intersect(simNodes, sampledNodes)
-        if(length(otherwiseSampledSimNodes) & !silent) {
-            message('  [Warning] predictive derived quantity function is simulating nodes being updated by other MCMC samplers: ',
-                    paste0(otherwiseSampledSimNodes, collapse=', '))
-        }
-        stochSaveNodes <- saveNodes[model$isStoch(saveNodes)]
-        nonPPsaveNodes <- setdiff(stochSaveNodes, ppNodesAndDeps)
-        if(length(nonPPsaveNodes) & !silent) {
-            message('  [Warning] predictive derived quantity function is operating on non-posterior-predictive nodes: ',
-                    paste0(nonPPsaveNodes, collapse=', '))
-        }
+        if(length(simNodes) == 0)           warning('No simulation nodes specified for discrepancy derived quantity')
+        if(length(discrepancyNodes) == 0)   warning('No nodes specified for calculating discrepancy function')
+        if(!is.nf(discrepancyFunction) & !is.Cnf(discrepancyFunction))   stop('discrepancyFunction must be a specialized nimbleFunction (with setup code)')
     },
     run = function(timesRan = double()) {
-        if(nResults == 0)   return()
-        model$simulate(simNodes)
-        model$calculate(calcNodes)
-        results[timesRan,] <<- values(model, saveNodes)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        results[timesRan, 1] <<- discrepancyFunction$run(values(model, discrepancyNodes))
+        model$simulate(simNodes, includeData = TRUE)
+        results[timesRan, 2] <<- discrepancyFunction$run(values(model, discrepancyNodes))
+        results[timesRan, 3] <<- results[timesRan, 2] - results[timesRan, 1]
+        nimCopy(from = mvSaved, to = model, row = 1, nodes = simNodes, logProb = FALSE)
     },
     methods = list(
         set_interval = function(newInterval = double()) {
@@ -504,7 +437,7 @@ derived_discrepancy <- nimbleFunction(
         },
         before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
             nKeep <- floor(niter / interval)
-            results <<- nimArray(NA, c(nKeep, nResults))
+            results <<- nimArray(NA, c(nKeep, 3))
         },
         get_results = function() {
             returnType(double(2))
@@ -515,7 +448,7 @@ derived_discrepancy <- nimbleFunction(
             return(names)
         },
         reset = function() {
-            results <<- nimArray(0, c(1, nResults))
+            results <<- nimArray(0, c(1, 3))
         }
     )
 )
@@ -555,14 +488,27 @@ derived_discrepancy <- nimbleFunction(
 #' The \code{predictive} derived quantity function accepts the following control list elements:
 #' \itemize{
 #' \item nodes. The \code{nodes} argument defines the predictive nodes which will have their values recorded and returned.  The \code{predictive} function will automatically determine which nodes upstream of \code{nodes} need to be simulated, prior to storing the values of \code{nodes}.  If omitted,  the default set of \code{nodes} will be all (non-data) terminal model nodes.  In addition, specifying the value \code{nodes = ".all"} will take \code{nodes} to be all predictive nodes in the model (all deterministic and stochastic nodes which have no downstream data dependencies).
-#' \item simNodes. The \code{simNodes} specifies the set of model nodes which will be simulated, prior to recording the values of \code{nodes}.  If ommited, which would be the usual case, \code{simNodes} will automatically represent the set of all model nodes which must be simulated in order to reach the predictive \code{nodes}.  By providing \code{simNodes}, more fine-grained control of the simulation process is possible, including omitting simulation of some nodes.
+#' \item simNodes. The \code{simNodes} argument specifies the set of model nodes which will be simulated, prior to recording the values of \code{nodes}.  If ommited, which would be the usual case, \code{simNodes} will automatically represent the set of all model nodes which must be simulated in order to reach the predictive \code{nodes}.  By providing \code{simNodes}, more fine-grained control of the simulation process is possible, including omitting simulation of some nodes.
 #' \item sort. The \code{sort} argument determines whether the simulation of \code{simNodes} takes place in topological order.  This argument has a default value of \code{TRUE}.  When specified as \code{FALSE} the simulation of \code{simNodes} will take place in the order in which they were specified in the \code{simNodes} argument, which may not be in their natural order of dependency.
 #' \item silent.  By default, the \code{predictive} derived quantity function will issue a warning when the \code{simNodes} argument includes node names which are being updated by some sampler function in the MCMC.  This warning may be suppressed by setting \code{silent} to \code{TRUE}.
 #' }
 #'
+#' @section Discrepancy Measures
+#'
+#' The \code{discrepancy} derived quantity function calculates an artibrary discrepancy measure function using the current values in the model, and calculates the measure once again after simulating an arbitrary set of model nodes.  The simulated set of nodes may include data nodes (thus simulating over the fixed data values), but rest assured the original values of all simulated nodes (data or otherwise) are restored into the model before the MCMC proceeds onward.  The two values of the discrepancy measure (one using the current model values, and the other using the newly simulated model values), as well as the difference between these two discrepancy measures are recorded and returned.  The discrepancy measure itself is specified using \code{discrepancyFunction} control argument to the \code{discrepancy} derived quantity function.
+#'
+#' When added to an MCMC configuration object using the \code{addDerivedQuantity} method, a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between operations of the \code{discrepancy} function.  For example, if \code{interval} is 2, then calculations of the discrepancy measure take place every other MCMC iteration.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
+#'
+#' The \code{discrepancy} derived quantity function accepts the following control list elements:
+#' \itemize{
+#' \item simNodes. The \code{simNodes} argument specifies the set of model nodes which are simulated, prior to the second calculation of the discrepancy measure.  \code{simNodes} may include any model nodes, including model parameters, latent states, posterior predictive quantities, and/or data values.  Data values specified in \code{simNodes} will indeed be simulated over, but the original values of all \code{simNodes} are restored into the model object, before the MCMC proceeds onward.  If ommited, then \code{simNodes} is taken as an empty vector of node names, and thus no nodes will be simulated.
+#' \item discrepancyNodes. The \code{discrepancyNodes} argument specifies the set of model nodes whose values are passed into the discrepancy function.  These \code{discrepancyNodes} may be a subset of the \code{simNodes}, or may also include nodes not in \code{simNodes}.  If omitted, \code{discrepancyNodes} is taken as all data nodes present in the model.
+#' \item discrepancyFunction. The \code{discrepancyFunction} argument is a function which calculates the discrepancy measure.  It must be a specialized \code{nimbleFunction}, which includes \code{setup} code, and has a \code{run} method accepting a single argument of type \code{double(1)} and having a return type of \code{double()}.  That is, the \code{run} method must accept a numeric vector argument (which will be the values of the \code{discrepancyNodes}) and must return a numeric scalar (which is the value of the discrepancy measure).  Once such a \code{nimbleFunction} generator (which includes \code{setup} code) is defined, a specialized instance should be created, and that instance should be provided as the \code{discrepancyFunction} argument.
+#' }
+#'
 #' @name derived
 #'
-#' @aliases derived_mean derived_variance derived_logProb
+#' @aliases derived_mean derived_variance derived_logProb derived_discrepancy
 #'
 #' @examples
 #' conf$addDerivedQuantity("mean", nodes = c("a", "b"))
