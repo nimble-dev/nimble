@@ -91,6 +91,7 @@ toEigenCalls <- c(
     makeCallList(c('nim_IsNA',
                    'nim_IsNaN'), 'toEigenScalarRecurse'),
     makeCallList(c('nimArr_dmnorm_chol',
+                   'nimArr_dmnorm_prec_ldet',
                    'nimArr_dmvt_chol',
                    'nimArr_dlkj_corr_cholesky',
                    'nimArr_dwish_chol',

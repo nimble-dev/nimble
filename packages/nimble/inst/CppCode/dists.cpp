@@ -1216,14 +1216,14 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 // Note that the matrix inverse elements are still only upper triangular,
 // i.e. all elements are returns but with zeros in the lower triangle.
 // I need to review what will really be needed.
-void chol_PDlogdet_internal(double *matPtr, double *ans, int n, bool is_precision) {
+void PDinverse_logdet_internal(double *matPtr, double *ans, int n, bool is_precision) {
     Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> 
         A(matPtr, n, n);
 
     double logdet_cov = 0.0;
 
     Eigen::MatrixXd chol;
-    chol = EIGEN_CHOL(A);
+    chol = EIGEN_CHOL(A); // note: llt could be used directly for solve below.
     double half_logdet = 0.0;
     for(int i = 0; i < n; ++i)
       half_logdet += std::log(chol(i, i));
@@ -1240,26 +1240,27 @@ void chol_PDlogdet_internal(double *matPtr, double *ans, int n, bool is_precisio
         Eigen::MatrixXd Prec(n, n);
         Prec = chol.template triangularView<Eigen::Upper>().solve(
             Eigen::MatrixXd::Identity(n, n));
-        for(int j = 0; j < n; ++j)
-          for(int i = 0; i < n; ++i)
-            ans[j * n + i] = Prec(i, j);
+        for(int j = 0; j < n; ++j) {
+          ans[j * n + j] = Prec(j, j);
+          for(int i = 0; i < j; ++i)
+            ans[j * n + i] = ans[i * n + j] = Prec(i, j);
+       }
     }
-
     // Last element is log(det(cov))
     ans[n * n] = logdet_cov;
 }
 
 // Drafted by GitHub copilot, modified by NIMBLE team.
-// This function is the R interface for chol_PDlogdet.
-SEXP C_chol_PDlogdet(SEXP mat, SEXP is_precision) {
+// This function is the R interface for PDinverse_logdet.
+SEXP C_PDinverse_logdet(SEXP mat, SEXP is_precision) {
     if(!Rf_isMatrix(mat) || !Rf_isReal(mat))
-        RBREAK("Error (C_chol_PDlogdet): 'mat' must be a real matrix.\n");
+        RBREAK("Error (C_PDinverse_logdet): 'mat' must be a real matrix.\n");
     if(!Rf_isLogical(is_precision))
-        RBREAK("Error (C_chol_PDlogdet): 'is_precision' must be logical.\n");
+        RBREAK("Error (C_PDinverse_logdet): 'is_precision' must be logical.\n");
 
     int* dims = INTEGER(Rf_getAttrib(mat, R_DimSymbol));
     if(dims[0] != dims[1])
-        RBREAK("Error (C_chol_PDlogdet): 'mat' must be a square matrix.\n");
+        RBREAK("Error (C_PDinverse_logdet): 'mat' must be a square matrix.\n");
     int n = dims[0];
 
     double* c_mat = REAL(mat);
@@ -1269,7 +1270,7 @@ SEXP C_chol_PDlogdet(SEXP mat, SEXP is_precision) {
     PROTECT(ans = Rf_allocVector(REALSXP, n * n + 1));
     double* c_ans = REAL(ans);
 
-    chol_PDlogdet_internal(c_mat, c_ans, n, c_is_precision);
+    PDinverse_logdet_internal(c_mat, c_ans, n, c_is_precision);
 
     UNPROTECT(1);
     return ans;
@@ -1334,8 +1335,9 @@ double dmnorm_prec_ldet(double* x, double* mean, double* prec_ldet, int n, int g
 }
 
 // This one needed more human editing for the recycling rule portion.
-SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP prec_ldet, SEXP return_log) 
+SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP prec_ldet, SEXP prec_param, SEXP return_log) 
 // calculates mv normal density given precision matrix and log(det(cov))
+// current prec_param is ignored and assume FALSE.
 // prec_ldet should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))
 {
   if(!Rf_isReal(x) || !Rf_isReal(mean))

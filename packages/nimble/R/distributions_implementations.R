@@ -545,6 +545,19 @@ qdexp <- function(p, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
 #' dmnorm_chol(x, mean, ch, prec_param = FALSE)
 NULL
 
+dmnorm_prec_ldet <- function(x, mean, prec_ldet, prec_param = TRUE, log = FALSE) {
+    if(storage.mode(prec_ldet) != 'double')
+         storage.mode(prec_ldet) <- 'double'
+    .Call(C_dmnorm_prec_ldet, as.double(x), as.double(mean), prec_ldet, as.double(prec_param), as.logical(log))
+}
+
+rmnorm_prec_ldet <- function(n=1, mean, prec_ldet, prec_param = TRUE, log = FALSE) {
+    if(n != 1) warning('rmnorm_prec_ldet only handles n = 1 at the moment')
+    if(storage.mode(prec_ldet) != 'double')
+         storage.mode(prec_ldet) <- 'double'
+    .Call(C_rmnorm_prec_ldet, as.integer(n), as.double(mean), prec_ldet, as.double(prec_param))
+}
+
 #' @rdname MultivariateNormal
 #' @export
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {

@@ -39,7 +39,7 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rmvt_chol, 4),
  FUN(C_dlkj_corr_cholesky, 4),
  FUN(C_rlkj_corr_cholesky, 2),
- FUN(C_chol_PDlogdet, 2),
+ FUN(C_PDinverse_logdet, 2),
  FUN(C_dmnorm_prec_ldet, 4),
  FUN(C_rmnorm_prec_ldet, 2),
  FUN(C_dexp_nimble, 3),

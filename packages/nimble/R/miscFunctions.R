@@ -72,6 +72,26 @@ calc_dmnormAltParams <- nimbleFunction(
     }
 )
 
+calc_dmnorm_prec_ldet_AltParams <- nimbleFunction(
+    name = 'calc_dmnorm_prec_ldet_AltParams',
+    run = function(prec_ldet = double(1), prec_param = double(), return_prec = double()) {
+        n <- sqrt(length(prec_ldet)-1)
+        nsq <- n * n
+        ans <- matrix(prec_ldet[1:nsq], nrow = n, ncol = n)
+        if(prec_param == return_prec) {
+        } else {
+            # Would be better to do this by Cholesky decomposition.
+            ans <- solve(ans)
+            ## Chris suggests:
+            ## tmp <- forwardsolve(L, I)
+            ## ans <- crossprod(tmp)
+        }
+        returnType(double(2))
+        return(ans)
+    }
+)
+
+
 ## This is used in conjugacy definition for ddirch, to calculate 'contribution'
 ## terms from dcat dependents.
 calc_dcatConjugacyContributions <- nimbleFunction(

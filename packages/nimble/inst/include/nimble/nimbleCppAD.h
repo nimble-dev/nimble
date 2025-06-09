@@ -130,6 +130,7 @@ class atomic_forwardsolve_class;
 class atomic_cholesky_class;
 class atomic_matmult_class;
 class atomic_matinverse_class;
+class atomic_PDinverse_logdet_class;
 class atomic_zround_class;
 class nimDerivs_floor_class;
 template<class ftor> class atomic_discrete_class;
@@ -344,6 +345,9 @@ class nimble_CppAD_tape_mgr {
   atomic_matinverse_class* new_atomic_matinverse(const std::string& name);
   void delete_atomic_matinverse(atomic_matinverse_class *atomic_matinverse);
 
+  atomic_PDinverse_logdet_class* new_atomic_PDinverse_logdet(const std::string& name);
+  void delete_atomic_PDinverse_logdet(atomic_PDinverse_logdet_class *atomic_PDinverse_logdet);
+ 
   std::vector<CppAD::AD<double> > dummyOutputs;
   void add_dummyOutput(CppAD::AD<double> &dummy);
   void sum_dummyOutputs_to_dependentVars(std::vector<CppAD::AD<double> > &depVars);

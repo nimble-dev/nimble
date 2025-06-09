@@ -53,6 +53,57 @@ Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
   return(res);
 }
 
+/* dmnorm: Multivariate normal distribution */
+/* Version that uses prec_ldet, a vector of length n*n+1, with the precision elements followed by log determinant of the covariance.*/
+template<class Type>
+Type nimDerivs_nimArr_dmnorm_prec_ldet(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<1, Type> &prec_ldet, Type prec_param, Type give_log, Type overwrite_inputs) { 
+/* ONLY prec_param=FALSE is currently implemented, while drafting and testing */
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  if(!CppAD::Constant(prec_param))
+    std::cout<<"Warning: In dmnorm (prec_ldet), prec_param with value = "<<CppAD::Value(prec_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make prec_param a constant to avoid this warning."<<std::endl;
+
+  int n = x.dimSize(0);
+  int i;
+  Type dens = Type(-n * M_LN_SQRT_2PI);
+  dens -= Type(0.5) * prec_ldet[n*n]; // log(det(cov)) term
+  /* Note that prec_ldet[n*n] will be log(det(cov)) even if prec_param=TRUE */
+
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mean[i];
+
+  NimArr<1, Type> prec_possible_copy;
+  Eigen::Map<MatrixXt > mapPrec(nimArrCopyIfNeeded<1, Type>(prec_ldet, prec_possible_copy).getPtr(), n, 1);
+  dens -= Type(0.5) * (xCopy.transpose() * mapPrec * xCopy).sum(); // quadratic form term. sum() makes it a C++ scalar.
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dmnorm_prec_ldet_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<1, Type> &prec_ldet, Type prec_param, int give_log, Type overwrite_inputs) { 
+/* ONLY prec_param=FALSE is currently implemented, while drafting and testing */
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  if(!CppAD::Constant(prec_param))
+    std::cout<<"Warning: In dmnorm (prec_ldet), prec_param with value = "<<CppAD::Value(prec_param)<<" is a variable but will be fixed in the tape until the tape is reset.  Make prec_param a constant to avoid this warning."<<std::endl;
+
+  int n = x.dimSize(0);
+  int i;
+  Type dens = Type(-n * M_LN_SQRT_2PI);
+  dens -= Type(0.5) * prec_ldet[n*n]; // log(det(cov)) term
+  /* Note that prec_ldet[n*n] will be log(det(cov)) even if prec_param=TRUE */
+
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mean[i];
+
+  NimArr<1, Type> prec_possible_copy;
+  Eigen::Map<MatrixXt > mapPrec(nimArrCopyIfNeeded<1, Type>(prec_ldet, prec_possible_copy).getPtr(), n, 1);
+  dens -= Type(0.5) * (xCopy.transpose() * mapPrec * xCopy).sum(); // quadratic form term. sum() makes it a C++ scalar.
+  if(!give_log){
+    dens = exp(dens);
+  }
+  return(dens);
+}
 
 /* dmnorm: Multivariate normal distribution */
 template<class Type>

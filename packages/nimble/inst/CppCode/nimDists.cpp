@@ -327,7 +327,7 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
 // then computes the precision matrix as the inverse of the covariance matrix.
 // The log determinant is computed based on the Cholesky decomposition.
 // The output is in the format needed for dmnorm_prec_ldet function.
-NimArr<1, double> chol_PDlogdet(NimArr<2, double> &mat, bool is_precision) {
+NimArr<1, double> PDinverse_logdet(NimArr<2, double> &mat, bool is_precision) {
     int n = mat.dimSize(0);
     NimArr<1, double> out;
     out.setSize(n * n + 1);
@@ -336,7 +336,7 @@ NimArr<1, double> chol_PDlogdet(NimArr<2, double> &mat, bool is_precision) {
     double* matPtr = nimArrCopyIfNeeded<2, double>(mat, matCopy).getPtr();
 
     // Use the internal function for the actual computation
-    chol_PDlogdet_internal(matPtr, out.getPtr(), n, is_precision);
+    PDinverse_logdet_internal(matPtr, out.getPtr(), n, is_precision);
 
     return out;
 }
