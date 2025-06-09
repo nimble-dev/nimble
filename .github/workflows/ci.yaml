@@ -74,6 +74,12 @@ jobs:
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "24.04", "./packages/nimble"))')
           sudo apt-get install libcurl4-openssl-dev  # needed for R pkg curl -> covr
 
+      - name: Install rlang (Windows) to try to fix install failure
+        if: runner.os == 'Windows'
+        run: |
+          install.packages('rlang')
+        shell: Rscript {0}
+
       - name: Install dependencies
         run: |
           source('install_requirements.R')  # Windows doesn't like running via ./install_requirements.R
