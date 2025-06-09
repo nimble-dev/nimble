@@ -25,3 +25,6 @@ for (package in requirements) {
 ## Apparently a bug in Matrix (as of early 2024) is causing an issue (https://bioconductor.org/packages/devel/bioc/vignettes/dreamlet/inst/doc/errors.html) that is causing test-ADlaplace.R failures when fitting a model with lmer.
 
 install.packages("lme4", type = "source")
+
+## Checking to see if this helps with failure to install nimble under Windows.
+install.packages("rlang")
