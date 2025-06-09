@@ -26,5 +26,3 @@ for (package in requirements) {
 
 install.packages("lme4", type = "source")
 
-## Checking to see if this helps with failure to install nimble under Windows.
-install.packages("rlang")
