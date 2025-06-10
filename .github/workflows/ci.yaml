@@ -49,12 +49,6 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Install rlang to try to address Windows problem
-        if: runner.os == 'Windows'
-        run: |
-          install.packages('rlang')
-        shell: Rscript {0}
-
       - name: Query dependencies
         run: |
           install.packages('remotes')
@@ -84,6 +78,14 @@ jobs:
       - name: Install dependencies
         run: |
           source('install_requirements.R')  # Windows doesn't like running via ./install_requirements.R
+        shell: Rscript {0}
+
+      - name: check rlang
+        if: runner.os == 'Windows'
+        run: |
+          list.files("C:/a/_temp/Library")
+          list.files("C:/a/_temp/Library/rlang/libs/x64")
+          dyn.load("C:/a/_temp/Library/rlang/libs/x64/rlang.dll")          
         shell: Rscript {0}
 
       - name: Install nimble (Windows)
