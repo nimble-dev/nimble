@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, r: 'release', batch: 1}
+          - {os: windows-latest, r: '4.4', batch: 1}
           - {os: macOS-latest, r: 'release', batch: 1}   # was hard-coded to 4.2.2 due to issues a while back
           - {os: ubuntu-24.04, r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 1}
           - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 1}
@@ -48,12 +48,6 @@ jobs:
           r-version: ${{ matrix.config.r }}
 
       - uses: r-lib/actions/setup-pandoc@v2
-
-      - name: Install rlang to try to address Windows problem
-        if: runner.os == 'Windows'
-        run: |
-          install.packages('rlang')
-        shell: Rscript {0}
 
       - name: Query dependencies
         run: |
