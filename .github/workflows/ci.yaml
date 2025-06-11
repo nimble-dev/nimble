@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, r: 'release', batch: 1}
+          - {os: windows-latest, r: 'release', rtools-version: "45", batch: 1}
           - {os: macOS-latest, r: 'release', batch: 1}   # was hard-coded to 4.2.2 due to issues a while back
           - {os: ubuntu-24.04, r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 1}
           - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 1}
@@ -78,14 +78,6 @@ jobs:
       - name: Install dependencies
         run: |
           source('install_requirements.R')  # Windows doesn't like running via ./install_requirements.R
-        shell: Rscript {0}
-
-      - name: check rlang
-        if: runner.os == 'Windows'
-        run: |
-          list.files("C:/a/_temp/Library")
-          list.files("C:/a/_temp/Library/rlang/libs/x64")
-          dyn.load("C:/a/_temp/Library/rlang/libs/x64/rlang.dll")          
         shell: Rscript {0}
 
       - name: Install nimble (Windows)
