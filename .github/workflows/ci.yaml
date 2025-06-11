@@ -84,7 +84,7 @@ jobs:
       - name: Install nimble (Windows)
         if: runner.os == 'Windows'
         run: |
-          R --version
+          Rscript -e "print(sessionInfo())"
           RCMD INSTALL --install-tests packages\\nimble
 
       - name: Install nimble
