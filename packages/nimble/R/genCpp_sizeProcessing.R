@@ -185,7 +185,7 @@ scalarOutputTypes <- list(decide = 'logical',
 expressionSymbolTypeReplacements <- c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction', 'symbolMemberFunction')
 
 checkNameConflict <- function(nm) {
-    if(!exists(nm, nimbleUserNamespace$.checkedNames)) {
+    if(!exists(nm, nimbleUserNamespace$.checkedNames, inherits = FALSE)) {
       nimbleUserNamespace$.checkedNames[[nm]] <- 1
       ## Handle replacements such as `gamma` -> `gammafn`.  
       if(nm %in% specificCallReplacements) {
