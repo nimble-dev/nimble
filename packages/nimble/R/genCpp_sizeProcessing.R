@@ -184,6 +184,24 @@ scalarOutputTypes <- list(decide = 'logical',
 ## and it will set the size expressions for A and for itself to 1.
 expressionSymbolTypeReplacements <- c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction', 'symbolMemberFunction')
 
+checkNameConflict <- function(nm) {
+    if(!exists(nm, nimbleUserNamespace$.checkedNames, inherits = FALSE)) {
+      nimbleUserNamespace$.checkedNames[[nm]] <- 1
+      ## Handle replacements such as `gamma` -> `gammafn`.  
+      if(nm %in% specificCallReplacements) {
+          nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
+      } else if(nm %in% nimKeyWords)
+          nm <- names(nimKeyWords)[which(nm == nimKeyWords)]
+      for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
+          objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
+          if(any(sapply(objs, is.rcf))) 
+              stop("The name of the nimbleFunction `", nm[i], "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
+      }
+    }
+}
+
+
+
 exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprClass
   ## name:
   if(code$isName) {
@@ -263,17 +281,7 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
     }
     sizeCall <- sizeCalls[[code$name]]
     if(!is.null(sizeCall)) {
-      nm <- code$name
-      ## Handle replacements such as `gamma` -> `gammafn`.  
-      if(nm %in% specificCallReplacements) {
-          nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
-      } else if(nm %in% nimKeyWords)
-          nm <- names(nimKeyWords)[which(nm == nimKeyWords)]
-      for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
-          objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
-          if(any(sapply(objs, is.rcf))) 
-              stop("The name of the nimbleFunction `", nm[i], "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
-      }
+      checkNameConflict(code$name) 
       if(.nimbleOptions$debugSizeProcessing) {
         browser()
         eval(
