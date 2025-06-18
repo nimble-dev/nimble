@@ -35,7 +35,6 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
   1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
   1. Optionally, calculate the WAIC (Section \@ref(sec:WAIC)).
 
-Prior to version 0.8.0, NIMBLE provided two additional functions, `MCMCsuite` and `compareMCMCs`, to facilitate comparison of multiple MCMC algorithms, either internal or external to NIMBLE.  Those capabilities have been redesigned and moved into a separate package called `compareMCMCs`.
 
 End-to-end examples of MCMC in NIMBLE can be found in Sections \@ref(sec:creating-mcmc)-\@ref(sec:customizing-mcmc) and Section \@ref(sec:mcmc-example-litters).
 <!---  ### Creating an MCMC algorithm -->
