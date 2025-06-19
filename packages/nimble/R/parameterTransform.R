@@ -182,7 +182,7 @@ parameterTransform <- nimbleFunction(
                 if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper') ||    ## 6: multivariate {normal, t, CAR},
                    isUserDefined(dist))                                              ##    all multivariate user-defined distributions,
                 {                                                                    ##    and non-scalar determ nodes when allowDeterm is TRUE
-                    if(isUserDefined(dist) & getNimbleOption('parameterTransformWarnUserDists'))
+                    if(isUserDefined(dist) && getNimbleOption('parameterTransformWarnUserDists'))
                         message('  [Warning] `parameterTransform` system detected multivariate user-defined distribution ', dist, '. No transformation will be applied to any dimension of \'x\' values of ', dist, '. If some values of \'x\' are not valid in ', dist, ', you may encounter errors.  This warning can be disabled using nimbleOptions(parameterTransformWarnUserDists = FALSE)')
                     transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
