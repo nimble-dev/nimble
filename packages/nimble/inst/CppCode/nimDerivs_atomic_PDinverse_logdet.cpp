@@ -33,12 +33,15 @@ Y is n*n + 1 vector. Y1 are the n*n precision elements, Y2 is log(det(X)).
 Forward first order
 dY1 = -Y1 * dX * Y1 (see atomic_matinverse notes)
 
+// Extend to the case of symmetric matrices represented by triangular parts.
+
 dY2 = trace(Y1 * dX) // Jacobi's formula for log determinant
 
 ----
 Reverse first order
 From Y1:
 Xadjoint = -t(Y1) %*% Yadjoint1 %*% t(Y1);
+
 
 From Y2:
 <Yadjoint2, dY2> = <Yadjoint2, trace(Y1 * dX)>
@@ -54,6 +57,11 @@ Xadjoint += t(Y1) * Yadjoint2
 ----
 Reverse second order
 // I am going to wait on this.
+*/
+
+/*
+Storage and usage of diagonal half-matrices:
+- 
 */
 
 atomic_PDinverse_logdet_class::atomic_PDinverse_logdet_class(const std::string& name) :
@@ -128,22 +136,21 @@ bool atomic_PDinverse_logdet_class::forward(
     
     // Assisted by copilot (begin)
     // (i) Cholesky decomposition (upper-triangular, as in NIMBLE convention)
-    Eigen::LLT<Eigen::MatrixXd> llt(Xmap);
-    Eigen::MatrixXd chol = llt.matrixU(); // Upper-triangular Cholesky factor
+    auto chol = Xmap.template selfadjointView<Eigen::Upper>().llt();
+    //Eigen::MatrixXd chol = llt.matrixU(); // Upper-triangular Cholesky factor
 
     // (ii) Matrix inverse from the Cholesky
     // Solve U^T U = X, so X^{-1} = U^{-1} (U^T)^{-1}
-    Ymap = llt.solve(Eigen::MatrixXd::Identity(n, n));
+    Ymap = chol.solve(Eigen::MatrixXd::Identity(n, n)).template triangularView<Eigen::Upper>();
 
     // (iii) Log determinant from the Cholesky
     // log(det(X)) = 2 * sum(log(diag(U)))
     double logdet = 0.0;
     for(int i = 0; i < n; ++i)
-        logdet += 2.0 * std::log(chol(i, i));
+        logdet += 2.0 * std::log(chol.matrixU()(i, i));
     // Assisted by copilot (end)
 
-   
-    taylor_y[n * n * nrow + 0] = logdet; // Last element is log(det(X))
+   taylor_y[n * n * nrow + 0] = logdet; // Last element is log(det(X))
     double_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );
   }
  if((order_low <= 1) && (order_up >= 1)) {
@@ -159,11 +166,17 @@ bool atomic_PDinverse_logdet_class::forward(
     EigenMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
     EigenMap dYmap(&taylor_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
     EigenConstMap dXmap(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow));
-    dYmap = -Ymap * dXmap * Ymap;
+    // multiplying two selfadjointViews does not seem to work.
+    // So, I will materialize at least one of them. If that works, I'll make it a member variable.
+    MatrixXd Ysym = Ymap.template selfadjointView<Eigen::Upper>();
+    MatrixXd dXsym = dXmap.template selfadjointView<Eigen::Upper>();
+//    dYmap = -(Ymap.template selfadjointView<Eigen::Upper>() * dXmap.template selfadjointView<Eigen::Upper>() * Ymap.template selfadjointView<Eigen::Upper>()).template triangularView<Eigen::Upper>();
+    dYmap = -(Ysym * dXsym * Ysym);
+    dYmap = dYmap.template triangularView<Eigen::Upper>();
     // Assisted by copilot (begin)
     // Jacobi's formula for log determinant: trace(Y1 * dX)
     // Since trace(A*B) = sum_ij A_ij * B_ji, so sum of element-wise product of Ymap and dXmap.transpose()
-    taylor_y[n * n * nrow + 1] = (Ymap.array() * dXmap.transpose().array()).sum();
+    taylor_y[n * n * nrow + 1] = (Ysym.array() * dXsym.transpose().array()).sum();
     // Assisted by copilot (end)
  }
     return true;
@@ -256,24 +269,39 @@ bool atomic_PDinverse_logdet_class::reverse(
 
         size_t cache_nrow = double_cache.nrow();  
         EigenConstMap Ymap(double_cache.taylor_y_ptr(), n, n, EigStrDyn(cache_nrow*n, cache_nrow ) );
+        MatrixXd Ysym = Ymap.template selfadjointView<Eigen::Upper>();
         EigenConstMap Xmap(&taylor_x[0], n, n, EigStrDyn(nrow*n, nrow) );
+        MatrixXd Xsym = Xmap.template selfadjointView<Eigen::Upper>();
         EigenMap Xadjoint_map(&partial_x[0], n, n, EigStrDyn(nrow*n, nrow) );
         if(order_up >= 0) {
             EigenConstMap Yadjoint_map(&partial_y[0], n, n, EigStrDyn(nrow*n, nrow ) );
-            Xadjoint_map = -Ymap.transpose() * Yadjoint_map *  Ymap.transpose();
-            Xadjoint_map += partial_y[n*n*nrow+0] * Ymap.transpose(); // Add the contribution from logdet
+            Xadjoint_map = (-Ysym.transpose() * Yadjoint_map.template triangularView<Eigen::Upper>() * Ysym.transpose());
+            for(size_t i = 0; i < n; ++i) {
+              Xadjoint_map(i, i) += Ysym(i, i) * partial_y[n*n*nrow+0]; // Add the contribution from logdet
+                for(size_t j = i+1; j < n; ++j) {
+                    Xadjoint_map(i, j) += Xadjoint_map(j, i) + // complete the contribution from inverse
+                     2 * Ysym(i, j) * partial_y[n*n*nrow+0]; // Add the contribution from logdet
+                    Xadjoint_map(j, i) = 0; 
+                }
+            }
+//            Xadjoint_map += partial_y[n*n*nrow+0] * Ysym.transpose(); // Add the contribution from logdet
         }
         if(order_up >= 1) {
             EigenConstMap Xdot_map(&taylor_x[1], n, n, EigStrDyn(nrow*n, nrow ) );     
+            MatrixXd Xdot_sym = Xdot_map.template selfadjointView<Eigen::Upper>();
             EigenConstMap Ydot_adjoint_map(&partial_y[1], n, n, EigStrDyn(nrow*n, nrow ) );
+            MatrixXd Ydot_adjoint_sym = Ydot_adjoint_map.template selfadjointView<Eigen::Upper>();
             EigenMap Xdot_adjoint_map(&partial_x[1], n, n, EigStrDyn(nrow*n, nrow) );
-            Eigen::MatrixXd Y_Xdot_Y_transpose = (Ymap * Xdot_map * Ymap).transpose();
-            Eigen::MatrixXd Ydot_adjoint_Ytranspose = Ydot_adjoint_map * Ymap.transpose();
-            Xadjoint_map += Ymap.transpose() * Ydot_adjoint_map *  Y_Xdot_Y_transpose +
-            Y_Xdot_Y_transpose * Ydot_adjoint_Ytranspose;
-            Xdot_adjoint_map = -Ymap.transpose() *  Ydot_adjoint_Ytranspose;
+
+            Eigen::MatrixXd Y_Xdot_Y_transpose = (Ysym * Xdot_sym * Ysym).transpose();
+            Eigen::MatrixXd Ydot_adjoint_Ytranspose = Ydot_adjoint_sym * Ysym.transpose();
+            Xadjoint_map += (Ysym.transpose() * Ydot_adjoint_sym * Y_Xdot_Y_transpose) + 
+                   (Y_Xdot_Y_transpose * Ydot_adjoint_Ytranspose);
+            Xdot_adjoint_map = (-Ysym.transpose() *  Ydot_adjoint_Ytranspose);
+            Xdot_adjoint_map = Xdot_adjoint_map.template triangularView<Eigen::Upper>();
             std::cout<<"In PDinverse_logdet reverse, second order reverse is not implemented for the logdet contribution, so expect wrong results unless that is constant.\n";  
         }
+//        Xadjoint_map = Xadjoint_map.template triangularView<Eigen::Upper>();
     return true;
 }
 
@@ -319,7 +347,7 @@ bool atomic_PDinverse_logdet_class::reverse(
   return true;
 }
 
-void PDinverse_logdet(const MatrixXd_CppAD &x, // This (non-template) type forces any incoming expression to be evaluated
+/* void PDinverse_logdet(const MatrixXd_CppAD &x, // This (non-template) type forces any incoming expression to be evaluated
 			 MatrixXd_CppAD &y) {
   // static PDinverse_logdet_class PDinverse_logdet("PDinverse_logdet"); // this has no state information so the same object can be used for all cases
   atomic_PDinverse_logdet_class *PDinverse_logdet;
@@ -346,11 +374,47 @@ void PDinverse_logdet(const MatrixXd_CppAD &x, // This (non-template) type force
 			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
 			CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
   }
-}
+} */
 
-MatrixXd_CppAD nimDerivs_PDinverse_logdet(const MatrixXd_CppAD &x) {
+/*
+MatrixXd_CppAD nimDerivs_PDinverse_logdet(const MatrixXd_CppAD &x, const CppAD::AD<double> &prec_param) {
+  // prec_param is ignored for now.
   MatrixXd_CppAD ans;
   PDinverse_logdet(x, ans);
   return ans;
+}
+*/
 
+NimArr<1, CppAD::AD<double> > nimDerivs_PDinverse_logdet(const NimArr<2, CppAD::AD<double> > &x, const CppAD::AD<double> &prec_param) {
+  // prec_param is ignored for now.
+  atomic_PDinverse_logdet_class *PDinverse_logdet;
+  size_t n = x.dim()[0];
+  std::vector<CppAD::AD<double> > xVec(n*n);
+  for(size_t i = 0; i < n; ++i) {
+    for(size_t j = 0; j < n; ++j) {
+      xVec[j*n + i] = x(i, j);
+    }
+  }
+  std::vector<CppAD::AD<double> > yVec(n*n+1);
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+  if(!recording) {
+    PDinverse_logdet = new atomic_PDinverse_logdet_class("PDinverse_logdet");
+  } else {
+    void *tape_mgr = CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr();
+    PDinverse_logdet = new_atomic_PDinverse_logdet(tape_mgr, "PDinverse_logdet");
+  }
+  (*PDinverse_logdet)(xVec, yVec);
+  NimArr<1, CppAD::AD<double> > y;
+  y.initialize(0, false, n*n+1);
+  for(size_t i = 0; i < n*n+1; ++i) {
+    y(i) = yVec[i];
+  }
+  if(!recording) {
+    delete PDinverse_logdet;
+  } else {
+    track_nimble_atomic(PDinverse_logdet,
+			CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+			CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
+  }
+  return y;
 }

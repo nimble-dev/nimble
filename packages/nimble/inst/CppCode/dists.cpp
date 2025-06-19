@@ -1213,37 +1213,41 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 }
 
 // Drafted by GitHub copilot, modified by NIMBLE team.
-// Note that the matrix inverse elements are still only upper triangular,
-// i.e. all elements are returns but with zeros in the lower triangle.
-// I need to review what will really be needed.
+// This function computes the inverse and log-determinant of a positive-definite matrix.
+// It can handle both precision matrices (where the input is the precision matrix and the output is the covariance matrix) 
+// and covariance matrices (where the input is the covariance matrix and the output is the precision matrix).
+// Like chol, only the upper triangular part of matPtr is used.
+// The first n*n elements of ans will be the inverse, but also only the upper triangular part.
+// This means there will be many zeros, which for now we retain because then the vector can be used
+// as a matrix within further copying.
 void PDinverse_logdet_internal(double *matPtr, double *ans, int n, bool is_precision) {
     Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> 
         A(matPtr, n, n);
 
     double logdet_cov = 0.0;
 
-    Eigen::MatrixXd chol;
-    chol = EIGEN_CHOL(A); // note: llt could be used directly for solve below.
+    //Eigen::MatrixXd chol;
+    auto chol = (A).template selfadjointView<Eigen::Upper>().llt();
+    // Eigen::LLT<Eigen::MatrixXd> llt(A); // could be used instead of chol below
+    // chol = EIGEN_CHOL(A); // note: llt could be used directly for solve below.
     double half_logdet = 0.0;
     for(int i = 0; i < n; ++i)
-      half_logdet += std::log(chol(i, i));
+      half_logdet += std::log(chol.matrixU()(i, i));
 
     if(is_precision) {
         // Precision matrix is input
         logdet_cov = -2.0 * half_logdet;
         for(int j = 0; j < n; ++j)
           for(int i = 0; i < n; ++i)
-            ans[j * n + i] = A(i, j);
+            ans[j * n + i] = A.triangularView<Eigen::Upper>()(i, j);
     } else {
         logdet_cov += 2.0 * half_logdet;
         // Compute precision matrix
         Eigen::MatrixXd Prec(n, n);
-        Prec = chol.template triangularView<Eigen::Upper>().solve(
-            Eigen::MatrixXd::Identity(n, n));
-        for(int j = 0; j < n; ++j) {
-          ans[j * n + j] = Prec(j, j);
-          for(int i = 0; i < j; ++i)
-            ans[j * n + i] = ans[i * n + j] = Prec(i, j);
+        Prec = chol.solve(Eigen::MatrixXd::Identity(n, n)).template triangularView<Eigen::Upper>();
+        for(size_t j = 0; j < n; ++j) {
+          for(size_t i = 0; i < n; ++i)
+            ans[j * n + i] = Prec(i, j);
        }
     }
     // Last element is log(det(cov))
@@ -1322,7 +1326,9 @@ double dmnorm_prec_ldet(double* x, double* mean, double* prec_ldet, int n, int g
     double* y = new double[n];
     double alpha = 1.0, beta = 0.0;
     int inc1 = 1;
-    F77_CALL(dgemv)("N", &n, &n, &alpha, prec_ldet, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
+    //F77_CALL(dgemv)("N", &n, &n, &alpha, prec_ldet, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
+    F77_CALL(dsymv)("U", &n, &alpha, prec_ldet, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
+
     double quad = F77_CALL(ddot)(&n, xCopy, &inc1, y, &inc1);
     delete [] y;
 
@@ -1335,7 +1341,7 @@ double dmnorm_prec_ldet(double* x, double* mean, double* prec_ldet, int n, int g
 }
 
 // This one needed more human editing for the recycling rule portion.
-SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP prec_ldet, SEXP prec_param, SEXP return_log) 
+SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP prec_ldet, SEXP return_log) 
 // calculates mv normal density given precision matrix and log(det(cov))
 // current prec_param is ignored and assume FALSE.
 // prec_ldet should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))

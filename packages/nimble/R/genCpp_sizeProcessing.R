@@ -6,6 +6,7 @@ sizeProc_storage_mode <- function(x) {
 }
     
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
+                              'nimArr_rmnorm_prec_ldet',
                               'nimArr_rmvt_chol',
                               'nimArr_rlkj_corr_cholesky',
                               'nimArr_rwish_chol',
@@ -101,7 +102,8 @@ sizeCalls <- c(
          Rf_eval = 'sizeReval',
          nimbleConvert = 'sizeNimbleConvert',
          nimbleUnconvert = 'sizeNimbleUnconvert',
-         asReturnSymbol = 'sizeAsReturnSymbol'),
+         asReturnSymbol = 'sizeAsReturnSymbol',
+         PDinverse_logdet = 'sizePDinverse_logdet'),
     makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
     makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
     makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
@@ -131,6 +133,7 @@ sizeCalls <- c(
                    'nimArr_dinterval',
                    'nimArr_ddirch'), 'sizeScalarRecurseAllowMaps'),
     makeCallList(c('nimArr_rmnorm_chol',
+                   'nimArr_rmnorm_prec_ldet',
                    'nimArr_rmvt_chol',
                    'nimArr_rlkj_corr_cholesky',
                    'nimArr_rwish_chol',
@@ -3266,6 +3269,65 @@ sizeMatrixSquareReduction <- function(code, symTab, typeEnv) {
     if(length(asserts) == 0) NULL else asserts
 }
 
+sizePDinverse_logdet <- function(code, symTab, typeEnv) {
+   # Modeled after a combination of generalFunSize and sizeUnaryCwiseSquare
+   if(length(code$args) != 2) {
+        stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument length != 2.'), call. = FALSE)
+    }
+    a1 <- code$args[[1]]
+    if(!inherits(a1, 'exprClass')) 
+      stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument that is not an expression.'), call. = FALSE)
+    ## Ensure that simple maps being passed will be passed without extra
+    ## copy that would occur from lifting an Eigen expression.
+    ## (Relevant primarily for first argument, but no harm in applying to second.)
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(code$args[[i]]$name == "[") {
+                if(inherits(code$args[[i]]$args[[1]],
+                            'exprClass')) { ## must be true, but I'm being defensive
+                    if(code$args[[i]]$args[[1]]$isName) {
+                        insertExprClassLayer(code, i, 'passByMap')
+                    }
+                }
+            }
+        }
+    }
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    ## lift any argument that is an expression
+    for(i in seq_along(code$args)) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                if(!code$args[[i]]$isName) {
+                    forceType <- NULL
+                    if(i==2) forceType <- 'double' ## second argument is always double
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv, forceType = forceType) )
+                }
+            }       
+    }
+    a1 <- code$args[[1]]
+    if(a1$nDim != 2) 
+      stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument that is not a matrix.'), call. = FALSE)
+    a1SizeExprs <- a1$sizeExprs
+    if(is.integer(a1SizeExprs[[1]]) && is.integer(a1SizeExprs[[2]])) {
+        newSizeExpr <- as.integer(a1SizeExprs[[1]] * a1SizeExprs[[2]] + 1)
+    } else {
+        newSizeExpr <- substitute(((A) * (B)) + 1, 
+                                  list(A = a1SizeExprs[[1]], B = a1SizeExprs[[2]]))
+    }
+    code$sizeExprs <- list(newSizeExpr)
+    code$nDim <- 1
+    code$toEigenize <- 'no'
+    code$type <- 'double'
+
+    ## Self-lift if this expression is amid a larger expression.
+    if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    } else
+      typeEnv$.ensureNimbleBlocks <- TRUE
+
+
+    invisible(asserts)
+}
+
 sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1){
     	stop(exprClassProcessingErrorMsg(code, 'sizeUnaryCwiseSquare called with argument length != 1.'), call. = FALSE)
@@ -3760,6 +3822,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
 
 mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), prec_param(scalar)
                                  1, 'double'), ## 1 = argument from which to take answer size, double = answer type
+                             nimArr_rmnorm_prec_ldet = list(c(1, 1),
+                                 1, 'double'),
                              nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
                                                        1, 'double'), ## 1 = argument from which to take answer size, double = answer type
                              nimArr_rlkj_corr_cholesky = list(c(0, 0), ## eta, p

@@ -545,17 +545,25 @@ qdexp <- function(p, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
 #' dmnorm_chol(x, mean, ch, prec_param = FALSE)
 NULL
 
-dmnorm_prec_ldet <- function(x, mean, prec_ldet, prec_param = TRUE, log = FALSE) {
-    if(storage.mode(prec_ldet) != 'double')
-         storage.mode(prec_ldet) <- 'double'
-    .Call(C_dmnorm_prec_ldet, as.double(x), as.double(mean), prec_ldet, as.double(prec_param), as.logical(log))
+PDinverse_logdet <- function(mat, prec_param = FALSE) {
+  if(storage.mode(mat) != 'double')
+   storage.mode(mat) <- 'double'
+  out <- .Call(C_PDinverse_logdet, mat, as.logical(prec_param))
+  return(out)
 }
 
-rmnorm_prec_ldet <- function(n=1, mean, prec_ldet, prec_param = TRUE, log = FALSE) {
+dmnorm_prec_ldet <- function(x, mean, prec_ldet, log = FALSE) {
+    if(storage.mode(prec_ldet) != 'double')
+         storage.mode(prec_ldet) <- 'double'
+    .Call(C_dmnorm_prec_ldet, as.double(x), as.double(mean), prec_ldet,
+    as.logical(log))
+}
+
+rmnorm_prec_ldet <- function(n=1, mean, prec_ldet) {
     if(n != 1) warning('rmnorm_prec_ldet only handles n = 1 at the moment')
     if(storage.mode(prec_ldet) != 'double')
          storage.mode(prec_ldet) <- 'double'
-    .Call(C_rmnorm_prec_ldet, as.integer(n), as.double(mean), prec_ldet, as.double(prec_param))
+    .Call(C_rmnorm_prec_ldet, as.integer(n), as.double(mean), prec_ldet)
 }
 
 #' @rdname MultivariateNormal

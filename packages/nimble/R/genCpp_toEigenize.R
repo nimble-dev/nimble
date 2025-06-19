@@ -101,6 +101,7 @@ toEigenCalls <- c(
                    'nimArr_dinterval',
                    'nimArr_ddirch'), 'toEigenScalarRecurse'),
     makeCallList(c('nimArr_rmnorm_chol',
+                   'nimArr_rmnorm_prec_ldet',
                    'nimArr_rmvt_chol',
                    'nimArr_rlkj_corr_cholesky',
                    'nimArr_rwish_chol',

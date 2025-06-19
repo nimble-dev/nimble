@@ -13,7 +13,8 @@
 void atomic_PDinverse_logdet(const MatrixXd_CppAD &x,
                              MatrixXd_CppAD &y);
 
-MatrixXd_CppAD nimDerivs_PDinverse_logdet(const MatrixXd_CppAD &x);
+// MatrixXd_CppAD nimDerivs_PDinverse_logdet(const MatrixXd_CppAD &x); // not sure this is actually needed.
+NimArr<1, CppAD::AD<double> > nimDerivs_PDinverse_logdet(const NimArr<2, CppAD::AD<double> > &x, const CppAD::AD<double> &prec_param);
 
 class atomic_PDinverse_logdet_class : public CppAD::atomic_three<double>, public nimble_atomic_base {
  public:
