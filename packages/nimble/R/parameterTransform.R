@@ -171,19 +171,27 @@ parameterTransform <- nimbleFunction(
                         if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound, which cannot be used in parameterTransform.')
                         if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound, which cannot be used in parameterTransform.')
                     } else {   ## some other distribution with finite support
-                        message('  [Warning] `parameterTransform` system cannot process the ', dist, ' distribution of node ', node, '.\n         The upper and lower bounds of the ', dist, ' distribution must be constant.\n         If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
+                        messageIfVerbose('  [Warning] `parameterTransform` system cannot process the `', dist, '`\n',
+                                         '            distribution for node `', node, '. The upper and lower bounds\n',
+                                         '            of `', dist, '` must be constant.\n')
                     }
                     transformType[i] <- 5L
                     transformData[i,DATA1] <- bounds[1]               ## formerly lowerBound
                     transformData[i,DATA2] <- bounds[2] - bounds[1]   ## formerly range
                     next }
-                stop(paste0('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
+                stop('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')')
             } else {   ## multivariate
                 if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper') ||    ## 6: multivariate {normal, t, CAR},
                    isUserDefined(dist))                                              ##    all multivariate user-defined distributions,
                 {                                                                    ##    and non-scalar determ nodes when allowDeterm is TRUE
                     if(isUserDefined(dist) && getNimbleOption('parameterTransformWarnUserDists'))
-                        message('  [Warning] `parameterTransform` system detected multivariate user-defined distribution ', dist, '. No transformation will be applied to any dimension of \'x\' values of ', dist, '. If some values of \'x\' are not valid in ', dist, ', you may encounter errors.  This warning can be disabled using nimbleOptions(parameterTransformWarnUserDists = FALSE)')
+                        messageIfVerbose(
+                            '  [Warning] `parameterTransform` system detected multivariate user-defined\n',
+                            '            distribution `', dist, '`. No transformation will be applied\n',
+                            '            to any dimension of the `x` values of `', dist, '`.\n'
+                            '            If some values of  `x` are not valid, you may encounter errors.\n'
+                            '            This warning can be disabled using\n',
+                            '            `nimbleOptions(parameterTransformWarnUserDists = FALSE)`.')
                     transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
@@ -215,7 +223,7 @@ parameterTransform <- nimbleFunction(
                     transformData[i,DATA1] <- d
                     transformData[i,DATA2] <- p
                     next }
-                stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
+                stop('parameterTransform doesn\'t handle \'', dist, '\' distributions.', call. = FALSE)
             }
         }
         if(nNodes == 0) {
