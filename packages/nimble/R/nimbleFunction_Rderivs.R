@@ -29,6 +29,8 @@ nimDerivs_dummy <- nimbleFunction(
 #' calculations, the uncompiled model that is used. This is needed in order
 #' to be able to correctly restore values into the model when \code{order} does not
 #' include 0 (or in all cases when double-taping).
+#' @param reset a logical specifying whether to reset the AD tape.
+#' Not used/relevant for uncompiled execution. Defaults to \code{FALSE}.
 #' @param ... additional arguments intended for internal use only.
 #'
 #'@details Derivatives for uncompiled nimbleFunctions are calculated using the
@@ -54,6 +56,7 @@ nimDerivs <- function(call = NA,
                       wrt = NULL,
                       order = nimC(0,1,2),
                       model = NA,
+                      reset = FALSE,
                       ...){ ## ... absorbs compile-only params
   fxnEnv <- parent.frame()
   fxnCall <- match.call()
