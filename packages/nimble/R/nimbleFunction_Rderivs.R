@@ -30,6 +30,7 @@ nimDerivs_dummy <- nimbleFunction(
 #' to be able to correctly restore values into the model when \code{order} does not
 #' include 0 (or in all cases when double-taping).
 #' @param reset a logical specifying whether to reset the AD tape.
+#' See Section 16.5.5 of user manual for details.
 #' Not used/relevant for uncompiled execution. Defaults to \code{FALSE}.
 #' @param ... additional arguments intended for internal use only.
 #'
