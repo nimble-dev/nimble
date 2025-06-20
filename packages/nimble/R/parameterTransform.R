@@ -188,8 +188,8 @@ parameterTransform <- nimbleFunction(
                         messageIfVerbose(
                             '  [Warning] `parameterTransform` system detected multivariate user-defined\n',
                             '            distribution `', dist, '`. No transformation will be applied\n',
-                            '            to any dimension of the `x` values of `', dist, '`.\n'
-                            '            If some values of  `x` are not valid, you may encounter errors.\n'
+                            '            to any dimension of the `x` values of `', dist, '`.\n',
+                            '            If some values of  `x` are not valid, you may encounter errors.\n',
                             '            This warning can be disabled using\n',
                             '            `nimbleOptions(parameterTransformWarnUserDists = FALSE)`.')
                     transformType[i] <- 6L
