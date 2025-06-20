@@ -313,7 +313,8 @@ nimbleMCMC <- function(code,
                        samples = TRUE,
                        samplesAsCodaMCMC = FALSE,
                        summary = FALSE,
-                       WAIC = FALSE) {
+                       WAIC = FALSE,
+                       userEnv = parent.frame()) {
     #### process 'code' argument, to accept a filename, or a function
     ##if(is.character(code) || is.function(code)) {
     ##    if(is.function(code)) modelText <- mergeMultiLineStatements(deparse(body(code)))
@@ -327,7 +328,7 @@ nimbleMCMC <- function(code,
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
-    Rmodel <- mcmc_createModelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check)
+    Rmodel <- mcmc_createModelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check, userEnv = userEnv)
     conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC, print = FALSE)
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
