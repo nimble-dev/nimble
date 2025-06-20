@@ -2801,8 +2801,11 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             }
             next
         } else {        ## not dropping a dimension, so the index is non-scalar
-            if(isExprClass) ## If it is an expression that is not `:` or blank, then a simple block is not allowed
-                if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
+            if(isExprClass) { ## If it is an expression that is not `:` or blank, then a simple block is not allowed
+                if(code$args[[i+1]]$name == '(')
+                    stop("detected unexpected use of `(` in model code in `", safeDeparse(code$expr), "`. Parentheses cannot be used in indexing in NIMBLE models")
+                    if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
+            }
         }
         needMap <- TRUE ## If the "next" in if(dropThisDim) {} is always hit, then needMap will never be set to TRUE
 
