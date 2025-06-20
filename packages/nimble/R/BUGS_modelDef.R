@@ -502,7 +502,7 @@ modelDefClass$methods(checkADsupportForDistribution = function(dist) {
   if(!supported)
       if(getNimbleOption('doADerrorTraps'))
           messageIfVerbose("  [Note] It is fine to have a distribution without derivatives as long as no\n",
-                           "         algorithm requests derivatives from it.",
+                           "         algorithm requests derivatives from it.\n",
                            "         For a user-defined distribution, set `buildDerivs = TRUE` (or to a list)\n",
                            "         in its nimbleFunction to turn on derivative support.\n",
                            "         Set `nimbleOptions(doADerrorTraps=FALSE)` to disable this check.")

@@ -1160,7 +1160,8 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     for(i in names(controlDefaults)) {
         if(!i %in% names(control)) control[[i]] <- controlDefaults[[i]]
     }
-    
+
+    nimbleUserNamespace$.checkedNames <- new.env()  # Memoization for checking nf name conflicts in `checkNameConflict()`.
 
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
     if(!showCompilerOutput) {

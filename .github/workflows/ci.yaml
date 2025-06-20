@@ -24,14 +24,14 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, r: 'release', batch: 1}
+          - {os: windows-latest, r: '4.4', batch: 1}
           - {os: macOS-latest, r: 'release', batch: 1}   # was hard-coded to 4.2.2 due to issues a while back
-          - {os: ubuntu-20.04, r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", batch: 1}
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", batch: 1}
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", batch: 2}
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", batch: 3}
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", batch: 4}
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", batch: 5}
+          - {os: ubuntu-24.04, r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 1}
+          - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 1}
+          - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 2}
+          - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 3}
+          - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 4}
+          - {os: ubuntu-24.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/noble/latest", batch: 5}
 
 
     env:
@@ -71,8 +71,9 @@ jobs:
           while read -r cmd
           do
             eval sudo $cmd
-          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04", "./packages/nimble"))')
+          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "24.04", "./packages/nimble"))')
           sudo apt-get install libcurl4-openssl-dev  # needed for R pkg curl -> covr
+          sudo apt-get install libfftw3-dev  # needed for R pkg fftwtools -> mcmcse
 
       - name: Install dependencies
         run: |
