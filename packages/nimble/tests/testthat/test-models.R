@@ -1026,6 +1026,14 @@ test_that("Warning printed when indexing info in user environment.", {
                    "Information has been found in the user's environment")
 })
 
+test_that("Informative error when using parentheses with model indexing.", {
+    code <- nimbleCode({
+        y[1,(1:2)] ~ ddirch(alpha[1:2])
+    })
+    m <- nimbleModel(code)
+    expect_error(cm <- compileNimble(m), "detected unexpected use of `\\(` in model code")
+})
+
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
