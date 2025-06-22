@@ -124,13 +124,13 @@ sampler_binary <- nimbleFunction(
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
     },
     run = function() {
-        currentLogProb <- checkLogProb(model$getLogProb(calcNodes))
+        currentLogProb <- checkLogProb(model$getLogProb(calcNodes), target)
         model[[target]] <<- 1 - model[[target]]
-        otherLogProbPrior <- checkLogProb(model$calculate(target))
+        otherLogProbPrior <- checkLogProb(model$calculate(target), target)
         if(otherLogProbPrior == -Inf) {
             otherLogProb <- otherLogProbPrior
         } else {
-            otherLogProb <- otherLogProbPrior + checkLogProb(model$calculate(calcNodesNoSelf))
+            otherLogProb <- otherLogProbPrior + checkLogProb(model$calculate(calcNodesNoSelf), target)
         }
         if(currentLogProb == -Inf & otherLogProb == -Inf)
             stop("in binary sampler, all log probability density values are negative infinity and sampling cannot proceed")
@@ -187,15 +187,15 @@ sampler_categorical <- nimbleFunction(
     },
     run = function() {
         currentValue <- model[[target]]
-        logProbs[currentValue] <<- checkLogProb(model$getLogProb(calcNodes))
+        logProbs[currentValue] <<- checkLogProb(model$getLogProb(calcNodes), target)
         for(i in 1:k) {
             if(i != currentValue) {
                 model[[target]] <<- i
-                logProbPrior <- checkLogProb(model$calculate(target))
+                logProbPrior <- checkLogProb(model$calculate(target), target)
                 if(logProbPrior == -Inf) {
                     logProbs[i] <<- -Inf
                 } else {
-                    logProbs[i] <<- logProbPrior + checkLogProb(model$calculate(calcNodesNoSelf))
+                    logProbs[i] <<- logProbPrior + checkLogProb(model$calculate(calcNodesNoSelf), target)
                 }
             }
         }
@@ -363,12 +363,12 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
-        logMHR <- checkLogProb(model$calculateDiff(target))
+        logMHR <- checkLogProb(model$calculateDiff(target), target)
         if(logMHR == -Inf) {
             jump <- FALSE
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
-            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf)) + propLogScale
+            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf), target) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
                 ##model$calculate(calcNodesPPomitted)
@@ -520,14 +520,14 @@ sampler_RW_noncentered <- nimbleFunction(
         }
         model[[target]] <<- propValue
 
-        logMHR <- checkLogProb(model$calculateDiff(target))
+        logMHR <- checkLogProb(model$calculateDiff(target), target)
         if(logMHR == -Inf) {
             jump <- FALSE
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
             ## Shift effects and add log-determinant of Jacobian of transformation. 
             logMHR <- logMHR + updateNoncentered(propValue, currentValue)
-            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf)) + propLogScale
+            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf), target) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
                 ##model$calculate(calcNodesPPomitted)
@@ -689,12 +689,12 @@ sampler_RW_block <- nimbleFunction(
         for(i in 1:tries) {
             propValueVector <- generateProposalVector()
             values(model, targetAsScalar) <<- propValueVector
-            lpD <- checkLogProb(model$calculateDiff(calcNodesProposalStage))
+            lpD <- checkLogProb(model$calculateDiff(calcNodesProposalStage), target)
             if(lpD == -Inf) {
                 jump <- FALSE
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
             } else {
-                lpD <- lpD + checkLogProb(model$calculateDiff(calcNodesDepStage))
+                lpD <- lpD + checkLogProb(model$calculateDiff(calcNodesDepStage), target)
                 jump <- decide(lpD)
                 if(jump) {
                     ##model$calculate(calcNodesPPomitted)
@@ -941,9 +941,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- checkLogProb(model$calculate(target))
+            lp <- checkLogProb(model$calculate(target), target)
             if(lp == -Inf) return(-Inf) 
-            lp <- lp + checkLogProb(model$calculate(calcNodesNoSelf))
+            lp <- lp + checkLogProb(model$calculate(calcNodesNoSelf), target)
             returnType(double())
             return(lp)
         },
@@ -1082,10 +1082,10 @@ sampler_slice_noncentered <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- checkLogProb(model$calculate(target))
+            lp <- checkLogProb(model$calculate(target), target)
             if(lp == -Inf) return(-Inf)
             lp <- lp + updateNoncentered(value)
-            lp <- lp + checkLogProb(model$calculate(calcNodesNoSelf))
+            lp <- lp + checkLogProb(model$calculate(calcNodesNoSelf), target)
             returnType(double())
             return(lp)
         },
@@ -1215,7 +1215,7 @@ sampler_ess <- nimbleFunction(
         theta_min <- theta - 2*Pi
         theta_max <- theta
         values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
-        lp <- checkLogProb(model$calculate(calcNodesNoSelf))
+        lp <- checkLogProb(model$calculate(calcNodesNoSelf), target)
         numContractions <- 0
         while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
             ## The checks for theta_max - theta_min small and max number of contractions are
@@ -1224,7 +1224,7 @@ sampler_ess <- nimbleFunction(
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
             values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
-            lp <- checkLogProb(model$calculate(calcNodesNoSelf))
+            lp <- checkLogProb(model$calculate(calcNodesNoSelf), target)
             numContractions <- numContractions + 1
         }
         if(theta_max - theta_min <= eps | numContractions == maxContractions) {
@@ -1370,9 +1370,9 @@ sampler_AF_slice <- nimbleFunction(
                 for(i in 1:d)
                     if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])            
             values(model, target) <<- targetValues
-            lp <- checkLogProb(model$calculate(calcNodesProposalStage))
+            lp <- checkLogProb(model$calculate(calcNodesProposalStage), target)
             if(lp == -Inf) return(lp)
-            lp <- lp + checkLogProb(model$calculate(calcNodesDepStage))
+            lp <- lp + checkLogProb(model$calculate(calcNodesDepStage), target)
             returnType(double())
             return(lp)
         },
@@ -1499,7 +1499,7 @@ sampler_crossLevel <- nimbleFunction(
         propLP0 <- 0
         for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP0 <- propLP0 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
         propValueVector <- topRWblockSamplerFunction$generateProposalVector()
-        topLP <- checkLogProb(my_setAndCalculateTop$run(propValueVector))
+        topLP <- checkLogProb(my_setAndCalculateTop$run(propValueVector), target)
         if(topLP == -Inf) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         }
@@ -1510,7 +1510,7 @@ sampler_crossLevel <- nimbleFunction(
             propLP1 <- 0
             for(iSF in seq_along(lowConjugateGetLogDensityFunctions))
                 propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run()
-            logMHR <- checkLogProb(modelLP1) - checkLogProb(modelLP0) - checkLogProb(propLP1) + checkLogProb(propLP0)
+            logMHR <- checkLogProb(modelLP1, target) - checkLogProb(modelLP0, target) - checkLogProb(propLP1, target) + checkLogProb(propLP0, target)
             jump <- decide(logMHR)
             if(jump) {
                 nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -1722,7 +1722,7 @@ sampler_RW_dirichlet <- nimbleFunction(
                 thetaVecProp <- thetaVec
                 thetaVecProp[i] <- propValue
                 values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + checkLogProb(model$calculateDiff(calcNodesNoSelf))
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + checkLogProb(model$calculateDiff(calcNodesNoSelf), target)
                 jump <- decide(logMHR)
             } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
@@ -1842,7 +1842,7 @@ sampler_RW_wishart <- nimbleFunction(
         ## matrix multiply to get proposal value (matrix)
         model[[target]] <<- t(propValue_chol) %*% propValue_chol
         ## decide and jump
-        logMHR <- checkLogProb(model$calculateDiff(calcNodes))
+        logMHR <- checkLogProb(model$calculateDiff(calcNodes), target)
         deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]
         for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
         jump <- decide(logMHR)
@@ -1965,8 +1965,8 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                     propValue[jprime] <<- z[jprime, i] * sqrt(partialSumsProp[jprime])
                 }
                 model[[target]][j:i, i] <<- propValue[j:i] 
-                logMHR <- checkLogProb(calculateDiff(model, calcNodesNoSelf)) +
-                            checkLogProb(calculateDiff(model, target))
+                logMHR <- checkLogProb(calculateDiff(model, calcNodesNoSelf), target) +
+                            checkLogProb(calculateDiff(model, target), target)
                 ## Adjust MHR to account for non-symmetric proposal by adjusting prior on U to transformed scale (i.e., y).
                 ## cosh component is for dz/dy and other component is for du/dz  where 'u' is the corr matrix.
                 ## This follows Stan reference manual Section 10.12 (for version 2.27).
@@ -2138,12 +2138,12 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             ## Adjust for log determinant term from initial values
             logMHR <- logMHR - logDetJac
 
-            lpD <- checkLogProb(calculateDiff(model, calcNodesProposalStage))
+            lpD <- checkLogProb(calculateDiff(model, calcNodesProposalStage), target)
             if(lpD == -Inf) {
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
                 jump <- FALSE
             } else {
-                logMHR <- logMHR + lpD + checkLogProb(calculateDiff(model, calcNodesDepStage))
+                logMHR <- logMHR + lpD + checkLogProb(calculateDiff(model, calcNodesDepStage), target)
                 jump <- decide(logMHR)
                 if(jump) {
                     nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -2418,7 +2418,7 @@ CAR_scalar_RW <- nimbleFunction(
         propValue <- rnorm(1, mean = model[[targetScalar]], sd = scale)
         model[[targetScalar]] <<- propValue
         lp1 <- dcarList[[1]]$run() + model$calculate(depNodes)
-        logMHR <- checkLogProb(lp1) - checkLogProb(lp0)
+        logMHR <- checkLogProb(lp1, target) - checkLogProb(lp0, target)
         jump <- decide(logMHR)
         if(jump) {
             model$calculate(targetScalar)
@@ -3359,8 +3359,8 @@ sampler_barker <- nimbleFunction(
 
         gradProposed <<- gradient(proposal)
         newLogDetJacobian <- my_parameterTransform$logDetJacobian(proposal)
-        lpD <- checkLogProb(model$calculateDiff(calcNodes)) + checkLogProb(newLogDetJacobian) -
-            checkLogProb(oldLogDetJacobian) + checkLogProb(calculateLogHastingsRatio(diff))
+        lpD <- checkLogProb(model$calculateDiff(calcNodes), target) + checkLogProb(newLogDetJacobian, target) -
+            checkLogProb(oldLogDetJacobian, target) + checkLogProb(calculateLogHastingsRatio(diff), target)
         jump <- decide(lpD)
 
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
