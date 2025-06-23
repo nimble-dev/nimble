@@ -2722,8 +2722,10 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     ## This is deprecated:
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
 
-    if(any(sapply(code$args, function(x) exists('name', x) && x$name =="-")))
-        stop("use of 'minus' indexing found in `", safeDeparse(code$expr), "` cannot be compiled")
+    minuses <- sapply(code$args, function(x) exists('name', x) && x$name == "-")
+    if(any(minuses)) 
+        if(any(sapply(code$args[minuses], function(x) length(x$args) == 1)))
+            stop("use of 'minus' indexing found in `", safeDeparse(code$expr), "` cannot be compiled")
     
     ## Iterate over arguments,  lifting any logical indices into which()
     ## e.g. X[i, bool] becomes X[i, Interm1], with Interm1 <- which(bool) as an assert.
