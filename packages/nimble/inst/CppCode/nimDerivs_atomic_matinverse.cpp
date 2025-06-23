@@ -45,7 +45,7 @@ dFdot = -(dY * Xdot * Y) -(Y * dXdot * Y) - (Y * Xdot * dY),
 dFdot = (Y * dX * Y * Xdot * Y) - (Y * dXdot * Y) + (Y * dXdot * Y * dX * Y)
 <Ydot_adjoint, dYdot> = <Ydot_adjoint,  Y * dX * Y * Xdot * Y> + <Ydot_adjoint, -Y * dXdot * Y> + <Ydot_adjoint, Y * Xdot * Y * dX * Y>
                       = <Y^T * Ydot_adjoint * (Y * Xdot * Y)^T, dX> + <-Y^T * Ydot_adjoint * Y^T , dXdot > + <(Y * Xdot * Y)^T * Ydot_adjoint * Y^T  , dX>
-                      = <Y^T * Ydot_adjoint * (Y * Xdot * Y)^T + (Y * Xdot * Y)^T * Ydot_adjoint * Y^T, dX> +  <-Y^T * Ydot_adjoint * Y^T , dXdot >
+                      = <Y^T * Ydot_adjoint *                  (Y * Xdot * Y)^T + (Y * Xdot * Y)^T * Ydot_adjoint * Y^T, dX> +  <-Y^T * Ydot_adjoint * Y^T , dXdot >
                       = <Xadjoint_term, dX> + <Xdot_adjoint_term, dXdot>
 */
 

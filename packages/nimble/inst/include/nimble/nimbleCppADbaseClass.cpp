@@ -43,180 +43,308 @@ bool check_inf_nan_gdi(CppAD::AD<double> v) {
 
 template<typename BASE, class TAPETYPE, class ADCLASS>
 void getDerivs_internal(vector<BASE> &independentVars,
-			TAPETYPE *ADtape,
-			const NimArr<1, double> &derivOrders,
-			const NimArr<1, double> &wrtVector,
-			nimSmartPtr<ADCLASS> &ansList) {
-  // std::cout<<"entering getDerivs_internal"<<std::endl;
-  // std::cout<<"independentVars: ";
-  // for(size_t ijk = 0; ijk < independentVars.size(); ++ijk)
-  //   std::cout<<independentVars[ijk]<<" ";
-  // std::cout<<std::endl;
-  // std::cout<<"derivOrders: ";
-  // for(size_t ijk = 0; ijk < derivOrders.size(); ++ijk)
-  //   std::cout<<derivOrders[ijk]<<" ";
-  // std::cout<<std::endl;
-  // std::cout<<"wrtVector: ";
-  // for(size_t ijk = 0; ijk < wrtVector.size(); ++ijk)
-  //   std::cout<<wrtVector[ijk]<<" ";
-  // std::cout<<std::endl;
-
-#ifdef _TIME_AD_GENERAL
-  derivs_getDerivs_timer_start();
-  derivs_tick_id();
-  derivs_show_id();
-#endif
-  std::size_t n = independentVars.size();  // dim of independent vars
-
-  std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
-  if(wrt_n == 2){
-    if(wrtVector[1] == -1){ // 2nd element -1 is a filler to ensure there is a vector out of compilation
-      wrt_n = 1;
-    }
-  }
-  bool wrtAll = wrtVector[0] == -1; // 1st element -1 is a flag to behave as if wrtVector has all elements
-  if(wrtAll) wrt_n = n;
-
-  int maxOrder;
-  bool ordersFound[3];
-  setOrdersFound(derivOrders, ordersFound, maxOrder);
-  //  std::cout<<"orders: "<<ordersFound[0]<<" "<<ordersFound[1]<<" "<<ordersFound[2]<<" "<<maxOrder<<std::endl;
-  // std::cout<<"maxOrder = "<<maxOrder<<std::endl;
-  vector<BASE> value_ans;
-  #ifdef _TIME_AD_GENERAL
-  derivs_run_tape_timer_start();
-#endif
-  value_ans = ADtape->Forward(0, independentVars);
-  //  std::cout<<"value_ans.size() = "<<value_ans.size()<<std::endl;
-#ifdef _TIME_AD_GENERAL
-  derivs_run_tape_timer_stop();
-#endif
-  if (ordersFound[0]) {
-    ansList->value.setSize(value_ans.size(), false, false);
-    std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
-  }
-  if(maxOrder > 0){
-    std::size_t q = value_ans.size();
-    vector<bool> infIndicators(q, false); // default values will be false
-    for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
-      if(check_inf_nan_gdi(value_ans[inf_ind])) {
-	infIndicators[inf_ind] = true;
+  TAPETYPE *ADtape,
+  const NimArr<1, double> &derivOrders,
+  const NimArr<1, double> &wrtVector,
+  nimSmartPtr<ADCLASS> &ansList) {
+    // std::cout<<"entering getDerivs_internal"<<std::endl;
+    // std::cout<<"independentVars: ";
+    // for(size_t ijk = 0; ijk < independentVars.size(); ++ijk)
+    //   std::cout<<independentVars[ijk]<<" ";
+    // std::cout<<std::endl;
+    // std::cout<<"derivOrders: ";
+    // for(size_t ijk = 0; ijk < derivOrders.size(); ++ijk)
+    //   std::cout<<derivOrders[ijk]<<" ";
+    // std::cout<<std::endl;
+    // std::cout<<"wrtVector: ";
+    // for(size_t ijk = 0; ijk < wrtVector.size(); ++ijk)
+    //   std::cout<<wrtVector[ijk]<<" ";
+    // std::cout<<std::endl;
+    
+    #ifdef _TIME_AD_GENERAL
+    derivs_getDerivs_timer_start();
+    derivs_tick_id();
+    derivs_show_id();
+    #endif
+    std::size_t n = independentVars.size();  // dim of independent vars
+    
+    std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
+    if(wrt_n == 2){
+      if(wrtVector[1] == -1){ // 2nd element -1 is a filler to ensure there is a vector out of compilation
+        wrt_n = 1;
       }
     }
-    if (ordersFound[1]) {
-      ansList->jacobian.setSize(q, wrt_n, false, false);
+    bool wrtAll = wrtVector[0] == -1; // 1st element -1 is a flag to behave as if wrtVector has all elements
+    if(wrtAll) wrt_n = n;
+    
+    int maxOrder;
+    bool ordersFound[3];
+    setOrdersFound(derivOrders, ordersFound, maxOrder);
+    //  std::cout<<"orders: "<<ordersFound[0]<<" "<<ordersFound[1]<<" "<<ordersFound[2]<<" "<<maxOrder<<std::endl;
+    // std::cout<<"maxOrder = "<<maxOrder<<std::endl;
+    vector<BASE> value_ans;
+    #ifdef _TIME_AD_GENERAL
+    derivs_run_tape_timer_start();
+    #endif
+    value_ans = ADtape->Forward(0, independentVars);
+    //  std::cout<<"value_ans.size() = "<<value_ans.size()<<std::endl;
+    #ifdef _TIME_AD_GENERAL
+    derivs_run_tape_timer_stop();
+    #endif
+    if (ordersFound[0]) {
+      ansList->value.setSize(value_ans.size(), false, false);
+      std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
     }
-    if (ordersFound[2]) {
-      ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
-    }
-    vector<BASE> cppad_derivOut;
-    std::vector<BASE> w(q, 0);
-    for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
-      w[dy_ind] = 1;
-      if (maxOrder == 1) {
-	if(!infIndicators[dy_ind]){
-#ifdef _TIME_AD_GENERAL
-	  derivs_run_tape_timer_start();
-#endif
-	  cppad_derivOut = ADtape->Reverse(1, w);
-#ifdef _TIME_AD_GENERAL
-	  derivs_run_tape_timer_stop();
-#endif
-	}
-      } else {
-	//	std::cout<<"wrtAll = "<<wrtAll<<std::endl;
-	// if(!wrtAll) {
-	//   for(size_t ijk = 0; ijk < wrt_n; ijk++) {
-	//     std::cout<<wrtVector[ijk]<<" ";
-	//   }
-	//   std::cout<<std::endl;
-	// }
-	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-	  if(!infIndicators[dy_ind]){
-	    int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
-	    std::vector<BASE> x1(n, 0);  // vector specifying first derivatives.
-	    // first specify coeffs for first dim
-	    // of s across all directions r, then
-	    // second dim, ...
-	    x1[dx1_ind] = 1;
-#ifdef _TIME_AD_GENERAL
-	    derivs_run_tape_timer_start();
-#endif
-	    // std::cout<<"Forward 1 x1: ";
-	    // for(int ijk = 0; ijk < x1.size(); ++ijk)
-	    //   std::cout<<x1[ijk]<<" ";
-	    // std::cout<<std::endl;
-	    // vector<BASE> forwardOut;
-	    // forwardOut = ADtape->Forward(1, x1);
-	    ADtape->Forward(1, x1);
-	    //	    std::cout<<"forwardOut 1 result (dx1_ind = "<< dx1_ind << ", forwardOut.size() = "<< forwardOut.size() <<"): ";
-	    // for(int ijk = 0; ijk < forwardOut.size(); ++ijk)
-	    //   std::cout<<forwardOut[ijk]<<" ";
-	    // std::cout<<std::endl;
-	    cppad_derivOut = ADtape->Reverse(2, w);
-	    // std::cout<<"reverse 2 result: ";
-	    // for(int ijk = 0; ijk < cppad_derivOut.size(); ++ijk)
-	    //   std::cout<<cppad_derivOut[ijk]<<" ";
-	    // std::cout<<std::endl;
-
-#ifdef _TIME_AD_GENERAL
-	    derivs_run_tape_timer_stop();
-#endif
-	  }
-	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-	    if(!infIndicators[dy_ind]){
-	      int dx2_ind = wrtAll ? vec_ind2 : wrtVector[vec_ind2] - 1;
-	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-		cppad_derivOut[dx2_ind * 2 + 1];
-	    }
-	    else{
-	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-		CppAD::numeric_limits<BASE>::quiet_NaN();
-	    }
-	  }
-	}
+    if(maxOrder > 0){
+      std::size_t q = value_ans.size();
+      vector<bool> infIndicators(q, false); // default values will be false
+      for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
+        if(check_inf_nan_gdi(value_ans[inf_ind])) {
+          infIndicators[inf_ind] = true;
+        }
       }
       if (ordersFound[1]) {
-	BASE *LHS = ansList->jacobian.getPtr() + dy_ind;
-	if(!infIndicators[dy_ind]){
-	  if(wrtAll) {
-	    for (size_t vec_ind3 = 0; vec_ind3 < wrt_n; ++vec_ind3, LHS += q) {
-	      *LHS = cppad_derivOut[vec_ind3 * maxOrder];
-	    }
-	  } else {
-	    double const *wrtVector_p = wrtVector.getConstPtr();
-	    double const *wrtVector_p_end = wrtVector_p + wrt_n;
-	    for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
-	      *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
-	    }
-	  }
-	} else {
-	  for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-	    *LHS = CppAD::numeric_limits<BASE>::quiet_NaN();
-	    LHS += q;
-	  }
-	}
-
-	// for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-	//   if(!infIndicators[dy_ind]){
-	//     int dx1_ind = wrtVector[vec_ind] - 1;
-	//     ansList->jacobian[vec_ind * q + dy_ind] =
-	//       cppad_derivOut[dx1_ind * maxOrder + 0];
-	//   }
-	//   else{
-	//     ansList->jacobian[vec_ind * q + dy_ind] =
-	//       CppAD::numeric_limits<double>::quiet_NaN();
-	//   }
-	// }
-
+        ansList->jacobian.setSize(q, wrt_n, false, false);
       }
-      w[dy_ind] = 0;
-    }
-  }
+      if (ordersFound[2]) {
+        ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
+      }
+      vector<BASE> cppad_derivOut;
+      std::vector<BASE> w(q, 0);
+      
+      // begin replacement
+      if (maxOrder == 1) {
+        if(q < wrt_n) {
+          //   std::cout<<"old version of jacobian\n";
+          for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
+            w[dy_ind] = 1;
+            if(!infIndicators[dy_ind]){
+              #ifdef _TIME_AD_GENERAL
+              derivs_run_tape_timer_start();
+              #endif
+              cppad_derivOut = ADtape->Reverse(1, w);
+              #ifdef _TIME_AD_GENERAL
+              derivs_run_tape_timer_stop();
+              #endif
+            }
+            if (ordersFound[1]) { // will always be true if maxOrder == 1
+              BASE *LHS = ansList->jacobian.getPtr() + dy_ind;
+              if(!infIndicators[dy_ind]){
+                if(wrtAll) {
+                  for (size_t vec_ind3 = 0; vec_ind3 < wrt_n; ++vec_ind3, LHS += q) {
+                    *LHS = cppad_derivOut[vec_ind3 * maxOrder];
+                  }
+                } else {
+                  double const *wrtVector_p = wrtVector.getConstPtr();
+                  double const *wrtVector_p_end = wrtVector_p + wrt_n;
+                  for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
+                    *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
+                  }
+                }
+              } else {
+                for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+                  *LHS = CppAD::numeric_limits<BASE>::quiet_NaN();
+                  LHS += q;
+                }
+              }
+            }
+            w[dy_ind] = 0;
+          }
+        } else { // q > n
+          //std::cout<<"new version of jacobian\n";
+          for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+            int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
+            std::vector<BASE> x1(n, 0);
+            x1[dx1_ind] = 1;
+            #ifdef _TIME_AD_GENERAL
+            derivs_run_tape_timer_start();
+            #endif
+            cppad_derivOut = ADtape->Forward(1, x1);
+            #ifdef _TIME_AD_GENERAL
+            derivs_run_tape_timer_stop();
+            #endif
+            //STOPPED HERE: REARRANGE RETURNING FROM Forward(1)
+            if (ordersFound[1]) { // will always be true if maxOrder == 1
+              BASE *LHS = ansList->jacobian.getPtr() + q*dx1_ind;
+              
+              for(size_t dy_ind = 0; dy_ind < q; ++dy_ind, ++LHS) {
+                *LHS = infIndicators[dy_ind] ?
+                CppAD::numeric_limits<BASE>::quiet_NaN() :
+                cppad_derivOut[dy_ind * maxOrder];
+              }
+            }
+          }
+        }  
+      } else {
+        // maxOrder > 1: outer loop over vec_ind, inner loop over dy_ind
+        for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+          int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
+          std::vector<BASE> x1(n, 0);
+          x1[dx1_ind] = 1;
+          #ifdef _TIME_AD_GENERAL
+          derivs_run_tape_timer_start();
+          #endif
+          ADtape->Forward(1, x1);
+          #ifdef _TIME_AD_GENERAL
+          derivs_run_tape_timer_stop();
+          #endif
+          for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
+            w[dy_ind] = 1;
+            if(!infIndicators[dy_ind]){
+              #ifdef _TIME_AD_GENERAL
+              derivs_run_tape_timer_start();
+              #endif
+              cppad_derivOut = ADtape->Reverse(2, w);
+              #ifdef _TIME_AD_GENERAL
+              derivs_run_tape_timer_stop();
+              #endif
+              for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
+                int dx2_ind = wrtAll ? vec_ind2 : wrtVector[vec_ind2] - 1;
+                ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+                cppad_derivOut[dx2_ind * 2 + 1];
+              }
+            } else {
+              for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
+                ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+                CppAD::numeric_limits<BASE>::quiet_NaN();
+              }
+            }
+            
+            if (ordersFound[1]) {
+              BASE *LHS = ansList->jacobian.getPtr() + dy_ind;
+              if(!infIndicators[dy_ind]){
+                if(wrtAll) {
+                  for (size_t vec_ind3 = 0; vec_ind3 < wrt_n; ++vec_ind3, LHS += q) {
+                    *LHS = cppad_derivOut[vec_ind3 * maxOrder];
+                  }
+                } else {
+                  double const *wrtVector_p = wrtVector.getConstPtr();
+                  double const *wrtVector_p_end = wrtVector_p + wrt_n;
+                  for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
+                    *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
+                  }
+                }
+              } else {
+                for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+                  *LHS = CppAD::numeric_limits<BASE>::quiet_NaN();
+                  LHS += q;
+                }
+              }
+            }
+            w[dy_ind] = 0;
+          }
+        }
+      } // end else
+
+// end replacement
+
+//     for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
+//       w[dy_ind] = 1;
+//       if (maxOrder == 1) {
+//         if(!infIndicators[dy_ind]){
+//           #ifdef _TIME_AD_GENERAL
+//           derivs_run_tape_timer_start();
+//           #endif
+//           cppad_derivOut = ADtape->Reverse(1, w);
+//           #ifdef _TIME_AD_GENERAL
+//           derivs_run_tape_timer_stop();
+//           #endif
+//         }
+//       } else {
+// 	//	std::cout<<"wrtAll = "<<wrtAll<<std::endl;
+// 	// if(!wrtAll) {
+// 	//   for(size_t ijk = 0; ijk < wrt_n; ijk++) {
+// 	//     std::cout<<wrtVector[ijk]<<" ";
+// 	//   }
+// 	//   std::cout<<std::endl;
+// 	// }
+// 	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+// 	  if(!infIndicators[dy_ind]){
+// 	    int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
+// 	    std::vector<BASE> x1(n, 0);  // vector specifying first derivatives.
+// 	    // first specify coeffs for first dim
+// 	    // of s across all directions r, then
+// 	    // second dim, ...
+// 	    x1[dx1_ind] = 1;
+// #ifdef _TIME_AD_GENERAL
+// 	    derivs_run_tape_timer_start();
+// #endif
+// 	    // std::cout<<"Forward 1 x1: ";
+// 	    // for(int ijk = 0; ijk < x1.size(); ++ijk)
+// 	    //   std::cout<<x1[ijk]<<" ";
+// 	    // std::cout<<std::endl;
+// 	    // vector<BASE> forwardOut;
+// 	    // forwardOut = ADtape->Forward(1, x1);
+// 	    ADtape->Forward(1, x1);
+// 	    //	    std::cout<<"forwardOut 1 result (dx1_ind = "<< dx1_ind << ", forwardOut.size() = "<< forwardOut.size() <<"): ";
+// 	    // for(int ijk = 0; ijk < forwardOut.size(); ++ijk)
+// 	    //   std::cout<<forwardOut[ijk]<<" ";
+// 	    // std::cout<<std::endl;
+// 	    cppad_derivOut = ADtape->Reverse(2, w);
+// 	    // std::cout<<"reverse 2 result: ";
+// 	    // for(int ijk = 0; ijk < cppad_derivOut.size(); ++ijk)
+// 	    //   std::cout<<cppad_derivOut[ijk]<<" ";
+// 	    // std::cout<<std::endl;
+
+// #ifdef _TIME_AD_GENERAL
+// 	    derivs_run_tape_timer_stop();
+// #endif
+// 	  }
+// 	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
+// 	    if(!infIndicators[dy_ind]){
+// 	      int dx2_ind = wrtAll ? vec_ind2 : wrtVector[vec_ind2] - 1;
+// 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+// 		cppad_derivOut[dx2_ind * 2 + 1];
+// 	    }
+// 	    else{
+// 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+// 		CppAD::numeric_limits<BASE>::quiet_NaN();
+// 	    }
+// 	  }
+// 	}
+//       }
+//       if (ordersFound[1]) {
+// 	BASE *LHS = ansList->jacobian.getPtr() + dy_ind;
+// 	if(!infIndicators[dy_ind]){
+// 	  if(wrtAll) {
+// 	    for (size_t vec_ind3 = 0; vec_ind3 < wrt_n; ++vec_ind3, LHS += q) {
+// 	      *LHS = cppad_derivOut[vec_ind3 * maxOrder];
+// 	    }
+// 	  } else {
+// 	    double const *wrtVector_p = wrtVector.getConstPtr();
+// 	    double const *wrtVector_p_end = wrtVector_p + wrt_n;
+// 	    for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
+// 	      *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
+// 	    }
+// 	  }
+// 	} else {
+// 	  for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+// 	    *LHS = CppAD::numeric_limits<BASE>::quiet_NaN();
+// 	    LHS += q;
+// 	  }
+// 	}
+
+// 	// for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+// 	//   if(!infIndicators[dy_ind]){
+// 	//     int dx1_ind = wrtVector[vec_ind] - 1;
+// 	//     ansList->jacobian[vec_ind * q + dy_ind] =
+// 	//       cppad_derivOut[dx1_ind * maxOrder + 0];
+// 	//   }
+// 	//   else{
+// 	//     ansList->jacobian[vec_ind * q + dy_ind] =
+// 	//       CppAD::numeric_limits<double>::quiet_NaN();
+// 	//   }
+// 	// }
+
+//       }
+//       w[dy_ind] = 0;
+//     }
+//   }
 #ifdef _TIME_AD_GENERAL
-  derivs_getDerivs_timer_stop();
+derivs_getDerivs_timer_stop();
 #endif
-};
+    }
+}
 
 void nimbleFunctionCppADbase::getDerivs_meta(nimbleCppADinfoClass &ADinfo,
 					     const NimArr<1, double> &derivOrders,
