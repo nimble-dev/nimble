@@ -244,6 +244,7 @@ buildMCMC <- nimbleFunction(
             thinWAIC <- FALSE
             nburnin_extraWAIC <- 0
         }
+        firstRun <- TRUE
         setupOutputs(derivedTypes)
     },
     
@@ -264,6 +265,8 @@ buildMCMC <- nimbleFunction(
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')
+        if(firstRun)   reset <<- TRUE       ## compulsory reset on first run of MCMC
+        firstRun <<- FALSE
         if(reset) {
             if(initializeModel)   my_initializeModel$run()
             thinToUseVec <<- thinFromConfVec
