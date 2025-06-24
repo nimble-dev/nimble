@@ -198,6 +198,11 @@ buildMacro <- function(fun,
     if(use3pieces) {
         wrapper <- function(code, modelInfo, .env) {
             args <- as.list(code)
+            if(length(args) != 3){
+              stop(paste0("buildMacro: This macro must be used as part of an assignment.\n",
+                         "Are you missing the left-hand-side of the assignment or assignment operator (~ / <-)?"),
+                   call.=FALSE)
+            }
             args[[1]] <- args[[1]] == '~'
             names(args) <- c('stoch','LHS','RHS')
             if(unpackArgs) {

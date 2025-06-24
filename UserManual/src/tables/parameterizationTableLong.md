@@ -47,7 +47,7 @@ relationship to the *canonical* parameterization used in NIMBLE.
   `...shape, size)`
   `dnegbin(prob, size)`     canonical
   `dnorm(mean, sd)`         canonical
-  `dnorm(mean, tau)`        `dnorm(mean, sd = 1 / sqrt(var))`
+  `dnorm(mean, tau)`        `dnorm(mean, sd = 1 / sqrt(tau))`
   `dnorm(mean, var)`        `dnorm(mean, sd = sqrt(var))`
   `dpois(lambda)`           canonical
   `dt(mu, sigma, df)`       canonical
