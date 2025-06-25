@@ -76,7 +76,7 @@ checkLogProb <- function(logProb, target) {
    if(is.na(logProb))
        return(-Inf)
    if(logProb == Inf)
-         print("MCMC sampling of ", target, " encountered a log probability density value of infinity. Results of sampling may not be valid.")
+         cat("MCMC sampling of ", target, " encountered a log probability density value of infinity. Results of sampling may not be valid.\n")
    return(logProb)
 }
 

@@ -63,7 +63,7 @@ bool decide(double lMHr) { // simple function accept or reject based on log Metr
   return(false);
 }
 
-void checkLogProbWarn(string target) {
+void checkLogProbWarn(std::string target) {
   _nimble_global_output<<"MCMC sampling of " << target << " encountered a log probability density value of infinity. Results of sampling may not be valid.\n";
   nimble_print_to_R(_nimble_global_output);
 }
