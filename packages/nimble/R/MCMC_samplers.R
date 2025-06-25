@@ -2418,7 +2418,7 @@ CAR_scalar_RW <- nimbleFunction(
         propValue <- rnorm(1, mean = model[[targetScalar]], sd = scale)
         model[[targetScalar]] <<- propValue
         lp1 <- dcarList[[1]]$run() + model$calculate(depNodes)
-        logMHR <- checkLogProb(lp1, target) - checkLogProb(lp0, target)
+        logMHR <- checkLogProb(lp1, targetScalar) - checkLogProb(lp0, targetScalar)
         jump <- decide(logMHR)
         if(jump) {
             model$calculate(targetScalar)
