@@ -53,10 +53,11 @@ decideAndJump <- nimbleFunction(
     setup = function(model, mvSaved, target, UNUSED) {    ## should remove UNUSED argument, after next release of nimbleSMC -DT July 2024
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
+        targetOne <- target[1]
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         ## Check each one individually to catch case like `3 - Inf`.
-        logMHR <- checkLogProb(modelLP1, target) - checkLogProb(modelLP0, target) - checkLogProb(propLP1, target) + checkLogProb(propLP0, target)
+        logMHR <- checkLogProb(modelLP1, targetOne) - checkLogProb(modelLP0, targetOne) - checkLogProb(propLP1, targetOne) + checkLogProb(propLP0, targetOne)
         jump <- decide(logMHR)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
