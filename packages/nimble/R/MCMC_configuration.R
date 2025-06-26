@@ -36,7 +36,7 @@ samplerConf <- setRefClass(
             mcmc_listContentsToStr(infoList, displayControlDefaults, displayNonScalars, displayConjugateDependencies)
         },
         show = function() {
-            cat(toStr(), '\n')
+            cat(toStr())  ## later, change to: cat(toStr(), '\n')
         }
     )
 )
