@@ -25,8 +25,8 @@ nimDerivs_dummy <- nimbleFunction(
 #' @param order an integer vector with values within the set \eqn{{0, 1, 2}}, 
 #' corresponding to whether the function value, Jacobian, and Hessian should be
 #'  returned respectively.  Defaults to \code{c(0, 1, 2)}.
-#' @param model (optional) for derivatives of a nimbleFunction that involves model.
-#' calculations, the uncompiled model that is used. This is needed in order
+#' @param model (optional) the uncompiled model that is used, if taking derivatives
+#' of a nimbleFunction that involves model calculations. This is needed in order
 #' to be able to correctly restore values into the model when \code{order} does not
 #' include 0 (or in all cases when double-taping).
 #' @param ... additional arguments intended for internal use only.
