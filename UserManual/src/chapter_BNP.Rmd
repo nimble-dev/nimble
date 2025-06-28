@@ -13,25 +13,27 @@ require(nimble)
 
 ## Bayesian nonparametric mixture models {#sec:bnpmixtures}
  
-NIMBLE provides support  for Bayesian nonparametric (BNP) mixture modeling.  The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures [@ferguson_73;@ferguson_74;@lo_84;@escobar_94;@escobar_west_95].   More specifically, a DP mixture model takes the form
+NIMBLE provides support  for Bayesian nonparametric (BNP) mixture modeling.  The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures [@ferguson_73;@ferguson_74;@lo_84;@escobar_94;@escobar_west_95]. These allow one to avoid specifying a particular parametric distribution for a given node (parameter) in a model. Instead one can use a DP mixture as a much more general, nonparametric distribution. For example, a normal distribution for a random effect could be replaced by a DP mixture of normal distributions, with the number of components of the mixture being determined from the data and not fixed in advance.
+
+We'll first introduce the general, technical definition of a DP mixture model before describing the Chinese Restaurant Process representation, which may be more interpretable for many readers. More specifically, a DP mixture model for a random variable $y_i$ takes the form
 
 $$y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta),$$
 $$G \mid \alpha, G_0 \sim  DP(\alpha, G_0),$$
 
-where $h(\cdot \mid \theta)$ is a suitable kernel with parameter $\theta$,  and  $\alpha$  and $G_0$ are the concentration and  baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to the model above.
+where $h(\cdot \mid \theta)$ is a suitable kernel (i.e., probability density/mass function) with parameter $\theta$,  and  $\alpha$  and $G_0$ are the concentration and  baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to the model above. While "y" would often be used as notation for a data value, it is used generically here, noting that often DP mixtures are used for random effects rather than directly for observations.
 
-When the random measure $G$ is integrated out from the model, the DP mixture model can be written using  latent or membership variables, $z_i$,  following a Chinese Restaurant Process (CRP) distribution [@blackwell_mcqueen_73], discussed in Section \@ref(sec:crp).  The model takes the form 
+When the random distribution (also referred to as a random 'measure') $G$ is integrated out from the model, the DP mixture model can be written using  latent or membership variables, $z_i$,  following a Chinese Restaurant Process (CRP) distribution [@blackwell_mcqueen_73], discussed in Section \@ref(sec:crp).  The model takes the form 
 
 $$y_i \mid \tilde{\boldsymbol{\theta}}, z_i \overset{ind}{\sim} h(\cdot \mid \tilde{\theta}_{z_i}),$$
 $$\boldsymbol{z}\mid \alpha \sim \mbox{CRP}(\alpha),\hspace{0.5cm}  \tilde{\theta}_j \overset{iid}{\sim}G_0,$$
-where $\mbox{CRP}(\alpha)$ denotes the CRP  distribution with concentration parameter $\alpha$.
+where $\mbox{CRP}(\alpha)$ denotes the CRP  distribution with concentration parameter $\alpha$. Put in perhaps more intuitive terms, $z_i$ says which cluster/group the $i$th unit is in, and the parameter $\tilde{\theta}_j$ for group $j$ is distributed according to the $G_0$ baseline distribution. The parameter $\alpha$ controls how dispersed the clustering is, described more in the next section.
 
-If a stick-breaking representation [@sethuraman_94], discussed in section \@ref(sec:sb), is  assumed for the random measure $G$, then the model takes the form
+If a stick-breaking representation [@sethuraman_94], discussed in section \@ref(sec:sb), is  assumed for the random distribution (measure) $G$, then the model takes the form
 
 $$y_i \mid {\boldsymbol{\theta}}^{\star}, \boldsymbol{v} \overset{ind}{\sim} \sum_{l=1}^{\infty}\left\{ v_l\prod_{m<l}(1-v_m)\right\} h(\cdot \mid {\theta}_l^{\star}),$$
 $$v_l \mid \alpha \overset{iid}{\sim} Beta(1, \alpha),\hspace{0.5cm}  {\theta}_l^{\star} \overset{iid}{\sim}G_0.$$
 
-\noindent More general representations of the random measure can be specify by considering $v_l \mid \nu_l, \alpha_l \overset{ind}{\sim} Beta(\nu_l, \alpha_l)$. Finite dimensional approximations can be obtained by truncating the infinite sum to have $L$ components. 
+\noindent More general representations of the random distribution can be specify by considering $v_l \mid \nu_l, \alpha_l \overset{ind}{\sim} Beta(\nu_l, \alpha_l)$. Finite dimensional approximations can be obtained by truncating the infinite sum to have $L$ components. 
 
 Different representations of  DP mixtures lead to different computational algorithms. NIMBLE supports sampling algorithms based on the CRP representation, as well as on the stick-breaking representation.  NIMBLE includes definitions of structures required to implement the CRP and stick-breaking distributions, and  the associated MCMC algorithms.
 
