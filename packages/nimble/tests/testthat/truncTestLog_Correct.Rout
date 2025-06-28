@@ -313,5 +313,5 @@ b[240] -0.179497687 -1.9350040 1.6936066       1
 b[241]  0.558300921 -0.9444116 2.7604134       1
 b[242] -1.128736274 -2.6476995 0.8977150       1
 b[243]  1.798281285 -1.1143304 2.7469463       1
- [ reached getOption("max.print") -- omitted 43 rows ]
+ [ reached 'max' / getOption("max.print") -- omitted 43 rows ]
 ===== Finished MCMC test for test of ordering constraint. =====

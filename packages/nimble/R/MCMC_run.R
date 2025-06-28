@@ -348,7 +348,8 @@ nimbleMCMC <- function(code,
                        mean = FALSE,
                        variance = FALSE,
                        logProb = FALSE,
-                       WAIC = FALSE) {
+                       WAIC = FALSE,
+                       userEnv = parent.frame()) {
     #### process 'code' argument, to accept a filename, or a function
     ##if(is.character(code) || is.function(code)) {
     ##    if(is.function(code)) modelText <- mergeMultiLineStatements(deparse(body(code)))

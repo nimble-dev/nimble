@@ -31,7 +31,9 @@
 #' \code{initializeModel}: Boolean specifying whether to run the initializeModel routine on the underlying model object, prior to beginning MCMC sampling (default = TRUE).
 #' 
 #' \code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain method.  The value for this argument is specified automatically from invocation via runMCMC, and need not be supplied when calling mcmc$run (default = 1).
-
+#' 
+#' \code{chain}: Integer specifying the MCMC chain number.  The chain number is passed to each MCMC sampler's before_chain and after_chain methods.  The value for this argument is specified automatically from invocation via runMCMC, and genernally need not be supplied when calling mcmc$run (default = 1).
+#'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
@@ -243,6 +245,7 @@ buildMCMC <- nimbleFunction(
             thinWAIC <- FALSE
             nburnin_extraWAIC <- 0
         }
+        firstRun <- TRUE
         setupOutputs(derivedTypes)
     },
     
@@ -263,6 +266,8 @@ buildMCMC <- nimbleFunction(
         if(niter < 0)       stop('cannot specify niter < 0')
         if(nburnin < 0)     stop('cannot specify nburnin < 0')
         if(nburnin > niter) stop('cannot specify nburnin > niter')
+        if(firstRun)   reset <- TRUE       ## compulsory reset on first run of MCMC
+        firstRun <<- FALSE
         if(reset) {
             if(initializeModel)   my_initializeModel$run()
             thinToUseVec <<- thinFromConfVec

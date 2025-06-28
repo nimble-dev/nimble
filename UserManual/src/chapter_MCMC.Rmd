@@ -35,7 +35,6 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
   1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
   1. Optionally, calculate the WAIC (Section \@ref(sec:WAIC)).
 
-Prior to version 0.8.0, NIMBLE provided two additional functions, `MCMCsuite` and `compareMCMCs`, to facilitate comparison of multiple MCMC algorithms, either internal or external to NIMBLE.  Those capabilities have been redesigned and moved into a separate package called `compareMCMCs`.
 
 End-to-end examples of MCMC in NIMBLE can be found in Sections \@ref(sec:creating-mcmc)-\@ref(sec:customizing-mcmc) and Section \@ref(sec:mcmc-example-litters).
 <!---  ### Creating an MCMC algorithm -->
@@ -1229,9 +1228,9 @@ samplesList <- runMCMC(Cmcmc_CL, niter=1000, nchains=3)
 lapply(samplesList, dim)
 ```
 
-## Comparing different MCMCs with *MCMCsuite* and *compareMCMCs* {#mcmc-suite-compare-mcmcs}
+## Comparing different MCMCs with *compareMCMCs* {#mcmc-suite-compare-mcmcs}
 
-Please see the `compareMCMCs` package for the features previously provided by `MCMCsuite` and `compareMCMCs` in NIMBLE (until version 0.8.0).  The `compareMCMCs` package provides tools to automatically run MCMC in nimble (including multiple sampler configurations), WinBUGS, OpenBUGS, JAGS, Stan, or any other engine for which you provide a simple common interface.  The package makes it easy to manage comparison metrics and generate html pages with comparison figures.
+Please see the `compareMCMCs` package for the features previously provided by the `compareMCMCs` function (and `MCMCsuite` function) in NIMBLE (until version 0.8.0).  The `compareMCMCs` package provides tools to automatically run MCMC in nimble (including multiple sampler configurations), WinBUGS, OpenBUGS, JAGS, Stan, or any other engine for which you provide a simple common interface.  The package makes it easy to manage comparison metrics and generate html pages with comparison figures.
 
 ## Running MCMC chains in parallel
 
