@@ -263,13 +263,43 @@ nf_checkDSLcode_buildDerivs <- function(code, buildDerivs) {
                 if(isFALSE(buildDerivs) || !length(buildDerivs) || is.null(buildDerivs) ||
                     (is.character(buildDerivs) && !methodName %in% buildDerivs) ||
                    (is.list(buildDerivs) && !methodName %in% names(buildDerivs)))
-                    message("  [Note] Detected use of `nimDerivs` with a function or method, `", methodName, "`, for which `buildDerivs` has not been set. This nimbleFunction cannot be compiled.") 
+                    messageIfVerbose("  [Note] Detected use of `nimDerivs` with a function or method, `", methodName, "`, for which `buildDerivs` has not been set. This nimbleFunction cannot be compiled.") 
             }
 
         }
     }
     invisible(NULL)
 }
+
+nf_checkDSLcode_checkForCalc <- function(code) {
+    code <- body(code)
+    return(sum(all.names(code) == "calculate") != sum(all.vars(code)=="calculate"))
+}
+
+
+nf_checkDSLcode_calcDerivsArgs <- function(code, methodsWithCalc) {
+    code <- body(code)
+    ## This assumes `derivs()` call is from assignment like `var <- derivs()`.
+    derivsFound <- which(sapply(code, function(expr)
+        length(expr) >= 3 && length(expr[[1]]) == 1 &&
+        as.character(expr[[1]]) %in% c("=", "<-", "<<-") &&
+        length(expr[[3]]) > 1 && length(expr[[3]][[1]]) == 1 && 
+        as.character(expr[[3]][[1]]) %in% c('derivs', 'nimDerivs')))
+    for(idx in derivsFound) {
+        argNames <- names(code[[idx]][[3]])
+        call <- code[[idx]][[3]][[2]][[1]]
+        if(length(call) == 1 && as.character(call) %in% methodsWithCalc &&
+           length(setdiff(c('model', 'constantNodes', 'updateNodes'), argNames))) 
+            messageIfVerbose("  [Warning] Detected use of `nimDerivs` on a function or method, `", code[[idx]][[3]][[2]][[1]], "`,\n",
+                             "            that appears to contain the use of `calculate` on a model.\n",
+                             "            If model calculations are done in the method being differentiated, the 'model'\n",
+                             "            argument to 'nimDerivs' should be included to ensure correct restoration of\n",
+                             "            values in the model, and the 'updateNodes' and 'constantNodes' arguments\n",
+                             "            should also be provided (see Section 16.7.2 of the User Manual).")
+    }
+    invisible(NULL)
+}
+
 
 nf_checkDSLcode <- function(code, methodNames, setupVarNames, args, where = NULL) {
     validCalls <- c(names(sizeCalls),
