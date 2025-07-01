@@ -245,6 +245,7 @@ parameterTransform <- nimbleFunction(
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
             if(nNodes == 0)   return(transformed)
+            iNode <- 1L; i <- 1L; j <- 1L; ind1 <- 1L; ind2 <- 1L; dd <- 1L   ## integer types
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
                 thisType <- transformType[iNode]
