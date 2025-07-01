@@ -365,7 +365,7 @@ test_that("Warning message works for use of nimDerivs with model calculate and i
         buildDerivs = c('dens_calc','dens_direct')
         ))
     
-    expect_error(
+    expect_message(
         mynf <- nimbleFunction(
     setup = function(model){
         paramNodes = 'psi[1:4]'
@@ -396,7 +396,7 @@ test_that("Warning message works for use of nimDerivs with model calculate and i
     buildDerivs = c('dens_calc','dens_direct')
     ), "appears to contain the use of `calculate` on a model")
     
-    expect_error(
+    expect_message(
         mynf <- nimbleFunction(
     setup = function(model){
         paramNodes = 'psi[1:4]'
