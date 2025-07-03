@@ -3026,7 +3026,7 @@ sampler_polyagamma <- nimbleFunction(
                 stop("polyagamma sampler: number of rows of design matrix, ", nrow(X), ", doesn't match number of Bernoulli observations, ", N)
             fixed <- TRUE
             fixedColumns <- rep(TRUE, nCoef)
-            initializeX <- TRUE ## Don't Initialize Design Matrix on first run
+            initializeX <- FALSE ## Don't Initialize Design Matrix on first run
         }
 
         initializeSize <- TRUE
