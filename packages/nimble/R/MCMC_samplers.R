@@ -2825,6 +2825,10 @@ sampler_polyagamma <- nimbleFunction(
         
         ## This allows user to override error trapping for unusual model structures.
         check <- extractControlElement(control, 'check', TRUE)   
+        ## If not checking, then inflation nodes need to be provided by user or set as empty
+        inflationNodes <- model$expandNodeNames(control$inflationNodes)
+        ## Check if design matrix columns are infinite and warn to scale design matrix.
+        infiniteOkay <-   extractControlElement(control, 'infiniteOkay', FALSE)
 
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -3012,6 +3016,8 @@ sampler_polyagamma <- nimbleFunction(
             }
             if(all(fixedColumns)) 
                 fixed <- TRUE
+
+            initializeX <- TRUE ## Initialize Design Matrix on first run
         } else {
             X <- control$designMatrix
             if(ncol(X) != nCoef)
@@ -3020,10 +3026,10 @@ sampler_polyagamma <- nimbleFunction(
                 stop("polyagamma sampler: number of rows of design matrix, ", nrow(X), ", doesn't match number of Bernoulli observations, ", N)
             fixed <- TRUE
             fixedColumns <- rep(TRUE, nCoef)
+            initializeX <- TRUE ## Don't Initialize Design Matrix on first run
         }
 
         initializeSize <- TRUE
-        initializeX <- TRUE
         pgSampler <- samplePolyaGamma()
 
         Q <- matrix(0, nrow = nCoef, ncol = nCoef)
@@ -3163,6 +3169,14 @@ sampler_polyagamma <- nimbleFunction(
             if(initializeX & zeroInflated) {
                 values(model, inflationNodes) <<- inflationValuesSaved
                 values(model, inflationNodesDeps) <<- inflationDepsValuesSaved
+            }
+            ## Check to see if covariates need to be scaled:
+            if(initializeX & !infiniteOkay) {
+              for(j in 1:nCoef){
+                if( any(abs(X[, j]) == Inf) ){
+                  cat("Warning: Infinite values constructed in the design matrix for covariate '", j, "'. Please consider scaling the covariate, providing the design matrix, or overriding this error with infiniteOkay = TRUE.\n")
+                }
+              }
             }
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
