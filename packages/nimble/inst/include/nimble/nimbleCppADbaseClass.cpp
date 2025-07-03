@@ -86,36 +86,154 @@ void getDerivs_internal(vector<BASE> &independentVars,
     #ifdef _TIME_AD_GENERAL
     derivs_run_tape_timer_start();
     #endif
-    value_ans = ADtape->Forward(0, independentVars);
-    //  std::cout<<"value_ans.size() = "<<value_ans.size()<<std::endl;
-    #ifdef _TIME_AD_GENERAL
-    derivs_run_tape_timer_stop();
-    #endif
-    if (ordersFound[0]) {
-      ansList->value.setSize(value_ans.size(), false, false);
-      std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
+
+    std::size_t q = ADtape->Range();
+    
+    int strategy_zero = 1; // 1 means do it, 0 means skip.
+    int strategy_one = 0; // 0=skip. 1=forward regular. 2=reverse subgraph_rev_jac. 3=reverse normal 
+    int strategy_two= 0; // 0=skip. 1=reverse regular.
+    if(maxOrder > 0) {
+      if (ordersFound[1]) {
+        // At least Jacobian is needed. 
+        if(!ordersFound[2]) {
+          // Hessian is not needed.
+          if(q <= n) { // possibly we should compare to wrt_n, but we have use cases where comparing to n works better
+            // It's hard to really know, because reverse offers the subgraph_rev_jac option.
+            // Use reverse mode b/c we have fewer (or equal) number of outputs as inputs.
+            if(q > 1) {
+              // If there are multiple outputs, use subgraph_rev_jac
+              strategy_one = 2; // use subgraph_rev_jac if jacobian is the final order
+              if(!ordersFound[0]) {
+                // If value is not needed, we can skip Forward 0 because subgraph_rev_jac does it itself.
+                strategy_zero = 0; 
+              }
+            } else {
+              // q == 1, so we can use regular reverse mode.
+              strategy_one = 3;// simple reverse
+            }
+          } else {
+            // Use forward mode b/c we have more outputs than inputs.
+            strategy_one = 1; // use forward
+          }
+        } else {
+          // Use Forward mode because we need to continue to Hessian.
+          // In this case, strategy_one is not actually checked below, but we set it here for consistency.
+          strategy_one = 1;
+        }
+      } // done with ordersFound[1]==true
+      if(ordersFound[2]) // Hessian is needed.
+        strategy_two = 1; // not really used below, but set up for consistency.
     }
-    if(maxOrder > 0){
-      std::size_t q = value_ans.size();
+  //std::cout<<"n: "<<n<<" q: "<<q<<" wrt_n: "<<wrt_n<<std::endl;
+  //std::cout<<"strategy flags: "<<strategy_zero<<" "<<strategy_one<<" "<<strategy_two<<std::endl;
+
+    // to-do: get Forward(0) out of subgraph_rev_jac if both are needed/used.
+    // For now we have to wastefully run Forward(0) even if it will be done again in subgraph_rev_jac.
+    if(strategy_zero==1) {
+      value_ans = ADtape->Forward(0, independentVars);
+      //  std::cout<<"value_ans.size() = "<<value_ans.size()<<std::endl;
+      #ifdef _TIME_AD_GENERAL
+      derivs_run_tape_timer_stop();
+      #endif
+      if (ordersFound[0]) {
+        ansList->value.setSize(value_ans.size(), false, false);
+        std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
+      }
+    } else {
+      // Initialize value_ans with size q and all zeros when strategy_zero == 0
+      value_ans.resize(q);
+      std::fill(value_ans.begin(), value_ans.end(), 0.0);
+    }
+    //std::cout<<"entering maxOrder> 0\n";
+    if(maxOrder > 0){ 
       vector<bool> infIndicators(q, false); // default values will be false
       for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
         if(check_inf_nan_gdi(value_ans[inf_ind])) {
           infIndicators[inf_ind] = true;
         }
       }
+      //std::cout<<"about to set jacobian and hessian sizes\n";
       if (ordersFound[1]) {
-        ansList->jacobian.setSize(q, wrt_n, false, false);
+        ansList->jacobian.setSize(q, wrt_n, false, true); // true for fill_zero
       }
+      //std::cout<<"done setting jacobian size\n";
       if (ordersFound[2]) {
-        ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
+        ansList->hessian.setSize(wrt_n, wrt_n, q, false, true);
       }
+      //std::cout<<"done setting hessian size\n";
       vector<BASE> cppad_derivOut;
       std::vector<BASE> w(q, 0);
       
       // begin replacement
       if (maxOrder == 1) {
-        if(q < wrt_n) {
-          //   std::cout<<"old version of jacobian\n";
+        if(strategy_one == 2) { // subgraph_rev_jac
+          // Reverse mode
+          //   std::cout<<"subgraph_rev_jac version of jacobian\n";
+          //   std::cout<<"select_domain: ";
+          //   for (size_t i = 0; i < select_domain.size(); i++) {
+          //     std::cout<<select_domain[i]<<" ";
+          //   }
+          //   std::cout<<std::endl;
+          //   std::cout<<"select_range: ";
+          //   for (size_t i = 0; i < select_range.size(); i++) {
+          //     std::cout<<select_range[i]<<" ";
+          //   }
+          //   std::cout<<std::endl;
+          // Use subgraph_rev_jac system
+          std::vector<bool> select_domain(n, false), select_range(q, true);
+          for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+            int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
+            select_domain[dx1_ind] = true;
+          }
+          std::vector<int> col_2_wrtVecm1;
+          if(!wrtAll) {
+            col_2_wrtVecm1.resize(n, -1);
+            for(size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+              col_2_wrtVecm1[wrtVector[vec_ind] - 1] = vec_ind;
+            }
+          }
+          // std::cout<<"done setting select_domain and select_range\n";
+          CppAD::sparse_rcv<std::vector<size_t> , std::vector<BASE> > matrix_out;
+          ADtape->subgraph_jac_rev(select_domain, select_range,
+            independentVars, matrix_out);
+          // std::cout<<"done with subgraph_jac_rev\n";
+          size_t nnz = matrix_out.nnz();
+          std::vector<size_t> row_major = matrix_out.row_major();
+          size_t this_row, this_col, this_ind;
+          BASE *LHS = ansList->jacobian.getPtr();
+         // size_t max_row(0), max_col(0);
+         // bool give_output = false;
+          for(size_t k = 0; k < nnz; k++)
+          {
+            this_ind = row_major[k];
+            this_row = matrix_out.row()[this_ind];
+            this_col = matrix_out.col()[this_ind];
+            int dx1_ind = wrtAll ? this_col : col_2_wrtVecm1[this_col];
+            if(dx1_ind < 0) {
+              std::cout<<"Error: dx1_ind is negative. This should not happen."<<std::endl;
+              continue; // skip this entry
+            }
+            LHS[dx1_ind*q + this_row] = matrix_out.val()[this_ind];
+            // if(this_row > max_row) {
+            //   max_row = this_row;
+            //   give_output = true;
+            // }
+            // if(this_col > max_col) {
+            //   max_col = this_col;
+            //   give_output = true;
+            // }
+            // if(give_output) {
+            //   give_output = false;
+            // //  std::cout<<"this_ind: "<<this_ind<<" this_row: "<<this_row<<" this_col: "<<this_col<<" dx1_ind: "<<dx1_ind<<std::endl;
+            // }
+            // std::cout<<"this_ind: "<<this_ind<<" this_row: "<<this_row<<
+            // " this_col: "<<this_col<<" dx1_ind: "<<dx1_ind<<" value: "<<
+            // matrix_out.val()[this_ind]<<std::endl;
+          }
+          //std::cout<<"done filling jacobian\n";
+        }
+        else if(strategy_one == 3) { // regular reverse, not currently used but kept for future use if needed
+          // std::cout<<"regular reverse version of jacobian\n";
           for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
             w[dy_ind] = 1;
             if(!infIndicators[dy_ind]){
@@ -150,7 +268,8 @@ void getDerivs_internal(vector<BASE> &independentVars,
             }
             w[dy_ind] = 0;
           }
-        } else { // q > n
+        } else if(strategy_one == 1) { // q > n
+          // Forward mode
           //std::cout<<"new version of jacobian\n";
           for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
             int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
@@ -163,7 +282,6 @@ void getDerivs_internal(vector<BASE> &independentVars,
             #ifdef _TIME_AD_GENERAL
             derivs_run_tape_timer_stop();
             #endif
-            //STOPPED HERE: REARRANGE RETURNING FROM Forward(1)
             if (ordersFound[1]) { // will always be true if maxOrder == 1
               BASE *LHS = ansList->jacobian.getPtr() + q*dx1_ind;
               
@@ -174,9 +292,12 @@ void getDerivs_internal(vector<BASE> &independentVars,
               }
             }
           }
-        }  
+        } else {
+          std::cout<<"Error: in getDerivs: strategy_one is not set correctly for maxOrder == 1."<<std::endl;
+        }
       } else {
         // maxOrder > 1: outer loop over vec_ind, inner loop over dy_ind
+        // strategy_one and strategy_two are actually ignored here for now, b/c we wouldn't be here if not needed.
         for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
           int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
           std::vector<BASE> x1(n, 0);
@@ -237,109 +358,6 @@ void getDerivs_internal(vector<BASE> &independentVars,
       } // end else
 
 // end replacement
-
-//     for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
-//       w[dy_ind] = 1;
-//       if (maxOrder == 1) {
-//         if(!infIndicators[dy_ind]){
-//           #ifdef _TIME_AD_GENERAL
-//           derivs_run_tape_timer_start();
-//           #endif
-//           cppad_derivOut = ADtape->Reverse(1, w);
-//           #ifdef _TIME_AD_GENERAL
-//           derivs_run_tape_timer_stop();
-//           #endif
-//         }
-//       } else {
-// 	//	std::cout<<"wrtAll = "<<wrtAll<<std::endl;
-// 	// if(!wrtAll) {
-// 	//   for(size_t ijk = 0; ijk < wrt_n; ijk++) {
-// 	//     std::cout<<wrtVector[ijk]<<" ";
-// 	//   }
-// 	//   std::cout<<std::endl;
-// 	// }
-// 	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-// 	  if(!infIndicators[dy_ind]){
-// 	    int dx1_ind = wrtAll ? vec_ind : wrtVector[vec_ind] - 1;
-// 	    std::vector<BASE> x1(n, 0);  // vector specifying first derivatives.
-// 	    // first specify coeffs for first dim
-// 	    // of s across all directions r, then
-// 	    // second dim, ...
-// 	    x1[dx1_ind] = 1;
-// #ifdef _TIME_AD_GENERAL
-// 	    derivs_run_tape_timer_start();
-// #endif
-// 	    // std::cout<<"Forward 1 x1: ";
-// 	    // for(int ijk = 0; ijk < x1.size(); ++ijk)
-// 	    //   std::cout<<x1[ijk]<<" ";
-// 	    // std::cout<<std::endl;
-// 	    // vector<BASE> forwardOut;
-// 	    // forwardOut = ADtape->Forward(1, x1);
-// 	    ADtape->Forward(1, x1);
-// 	    //	    std::cout<<"forwardOut 1 result (dx1_ind = "<< dx1_ind << ", forwardOut.size() = "<< forwardOut.size() <<"): ";
-// 	    // for(int ijk = 0; ijk < forwardOut.size(); ++ijk)
-// 	    //   std::cout<<forwardOut[ijk]<<" ";
-// 	    // std::cout<<std::endl;
-// 	    cppad_derivOut = ADtape->Reverse(2, w);
-// 	    // std::cout<<"reverse 2 result: ";
-// 	    // for(int ijk = 0; ijk < cppad_derivOut.size(); ++ijk)
-// 	    //   std::cout<<cppad_derivOut[ijk]<<" ";
-// 	    // std::cout<<std::endl;
-
-// #ifdef _TIME_AD_GENERAL
-// 	    derivs_run_tape_timer_stop();
-// #endif
-// 	  }
-// 	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-// 	    if(!infIndicators[dy_ind]){
-// 	      int dx2_ind = wrtAll ? vec_ind2 : wrtVector[vec_ind2] - 1;
-// 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-// 		cppad_derivOut[dx2_ind * 2 + 1];
-// 	    }
-// 	    else{
-// 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-// 		CppAD::numeric_limits<BASE>::quiet_NaN();
-// 	    }
-// 	  }
-// 	}
-//       }
-//       if (ordersFound[1]) {
-// 	BASE *LHS = ansList->jacobian.getPtr() + dy_ind;
-// 	if(!infIndicators[dy_ind]){
-// 	  if(wrtAll) {
-// 	    for (size_t vec_ind3 = 0; vec_ind3 < wrt_n; ++vec_ind3, LHS += q) {
-// 	      *LHS = cppad_derivOut[vec_ind3 * maxOrder];
-// 	    }
-// 	  } else {
-// 	    double const *wrtVector_p = wrtVector.getConstPtr();
-// 	    double const *wrtVector_p_end = wrtVector_p + wrt_n;
-// 	    for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
-// 	      *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
-// 	    }
-// 	  }
-// 	} else {
-// 	  for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-// 	    *LHS = CppAD::numeric_limits<BASE>::quiet_NaN();
-// 	    LHS += q;
-// 	  }
-// 	}
-
-// 	// for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-// 	//   if(!infIndicators[dy_ind]){
-// 	//     int dx1_ind = wrtVector[vec_ind] - 1;
-// 	//     ansList->jacobian[vec_ind * q + dy_ind] =
-// 	//       cppad_derivOut[dx1_ind * maxOrder + 0];
-// 	//   }
-// 	//   else{
-// 	//     ansList->jacobian[vec_ind * q + dy_ind] =
-// 	//       CppAD::numeric_limits<double>::quiet_NaN();
-// 	//   }
-// 	// }
-
-//       }
-//       w[dy_ind] = 0;
-//     }
-//   }
 #ifdef _TIME_AD_GENERAL
 derivs_getDerivs_timer_stop();
 #endif
