@@ -3174,6 +3174,7 @@ sampler_polyagamma <- nimbleFunction(
             if(initializeX & !infiniteOkay) {
               for(j in 1:nCoef){
                 if( any(abs(X[, j]) == Inf) ){
+                  ## @CJP: Maybe we should change this to a stop? I suspect it can happen if we have uncaught zero inflation on a stochastic column...
                   cat("Warning: Infinite values constructed in the design matrix for covariate '", j, "'. Please consider scaling the covariate, providing the design matrix, or overriding this error with infiniteOkay = TRUE.\n")
                 }
               }
