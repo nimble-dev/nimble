@@ -632,9 +632,9 @@ glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'),
 
 ## Nested approximation methods{#sec:nested-approx}
 
-NIMBLE version 1.4.0 introduces a nested approximation method that provides approximate posterior inference using methodology similar to the well-known INLA approach [@rue2009approximate, @martins2013bayesian] and to the related methods for extended Gaussian latent models (EGLM) of @stringer2023fast, implemented in the `aghq` R package.
+NIMBLE version 1.4.0 introduces a nested approximation method that provides approximate posterior inference using methodology similar to the well-known INLA approach [@rue2009approximate, @martins2013bayesian], implemented in the R-INLA package and to the related methods for extended Gaussian latent models (EGLM) of @stringer2023fast, implemented in the `aghq` R package.
 
-Such nested approximations build on Laplace approximation, which provides an approximate marginal posterior, integrating (marginalizing) over latent nodes. Then instead of maximizing the approximation, one approximates the marginal posterior of the (hyper)parameters on a carefully-chosen set of points. Inference for individual (hyper) parameters is done by numerical approximation or numerical integration. Inference for the latent nodes is done via numerical integration (INLA) or via sampling (INLA and EGLM). 
+Such nested approximations build on Laplace approximation, which provides an approximate marginal posterior for model (hyper)parameters, integrating (marginalizing) over latent nodes. Then instead of maximizing the approximation, one approximates the marginal posterior of the (hyper)parameters on a carefully-chosen set of points. Inference for individual (hyper)parameters is done by numerical approximation, numerical integration, or sampling from an approximation to the marginal posterior. Inference for the latent nodes is done via numerical integration or via sampling from a mixture (over the hyperparameter points) of multivariate normal distributions.
 
 Our implementation in NIMBLE borrows heavily from the INLA and EGLM approaches.
 
@@ -642,10 +642,10 @@ Our implementation in NIMBLE borrows heavily from the INLA and EGLM approaches.
 Here we list some of the similarities and differences from INLA and the EGLM approach (`aghq` package):
 
  - Like EGLM, we use automatic differentiation to calculate the Laplace-approximated marginal likelihood.
- - Like EGLM, we take the latent nodes to be only the parameters in the model, without including the additive predictor values as done in INLA.
+ - Like EGLM, we take the latent nodes to be only the latent stochastic parameters in the model, without including the additive predictor values as done in INLA.
  - For marginal inference on a chosen univariate (hyper)parameter we provide the univariate asymmetric Gaussian approximation used by INLA and also (for increased accuracy at additional computational expense) numerical integration via AGHQ as in EGLM.
  - For joint inference on the (hyper)parameters we provide simulation from the joint asymmetric Gaussian approximation as done in INLA.
- - For inference on the latent nodes, we provide joint simulation from a multivariate normal mixture over the (hyper)parameter grid points as done in EGLM and lso available in INLA. Unlike in INLA, we do not provide univariate latent inference using deterministic nested Laplace approximation. The simulation-based approach may not be as accurate, but it allows for joint inference, including inference on quantities that depend on more than one latent node.
+ - For inference on the latent nodes, we provide joint simulation from a multivariate normal mixture over the (hyper)parameter grid points as done in EGLM and also available in INLA. Unlike in INLA, we do not provide univariate latent inference using deterministic nested Laplace approximation. The simulation-based approach may not be as accurate, but it allows for joint inference, including inference on quantities that depend on more than one latent node.
  - Unlike either EGLM or INLA, latent nodes are not required to have a joint normal distribution, though accuracy may be less when the latent nodes have other distributions.
  - For latent nodes whose conditional distributions factor into univariate conditionally independent sets, the Laplace approximation is a product of univariate approximations, and one can instead use NIMBLE's AGHQ approximation for higher accuracy.
  - We allow the user to choose the grid used for the (hyper)parameters. By default for $d>2$ parameters, we use the CCD grid used by INLA, but one can choose to use the AGHQ grid as used in EGLM or provide one's own grid. In the future we may provide additional grids, such as sparse grids.
@@ -653,72 +653,265 @@ Here we list some of the similarities and differences from INLA and the EGLM app
 
 ### Overview of the methodology
 
-NIMBLE's nested approximation consists of several pieces, with different options that allow a user to choose how the approximation is done. We briefly describe the pieces here. We refer to the (hyper)parameters simply as "parameters". 
+NIMBLE's nested approximation consists of several pieces, with different options that allow a user to choose how the approximation is done. We briefly describe the pieces here. For simplicity, we refer to the (hyper)parameters simply as "parameters". 
 
 #### Marginalization over the latent nodes
 
 We approximately marginalize (integrate) over the latent nodes to approximate the marginal joint distribution of the parameters. This uses Laplace approximation and is sometimes referred to as the "inner" marginalization. The Laplace approximation is computed using the gradient and Hessian with respect to the latent nodes for a given set of parameter values.
 
-In the case that the conditional distributions of the latent nodes factor into univariate conditionally independent sets of nodes (conditional on the parameters), this by default uses the product of univariate Laplace approximations and in NIMBLE can be made more accurate by using AGHQ with more than one quadrature point. 
+In the case that the conditional distributions of the latent nodes factor into univariate conditionally-independent sets of nodes (conditional on the parameters), this approximation by default uses the product of univariate Laplace approximations and in NIMBLE can be made more accurate by using AGHQ with more than one quadrature point. 
 
 #### Approximating the marginal parameter distribution on a grid
 
-In order to simulate from the posterior distribution for the latent nodes (or to estimate the marginal likelihood), one needs to evaluate the  joint parameter (approximate) posterior density on a grid of points.
+In order to simulate from the posterior distribution for the latent nodes (or to estimate the marginal likelihood), one needs to evaluate the  joint parameter posterior density on a grid of points.
 
 NIMBLE primarily offers the options of using a CCD grid (as used by INLA) or an AGHQ grid (as used in the EGLM approach). While the AGHQ grid is expected to be more accurate, the CCD grid uses fewer points and is therefore less computationally intensive.
 
 For $d <= 2$ NIMBLE defaults to the AGHQ grid and otherwise uses the CCD grid.
 
-NIMBLE also allows users to provide their own grids. 
+NIMBLE also allows users to provide their own grid. 
 
 #### Joint inference for latent nodes
 
 NIMBLE provides the ability to simulate the latent nodes from a mixture of multivariate Gaussian distributions, mixing over the parameter values at the grid points discussed in the previous section. The multivariate Gaussian distribution is based on the Laplace approximation for the latent nodes, which provides the mean and variance conditional on the parameter value at the grid point. The weights in the mixture are based on the Laplace-approximated marginal density (for the parameters and data, jointly), with stratified sampling to reduce variance.
 
-INLA adjusts the latent node marginals via a Gaussian copula to correspond with a skew-normal approximation. We have not implemented such an approximation so not adjustment is done.
+INLA adjusts the latent node marginals via a Gaussian copula to correspond with a skew-normal approximation [TODO: check on terminology here]. We have not implemented such an approximation so no adjustment is done.
 
 #### Univariate inference for parameters
 
-NIMBLE offers two approaches for univariate marginal inference for individual parameters. The first is a computationally-efficient integration-free method that mimics that used by INLA [@martins2013bayesian]. This uses the  joint asymmetric Gaussian as the joint marginal posterior of the parameters and allows one to calculate the density at individual evaluation points for the univariate marginal. The univariate density is calculated on a fine grid of points, from which one can build a spline-based approximation to the marginal density that can be used to compute moments and quantiles for univariate inference.
+NIMBLE offers two approaches for univariate marginal inference for individual parameters. The first is a computationally-efficient integration-free method that mimics that used by INLA [@martins2013bayesian]. This uses a  joint asymmetric Gaussian distribution approximation as the marginal joint posterior of the parameters and allows one to calculate the density at individual evaluation points for the univariate marginal. NIMBLE calculates the univariate density on a fine grid of evaluation points, from which one can build a spline-based approximation to the marginal density that can be used to compute moments and quantiles for univariate inference.
 
-The second, more accurate approach, is to use $d-1$-dimensional AGHQ to integrate over the Laplace-approximated joint parameter marginal distribution. This can greatly improve accuracy, but can be computationally expensive unless $d$ is quite small (e.g., 2-4), or even if the number of latent node elements is quite large (which makes the Laplace approximation expensive). Because of the expense, we only take this approach if requested by the user and we allow the user to choose the specific parameter(s) for which they want to estimate marginals for using this approach.
+The second, more accurate approach, is to use $d-1$-dimensional AGHQ to integrate over the Laplace-approximated joint parameter marginal distribution. This can greatly improve accuracy, but can be computationally expensive unless $d$ is quite small (e.g., 2-4), or even if the number of latent node elements is quite large (which makes the Laplace approximation expensive). Because of the expense, we only take this approach if requested by the user, and we allow the user to choose the specific parameter(s) for which they want to estimate marginals with this approach.
 
 #### Joint inference for parameters
 
 If one is interested in joint inference for the parameters (or inference on functions of more than one parameter), NIMBLE provides the ability to simulate from the asymmetric multivariate Gaussian distribution approximation to the marginal joint distribution of the parameters that is used by INLA [@martins2013bayesian]. The approximation is done in the transformed space after transforming the parameters to be unconstrained (this can sometimes reduce the dimension of the parameter vector such as with the Dirichlet, Wishart, and LKJ distributions). In the transformed space, a two-piece split normal distribution (which allows for skew in both directions) is used for each univariate component after rotating the transformed parameters based on the Hessian at the maximum to account for the correlation structure.
 
-As also done in INLA, we use a Gaussian copula to transform the simulated parameter values in a univariate fashion to match the univariate marginal distributions estimated either from the integration-free or AGHQ approaches.
+As also done in INLA, we use a Gaussian copula to transform the simulated parameter values, in a univariate fashion, to match the univariate marginal distributions estimated either from the integration-free or AGHQ approaches.
 
 #### Approximate marginal likelihood
 
 The marginal likelihood for a model integrates over all parameters (including both 'parameters' discussed above and latent nodes). This can be useful for model selection, but is not well-defined if any prior distributions are improper and is not reliable for diffuse prior distributions.
 
-In NIMBLE's nested approximation, the marginal likelihood is approximated either by the approximation used by INLA based on the approximate Gaussian distribution for the parameters or via AGHQ using the AGHQ grid weights and associated Laplace-approximated density values.
+In NIMBLE's nested approximation, the marginal likelihood is approximated either  based on the approximate Gaussian distribution for the parameters used by INLA or via AGHQ using the AGHQ grid weights and associated Laplace-approximated parameter density values.
 
 
 #### Determining latent nodes and parameters
 
-By default, NIMBLE's nested approximation will try to automatically determine the node sets, selecting random effects and regression fixed effects (coefficients) as the latent nodes and other unknown quantities (variance components and parameters of random effects distributions) as "parameters".
+By default, NIMBLE's nested approximation will try to automatically determine the node sets, selecting random effects and regression fixed effects (coefficients) as the "latent nodes" and other unknown quantities (e.g., variance components and parameters of random effects distributions) as "parameters".
 
 Given the computations involved, it is best to have the number of parameters be relatively small, such as fewer than 10.
 
-Note that the treatment of fixed effects differs between the nested approximation and NIMBLE's Laplace approximation. In Laplace approximation, fixed effects are treated as parameters of interest and maximized with respect to, rather than being marginalized over. In the nested approximation, they are marginalized over and inference on them can be done based on simulated values.
+Note that the treatment of fixed effects differs between the nested approximation and NIMBLE's Laplace approximation. In Laplace approximation, fixed effects are treated as parameters of interest and maximized with respect to, rather than being marginalized over. In the nested approximation, they are marginalized over and inference on them can be done based on simulated values. One advantage of grouping fixed effects with random effects is that one can make simulation-based inference on quantities that depend on both sets of effects, such a regression-style linear predictors
 
-It is also possible to choose which nodes go in which set. One might choose to include fixed effects in the parameter set. Another situation where one might configure this manually is if random effects in a model are specified in a "non-centered" parameterization such as:
+It is also possible to choose which nodes go in which set. One might choose to include fixed effects in the parameter set, akin to how Laplace approximation works. Another situation where one might configure this manually is if random effects in a model are specified in a "non-centered" parameterization such as:
 
 $$
 \eta_i = \mu + \sigma b_i
 b_i \sim \mathcal{N}(0, 1)
 $$
 
-In this parameterization the random effects, $b_i$, do not depend on any parameters because $\mu$ and $\sigma$ are involved directly in the linear predictor, $\eta_i$ (often one would instead have a centered parameterization, $b_i \sim \mathcal{N}(\mu, \sigma)$). Because of this, NIMBLE's nested approximation would by default put the $b_i$ nodes into the parameter set, which in general would result in very slow computation (because there would be a large number of parameters). 
+In this parameterization the random effects, $b_i$, do not depend on any parameters because $\mu$ and $\sigma$ are involved directly in the linear predictor, $\eta_i$. This stands in contrast to the common centered parameterization,  with $b_i \sim \mathcal{N}(\mu, \sigma)$. Because each $b_i$ does not depend on any parameters, NIMBLE's nested approximation would by default put the $b_i$ nodes into the parameter set, which in general would result in very slow computation (because there would be a large number of parameters).
+
+One further note is that it can be advantageous computationally to have fixed effects in the parameter set. This can sometimes allow NIMBLE to set up a product of lower-dimensional Laplace approximations instead of one higher-dimensional Laplace approximation. However, the benefit of the product trades off with the higher-dimensionality of the parameter vector, which increases computation. How these trade off in a particular modeling context can be worth experimentation. 
 
 #### Computational bottlenecks
 
-To sample the latent nodes, one needs to find the weights and the parameters of the multivariate normal approximation to the latent nodes at each point in the grid of parameters. For a large number of parameters this can be expensive because Laplace approximation is done at many grid points. For for a large number of latent node elements, this can be expensive because one is using a large multivariate normal. Computing the parameters of this involves optimization over a space whose dimension is the number of latent node elements, as well as computation of the Hessian at the maximum. Furthermore, one needs to simulate from the high-dimensional multivariate normal. 
+To sample the latent nodes, one needs to find the weights and the parameters of the multivariate normal approximation to the latent nodes at each point in the grid of parameters. For a large number of parameters this can be expensive because Laplace approximation is done at many grid points. For a large number of latent node elements, even a single Laplace approximation at a single set of parameter values can be expensive. Computing the parameters of this approximation involves optimization over a space whose dimension is the number of latent node elements, as well as computation of the Hessian at the maximum. Furthermore, for inference, one then needs to simulate from the high-dimensional multivariate normal. 
 
-To approximate the univariate marginals for the parameters via AGHQ, this requires $d-1$ dimensional AGHQ, which can be expensive as the number of quadrature points grows as $(d-1)^k$ where $k$ is the number of Gauss-Hermite quadrature grid points in one dimension. Often this would be chosen to be small, such as 3 or 5, but even the computations increase rapidly in $d$. 
+To approximate the univariate marginals for the parameters via AGHQ, this requires $d-1$-dimensional AGHQ, which can be expensive, because the number of quadrature points grows as $(d-1)^k$ where $k$ is the number of Gauss-Hermite quadrature grid points in one dimension. Often this would be chosen to be small, such as 3 or 5, but even then the computations increase rapidly in $d$. 
 
-### Example usage
+### Using NIMBLE's nested approximation
 
-[show moving fixed effects back and forth]
+Next we'll give example usage of NIMBLE's nested approximation. Further details are available in the usual R help content for the various functions.
+
+The core functions are `buildNestedApprox` and `runNestedApprox`. These are analgous to the "build" and "run" functions for MCMC and for Laplace.
+
+ - `buildNestedApprox` sets up the approximation for a model of interest and allows the user to control various aspects of how the approximation is done. It returns an uncompiled nested approximation algorithm.
+ - `runNestedApprox` runs the basic steps of the approximation, giving initial univariate marginal parameter inference (and optionally allowing the user to request latent node or parameter samples. It returns a nested approximation (`nestedApprox`) object.
+ - Various additional functions can be applied to the nested approximation object to do further components of the approximation, including:
+    - `improveParamMarginal`: use AGHQ to improve marginal parameter inference relative to the default inference based on the asymmetric Gaussian approximation.
+    - `sampleLatents`: sample from the approximate joint distribution of the latent nodes (the mixture over parameter grid points of multivariate normal distributions).
+    - `sampleParams`: sample from the asymmetric Gaussian approximation.
+    - `calcMarginalLogLikImproved`: use AGHQ to improve estimation of the marginal likelihood relative to the default estimate based on the asymmetric Gaussian approximation.
+    - `{d,e,q,r}marginal` and `plotMarginal`: estimate the density (`d`), expectations (`e`), and quantiles (`q`) for a univariate marginal and sample from the marginal (`r`) and plot the marginal density.
+
+
+#### Example use
+
+[This is a normal-normal case so one can marginalize exactly and do inference (MCMC or MLE or otherwise) on the analytically-marginalized model. We could look for a difference example, such as the E. cervi example from our trainings.]
+
+We'll use the penicillin example from the `faraway` package, which has data on penicillin production as a function of treatment (four levels) and blend (five levels). The treatment is considered as a fixed effect (note the constant, large variance/small precisionwhile the blend/block is considered as a random effect.
+
+[insert model code and model set up]
+
+
+Given a NIMBLE model, we can build (and compiled) our nested approximation.
+
+```{r}
+approx <- buildNestedApprox(model = model)
+comp_approx <- compileNimble(approx, project = model)
+```
+
+(Note that NIMBLE has automatically put the two variance components into the parameters and the fixed and random effects into the latent nodes. As described below, one can change the node sets if desired by passing `paramNodes` and/or `latentNodes`.)
+
+Next we run our nested approximation, getting back initial inference on the parameters.
+
+```{r}
+result <- runNestedApprox(comp_approx)
+result
+```
+
+This is a simple model, so it's not surprising that doesn't take long, but even for large models or a large number of parameters, this step will generally be faster than the steps below because the approximate Gaussian distribution for the parameters can be computed quickly, requiring maximization and computation of the Hessian for the Laplace approximation (that said that could take some time when there is a large number of latent nodes).
+
+Now, let's refine our estimation of the parameters by using AGHQ in place of the approximate Gaussian. That does $d-1$ dimensional AGHQ (simply 1-d AGHQ) for each parameter requested (by default all of them).
+
+
+There are two quantities that control the accuracy of the AGHQ marginal estimate. The first is the number of grid points in the AGHQ numerical integration (`nQuad`), where $k$ is the number of points in one dimension. More is better for accuracy but the computational cost grows as $(d-1)^k$. The marginal density is estimated at each of a set of evaluation points of values of the parameter (`nMarginalGrid`), using AGHQ for each point, after which a spline is fit to estimate the full marginal density.
+
+[show increase in nGrid]
+[show increase in nPoints]
+
+We can estimate other expectations or quantiles than those reported and plot a density estimate:
+
+[show emarginal, qmarginal, plotMarginal]
+
+Next, we turn to inference on the latent nodes. This is straightforward in principle but can be computationally costly because we sample from a mixture of multivariate normal distributions. This requires Laplace approximation at each of the parameter grid points, where the Laplace approximation can be costly if there are many latent nodes or many grid points. And it requires sampling from the multivariate normal distributions, which can be costly if there are many latent nodes.
+
+```{r}
+latent_sample <- result$sampleLatents(n=1000)
+```
+
+Note that one can optionally return the parameter values corresponding with each latent sample to see the explicit mixture being used.
+
+Finally, if one wants joint inference for multiple parameters (or a function of more than one parameter), one can sample from the approximate Gaussian approximation, with a copula-based adjustment so the univariate marginals of the sample match the (current) marginal estimates. This adjustment will use the initial estimate, if `improveParamMarginals` has not been run, or the improved marginal estimates for whichever parameters `improveParamMarginals` has been run for.
+
+
+
+
+
+
+
+
+
+#### Setting latent nodes and parameters
+
+As discussed above, NIMBLE tries to automatically determine sets of latent nodes and parameters, with random and fixed effects generally included in the latent nodes. In some cases this automatic determination gives sets that are not natural choices because of the model structure and in other cases, a user might want to choose the sets themself.
+
+Here's the NIMBLE code for a toy GLMM model for illustration.
+
+```{r}
+code <- nimbleCode({
+   for(i in 1:n) {
+     y[i] ~ dbern(p[i])
+     logit(p[i]) <- beta1 * x[i] + b[i]
+     b[i] ~ dnorm(mu, sd = sigma)
+   }
+   mu ~ dflat()
+   sigma ~ dunif(0, 100)
+   beta1 ~ dflat()
+})
+n <- 30
+x <- rnorm(n)
+y <- rbinom(n, 1, 0.5)
+
+model <- nimbleModel(code, constants = list(n = n), data = list(y = y, x = x))
+approx <- buildNestedApprox(model)
+```
+
+We see that NIMBLE has put the fixed effect (`beta1`) and random effects (`b[i]`) in the latent nodes and the random effects parameters, $mu$ and $sigma$, into the parameter set.
+
+In the model above, the role of the overall intercept is played by the random effects mean. We could instead have centered the random effects on zero and introduced an explicit intercept.
+
+```{r}
+code <- nimbleCode({
+   for(i in 1:n) {
+     y[i] ~ dbern(p[i])
+     logit(p[i]) <- beta0 + beta1 * x[i] + b[i]
+     b[i] ~ dnorm(0, sd = sigma)
+   }
+   mu ~ dflat()
+   sigma ~ dunif(0, 100)
+   beta0 ~ dflat()
+   beta1 ~ dflat()
+})
+n <- 30
+x <- rnorm(n)
+y <- rbinom(n, 1, 0.5)
+
+model <- nimbleModel(code, constants = list(n = n), data = list(y = y, x = x))
+approx <- buildNestedApprox(model)
+```
+
+The split into latent nodes and parameters is equivalent.
+
+In contrast, if we use a non-centered parameterization (this arises often when using HMC as a better parameterization), then NIMBLE tries to put everything into the parameters, and an error occurs.
+
+
+```{r, error=TRUE}
+code <- nimbleCode({
+   for(i in 1:n) {
+     y[i] ~ dbern(p[i])
+     logit(p[i]) <- beta0 + beta1 * x[i] + sigma*b[i]
+     b[i] ~ dnorm(0, 1)
+   }
+   mu ~ dflat()
+   sigma ~ dunif(0, 100)
+   beta0 ~ dflat()
+   beta1 ~ dflat()
+})
+n <- 30
+x <- rnorm(n)
+y <- rbinom(n, 1, 0.5)
+
+model <- nimbleModel(code, constants = list(n = n), data = list(y = y, x = x))
+approx <- buildNestedApprox(model)
+```
+
+Instead, we could manually specify the parameters.
+[possible condIndepSets bug causing 2 laplace approximations here...]
+
+```{r, error=TRUE}
+code <- nimbleCode({
+   for(i in 1:n) {
+     y[i] ~ dbern(p[i])
+     logit(p[i]) <- beta0 + beta1 * x[i] + sigma*b[i]
+     b[i] ~ dnorm(0, 1)
+   }
+   mu ~ dflat()
+   sigma ~ dunif(0, 100)
+   beta0 ~ dflat()
+   beta1 ~ dflat()
+})
+n <- 30
+x <- rnorm(n)
+y <- rbinom(n, 1, 0.5)
+
+model <- nimbleModel(code, constants = list(n = n), data = list(y = y, x = x))
+approx <- buildNestedApprox(model, paramNodes = "sigma")
+```
+
+In some cases it can be computationally advantageous to move fixed effects into the parameter set so that the Laplace approximation can be done as a product of lower-dimensional Laplace approximations. Here's an example of doing that manually.
+
+```{r}
+code <- nimbleCode({
+   for(i in 1:n) {
+     y[i] ~ dbern(p[i])
+     logit(p[i]) <- beta0 + beta1 * x[i] + sigma*b[i]
+     b[i] ~ dnorm(0, 1)
+   }
+   mu ~ dflat()
+   sigma ~ dunif(0, 100)
+   beta0 ~ dflat()
+   beta1 ~ dflat()
+})
+n <- 30
+x <- rnorm(n)
+y <- rbinom(n, 1, 0.5)
+
+model <- nimbleModel(code, constants = list(n = n), data = list(y = y, x = x))
+approx <- buildNestedApprox(model, paramNodes = c("beta0", "beta1", "sigma"))
+```
+
+Note the messaging indicating that 30 Laplace approximations (one for each conditionally-independent set of nodes containing a ${y_i, b_i}$ pair) were built. (In other, perhaps more common situations, one might have grouping structure such that a single random effect is associated with multiple observations such that the random effect and associated observations are conditionally independent of other random effects and observations given the parameters.)
+
