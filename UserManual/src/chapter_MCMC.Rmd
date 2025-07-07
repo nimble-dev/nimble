@@ -597,7 +597,7 @@ runMCMC(buildMCMC(conf), niter = 3)
 
 #### Mean and variance derived quantities
 
-These derived quantities allow one to calculate the posterior mean and variance of nodes of interest using all samples (without thinning). (Note that  using the `summary` argument to `runMCMC` or `nimbleMCMC` results in means and variances calculated using the thinned samples.) One can also also calculate running means and variances during a chain using the `recordingFrequency` option discussed at the end of this section.
+These derived quantities allow one to calculate the posterior mean and variance of nodes of interest using all samples (without thinning). (Note that  using the `summary` argument to `runMCMC` or `nimbleMCMC` results in means and variances calculated using the thinned samples.) This can also allow one to avoid monitoring some variables if all ones wants is summary statistics. One can also also calculate running means and variances during a chain using the `recordingFrequency` option discussed at the end of this section.
 
 For example, here we add calculate the posterior means for nodes `theta[1:5]` and the posterior variances for another set of nodes:
 
