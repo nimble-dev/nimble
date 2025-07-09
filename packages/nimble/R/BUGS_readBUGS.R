@@ -149,6 +149,40 @@ nimbleCode <- function(code) {
 
 BUGScode <- nimbleCode
 
+#' Combine outputs of two or more calls to 'nimbleCode()'
+#'
+#' Combines the outputs of two or more \code{\link{nimbleCode}} calls into one, which can then be used by \code{\link{nimbleModel}}.
+#'
+#' @param ... Two or more outputs from \code{\link{nimbleCode}.
+#' @author Adam B. Smith
+#' @returns Concatenated `nimbleCode()` objects.
+#' @examples
+#' a <- nimbleCode({ x1 <- 23; x2 <- 13 })
+#' b <- nimbleCode({ x1 + x2 })
+#' c <- glueNimbleCode(a, b)
+#' c
+#' eval(c) # executes a and b together
+#' @export
+glueNimbleCode <- function(...) {
+    
+    x <- list(...)
+    
+    # extract expressions from each nimbleCode object
+    allExpress <- unlist(
+        lapply(x, function(expr) {
+            if (is.call(expr) && identical(expr[[1]], as.name('{'))) {
+                as.list(expr[-1])
+            } else {
+                list(expr)
+            }
+        }),
+        recursive = FALSE
+    )
+    
+    as.call(c(list(as.name('{')), allExpress))
+
+}
+
 processVarBlock <- function(lines) {
   # processes a var block from a BUGS file, determining variable names, dimensions, and sizes
   # at this point, sizes may have unevaluated variables in them
