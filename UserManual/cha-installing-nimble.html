@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 4 Installing NIMBLE | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 4 Installing NIMBLE | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -30,7 +30,7 @@
   
 <link rel="prev" href="cha-more-introduction.html"/>
 <link rel="next" href="cha-writing-models.html"/>
-<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="libs/jquery-3.6.1/jquery-3.6.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -64,7 +64,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -126,7 +126,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging div.csl-entry {
   margin-left:2em;
@@ -281,7 +280,7 @@ div.csl-indent {
 <li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
 </ul></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
-<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
+<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
 </ul></li>
 <li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
@@ -295,7 +294,18 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
-<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#laplace-approximation-and-adaptive-gauss-hermite-quadrature"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
+<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:AD-laplace"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a>
+<ul>
+<li class="chapter" data-level="8.3.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#glmm-example"><i class="fa fa-check"></i><b>8.3.1</b> GLMM example</a></li>
+<li class="chapter" data-level="8.3.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-laplace-approximation"><i class="fa fa-check"></i><b>8.3.2</b> Using Laplace approximation</a></li>
+<li class="chapter" data-level="8.3.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>8.3.3</b> Using the Laplace approximation methods directly</a></li>
+<li class="chapter" data-level="8.3.4" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>8.3.4</b> Changing the optimization methods</a></li>
+</ul></li>
+<li class="chapter" data-level="8.4" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:nested-approx"><i class="fa fa-check"></i><b>8.4</b> Nested approximation methods</a>
+<ul>
+<li class="chapter" data-level="8.4.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#overview-of-the-methodology"><i class="fa fa-check"></i><b>8.4.1</b> Overview of the methodology</a></li>
+<li class="chapter" data-level="8.4.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-nimbles-nested-approximation"><i class="fa fa-check"></i><b>8.4.2</b> Using NIMBLE’s nested approximation</a></li>
+</ul></li>
 </ul></li>
 <li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
 <ul>
@@ -446,33 +456,25 @@ div.csl-indent {
 <li class="part"><span><b>V Automatic Derivatives in NIMBLE</b></span></li>
 <li class="chapter" data-level="16" data-path="cha-AD.html"><a href="cha-AD.html"><i class="fa fa-check"></i><b>16</b> Automatic Derivatives</a>
 <ul>
-<li class="chapter" data-level="16.1" data-path="cha-AD.html"><a href="cha-AD.html#sec:use-derivs"><i class="fa fa-check"></i><b>16.1</b> How to turn on derivatives in a model</a>
+<li class="chapter" data-level="16.1" data-path="cha-AD.html"><a href="cha-AD.html#sec:use-derivs"><i class="fa fa-check"></i><b>16.1</b> How to turn on derivatives in a model</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.2</b> How to support derivatives in user-defined functions and distributions</a></li>
+<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.3</b> What operations are and aren’t supported for AD</a></li>
+<li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.4</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
-<li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
+<li class="chapter" data-level="16.4.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.4.1</b> Checking derivatives with uncompiled execution</a></li>
+<li class="chapter" data-level="16.4.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.4.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="16.4.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.4.3</b> Using AD with multiple nimbleFunctions</a></li>
+<li class="chapter" data-level="16.4.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.4.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="16.4.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.4.5</b> Resetting a <code>nimDerivs</code> call</a></li>
+<li class="chapter" data-level="16.4.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.4.6</b> A note on performance benchmarking</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a>
+<li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#advanced-uses-double-taping"><i class="fa fa-check"></i><b>16.5</b> Advanced uses: double taping</a></li>
+<li class="chapter" data-level="16.6" data-path="cha-AD.html"><a href="cha-AD.html#derivatives-involving-model-calculations"><i class="fa fa-check"></i><b>16.6</b> Derivatives involving model calculations</a>
 <ul>
-<li class="chapter" data-level="16.2.1" data-path="cha-AD.html"><a href="cha-AD.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>16.2.1</b> Using the Laplace approximation methods directly</a></li>
-<li class="chapter" data-level="16.2.2" data-path="cha-AD.html"><a href="cha-AD.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>16.2.2</b> Changing the optimization methods</a></li>
+<li class="chapter" data-level="16.6.1" data-path="cha-AD.html"><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate"><i class="fa fa-check"></i><b>16.6.1</b> Method 1: <code>nimDerivs</code> of <code>model$calculate</code></a></li>
+<li class="chapter" data-level="16.6.2" data-path="cha-AD.html"><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate"><i class="fa fa-check"></i><b>16.6.2</b> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code></a></li>
 </ul></li>
-<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
-<li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
-<li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
-<ul>
-<li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
-<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
-<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
-<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
-<li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
-<li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
-</ul></li>
-<li class="chapter" data-level="16.6" data-path="cha-AD.html"><a href="cha-AD.html#advanced-uses-double-taping"><i class="fa fa-check"></i><b>16.6</b> Advanced uses: double taping</a></li>
-<li class="chapter" data-level="16.7" data-path="cha-AD.html"><a href="cha-AD.html#derivatives-involving-model-calculations"><i class="fa fa-check"></i><b>16.7</b> Derivatives involving model calculations</a>
-<ul>
-<li class="chapter" data-level="16.7.1" data-path="cha-AD.html"><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate"><i class="fa fa-check"></i><b>16.7.1</b> Method 1: <code>nimDerivs</code> of <code>model$calculate</code></a></li>
-<li class="chapter" data-level="16.7.2" data-path="cha-AD.html"><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate"><i class="fa fa-check"></i><b>16.7.2</b> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code></a></li>
-</ul></li>
-<li class="chapter" data-level="16.8" data-path="cha-AD.html"><a href="cha-AD.html#sec:parameter-transform"><i class="fa fa-check"></i><b>16.8</b> Parameter transformations</a></li>
+<li class="chapter" data-level="16.7" data-path="cha-AD.html"><a href="cha-AD.html#sec:parameter-transform"><i class="fa fa-check"></i><b>16.7</b> Parameter transformations</a></li>
 </ul></li>
 <li class="chapter" data-level="17" data-path="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><a href="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><i class="fa fa-check"></i><b>17</b> Example: maximum likelihood estimation using <code>optim</code> with gradients from <code>nimDerivs</code>.</a></li>
 <li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
@@ -566,6 +568,12 @@ again.</p>
 <code>install.packages("nimble")</code> in R or using the <code>R CMD INSTALL</code>
 method if you download the package source directly.</p>
 <p>NIMBLE can also be obtained from the <a href="https://r-nimble.org">NIMBLE website</a>. To install from our website, please see our <a href="https://r-nimble.org/download">Download page</a> for the specific invocation of <code>install.packages</code>.</p>
+<p>To test that the installation worked and can use NIMBLE’s compilation system, you can run this small test code, which should run without error and produce a value for <code>y</code> in the model.</p>
+<div class="sourceCode" id="cb71"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb71-1"><a href="cha-installing-nimble.html#cb71-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({ y <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>,<span class="dv">1</span>) })</span>
+<span id="cb71-2"><a href="cha-installing-nimble.html#cb71-2" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(code)</span>
+<span id="cb71-3"><a href="cha-installing-nimble.html#cb71-3" tabindex="-1"></a>comp_model <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
+<span id="cb71-4"><a href="cha-installing-nimble.html#cb71-4" tabindex="-1"></a>comp_model<span class="sc">$</span><span class="fu">simulate</span>(<span class="st">&#39;y&#39;</span>)</span>
+<span id="cb71-5"><a href="cha-installing-nimble.html#cb71-5" tabindex="-1"></a>comp_model<span class="sc">$</span>y</span></code></pre></div>
 </div>
 <div id="troubleshooting-installation-problems" class="section level2 hasAnchor" number="4.4">
 <h2><span class="header-section-number">4.4</span> Troubleshooting installation problems<a href="cha-installing-nimble.html#troubleshooting-installation-problems" class="anchor-section" aria-label="Anchor link to header"></a></h2>
@@ -576,10 +584,10 @@ but we want to hear about any and help resolve them.</p>
 <p>For Windows:</p>
 <ul>
 <li><p>Be sure you have set <code>PATH</code> when installing Rtools (see instructions above in the Windows installation section). Alternatively, one can set the <code>PATH</code> manually using syntax similar to this (after changing <code>C:\\Rtools\\bin;C:\\Rtools\\mingw_64\\bin</code> to be appropriate for your system):</p>
-<div class="sourceCode" id="cb71"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb71-1"><a href="cha-installing-nimble.html#cb71-1" tabindex="-1"></a>path <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)</span>
-<span id="cb71-2"><a href="cha-installing-nimble.html#cb71-2" tabindex="-1"></a>newPath <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">Rtools</span><span class="sc">\\</span><span class="st">bin;C:</span><span class="sc">\\</span><span class="st">Rtools</span><span class="sc">\\</span><span class="st">mingw_64</span><span class="sc">\\</span><span class="st">bin;&quot;</span>,</span>
-<span id="cb71-3"><a href="cha-installing-nimble.html#cb71-3" tabindex="-1"></a>             path, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
-<span id="cb71-4"><a href="cha-installing-nimble.html#cb71-4" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">PATH =</span> newPath) </span></code></pre></div></li>
+<div class="sourceCode" id="cb72"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb72-1"><a href="cha-installing-nimble.html#cb72-1" tabindex="-1"></a>path <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">&#39;PATH&#39;</span>)</span>
+<span id="cb72-2"><a href="cha-installing-nimble.html#cb72-2" tabindex="-1"></a>newPath <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">Rtools</span><span class="sc">\\</span><span class="st">bin;C:</span><span class="sc">\\</span><span class="st">Rtools</span><span class="sc">\\</span><span class="st">mingw_64</span><span class="sc">\\</span><span class="st">bin;&quot;</span>,</span>
+<span id="cb72-3"><a href="cha-installing-nimble.html#cb72-3" tabindex="-1"></a>             path, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb72-4"><a href="cha-installing-nimble.html#cb72-4" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">PATH =</span> newPath) </span></code></pre></div></li>
 <li><p>Be sure the <code>Rtools.exe</code> version matches the R version.</p></li>
 <li><p>Try re-installing <code>Rtools</code> followed by re-installing NIMBLE.</p></li>
 <li><p>If you’re using <code>Rtools42</code> or <code>Rtools40</code>, make sure you are using a newer version of RStudio (at least 1.2.5042).</p></li>
@@ -591,11 +599,12 @@ but we want to hear about any and help resolve them.</p>
 <ul>
 <li><p>Newly installed Xcode/command line tools may need to be started once manually to provide a one-time permission before they will work from NIMBLE.</p></li>
 <li><p>Upgrading your MacOS version may result in an error while installing or using NIMBLE. Please try running the following in the Terminal to reinstall Xcode/command line tools:</p>
-<div class="sourceCode" id="cb72"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb72-1"><a href="cha-installing-nimble.html#cb72-1" tabindex="-1"></a><span class="ex">xcode-select</span> <span class="at">--install</span></span></code></pre></div></li>
+<div class="sourceCode" id="cb73"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb73-1"><a href="cha-installing-nimble.html#cb73-1" tabindex="-1"></a><span class="ex">xcode-select</span> <span class="at">--install</span></span></code></pre></div></li>
 <li><p>If multiple C++ compilers are present on a system, be sure the <code>PATH</code> will find the right one.</p></li>
 </ul>
 <p>All operating systems:</p>
 <ul>
+<li>To determine if the problem is with the availability of the C++ compiler or with NIMBLE itself, you can try to install the <code>Rcpp</code> package. If you can install <code>Rcpp</code> and successfully run this command in R: <code>Rcpp::evalCpp("2 + 2")</code> and get 4, that suggests the problem is with NIMBLE. If not, then the problem is probably with the C++ compiler or its use from R and not with NIMBLE itself.</li>
 <li>If problems arise from generating and compiling C++ files from the default location in R’s <code>tempdir()</code>, one can use the <code>dirName</code> argument to <code>compileNimble</code> to put such files elsewhere, such as in a local working directory.</li>
 </ul>
 <p>If those suggestions don’t help, please post about installation problems to the <a href="https://groups.google.com/forum/#!forum/nimble-users">nimble-users Google group</a> or
@@ -619,9 +628,9 @@ You can specify a particular location in either of two ways:</p>
 <ol style="list-style-type: decimal">
 <li><p>Set the environment variable <code>EIGEN_DIR</code> before installing the R package, for example: <code>export EIGEN_DIR=/usr/include/eigen3</code> in the bash shell.</p></li>
 <li><p>Use</p>
-<div class="sourceCode" id="cb73"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb73-1"><a href="cha-installing-nimble.html#cb73-1" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL <span class="at">--configure-args</span><span class="op">=</span><span class="st">&#39;--with-eigen=/path/to/eigen&#39;</span> nimble_VERSION.tar.gz</span></code></pre></div>
+<div class="sourceCode" id="cb74"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb74-1"><a href="cha-installing-nimble.html#cb74-1" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL <span class="at">--configure-args</span><span class="op">=</span><span class="st">&#39;--with-eigen=/path/to/eigen&#39;</span> nimble_VERSION.tar.gz</span></code></pre></div>
 <p>or</p>
-<div class="sourceCode" id="cb74"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb74-1"><a href="cha-installing-nimble.html#cb74-1" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">&quot;nimble&quot;</span><span class="ex">,</span> configure.args = <span class="st">&quot;--with-eigen=/path/to/eigen&quot;</span><span class="kw">)</span></span></code></pre></div></li>
+<div class="sourceCode" id="cb75"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb75-1"><a href="cha-installing-nimble.html#cb75-1" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">&quot;nimble&quot;</span><span class="ex">,</span> configure.args = <span class="st">&quot;--with-eigen=/path/to/eigen&quot;</span><span class="kw">)</span></span></code></pre></div></li>
 </ol>
 <p>In these cases, the directory should be the full path to the directory that
 contains the Eigen directory, e.g., <code>/usr/include/eigen3</code>. It is not the full path to the Eigen
@@ -636,7 +645,7 @@ library - <em>libnimble.so</em>. This single instance of the library is then lin
 with the code for each generated model. In contrast, the default for Windows and MacOS
 is to compile the library code as a static library - <em>libnimble.a</em> - that is compiled into each model’s and each algorithm’s own dynamically loadable library (DLL). This does repeat the same code across models and so occupies more memory. There may be a marginal speed advantage.
 If one would like to enable the linkable library in place of the static library (do this only on MacOS and other UNIX variants and not on Windows), one can install the source package with the configuration argument <code>--enable-dylib</code> set to true. First obtain the NIMBLE source package (which will have the extension <code>.tar.gz</code> from <a href="https://r-nimble.org/download">our website</a> and then install as follows, replacing <code>VERSION</code> with the appropriate version number:</p>
-<div class="sourceCode" id="cb75"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb75-1"><a href="cha-installing-nimble.html#cb75-1" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL <span class="at">--configure-args</span><span class="op">=</span><span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</span></code></pre></div>
+<div class="sourceCode" id="cb76"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb76-1"><a href="cha-installing-nimble.html#cb76-1" tabindex="-1"></a><span class="ex">R</span> CMD INSTALL <span class="at">--configure-args</span><span class="op">=</span><span class="st">&#39;--enable-dylib=true&#39;</span> nimble_VERSION.tar.gz</span></code></pre></div>
 </div>
 <div id="sec:blas" class="section level3 hasAnchor" number="4.5.3">
 <h3><span class="header-section-number">4.5.3</span> BLAS and LAPACK<a href="cha-installing-nimble.html#sec:blas" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -707,43 +716,43 @@ and 10.<a href="cha-installing-nimble.html#fnref9" class="footnote-back">↩︎<
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": null,
-"text": null
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": null,
-"text": null
-},
-"download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-},
-"toc_depth": 3
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": null,
+    "text": null
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  },
+  "toc_depth": 3
 });
 });
 </script>

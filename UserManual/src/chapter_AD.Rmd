@@ -484,9 +484,37 @@ In `derivs_nf`:
 
 Thus, `nimDerivs(model$calculate(calc_nodes), wrt = with_respect_to_nodes, <other args>)` takes derivatives of a function whose inputs are the values of `with_respect_to_nodes` (using their values in the model object) and whose output is the summed log probability returned by `model$calculate(calc_nodes)`. The internal handling of this case is distinct from other calls to `nimDerivs`.
 
-Now we can make an instance of `derivs_nf`, compile the model and nimbleFunction instance, and look at the results. We will assume the `model` was built as above in the Laplace example.
+Now we can make an instance of `derivs_nf`, compile the model and nimbleFunction instance, and look at the results. We will use the `model` from the HMC and Laplace examples.
 
 ```{r, eval=eval}
+model_code <- nimbleCode({
+  # priors 
+  intercept ~ dnorm(0, sd = 100)
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dhalfflat()
+  # random effects and data  
+  for(i in 1:10) {
+    # random effects
+    ran_eff[i] ~ dnorm(0, sd = sigma)
+    for(j in 1:5) {
+      # data
+      y[i,j] ~ dpois(exp(intercept + beta*X[i,j] + ran_eff[i]))
+    }
+  }
+})
+set.seed(123)
+X <- matrix(rnorm(50), nrow = 10)
+model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
+                     buildDerivs = TRUE) # Here is the argument needed for AD.
+
+model$intercept <- 0
+model$beta <- 0.2
+model$sigma <- 0.5
+model$calculate() # This will return NA because the model is not fully initialized.
+model$simulate(model$getDependencies('ran_eff'))
+model$calculate() # Now the model is fully initialized: all nodes have valid values.
+model$setData('y') # Now the model has y marked as data, with values from simulation.
+
 wrt_nodes <- c('intercept','beta', 'sigma')
 calc_nodes <- model$getDependencies(wrt_nodes)
 derivs_all <- derivs_nf(model, wrt_nodes, calc_nodes)
