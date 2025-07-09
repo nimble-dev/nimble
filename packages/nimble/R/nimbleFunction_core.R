@@ -94,13 +94,15 @@ nimbleFunction <- function(setup         = NULL,
     ## Check that if a model calculate is in the code of `run` or another method on
     ## which `derivs` is called, that the `model`, `updateNodes`,and `constantNodes`
     ## arguments are provided.
-    if(length(buildDerivs)) {
+    if(getNimbleOptions('checkDerivsArgs') && length(buildDerivs)) {
         allMethods <- c(list(run = run), methods)
         if(is.character(buildDerivs)) nms <- buildDerivs else nms <- names(buildDerivs)
         methodsWithCalc <- sapply(allMethods[nms], nf_checkDSLcode_checkForCalc)
         methodsWithCalc <- nms[methodsWithCalc]
+        methodsDerivsOf <- sapply(allMethods, nf_checkDSLcode_checkDerivsOf)
+        methodsDerivsOf <- methodsDerivsOf[!sapply(methodsDerivsOf, is.null)]
         if(length(methodsWithCalc))
-            tmp <- sapply(c(list(run = run), methods), nf_checkDSLcode_calcDerivsArgs, methodsWithCalc)
+            tmp <- sapply(c(list(run = run), methods), nf_checkDSLcode_calcDerivsArgs, methodsWithCalc, methodsDerivsOf)
     }
     
     if(is.null(setup)) {

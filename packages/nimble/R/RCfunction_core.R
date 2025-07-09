@@ -276,19 +276,42 @@ nf_checkDSLcode_checkForCalc <- function(code) {
     return(sum(all.names(code) == "calculate") != sum(all.vars(code)=="calculate"))
 }
 
-
-nf_checkDSLcode_calcDerivsArgs <- function(code, methodsWithCalc) {
+nf_checkDSLcode_checkDerivsOf <- function(code) {
     code <- body(code)
     ## This assumes `derivs()` call is from assignment like `var <- derivs()`.
-    derivsFound <- which(sapply(code, function(expr)
+    derivsFound <- which(findDerivsCalls(code))
+    if(length(derivsFound)) {
+        derivsOf <- sapply(derivsFound, function(i)
+            return(code[[i]][[3]][[2]][[1]]))
+        return(as.character(derivsOf[sapply(derivsOf, is.name)]))
+    }
+    return(NULL)
+}
+
+findDerivsCalls <- function(code) {
+    sapply(code, function(expr)
         length(expr) >= 3 && length(expr[[1]]) == 1 &&
         as.character(expr[[1]]) %in% c("=", "<-", "<<-") &&
         length(expr[[3]]) > 1 && length(expr[[3]][[1]]) == 1 && 
-        as.character(expr[[3]][[1]]) %in% c('derivs', 'nimDerivs')))
+        as.character(expr[[3]][[1]]) %in% c('derivs', 'nimDerivs'))
+}
+
+checkNestedCalcCall <- function(functionName, methodsWithCalc, methodsDerivsOf) {
+    if(functionName %in% methodsWithCalc) return(TRUE)
+    if(functionName %in% names(methodsDerivsOf)) 
+        return(any(sapply(methodsDerivsOf[[functionName]], checkNestedCalcCall,
+                          methodsWithCalc, methodsDerivsOf)))
+    return(FALSE)
+}
+
+nf_checkDSLcode_calcDerivsArgs <- function(code, methodsWithCalc, methodsDerivsOf) {
+    code <- body(code)
+    ## This assumes `derivs()` call is from assignment like `var <- derivs()`.
+    derivsFound <- which(findDerivsCalls(code))
     for(idx in derivsFound) {
         argNames <- names(code[[idx]][[3]])
         call <- code[[idx]][[3]][[2]][[1]]
-        if(length(call) == 1 && as.character(call) %in% methodsWithCalc &&
+        if(length(call) == 1 && checkNestedCalcCall(as.character(call), methodsWithCalc, methodsDerivsOf) &&
            length(setdiff(c('model', 'constantNodes', 'updateNodes'), argNames))) 
             messageIfVerbose("  [Warning] Detected use of `nimDerivs` on a function or method, `", code[[idx]][[3]][[2]][[1]], "`,\n",
                              "            that appears to contain the use of `calculate` on a model.\n",

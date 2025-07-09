@@ -429,3 +429,118 @@ test_that("Warning message works for use of nimDerivs with model calculate and i
 })
     
 
+
+
+
+test_that("Warning message works for use of nimDerivs with nested model calculate and incorrect args", {
+    expect_silent(
+        mynf <- nimbleFunction(
+            setup = function(model){
+                paramNodes = 'psi[1:4]'
+            },
+            run = function(x = double(1), alpha=double(1)) {
+            },
+            methods = list(
+                inner_logLik = function(reTransform = double(1)) {
+                    values(model, randomEffectsNodes) <<- reTransform
+                    ans <- model$calculate(innerCalcNodes) 
+                    return(ans)
+                    returnType(double())
+                },
+                gr_inner_logLik_internal = function(reTransform = double(1)) {
+                    ans <- derivs(inner_logLik(reTransform), wrt = re_indices_inner, order = 1, model = model,
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+                    return(ans$jacobian[1,])
+                    returnType(double(1))
+                },
+                ## Double taping for efficiency
+                he_inner_logLik_internal = function(reTransform = double(1)) {
+                    ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = re_indices_inner, order = 1, model = model,
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+                    return(ans$jacobian)
+                    returnType(double(2))
+                },
+                he_inner_logLik_internal = function(reTransform = double(1)) {
+                    ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = re_indices_inner, order = 0, model = model,
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+                    return(ans$value)
+                    returnType(double(2))
+                }
+            ), buildDerivs = c('inner_logLik','gr_inner_logLik_internal','he_inner_logLik_internal')
+        )
+    )
+
+    expect_message(
+        mynf <- nimbleFunction(
+            setup = function(model){
+                paramNodes = 'psi[1:4]'
+            },
+            run = function(x = double(1), alpha=double(1)) {
+            },
+            methods = list(
+                inner_logLik = function(reTransform = double(1)) {
+                    values(model, randomEffectsNodes) <<- reTransform
+                    ans <- model$calculate(innerCalcNodes) 
+                    return(ans)
+                    returnType(double())
+                },
+                gr_inner_logLik_internal = function(reTransform = double(1)) {
+                    ans <- derivs(inner_logLik(reTransform), wrt = re_indices_inner, order = 1, model = model,
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+                    return(ans$jacobian[1,])
+                    returnType(double(1))
+                },
+                he_inner_logLik_internal = function(reTransform = double(1)) {
+                    ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = re_indices_inner, order = 1, model = model,
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+                    return(ans$jacobian)
+                    returnType(double(2))
+                },
+                he_inner_logLik = function(reTransform = double(1)) {
+                    ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = re_indices_inner, order = 0, model = model,
+                                  constantNodes = inner_constantNodes) # Missing `updateNodes`.
+                    return(ans$value)
+                    returnType(double(2))
+                }
+            ),
+            buildDerivs = c('inner_logLik','gr_inner_logLik_internal','he_inner_logLik_internal')
+        ), "appears to contain the use of `calculate` on a model")
+
+    expect_message(
+        mynf <- nimbleFunction(
+            setup = function(model){
+                paramNodes = 'psi[1:4]'
+            },
+            run = function(x = double(1), alpha=double(1)) {
+            },
+            methods = list(
+                inner_logLik = function(reTransform = double(1)) {
+                    values(model, randomEffectsNodes) <<- reTransform
+                    ans <- model$calculate(innerCalcNodes)
+                    return(ans)
+                    returnType(double())
+                },
+                gr_inner_logLik_internal = function(reTransform = double(1)) {
+                    ans <- derivs(inner_logLik(reTransform), wrt = re_indices_inner, order = 1, model = model,
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+                    return(ans$jacobian[1,])
+                    returnType(double(1))
+                },
+                he_inner_logLik_internal = function(reTransform = double(1)) {
+                    ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = re_indices_inner, order = 1, 
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes) # Missing `model`.
+                    return(ans$jacobian)
+                    returnType(double(2))
+                },
+                he_inner_logLik = function(reTransform = double(1)) {
+                    ans <- derivs(gr_inner_logLik_internal(reTransform), wrt = re_indices_inner, order = 0, model = model,
+                                  updateNodes = inner_updateNodes, constantNodes = inner_constantNodes)
+                    return(ans$value)
+                    returnType(double(2))
+                }
+            ),
+            buildDerivs = c('inner_logLik','gr_inner_logLik_internal','he_inner_logLik_internal')
+        ), "appears to contain the use of `calculate` on a model")
+})
+    
+
