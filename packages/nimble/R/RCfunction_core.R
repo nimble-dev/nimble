@@ -278,7 +278,6 @@ nf_checkDSLcode_checkForCalc <- function(code) {
 
 nf_checkDSLcode_checkDerivsOf <- function(code) {
     code <- body(code)
-    ## This assumes `derivs()` call is from assignment like `var <- derivs()`.
     derivsFound <- which(findDerivsCalls(code))
     if(length(derivsFound)) {
         derivsOf <- sapply(derivsFound, function(i)
@@ -289,6 +288,7 @@ nf_checkDSLcode_checkDerivsOf <- function(code) {
 }
 
 findDerivsCalls <- function(code) {
+    ## This assumes `derivs()` call is from assignment like `var <- derivs()`.
     sapply(code, function(expr)
         length(expr) >= 3 && length(expr[[1]]) == 1 &&
         as.character(expr[[1]]) %in% c("=", "<-", "<<-") &&
@@ -306,7 +306,6 @@ checkNestedCalcCall <- function(functionName, methodsWithCalc, methodsDerivsOf) 
 
 nf_checkDSLcode_calcDerivsArgs <- function(code, methodsWithCalc, methodsDerivsOf) {
     code <- body(code)
-    ## This assumes `derivs()` call is from assignment like `var <- derivs()`.
     derivsFound <- which(findDerivsCalls(code))
     for(idx in derivsFound) {
         argNames <- names(code[[idx]][[3]])
