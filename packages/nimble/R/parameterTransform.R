@@ -245,6 +245,7 @@ parameterTransform <- nimbleFunction(
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
             if(nNodes == 0)   return(transformed)
+            iNode <- 1L; i <- 1L; j <- 1L; dd <- 1L; pp <- 1L   ## integer types
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
                 thisType <- transformType[iNode]
@@ -263,14 +264,14 @@ parameterTransform <- nimbleFunction(
                               ## DT: there has to be a better way to do this procedure, below,
                               ## creating the vector of the log-Cholesky transformed values.
                               theseTransformed <- nimNumeric(transformData[iNode,DATA2])
-                              tInd <- 1
+                              tInd <- 1L
                               for(j in 1:dd) {
                                   for(i in 1:dd) {
-                                      if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
-                                      if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
+                                      if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1L }
+                                      if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1L } } }
                           },
                           {                                        ## 8: multivariate dirichlet
-                              dd <- transformData[iNode,DATA1] - 1
+                              dd <- transformData[iNode,DATA1] - 1L
                               theseTransformed <- nimNumeric(dd)
                               theseTransformed[1] <- logit( theseValues[1] )
                               if(dd > 1) {
@@ -287,13 +288,13 @@ parameterTransform <- nimbleFunction(
                               theseTransformed <- nimNumeric(pp)
                               theseValuesMatrix <- nimArray(theseValues, dim = c(dd, dd))  # U in matrix form
                               if(dd > 1) {
-                                  cnt <- 1
+                                  cnt <- 1L
                                   ## Length of each column of U is 1.
                                   ## We first produce the canonical partial correlations and then apply atanh()
                                   ## to make the unconstrained parameters..
                                   for(j in 2:dd) {
                                       theseTransformed[cnt] <- atanh(theseValuesMatrix[1, j])
-                                      cnt <- cnt + 1
+                                      cnt <- cnt + 1L
                                       if(j > 2) {
                                           partialSum <- 1
                                           for(i in 2:(j-1)) {
@@ -301,7 +302,7 @@ parameterTransform <- nimbleFunction(
                                               ## Transformed value is atanh of the proportion of the
                                               ## remaining correlation (which is in 'partialSum').
                                               theseTransformed[cnt] <- atanh(theseValuesMatrix[i, j] / sqrt(partialSum))
-                                              cnt <- cnt + 1
+                                              cnt <- cnt + 1L
                                           }
                                       }
                                   }
@@ -470,6 +471,6 @@ parameterTransform <- nimbleFunction(
             return(lp)
         }
     ),
-    buildDerivs = list(inverseTransform = list(),
+    buildDerivs = list(inverseTransform = list(), transform = list(),
                        logDetJacobian = list(ignore = c('iNode','j','dd','ddm1','i')))
 )

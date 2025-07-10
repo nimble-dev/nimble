@@ -196,7 +196,7 @@ cppOutputNimDerivsPrependType <- function(code, symTab){
     for(i in seq_along(code$args)){
       iArg <- code$args[[i]]
       iName <- names(code$args)[i]
-      if(iName == 'log' && (is.numeric(iArg) | is.logical(iArg))){
+      if(isTRUE(iName == 'log' && (is.numeric(iArg) || is.logical(iArg)))) {
         logFixedString <- '_logFixed'
         argList[[length(argList) + 1]] <- nimGenerateCpp(iArg, symTab,
                                                          asArg = TRUE)
