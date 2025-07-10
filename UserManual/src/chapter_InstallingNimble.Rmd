@@ -88,6 +88,15 @@ method if you download the package source directly.
 
 NIMBLE can also be obtained from the [NIMBLE website](https://r-nimble.org). To install from our website, please see our [Download page](https://r-nimble.org/download) for the specific invocation of `install.packages`.
 
+To test that the installation worked and can use NIMBLE's compilation system, you can run this small test code, which should run without error and produce a value for `y` in the model.
+
+```{r, eval=FALSE}
+code <- nimbleCode({ y ~ dnorm(0,1) })
+model <- nimbleModel(code)
+comp_model <- compileNimble(model)
+comp_model$simulate('y')
+comp_model$y
+```
 
 ## Troubleshooting installation problems
 
@@ -125,6 +134,7 @@ For MacOS:
 
 All operating systems:
 
+  - To determine if the problem is with the availability of the C++ compiler or with NIMBLE itself, you can try to install the `Rcpp` package. If you can install `Rcpp` and successfully run this command in R: `Rcpp::evalCpp("2 + 2")` and get 4, that suggests the problem is with NIMBLE. If not, then the problem is probably with the C++ compiler or its use from R and not with NIMBLE itself.
   - If problems arise from generating and compiling C++ files from the default location in R's `tempdir()`, one can use the `dirName` argument to `compileNimble` to put such files elsewhere, such as in a local working directory. 
 
 If those suggestions don't help, please post about installation problems to the [nimble-users Google group](https://groups.google.com/forum/#!forum/nimble-users) or 

@@ -881,7 +881,7 @@ If `fixedValue` is given when using `indicatorNodes` the values provided in `fix
 
 
 
-NIMBLE provides a variety of other commonly-used samplers, some for general-purpose use and some for specialized use with particular distributions or situations. Some that are worth particular consideration are:
+NIMBLE provides a variety of other commonly-used samplers, some for general-purpose use and some for specialized use with particular distributions or situations. Some that are worth particular consideration as they may perform better than the samplers that NIMBLE assigns by default are:
 
   1. the Hamiltonian Monte Carlo (HMC) sampler in the `nimbleHMC` package,
   2. the slice sampler for sampling scalar parameters in place of the default `RW` (Metropolis) sampler,

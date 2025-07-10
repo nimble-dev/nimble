@@ -3522,7 +3522,7 @@ sampler_barker <- nimbleFunction(
     
 #' MCMC Sampling Algorithms
 #'
-#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package.
+#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package. Additional details, including some recommendations for samplers that may perform better than the samplers that NIMBLE assigns by default are provided in Section 7.11 of the User Manual.
 #'
 #'
 #' @param model (uncompiled) model on which the MCMC is to be run
