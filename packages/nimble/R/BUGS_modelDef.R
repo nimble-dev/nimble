@@ -351,7 +351,9 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
         if(!(length(initDim) == 1 && initDim == 1)) {  # i.e., non-scalar inits; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
             if(initName %in% names(dL)) {
                 if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
-                    messageIfVerbose('  [Warning] Inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
+                    messageIfVerbose("  [Warning] Inconsistent dimensions between `inits` and `dimensions`\n",
+                                     "            Ignoring dimensions in `dimensions`.")
+                    dL[[initName]] <- initDim  ## Changed 2025-07-09 to avoid inconsistent compiled/uncompiled behavior.
                 }
             } else {
                 dL[[initName]] <- initDim
@@ -2732,6 +2734,9 @@ modelDefClass$methods(genVarInfo3 = function() {
         if(!(dimVarName %in% names(varInfo))) next
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions for variable ', dimVarName)
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
+        if(any(dimensionsList[[dimVarName]] > varInfo[[dimVarName]]$maxs))
+            messageIfVerbose("  [Warning] dimensions specified are larger than model specification\n",
+                             "            for variable `", dimVarName, "`.")
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 
