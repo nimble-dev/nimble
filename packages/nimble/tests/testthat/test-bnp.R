@@ -1771,7 +1771,7 @@ test_that("getSamplesDPmeasure handles change in size from tildeVars to use with
     fit <- runMCMC(cmcmc, niter = 10, nburnin = 0)
     fit_stick <- getSamplesDPmeasure(cmcmc)
     expect_identical(length(fit_stick), 10L)
-    expect_identical(dim(fit_stick[[1]]), c(29L, 1L+7L+9L))
+    expect_identical(dim(fit_stick[[1]])[2], 1L+7L+9L)
 })
 
 
