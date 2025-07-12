@@ -141,7 +141,7 @@ to try on our model, let's use NIMBLE's default MCMC. Note that conjugate relati
 %  exponential yet.] -->
 <!---  footnote is true but not relevant as there is not a conj relationship for alpha in a gamma-distributed dependency -->
 
-```{r, mcmcPump, fig.height=2.5}
+```{r, mcmcPump, fig.height=2}
 ``` 
 
 Notice the posterior correlation between `alpha` and `beta`.
@@ -154,7 +154,7 @@ Let's add an adaptive
 block sampler on `alpha` and `beta` jointly and see if that
 improves the mixing. 
 
-```{r, mcmcPump2, fig.height=2.5}
+```{r, mcmcPump2, fig.height=2}
 ``` 
 
 We can see that the block sampler has decreased the 
