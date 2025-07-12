@@ -577,6 +577,9 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
     ## overall strategy is to separate runs of scaalrs and non-scalars
     ## also in C++ we don't take arbitrary arguments.  Instead we chain together calls in groups of 4
     ##     e.g. c(a1, a2, a3, a4, a5) will become c( c(a1, a2, a3, a4), a5)
+
+    if(!length(code$args))
+        stop("`c()` must have at least one argument")
     
     ## first puzzle is with nimC(scalar1, scalar2, vector1, scalar3)
     ## we need to extract the runs of scalars like (scalar1, scalar2), so they can be packed up in an object together.
@@ -2719,6 +2722,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     ## This is deprecated:
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
 
+    minuses <- sapply(code$args, function(x) inherits(x, 'exprClass') &&
+                                             exists('name', x) && x$name == "-")
+    if(any(minuses)) 
+        if(any(sapply(code$args[minuses], function(x) length(x$args) == 1)))
+            stop("use of 'minus' indexing found in `", safeDeparse(code$expr), "` cannot be compiled")
+    
     ## Iterate over arguments,  lifting any logical indices into which()
     ## e.g. X[i, bool] becomes X[i, Interm1], with Interm1 <- which(bool) as an assert.
     for(i in seq_along(code$args)) {

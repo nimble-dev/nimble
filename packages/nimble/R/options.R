@@ -226,7 +226,8 @@ nimOptimMethod("bobyqa",
         useOldcWiseRule = FALSE, # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
         stripUnusedTypeDefs = TRUE,
         digits = NULL,
-        enableVirtualNodeFunctionDefs = FALSE
+        enableVirtualNodeFunctionDefs = FALSE,
+        checkDerivsArgs = TRUE
       )
 )
 
