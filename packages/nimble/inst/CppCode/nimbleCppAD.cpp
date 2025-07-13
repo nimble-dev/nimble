@@ -838,6 +838,13 @@ NimArr<1, double> make_vector_if_necessary(NimArr<1, int> a){
       return(intArray);
 }
 
+NimArr<1, CppAD::AD<double> > make_vector_if_necessary(CppAD::AD<double> x) {
+  NimArr<1, CppAD::AD<double> > NimArr_x;
+  NimArr_x.setSize(1, 0, 0);
+  NimArr_x[0] = x;
+  return NimArr_x;
+}
+
 void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
 			    ManyVariablesMapAccessor &MVA_AD,
 			    ManyVariablesMapAccessor &MVA_orig,

@@ -568,6 +568,7 @@ NimArr<1, double> make_vector_if_necessary(int);
 NimArr<1, double> make_vector_if_necessary(double);
 NimArr<1, double> make_vector_if_necessary(NimArr<1, double>);
 NimArr<1, double> make_vector_if_necessary(NimArr<1, int>);
+NimArr<1, CppAD::AD<double> > make_vector_if_necessary(CppAD::AD<double> x);
 
 template <typename T>
 NimArr<1, double> make_vector_if_necessary(const T &x) { // This case catches eigen ops

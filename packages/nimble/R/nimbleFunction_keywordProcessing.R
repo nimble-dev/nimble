@@ -818,6 +818,9 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     ## First check to see if nimFxn argument is a method.
     fxnCall <- code[[2]][[1]]
     order <- code[['order']]
+    outInds <- code[['outInds']]
+    inDir <- code[['inDir']]
+    outDir <- code[['outDir']]
 
     calculateCase <- FALSE
     if(deparse(fxnCall) == 'calculate'){
@@ -831,7 +834,15 @@ nimDerivs_keywordInfo <- keywordInfoClass(
         code[[2]] <- matchKeywordCode(code[[2]], nfProc)
         calculateCase <- TRUE
     }
+    non_NA_arg <- function(arg) {
+        if(is.call(arg)) return(TRUE)
+        if(is.name(arg)) return(TRUE)
+        !isTRUE(all(is.na(arg)))
+    }
     if(calculateCase) {
+        if(non_NA_arg(outInds) || non_NA_arg(inDir) || non_NA_arg(outDir)) {
+            warning("nimDerivs with calculate() does not support outInds, inDir, or outDir arguments. They will be ignored.")
+        }
         innerCode <- code[[2]]
         if(length(code$wrt)==1)
           if(!is.name(code$wrt))
@@ -852,6 +863,28 @@ nimDerivs_keywordInfo <- keywordInfoClass(
 
       ## Only make the wrt substitution if the names are baked in as character
       wrtArg <- code$wrt
+
+      # For extending to outInds, inDir, and outDir, we will
+      # 1. Give warnings if either wrt and inDir are given
+      #   or outInds and outDir are given.
+      #   Treat wrt and outInds as over-riding the others.
+      # 2. I think we can leave the rest as is, except set NAs to -1s for an easier flag inside C++.
+      #    wrt gets more handling here, resulting in default (-1, -1) if wrt is NULL.
+      #    But sizeProcessing with do makeVectorIfNeeded so the others can be left as is.
+
+        ## We thought about some argument warnings here, but any warnings need to be run-time.
+        ## wrt and inDir don't make sense in one call, but they can both be run-time so can change betwen calls.
+        ## outDir and outInds are similar and are even both allowed because in the (run-time) case or order=2
+        ## the outInds are used for the Jacobian and the outDir for the Hessian reverse.
+        for(nameToCheck in c('outInds')) { ## Oops, general loop but only one case.
+            if(!non_NA_arg(code[[nameToCheck]]))
+             code[[nameToCheck]] <- substitute(A, list(A=-1)) # get -1 as a number, not parse tree of -(1)
+        }
+        for(nameToCheck in c('inDir', 'outDir')) {
+            if(!non_NA_arg(code[[nameToCheck]]))
+             code[[nameToCheck]] <- as.numeric(NA) # ensure it is a numeric NA.
+        }
+        
       doPreprocess <- FALSE
       if(is.numeric(wrtArg) | is.logical(wrtArg)) {
         if(any(is.na(wrtArg[1]))) { ## wrt = NULL (default), set to NA, which will become -1 by convertWrtArgToIndices and then c(-1, -1) in the setup code
@@ -1024,7 +1057,8 @@ matchFunctions[['nimDerivs']] <- function(call = NA,
                                           order = nimC(0,1,2),
                                           wrt = NA,
                                           model = NA, updateNodes = NA, constantNodes = NA,
-                                          do_update = TRUE, reset = FALSE) {}
+                                          do_update = TRUE, reset = FALSE,
+                                          outInds=NA, inDir=NA, outDir=NA) {}
 matchFunctions[['derivInfo']] <- derivInfo
 matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}

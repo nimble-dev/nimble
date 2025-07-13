@@ -81,11 +81,6 @@ class atomic_PDinverse_logdet_class : public CppAD::atomic_three<double>, public
 atomic_PDinverse_logdet_class* new_atomic_PDinverse_logdet(void* tape_mgr, const std::string& name);
 void delete_atomic_PDinverse_logdet(void* tape_mgr, atomic_PDinverse_logdet_class *atomic_PDinverse_logdet);
 
-
-
-
-
-
 // Forward mode
 inline bool atomic_PDinverse_logdet_class::forward(
     const CppAD::vector<double>& parameter_x,

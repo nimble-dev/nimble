@@ -1272,11 +1272,13 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   
   ## asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
   ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
-  if(inherits(code$args[['wrt']], 'exprClass')) {
-    if(!code$args[['wrt']]$isName) {
-      iWrt <- which(names(code$args) == 'wrt')
-      if(length(iWrt) != 1) stop("problem working on wrt argument to nimDerivs")
-      asserts <- c(asserts, sizeInsertIntermediate(code, iWrt, symTab, typeEnv) )
+  for(liftArgName in c("wrt", "outInds", "inDir", "outDir")) {
+    if(inherits(code$args[[liftArgName]], 'exprClass')) {
+      if(!code$args[[liftArgName]]$isName) {
+        iLift <- which(names(code$args) == liftArgName)
+        if(length(iLift) != 1) stop("problem working on ", liftArgName, " argument to nimDerivs")
+        asserts <- c(asserts, sizeInsertIntermediate(code, iLift, symTab, typeEnv))
+      }
     }
   }
   if(inherits(code$args[['order']], 'exprClass')) {
@@ -1295,16 +1297,23 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
       ## asserts <- c(asserts, sizeInsertIntermediate(code, iOrder, symTab, typeEnv) )
     }
   }
+  for(makeVecName in c('wrt', 'order', 'outInds', 'inDir', 'outDir')) {
+      iMakeVec <- which(names(code$args) == makeVecName)
+      if(length(iMakeVec) != 1) stop("problem working on ", makeVecName, " argument to nimDerivs")
+      insertExprClassLayer(code, iMakeVec, 'make_vector_if_necessary',
+                                                    type = 'double',
+                                                    nDim = 1,
+                                                    sizeExprs = list())
+  }
+#   insertExprClassLayer(code, which(names(code$args)=='wrt'), 'make_vector_if_necessary',
+#                        type = 'double',
+#                        nDim = 1,
+#                        sizeExprs = list())
   
-  insertExprClassLayer(code, which(names(code$args)=='wrt'), 'make_vector_if_necessary',
-                       type = 'double',
-                       nDim = 1,
-                       sizeExprs = list())
-  
-  a1 <- insertExprClassLayer(code, which(names(code$args)=='order'), 'make_vector_if_necessary',
-                             type = 'double',
-                             nDim = 1,
-                             sizeExprs = list())
+#   a1 <- insertExprClassLayer(code, which(names(code$args)=='order'), 'make_vector_if_necessary',
+#                              type = 'double',
+#                              nDim = 1,
+#                              sizeExprs = list())
   newADinfoName <- ADinfoLabel()
 ##  symTab$addSymbol(symbolADinfo$new(name = newADinfoName))
   if(!is.list(code$aux))
