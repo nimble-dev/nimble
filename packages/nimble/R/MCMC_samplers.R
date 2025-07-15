@@ -2825,10 +2825,6 @@ sampler_polyagamma <- nimbleFunction(
         
         ## This allows user to override error trapping for unusual model structures.
         check <- extractControlElement(control, 'check', TRUE)   
-        ## If not checking, then inflation nodes need to be provided by user or set as empty
-        inflationNodes <- model$expandNodeNames(control$inflationNodes)
-        ## Check if design matrix columns are infinite and warn to scale design matrix.
-        infiniteOkay <-   extractControlElement(control, 'infiniteOkay', FALSE)
 
         ## node list generation
         target <- model$expandNodeNames(target)
@@ -2873,7 +2869,10 @@ sampler_polyagamma <- nimbleFunction(
         sizeNodes <- setdiff(probAndSizeNodes, probNodes)
 
         zeroInflated <- FALSE
-        
+        ## Zero-Inflation node detection:
+        inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
+        if(length(inflationNodes)) inflationNodes <- setdiff(inflationNodes, nonTarget)
+
         ## Conjugacy checking, part 2.
         ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
         ## and that zero-inflation variable multiplies the baseline probability.
@@ -2881,12 +2880,10 @@ sampler_polyagamma <- nimbleFunction(
         ## First we need some processing to make sure that we can simply check inflation based only on `probNodes[1]`,
         ## to avoid costly checking.
         if(check) {
-            inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
             if(length(inflationNodes)) {
                 ## Check that inflation probabilities are directly specified as parents of `probNodes`
                 ## to avoid having to check multiple declarations. Seemingly anything otherwise would be
                 ## an unusual zero inflation construction.
-                inflationNodes <- setdiff(inflationNodes, nonTarget)
                 test <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, immediateOnly = TRUE)
                 test <- setdiff(test, nonTarget)
                 if(!identical(test, inflationNodes))  # So we need to only consider a single declaration.
@@ -3171,11 +3168,10 @@ sampler_polyagamma <- nimbleFunction(
                 values(model, inflationNodesDeps) <<- inflationDepsValuesSaved
             }
             ## Check to see if covariates need to be scaled:
-            if(initializeX & !infiniteOkay) {
+            if(initializeX) {
               for(j in 1:nCoef){
                 if( any(abs(X[, j]) == Inf) ){
-                  ## @CJP: Maybe we should change this to a stop? I suspect it can happen if we have uncaught zero inflation on a stochastic column...
-                  cat("Warning: Infinite values constructed in the design matrix for covariate '", j, "'. Please consider scaling the covariate, providing the design matrix, or overriding this error with infiniteOkay = TRUE.\n")
+                  stop("Infinite values constructed in the design matrix of the polyagamma sampler. Please consider scaling the covariate or providing the design matrix.\n")
                 }
               }
             }
