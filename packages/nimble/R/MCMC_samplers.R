@@ -1169,7 +1169,7 @@ essNF_multivariate <- nimbleFunction(
     name = 'essNF_multivariate',
     contains = essNFList_virtual,
     setup = function(model, node) {
-        if(!(model$getDistribution(node) == 'dmnorm'))   stop('something went wrong')
+        if(!(model$getDistribution(node) %in% c('dmnorm', 'dmnormAD')))   stop('sampler_ess: node `', node, '` does not have a dmnorm distribution')
     },
     run = function() {
         mean <- model$getParam(node, 'mean')
@@ -1200,10 +1200,10 @@ sampler_ess <- nimbleFunction(
         ## nested function and function list definitions
         essNFList <- nimbleFunctionList(essNFList_virtual)
         if(model$getDistribution(target) == 'dnorm')    essNFList[[1]] <- essNF_univariate(model, target)
-        if(model$getDistribution(target) == 'dmnorm')   essNFList[[1]] <- essNF_multivariate(model, target)
+        if(model$getDistribution(target) %in% c('dmnorm','dmnormAD'))   essNFList[[1]] <- essNF_multivariate(model, target)
         ## checks
         if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
-        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
+        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm', 'dmnormAD')))   stop('elliptical slice sampler only applies to normal distributions')
     },
     run = function() {
         u <- model$getLogProb(calcNodesNoSelf) - rexp(1, 1)
@@ -2854,7 +2854,7 @@ sampler_polyagamma <- nimbleFunction(
 
         ## Conjugacy checking, part 1.
         if(check) {
-            if(!all(targetDists %in% c("dnorm", "dmnorm")))
+            if(!all(targetDists %in% c("dnorm", "dmnorm", "dmnormAD")))
                 stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors. ", checkMessage)
             if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin")) ) 
                 stop("polyagamma sampler: response nodes must be distributed `dbern` or `dbin`. ", checkMessage)
@@ -2973,7 +2973,7 @@ sampler_polyagamma <- nimbleFunction(
         singleSize <- FALSE
 
         dnormNodes <- targetDists == "dnorm"
-        dmnormNodes <- targetDists == "dmnorm"
+        dmnormNodes <- targetDists %in% c("dmnorm", "dmnormAD")
         n_dnorm <- sum(dnormNodes)
         n_dmnorm <- sum(dmnormNodes)
         

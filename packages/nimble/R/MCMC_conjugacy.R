@@ -144,6 +144,20 @@ conjugacyRelationshipsInputList <- list(
                         mu <- backsolve(R, forwardsolve(t(R), A))[,1]
                         dmnorm_chol(mean = mu, cholesky = R, prec_param = 1) }'),
 
+    list(prior = 'dmnormAD',
+         link = 'linear',
+         dependents = list(
+           ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
+             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)')),
+         ## LINK will be replaced with appropriate link via code processing
+         ## original less efficient posterior definition:
+         ## posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
+         ##                          cholesky   = chol(prior_prec + contribution_prec),
+         ##                          prec_param = 1)'),
+         posterior = '{ R <- chol(prior_prec + contribution_prec)
+                        A <- prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)
+                        mu <- backsolve(R, forwardsolve(t(R), A))[,1]
+                        dmnorm_chol(mean = mu, cholesky = R, prec_param = 1) }'),
 
     ## wishart
     list(prior = 'dwish',
