@@ -552,6 +552,8 @@ PDinverse_logdet <- function(mat, prec_param = FALSE) {
   return(out)
 }
 
+#' @rdname MultivariateNormal
+#' @export
 dmnorm_prec_ldet <- function(x, mean, prec_ldet, log = FALSE) {
     if(storage.mode(prec_ldet) != 'double')
          storage.mode(prec_ldet) <- 'double'
@@ -559,11 +561,13 @@ dmnorm_prec_ldet <- function(x, mean, prec_ldet, log = FALSE) {
     as.logical(log))
 }
 
+#' @rdname MultivariateNormal
+#' @export
 rmnorm_prec_ldet <- function(n=1, mean, prec_ldet) {
     if(n != 1) warning('rmnorm_prec_ldet only handles n = 1 at the moment')
     if(storage.mode(prec_ldet) != 'double')
          storage.mode(prec_ldet) <- 'double'
-    .Call(C_rmnorm_prec_ldet, as.integer(n), as.double(mean), prec_ldet)
+    .Call(C_rmnorm_prec_ldet, as.double(mean), prec_ldet)
 }
 
 #' @rdname MultivariateNormal
