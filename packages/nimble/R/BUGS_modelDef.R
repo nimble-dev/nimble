@@ -1059,6 +1059,12 @@ liftedCallsGetIndexingFromArgumentNumbers <- list(
     CAR_calcEVs3 = c(3)
 )
 
+liftedCallsGetIndexingOther <- list(
+    PDinverse_logdet = function(argList)
+        list(substitute(1:N, list(N=argList[[1]][[3]][[3]]*argList[[1]][[4]][[3]] + 1)))
+)
+
+
 modelDefClass$methods(liftExpressionArgs = function() {
     ## overwrites declInfo (*and adds*), lifts any expressions in distribution arguments to new nodes
     newDeclInfo <- list()
@@ -1125,6 +1131,7 @@ isExprLiftable <- function(paramExpr, type = NULL) {
         callText <- getCallText(paramExpr)
         if(callText == 'chol')         return(TRUE)    ## do lift calls to chol(...)
         if(callText == 'inverse')      return(TRUE)    ## do lift calls to inverse(...)
+        if(callText == 'PDinverse_logdet')  return(TRUE)    ## do lift calls to PDinverse_logdet(...)
         if(callText == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
         if(callText == 'CAR_calcC')    return(TRUE)    ## do lift calls to CAR_calcC(...)
         if(callText == 'CAR_calcM'  )  return(TRUE)    ## do lift calls to CAR_calcM(...)
@@ -1148,6 +1155,8 @@ isExprLiftable <- function(paramExpr, type = NULL) {
 addNecessaryIndexingToNewNode <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
     if(is.call(paramExpr) && safeDeparse(paramExpr[[1]], warn = TRUE) %in% names(liftedCallsGetIndexingFromArgumentNumbers))
         return(addNecessaryIndexingFromArgumentNumbers(newNodeNameExpr, paramExpr, indexVarExprs))
+    if(is.call(paramExpr) && safeDeparse(paramExpr[[1]], warn = TRUE) %in% names(liftedCallsGetIndexingOther))
+        return(addNecessaryIndexingOther(newNodeNameExpr, paramExpr, indexVarExprs))
     usedIndexVarsList <- indexVarExprs[indexVarExprs %in% all.vars(paramExpr)]    # this extracts any index variables which appear in 'paramExpr'
     vectorizedIndexExprsList <- extractAnyVectorizedIndexExprs(paramExpr)    # creates a list of any vectorized (:) indexing expressions appearing in 'paramExpr'
     neededIndexExprsList <- c(usedIndexVarsList, vectorizedIndexExprsList)
@@ -1165,6 +1174,15 @@ addNecessaryIndexingFromArgumentNumbers <- function(newNodeNameExpr, paramExpr, 
     newNodeNameExprIndexed[3:(2+length(neededIndexExprsList))] <- neededIndexExprsList
     return(newNodeNameExprIndexed)
 }
+addNecessaryIndexingOther <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
+    paramExprCallName <- as.character(paramExpr[[1]])
+    neededIndexExprsList <- liftedCallsGetIndexingOther[[paramExprCallName]](as.list(paramExpr[-1]))
+    newNodeNameExprIndexed <- substitute(NAME[], list(NAME = newNodeNameExpr))
+    newNodeNameExprIndexed[3:(2+length(neededIndexExprsList))] <- neededIndexExprsList
+    return(newNodeNameExprIndexed)
+}
+
+
 extractAnyVectorizedIndexExprs <- function(expr) {
     if(!(':' %in% all.names(expr)))    return(list())
     if(!is.call(expr))     return(list())
