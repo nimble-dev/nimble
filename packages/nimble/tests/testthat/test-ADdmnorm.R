@@ -11,13 +11,7 @@ nimbleOptions(useADmatInverseAtomic  = TRUE)
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
-## verbose: set to FALSE
-nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
 
-## MCMC progress bar: set to FALSE
-nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
-nimbleOptions(MCMCprogressBar = FALSE)
 
 relTol <- eval(formals(test_ADModelCalculate)$relTol)
 relTol[3] <- 1e-6
@@ -108,6 +102,14 @@ test_that("lifting of PDinverse_logdet", {
 # Run various NIMBLE tests that use dmnorm with dmnormAD instead.
 
 # From test-mcmc.R
+
+## verbose: set to FALSE
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+## MCMC progress bar: set to FALSE
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
 
 ## MCMC orderSamplersPosteriorPredictiveLast - save current setting
 nimbleReorderPPsamplersSetting <- getNimbleOption('MCMCorderPosteriorPredictiveSamplersLast')
