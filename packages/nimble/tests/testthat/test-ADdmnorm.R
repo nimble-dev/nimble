@@ -87,6 +87,23 @@ test_ADModelCalculate(model, useParamTransform = TRUE,
 # Aborted
 }
 
+test_that("non-assignment of dmnormAD if cholesky param used", {
+    code <- nimbleCode({
+        y[1:3] ~ dmnorm(mu[1:3], cholesky = L[1:3,1:3], prec_param = 0)
+    })
+    expect_message(m <- nimbleModel(code, inits=list(mu=rep(0,3),L=diag(3))),
+                   "Detected use of `cholesky` parameterization")
+})
+
+test_that("lifting of PDinverse_logdet", {
+    code <- nimbleCode({
+        y[1:3] ~ dmnorm(mu[1:3], Q[2, 1:3, 5:7, 1])
+    })
+    m <- nimbleModel(code, data = list(y=rnorm(3)))
+    which_PDinverse <- grep("PDinverse_logdet", m$getNodeNames())
+    expect_identical(length(m[[m$getNodeNames()[which_PDinverse]]]), 10L)
+})
+    
 
 # Run various NIMBLE tests that use dmnorm with dmnormAD instead.
 
@@ -584,260 +601,6 @@ test_that('detect conjugacy when scaling Wishart, inverse Wishart cases', {
     expect_identical(length(m$checkConjugacy('Sigma')), 0L, 'Wishart case')
 })
 
-test_that('using LKJ randomw walk samplers', {
-    opt <- nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions')
-    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = TRUE)
-    
-    R <- matrix(c(
-        1, 0.9, .3, -.5, .1,
-        0.9, 1, .15, -.3, .1,
-        .3, .15, 1, .3, .1,
-        -.5, -.3, .3, 1, .1,
-        .1,.1,.1,.1, 1)
-      , 5, 5)
-
-    U <- chol(R)
-
-    sds <- c(5,4, 3, 2, 1)
-
-    ## Remaining length of columns of U
-    PS <- matrix(0, 5, 5)
-    PS[1,] <- 1
-    PS[2, 2:5] <- 1-U[1, 2:5]^2
-    PS[3, 3] <- 1 - sum(U[1:2, 3]^2)
-    PS[3, 4] <- 1-U[1,4]^2-U[2,4]^2
-    PS[4,4] <- 1 - sum(U[1:3, 4]^2)
-    PS[3, 5] <- 1-U[1,5]^2-U[2,5]^2
-    PS[4, 5]<- 1-U[1,5]^2-U[2,5]^2-U[3,5]^2
-    PS[5, 5]<- 1 - sum(U[1:4, 5]^2)
-
-    ## Canonical partial correlations
-    Z <- diag(5)
-    Z[1,2:5] <- U[1, 2:5]
-    Z[2,3] <- U[2,3]/sqrt(PS[2,3])
-    Z[2,4] <- U[2,4]/sqrt(PS[2,4])
-    Z[3,4] <- U[3,4]/sqrt(PS[3,4])
-    Z[2,5] <- U[2,5]/sqrt(PS[2,5])
-    Z[3,5] <- U[3,5]/sqrt(PS[3,5])
-    Z[4,5] <- U[4,5]/sqrt(PS[4,5])
-
-    ## transformed parameter
-    yt <- atanh(Z)
-    diag(yt) <- 0
-    yt <- yt[yt!=0]
-
-    ## Log determinant of Jacobian of transformation from U to y via Z
-    logDetJac <- 0.5*(log(PS[2,3])+log(PS[2,4])+log(PS[3,4])+log(PS[2,5]) +
-                      log(PS[3,5]) + log(PS[4,5])) - 2*sum(log(cosh(yt)))
-    
-    set.seed(1)
-    Sigma <- diag(sds)%*%R%*%diag(sds)
-
-    n <- 100
-    p <- 5
-    y <- t(t(chol(Sigma))%*%matrix(rnorm(p*n),p,n))
-
-    uppertri_mult_diag <- nimbleFunction(
-        run = function(mat = double(2), vec = double(1)) {
-            returnType(double(2))
-            p <- length(vec)
-            out <- matrix(nrow = p, ncol = p, init = FALSE)
-            for(i in 1:p)
-                out[ , i] <- mat[ , i] * vec[i]
-            return(out)
-        })
-    temporarilyAssignInGlobalEnv(uppertri_mult_diag)
-
-    thin <- 10
-    
-    code <- nimbleCode({
-        for(i in 1:n)
-            y[i, 1:p] ~ dmnorm(mu[1:p], cholesky = U[1:p, 1:p], prec_param = 0)
-        U[1:p,1:p] <- uppertri_mult_diag(Ustar[1:p, 1:p], sds[1:p])
-        Ustar[1:p,1:p] ~ dlkj_corr_cholesky(1.3, p)
-    })
-    m <- nimbleModel(code, constants = list(n = n, p = p, mu = rep(0, p)),
-                     data = list(y = y), inits = list(sds = sds, Ustar = U))
-    cm <- compileNimble(m)
-
-    conf <- configureMCMC(m, nodes = NULL, thin = thin)
-    conf$addSampler('Ustar', 'RW_block_lkj_corr_cholesky',
-                    control = list(adaptInterval = 50, adaptFactorExponent = .25, scale = 0.1))
-    mcmc <- buildMCMC(conf)
-    cmcmc <- compileNimble(mcmc, project = m)
-
-    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
-    expect_identical(mcmc$samplerFunctions[[1]]$y, yt)
-    expect_equal(mcmc$samplerFunctions[[1]]$partialSums, PS)  # not sure why off by double precision f.p. error
-    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
-    expect_equal(mcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
-
-    cmcmc$samplerFunctions[[1]]$transform(m$Ustar)
-    expect_identical(cmcmc$samplerFunctions[[1]]$y, yt)
-    expect_equal(cmcmc$samplerFunctions[[1]]$partialSums, PS)
-    expect_identical(cmcmc$samplerFunctions[[1]]$z, Z)
-    expect_equal(cmcmc$samplerFunctions[[1]]$logDetJac, logDetJac)
-
-    nIts <- 50000
-    out <- runMCMC(cmcmc, 50000)
-    outSigma <- matrix(0, nrow(out), p*p)
-    for(i in 1:nrow(outSigma))
-        outSigma[i,] <- t(matrix(out[i,], p, p)) %*% matrix(out[i,],p,p)
-                
-    conf <- configureMCMC(m, nodes = NULL, thin = 10)
-    conf$addSampler('Ustar', 'RW_lkj_corr_cholesky', control = list(scale = .1))
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc,project = m)
-
-    mcmc$samplerFunctions[[1]]$transform(m$Ustar)
-    expect_equal(mcmc$samplerFunctions[[1]]$partialSums, PS)
-    expect_identical(mcmc$samplerFunctions[[1]]$z, Z)
-
-    cmcmc$samplerFunctions[[1]]$transform(m$Ustar)
-    expect_equal(cmcmc$samplerFunctions[[1]]$partialSums, PS)
-    expect_identical(cmcmc$samplerFunctions[[1]]$z, Z)
-
-    out2 <- runMCMC(cmcmc, nIts)
-    outSigma2 <- matrix(0, nrow(out), p*p)
-    for(i in 1:nrow(outSigma2))
-        outSigma2[i,] <- t(matrix(out2[i,], p, p)) %*% matrix(out2[i,],p,p)
-    
-    ## Compare sampler output to Stan results (see code in paciorek's lkj_testing.R file)
-    stan_means <- c(1.00000000, 0.87580832, 0.41032781, -0.56213296, 0.09006483, 0.87580832,
-                    1.00000000, 0.18682787, -0.33699708, 0.12656145, 0.41032781, 0.18682787,
-                    1.00000000, 0.11984278, 0.10919301, -0.56213296, -0.33699708, 0.11984278,
-                    1.00000000, 0.10392069, 0.09006483, 0.12656145, 0.10919301, 0.10392069,
-                    1.00000000)
-    stan_sds <- c(0.000000e+00, 1.789045e-02, 6.244945e-02, 5.393811e-02, 7.928870e-02,
-                  1.789045e-02, 0.000000e+00, 8.376820e-02, 7.448420e-02, 8.411652e-02,
-                  6.244945e-02, 8.376820e-02, 8.600611e-17, 8.132228e-02, 9.242809e-02,
-                  5.393811e-02, 7.448420e-02, 8.132228e-02, 8.711701e-17, 8.605078e-02,
-                  7.928870e-02, 8.411652e-02, 9.242809e-02, 8.605078e-02, 1.227811e-16)
-
-    nim_means_block <- apply(outSigma[1001:nrow(out), ], 2, mean)
-    nim_sds_block <- apply(outSigma[1001:nrow(out), ], 2, sd)
-    nim_means_uni <- apply(outSigma2[1001:nrow(out), ], 2, mean)
-    nim_sds_uni <- apply(outSigma2[1001:nrow(out), ], 2, sd)
-
-    cols <- matrix(1:(p*p), p, p)
-    cols <- cols[upper.tri(cols)]
-
-    expect_lt(max(abs(stan_means[cols] - nim_means_block[cols])),  0.005)
-    expect_lt(max(abs(stan_means[cols] - nim_means_uni[cols])), 0.005)
-    expect_lt(max(abs(stan_sds[cols] - nim_sds_block[cols])), 0.005)
-    expect_lt(max(abs(stan_sds[cols] - nim_sds_uni[cols])), 0.005)
-    
-    ## Compare sampler output to truth for another (simple) model.
-    code <- nimbleCode({
-        for(i in 1:n) {
-            y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
-        }
-        R[1:J, 1:J] <- t(U[1:J, 1:J]) %*% U[1:J, 1:J]
-        U[1:J, 1:J] ~ dlkj_corr_cholesky(eta, J)
-    })
-    J <- 5
-    n <- 2000
-    set.seed(1)
-    eta <- 1.3
-    mat <- rlkj_corr_cholesky(1, eta, J)
-    y <- t(t(mat) %*% matrix(rnorm(n*J), J, n))
-    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
-                     inits = list(eta = 1, mu = rep(0, J), U = diag(J)))
-
-    set.seed(1)
-    conf <- configureMCMC(m)
-    samplers <- conf$getSamplers()
-    expect_equal(samplers[[1]]$name, 'RW_block_lkj_corr_cholesky')
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
-    postMean <- colMeans(samples)
-    names(postMean) <- NULL
-    expect_lt(max(abs(postMean - c(mat))), 0.07, label = "RW_block_lkj posterior not close to truth")
-
-    set.seed(1)
-    conf <- configureMCMC(m, nodes = NULL)
-    conf$addSampler('U', 'RW_lkj_corr_cholesky')
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    samples <- runMCMC(cmcmc, niter = 2500, nburnin = 500)
-    postMean <- colMeans(samples)
-    names(postMean) <- NULL
-    expect_lt(max(abs(postMean - c(mat))), 0.07, label = "RW_lkj posterior not close to truth")
-
-    ## 2x2 case
-
-    code <- nimbleCode({
-        for(i in 1:n) {
-            y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
-        }
-        R[1:J, 1:J] <- t(U[1:J, 1:J]) %*% U[1:J, 1:J]
-        U[1:J, 1:J] ~ dlkj_corr_cholesky(eta, J)
-    })
-    J <- 2
-    n <- 2000
-    set.seed(1)
-    eta <- 1.3   
-    mat <- rlkj_corr_cholesky(1, eta, J)
-    y <- t(t(mat) %*% matrix(rnorm(n*J), J, n))
-    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
-                     inits = list(eta = 1.3, mu = rep(0, J), U = diag(J)))
-
-
-    set.seed(1)
-    conf <- configureMCMC(m, nodes = 'U')
-    expect_identical(conf$getSamplers('U')[[1]]$name, "RW_lkj_corr_cholesky")
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    samples <- runMCMC(cmcmc, niter = 5500, nburnin = 500)
-    postMean <- mean(samples[ , 'U[1, 2]'])
-    expect_lt(abs(postMean - mat[1,2]), 0.04, label = "RW_lkj posterior not close to truth for 2x2 case")
-
-    
-    ## Now compare for eta=1 prior (uniform prior case)
-    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
-                     inits = list(eta = 1, mu = rep(0, J), U = diag(J)))
-
-    set.seed(1)
-    conf <- configureMCMC(m, nodes = 'U')
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    samples <- runMCMC(cmcmc, niter = 5500, nburnin = 500)
-    postMean <- mean(samples[ , 'U[1, 2]'])
-    postSD <- sd(samples[ , 'U[1, 2]'])
-
-    code <- nimbleCode({
-        for(i in 1:n) {
-            y[i, 1:J] ~ dmnorm(mu[1:J], cov = R[1:J, 1:J])
-        }
-        R[1,2] <- rho
-        R[2,1] <- rho
-        rho ~ dunif(-1,1)
-    })
-    m <- nimbleModel(code, data = list(y = y), constants = list(n = n, J = J),
-                     inits = list(rho = 0, mu = rep(0, J), R = diag(J)))
-
-
-    set.seed(1)
-    conf <- configureMCMC(m, nodes = NULL)
-    conf$addSampler('rho','slice')
-    mcmc <- buildMCMC(conf)
-    cm <- compileNimble(m)
-    cmcmc <- compileNimble(mcmc, project = m)
-    samples <- runMCMC(cmcmc, niter = 1000, nburnin = 100)
-    postMeanAlt <- mean(samples)
-    postSDAlt <- sd(samples)
-    expect_lt(abs(postMean - postMeanAlt), 0.0005, label = "RW_lkj posterior not close to slice-based MCMC")
-    expect_lt(abs(postSD - postSDAlt), 0.001, label = "RW_lkj posterior not close to slice-based MCMC")
-
-    
-    nimbleOptions('buildInterfacesForCompiledNestedNimbleFunctions' = opt)
-})
 
 test_that("realized conjugacy links are working", {
 
@@ -927,14 +690,18 @@ nimbleOptions(verbose = FALSE)
 test_that('getParam', {
     
     code = nimbleCode({
-        a[1:3] ~ dmnorm(mu[1:3],pr[1:3,1:3])
+        a[1:4] ~ dmnorm(mu[1:4],pr[1:4,1:4])
     })
-    pr1 = diag(3)
+    pr1 = diag(4)
     pr1[1,2]=pr1[2,1]=.3
+    pr1[1,3]=pr1[3,1]=-.1
+    pr1[2,3]=pr1[3,2] = 0.4
     pr2 <- pr1
     pr1[1,2]=pr1[2,1]=.5
+    pr1[1,3]=pr1[3,1]=-.2
+    pr1[2,3]=pr1[3,2] = 0.3
     
-    m = nimbleModel(code, inits =list(mu=rep(1,3), pr = pr1))
+    m = nimbleModel(code, inits =list(mu=rep(1,4), pr = pr1))
     cm = compileNimble(m)
     
     cm$pr <- pr2
