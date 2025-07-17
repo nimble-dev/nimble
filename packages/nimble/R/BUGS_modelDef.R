@@ -835,7 +835,6 @@ modelDefClass$methods(reparameterizeDists = function() {
             BUGSdecl$distributionName <- "dmnormAD"
             BUGSdecl$valueExpr[[1]] <- quote(dmnormAD)
         }
-        if(exists('paciorek') && BUGSdecl$distributionName == "dmnormAD") browser()  # DEBUG
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         distName <- BUGSdecl$distributionName #as.character(valueExpr[[1]])
         if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
