@@ -63,9 +63,6 @@ calc_dmnormAltParams <- nimbleFunction(
         } else {
             I <- diag(dim(cholesky)[1])
             ans <- backsolve(cholesky, forwardsolve(t(cholesky), I))
-            ## Chris suggests:
-            ## tmp <- forwardsolve(L, I)
-            ## ans <- crossprod(tmp)
         }
         returnType(double(2))
         return(ans)
@@ -82,11 +79,7 @@ calc_dmnorm_prec_ldet_AltParams <- nimbleFunction(
             ## No further action needed.
         } else {
             chol <- chol(ans)
-            ans <- forwardsolve(t(chol), diag(n))
-            ans <- ans %*% t(ans)
-            ## The uses Chris' suggestion:
-            ## tmp <- forwardsolve(L, I)
-            ## ans <- crossprod(tmp)
+            ans <- backsolve(chol, forwardsolve(t(chol), diag(n)))
         }
         returnType(double(2))
         return(ans)
@@ -134,9 +127,6 @@ calc_dwishAltParams <- nimbleFunction(
         } else {
             I <- diag(dim(cholesky)[1])
             ans <- backsolve(cholesky, forwardsolve(t(cholesky), I))
-            ## Chris suggests:
-            ## tmp <- forwardsolve(L, I)
-            ## ans <- crossprod(tmp)
         }
         returnType(double(2))
         return(ans)
