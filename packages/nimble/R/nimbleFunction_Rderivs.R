@@ -25,16 +25,25 @@ nimDerivs_dummy <- nimbleFunction(
 #' @param order an integer vector with values within the set \eqn{{0, 1, 2}}, 
 #' corresponding to whether the function value, Jacobian, and Hessian should be
 #'  returned respectively.  Defaults to \code{c(0, 1, 2)}.
-#' @param model (optional) for derivatives of a nimbleFunction that involves model.
-#' calculations, the uncompiled model that is used. This is needed in order
+#' @param model (optional) the uncompiled model that is used, if taking derivatives
+#' of a nimbleFunction that involves model calculations. This is needed in order
 #' to be able to correctly restore values into the model when \code{order} does not
-#' include 0 (or in all cases when double-taping).
+#' include 0 (or in all cases when double-taping). IMPORTANT: if \code{model}
+#' is included, one should also include the arguments \code{updateNodes} and
+#' \code{constantNodes} using the output obtained from running
+#' \code{makeModelDerivsInfo}.
 #' @param ... additional arguments intended for internal use only.
 #'
 #'@details Derivatives for uncompiled nimbleFunctions are calculated using the
 #' \code{numDeriv} package.  If this package is not installed, an error will
 #' be issued.  Derivatives for matrix valued arguments will be returned in 
 #' column-major order.
+#'
+#' As discussed above with the \code{model} argument, if taking derivatives
+#' of a nimbleFunction that involves model calculations (rather than directly
+#' taking derivatives of `calculate`), care needs to be taken to provide
+#' \code{model}, \code{updateNodes}, and \code{calcNodes} arguments. See
+#' Section 16.7.2 of the User Manual for more details.
 #' 
 #' @return an \code{ADNimbleList} with elements \code{value}, \code{jacobian},
 #' and \code{hessian}.
@@ -694,15 +703,7 @@ nimDerivs_nf <- function(call = NA,
           if(e$restoreInfo$deepestDepth < e$restoreInfo$currentDepth)
               e$restoreInfo$deepestDepth <- e$restoreInfo$currentDepth
       }
-  } else { # partial check for whether there is a model in the nimbleFunction
-      if(is(derivFxn, 'refMethodDef') && is.nf(e$.self)) {
-          isModel <- sapply(names(e), function(x) is.model(e[[x]]))
-          if(any(isModel)) {
-              modelElement <- names(e)[which(isModel)]
-              warning("nimDerivs_nf: detected a model, ", paste(modelElement, collapse = ','), ", associated with the nimbleFunction whose method is being differentiated. If model calculations are done in the method being differentiated, the 'model' argument to 'nimDerivs' should be included to ensure correct restoration of values in the model.")
-          }
-      }
-  }
+  } 
   
   ## standardize the derivFxnCall arguments
   derivFxnCall <- match.call(derivFxn, derivFxnCall)

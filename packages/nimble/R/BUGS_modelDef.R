@@ -502,7 +502,7 @@ modelDefClass$methods(checkADsupportForDistribution = function(dist) {
   if(!supported)
       if(getNimbleOption('doADerrorTraps'))
           messageIfVerbose("  [Note] It is fine to have a distribution without derivatives as long as no\n",
-                           "         algorithm requests derivatives from it.",
+                           "         algorithm requests derivatives from it.\n",
                            "         For a user-defined distribution, set `buildDerivs = TRUE` (or to a list)\n",
                            "         in its nimbleFunction to turn on derivative support.\n",
                            "         Set `nimbleOptions(doADerrorTraps=FALSE)` to disable this check.")
@@ -1558,6 +1558,13 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     ## In the second, elements give the column index, e.g. [1 2 3; 1 2 3; 1 2 3]
     ## etc.
     arrayWithIndices <- vector('list', length = nDim)
+    if(is.null(dims))
+        stop("Something is inconsistent in the use of `", varName, "` in the model.\n",
+                    "Check for conflicting declarations.\n",
+                    "If your model has macros or if-then-else blocks\n",
+                    "you can inspect the processed model code by calling\n",
+                    "`nimbleOptions(stop_after_processing_model_code = TRUE)`\n",
+                    "before calling nimbleModel.\n", call. = FALSE)
     arrayWithIndices[[1]] <- array( rep(1:dims[1], prod(dims[-1])), dims)
     ## We could reduce memory footprint by doing all steps on each dimension before building arrayWithIndices for new dimension
     if(nDim > 1) {
@@ -2502,8 +2509,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         stop(paste0("Something is inconsistent in the model.\n",
                     "Check for conflicting declarations.\n",
                     "If your model has macros or if-then-else blocks\n",
-                    "you can inspect the processed model code by doing\n",
-                    "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
+                    "you can inspect the processed model code by calling\n",
+                    "`nimbleOptions(stop_after_processing_model_code = TRUE)`\n",
                     "before calling nimbleModel.\n"
                     ),
              call. = FALSE)

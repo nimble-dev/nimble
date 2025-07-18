@@ -789,7 +789,7 @@ modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
 }
 
 ## modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
-##   message("   [Note] Operator `pow` may cause derivative problems with negative arguments. If the exponent is guaranteed to be an integer, use `pow_int` instead.")
+##   message("  [Note] Operator `pow` may cause derivative problems with negative arguments. If the exponent is guaranteed to be an integer, use `pow_int` instead.")
 ##   invisible(NULL)
 ## }
 
@@ -953,12 +953,12 @@ modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
 
 modifyForAD_nfMethod <- function(code, symTab, workEnv) {
   if(code$args[[1]]$name != "cppPointerDereference")
-    message("   [Note] In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
+    message("  [Note] In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
   objName <- code$args[[1]]$args[[1]]$name
   NFsymObj <- workEnv$RsymTab$getSymbolObject(objName, TRUE)
   methodName <- code$args[[2]]
   if(!is.character(methodName))
-    message("   [Note] In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
+    message("  [Note] In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
   methodSymObj <- NFsymObj$nfProc$compileInfos[[methodName]]$newLocalSymTab$getSymbolObject(methodName, TRUE)
   buildDerivs <- methodSymObj$nfMethodRCobj$buildDerivs
   if(!is.null(buildDerivs))
