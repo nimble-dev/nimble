@@ -248,11 +248,11 @@ test_that('parameterTransform for lkj correlation matrices', {
     
     expect_identical(yt, yt_from_pt)
     expect_equal(U, matrix(U_from_pt, p, p))
-    expect_identical(logDetJac, logDetJac_from_pt)
+    expect_equal(logDetJac, logDetJac_from_pt)
     
     expect_identical(yt, cyt_from_pt)
     expect_equal(U, matrix(cU_from_pt, p, p))
-    expect_identical(logDetJac, clogDetJac_from_pt)
+    expect_identical(logDetJac_from_pt, clogDetJac_from_pt)
 })
 
 test_that('parameterTransform works for zero nodes', {

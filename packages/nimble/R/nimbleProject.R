@@ -899,7 +899,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                 ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
                 ok <- !is.null(ans)
             }
-            if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
+            if(!ok) stop("There is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an existing project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
 
             ans
         },
@@ -1160,7 +1160,8 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     for(i in names(controlDefaults)) {
         if(!i %in% names(control)) control[[i]] <- controlDefaults[[i]]
     }
-    
+
+    nimbleUserNamespace$.checkedNames <- new.env()  # Memoization for checking nf name conflicts in `checkNameConflict()`.
 
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
     if(!showCompilerOutput) {

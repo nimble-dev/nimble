@@ -188,6 +188,24 @@ scalarOutputTypes <- list(decide = 'logical',
 ## and it will set the size expressions for A and for itself to 1.
 expressionSymbolTypeReplacements <- c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction', 'symbolMemberFunction')
 
+checkNameConflict <- function(nm) {
+    if(!exists(nm, nimbleUserNamespace$.checkedNames, inherits = FALSE)) {
+      nimbleUserNamespace$.checkedNames[[nm]] <- 1
+      ## Handle replacements such as `gamma` -> `gammafn`.  
+      if(nm %in% specificCallReplacements) {
+          nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
+      } else if(nm %in% nimKeyWords)
+          nm <- names(nimKeyWords)[which(nm == nimKeyWords)]
+      for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
+          objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
+          if(any(sapply(objs, is.rcf))) 
+              stop("The name of the nimbleFunction `", nm[i], "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
+      }
+    }
+}
+
+
+
 exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprClass
   ## name:
   if(code$isName) {
@@ -267,17 +285,7 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
     }
     sizeCall <- sizeCalls[[code$name]]
     if(!is.null(sizeCall)) {
-      nm <- code$name
-      ## Handle replacements such as `gamma` -> `gammafn`.  
-      if(nm %in% specificCallReplacements) {
-          nm <- names(specificCallReplacements)[which(nm == specificCallReplacements)]
-      } else if(nm %in% nimKeyWords)
-          nm <- names(nimKeyWords)[which(nm == nimKeyWords)]
-      for(i in seq_along(nm)) { # `lgammafn` will give back two items, not one.
-          objs <- sapply(nm[i], function(x) getAnywhere(x)$objs)
-          if(any(sapply(objs, is.rcf))) 
-              stop("The name of the nimbleFunction `", nm[i], "` conflicts with a function in the NIMBLE language (DSL); please use a different name")
-      }
+      checkNameConflict(code$name) 
       if(.nimbleOptions$debugSizeProcessing) {
         browser()
         eval(
@@ -573,6 +581,9 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
     ## overall strategy is to separate runs of scaalrs and non-scalars
     ## also in C++ we don't take arbitrary arguments.  Instead we chain together calls in groups of 4
     ##     e.g. c(a1, a2, a3, a4, a5) will become c( c(a1, a2, a3, a4), a5)
+
+    if(!length(code$args))
+        stop("`c()` must have at least one argument")
     
     ## first puzzle is with nimC(scalar1, scalar2, vector1, scalar3)
     ## we need to extract the runs of scalars like (scalar1, scalar2), so they can be packed up in an object together.
@@ -2724,6 +2735,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     ## This is deprecated:
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
 
+    minuses <- sapply(code$args, function(x) inherits(x, 'exprClass') &&
+                                             exists('name', x) && x$name == "-")
+    if(any(minuses)) 
+        if(any(sapply(code$args[minuses], function(x) length(x$args) == 1)))
+            stop("use of 'minus' indexing found in `", safeDeparse(code$expr), "` cannot be compiled")
+    
     ## Iterate over arguments,  lifting any logical indices into which()
     ## e.g. X[i, bool] becomes X[i, Interm1], with Interm1 <- which(bool) as an assert.
     for(i in seq_along(code$args)) {
@@ -2806,8 +2823,11 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             }
             next
         } else {        ## not dropping a dimension, so the index is non-scalar
-            if(isExprClass) ## If it is an expression that is not `:` or blank, then a simple block is not allowed
-                if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
+            if(isExprClass) { ## If it is an expression that is not `:` or blank, then a simple block is not allowed
+                if(code$args[[i+1]]$name == '(')
+                    stop("detected unexpected use of `(` in model code in `", safeDeparse(code$expr), "`. Parentheses cannot be used in indexing in NIMBLE models")
+                    if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
+            }
         }
         needMap <- TRUE ## If the "next" in if(dropThisDim) {} is always hit, then needMap will never be set to TRUE
 

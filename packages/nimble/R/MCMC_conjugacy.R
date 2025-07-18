@@ -671,7 +671,7 @@ conjugacyClass <- setRefClass(
 
             ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- model$getLogProb(calcNodes)
 
-            if(getNimbleOption('verifyConjugatePosteriors')) {
+            if(getNimbleOption('MCMCverifyConjugatePosteriors')) {
                 functionBody$addCode({
                     modelLogProb0 <- model$getLogProb(calcNodes)
                     origTargetValue <- model[[target]]
@@ -690,7 +690,7 @@ conjugacyClass <- setRefClass(
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
             }, list(RPOSTERIORCALL = posteriorObject$rCallExpr))
             ## only if we're verifying conjugate posterior distributions: figure out if conjugate posterior distribution is correct
-            if(getNimbleOption('verifyConjugatePosteriors')) {
+            if(getNimbleOption('MCMCverifyConjugatePosteriors')) {
                 functionBody$addCode({
                     modelLogProb1 <- model$getLogProb(calcNodes)
                     posteriorLogDensity0 <- DPOSTERIORCALL_ORIG

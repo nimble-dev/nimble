@@ -75,8 +75,8 @@ The following are not supported.
   and if the dimensions of the variable are not clearly defined in
   other declarations, NIMBLE currently requires that the dimensions of
   x be provided when the model object is created (via `nimbleModel`).
-  1. Use of non-sequential indexes in the definition of a for loop. JAGS allows syntax such as `for(i in expr)` when `expr` evaluates to an integer vector. In NIMBLE one can use the work-around of defining a constant vector, say `k`, and using `k[i]` in the body of the for loop.
-  1. Use of non-sequential indexes to subset variables. JAGS allows syntax such as `sum(mu[expr])` when `expr` evaluates to an integer vector. In NIMBLE one can use the work-around of defining a nimbleFunction that takes `mu` and the index vector as arguments and does the calculation of interest.
+  1. Use of non-sequentially-increasing indexes in the definition of a for loop. JAGS allows syntax such as `for(i in expr)` when `expr` evaluates to an integer vector. In NIMBLE one can use the work-around of defining a constant vector, say `k`, and using `k[i]` in the body of the for loop.
+  1. Use of non-sequentially-increasing indexes to subset variables. JAGS allows syntax such as `sum(mu[expr])` when `expr` evaluates to an integer vector. In NIMBLE one can use the work-around of defining a nimbleFunction that takes `mu` and the index vector as arguments and does the calculation of interest.
 
 ## Writing models
 

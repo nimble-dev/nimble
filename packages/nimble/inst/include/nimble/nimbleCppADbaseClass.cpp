@@ -2,9 +2,9 @@
 // It is not compiled into libnimble.a but rather copied
 // to the on-the-fly working directly (normally tempdir())
 // and compiled once-per-session there if AD is used.
+#include <math.h>
 #include <iostream>
 #include <nimble/nimbleCppADbaseClass.h>
-#include <math.h>
 #include <nimble/NimArr.h>
 #include <nimble/nimDerivs_dists.h>
 
