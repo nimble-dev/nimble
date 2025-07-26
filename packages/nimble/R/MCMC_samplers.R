@@ -2877,7 +2877,10 @@ sampler_polyagamma <- nimbleFunction(
         sizeNodes <- setdiff(probAndSizeNodes, probNodes)
 
         zeroInflated <- FALSE
-        
+        ## Zero-Inflation node detection:
+        inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
+        if(length(inflationNodes)) inflationNodes <- setdiff(inflationNodes, nonTarget)
+
         ## Conjugacy checking, part 2.
         ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
         ## and that zero-inflation variable multiplies the baseline probability.
@@ -2885,12 +2888,10 @@ sampler_polyagamma <- nimbleFunction(
         ## First we need some processing to make sure that we can simply check inflation based only on `probNodes[1]`,
         ## to avoid costly checking.
         if(check) {
-            inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
             if(length(inflationNodes)) {
                 ## Check that inflation probabilities are directly specified as parents of `probNodes`
                 ## to avoid having to check multiple declarations. Seemingly anything otherwise would be
                 ## an unusual zero inflation construction.
-                inflationNodes <- setdiff(inflationNodes, nonTarget)
                 test <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, immediateOnly = TRUE)
                 test <- setdiff(test, nonTarget)
                 if(!identical(test, inflationNodes))  # So we need to only consider a single declaration.
@@ -3020,6 +3021,8 @@ sampler_polyagamma <- nimbleFunction(
             }
             if(all(fixedColumns)) 
                 fixed <- TRUE
+
+            initializeX <- TRUE ## Initialize Design Matrix on first run
         } else {
             X <- control$designMatrix
             if(ncol(X) != nCoef)
@@ -3028,10 +3031,10 @@ sampler_polyagamma <- nimbleFunction(
                 stop("polyagamma sampler: number of rows of design matrix, ", nrow(X), ", doesn't match number of Bernoulli observations, ", N)
             fixed <- TRUE
             fixedColumns <- rep(TRUE, nCoef)
+            initializeX <- FALSE ## Don't Initialize Design Matrix on first run
         }
 
         initializeSize <- TRUE
-        initializeX <- TRUE
         pgSampler <- samplePolyaGamma()
 
         Q <- matrix(0, nrow = nCoef, ncol = nCoef)
@@ -3171,6 +3174,14 @@ sampler_polyagamma <- nimbleFunction(
             if(initializeX & zeroInflated) {
                 values(model, inflationNodes) <<- inflationValuesSaved
                 values(model, inflationNodesDeps) <<- inflationDepsValuesSaved
+            }
+            ## Check to see if covariates need to be scaled:
+            if(initializeX) {
+              for(j in 1:nCoef){
+                if( any(abs(X[, j]) == Inf) ){
+                  stop("Infinite values constructed in the design matrix of the polyagamma sampler. Please consider scaling the covariate or providing the design matrix.\n")
+                }
+              }
             }
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
