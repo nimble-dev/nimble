@@ -323,6 +323,7 @@ buildOneAGHQuad1D <- nimbleFunction(
       ##   transMethod <<- gridType
       ## }
       if(replace_optimControl) {
+        optimControl$fnscale <- -1
         optimControl_ <<- optimControl
       }
     },
@@ -1163,6 +1164,7 @@ buildOneAGHQuad <- nimbleFunction(
         transMethod <<- gridType
       }
       if(replace_optimControl) {
+        optimControl$fnscale <- -1   
         optimControl_ <<- optimControl
       }
     },
