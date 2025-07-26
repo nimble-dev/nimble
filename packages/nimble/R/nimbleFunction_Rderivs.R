@@ -703,15 +703,7 @@ nimDerivs_nf <- function(call = NA,
           if(e$restoreInfo$deepestDepth < e$restoreInfo$currentDepth)
               e$restoreInfo$deepestDepth <- e$restoreInfo$currentDepth
       }
-  } else { # partial check for whether there is a model in the nimbleFunction
-      if(is(derivFxn, 'refMethodDef') && is.nf(e$.self)) {
-          isModel <- sapply(names(e), function(x) is.model(e[[x]]))
-          if(any(isModel)) {
-              modelElement <- names(e)[which(isModel)]
-              warning("nimDerivs_nf: detected a model, ", paste(modelElement, collapse = ','), ", associated with the nimbleFunction whose method is being differentiated. If model calculations are done in the method being differentiated, the 'model' argument to 'nimDerivs' should be included to ensure correct restoration of values in the model.")
-          }
-      }
-  }
+  } 
   
   ## standardize the derivFxnCall arguments
   derivFxnCall <- match.call(derivFxn, derivFxnCall)

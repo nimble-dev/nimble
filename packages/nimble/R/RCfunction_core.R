@@ -263,13 +263,65 @@ nf_checkDSLcode_buildDerivs <- function(code, buildDerivs) {
                 if(isFALSE(buildDerivs) || !length(buildDerivs) || is.null(buildDerivs) ||
                     (is.character(buildDerivs) && !methodName %in% buildDerivs) ||
                    (is.list(buildDerivs) && !methodName %in% names(buildDerivs)))
-                    message("  [Note] Detected use of `nimDerivs` with a function or method, `", methodName, "`, for which `buildDerivs` has not been set. This nimbleFunction cannot be compiled.") 
+                    messageIfVerbose("  [Note] Detected use of `nimDerivs` with a function or method, `", methodName, "`, for which `buildDerivs` has not been set. This nimbleFunction cannot be compiled.") 
             }
 
         }
     }
     invisible(NULL)
 }
+
+nf_checkDSLcode_checkForCalc <- function(code) {
+    code <- body(code)
+    return(sum(all.names(code) == "calculate") != sum(all.vars(code)=="calculate"))
+}
+
+nf_checkDSLcode_checkDerivsOf <- function(code) {
+    code <- body(code)
+    derivsFound <- which(findDerivsCalls(code))
+    if(length(derivsFound)) {
+        derivsOf <- sapply(derivsFound, function(i)
+            return(code[[i]][[3]][[2]][[1]]))
+        return(as.character(derivsOf[sapply(derivsOf, is.name)]))
+    }
+    return(NULL)
+}
+
+findDerivsCalls <- function(code) {
+    ## This assumes `derivs()` call is from assignment like `var <- derivs()`.
+    sapply(code, function(expr)
+        length(expr) >= 3 && length(expr[[1]]) == 1 &&
+        as.character(expr[[1]]) %in% c("=", "<-", "<<-") &&
+        length(expr[[3]]) > 1 && length(expr[[3]][[1]]) == 1 && 
+        as.character(expr[[3]][[1]]) %in% c('derivs', 'nimDerivs'))
+}
+
+checkNestedCalcCall <- function(functionName, methodsWithCalc, methodsDerivsOf) {
+    if(functionName %in% methodsWithCalc) return(TRUE)
+    if(functionName %in% names(methodsDerivsOf)) 
+        return(any(sapply(methodsDerivsOf[[functionName]], checkNestedCalcCall,
+                          methodsWithCalc, methodsDerivsOf)))
+    return(FALSE)
+}
+
+nf_checkDSLcode_calcDerivsArgs <- function(code, methodsWithCalc, methodsDerivsOf) {
+    code <- body(code)
+    derivsFound <- which(findDerivsCalls(code))
+    for(idx in derivsFound) {
+        argNames <- names(code[[idx]][[3]])
+        call <- code[[idx]][[3]][[2]][[1]]
+        if(length(call) == 1 && checkNestedCalcCall(as.character(call), methodsWithCalc, methodsDerivsOf) &&
+           length(setdiff(c('model', 'constantNodes', 'updateNodes'), argNames))) 
+            messageIfVerbose("  [Warning] Detected use of `nimDerivs` on a function or method, `", code[[idx]][[3]][[2]][[1]], "`,\n",
+                             "            that appears to contain the use of `calculate` on a model.\n",
+                             "            If model calculations are done in the method being differentiated, the 'model'\n",
+                             "            argument to 'nimDerivs' should be included to ensure correct restoration of\n",
+                             "            values in the model, and the 'updateNodes' and 'constantNodes' arguments\n",
+                             "            should also be provided (see Section 16.7.2 of the User Manual).")
+    }
+    invisible(NULL)
+}
+
 
 nf_checkDSLcode <- function(code, methodNames, setupVarNames, args, where = NULL) {
     validCalls <- c(names(sizeCalls),

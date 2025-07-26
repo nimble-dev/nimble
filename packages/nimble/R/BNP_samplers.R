@@ -210,17 +210,13 @@ sampleDPmeasure <- nimbleFunction(
       parentNodesXiDeps <- dcrpNode 
     }
     
-    dataNodes <- model$getDependencies(dcrpNode, stochOnly = TRUE, self = FALSE)
     N <- length(model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE))
     
     p <- length(tildeVars)
-    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    dimTildeVarsNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array) (dimTildeVarsNim=dimTildeNim)
     dimTildeVars <- numeric(p+1) # dimension to be used in run code (dimTildeVars=dimTilde)
-    for(i in 1:p) {
-      dimTildeVarsNim[i] <- model$getDimension(clusterVarInfo$clusterNodes[[i]][1])
-      dimTildeVars[i] <- lengthData^(dimTildeVarsNim[i]) 
-    }
+    for(i in 1:p) 
+        dimTildeVars[i] <- length(model$expandNodeNames(clusterVarInfo$clusterNodes[[i]][[1]],
+                                                        returnScalarComponents = TRUE))
     nTildeVarsPerCluster <-  clusterVarInfo$numNodesPerCluster
     nTilde <- numeric(p+1)
     nTilde[1:p] <- clusterVarInfo$nTilde / nTildeVarsPerCluster
