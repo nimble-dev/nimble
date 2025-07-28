@@ -831,6 +831,17 @@ modelDefClass$methods(reparameterizeDists = function() {
         BUGSdecl <- declInfo[[i]]     ## grab this current BUGS declation info object
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         code <- BUGSdecl$code   ## grab the original code
+        if(BUGSdecl$distributionName == "dmnorm" && buildDerivs && getNimbleOption('useADdmnorm')) {
+            if(length(BUGSdecl$code) > 2 && "cholesky" %in% names(BUGSdecl$code[[3]])) {
+                messageIfVerbose("  [Note] Detected use of `cholesky` parameterization of `dmnorm` with a\n",
+                                 "         derivative-enabled model. AD-optimized `dmnorm` is only available\n",
+                                 "         for the `prec` or `cov` parameterizations. NIMBLE will use a version\n",
+                                 "         of `dmnorm` not optimized for AD, which may result in inefficiency.")
+            } else {
+                BUGSdecl$distributionName <- "dmnormAD"
+                BUGSdecl$valueExpr[[1]] <- quote(dmnormAD)
+            }
+        }
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         distName <- BUGSdecl$distributionName #as.character(valueExpr[[1]])
         if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
@@ -1060,8 +1071,12 @@ liftedCallsGetIndexingFromArgumentNumbers <- list(
 )
 
 liftedCallsGetIndexingOther <- list(
-    PDinverse_logdet = function(argList)
-        list(substitute(1:N, list(N=argList[[1]][[3]][[3]]*argList[[1]][[4]][[3]] + 1)))
+    ## This is general in that it finds the number of elements of the matrix,
+    ## but the input shouldn't be anything other than square.
+    PDinverse_logdet = function(argList) {
+        getlen <- function(arg) length(eval(arg))
+        list(substitute(1:N, list(N = prod(sapply(argList[[1]][3:length(argList[[1]])], getlen))+1)))
+    }
 )
 
 

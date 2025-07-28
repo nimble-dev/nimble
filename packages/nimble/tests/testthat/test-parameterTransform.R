@@ -3,7 +3,10 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
+buildModelDerivsSetting = nimbleOptions('buildModelDerivs')
 nimbleOptions(verbose = FALSE)
+nimbleOptions(buildModelDerivs = TRUE)
+
 
 
 ##
@@ -277,5 +280,4 @@ test_that('parameterTransform works for zero nodes', {
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
-
-
+nimbleOptions(buildModelDerivs = buildModelDerivsSetting)

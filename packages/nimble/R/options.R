@@ -227,7 +227,8 @@ nimOptimMethod("bobyqa",
         stripUnusedTypeDefs = TRUE,
         digits = NULL,
         enableVirtualNodeFunctionDefs = FALSE,
-        checkDerivsArgs = TRUE
+        checkDerivsArgs = TRUE,
+        useADdmnorm = TRUE
       )
 )
 
