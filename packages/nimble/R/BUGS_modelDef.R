@@ -831,7 +831,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         BUGSdecl <- declInfo[[i]]     ## grab this current BUGS declation info object
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         code <- BUGSdecl$code   ## grab the original code
-        if(BUGSdecl$distributionName == "dmnorm" && buildDerivs) {
+        if(BUGSdecl$distributionName == "dmnorm" && buildDerivs && getNimbleOption('useADdmnorm')) {
             if(length(BUGSdecl$code) > 2 && "cholesky" %in% names(BUGSdecl$code[[3]])) {
                 messageIfVerbose("  [Note] Detected use of `cholesky` parameterization of `dmnorm` with a\n",
                                  "         derivative-enabled model. AD-optimized `dmnorm` is only available\n",
