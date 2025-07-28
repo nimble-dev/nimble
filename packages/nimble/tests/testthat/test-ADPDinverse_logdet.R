@@ -16,6 +16,8 @@ relTol[4] <- 1e-4
 verbose <- FALSE
 
 # Standalone test
+cov <- crossprod(matrix(rnorm(25), 5))
+
 PDinverse_logdet_test <- make_AD_test2(
   op = list(
     name = "PDinverse_logdet with prec_param FALSE: positive definite inverse and log determinant test",
@@ -34,7 +36,6 @@ PDinverse_logdet_test <- make_AD_test2(
   inputs = list(record = list(mat = cov),
                 test   = list(mat = cov+0.1))
 )
-cov <- crossprod(matrix(rnorm(25), 5))
 PDinverse_logdet_test_out <- test_AD2(PDinverse_logdet_test)
 
 # Test in a model with dmnormAD
