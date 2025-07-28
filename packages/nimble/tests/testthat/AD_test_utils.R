@@ -301,7 +301,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                                    abs_threshold = RRabsThresh,
                                                    info = paste0("(RR order ", o,")"))
                     pass <- pass && localPass
-                    if(verbose && !pass) {
+                    if(verbose && !localPass) {
                         cat(paste('Some R-to-R derivatives do not match for order', o, '.\n'))
                     }
                 }
@@ -310,7 +310,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                                    abs_threshold = RCabsThresh,
                                                 info = paste0("(RC order ", o,")"))
                     pass <- pass && localPass
-                    if(verbose && !pass) {
+                    if(verbose && !localPass) {
                         cat(paste('Some C-to-R derivatives do not match for order', o, '.\n'))
                         print(RansSet[[1]])
                         print(CansSet)
@@ -321,7 +321,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                                    abs_threshold = CCabsThresh,
                                                 info = paste0("(CC order ", o, ")"))
                     pass <- pass && localPass
-                    if(verbose && !pass) {
+                    if(verbose && !localPass) {
                         cat(paste('Some C-to-C derivatives do not match for order', o, '.\n'))
                         print(CansSet[[1]])
                         print(CansSet[-1])
