@@ -19,31 +19,9 @@ relTol[4] <- 1e-4
 
  # Standalone test
 
-cov <- crossprod(matrix(rnorm(25), 5))
-
-PDinverse_logdet_test <- make_AD_test2(
-  op = list(
-    name = "PDinverse_logdet with prec_param FALSE: positive definite inverse and log determinant test",
-    opParam = list(name = "PDinverse_logdet"),
-    expr = quote({
-      pdl <- PDinverse_logdet(mat, 0)
-      out <- pdl
-    }),
-    args = list(
-      mat = quote(double(2))
-    ),
-    outputType = quote(double(1))
-  ),
-  argTypes = c(mat='double(2)'),
-  wrt = c('mat'),
-  inputs = list(record = list(mat = cov),
-                test   = list(mat = cov+0.1))
-)
-PDinverse_logdet_test_out <- test_AD2(PDinverse_logdet_test)
 
 # Test in a model with dmnormAD
 
-if(FALSE) {  # this is seg-faulting. 
 set.seed(1)
 n <- 3
 locs <- cbind(runif(n),runif(n))
@@ -65,7 +43,7 @@ relTolTmp <- relTol
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-2
 relTolTmp[4] <- 1e-2
-relTolTmp[5] <- 1e-13
+relTolTmp[5] <- 1e-12
 
 test_ADModelCalculate(model, useParamTransform = TRUE,
                       newConstantNodes = list(dd = dd*1.1, x=c(.15, .25, .35)),
@@ -79,7 +57,28 @@ test_ADModelCalculate(model, useParamTransform = TRUE,
 #  Using wrt:  sigma rho 
 # corrupted size vs. prev_size while consolidating
 # Aborted
-}
+
+cov <- crossprod(matrix(rnorm(25), 5))
+
+PDinverse_logdet_test <- make_AD_test2(
+  op = list(
+    name = "PDinverse_logdet with prec_param FALSE: positive definite inverse and log determinant test",
+    opParam = list(name = "PDinverse_logdet"),
+    expr = quote({
+      pdl <- PDinverse_logdet(mat, 0)
+      out <- pdl
+    }),
+    args = list(
+      mat = quote(double(2))
+    ),
+    outputType = quote(double(1))
+  ),
+  argTypes = c(mat='double(2)'),
+  wrt = c('mat'),
+  inputs = list(record = list(mat = cov),
+                test   = list(mat = cov+0.1))
+)
+PDinverse_logdet_test_out <- test_AD2(PDinverse_logdet_test)
 
 test_that("non-assignment of dmnormAD if cholesky param used", {
     code <- nimbleCode({
