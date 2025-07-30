@@ -2036,7 +2036,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                                            newUpdateNodes = NULL, newConstantNodes = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3, 1e-3, 1e-14), absTolThreshold = 0, useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkDoubleTape = TRUE, 
-                                           checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
+                                           checkCompiledValuesIdentical = TRUE, check01vs012jacIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                            doAllUncHessian = TRUE,
                                            verbose = FALSE, debug = FALSE){
 
@@ -2546,7 +2546,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 ## explicit comparison of first derivs;
                 ## Originally, both of these are reverse mode because 2nd order reverse also invokes first order reverse.
                 ## As of version 1.4.0, these are not identical for at least test-ADdmnorm test.
-                expect_equal(cOutput01$jacobian, cOutput012$jacobian)
+                if(check01vs012jacIdentical) {
+                    expect_identical(cOutput01$jacobian, cOutput012$jacobian)
+                } else expect_equal(cOutput01$jacobian, cOutput012$jacobian)
                 
                 expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 

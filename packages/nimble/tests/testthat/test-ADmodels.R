@@ -58,6 +58,8 @@ test_that('AD support is correctly determined for distributions', {
     c ~ userObj1$dNO()
     d ~ userObj1$dYES()
   })
+  temporarilyAssignInGlobalEnv(userObj1)
+
   m <- nimbleModel(mc)
   expect_false(m$modelDef$checkADsupportForDistribution("duserNO"))
   expect_true(m$modelDef$checkADsupportForDistribution("duserYES"))

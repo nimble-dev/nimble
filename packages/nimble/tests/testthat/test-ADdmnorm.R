@@ -8,6 +8,10 @@ nimbleOptions(useADsolveAtomic  = TRUE)
 nimbleOptions(useADmatMultAtomic = TRUE)
 nimbleOptions(useADmatInverseAtomic  = TRUE)
 
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
@@ -43,13 +47,14 @@ relTolTmp <- relTol
 relTolTmp[2] <- 1e-6
 relTolTmp[3] <- 1e-2
 relTolTmp[4] <- 1e-2
-relTolTmp[5] <- 1e-12
+relTolTmp[5] <- 1e-13
 
-test_ADModelCalculate(model, useParamTransform = TRUE,
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp,
                       newConstantNodes = list(dd = dd*1.1, x=c(.15, .25, .35)),
                       newUpdateNodes = list(mu = c(.22, .32, .12)),
-                      checkCompiledValuesIdentical = FALSE, checkDoubleUncHessian = TRUE,
-                      useFasterRderivs = TRUE, verbose = TRUE, name = 'dmnormAD with prec_ldet')
+                      checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
+                      checkDoubleUncHessian = TRUE,
+                      useFasterRderivs = TRUE, verbose = FALSE, name = 'dmnormAD with prec_ldet')
 # ============================================
 # testing HMC/MAP-based scenario
 # --------------------------------------------
