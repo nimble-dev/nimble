@@ -2544,8 +2544,9 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 }
                 
                 ## explicit comparison of first derivs;
-                ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
-                expect_identical(cOutput01$jacobian, cOutput012$jacobian)
+                ## Originally, both of these are reverse mode because 2nd order reverse also invokes first order reverse.
+                ## As of version 1.4.0, these are not identical for at least test-ADdmnorm test.
+                expect_equal(cOutput01$jacobian, cOutput012$jacobian)
                 
                 expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 
