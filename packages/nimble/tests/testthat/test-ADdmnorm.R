@@ -8,14 +8,8 @@ nimbleOptions(useADsolveAtomic  = TRUE)
 nimbleOptions(useADmatMultAtomic = TRUE)
 nimbleOptions(useADmatInverseAtomic  = TRUE)
 
-nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
-
-
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
-
-
 
 relTol <- eval(formals(test_ADModelCalculate)$relTol)
 relTol[3] <- 1e-6
@@ -102,6 +96,160 @@ test_that("lifting of PDinverse_logdet", {
     expect_identical(length(m[[m$getNodeNames()[which_PDinverse]]]), 10L)
 })
     
+# getParam
+
+test_that('getParam', {
+    
+    code = nimbleCode({
+        a[1:4] ~ dmnorm(mu[1:4],pr[1:4,1:4])
+    })
+    pr1 = diag(4)
+    pr1[1,2]=pr1[2,1]=.3
+    pr1[1,3]=pr1[3,1]=-.1
+    pr1[2,3]=pr1[3,2] = 0.4
+    pr2 <- pr1
+    pr1[1,2]=pr1[2,1]=.5
+    pr1[1,3]=pr1[3,1]=-.2
+    pr1[2,3]=pr1[3,2] = 0.3
+    
+    m = nimbleModel(code, inits =list(mu=rep(1,4), pr = pr1))
+    cm = compileNimble(m)
+    
+    cm$pr <- pr2
+    cm$calculate(cm$getDependencies('pr'))
+    
+    expect_equal(pr1, m$getParam('a', 'prec'))
+    expect_equal(pr2, cm$getParam('a', 'prec'))
+    expect_equal(solve(pr1), m$getParam('a', 'cov'))
+    expect_equal(solve(pr2), cm$getParam('a', 'cov'))
+
+    code = nimbleCode({
+        a[1:3] ~ dmnorm(mu[1:3],cov=pr[1:3,1:3])
+    })
+    pr1 = diag(3)
+    pr1[1,2]=pr1[2,1]=.3
+    pr2 <- pr1
+    pr1[1,2]=pr1[2,1]=.5
+    m = nimbleModel(code, inits =list(mu=rep(1,3), pr = pr1))
+    cm = compileNimble(m)
+    
+    cm$pr <- pr2
+    cm$calculate(cm$getDependencies('pr'))
+    
+    expect_equal(pr1, m$getParam('a', 'cov'))
+    expect_equal(pr2, cm$getParam('a', 'cov'))
+    expect_equal(solve(pr1), m$getParam('a', 'prec'))
+    expect_equal(solve(pr2), cm$getParam('a', 'prec'))
+})
+
+# test-models
+
+K <- 2
+y <- c(.1, .3)
+model <- function() {
+    y[1:K] ~ dmnorm(mu[1:K], prec[1:K,1:K]);
+    for(i in 1:K) {
+        mu0[i] <- 0
+    }
+    R[1,1] <- .01
+    R[2,2] <- .01
+    R[1,2] <- 0
+    R[2,1] <- 0
+    Omega[1,1] <- .01
+    Omega[2,2] <- .01
+    Omega[1,2] <- 0
+    Omega[2,1] <- 0
+
+    mu[1:K] ~ dmnorm(mu0[1:K], Omega[1:K,1:K])
+    prec[1:K,1:K] ~ dwish(R[1:K,1:K], 5)
+}
+
+inits <- list(mu = c(0,0), prec = matrix(c(.005,.001,.001,.005), 2))
+data <- list(K = K, y = y)
+
+testBUGSmodel(example = 'testN', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+# Polya-gamma
+
+test_that('polyagamma validity checks', {
+    ## Various valid basic model structures
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b0+b1*x[i])
+            y0[i] ~ dbern(p0[i])
+            
+            logit(p1[i]) <- a0 + a1*x[i]
+            y1[i]~dbern(p1[i])
+            
+            logit(p2[i]) <- inprod(x2[i,1:p], b2[1:p])
+            y2[i]~dbin(p2[i], size = m)
+            
+            logit(p3[i])  <- x2[i,1:p] %*% b3[1:p]
+            y3[i]~dbin(p3[i], 1)            
+        }
+        m ~ dpois(5)
+        
+        b0~dnorm(0, sd=10)
+        b1~dnorm(0, sd=10)
+        a0~dnorm(0, sd=10)
+        a1~dnorm(0, sd=10)
+        
+        b2[1:p] ~ dmnorm(mu[1:p], Q[1:p,1:p])
+        for(i in 1:p)
+            b3[i] ~ dnorm(0, sd = 10) 
+    })
+
+    n <- 10
+    p <- 3
+    constants <- list(n=n, p=p, x = runif(n), x2 = matrix(runif(n*p),n))
+    ys <- rep(1,n)
+    data <- list(y0 = ys, y1 = ys, y2 = ys, y3 = ys)
+    
+    m <- nimbleModel(code, constants = constants, data = data)
+    conf <- configureMCMC(m, nodes = 'm')
+    expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1')))
+    expect_silent(conf$addSampler(type='polyagamma', target=c('a0','a1')))
+    expect_silent(conf$addSampler(type='polyagamma', target=c('b2')))
+    expect_silent(conf$addSampler(type='polyagamma', target=c('b3')))
+    expect_silent(mcmc <- buildMCMC(conf))
+
+
+    ## dnorm + dmnorm
+    code <- nimbleCode({
+        for(i in 1:n) {
+            p0[i] <- expit(b[1]+u[k[i]]+b[2]*x[i])
+            y0[i] ~ dbern(p0[i])
+        }
+
+        b[1:2] ~ dmnorm(z[1:2], pr[1:2,1:2])
+        
+        for(i in 1:p)
+            u[i] ~ dnorm(0,1)
+    })
+
+    
+    n <- 9
+    p <- 3
+    constants <- list(n=n, p=p, x = runif(n), k = rep(1:3, each = 3), z=rep(0,2), pr=diag(2))
+    ys <- rep(1,n)
+    data <- list(y0 = ys)
+    
+    m <- nimbleModel(code, constants = constants, data = data)
+    conf <- configureMCMC(m, nodes = NULL)
+    expect_silent(conf$addSampler(type='polyagamma', target=c('b','u')))
+    expect_silent(mcmc <- buildMCMC(conf))
+    mcmc$run(1)
+    expect_equal(mcmc$samplerFunctions[[1]]$X,
+                     cbind(rep(1,n), constants$x, c(rep(1,3),rep(0,6)),
+                           c(rep(0,3),rep(1,3),rep(0,3)),
+                           c(rep(0,6),rep(1,3))))
+    lens <- c(2,1,1,1); names(lens) <- c('b[1:2]','u[1]','u[2]','u[3]')
+    expect_equal(mcmc$samplerFunctions[[1]]$nodeLengths, lens)
+
+})
+
 
 # Run various NIMBLE tests that use dmnorm with dmnormAD instead.
 
@@ -686,163 +834,6 @@ test_that("realized conjugacy links are working", {
 
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnormAD_identity_nodeNames, c('y1[1, 1:3]', 'y1[2, 1:3]'))
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnormAD_multiplicativeScalar_nodeNames, c('y2[1, 1:3]', 'y2[2, 1:3]'))
-})
-
-
-nimbleOptions(verbose = FALSE)
-
-# getParam
-
-test_that('getParam', {
-    
-    code = nimbleCode({
-        a[1:4] ~ dmnorm(mu[1:4],pr[1:4,1:4])
-    })
-    pr1 = diag(4)
-    pr1[1,2]=pr1[2,1]=.3
-    pr1[1,3]=pr1[3,1]=-.1
-    pr1[2,3]=pr1[3,2] = 0.4
-    pr2 <- pr1
-    pr1[1,2]=pr1[2,1]=.5
-    pr1[1,3]=pr1[3,1]=-.2
-    pr1[2,3]=pr1[3,2] = 0.3
-    
-    m = nimbleModel(code, inits =list(mu=rep(1,4), pr = pr1))
-    cm = compileNimble(m)
-    
-    cm$pr <- pr2
-    cm$calculate(cm$getDependencies('pr'))
-    
-    expect_equal(pr1, m$getParam('a', 'prec'))
-    expect_equal(pr2, cm$getParam('a', 'prec'))
-    expect_equal(solve(pr1), m$getParam('a', 'cov'))
-    expect_equal(solve(pr2), cm$getParam('a', 'cov'))
-
-    code = nimbleCode({
-        a[1:3] ~ dmnorm(mu[1:3],cov=pr[1:3,1:3])
-    })
-    pr1 = diag(3)
-    pr1[1,2]=pr1[2,1]=.3
-    pr2 <- pr1
-    pr1[1,2]=pr1[2,1]=.5
-    m = nimbleModel(code, inits =list(mu=rep(1,3), pr = pr1))
-    cm = compileNimble(m)
-    
-    cm$pr <- pr2
-    cm$calculate(cm$getDependencies('pr'))
-    
-    expect_equal(pr1, m$getParam('a', 'cov'))
-    expect_equal(pr2, cm$getParam('a', 'cov'))
-    expect_equal(solve(pr1), m$getParam('a', 'prec'))
-    expect_equal(solve(pr2), cm$getParam('a', 'prec'))
-})
-
-# test-models
-
-K <- 2
-y <- c(.1, .3)
-model <- function() {
-    y[1:K] ~ dmnorm(mu[1:K], prec[1:K,1:K]);
-    for(i in 1:K) {
-        mu0[i] <- 0
-    }
-    R[1,1] <- .01
-    R[2,2] <- .01
-    R[1,2] <- 0
-    R[2,1] <- 0
-    Omega[1,1] <- .01
-    Omega[2,2] <- .01
-    Omega[1,2] <- 0
-    Omega[2,1] <- 0
-
-    mu[1:K] ~ dmnorm(mu0[1:K], Omega[1:K,1:K])
-    prec[1:K,1:K] ~ dwish(R[1:K,1:K], 5)
-}
-
-inits <- list(mu = c(0,0), prec = matrix(c(.005,.001,.001,.005), 2))
-data <- list(K = K, y = y)
-
-testBUGSmodel(example = 'testN', dir = "",
-              model = model, data = data, inits = inits,
-              useInits = TRUE)
-
-# Polya-gamma
-
-test_that('polyagamma validity checks', {
-    ## Various valid basic model structures
-    code <- nimbleCode({
-        for(i in 1:n) {
-            p0[i] <- expit(b0+b1*x[i])
-            y0[i] ~ dbern(p0[i])
-            
-            logit(p1[i]) <- a0 + a1*x[i]
-            y1[i]~dbern(p1[i])
-            
-            logit(p2[i]) <- inprod(x2[i,1:p], b2[1:p])
-            y2[i]~dbin(p2[i], size = m)
-            
-            logit(p3[i])  <- x2[i,1:p] %*% b3[1:p]
-            y3[i]~dbin(p3[i], 1)            
-        }
-        m ~ dpois(5)
-        
-        b0~dnorm(0, sd=10)
-        b1~dnorm(0, sd=10)
-        a0~dnorm(0, sd=10)
-        a1~dnorm(0, sd=10)
-        
-        b2[1:p] ~ dmnorm(mu[1:p], Q[1:p,1:p])
-        for(i in 1:p)
-            b3[i] ~ dnorm(0, sd = 10) 
-    })
-
-    n <- 10
-    p <- 3
-    constants <- list(n=n, p=p, x = runif(n), x2 = matrix(runif(n*p),n))
-    ys <- rep(1,n)
-    data <- list(y0 = ys, y1 = ys, y2 = ys, y3 = ys)
-    
-    m <- nimbleModel(code, constants = constants, data = data)
-    conf <- configureMCMC(m, nodes = 'm')
-    expect_silent(conf$addSampler(type='polyagamma', target=c('b0','b1')))
-    expect_silent(conf$addSampler(type='polyagamma', target=c('a0','a1')))
-    expect_silent(conf$addSampler(type='polyagamma', target=c('b2')))
-    expect_silent(conf$addSampler(type='polyagamma', target=c('b3')))
-    expect_silent(mcmc <- buildMCMC(conf))
-
-
-    ## dnorm + dmnorm
-    code <- nimbleCode({
-        for(i in 1:n) {
-            p0[i] <- expit(b[1]+u[k[i]]+b[2]*x[i])
-            y0[i] ~ dbern(p0[i])
-        }
-
-        b[1:2] ~ dmnorm(z[1:2], pr[1:2,1:2])
-        
-        for(i in 1:p)
-            u[i] ~ dnorm(0,1)
-    })
-
-    
-    n <- 9
-    p <- 3
-    constants <- list(n=n, p=p, x = runif(n), k = rep(1:3, each = 3), z=rep(0,2), pr=diag(2))
-    ys <- rep(1,n)
-    data <- list(y0 = ys)
-    
-    m <- nimbleModel(code, constants = constants, data = data)
-    conf <- configureMCMC(m, nodes = NULL)
-    expect_silent(conf$addSampler(type='polyagamma', target=c('b','u')))
-    expect_silent(mcmc <- buildMCMC(conf))
-    mcmc$run(1)
-    expect_equal(mcmc$samplerFunctions[[1]]$X,
-                     cbind(rep(1,n), constants$x, c(rep(1,3),rep(0,6)),
-                           c(rep(0,3),rep(1,3),rep(0,3)),
-                           c(rep(0,6),rep(1,3))))
-    lens <- c(2,1,1,1); names(lens) <- c('b[1:2]','u[1]','u[2]','u[3]')
-    expect_equal(mcmc$samplerFunctions[[1]]$nodeLengths, lens)
-
 })
 
 
