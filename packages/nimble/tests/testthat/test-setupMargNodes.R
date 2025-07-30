@@ -439,3 +439,28 @@ test_that("setupMargNodes finds correct randomEffectsNodes based on calcNodes in
   expect_identical(SMN$randomEffectsNodes, c("r[1]","r[2]"))
   expect_identical(SMN$paramNodes, c("p[1]","p[2]"))
 })
+
+test_that("regression tests that `getConditionallyIndependentSets` works with traversal of determ nodes", {
+    code <- nimbleCode({
+        for(i in 1:5) {
+            y[i] ~ dnorm(b1*x[i] + mu[i], sd = exp(b2*x[i]+ mu2[i]))
+            mu[i] ~ dnorm(0, tau)
+            mu2[i] ~ dnorm(0, tau2)
+        }
+        b1~dflat()
+        b2 ~dflat()
+        tau ~ dhalfflat()
+        tau2~dhalfflat()
+    })
+    m <- nimbleModel(code, data = list(y = rnorm(5)))
+    given <- c('tau','tau2',paste0('y[', 1:5, ']'))
+    
+    ## Correct
+    latents <- c('b1','b2',paste0('mu[', 1:5, ']'),paste0('mu2[', 1:5, ']'))
+    expect_length(m$getConditionallyIndependentSets(nodes = latents, givenNodes = given, unknownAsGiven = TRUE), 1)
+    
+    ## In issue 1564, incorrect with different order for the latents: `mu2[1]` split out into its own set
+    latents <- c(paste0('mu[', 1:5, ']'),paste0('mu2[', 1:5, ']'),'b1','b2')
+    expect_length(m$getConditionallyIndependentSets(nodes = latents, givenNodes = given, unknownAsGiven = TRUE), 1)
+})
+
