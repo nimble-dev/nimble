@@ -1788,7 +1788,7 @@ calcNodesForDerivs <- nimbleFunction(
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = NULL, calcNodes = NULL, wrt = NULL,
                                   newUpdateNodes = NULL, newConstantNodes = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3, 1e-3, 1e-14), absTolThreshold = 0, useFasterRderivs = FALSE, useParamTransform = FALSE,
-                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
+                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, check01vs012jacIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                   doAllUncHessian = TRUE, seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
@@ -1830,6 +1830,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
@@ -1866,6 +1867,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
@@ -1910,6 +1912,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
@@ -1957,6 +1960,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
@@ -1993,6 +1997,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
     } else {
@@ -2023,6 +2028,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
     }
