@@ -1575,7 +1575,7 @@ See the initialize() function
             cat('===== Samplers =====\n')
             if(length(samplerConfs)) printSamplers(byType = TRUE) else cat('(no samplers assigned)\n')
             if(length(derivedConfs)) {
-                cat('===== Derived Quantities =====\n')
+                cat('===== DerivedQ =====\n')
                 printDerivedQuantities(byType = TRUE)
             }
             printComments(...)
