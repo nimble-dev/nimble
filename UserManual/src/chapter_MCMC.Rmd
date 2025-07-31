@@ -30,7 +30,7 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
           i. Add, remove, or re-order the list of samplers (Section \@ref(sec:samplers-provided) and `help(samplers)` in R for details), including adding your own samplers (Section \@ref(sec:user-samplers));
           i. Change the tuning parameters or adaptive properties of individual samplers;
           i. Change the variables to monitor (record for output) and thinning intervals for MCMC samples.
-          i. Choose additional "derived" quantities of interest to monitor.
+          i. Choose additional "derived quantities" of interest to monitor.
   1. Use `buildMCMC` to build the MCMC object and its samplers either from the model (using default MCMC configuration) or from a customized MCMC configuration (Section \@ref(sec:build-compile-mcmc)).
   1. Compile the MCMC object (and the model), unless one is debugging and wishes to run the uncompiled MCMC.
   1. Run the MCMC and extract the samples and any derived quantities (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
@@ -99,8 +99,7 @@ Based on its arguments, `nimbleMCMC` optionally returns any combination of
   - posterior log-probabilities, and
   - WAIC value.
 
-
-The above are calculated and returned for each MCMC chain, all using the post-burnin samples. The samples and log-probabilities are thinned and the summary statistics (but not the stand-alone means and variances or the WAIC) use the thinned samples.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
+The above are calculated and returned for each MCMC chain, all using the post-burnin samples. The samples and log-probabilities are thinned and the summary statistics reported (but not the WAIC calculation) use the thinned samples.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
 
 Several example usages of `nimbleMCMC` are shown below:
 
@@ -129,7 +128,7 @@ initsList <- initsFunction()
 Rmodel <- nimbleModel(code, data = data, inits = initsList)
 
 # Using the existing Rmodel object, execute three MCMC chains with 
-# specified burn-in.  Return samples, overal log-probability,
+# specified burn-in.  Return samples, overall log-probability,
 # summary statistics, and WAIC.
 mcmc_out <- nimbleMCMC(model = Rmodel,
                        niter = 20000, nchains = 3, nburnin = 2000,
@@ -197,7 +196,7 @@ A posterior predictive node is a node that is not itself data and has no data no
 
 As of version 0.13.0, NIMBLE's handling of posterior predictive nodes in MCMC sampling has changed in order to improve MCMC mixing. Samplers for nodes that are not posterior predictive nodes no longer condition on the values of the posterior predictive nodes. This produces a valid MCMC over the posterior distribution marginalizing over the posterior predictive nodes. This MCMC will generally mix better than an MCMC that conditions on the values of posterior predictive nodes, by reducing the dimensionality of the parameter space and removing the dependence between the sampled nodes and the posterior predictive nodes. At the end of each MCMC iteration, the posterior predictive nodes are sampled by  `posterior_predictive` sampler(s) based on their conditional distribution(s).
 
-Note that predictive node sampling is done at each iteration. When thinning is used, this results in unneeded computation (the sampling for the iterations that excluded from the output). To avoid this, one can set `samplePredictiveNodes = FALSE` as an argument to `configureMCMC` and then add the `predictive` derived quantity to the MCMC configuration object via `addDerivedQuantity` (Section \@ref(sec:derived-quantities)).
+Note that predictive node sampling is done at each iteration. When thinning is used, this results in unneeded computation (the sampling computation for the iterations that excluded from the output). To avoid this, one can set `samplePredictiveNodes = FALSE` as an argument to `configureMCMC` and then add the `predictive` derived quantity to the MCMC configuration object via `addDerivedQuantity` (Section \@ref(sec:derived-quantities)). When doing so, samples for any predictive nodes will no longer be included with the MCMC samples array, but rather will appear as part of the `derived` MCMC output.
 
 #### Options to control default sampler assignments
 
@@ -476,7 +475,7 @@ As of version 1.4.0, NIMBLE allows one to specify "derived quantities" to calcul
  - posterior predictive samples for predictive nodes, and
  - arbitrary calculations by providing a user-defined nimbleFunction that follows the required specification.
 
-User-defined derived quantity nimbleFunctions provide a general way for a user to intervene at the end of an MCMC iteration and do something. This would often be recording a value (to be returned at the end of the MCMC) or updating some summary statistic, but it's up the person writing the nimbleFunction.
+User-defined derived quantity nimbleFunctions provide a general way for a user to intervene at the end of an MCMC iteration and do something. This would often be recording a value (to be returned at the end of the MCMC) or updating some summary statistic, but the derived quantities system doesn't require this, giving users flexibility.
 
 The operation of every derived quantity function is governed by an `interval` parameter. Each derived quantity function is executed at the end of every `interval` MCMC iterations. The default value for `interval` is given by the `thin` interval of the MCMC. This means that, by default, each derived quantity function will execute after all the MCMC samplers for the MCMC iterations for which samples are recorded. If `interval = 1` for a derived quantity function, then that derived quantity function will execute at the end of every MCMC sampling iteration. 
 
@@ -672,7 +671,7 @@ toyModel <- nimbleModel(toyCode, data = toyData, inits = toyInits)
 
 For the following examples, we use the argument `samplePredictiveNodes = FALSE` in `configureMCMC` to prevent the default assignment of a `posterior_predictive sampler` to `z` and predictive deterministic calculation of `muSq`. Instead we will do the predictive sampling via the derived quantity, thereby avoiding sampling during the thinned iterations. (Note that one can control `samplePredictiveNodes` generally with the NIMBLE option `MCMCassignSamplersToPosteriorPredictiveNodes`.)
 
-First, we apply the predictive derived quantity function to both `muSq` and `z`. New values of both muSq and z will be simulated and saved on each MCMC iteration.
+First, we apply the predictive derived quantity function to both `muSq` and `z`. New values of both `muSq` and `z` will be simulated and saved on each MCMC iteration.
 
 For this model, this is the same as if nodes were specified as `nodes = '.all'`.
 
