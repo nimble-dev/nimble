@@ -192,19 +192,29 @@ nimbleCode <- function(...){
       # Can do this by evaluating ..i
       out <- eval(str2lang(paste0("..", i)))
       # Check that the evaluated result is code and error if it isn't
-      if(!is.call(out) | is.name(out) | is.expression(out)){
+      if(is.call(out)){
+        if(out[[1]] != "{"){
+          stop("Call ", safeDeparse(code[[i]])," must be wrapped in brackets { }",
+              call.=FALSE)
+        }
+        return(out)
+      } else {
         stop("Object ", safeDeparse(code[[i]]), " does not contain valid code",
              call.=FALSE)
       }
-      # Return the evaluated result
-      return(out)
     }
   })
 
-  # Combine all the code chunks
-  out <- embedListInRbracket(out)
-  # Remove extra curly brackets before returning
-  removeExtraBrackets(out)
+  # Combine all the code chunks if more than one
+  # This could be done regardless of number of chunks, but possibly better
+  # not to run this code unless absolutely necessary
+  if(length(code) > 1){
+    out <- embedListInRbracket(out)
+    out <- removeExtraBrackets(out)
+  } else {
+    out <- out[[1]]
+  }
+  out
 }
 
 
