@@ -130,20 +130,81 @@ nimbleModel <- function(code,
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
-#' Simply keeps model code as an R call object, the form needed by \code{\link{nimbleModel}} and optionally usable by \code{\link{readBUGSmodel}}.
+#' Takes one or more R expressions or code objects, combines them if necessary, and returns the 
+#' resulting code as an R call object in the form needed by \code{\link{nimbleModel}}
+#' and optionally usable by \code{\link{readBUGSmodel}}.
 #'
-#' @param code expression providing the code for the model
-#' @author Daniel Turek
+#' @param ... One or more R code expressions or objects containing R code, providing the code for the model. See details.
+#' @author Daniel Turek and Ken Kellner
 #' @export
-#' @details It is equivalent to use the R function \code{\link{quote}}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
+#' @details
+#' You may provide code to \code{nimbleCode} in two ways. The first way
+#' is to provide the code as an argument directly, wrapped in curly brackets (\{\}).
+#' The second is to create an object containing code with either \code{nimbleCode} or \code{quote},
+#' and pass that object to \code{nimbleCode}. You may mix and match these two approaches.
+#' Note that code provided directly but not wrapped in \{\} will be rejected.
+#' When multiple pieces of code are provided as arguments, they will be combined into
+#' a single code object by \code{nimbleCode} and unnecessary curly brackets will be
+#' automatically removed.
+#'
+#' When providing a single block of code directly, the result from \code{nimbleCode}
+#' is equivalent to using the R function \code{\link{quote}}.  \code{nimbleCode} is 
+#' simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
 #' @examples
+#' # Provide a single block of code directly
 #' code <- nimbleCode({
 #'     x ~ dnorm(mu, sd = 1)
 #'     mu ~ dnorm(0, sd = prior_sd)
 #' })
-nimbleCode <- function(code) {
-  code <- substitute(code)
-  return(code)
+#'
+#' # Combine multiple previously saved code objects
+#' code2 <- nimbleCode(code, code)
+#'
+#' # Combine code and previously saved code objects
+#' code3 <- nimbleCode({
+#'    y ~ dnorm(mu, sd = 1)
+#' }, code, code2)
+nimbleCode <- function(...){
+  # Doing this substitution first is necessary to keep R from evaluating directly 
+  # provided code chunks, which will usually result in an error
+  code <- substitute(list(...))
+  if(length(code) == 1){
+    stop("Must provide at least one argument")
+  }
+  code <- code[2:length(code)] # drop list prefix
+
+  # Iterate through each code element and extract the code from it
+  out <- lapply(1:length(code), function(i){
+    # If element i is a call (a directly provided code chunk)
+    if(is.call(code[[i]])){
+      # Check it is in brackets
+      if(code[[i]][[1]] == "{"){
+        # If it is, return the code unchanged
+        return(code[[i]])
+      } else {
+        # Error if not in brackets
+        stop("Call ", safeDeparse(code[[i]])," must be wrapped in brackets { }",
+             call.=FALSE)
+      }
+    } else {
+      # If not a call, we assume element i must be an object containing code
+      # We need to extract element i from the ...
+      # Can do this by evaluating ..i
+      out <- eval(str2lang(paste0("..", i)))
+      # Check that the evaluated result is code and error if it isn't
+      if(!is.call(out) | is.name(out) | is.expression(out)){
+        stop("Object ", safeDeparse(code[[i]]), " does not contain valid code",
+             call.=FALSE)
+      }
+      # Return the evaluated result
+      return(out)
+    }
+  })
+
+  # Combine all the code chunks
+  out <- embedListInRbracket(out)
+  # Remove extra curly brackets before returning
+  removeExtraBrackets(out)
 }
 
 
