@@ -412,7 +412,7 @@ derived_discrepancy <- nimbleFunction(
         discrepancyFunction <- extractControlElement(control, 'discrepancyFunction', error = 'must provide discrepancyFunction control argument to discrepancy derived quantity')
         ## node list generation
         simNodes <- model$expandNodeNames(simNodes)
-        if(discrepancyNodes == '.missing')   discrepancyNodes <- model$getNodeNames(dataOnly = TRUE)
+        if(identical(discrepancyNodes, '.missing'))   discrepancyNodes <- model$getNodeNames(dataOnly = TRUE)
         ## names generation
         names <- c('discrepancy_model', 'discrepancy_simulated', 'discrepancy_diff')
         ## numeric value generation
