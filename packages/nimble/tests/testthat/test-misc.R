@@ -380,5 +380,92 @@ test_that("missing return statement is trapped",
                  info = "error-trapping missing return statement")
 })
 
+test_that("nimbleCode combines multiple code objects", {
+  # Some objects containing code
+  c1 <- quote({x + 1})
+  c2 <- quote({
+    for (i in 1:2){
+      y <- i
+    }
+    z + 3
+  })
+  # Object not containing code
+  c3 <- "a"
+
+  # Check nimbleCode = quote when a single code block is provided
+  expect_equal(
+    nimbleCode({
+      for (i in 1:2){
+        y[i] ~ dnorm(0, sd = 1)
+      }
+    }),
+    quote({
+      for (i in 1:2){
+        y[i] ~ dnorm(0, sd = 1)
+      }
+    })
+  )
+
+  # Check combining code block with objects
+  expect_equal(
+    nimbleCode({
+      for (i in 1:2){
+        y[i] ~ dnorm(0, sd = 1)
+      }
+    }, c1, c2),
+    quote({
+      for (i in 1:2){
+        y[i] ~ dnorm(0, sd = 1)
+      }
+      x + 1
+      for (i in 1:2){
+        y <- i
+      }
+      z + 3
+    })
+  )
+
+  # Only code objects
+  expect_equal(
+    nimbleCode(c1, c2),
+    quote({
+      x + 1
+      for (i in 1:2){
+        y  <- i
+      }
+      z + 3
+    })
+  )
+
+  # Multiple code blocks
+  expect_equal(
+    nimbleCode({y+1}, {z+1}),
+    quote({
+      y + 1
+      z + 1
+    })
+  )
+
+  # Inside function
+  fun <- function(a){
+    nimbleCode(a)
+  }
+  expect_equal(nimbleCode(c1), fun(c1))
+
+  # Check error if non-bracketed code provided
+  expect_error(nimbleCode(y+1), "must be wrapped in brackets")
+  expect_error(nimbleCode(c1, y+1), "must be wrapped in brackets")
+
+  # Check error if object not containing code provided
+  expect_error(nimbleCode(c3), "does not contain valid code")
+  expect_error(nimbleCode({y+1}, c3), "does not contain valid code")
+  
+  # Check error if object doesn't exist
+  expect_error(nimbleCode(c1, c5), "not found")
+  
+  # Check error if no arguments provided
+  expect_error(nimbleCode(), "at least one argument")
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
