@@ -53,10 +53,11 @@ decideAndJump <- nimbleFunction(
     setup = function(model, mvSaved, target, UNUSED) {    ## should remove UNUSED argument, after next release of nimbleSMC -DT July 2024
         ccList <- mcmc_determineCalcAndCopyNodes(model, target)
         copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch  # not used: calcNodes, calcNodesNoSelf
+        targetNames <- createNamesString(target)
     },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         ## Check each one individually to catch case like `3 - Inf`.
-        logMHR <- checkLogProb(modelLP1) - checkLogProb(modelLP0) - checkLogProb(propLP1) + checkLogProb(propLP0)
+        logMHR <- checkLogProb(modelLP1, targetNames) - checkLogProb(modelLP0, targetNames) - checkLogProb(propLP1, targetNames) + checkLogProb(propLP0, targetNames)
         jump <- decide(logMHR)
         if(jump) {
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
@@ -72,11 +73,11 @@ decideAndJump <- nimbleFunction(
     }
 )
 
-checkLogProb <- function(logProb) {
+checkLogProb <- function(logProb, target) {
    if(is.na(logProb))
        return(-Inf)
    if(logProb == Inf)
-         print("MCMC sampling encountered a log probability density value of infinity. Results of sampling may not be valid.")
+         cat("MCMC sampling of ", target, " encountered a log probability density value of infinity. Results of sampling may not be valid.\n")
    return(logProb)
 }
 
@@ -551,6 +552,11 @@ mcmc_checkTargetAD <- function(model, targetNodes, samplerType) {
              paste0(dists[!ADok], collapse = ', '))
 }
 
+createNamesString <- function(target) {
+    if(length(target) == 1) return(target)
+    if(length(target) > 4) target <- c(target[1:4], "...")
+    return(paste0("{", paste(target, collapse = ', '), "}"))
+}
 
 # This is function which builds a new MCMCconf from an old MCMCconf
 # This is required to be able to a new C-based MCMC without recompiling
@@ -581,6 +587,7 @@ getBaseClassName <- function(nf) {
     if(is.null(baseName)) warning('cannot find base class name')
     return(baseName)
 }
+
 
 
 

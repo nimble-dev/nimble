@@ -1110,6 +1110,25 @@ test_that("conflicted nimbleFunction names trapped", {
 
 })
 
+test_that("Error trap 'minus' indexing.", {
+    testMinusIdx <- nimbleFunction(
+        run = function(x = double(0)) {
+            ans <- x[-3]
+            return(ans)
+            returnType(double(1))
+        } )
+    expect_error(cf <- compileNimble(testMinusIdx), "use of 'minus' indexing")
+    
+    testMinusIdx <- nimbleFunction(
+        run = function(x = double(2)) {
+            ans <- x[5, -c(1,4)]
+            return(ans)
+            returnType(double(1))
+        } )
+    expect_error(cf <- compileNimble(testMinusIdx), "use of 'minus' indexing")
+})
+
+
 nimbleOptions(allowNFobjInModel = currentOption)
 
 nimbleOptions(verbose = nimbleVerboseSetting)

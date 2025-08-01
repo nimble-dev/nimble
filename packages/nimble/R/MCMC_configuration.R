@@ -787,8 +787,18 @@ The second usage of \'multivariateNodesAsScalars\' occurs when \'default\' is TR
 For internal use only
 '
             if(!allowData && !allowData_global) {
-                if(all(model$isData(targetOne)))   return()
-                if(any(model$isData(targetOne)))   targetOne <- filterOutDataNodes(targetOne)
+                if(all(model$isData(targetOne))) {
+                    messageIfVerbose('  [Note] Samplers not added to data node: `', paste0(targetOne, collapse = '`, `'), '`.\n',
+                                     '         Provide argument `allowData = TRUE` to `addSampler` method, to force sampler assignment.')
+                    return()
+                }
+                if(any(model$isData(targetOne))) {
+                    targetWithSomeData <- model$expandNodeNames(targetOne)
+                    targetOne <- filterOutDataNodes(targetOne)    ## this is the salient step of this entire block
+                    targetDataComponents <- setdiff(targetWithSomeData, targetOne)
+                    messageIfVerbose('  [Note] Samplers not added to data node: `', paste0(targetDataComponents, collapse = '`, `'), '`.\n',
+                                     '         Provide argument `allowData = TRUE` to `addSampler` method, to force sampler assignment.')
+                }
             }
             newInd <- length(samplerConfs) + 1
             samplerConfs[[newInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=targetOne, control=thisControlList, model=model)

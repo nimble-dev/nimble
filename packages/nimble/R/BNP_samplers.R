@@ -14,12 +14,12 @@ getNsave <- nimbleFunction(
 ##  Wrapper function for sampleDPmeasure
 ##-----------------------------------------
 
-#' Get posterior samples for a Dirichlet process measure
+#' Get posterior samples for a Dirichlet process distribution (measure)
 #'
-#' This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
+#' This function obtains posterior samples from a Dirichlet process distributed random distribution (measure) of a model specified using the \code{dCRP} distribution.
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
-#' @param epsilon  used for determining the truncation level of the representation of the random measure.
+#' @param epsilon  used for determining the truncation level of the representation of the random distribution (measure).
 #' @param setSeed Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.
 #'
 #' @param progressBar Logical specifying whether to display a progress bar during execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}
@@ -28,15 +28,15 @@ getNsave <- nimbleFunction(
 #' 
 #' @export
 #' @details
-#' This function provides samples from a random measure having a Dirichlet process prior. Realizations are almost surely discrete and represented by a (finite) stick-breaking representation (Sethuraman, 1994), whose atoms (or point masses) are independent and identically distributed. This sampler can only be used with models containing a \code{dCRP} distribution. 
+#' This function provides samples from a random distribution (measure) having a Dirichlet process prior. Realizations are almost surely discrete and represented by a (finite) stick-breaking representation (Sethuraman, 1994), whose atoms (or point masses) are independent and identically distributed. This sampler can only be used with models containing a \code{dCRP} distribution. 
 #'
-#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the posterior samples to generate samples of the random measure. Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
+#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the posterior samples to generate samples of the random distribution (measure). Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
 #' 
 #' The \code{epsilon} argument is optional and used to determine the truncation level of the random measure. \code{epsilon} is the tail probability of the random measure, which together with posterior samples of the concentration parameter, determines the truncation level. The default value is 1e-4.
 #'  
-#' The output is a list of matrices. Each matrix represents a sample from the random measure. In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
+#' The output is a list of matrices. Each matrix represents a sample from the random distribution (measure). In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
 #' 
-#' For more details about sampling the random measure and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
+#' For more details about sampling the random distribution (measure) and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
 #' 
 #' @seealso \code{\link{buildMCMC}}, \code{\link{configureMCMC}}, 
 #' @references
@@ -210,17 +210,13 @@ sampleDPmeasure <- nimbleFunction(
       parentNodesXiDeps <- dcrpNode 
     }
     
-    dataNodes <- model$getDependencies(dcrpNode, stochOnly = TRUE, self = FALSE)
     N <- length(model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE))
     
     p <- length(tildeVars)
-    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    dimTildeVarsNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array) (dimTildeVarsNim=dimTildeNim)
     dimTildeVars <- numeric(p+1) # dimension to be used in run code (dimTildeVars=dimTilde)
-    for(i in 1:p) {
-      dimTildeVarsNim[i] <- model$getDimension(clusterVarInfo$clusterNodes[[i]][1])
-      dimTildeVars[i] <- lengthData^(dimTildeVarsNim[i]) 
-    }
+    for(i in 1:p) 
+        dimTildeVars[i] <- length(model$expandNodeNames(clusterVarInfo$clusterNodes[[i]][[1]],
+                                                        returnScalarComponents = TRUE))
     nTildeVarsPerCluster <-  clusterVarInfo$numNodesPerCluster
     nTilde <- numeric(p+1)
     nTilde[1:p] <- clusterVarInfo$nTilde / nTildeVarsPerCluster
