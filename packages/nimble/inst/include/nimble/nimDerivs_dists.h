@@ -1248,7 +1248,7 @@ Type nimDerivs_nimArr_dcar_proper(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimAr
     lp += (log(Type(1) - gamma*evs[i]) - log(M[i])) / Type(2.0);
   }
   lp += Type(N / 2.0) * (log(tau) - Type(M_LN_2PI));
-  lp = give_log * lp + (Type(1) - give_log) * exp(lp);
+  lp = log_or_exp(lp, give_log);
   // lp = CppAD::CondExpEq(give_log, Type(1), lp, exp(lp));
   return(lp);
 }
