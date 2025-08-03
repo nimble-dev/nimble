@@ -327,12 +327,12 @@ buildMCMC <- nimbleFunction(
             if(time) {
                 for(i in seq_along(samplerExecutionOrderToUse)) {
                     ind <- samplerExecutionOrderToUse[i]
-                    samplerTimes[ind] <<- samplerTimes[ind] + run.time(samplerFunctions[[ind]]$run())
+                    samplerTimes[ind] <<- samplerTimes[ind] + run.time(executeOneSampler(ind))
                 }
             } else {
                 for(i in seq_along(samplerExecutionOrderToUse)) {
                     ind <- samplerExecutionOrderToUse[i]
-                    samplerFunctions[[ind]]$run()
+                    executeOneSampler(ind)
                 }
             }
             if(iter > nburnin) {
@@ -375,6 +375,9 @@ buildMCMC <- nimbleFunction(
         returnType(void())
     },
     methods = list(
+        executeOneSampler = function(ind = double()) {
+            samplerFunctions[[ind]]$run()
+        },
         getTimes = function() {
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
