@@ -3851,7 +3851,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
 
 mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), prec_param(scalar)
                                  1, 'double'), ## 1 = argument from which to take answer size, double = answer type
-                             nimArr_rmnorm_prec_ldet = list(c(1, 1),
+                             nimArr_rmnorm_prec_ldet = list(c(1, 2, 1, 0),
                                  1, 'double'),
                              nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
                                                        1, 'double'), ## 1 = argument from which to take answer size, double = answer type

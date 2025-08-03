@@ -53,8 +53,10 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
 
 NimArr<1, double> PDinverse_logdet(NimArr<2, double> &mat, bool is_precision);
 
-double nimArr_dmnorm_prec_ldet(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<1, double> &prec_ldet, int give_log, int overwrite_inputs);
-void nimArr_rmnorm_prec_ldet(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<1, double> &prec_ldet);
+double nimArr_dmnorm_prec_ldet(NimArr<1, double> &x, NimArr<1, double> &mean, 
+   NimArr<2, double> &mat, NimArr<1, double> &prec_ldet, int prec_param, int give_log, int overwrite_inputs);
+void nimArr_rmnorm_prec_ldet(NimArr<1, double> &ans, NimArr<1, double> &mean,
+   NimArr<2, double> &mat, NimArr<1, double> &prec_ldet, int prec_param);
 
 double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double df, double prec_param, int give_log, int overwrite_inputs);
 void nimArr_rmvt_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, double df, double prec_param);

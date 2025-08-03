@@ -380,10 +380,4 @@ inline bool atomic_PDinverse_logdet_class::reverse(
   return true;
 }
 
-
-
-
-
-
-
 #endif
