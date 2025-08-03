@@ -1059,6 +1059,8 @@ void nimble_CppAD_tape_mgr::reset() {
   ftrunc_index = 0;
   nimRound_exists = false;
   nimRound_index = 0;
+  nimStep_exists = false;
+  nimStep_index = 0;
   log_pow_int_exists = false;
   log_pow_int_index = 0;
   zb_over_a_exists = false;
@@ -1117,6 +1119,8 @@ nimble_CppAD_tape_mgr::nimble_CppAD_tape_mgr() :
   ftrunc_exists(false),
   nimRound_index(0),
   nimRound_exists(false),
+  nimStep_index(0),
+  nimStep_exists(false),
   log_pow_int_index(0),
   log_pow_int_exists(false),
   zb_over_a_index(0),

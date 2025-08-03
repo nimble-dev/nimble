@@ -144,5 +144,72 @@ public:
   atomic_nimRound_class(const std::string& name);
 };
 
+/***********/
+
+CppAD::AD<double> nimDerivs_nimStep(const CppAD::AD<double> x);
+
+atomic_nimStep_class *track_atomic_nimStep(void* tape_mgr_ptr,
+				       std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+
+class nimDerivs_nimStep_class {
+ public:
+  double operator()(double x);
+  double operator()(int x);
+  CppAD::AD<double> operator()(const CppAD::AD<double> &x);
+};
+
+class atomic_nimStep_class : public atomic_discrete_class<nimDerivs_nimStep_class> {
+public:
+  atomic_nimStep_class(const std::string& name);
+};
+
+#define TTT_ CppAD::AD<double>
+
+inline TTT_ nimDerivs_pairmax(TTT_ x1, TTT_ x2) {
+  TTT_ cond = nimDerivs_nimStep(x1-x2);
+  return CppAD::azmul(cond, x1) + CppAD::azmul(TTT_(1) - cond, x2);
+//  return(CondExpGt(x1, x2, x1, x2));
+}
+
+inline TTT_ nimDerivs_pairmin(TTT_ x1, TTT_ x2) {
+  TTT_ cond = nimDerivs_nimStep(x1-x2);
+  return CppAD::azmul((TTT_(1)-cond), x1) + CppAD::azmul(cond, x2);
+//  return(CondExpLt(x1, x2, x1, x2));
+}
+
+inline TTT_ nimDerivs_nimEquals(TTT_ x1, TTT_ x2){
+  TTT_ cond = nimDerivs_nimStep(x1-x2) * nimDerivs_nimStep(x2-x1);
+  return cond;
+//  return(CondExpEq(x1, x2, T(1), T(0)));
+}
+
+inline TTT_ nimDerivs_CondExpEq(TTT_ x1, TTT_ x2, TTT_ y1, TTT_ y2) {
+  TTT_ cond = nimDerivs_nimEquals(x1, x2);
+  return CppAD::azmul(cond, y1) + CppAD::azmul((TTT_(1) - cond), y2);
+//  return(CondExpEq(x1, x2, T(1), T(0)));
+}
+
+inline TTT_ nimDerivs_CondExpGe(TTT_ x1, TTT_ x2, TTT_ y1, TTT_ y2) {
+  TTT_ cond = nimDerivs_nimStep(x1-x2);
+  return CppAD::azmul(cond, y1) + CppAD::azmul((TTT_(1) - cond), y2);
+}
+
+inline TTT_ nimDerivs_CondExpGt(TTT_ x1, TTT_ x2, TTT_ y1, TTT_ y2) {
+  TTT_ cond = 1-nimDerivs_nimStep(x2-x1);
+  return CppAD::azmul(cond, y1) + CppAD::azmul((TTT_(1) - cond), y2);
+}
+
+inline TTT_ nimDerivs_CondExpLe(TTT_ x1, TTT_ x2, TTT_ y1, TTT_ y2) {
+  TTT_ cond = nimDerivs_nimStep(x2-x1);
+  return CppAD::azmul(cond, y1) + CppAD::azmul((TTT_(1) - cond), y2);
+}
+
+inline TTT_ nimDerivs_CondExpLt(TTT_ x1, TTT_ x2, TTT_ y1, TTT_ y2) {
+  TTT_ cond = 1-nimDerivs_nimStep(x1-x2);
+  return CppAD::azmul(cond, y1) + CppAD::azmul((TTT_(1) - cond), y2);
+}
+
+#undef TTT_
+
 #endif
 

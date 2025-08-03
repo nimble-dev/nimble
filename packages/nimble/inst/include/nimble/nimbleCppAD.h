@@ -138,6 +138,7 @@ class atomic_floor_class;
 class atomic_ceil_class;
 class atomic_ftrunc_class;
 class atomic_nimRound_class;
+class atomic_nimStep_class;
 class atomic_log_pow_int_class;
 class atomic_zb_over_a_class;
 class atomic_probit_class;
@@ -297,6 +298,12 @@ class nimble_CppAD_tape_mgr {
   atomic_nimRound_class* new_atomic_nimRound(const std::string& name);
   void delete_atomic_nimRound(atomic_nimRound_class *atomic_nimRound);
   atomic_nimRound_class *get_atomic_nimRound(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  
+  int nimStep_index;
+  bool nimStep_exists;
+  atomic_nimStep_class* new_atomic_nimStep(const std::string& name);
+  void delete_atomic_nimStep(atomic_nimStep_class *atomic_nimStep);
+  atomic_nimStep_class *get_atomic_nimStep(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
   
   int log_pow_int_index;
   bool log_pow_int_exists;
