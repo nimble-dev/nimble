@@ -852,7 +852,7 @@ Type nimDerivs_dflat_logFixed(Type x, int give_log)
 template<class Type>
 Type nimDerivs_dhalfflat(Type x, Type give_log)
 {
-  Type res = nimDerivs_nimCondGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
+  Type res = nimDerivs_CondExpGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
   // Type res = CppAD::CondExpGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
   res = log_or_exp(res, give_log);
   // res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
@@ -863,7 +863,7 @@ Type nimDerivs_dhalfflat_logFixed(Type x, int give_log)
 {
   Type res;
   if(give_log) {
-    res = nimDerivs_nimCondGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
+    res = nimDerivs_CondExpGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
     // res = CppAD::CondExpGe(x, Type(0), Type(0), -CppAD::numeric_limits<Type>::max());
   } else {
     res = nimDerivs_nimStep(x);
@@ -909,7 +909,7 @@ template<class Type>
 Type nimDerivs_dweibull(Type x, Type shape, Type scale, Type give_log)
 {
 	Type res = shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape));
-  res = log_or_exp(res, give_log);
+  res = CppAD::azmul(give_log, log(res)) + CppAD::azmul(Type(1)-give_log, res);
 	// res = CppAD::CondExpEq(give_log, Type(0), res, log(res));
 	return(res);
 }
