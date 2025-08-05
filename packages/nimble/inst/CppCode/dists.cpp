@@ -1273,10 +1273,10 @@ SEXP C_PDinverse_logdet(SEXP mat) {
 // ...existing code...
 // Begin multivariate normal version that uses pre-computed precision with (log(det(cov))) tacked on.
 // Drafted by GitHub copoilot, modified by NIMBLE team.
-double dmnorm_prec_ldet(double* x, double* mean,
+double dmnorm_inv_ld(double* x, double* mean,
                         double* mat, double* PDinv_ldet, int n,
                         int prec_param, int give_log, int overwrite_inputs) {
-    // prec_ldet: length n*n+1, first n*n elements are precision matrix (column-major), last is log(det(cov))
+    // inv_ld: length n*n+1, first n*n elements are precision matrix (column-major), last is log(det(cov))
     double* xCopy;
     double dens = -n * M_LN_SQRT_2PI;
     int i, j;
@@ -1325,7 +1325,7 @@ double dmnorm_prec_ldet(double* x, double* mean,
     // for(i = 0; i < n; i++) {
     //     double tmp = 0.0;
     //     for(j = 0; j < n; j++) {
-    //         tmp += prec_ldet[j*n + i] * xCopy[j]; // column-major
+    //         tmp += inv_ld[j*n + i] * xCopy[j]; // column-major
     //     }
     //     quad += xCopy[i] * tmp;
     // }
@@ -1335,9 +1335,9 @@ double dmnorm_prec_ldet(double* x, double* mean,
     double* y = new double[n];
     double alpha = 1.0, beta = 0.0;
     int inc1 = 1;
-    double *prec_ldet = prec_param ? mat : PDinv_ldet; 
-    //F77_CALL(dgemv)("N", &n, &n, &alpha, prec_ldet, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
-    F77_CALL(dsymv)("U", &n, &alpha, prec_ldet, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
+    double *inv_ld = prec_param ? mat : PDinv_ldet; 
+    //F77_CALL(dgemv)("N", &n, &n, &alpha, inv_ld, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
+    F77_CALL(dsymv)("U", &n, &alpha, inv_ld, &n, xCopy, &inc1, &beta, y, &inc1 FCONE);
 
     double quad = F77_CALL(ddot)(&n, xCopy, &inc1, y, &inc1);
     delete [] y;
@@ -1351,36 +1351,36 @@ double dmnorm_prec_ldet(double* x, double* mean,
 }
 
 // This one needed more human editing for the recycling rule portion.
-SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP mat, SEXP prec_ldet, SEXP prec_param, SEXP return_log) 
+SEXP C_dmnorm_inv_ld(SEXP x, SEXP mean, SEXP mat, SEXP inv_ld, SEXP prec_param, SEXP return_log) 
 // calculates mv normal density given precision matrix and log(det(cov))
 // current prec_param is ignored and assume FALSE.
-// prec_ldet should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))
+// inv_ld should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))
 {
   if(!Rf_isReal(x) || !Rf_isReal(mean))
-    RBREAK("Error (C_dmnorm_prec_ldet): 'x' and 'mean' should be real valued.\n");
-  if(!Rf_isReal(prec_ldet) || !Rf_isLogical(return_log))
-    RBREAK("Error (C_dmnorm_prec_ldet): invalid input type for one of the arguments.\n");
+    RBREAK("Error (C_dmnorm_inv_ld): 'x' and 'mean' should be real valued.\n");
+  if(!Rf_isReal(inv_ld) || !Rf_isLogical(return_log))
+    RBREAK("Error (C_dmnorm_inv_ld): invalid input type for one of the arguments.\n");
   if(!Rf_isMatrix(mat) || !Rf_isReal(mat))
-    RBREAK("Error (C_dmnorm_prec_ldet): 'mat' must be a real matrix.\n");
+    RBREAK("Error (C_dmnorm_inv_ld): 'mat' must be a real matrix.\n");
   if(!Rf_isReal(prec_param))
-    RBREAK("Error (C_dmnorm_prec_ldet): invalid input type for prec_param.\n");
+    RBREAK("Error (C_dmnorm_inv_ld): invalid input type for prec_param.\n");
   int* dims = INTEGER(Rf_getAttrib(mat, R_DimSymbol));
   if(dims[0] != dims[1])
-    RBREAK("Error (C_dmnorm_prec_ldet): 'mat' must be a square matrix.\n");
+    RBREAK("Error (C_dmnorm_inv_ld): 'mat' must be a square matrix.\n");
   int p = dims[0];
 
   int n_x = LENGTH(x);
   if(n_x != p)
-    RBREAK("Error (C_dmnorm_prec_ldet): 'x' and 'mat' are not of compatible sizes.\n");
+    RBREAK("Error (C_dmnorm_inv_ld): 'x' and 'mat' are not of compatible sizes.\n");
   
-  if(LENGTH(prec_ldet) != n_x*n_x + 1)
-    RBREAK("Error (C_dmnorm_prec_ldet): 'prec_ldet' must be length n*n+1.\n");
+  if(LENGTH(inv_ld) != n_x*n_x + 1)
+    RBREAK("Error (C_dmnorm_inv_ld): 'inv_ld' must be length n*n+1.\n");
 
   int give_log = (int) LOGICAL(return_log)[0];
   double* c_x = REAL(x);
   double* c_mean = REAL(mean);
   double * c_mat = REAL(mat);
-  double* c_prec_ldet = REAL(prec_ldet);
+  double* c_inv_ld = REAL(inv_ld);
   double c_prec_param = REAL(prec_param)[0];
 
   int n_mean = LENGTH(mean);
@@ -1398,7 +1398,7 @@ SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP mat, SEXP prec_ldet, SEXP prec_p
 
   SEXP ans;
   PROTECT(ans = Rf_allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dmnorm_prec_ldet(c_x, full_mean, c_mat, c_prec_ldet, n_x, give_log, c_prec_param, 0);
+  REAL(ans)[0] = dmnorm_inv_ld(c_x, full_mean, c_mat, c_inv_ld, n_x, c_prec_param, give_log, 0);
   if(n_mean < n_x)
     delete [] full_mean;
   UNPROTECT(1);
@@ -1406,15 +1406,15 @@ SEXP C_dmnorm_prec_ldet(SEXP x, SEXP mean, SEXP mat, SEXP prec_ldet, SEXP prec_p
 }
 
 // This one needed a fair bit of editing.
-void rmnorm_prec_ldet(double *ans, double* mean,
-                      double *mat, double* prec_ldet, int n, int prec_param) {
-  // prec_ldet: length n*n+1, first n*n elements are precision matrix (column-major), last is log(det(cov))
-  // last element of prec_ldet is not used.
+void rmnorm_inv_ld(double *ans, double* mean,
+                      double *mat, double* inv_ld, int n, int prec_param) {
+  // inv_ld: length n*n+1, first n*n elements are precision matrix (column-major), last is log(det(cov))
+  // last element of inv_ld is not used.
   // Generate standard normal
   bool return_NaN = ISNAN_ANY(mean, n);
-  if(!prec_param) return_NaN |= ISNAN_ANY(prec_ldet, n*n) || (!R_FINITE_ANY(prec_ldet, n*n));
-  else return_NaN |= ISNAN(prec_ldet[n*n] || ISNAN_ANY(mat, n*n)) || 
-                     (!R_FINITE(prec_ldet[n*n]) || !R_FINITE_ANY(mat, n*n));
+  if(!prec_param) return_NaN |= ISNAN_ANY(inv_ld, n*n) || (!R_FINITE_ANY(inv_ld, n*n));
+  else return_NaN |= ISNAN(inv_ld[n*n] || ISNAN_ANY(mat, n*n)) || 
+                     (!R_FINITE(inv_ld[n*n]) || !R_FINITE_ANY(mat, n*n));
   if (return_NaN) {
     for(int j = 0; j < n; j++) 
       ans[j] = R_NaN;
@@ -1428,7 +1428,7 @@ void rmnorm_prec_ldet(double *ans, double* mean,
   double* chol_prec = new double[n*n];
   if(!prec_param) {
     for(int i = 0; i < n*n; i++)
-      chol_prec[i] = prec_ldet[i];
+      chol_prec[i] = inv_ld[i];
   } else {
     for(int i = 0; i < n*n; i++)
       chol_prec[i] = mat[i];
@@ -1437,7 +1437,7 @@ void rmnorm_prec_ldet(double *ans, double* mean,
   int info(0);
   F77_CALL(dpotrf)(&uplo, &n, chol_prec, &n, &info FCONE);
   if (info != 0) {
-    Rf_error("Error in Cholesky decomposition in rnorm_prec_ldet: dpotrf returned info != %d", info);
+    Rf_error("Error in Cholesky decomposition in rnorm_inv_ld: dpotrf returned info != %d", info);
   }
   // Solve U^T y = z (z = ans), then U x = y
   char transPrec = 'N';
@@ -1455,31 +1455,31 @@ void rmnorm_prec_ldet(double *ans, double* mean,
 }
 
 // also substantial editing
-SEXP C_rmnorm_prec_ldet(SEXP mean, SEXP mat, SEXP prec_ldet, SEXP prec_param) 
+SEXP C_rmnorm_inv_ld(SEXP mean, SEXP mat, SEXP inv_ld, SEXP prec_param) 
 // generates single mv normal draw given precision matrix and log(det(cov))
-// prec_ldet should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))
+// inv_ld should be a numeric vector of length n*n+1: first n*n elements are precision matrix (column-major), last is log(det(cov))
 {
 if(!Rf_isReal(mean))
-    RBREAK("Error (C_rmnorm_prec_ldet): 'mean' should be real-valued\n");
-  if(!Rf_isReal(prec_ldet))
-    RBREAK("Error (C_rmnorm_prec_ldet): invalid input type for one of the arguments.\n");
+    RBREAK("Error (C_rmnorm_inv_ld): 'mean' should be real-valued\n");
+  if(!Rf_isReal(inv_ld))
+    RBREAK("Error (C_rmnorm_inv_ld): invalid input type for one of the arguments.\n");
   if(!Rf_isMatrix(mat) || !Rf_isReal(mat))
-    RBREAK("Error (C_rmnorm_prec_ldet): 'mat' must be a real matrix.\n");
+    RBREAK("Error (C_rmnorm_inv_ld): 'mat' must be a real matrix.\n");
   if(!Rf_isReal(prec_param))
-    RBREAK("Error (C_rmnorm_prec_ldet): invalid input type for prec_param.\n");
+    RBREAK("Error (C_rmnorm_inv_ld): invalid input type for prec_param.\n");
 
   int* dims = INTEGER(Rf_getAttrib(mat, R_DimSymbol));
   if(dims[0] != dims[1])
-    RBREAK("Error (C_rmnorm_prec_ldet): 'mat' must be a square matrix.\n");
+    RBREAK("Error (C_rmnorm_inv_ld): 'mat' must be a square matrix.\n");
   int n_mean = LENGTH(mean);
   int n_mat = dims[0];
-  if(LENGTH(prec_ldet) != n_mat*n_mat + 1)
-    RBREAK("Error (C_rmnorm_prec_ldet): 'prec_ldet' must be length n*n+1.\n");
-  int n_values = n_mat; //sqrt(LENGTH(prec_ldet) - 1);
+  if(LENGTH(inv_ld) != n_mat*n_mat + 1)
+    RBREAK("Error (C_rmnorm_inv_ld): 'inv_ld' must be length n*n+1.\n");
+  int n_values = n_mat; //sqrt(LENGTH(inv_ld) - 1);
   
   double* c_mean = REAL(mean);
   double c_prec_param = REAL(prec_param)[0];
-  double* c_prec_ldet = REAL(prec_ldet);
+  double* c_inv_ld = REAL(inv_ld);
   double* c_mat = REAL(mat);
   double* full_mean; 
 
@@ -1497,7 +1497,7 @@ if(!Rf_isReal(mean))
 
   SEXP ans;
   PROTECT(ans = Rf_allocVector(REALSXP, n_mean));  
-  rmnorm_prec_ldet(REAL(ans), full_mean, c_mat, c_prec_ldet, n_mean, c_prec_param);
+  rmnorm_inv_ld(REAL(ans), full_mean, c_mat, c_inv_ld, n_mean, c_prec_param);
 
   PutRNGstate();
   if(n_mean < n_values) 

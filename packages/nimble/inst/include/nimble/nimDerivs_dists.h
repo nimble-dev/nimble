@@ -61,12 +61,12 @@ Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
 }
 
 /* dmnorm: Multivariate normal distribution */
-/* Version that uses prec_ldet, a vector of length n*n+1, with the precision elements followed by log determinant of the covariance.*/
+/* Version that uses inv_ld, a vector of length n*n+1, with the precision elements followed by log determinant of the covariance.*/
 template<class Type>
-Type nimDerivs_nimArr_dmnorm_prec_ldet(NimArr<1, Type> &x, 
+Type nimDerivs_nimArr_dmnorm_inv_ld(NimArr<1, Type> &x, 
                                       NimArr<1, Type> &mean,
                                       NimArr<2, Type> &mat,
-                                      NimArr<1, Type> &prec_ldet,
+                                      NimArr<1, Type> &inv_ld,
                                       Type prec_param, // This gets baked in. It is essentially a compile time arg.
                                       Type give_log,
                                       Type overwrite_inputs) {
@@ -76,8 +76,8 @@ Type nimDerivs_nimArr_dmnorm_prec_ldet(NimArr<1, Type> &x,
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
   double pmhalf = CppAD::Value(prec_param) == 1 ? 0.5 : -0.5;
-  dens += Type(pmhalf) * prec_ldet[n*n]; // log(det(cov)) term
-  /* Note that prec_ldet[n*n] will be log(det(cov)) even if prec_param=TRUE */
+  dens += Type(pmhalf) * inv_ld[n*n]; // log(det(cov)) term
+  /* Note that inv_ld[n*n] will be log(det(cov)) even if prec_param=TRUE */
 
   MatrixXt xCopy(n, 1);
   for(i = 0; i < n; i++)
@@ -85,11 +85,11 @@ Type nimDerivs_nimArr_dmnorm_prec_ldet(NimArr<1, Type> &x,
 
   NimArr<1, Type> prec_possible_copy;
   NimArr<2, Type> mat_possible_copy;
-  Eigen::Map<MatrixXt > mapPrec;
+  Eigen::Map<MatrixXt > mapPrec(0,0,0);
   if(CppAD::Value(prec_param) == 1) { // mat is the precision.
     new (&mapPrec) Eigen::Map<MatrixXt>(nimArrCopyIfNeeded<2, Type>(mat, mat_possible_copy).getPtr(), n, n);
-  } else { // mat is the covariance so prec_ldet has the precision flattened.
-    new (&mapPrec) Eigen::Map<MatrixXt>(nimArrCopyIfNeeded<1, Type>(prec_ldet, prec_possible_copy).getPtr(), n, n);
+  } else { // mat is the covariance so inv_ld has the precision flattened.
+    new (&mapPrec) Eigen::Map<MatrixXt>(nimArrCopyIfNeeded<1, Type>(inv_ld, prec_possible_copy).getPtr(), n, n);
   }
 
   dens -= Type(0.5) * (xCopy.transpose() * mapPrec.template selfadjointView<Eigen::Upper>() * xCopy).sum(); // quadratic form term. sum() makes it a C++ scalar.
@@ -99,10 +99,10 @@ Type nimDerivs_nimArr_dmnorm_prec_ldet(NimArr<1, Type> &x,
 }
 
 template<class Type>
-Type nimDerivs_nimArr_dmnorm_prec_ldet_logFixed(NimArr<1, Type> &x, 
+Type nimDerivs_nimArr_dmnorm_inv_ld_logFixed(NimArr<1, Type> &x, 
                                                 NimArr<1, Type> &mean, 
                                                 NimArr<2, Type> &mat,
-                                                NimArr<1, Type> &prec_ldet, 
+                                                NimArr<1, Type> &inv_ld, 
                                                 Type prec_param, // This gets baked in. It is essentially a compile time arg.
                                                 int give_log, 
                                                 Type overwrite_inputs) {
@@ -112,7 +112,7 @@ Type nimDerivs_nimArr_dmnorm_prec_ldet_logFixed(NimArr<1, Type> &x,
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
   double pmhalf = CppAD::Value(prec_param) == 1 ? 0.5 : -0.5;
-  dens += Type(pmhalf) * prec_ldet[n*n]; // log(det(cov)) term
+  dens += Type(pmhalf) * inv_ld[n*n]; // log(det(cov)) term
 
   MatrixXt xCopy(n, 1);
   for(i = 0; i < n; i++)
@@ -120,11 +120,11 @@ Type nimDerivs_nimArr_dmnorm_prec_ldet_logFixed(NimArr<1, Type> &x,
 
   NimArr<1, Type> prec_possible_copy;
   NimArr<2, Type> mat_possible_copy;
-  Eigen::Map<MatrixXt> mapPrec;
+  Eigen::Map<MatrixXt> mapPrec(0,0,0);
   if(CppAD::Value(prec_param) == 1) { // mat is the precision.
     new (&mapPrec) Eigen::Map<MatrixXt>(nimArrCopyIfNeeded<2, Type>(mat, mat_possible_copy).getPtr(), n, n);
-  } else { // mat is the covariance so prec_ldet has the precision flattened.
-    new (&mapPrec) Eigen::Map<MatrixXt>(nimArrCopyIfNeeded<1, Type>(prec_ldet, prec_possible_copy).getPtr(), n, n);
+  } else { // mat is the covariance so inv_ld has the precision flattened.
+    new (&mapPrec) Eigen::Map<MatrixXt>(nimArrCopyIfNeeded<1, Type>(inv_ld, prec_possible_copy).getPtr(), n, n);
   }
   dens -= Type(0.5) * (xCopy.transpose() * mapPrec.template selfadjointView<Eigen::Upper>() * xCopy).sum(); // quadratic form term. sum() makes it a C++ scalar.
   if(!give_log){

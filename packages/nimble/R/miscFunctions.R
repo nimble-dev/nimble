@@ -69,12 +69,12 @@ calc_dmnormAltParams <- nimbleFunction(
     }
 )
 
-calc_dmnorm_prec_ldet_AltParams <- nimbleFunction(
-    name = 'calc_dmnorm_prec_ldet_AltParams',
-    run = function(prec_ldet = double(1), return_prec = double()) {
-        n <- sqrt(length(prec_ldet)-1)
+calc_dmnorm_inv_ld_AltParams <- nimbleFunction(
+    name = 'calc_dmnorm_inv_ld_AltParams',
+    run = function(inv_ld = double(1), return_prec = double()) {
+        n <- sqrt(length(inv_ld)-1)
         nsq <- n * n
-        ans <- matrix(prec_ldet[1:nsq], nrow = n, ncol = n)
+        ans <- matrix(inv_ld[1:nsq], nrow = n, ncol = n)
         if(return_prec) {
             if(n > 1) {  # Fill lower triangle if needed as PDinverse_logdet only guarantees upper.
                 if(ans[1,2] != ans[2,1]) {  # Equality would generally be exact if prec is provided to model.
