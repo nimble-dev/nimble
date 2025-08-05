@@ -14,7 +14,7 @@ void atomic_PDinverse_logdet(const MatrixXd_CppAD &x,
                              MatrixXd_CppAD &y);
 
 // MatrixXd_CppAD nimDerivs_PDinverse_logdet(const MatrixXd_CppAD &x); // not sure this is actually needed.
-NimArr<1, CppAD::AD<double> > nimDerivs_PDinverse_logdet(const NimArr<2, CppAD::AD<double> > &x, const CppAD::AD<double> &prec_param);
+NimArr<1, CppAD::AD<double> > nimDerivs_PDinverse_logdet(const NimArr<2, CppAD::AD<double> > &x);
 
 class atomic_PDinverse_logdet_class : public CppAD::atomic_three<double>, public nimble_atomic_base {
  public:
@@ -180,7 +180,7 @@ inline bool atomic_PDinverse_logdet_class::forward(
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < n; ++j)
         NimArrX(i, j) = Xmap(i, j);
-    NimArrY = nimDerivs_PDinverse_logdet(NimArrX, 0);
+    NimArrY = nimDerivs_PDinverse_logdet(NimArrX);
    for (size_t i = 0; i < n*n+1; ++i)
       taylor_y[i*nrow] = NimArrY[i];
     CppADdouble_cache.set_cache( 0, 0, order_up, taylor_x, taylor_y );

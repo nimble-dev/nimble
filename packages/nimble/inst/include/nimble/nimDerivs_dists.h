@@ -120,7 +120,7 @@ Type nimDerivs_nimArr_dmnorm_prec_ldet_logFixed(NimArr<1, Type> &x,
 
   NimArr<1, Type> prec_possible_copy;
   NimArr<2, Type> mat_possible_copy;
-  Eigen::Map<MatrixXt > mapPrec;
+  Eigen::Map<MatrixXt> mapPrec;
   if(CppAD::Value(prec_param) == 1) { // mat is the precision.
     new (&mapPrec) Eigen::Map<MatrixXt>(nimArrCopyIfNeeded<2, Type>(mat, mat_possible_copy).getPtr(), n, n);
   } else { // mat is the covariance so prec_ldet has the precision flattened.

@@ -211,8 +211,8 @@ distributionsInputList <- list(
                    types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
     
     dmnormAD = list(BUGSdist = 'dmnormAD(mean, prec, cov, prec_ldet, prec_param)',
-                   Rdist    = c('dmnorm_prec_ldet(mean, cov = cov, prec_ldet = PDinverse_logdet(cov), prec_param = 0)',
-                                'dmnorm_prec_ldet(mean, prec = prec, prec_ldet = PDinverse_logdet(prec), prec_param = 1)'),
+                   Rdist    = c('dmnorm_prec_ldet(mean, mat = cov, prec_ldet = PDinverse_logdet(cov), prec_param = 0)',
+                                'dmnorm_prec_ldet(mean, mat = prec, prec_ldet = PDinverse_logdet(prec), prec_param = 1)'),
                    altParams= c('prec = calc_dmnorm_prec_ldet_AltParams(prec_ldet, 1)',
                                 'cov = calc_dmnorm_prec_ldet_AltParams(prec_ldet, 0)'),
                    mixedSizes = TRUE,

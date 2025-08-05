@@ -3300,8 +3300,8 @@ sizeMatrixSquareReduction <- function(code, symTab, typeEnv) {
 
 sizePDinverse_logdet <- function(code, symTab, typeEnv) {
    # Modeled after a combination of generalFunSize and sizeUnaryCwiseSquare
-   if(length(code$args) != 2) {
-        stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument length != 2.'), call. = FALSE)
+   if(length(code$args) != 1) {
+        stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument length != 1.'), call. = FALSE)
     }
     a1 <- code$args[[1]]
     if(!inherits(a1, 'exprClass')) 

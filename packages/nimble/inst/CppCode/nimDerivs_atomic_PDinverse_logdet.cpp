@@ -453,8 +453,8 @@ MatrixXd_CppAD nimDerivs_PDinverse_logdet(const MatrixXd_CppAD &x, const CppAD::
 }
 */
 
-NimArr<1, CppAD::AD<double> > nimDerivs_PDinverse_logdet(const NimArr<2, CppAD::AD<double> > &x, const CppAD::AD<double> &prec_param) {
-  // prec_param is ignored for now.
+NimArr<1, CppAD::AD<double> > nimDerivs_PDinverse_logdet(const NimArr<2, CppAD::AD<double> > &x) {
+  // prec_param was being ignored and has been removed for now.
   atomic_PDinverse_logdet_class *PDinverse_logdet;
   size_t n = x.dim()[0];
   std::vector<CppAD::AD<double> > xVec(n*n);
