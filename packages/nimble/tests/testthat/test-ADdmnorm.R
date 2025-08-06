@@ -241,8 +241,8 @@ test_that('getParam', {
     cm$pr <- pr2
     cm$calculate(cm$getDependencies('pr'))
 
-    expect_equal(pr1, m$getParam('a', 'prec'))
-    expect_equal(pr2, cm$getParam('a', 'prec'))
+    expect_identical(pr1, m$getParam('a', 'prec'))
+    expect_identical(pr2, cm$getParam('a', 'prec'))
     expect_equal(solve(pr1), m$getParam('a', 'cov'))
     expect_equal(solve(pr2), cm$getParam('a', 'cov'))
 
@@ -259,8 +259,8 @@ test_that('getParam', {
     cm$pr <- pr2
     cm$calculate(cm$getDependencies('pr'))
 
-    expect_equal(pr1, m$getParam('a', 'cov'))
-    expect_equal(pr2, cm$getParam('a', 'cov'))
+    expect_identical(pr1, m$getParam('a', 'cov'))
+    expect_identical(pr2, cm$getParam('a', 'cov'))
     expect_equal(solve(pr1), m$getParam('a', 'prec'))
     expect_equal(solve(pr2), cm$getParam('a', 'prec'))
 })
@@ -373,6 +373,52 @@ test_that('polyagamma validity checks', {
 
 })
 
+test_that('Wishart-dmnorm conjugacy', {
+   n <- 3
+   R <- diag(rep(1,3))
+   mu <- 1:3
+   Y <- matrix(rnorm(9), 3)
+   data <- list(Y = Y, mu = mu, R = R)
+   code <- nimbleCode( {
+       for(i in 1:3) {
+           Y[i, 1:3] ~ dmnorm(mu[1:3], Omega[1:3,1:3]);
+       }
+       Omega[1:3,1:3] ~ dwish(R[1:3,1:3], 4);
+   })
+   m <- nimbleModel(code, data = data)
+   conf <- configureMCMC(m)
+   expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dwish_dmnormAD_identity")
+
+   code <- nimbleCode( {
+       for(i in 1:3) {
+           Y[i, 1:3] ~ dmnorm(mu[1:3], cov = Omega[1:3,1:3]);
+       }
+       Omega[1:3,1:3] ~ dwish(R[1:3,1:3], 4);
+   })
+   m <- nimbleModel(code, data = data)
+   conf <- configureMCMC(m)
+   expect_identical(conf$getSamplers()[[1]]$name, "RW_wishart")
+
+   code <- nimbleCode( {
+       for(i in 1:3) {
+           Y[i, 1:3] ~ dmnorm(mu[1:3], Omega[1:3,1:3]);
+       }
+       Omega[1:3,1:3] ~ dinvwish(R[1:3,1:3], 4);
+   })
+   m <- nimbleModel(code, data = data)
+   conf <- configureMCMC(m)
+   expect_identical(conf$getSamplers()[[1]]$name, "RW_wishart")
+
+   code <- nimbleCode( {
+       for(i in 1:3) {
+           Y[i, 1:3] ~ dmnorm(mu[1:3], cov = Omega[1:3,1:3]);
+       }
+       Omega[1:3,1:3] ~ dinvwish(R[1:3,1:3], 4);
+   })
+   m <- nimbleModel(code, data = data)
+   conf <- configureMCMC(m)
+   expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dinvwish_dmnormAD_identity")
+})   
 
 # Run various NIMBLE tests that use dmnorm with dmnormAD instead.
 
