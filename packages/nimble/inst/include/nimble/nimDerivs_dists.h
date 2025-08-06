@@ -63,7 +63,7 @@ Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
 /* dmnorm: Multivariate normal distribution */
 /* Version that uses inv_ld, a vector of length n*n+1, with the precision elements followed by log determinant of the covariance.*/
 template<class Type>
-Type nimDerivs_nimArr_dmnorm_inv_ld(NimArr<1, Type> &x, 
+Type nimDerivs_nimArr_dmnorm_inv_ld(NimArr<1, Type> &x,
                                       NimArr<1, Type> &mean,
                                       NimArr<2, Type> &mat,
                                       NimArr<1, Type> &inv_ld,
@@ -99,12 +99,12 @@ Type nimDerivs_nimArr_dmnorm_inv_ld(NimArr<1, Type> &x,
 }
 
 template<class Type>
-Type nimDerivs_nimArr_dmnorm_inv_ld_logFixed(NimArr<1, Type> &x, 
-                                                NimArr<1, Type> &mean, 
+Type nimDerivs_nimArr_dmnorm_inv_ld_logFixed(NimArr<1, Type> &x,
+                                                NimArr<1, Type> &mean,
                                                 NimArr<2, Type> &mat,
-                                                NimArr<1, Type> &inv_ld, 
+                                                NimArr<1, Type> &inv_ld,
                                                 Type prec_param, // This gets baked in. It is essentially a compile time arg.
-                                                int give_log, 
+                                                int give_log,
                                                 Type overwrite_inputs) {
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
 
@@ -936,7 +936,7 @@ template<class Type>
 Type nimDerivs_dweibull(Type x, Type shape, Type scale, Type give_log)
 {
 	Type res = shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape));
-  res = log_or_exp(res, give_log);
+        res = CppAD::azmul(give_log, log(res)) + CppAD::azmul(Type(1)-give_log, res);
 	// res = CppAD::CondExpEq(give_log, Type(0), res, log(res));
 	return(res);
 }
