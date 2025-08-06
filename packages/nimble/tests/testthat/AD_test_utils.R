@@ -253,7 +253,6 @@ test_AD2_oneCall <- function(Robj, Cobj,
     wrt_all <- 1:len_record
   else
     wrt_all <- wrt
-  browser()
   do_one_set("run", name = "run",
              doR = TRUE, doC = TRUE, tapingLevel = 0, fixedOrder = 0)
   do_one_set("derivsRun", order = order, metaLevel = 0, name = "derivsRun",
