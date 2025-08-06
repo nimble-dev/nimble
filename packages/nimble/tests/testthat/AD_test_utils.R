@@ -2051,7 +2051,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
     on.exit(local_edition(saved_edition))
     
     test_that(paste0("Derivatives of calculate for model ", name), {
-        if(exists('paciorek') && paciorek == 0) browser()
         if(is.null(calcNodes))
             calcNodes <- model$getNodeNames()
 
@@ -2150,7 +2149,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
         for(case in 1:2) {
             for(idx in seq_along(xList)) {
-                if(exists('paciorek') && paciorek == idx) browser()
                 if(verbose) {
                     if(case == 1) {
                         if(idx == 1) {
