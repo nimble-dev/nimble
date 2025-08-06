@@ -71,24 +71,25 @@ calc_dmnormAltParams <- nimbleFunction(
 
 calc_dmnorm_inv_ld_AltParams <- nimbleFunction(
     name = 'calc_dmnorm_inv_ld_AltParams',
-    run = function(inv_ld = double(1), return_prec = double()) {
+    run = function(mat = double(2), inv_ld = double(1), prec_param = double(), return_prec = double()) {
+        ## No need for inversion as desired result is either in `mat` from
+        ## original parameter provided or inverse is in `inv_ld`.
+        
+        if(prec_param == return_prec)
+            return(mat)
+        
         n <- sqrt(length(inv_ld)-1)
         nsq <- n * n
         ans <- matrix(inv_ld[1:nsq], nrow = n, ncol = n)
-        if(return_prec) {
-            if(n > 1) {  # Fill lower triangle if needed as PDinverse_logdet only guarantees upper.
-                if(ans[1,2] != ans[2,1]) {  # Equality would generally be exact if prec is provided to model.
-                    for(i in 2:n)
-                        for(j in 1:(i-1))
-                            ans[i,j] <- ans[j,i]
-                }
+        if(n > 1) {  # Fill lower triangle if needed as PDinverse_logdet only guarantees upper.
+            if(ans[1,2] != ans[2,1]) {  # Equality would generally be exact if prec is provided to model.
+                for(i in 2:n)
+                    for(j in 1:(i-1))
+                        ans[i,j] <- ans[j,i]
             }
-        } else {
-            chol <- chol(ans)
-            ans <- backsolve(chol, forwardsolve(t(chol), diag(n)))
         }
-        returnType(double(2))
         return(ans)
+        returnType(double(2))
     }
 )
 
