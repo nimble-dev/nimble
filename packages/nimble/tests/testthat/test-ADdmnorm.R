@@ -53,7 +53,7 @@ code <- nimbleCode({
   rho ~ dunif(0,3)
   cov[1:3,1:3] <- sigma*sigma*exp(-dd[1:3,1:3]/rho)
   inv_ld[1:10] <- PDinverse_logdet(cov[1:3, 1:3])
-  x[1:3] ~ dmnormAD(mean = mu[1:3], cov = cov[1:3, 1:3], inv_ld = inv_ld[1:10])
+  x[1:3] ~ dmnormAD(mean = mu[1:3], cov = cov[1:3, 1:3])
 })
 inits <- list(sigma = 0.8, rho = 1.2, mu = c(.2, .3, .1))
 constants = list(dd=dd)
@@ -72,6 +72,9 @@ test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp,
                       checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
                       checkDoubleUncHessian = TRUE,
                       useFasterRderivs = TRUE, verbose = FALSE, name = 'dmnormAD with inv_ld')
+
+## Depending on the order in which the test above appears in the sequence of testing,
+## we have seen the following crash:
 # ============================================
 # testing HMC/MAP-based scenario
 # --------------------------------------------
