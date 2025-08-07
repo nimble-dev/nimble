@@ -63,12 +63,30 @@ calc_dmnormAltParams <- nimbleFunction(
         } else {
             I <- diag(dim(cholesky)[1])
             ans <- backsolve(cholesky, forwardsolve(t(cholesky), I))
-            ## Chris suggests:
-            ## tmp <- forwardsolve(L, I)
-            ## ans <- crossprod(tmp)
         }
         returnType(double(2))
         return(ans)
+    }
+)
+
+calc_dmnorm_inv_ld_AltParams <- nimbleFunction(
+    name = 'calc_dmnorm_inv_ld_AltParams',
+    run = function(mat = double(2), inv_ld = double(1), prec_param = double(), return_prec = double()) {
+        ## No need for inversion as desired result is either in `mat` from
+        ## original parameter provided or inverse is in `inv_ld`.
+        if(prec_param == return_prec)
+            return(mat)
+        
+        n <- sqrt(length(inv_ld)-1)
+        nsq <- n * n
+        ans <- matrix(inv_ld[1:nsq], nrow = n, ncol = n)
+        if(n > 1) {  # Fill lower triangle as PDinverse_logdet only guarantees upper.
+            for(i in 2:n)
+                for(j in 1:(i-1))
+                    ans[i,j] <- ans[j,i]
+        }
+        return(ans)
+        returnType(double(2))
     }
 )
 
@@ -113,9 +131,6 @@ calc_dwishAltParams <- nimbleFunction(
         } else {
             I <- diag(dim(cholesky)[1])
             ans <- backsolve(cholesky, forwardsolve(t(cholesky), I))
-            ## Chris suggests:
-            ## tmp <- forwardsolve(L, I)
-            ## ans <- crossprod(tmp)
         }
         returnType(double(2))
         return(ans)

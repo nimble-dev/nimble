@@ -545,6 +545,36 @@ qdexp <- function(p, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
 #' dmnorm_chol(x, mean, ch, prec_param = FALSE)
 NULL
 
+PDinverse_logdet <- function(mat) {
+  if(storage.mode(mat) != 'double')
+   storage.mode(mat) <- 'double'
+  out <- .Call(C_PDinverse_logdet, mat)
+  return(out)
+}
+
+#' @rdname MultivariateNormal
+#' @export
+dmnorm_inv_ld <- function(x, mean, mat, inv_ld, prec_param = TRUE, log = FALSE) {
+    if(storage.mode(inv_ld) != 'double')
+         storage.mode(inv_ld) <- 'double'
+    if(storage.mode(mat) != 'double')
+         storage.mode(mat) <- 'double'
+    .Call(C_dmnorm_inv_ld, as.double(x), as.double(mean), mat, inv_ld,
+          as.double(prec_param), as.logical(log))
+}
+
+#' @rdname MultivariateNormal
+#' @export
+rmnorm_inv_ld <- function(n=1, mean, mat, inv_ld, prec_param = TRUE) {
+    if(n != 1) warning('rmnorm_inv_ld only handles n = 1 at the moment')
+    if(storage.mode(inv_ld) != 'double')
+         storage.mode(inv_ld) <- 'double'
+    if(storage.mode(mat) != 'double')
+         storage.mode(mat) <- 'double'
+    .Call(C_rmnorm_inv_ld, as.double(mean), mat, inv_ld,
+          as.double(prec_param))
+}
+
 #' @rdname MultivariateNormal
 #' @export
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {

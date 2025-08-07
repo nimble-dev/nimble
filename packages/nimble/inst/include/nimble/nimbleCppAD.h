@@ -130,6 +130,7 @@ class atomic_forwardsolve_class;
 class atomic_cholesky_class;
 class atomic_matmult_class;
 class atomic_matinverse_class;
+class atomic_PDinverse_logdet_class;
 class atomic_zround_class;
 class nimDerivs_floor_class;
 template<class ftor> class atomic_discrete_class;
@@ -137,6 +138,7 @@ class atomic_floor_class;
 class atomic_ceil_class;
 class atomic_ftrunc_class;
 class atomic_nimRound_class;
+class atomic_nimStep_class;
 class atomic_log_pow_int_class;
 class atomic_zb_over_a_class;
 class atomic_probit_class;
@@ -297,6 +299,12 @@ class nimble_CppAD_tape_mgr {
   void delete_atomic_nimRound(atomic_nimRound_class *atomic_nimRound);
   atomic_nimRound_class *get_atomic_nimRound(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
   
+  int nimStep_index;
+  bool nimStep_exists;
+  atomic_nimStep_class* new_atomic_nimStep(const std::string& name);
+  void delete_atomic_nimStep(atomic_nimStep_class *atomic_nimStep);
+  atomic_nimStep_class *get_atomic_nimStep(std::vector<CppAD::local::atomic_index_info>* vec_ptr);
+  
   int log_pow_int_index;
   bool log_pow_int_exists;
   atomic_log_pow_int_class* new_atomic_log_pow_int(const std::string& name);
@@ -344,6 +352,9 @@ class nimble_CppAD_tape_mgr {
   atomic_matinverse_class* new_atomic_matinverse(const std::string& name);
   void delete_atomic_matinverse(atomic_matinverse_class *atomic_matinverse);
 
+  atomic_PDinverse_logdet_class* new_atomic_PDinverse_logdet(const std::string& name);
+  void delete_atomic_PDinverse_logdet(atomic_PDinverse_logdet_class *atomic_PDinverse_logdet);
+ 
   std::vector<CppAD::AD<double> > dummyOutputs;
   void add_dummyOutput(CppAD::AD<double> &dummy);
   void sum_dummyOutputs_to_dependentVars(std::vector<CppAD::AD<double> > &depVars);
@@ -564,6 +575,7 @@ NimArr<1, double> make_vector_if_necessary(int);
 NimArr<1, double> make_vector_if_necessary(double);
 NimArr<1, double> make_vector_if_necessary(NimArr<1, double>);
 NimArr<1, double> make_vector_if_necessary(NimArr<1, int>);
+NimArr<1, CppAD::AD<double> > make_vector_if_necessary(CppAD::AD<double> x);
 
 template <typename T>
 NimArr<1, double> make_vector_if_necessary(const T &x) { // This case catches eigen ops

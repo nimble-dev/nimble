@@ -198,6 +198,20 @@ make_deriv_function <- function(origFun,
                                   nDim = 1, type = 'double', ref = TRUE, const = TRUE))
   newFun$args$addSymbol(cppVar(baseType = 'bool', name = "DO_UPDATE_"))
   newFun$args$addSymbol(cppVar(baseType = 'bool', name = "RESET_"))
+    newFun$args$addSymbol(cppNimArr(name = 'ARGZ_outInds__',
+                                  nDim = 1, type = 'double', ref = TRUE, const = TRUE))
+
+  inDirSym <- cppNimArr(name = 'ARGZ_inDir__',
+                                  nDim = 1, type = 'double', ref = TRUE, const = TRUE)
+  outDirSym <- cppNimArr(name = 'ARGZ_outDir__',
+                                  nDim = 1, type = 'double', ref = TRUE, const = TRUE)
+  if(meta) {
+    inDirSym <- cppVarSym2templateTypeCppVarSym(inDirSym) 
+    outDirSym <- cppVarSym2templateTypeCppVarSym(outDirSym)
+  }
+  newFun$args$addSymbol(inDirSym)
+  newFun$args$addSymbol(outDirSym)
+
   newFun$args$addSymbol(cppVar(name = 'ARGZ_ADinfo_',
                                ref = TRUE,
                                baseType = "nimbleCppADinfoClass"))
@@ -233,6 +247,9 @@ make_deriv_function <- function(origFun,
       getDerivsRcall <- substitute(returnList_ <- GETDERIVS_WRAPPER( INNERCALL,
                                                                     ARGZ_nimDerivsOrders_,
                                                                     ARGZ_wrtVector_ ,
+                                                                    ARGZ_outInds__,
+                                                                    ARGZ_inDir__,
+                                                                    ARGZ_outDir__,
                                                                     recordingInfo_),
                                    list(INNERCALL = innerRcall,
                                         GETDERIVS_WRAPPER = as.name(getDerivs_wrapper)))
@@ -240,7 +257,10 @@ make_deriv_function <- function(origFun,
       getDerivs_wrapper <- 'getDerivs_wrapper'
       getDerivsRcall <- substitute(returnList_ <- GETDERIVS_WRAPPER( INNERCALL,
                                                                     ARGZ_nimDerivsOrders_,
-                                                                    ARGZ_wrtVector_ ),
+                                                                    ARGZ_wrtVector_ ,
+                                                                    ARGZ_outInds__,
+                                                                    ARGZ_inDir__,
+                                                                    ARGZ_outDir__),
                                    list(INNERCALL = innerRcall,
                                         GETDERIVS_WRAPPER = as.name(getDerivs_wrapper)))
   }

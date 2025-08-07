@@ -105,7 +105,12 @@ AD<Base>& AD<Base>::operator /= (const AD<Base> &right)
         }
     }
     else if( dyn_left | dyn_right )
-    {   addr_t arg0 = taddr_;
+    {  if( (!dyn_right) && IdenticalOne(right.value_))
+      {  // dynamic /= 1, so do nothing
+      } else if( (!dyn_left) && IdenticalZero(left))
+      {  // 0 /= dynamic, so do nothing
+      } else
+      { addr_t arg0 = taddr_;
         addr_t arg1 = right.taddr_;
         if( ! dyn_left )
             arg0 = tape->Rec_.put_con_par(left);
@@ -118,6 +123,7 @@ AD<Base>& AD<Base>::operator /= (const AD<Base> &right)
         );
         tape_id_ = tape_id;
         ad_type_ = dynamic_enum;
+      }
     }
     return *this;
 }
