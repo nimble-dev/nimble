@@ -1367,7 +1367,7 @@ cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansionsNode =
             expr <- depNodeExprExpanded
         } else { expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansionsNode) }
         ## We expect to find target in PDinverse_logdet() one extra time when dmnormAD used.
-        if(length(expr) > 1 && expr[[1]] != "PDinverse_logdet") {  
+        if(!(length(expr) > 1 && expr[[1]] == "PDinverse_logdet")) {  
             if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
             if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
         }
