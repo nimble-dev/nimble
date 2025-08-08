@@ -202,6 +202,98 @@ dmnormAD_test2b <- make_AD_test2(
 )
 dmnormAD_test2b_out <- test_AD2(dmnormAD_test2b)
 
+## Check that rmnorm_inv_ld works and draws the same numbers as from rmnorm_chol
+test_that("rmnorm_inv_ld works and matches rmnorm_chol", {
+  set.seed(1)
+  cov <- crossprod(matrix(rnorm(25), 5))
+  PDild_cov <- PDinverse_logdet(cov)
+  chol_cov <- chol(cov)
+
+  prec <- solve(cov)
+  PDild_prec <- PDinverse_logdet(prec)
+  chol_prec <- chol(prec)
+
+  mu <- c(0.2,0.1,0.3,0.15,0.25)
+
+  # PD_ild (PDinverse_logdet) will be ignored for method 2, rmnorm_chol
+  nf <- nimbleFunction(
+    run = function(mu=double(1), mat=double(2), PDild=double(1),
+                   prec_param=double(0), method = integer(0)) {
+      if(method == 1)
+        ans <- rmnorm_inv_ld(1, mu, mat=mat, inv_ld = PDild, prec_param=prec_param)
+      if(method == 2)
+        ans <- rmnorm_chol(1, mu, cholesky = mat, prec_param=prec_param)
+      return(ans)
+      returnType(double(1))
+    }
+  )
+  cnf <- compileNimble(nf)
+
+  # uncompiled
+  set.seed(1); x_PLD_0 <- nf(mu, cov, PDild_cov, 0, 1)
+  set.seed(1); x_chol_0 <- nf(mu, chol_cov, c(0), 0, 2)
+  set.seed(1); x_PLD_1 <- nf(mu, prec, PDild_prec, 1, 1)
+  set.seed(1); x_chol_1 <- nf(mu, chol_prec, c(0), 1, 2)
+
+  # compiled
+  set.seed(1); Cx_PLD_0 <- cnf(mu, cov, PDild_cov, 0, 1)
+  set.seed(1); Cx_chol_0 <- cnf(mu, chol_cov, c(0), 0, 2)
+  set.seed(1); Cx_PLD_1 <- cnf(mu, prec, PDild_prec, 1, 1)
+  set.seed(1); Cx_chol_1 <- cnf(mu, chol_prec, c(0), 1, 2)
+
+  # look all together
+  #rbind(x_PLD_0, x_chol_0, x_PLD_1, x_chol_1,
+  #      Cx_PLD_0, Cx_chol_0, Cx_PLD_1, Cx_chol_1)
+
+  expect_equal(x_PLD_0, x_chol_0)
+  expect_equal(x_PLD_1, x_chol_1)
+  expect_equal(Cx_PLD_0, Cx_chol_0)
+  expect_equal(Cx_PLD_1, Cx_chol_1)
+  expect_equal(x_PLD_0, Cx_PLD_0)
+  expect_equal(x_PLD_1, Cx_PLD_1)
+
+  # Check use of recycling rule for the mean
+  mu <- c(0, 100)
+
+  set.seed(1); x_PLD_0 <- nf(mu, cov, PDild_cov, 0, 1)
+  set.seed(1); x_chol_0 <- nf(mu, chol_cov, c(0), 0, 2)
+  set.seed(1); x_PLD_1 <- nf(mu, prec, PDild_prec, 1, 1)
+  set.seed(1); x_chol_1 <- nf(mu, chol_prec, c(0), 1, 2)
+
+  # compiled
+  set.seed(1); Cx_PLD_0 <- cnf(mu, cov, PDild_cov, 0, 1)
+  set.seed(1); Cx_chol_0 <- cnf(mu, chol_cov, c(0), 0, 2)
+  set.seed(1); Cx_PLD_1 <- cnf(mu, prec, PDild_prec, 1, 1)
+  set.seed(1); Cx_chol_1 <- cnf(mu, chol_prec, c(0), 1, 2)
+
+  expect_equal(x_PLD_0, x_chol_0)
+  expect_equal(x_PLD_1, x_chol_1)
+  expect_equal(Cx_PLD_0, Cx_chol_0)
+  expect_equal(Cx_PLD_1, Cx_chol_1)
+  expect_equal(x_PLD_0, Cx_PLD_0)
+  expect_equal(x_PLD_1, Cx_PLD_1)
+
+  mu <- c(0, 10, 20, 30, 40, 50, 60) # too long, only first 5 should be used
+
+  set.seed(1); x_PLD_0 <- nf(mu, cov, PDild_cov, 0, 1)
+  set.seed(1); x_chol_0 <- nf(mu, chol_cov, c(0), 0, 2)
+  set.seed(1); x_PLD_1 <- nf(mu, prec, PDild_prec, 1, 1)
+  set.seed(1); x_chol_1 <- nf(mu, chol_prec, c(0), 1, 2)
+
+  # compiled
+  set.seed(1); Cx_PLD_0 <- cnf(mu, cov, PDild_cov, 0, 1)
+  set.seed(1); Cx_chol_0 <- cnf(mu, chol_cov, c(0), 0, 2)
+  set.seed(1); Cx_PLD_1 <- cnf(mu, prec, PDild_prec, 1, 1)
+  set.seed(1); Cx_chol_1 <- cnf(mu, chol_prec, c(0), 1, 2)
+
+  expect_equal(x_PLD_0, x_chol_0)
+  expect_equal(x_PLD_1, x_chol_1)
+  expect_equal(Cx_PLD_0, Cx_chol_0)
+  expect_equal(Cx_PLD_1, Cx_chol_1)
+  expect_equal(x_PLD_0, Cx_PLD_0)
+  expect_equal(x_PLD_1, Cx_PLD_1)
+})
+
 test_that("non-assignment of dmnormAD if cholesky param used", {
     code <- nimbleCode({
         y[1:3] ~ dmnorm(mu[1:3], cholesky = L[1:3,1:3], prec_param = 0)
@@ -418,7 +510,7 @@ test_that('Wishart-dmnorm conjugacy', {
    m <- nimbleModel(code, data = data)
    conf <- configureMCMC(m)
    expect_identical(conf$getSamplers()[[1]]$name, "conjugate_dinvwish_dmnormAD_identity")
-})   
+})
 
 # Run various NIMBLE tests that use dmnorm with dmnormAD instead.
 

@@ -1409,49 +1409,23 @@ SEXP C_dmnorm_inv_ld(SEXP x, SEXP mean, SEXP mat, SEXP inv_ld, SEXP prec_param, 
 void rmnorm_inv_ld(double *ans, double* mean,
                       double *mat, double* inv_ld, int n, int prec_param) {
   // inv_ld: length n*n+1, first n*n elements are precision matrix (column-major), last is log(det(cov))
-  // last element of inv_ld is not used.
-  // Generate standard normal
-  bool return_NaN = ISNAN_ANY(mean, n);
-  if(!prec_param) return_NaN |= ISNAN_ANY(inv_ld, n*n) || (!R_FINITE_ANY(inv_ld, n*n));
-  else return_NaN |= ISNAN(inv_ld[n*n] || ISNAN_ANY(mat, n*n)) || 
-                     (!R_FINITE(inv_ld[n*n]) || !R_FINITE_ANY(mat, n*n));
-  if (return_NaN) {
-    for(int j = 0; j < n; j++) 
-      ans[j] = R_NaN;
-    return;
-  }
-  
-  for(int i = 0; i < n; i++)
-  ans[i] = norm_rand();
-  
-  // Cholesky decomposition of precision matrix
-  double* chol_prec = new double[n*n];
-  if(!prec_param) {
-    for(int i = 0; i < n*n; i++)
-      chol_prec[i] = inv_ld[i];
-  } else {
-    for(int i = 0; i < n*n; i++)
-      chol_prec[i] = mat[i];
-  } 
-  char uplo = 'U';
+  // Actually inv_ld is not used at all.
+  // We retain it for now in case we use it in the future.
+
+  // Make Cholesky decomposition of covariance or precision.
+  // We do not check for NaNs here because they will be checked
+  // in rmnorm_chol.
+  // dpotrf will simply propagate NaNs. 
+  // (According to chatGPT, the info code is not a reliable way to
+  // check if NaNs occurred.)
+  double* chol = new double[n*n];
+  for(int i = 0; i < n*n; i++)
+    chol[i] = mat[i]; // cov if prec_param is FALSE, prec if TRUE
+  char uplo('U');
   int info(0);
-  F77_CALL(dpotrf)(&uplo, &n, chol_prec, &n, &info FCONE);
-  if (info != 0) {
-    Rf_error("Error in Cholesky decomposition in rnorm_inv_ld: dpotrf returned info != %d", info);
-  }
-  // Solve U^T y = z (z = ans), then U x = y
-  char transPrec = 'N';
-  char diag = 'N';
-  int incx = 1;
-  int lda(n);
-  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, 
-    chol_prec, &lda, ans, &incx FCONE FCONE FCONE);
-    
-    // Add mean
-    for(int i = 0; i < n; i++)
-    ans[i] += mean[i];
-    
-    delete [] chol_prec;
+  F77_CALL(dpotrf)(&uplo, &n, chol, &n, &info FCONE);
+  rmnorm_chol(ans, mean, chol, n, prec_param);
+  delete [] chol;
 }
 
 // also substantial editing
@@ -1496,8 +1470,8 @@ if(!Rf_isReal(mean))
   GetRNGstate(); 
 
   SEXP ans;
-  PROTECT(ans = Rf_allocVector(REALSXP, n_mean));  
-  rmnorm_inv_ld(REAL(ans), full_mean, c_mat, c_inv_ld, n_mean, c_prec_param);
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
+  rmnorm_inv_ld(REAL(ans), full_mean, c_mat, c_inv_ld, n_values, c_prec_param);
 
   PutRNGstate();
   if(n_mean < n_values) 
