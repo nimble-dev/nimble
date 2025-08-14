@@ -157,41 +157,46 @@ nimbleModel <- function(code,
 #'     mu ~ dnorm(0, sd = prior_sd)
 #' })
 #'
+#' code_new <- nimbleCode({
+#'     prior_sd ~ dhalfflat()
+#' })
+#'
 #' # Combine multiple previously saved code objects
-#' code2 <- nimbleCode(code, code)
+#' code2 <- nimbleCode(code, code_new)
 #'
 #' # Combine code and previously saved code objects
 #' code3 <- nimbleCode({
 #'    y ~ dnorm(mu, sd = 1)
-#' }, code, code2)
+#' }, code, code_new)
+#' 
 nimbleCode <- function(...){
   # Doing this substitution first is necessary to keep R from evaluating directly 
-  # provided code chunks, which will usually result in an error
+  # provided code chunks, which will usually result in an error.
   code <- substitute(list(...))
   if(length(code) == 1){
     stop("Must provide at least one argument")
   }
-  code <- code[2:length(code)] # drop list prefix
+  code <- code[2:length(code)] # Drop list prefix.
 
-  # Iterate through each code element and extract the code from it
+  # Iterate through each code element and extract the code from it.
   out <- lapply(1:length(code), function(i){
     # If element i is a call (a directly provided code chunk)
     if(is.call(code[[i]])){
       # Check it is in brackets
       if(code[[i]][[1]] == "{"){
-        # If it is, return the code unchanged
+        # If it is, return the code unchanged.
         return(code[[i]])
       } else {
-        # Error if not in brackets
+        # Error if not in brackets.
         stop("Call ", safeDeparse(code[[i]])," must be wrapped in brackets { }",
              call.=FALSE)
       }
     } else {
-      # If not a call, we assume element i must be an object containing code
+      # If not a call, we assume element i must be an object containing code.
       # We need to extract element i from the ...
-      # Can do this by evaluating ..i
+      # Can do this by evaluating `..i`.
       out <- eval(str2lang(paste0("..", i)))
-      # Check that the evaluated result is code and error if it isn't
+      # Check that the evaluated result is code and error if it isn't.
       if(is.call(out)){
         if(out[[1]] != "{"){
           stop("Call ", safeDeparse(code[[i]])," must be wrapped in brackets { }",
@@ -205,9 +210,9 @@ nimbleCode <- function(...){
     }
   })
 
-  # Combine all the code chunks if more than one
+  # Combine all the code chunks if more than one.
   # This could be done regardless of number of chunks, but possibly better
-  # not to run this code unless absolutely necessary
+  # not to run this code unless absolutely necessary.
   if(length(code) > 1){
     out <- embedListInRbracket(out)
     out <- removeExtraBrackets(out)
