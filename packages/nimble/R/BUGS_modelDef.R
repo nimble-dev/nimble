@@ -351,7 +351,9 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataLis
         if(!(length(initDim) == 1 && initDim == 1)) {  # i.e., non-scalar inits; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
             if(initName %in% names(dL)) {
                 if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
-                    messageIfVerbose('  [Warning] Inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
+                    messageIfVerbose("  [Warning] Inconsistent dimensions between `inits` and `dimensions`\n",
+                                     "            Ignoring dimensions in `dimensions`.")
+                    dL[[initName]] <- initDim  ## Changed 2025-07-09 to avoid inconsistent compiled/uncompiled behavior.
                 }
             } else {
                 dL[[initName]] <- initDim
@@ -831,6 +833,17 @@ modelDefClass$methods(reparameterizeDists = function() {
         BUGSdecl <- declInfo[[i]]     ## grab this current BUGS declation info object
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         code <- BUGSdecl$code   ## grab the original code
+        if(BUGSdecl$distributionName == "dmnorm" && buildDerivs && getNimbleOption('useADdmnorm')) {
+            if(length(BUGSdecl$code) > 2 && "cholesky" %in% names(BUGSdecl$code[[3]])) {
+                messageIfVerbose("  [Note] Detected use of `cholesky` parameterization of `dmnorm` with a\n",
+                                 "         derivative-enabled model. AD-optimized `dmnorm` is only available\n",
+                                 "         for the `prec` or `cov` parameterizations. NIMBLE will use a version\n",
+                                 "         of `dmnorm` not optimized for AD, which may result in inefficiency.")
+            } else {
+                BUGSdecl$distributionName <- "dmnormAD"
+                BUGSdecl$valueExpr[[1]] <- quote(dmnormAD)
+            }
+        }
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         distName <- BUGSdecl$distributionName #as.character(valueExpr[[1]])
         if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
@@ -1059,6 +1072,16 @@ liftedCallsGetIndexingFromArgumentNumbers <- list(
     CAR_calcEVs3 = c(3)
 )
 
+liftedCallsGetIndexingOther <- list(
+    ## This is general in that it finds the number of elements of the matrix,
+    ## but the input shouldn't be anything other than square.
+    PDinverse_logdet = function(argList) {
+        getlen <- function(arg) length(eval(arg))
+        list(substitute(1:N, list(N = prod(sapply(argList[[1]][3:length(argList[[1]])], getlen))+1)))
+    }
+)
+
+
 modelDefClass$methods(liftExpressionArgs = function() {
     ## overwrites declInfo (*and adds*), lifts any expressions in distribution arguments to new nodes
     newDeclInfo <- list()
@@ -1125,6 +1148,7 @@ isExprLiftable <- function(paramExpr, type = NULL) {
         callText <- getCallText(paramExpr)
         if(callText == 'chol')         return(TRUE)    ## do lift calls to chol(...)
         if(callText == 'inverse')      return(TRUE)    ## do lift calls to inverse(...)
+        if(callText == 'PDinverse_logdet')  return(TRUE)    ## do lift calls to PDinverse_logdet(...)
         if(callText == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
         if(callText == 'CAR_calcC')    return(TRUE)    ## do lift calls to CAR_calcC(...)
         if(callText == 'CAR_calcM'  )  return(TRUE)    ## do lift calls to CAR_calcM(...)
@@ -1148,6 +1172,8 @@ isExprLiftable <- function(paramExpr, type = NULL) {
 addNecessaryIndexingToNewNode <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
     if(is.call(paramExpr) && safeDeparse(paramExpr[[1]], warn = TRUE) %in% names(liftedCallsGetIndexingFromArgumentNumbers))
         return(addNecessaryIndexingFromArgumentNumbers(newNodeNameExpr, paramExpr, indexVarExprs))
+    if(is.call(paramExpr) && safeDeparse(paramExpr[[1]], warn = TRUE) %in% names(liftedCallsGetIndexingOther))
+        return(addNecessaryIndexingOther(newNodeNameExpr, paramExpr, indexVarExprs))
     usedIndexVarsList <- indexVarExprs[indexVarExprs %in% all.vars(paramExpr)]    # this extracts any index variables which appear in 'paramExpr'
     vectorizedIndexExprsList <- extractAnyVectorizedIndexExprs(paramExpr)    # creates a list of any vectorized (:) indexing expressions appearing in 'paramExpr'
     neededIndexExprsList <- c(usedIndexVarsList, vectorizedIndexExprsList)
@@ -1165,6 +1191,15 @@ addNecessaryIndexingFromArgumentNumbers <- function(newNodeNameExpr, paramExpr, 
     newNodeNameExprIndexed[3:(2+length(neededIndexExprsList))] <- neededIndexExprsList
     return(newNodeNameExprIndexed)
 }
+addNecessaryIndexingOther <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
+    paramExprCallName <- as.character(paramExpr[[1]])
+    neededIndexExprsList <- liftedCallsGetIndexingOther[[paramExprCallName]](as.list(paramExpr[-1]))
+    newNodeNameExprIndexed <- substitute(NAME[], list(NAME = newNodeNameExpr))
+    newNodeNameExprIndexed[3:(2+length(neededIndexExprsList))] <- neededIndexExprsList
+    return(newNodeNameExprIndexed)
+}
+
+
 extractAnyVectorizedIndexExprs <- function(expr) {
     if(!(':' %in% all.names(expr)))    return(list())
     if(!is.call(expr))     return(list())
@@ -1540,6 +1575,13 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     ## In the second, elements give the column index, e.g. [1 2 3; 1 2 3; 1 2 3]
     ## etc.
     arrayWithIndices <- vector('list', length = nDim)
+    if(is.null(dims))
+        stop("Something is inconsistent in the use of `", varName, "` in the model.\n",
+                    "Check for conflicting declarations.\n",
+                    "If your model has macros or if-then-else blocks\n",
+                    "you can inspect the processed model code by calling\n",
+                    "`nimbleOptions(stop_after_processing_model_code = TRUE)`\n",
+                    "before calling nimbleModel.\n", call. = FALSE)
     arrayWithIndices[[1]] <- array( rep(1:dims[1], prod(dims[-1])), dims)
     ## We could reduce memory footprint by doing all steps on each dimension before building arrayWithIndices for new dimension
     if(nDim > 1) {
@@ -2484,8 +2526,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         stop(paste0("Something is inconsistent in the model.\n",
                     "Check for conflicting declarations.\n",
                     "If your model has macros or if-then-else blocks\n",
-                    "you can inspect the processed model code by doing\n",
-                    "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
+                    "you can inspect the processed model code by calling\n",
+                    "`nimbleOptions(stop_after_processing_model_code = TRUE)`\n",
                     "before calling nimbleModel.\n"
                     ),
              call. = FALSE)
@@ -2725,6 +2767,9 @@ modelDefClass$methods(genVarInfo3 = function() {
         if(!(dimVarName %in% names(varInfo))) next
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions for variable ', dimVarName)
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
+        if(any(dimensionsList[[dimVarName]] > varInfo[[dimVarName]]$maxs))
+            messageIfVerbose("  [Warning] dimensions specified are larger than model specification\n",
+                             "            for variable `", dimVarName, "`.")
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 

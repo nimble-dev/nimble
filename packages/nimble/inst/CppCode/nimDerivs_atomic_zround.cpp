@@ -250,3 +250,33 @@ CppAD::AD<double> nimDerivs_nimRound(const CppAD::AD<double> x) {
   return out[0];
 }
 
+/**************************/
+
+double nimDerivs_nimStep_class::operator()(double x) {return nimStep(x);}
+double nimDerivs_nimStep_class::operator()(int x) {return nimStep(x);}
+CppAD::AD<double> nimDerivs_nimStep_class::operator()(const CppAD::AD<double> &x) {return nimDerivs_nimStep(x);}
+
+atomic_nimStep_class::atomic_nimStep_class(const std::string& name) : 
+  atomic_discrete_class<nimDerivs_nimStep_class>(name)
+{ }
+
+CppAD::AD<double> nimDerivs_nimStep(const CppAD::AD<double> x) {
+  atomic_nimStep_class* atomic_nimStep;
+  bool recording = CppAD::AD<double>::get_tape_handle_nimble() != nullptr;
+  if(!recording) {
+    atomic_nimStep = new atomic_nimStep_class("atomic_nimStep");
+  } else {
+    atomic_nimStep = track_atomic_nimStep(CppAD::AD<double>::get_tape_handle_nimble()->nimble_CppAD_tape_mgr_ptr(),
+					  CppAD::local::atomic_index_info_vec_manager_nimble<double>::manage() );
+  }
+  CppAD::vector< CppAD::AD<double> > in(1);
+  in[0] = x;
+  CppAD::vector< CppAD::AD<double> > out(1);
+  (*atomic_nimStep)(in, out);
+  if(!recording) {
+    delete atomic_nimStep;
+  }
+  return out[0];
+}
+
+

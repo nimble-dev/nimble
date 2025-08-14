@@ -383,7 +383,29 @@ test_that("test of using dimensions of inits when dimension information not avai
     expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3))), info = "expected error because dimension of mu is unknown")
     m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:5))
     expect_equal(m$modelDef$dimensionsList$mu, 5, info = "dimension for mu not equal to that given in inits")
-    expect_message(m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:8), dimensions = list(mu = 5)), "Inconsistent dimensions between inits and dimensions")
+    expect_message(m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:8), dimensions = list(mu = 5)), "Inconsistent dimensions between `inits` and `dimensions`")
+})
+
+test_that("test of using dimensions of inits different than LHS dimensions:", {
+    code <- nimbleCode({
+        for(i in 1:4){
+            y[i] ~ dnorm(S[site[i]], 1)
+            S[i] ~ dnorm(0,1)
+        }
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = rnorm(4)), inits=list(site=rep(1,4), S=rnorm(2))),
+                 "dimensions specified are smaller")
+    
+    code <- nimbleCode({
+        for(i in 1:4){
+            y[i] ~ dnorm(S[site[i]], 1)
+            S[i] ~ dnorm(0,1)
+        }
+    })
+    expect_message(m <- nimbleModel(code, data = list(y = rnorm(4)), inits=list(site=rep(1,4), S=rnorm(10))),
+                   "dimensions specified are larger than model specification")
+    cm <- compileNimble(m)
+    expect_identical(m$S, cm$S)
 })
 
 test_that("test of using dimensions of data when dimension information not available:", {
@@ -945,7 +967,8 @@ test_that("bad size or dimension of initial values", {
 
     ## For better or worse, length of 5 gets baked in based on inits.
     ## TODO: do we want to reconsider whether this should error out?
-    m <- nimbleModel(code, inits = list(z = rnorm(5)))
+    expect_message(m <- nimbleModel(code, inits = list(z = rnorm(5))),
+                   "dimensions specified are larger than model specification")
     cm <- compileNimble(m)
     expect_identical(m$z, cm$z)
 
@@ -958,8 +981,8 @@ test_that("bad size or dimension of initial values", {
     ### matrix
 
     ## For better or worse, 4x2 gets baked in based on inits.
-    ## TODO: do we want to reconsider whether this should error out?
-    m <- nimbleModel(code, inits = list(b = matrix(rnorm(8),4,2)))
+    expect_message(m <- nimbleModel(code, inits = list(b = matrix(rnorm(8),4,2))),
+                   "dimensions specified are larger than model specification")
     cm <- compileNimble(m)
     expect_identical(m$b, cm$b)
 
@@ -1024,6 +1047,14 @@ test_that("Warning printed when indexing info in user environment.", {
     temporarilyAssignInGlobalEnv(N)
     expect_message(m <- nimbleModel(code, constants = list(foo=3)),
                    "Information has been found in the user's environment")
+})
+
+test_that("Informative error when using parentheses with model indexing.", {
+    code <- nimbleCode({
+        y[1,(1:2)] ~ ddirch(alpha[1:2])
+    })
+    m <- nimbleModel(code)
+    expect_error(cm <- compileNimble(m), "detected unexpected use of `\\(` in model code")
 })
 
 

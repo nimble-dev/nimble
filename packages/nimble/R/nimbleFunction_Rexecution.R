@@ -1497,15 +1497,15 @@ nimOptimDefaultControl <- function() {
   control <- optimControlNimbleList$new()
   control$trace <- 0
   control$fnscale <- 1
-  control$parscale <- NA # Must be filled in to length of par
-  control$ndeps <- NA    # Ditto
-  control$maxit <- NA  ## The default value depends on method.
+  control$parscale <- as.numeric(NA) # Must be filled in to length of par
+  control$ndeps <- as.numeric(NA)    # Ditto
+  control$maxit <- as.integer(NA)  ## The default value depends on method.
   control$abstol = -Inf
   control$reltol <- sqrt(.Machine$double.eps)
   control$alpha <- 1.0
   control$beta <- 0.5
   control$gamma <- 2.0
-  control$REPORT <- NA # Method dependent and not used in compiled version
+  control$REPORT <- as.integer(NA) # Method dependent and not used in compiled version
   control$type <- 1
   control$lmm <- 5
   control$factr <- 1e7

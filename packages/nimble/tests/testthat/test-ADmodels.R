@@ -5,9 +5,9 @@ nimbleOptions(enableDerivs = TRUE)
 nimbleOptions(buildModelDerivs = TRUE)
 
 nimbleOptions(useADcholAtomic = TRUE)
-nimbleOptions(useADsolveAtomic  = TRUE)                              
-nimbleOptions(useADmatMultAtomic = TRUE)                             
-nimbleOptions(useADmatInverseAtomic  = TRUE)                       
+nimbleOptions(useADsolveAtomic  = TRUE)
+nimbleOptions(useADmatMultAtomic = TRUE)
+nimbleOptions(useADmatInverseAtomic  = TRUE)
 
 relTol <- eval(formals(test_ADModelCalculate)$relTol)
 relTol[3] <- 1e-6
@@ -58,6 +58,8 @@ test_that('AD support is correctly determined for distributions', {
     c ~ userObj1$dNO()
     d ~ userObj1$dYES()
   })
+  temporarilyAssignInGlobalEnv(userObj1)
+
   m <- nimbleModel(mc)
   expect_false(m$modelDef$checkADsupportForDistribution("duserNO"))
   expect_true(m$modelDef$checkADsupportForDistribution("duserYES"))
@@ -102,7 +104,7 @@ test_that('pow and pow_int work', {  ## 28 sec.
   expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian)
   expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = 1e-4)
 
-  
+
   mc <- nimbleCode({
     d ~ dnorm(0, sd = 10)
     trt <- -1
@@ -153,7 +155,7 @@ test_that('makeModelDerivsInfo works correctly', {
                          inits = list(mu = rnorm(n), sigma2 = 2.1, tau = 1.7, mu0 = 0.8))
 
     ## Various wrt and calcNodes cases; not exhaustive, but hopefully capturing most possibilities
-    
+
     ## distinct wrt and calcNodes: updateNodes should have 'mu' and determ parents not in calcNodes
     result <- makeModelDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'tau'), calcNodes = c('mu','y'))
     expect_identical(result$updateNodes, c("lifted_sqrt_oPsigma2_cP", "lifted_d1_over_sqrt_oPtau_cP",
@@ -266,7 +268,7 @@ test_that('makeModelDerivsInfo works correctly', {
     result <- makeModelDerivsInfo(model = model, wrtNodes = c('sigma2', 'mu0', 'mu'), calcNodes = c('sigma2', 'mu0', 'mu'))
     expect_identical(result$updateNodes, c(lftChElems))
     expect_identical(result$constantNodes, character(0))
-   
+
 })
 
 ## basic model, with lifted nodes
@@ -278,7 +280,7 @@ code <- nimbleCode({
         tau0 ~ dgamma(1.5, 2.5)
         tau ~ dgamma(1.2, 2.3)
         for(j in 1:3) {
-            for(i in 1:2) 
+            for(i in 1:2)
                 a[j, i] ~ dnorm(mu[j], var = tau)
             mu[j] ~ dnorm(mu0, var = tau0)
         }
@@ -293,7 +295,7 @@ test_ADModelCalculate(model, relTol = relTolTmp, checkCompiledValuesIdentical = 
                       verbose = verbose, name = 'basic model, lifted nodes')
 
 ## basic state space model
-set.seed(1) 
+set.seed(1)
 code <- nimbleCode({
     x0 ~ dnorm(0,1)
     x[1] ~ dnorm(x0, 1)
@@ -313,7 +315,7 @@ relTolTmp[2] <- 1e-7
 relTolTmp[3] <- 1e-4
 relTolTmp[4] <- 1e-2
 ## 204 sec.
-test_ADModelCalculate(model, relTol = relTolTmp, useFasterRderivs = TRUE, verbose = verbose, name = 'basic state space') 
+test_ADModelCalculate(model, relTol = relTolTmp, useFasterRderivs = TRUE, verbose = verbose, name = 'basic state space')
 
 ## basic tricky indexing
 set.seed(1)
@@ -328,7 +330,7 @@ model <- nimbleModel(code, dimensions = list(x = 2, y = 2, z = 3), inits = list(
 relTolTmp <- relTol
 relTolTmp[4] <- 1e-3
 ### 185 sec.
-test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'basic tricky indexing', 
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'basic tricky indexing',
                       newUpdateNodes = list(covMat = matrix(c(0.7, .25, .25, .7), 2)))
 
 
@@ -343,7 +345,7 @@ code <- nimbleCode({
     sigma ~ dinvgamma(shape = a, rate = b)
     a ~ dexp(scale = 1.5)
     b ~ dexp(2.1)
-    mu0 ~ dnorm(0, .00001)  # dflat()  # dflat not handled 
+    mu0 ~ dnorm(0, .00001)  # dflat()  # dflat not handled
 })
 n <- 10
 log_mu_init <- rnorm(1)
@@ -364,7 +366,7 @@ test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, name = 'stoc
 
 
 
-## complicated indexing 
+## complicated indexing
 set.seed(1)
 code <- nimbleCode({
     x[2:4,3:5] <- S[1:3,1:3]
@@ -454,7 +456,7 @@ code <- nimbleCode({
     rho ~ dgamma(2, 3)
 })
 
-set.seed(1)                               
+set.seed(1)
 n <- 5
 locs <- runif(n)
 dd <- fields::rdist(locs)
@@ -475,8 +477,8 @@ relTolTmp[5] <- 1e-13
 
 ## 350 sec.
 test_ADModelCalculate(model, useParamTransform = TRUE, useFasterRderivs = TRUE,
-                      newUpdateNodes = list(dist = newDist, pr = newPr), checkCompiledValuesIdentical = FALSE, 
-                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose, 
+                      newUpdateNodes = list(dist = newDist, pr = newPr), checkCompiledValuesIdentical = FALSE,
+                      relTol = relTolTmp, absTolThreshold = 1e-12, verbose = verbose,
                       name = 'dnorm with user-defined fxn for covariance with loops')
 
 ## other dmnorm parameterizations
@@ -542,7 +544,7 @@ rGPdist <- nimbleFunction(
 assign('dGPdist', dGPdist, envir = .GlobalEnv)
 assign('rGPdist', rGPdist, envir = .GlobalEnv)
 
-code <- nimbleCode({ 
+code <- nimbleCode({
     y[1:n] ~ dGPdist(dist[1:n, 1:n], rho)
     rho ~ dgamma(2, 3)
 })
@@ -636,11 +638,11 @@ test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose 
 set.seed(1)
 code <- nimbleCode({
     a ~ dgamma(1.1, 0.8)
-    for(i in 1:4) 
+    for(i in 1:4)
         b[i] ~ dnorm(z[i], var = a)
     z[1] ~ dnorm(0, 1)
     z[2] ~ dnorm(0, 1)
-    z[3:4] ~ dmnorm(mu0[1:2], pr[1:2,1:2])        
+    z[3:4] ~ dmnorm(mu0[1:2], pr[1:2,1:2])
 })
 model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = runif(4), pr = diag(2), mu0 = rep(0, 2)))
 ## calcNodes excludes det intermediates
@@ -720,7 +722,7 @@ relTolTmp[5] <- 1e-9
 ## 335 sec.
 test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNodes = list(p = newP), newConstantNodes = list(y = newY),
                       checkDoubleUncHessian = FALSE, relTol = relTolTmp, absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,
-                      useFasterRderivs = TRUE, verbose = verbose, name = 'Dirichlet paramTransform') 
+                      useFasterRderivs = TRUE, verbose = verbose, name = 'Dirichlet paramTransform')
 
 
 ## Various likelihood-level non-differentiable constructs/distributions
@@ -754,7 +756,7 @@ model <- nimbleModel(code, data = list(y = 1.5),
                      inits = list(mu = rnorm(1)))
 relTolTmp <- relTol
 
-test_ADModelCalculate(model, relTol = relTolTmp, 
+test_ADModelCalculate(model, relTol = relTolTmp,
                       verbose = verbose, name = 'dflat')
 
 ## dcat as likelihood
@@ -765,7 +767,7 @@ code <- nimbleCode({
     p[1:3] ~ ddirch(alpha[1:3])
 })
 
-model <- nimbleModel(code, data = list(z = 2), inits = list(alpha = 1:3, p = c(.2,.3,.5))) 
+model <- nimbleModel(code, data = list(z = 2), inits = list(alpha = 1:3, p = c(.2,.3,.5)))
 relTolTmp <- relTol
 
 relTolTmp <- relTol
@@ -793,7 +795,7 @@ code <- nimbleCode({
     p[1:3] ~ ddirch(alpha[1:3])
 })
 
-model <- nimbleModel(code, data = list(y = rnorm(5)), inits = list(z = c(1,2,2,1,3), mu = rnorm(3), alpha = 1:3, p = c(.2,.3,.5))) 
+model <- nimbleModel(code, data = list(y = rnorm(5)), inits = list(z = c(1,2,2,1,3), mu = rnorm(3), alpha = 1:3, p = c(.2,.3,.5)))
 
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
@@ -801,7 +803,7 @@ relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-3
 
 test_ADModelCalculate(model, wrt = c('mu','p'), relTol = relTolTmp, absTolThreshold = 1e-12,
-                      newUpdateNodes = list(z=c(3,3,2,1,2)), xNew = list(p = c(.35,.25,.4)), 
+                      newUpdateNodes = list(z=c(3,3,2,1,2)), xNew = list(p = c(.35,.25,.4)),
                       verbose = verbose, name = 'dcat latent, stochastic indexing',
                       checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, useParamTransform = TRUE)
 

@@ -1183,7 +1183,7 @@ void  AGHQuad_summary::copyFromRobject ( SEXP Robject )  {
   // copyFromRobject scheme)?
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("vcov");
   COPY_LOGICAL_SCALAR_FROM_R_OBJECT("originalScale");
-  UNPROTECT(4);
+  UNPROTECT(5);
 }
 AGHQuad_summary::AGHQuad_summary (  )  {
   RCopiedFlag = false;

@@ -253,7 +253,6 @@ test_AD2_oneCall <- function(Robj, Cobj,
     wrt_all <- 1:len_record
   else
     wrt_all <- wrt
-  
   do_one_set("run", name = "run",
              doR = TRUE, doC = TRUE, tapingLevel = 0, fixedOrder = 0)
   do_one_set("derivsRun", order = order, metaLevel = 0, name = "derivsRun",
@@ -301,7 +300,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                                    abs_threshold = RRabsThresh,
                                                    info = paste0("(RR order ", o,")"))
                     pass <- pass && localPass
-                    if(verbose && !pass) {
+                    if(verbose && !localPass) {
                         cat(paste('Some R-to-R derivatives do not match for order', o, '.\n'))
                     }
                 }
@@ -310,7 +309,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                                    abs_threshold = RCabsThresh,
                                                 info = paste0("(RC order ", o,")"))
                     pass <- pass && localPass
-                    if(verbose && !pass) {
+                    if(verbose && !localPass) {
                         cat(paste('Some C-to-R derivatives do not match for order', o, '.\n'))
                         print(RansSet[[1]])
                         print(CansSet)
@@ -321,7 +320,7 @@ test_AD2_oneCall <- function(Robj, Cobj,
                                                    abs_threshold = CCabsThresh,
                                                 info = paste0("(CC order ", o, ")"))
                     pass <- pass && localPass
-                    if(verbose && !pass) {
+                    if(verbose && !localPass) {
                         cat(paste('Some C-to-C derivatives do not match for order', o, '.\n'))
                         print(CansSet[[1]])
                         print(CansSet[-1])
@@ -1788,7 +1787,7 @@ calcNodesForDerivs <- nimbleFunction(
 test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = NULL, calcNodes = NULL, wrt = NULL,
                                   newUpdateNodes = NULL, newConstantNodes = NULL,
                                   relTol = c(1e-15, 1e-8, 1e-3, 1e-3, 1e-14), absTolThreshold = 0, useFasterRderivs = FALSE, useParamTransform = FALSE,
-                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
+                                  checkDoubleTape = TRUE, checkCompiledValuesIdentical = TRUE, check01vs012jacIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                   doAllUncHessian = TRUE, seed = 1, verbose = FALSE, debug = FALSE){
     if(!is.null(seed))
         set.seed(seed)
@@ -1830,6 +1829,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                        verbose = verbose, debug = debug))
         ## max. lik. use case
@@ -1866,6 +1866,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
@@ -1910,6 +1911,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
@@ -1957,6 +1959,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
 
@@ -1993,6 +1996,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
     } else {
@@ -2023,6 +2027,7 @@ test_ADModelCalculate <- function(model, name = 'unknown', x = 'given', xNew = N
                                            useFasterRderivs =  useFasterRderivs, useParamTransform = useParamTransform,
                                            checkDoubleTape = checkDoubleTape,
                                            checkCompiledValuesIdentical = checkCompiledValuesIdentical,
+                                           check01vs012jacIdentical = check01vs012jacIdentical,
                                            checkDoubleUncHessian = checkDoubleUncHessian, doAllUncHessian = doAllUncHessian,
                                            verbose = verbose, debug = debug))
     }
@@ -2036,7 +2041,7 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                                            newUpdateNodes = NULL, newConstantNodes = NULL, 
                                            relTol = c(1e-15, 1e-8, 1e-3, 1e-3, 1e-14), absTolThreshold = 0, useFasterRderivs = FALSE,
                                            useParamTransform = FALSE, checkDoubleTape = TRUE, 
-                                           checkCompiledValuesIdentical = TRUE, checkDoubleUncHessian = TRUE,
+                                           checkCompiledValuesIdentical = TRUE, check01vs012jacIdentical = TRUE, checkDoubleUncHessian = TRUE,
                                            doAllUncHessian = TRUE,
                                            verbose = FALSE, debug = FALSE){
 
@@ -2045,7 +2050,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
     on.exit(local_edition(saved_edition))
     
     test_that(paste0("Derivatives of calculate for model ", name), {
-        if(exists('paciorek') && paciorek == 0) browser()
         if(is.null(calcNodes))
             calcNodes <- model$getNodeNames()
 
@@ -2144,7 +2148,6 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
 
         for(case in 1:2) {
             for(idx in seq_along(xList)) {
-                if(exists('paciorek') && paciorek == idx) browser()
                 if(verbose) {
                     if(case == 1) {
                         if(idx == 1) {
@@ -2544,8 +2547,11 @@ test_ADModelCalculate_internal <- function(model, name = 'unknown', xOrig = NULL
                 }
                 
                 ## explicit comparison of first derivs;
-                ## both of these are reverse mode because 2nd order reverse also invokes first order reverse
-                expect_identical(cOutput01$jacobian, cOutput012$jacobian)
+                ## Originally, both of these are reverse mode because 2nd order reverse also invokes first order reverse.
+                ## As of version 1.4.0, these are not identical for at least test-ADdmnorm test.
+                if(check01vs012jacIdentical) {
+                    expect_identical(cOutput01$jacobian, cOutput012$jacobian)
+                } else expect_equal(cOutput01$jacobian, cOutput012$jacobian)
                 
                 expect_identical(cOutput12$jacobian, cOutput012$jacobian)
 

@@ -141,7 +141,7 @@ to try on our model, let's use NIMBLE's default MCMC. Note that conjugate relati
 %  exponential yet.] -->
 <!---  footnote is true but not relevant as there is not a conj relationship for alpha in a gamma-distributed dependency -->
 
-```{r, mcmcPump, fig.height=2.5}
+```{r, mcmcPump, fig.height=2}
 ``` 
 
 Notice the posterior correlation between `alpha` and `beta`.
@@ -154,7 +154,7 @@ Let's add an adaptive
 block sampler on `alpha` and `beta` jointly and see if that
 improves the mixing. 
 
-```{r, mcmcPump2, fig.height=2.5}
+```{r, mcmcPump2, fig.height=2}
 ``` 
 
 We can see that the block sampler has decreased the 
@@ -165,6 +165,8 @@ the point of this example.
 
 Once you learn the MCMC system, you can write your own samplers and
 include them.  The entire system is written in nimbleFunctions.
+
+In addition to customizing samplers, you can also choose additional quantities (e.g., model log-probabilities) to generate in the MCMC output, using the MCMC derived quantities functionality (Section \@ref(sec:derived-quantities), introduced in NIMBLE version 1.4.0.
 
 ## Running MCEM {#sec:running-mcem}
 

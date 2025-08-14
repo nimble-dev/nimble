@@ -77,6 +77,7 @@ nimblePreevaluationFunctionNames <- c('+',
                                       'asCol',
                                       'logdet',    
                                       'chol',
+                                      'PDinverse_logdet',
                                       'inverse',
                                       'forwardsolve',
                                       'backsolve',
@@ -788,9 +789,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex)
-                stop('Error: Variable',
+                stop('Error: Variable ',
                      safeDeparse(code[[2]]),
-                     'on outside of [ contains a BUGS code index.')
+                     ' on outside of `[` in ', safeDeparse(code), ' contains a model code index.')
             
             if(variable$replaceable) {
                 ## a case like x[ block[i] ], dealing with the

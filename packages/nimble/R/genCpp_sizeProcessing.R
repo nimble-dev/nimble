@@ -6,6 +6,7 @@ sizeProc_storage_mode <- function(x) {
 }
     
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
+                              'nimArr_rmnorm_inv_ld',
                               'nimArr_rmvt_chol',
                               'nimArr_rlkj_corr_cholesky',
                               'nimArr_rwish_chol',
@@ -101,7 +102,8 @@ sizeCalls <- c(
          Rf_eval = 'sizeReval',
          nimbleConvert = 'sizeNimbleConvert',
          nimbleUnconvert = 'sizeNimbleUnconvert',
-         asReturnSymbol = 'sizeAsReturnSymbol'),
+         asReturnSymbol = 'sizeAsReturnSymbol',
+         PDinverse_logdet = 'sizePDinverse_logdet'),
     makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
     makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
     makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
@@ -119,6 +121,7 @@ sizeCalls <- c(
     rexp = 'sizeRecyclingRuleRfunction',
     makeCallList(c('nimAnyNA','nimAnyNaN'), 'sizeScalarRecurse'),
     makeCallList(c('nimArr_dmnorm_chol',
+                   'nimArr_dmnorm_inv_ld',
                    'nimArr_dmvt_chol',
                    'nimArr_dlkj_corr_cholesky',
                    'nimArr_dwish_chol',
@@ -130,6 +133,7 @@ sizeCalls <- c(
                    'nimArr_dinterval',
                    'nimArr_ddirch'), 'sizeScalarRecurseAllowMaps'),
     makeCallList(c('nimArr_rmnorm_chol',
+                   'nimArr_rmnorm_inv_ld',
                    'nimArr_rmvt_chol',
                    'nimArr_rlkj_corr_cholesky',
                    'nimArr_rwish_chol',
@@ -577,6 +581,9 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
     ## overall strategy is to separate runs of scaalrs and non-scalars
     ## also in C++ we don't take arbitrary arguments.  Instead we chain together calls in groups of 4
     ##     e.g. c(a1, a2, a3, a4, a5) will become c( c(a1, a2, a3, a4), a5)
+
+    if(!length(code$args))
+        stop("`c()` must have at least one argument")
     
     ## first puzzle is with nimC(scalar1, scalar2, vector1, scalar3)
     ## we need to extract the runs of scalars like (scalar1, scalar2), so they can be packed up in an object together.
@@ -1276,11 +1283,13 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   
   ## asserts <- sizeNimbleListReturningFunction(code, symTab, typeEnv)
   ## lift wrt if needed.  I'm not sure why sizeNimbleListReturningFunction doesn't handle lifting
-  if(inherits(code$args[['wrt']], 'exprClass')) {
-    if(!code$args[['wrt']]$isName) {
-      iWrt <- which(names(code$args) == 'wrt')
-      if(length(iWrt) != 1) stop("problem working on wrt argument to nimDerivs")
-      asserts <- c(asserts, sizeInsertIntermediate(code, iWrt, symTab, typeEnv) )
+  for(liftArgName in c("wrt", "outInds", "inDir", "outDir")) {
+    if(inherits(code$args[[liftArgName]], 'exprClass')) {
+      if(!code$args[[liftArgName]]$isName) {
+        iLift <- which(names(code$args) == liftArgName)
+        if(length(iLift) != 1) stop("problem working on ", liftArgName, " argument to nimDerivs")
+        asserts <- c(asserts, sizeInsertIntermediate(code, iLift, symTab, typeEnv))
+      }
     }
   }
   if(inherits(code$args[['order']], 'exprClass')) {
@@ -1299,16 +1308,23 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
       ## asserts <- c(asserts, sizeInsertIntermediate(code, iOrder, symTab, typeEnv) )
     }
   }
+  for(makeVecName in c('wrt', 'order', 'outInds', 'inDir', 'outDir')) {
+      iMakeVec <- which(names(code$args) == makeVecName)
+      if(length(iMakeVec) != 1) stop("problem working on ", makeVecName, " argument to nimDerivs")
+      insertExprClassLayer(code, iMakeVec, 'make_vector_if_necessary',
+                                                    type = 'double',
+                                                    nDim = 1,
+                                                    sizeExprs = list())
+  }
+#   insertExprClassLayer(code, which(names(code$args)=='wrt'), 'make_vector_if_necessary',
+#                        type = 'double',
+#                        nDim = 1,
+#                        sizeExprs = list())
   
-  insertExprClassLayer(code, which(names(code$args)=='wrt'), 'make_vector_if_necessary',
-                       type = 'double',
-                       nDim = 1,
-                       sizeExprs = list())
-  
-  a1 <- insertExprClassLayer(code, which(names(code$args)=='order'), 'make_vector_if_necessary',
-                             type = 'double',
-                             nDim = 1,
-                             sizeExprs = list())
+#   a1 <- insertExprClassLayer(code, which(names(code$args)=='order'), 'make_vector_if_necessary',
+#                              type = 'double',
+#                              nDim = 1,
+#                              sizeExprs = list())
   newADinfoName <- ADinfoLabel()
 ##  symTab$addSymbol(symbolADinfo$new(name = newADinfoName))
   if(!is.list(code$aux))
@@ -2719,6 +2735,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     ## This is deprecated:
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
 
+    minuses <- sapply(code$args, function(x) inherits(x, 'exprClass') &&
+                                             exists('name', x) && x$name == "-")
+    if(any(minuses)) 
+        if(any(sapply(code$args[minuses], function(x) length(x$args) == 1)))
+            stop("use of 'minus' indexing found in `", safeDeparse(code$expr), "` cannot be compiled")
+    
     ## Iterate over arguments,  lifting any logical indices into which()
     ## e.g. X[i, bool] becomes X[i, Interm1], with Interm1 <- which(bool) as an assert.
     for(i in seq_along(code$args)) {
@@ -2801,8 +2823,11 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             }
             next
         } else {        ## not dropping a dimension, so the index is non-scalar
-            if(isExprClass) ## If it is an expression that is not `:` or blank, then a simple block is not allowed
-                if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
+            if(isExprClass) { ## If it is an expression that is not `:` or blank, then a simple block is not allowed
+                if(code$args[[i+1]]$name == '(')
+                    stop("detected unexpected use of `(` in model code in `", safeDeparse(code$expr), "`. Parentheses cannot be used in indexing in NIMBLE models")
+                    if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
+            }
         }
         needMap <- TRUE ## If the "next" in if(dropThisDim) {} is always hit, then needMap will never be set to TRUE
 
@@ -3271,6 +3296,65 @@ sizeMatrixSquareReduction <- function(code, symTab, typeEnv) {
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
     }
     if(length(asserts) == 0) NULL else asserts
+}
+
+sizePDinverse_logdet <- function(code, symTab, typeEnv) {
+   # Modeled after a combination of generalFunSize and sizeUnaryCwiseSquare
+   if(length(code$args) != 1) {
+        stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument length != 1.'), call. = FALSE)
+    }
+    a1 <- code$args[[1]]
+    if(!inherits(a1, 'exprClass')) 
+      stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument that is not an expression.'), call. = FALSE)
+    ## Ensure that simple maps being passed will be passed without extra
+    ## copy that would occur from lifting an Eigen expression.
+    ## (Relevant primarily for first argument, but no harm in applying to second.)
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(code$args[[i]]$name == "[") {
+                if(inherits(code$args[[i]]$args[[1]],
+                            'exprClass')) { ## must be true, but I'm being defensive
+                    if(code$args[[i]]$args[[1]]$isName) {
+                        insertExprClassLayer(code, i, 'passByMap')
+                    }
+                }
+            }
+        }
+    }
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    ## lift any argument that is an expression
+    for(i in seq_along(code$args)) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                if(!code$args[[i]]$isName) {
+                    forceType <- NULL
+                    if(i==2) forceType <- 'double' ## second argument is always double
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv, forceType = forceType) )
+                }
+            }       
+    }
+    a1 <- code$args[[1]]
+    if(a1$nDim != 2) 
+      stop(exprClassProcessingErrorMsg(code, 'sizePDinverse_logdet called with argument that is not a matrix.'), call. = FALSE)
+    a1SizeExprs <- a1$sizeExprs
+    if(is.integer(a1SizeExprs[[1]]) && is.integer(a1SizeExprs[[2]])) {
+        newSizeExpr <- as.integer(a1SizeExprs[[1]] * a1SizeExprs[[2]] + 1)
+    } else {
+        newSizeExpr <- substitute(((A) * (B)) + 1, 
+                                  list(A = a1SizeExprs[[1]], B = a1SizeExprs[[2]]))
+    }
+    code$sizeExprs <- list(newSizeExpr)
+    code$nDim <- 1
+    code$toEigenize <- 'no'
+    code$type <- 'double'
+
+    ## Self-lift if this expression is amid a larger expression.
+    if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    } else
+      typeEnv$.ensureNimbleBlocks <- TRUE
+
+
+    invisible(asserts)
 }
 
 sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
@@ -3767,6 +3851,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
 
 mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), prec_param(scalar)
                                  1, 'double'), ## 1 = argument from which to take answer size, double = answer type
+                             nimArr_rmnorm_inv_ld = list(c(1, 2, 1, 0),
+                                 1, 'double'),
                              nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
                                                        1, 'double'), ## 1 = argument from which to take answer size, double = answer type
                              nimArr_rlkj_corr_cholesky = list(c(0, 0), ## eta, p

@@ -1727,6 +1727,54 @@ test_that("check use of epsilon parameter in getSamplesDPmeasure", {
 })
 
 
+test_that("getSamplesDPmeasure handles change in size from tildeVars to use with data", {
+    code_bnp_mvn_reg = nimbleCode({
+        alpha  ~ dgamma(alpha_shape, alpha_rate)
+        z[1:n] ~ dCRP(alpha, size = n)
+        for ( k in 1:Kmax ) {
+            beta[1:pJ, k]      ~ dmnorm(beta_mean[1:pJ], cov = beta_cov[1:pJ, 1:pJ])
+            Sigma[1:J, 1:J, k] ~ dinvwish(S = Sigma_scale[1:J, 1:J], df = Sigma_df)
+        }
+        for ( i in 1:n ) {
+            mu[i, 1:J] <- X[id_start[i]:id_end[i], 1:pJ] %*% beta[1:pJ, z[i]]
+            y[id_start[i]:id_end[i]] ~ dmnorm(mu[i, 1:J], cov = Sigma[1:J, 1:J, z[i]])
+        }
+    })
+    pJ <- 7
+    J <- 3
+    n <- 20
+    Kmax <- 12
+
+    X <- matrix(rnorm(n*J*pJ), nrow = n*J)
+    id_start    = integer(n)
+    id_end      = integer(n)
+    id_start[1] = 1
+    id_end[1]   = J
+    for ( i in 2:n ) {
+        id_end[i]   = id_end[i-1] + J
+        id_start[i] = id_end[i] - (J-1)
+    }
+    constants <- list(pJ = pJ, J = J, n = n, Kmax = Kmax, id_start = id_start, id_end = id_end)
+   
+    data = list(y = rnorm(n*J), X = X)
+    Sigma <- array(0, c(J,J,Kmax))
+    for(i in 1:Kmax) Sigma[,,i] <- diag(J)
+    inits <- list(alpha = 2, z = rep(1, n), beta = matrix(rnorm(pJ*Kmax), nrow = pJ),
+                  Sigma = Sigma, beta_mean = rep(0, pJ), beta_cov = diag(pJ),
+                  Sigma_scale = diag(J), Sigma_df = 5, alpha_shape = 8, alpha_rate = 2)
+
+    model    <- nimbleModel(code_bnp_mvn_reg, constants, data, inits)
+    mcmcConf <- configureMCMC(model, monitors = c('alpha', 'beta', 'Sigma', 'z') )
+    cmodel   <- compileNimble(model)
+    mcmc     <- buildMCMC(mcmcConf)
+    cmcmc    <- compileNimble(mcmc, project = cmodel)
+    fit <- runMCMC(cmcmc, niter = 10, nburnin = 0)
+    fit_stick <- getSamplesDPmeasure(cmcmc)
+    expect_identical(length(fit_stick), 10L)
+    expect_identical(dim(fit_stick[[1]])[2], 1L+7L+9L)
+})
+
+
 
 
 

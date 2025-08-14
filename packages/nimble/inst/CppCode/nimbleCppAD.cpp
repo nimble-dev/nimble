@@ -838,6 +838,13 @@ NimArr<1, double> make_vector_if_necessary(NimArr<1, int> a){
       return(intArray);
 }
 
+NimArr<1, CppAD::AD<double> > make_vector_if_necessary(CppAD::AD<double> x) {
+  NimArr<1, CppAD::AD<double> > NimArr_x;
+  NimArr_x.setSize(1, 0, 0);
+  NimArr_x[0] = x;
+  return NimArr_x;
+}
+
 void setValues_AD_AD_taping(NimArr<1, CppAD::AD<double> > &v,
 			    ManyVariablesMapAccessor &MVA_AD,
 			    ManyVariablesMapAccessor &MVA_orig,
@@ -1052,6 +1059,8 @@ void nimble_CppAD_tape_mgr::reset() {
   ftrunc_index = 0;
   nimRound_exists = false;
   nimRound_index = 0;
+  nimStep_exists = false;
+  nimStep_index = 0;
   log_pow_int_exists = false;
   log_pow_int_index = 0;
   zb_over_a_exists = false;
@@ -1110,6 +1119,8 @@ nimble_CppAD_tape_mgr::nimble_CppAD_tape_mgr() :
   ftrunc_exists(false),
   nimRound_index(0),
   nimRound_exists(false),
+  nimStep_index(0),
+  nimStep_exists(false),
   log_pow_int_index(0),
   log_pow_int_exists(false),
   zb_over_a_index(0),

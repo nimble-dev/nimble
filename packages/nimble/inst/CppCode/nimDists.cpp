@@ -295,25 +295,137 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
   NimArr<2, double> cholCopy;
   double *ansPtr, *meanPtr, *cholPtr;
 
-  int n = mean.size();
+  int n_mean = mean.size();
+  int n_values = chol.dimSize(0);
   if(!ans.isMap()) {
-    ans.setSize(n);
+    ans.setSize(n_values);
   } else {
-    if(ans.size() != n) {
-      _nimble_global_output<<"Error in nimArr_rmnorm_chol: answer size ("<< ans.size() <<") does not match mean size ("<<n<<").\n";
+    if(ans.size() != n_values) {
+      _nimble_global_output<<"Error in nimArr_rmnorm_chol: answer size ("<< ans.size() <<") does not match mean size ("<<n_values<<").\n";
       nimble_print_to_R(_nimble_global_output);
     }
   }
+
+  // recycling rule for the mean.
+  if(n_mean < n_values) {
+    meanPtr = new double[n_values];
+    int i_mean = 0;
+    for(int i = 0; i < n_values; i++) {
+      meanPtr[i] = mean[i_mean++];
+      if(i_mean == n_mean) i_mean = 0;
+    }
+  } else meanPtr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
+
   ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
-  meanPtr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
   cholPtr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
-  rmnorm_chol(ansPtr, meanPtr, cholPtr, n, prec_param);
+  rmnorm_chol(ansPtr, meanPtr, cholPtr, n_values, prec_param);
 
   if(ansPtr != ans.getPtr()) {ans = ansCopy;} 
+  if(n_mean < n_values) 
+    delete [] meanPtr;
   // if(ans.isMap()) {
   //   ans = ansCopy;
   // }
 }
+
+// Drafted by GitHub copilot, modified by NIMBLE team.
+// Compute a vector of matrix inverse elements and log determinant of covariance matrix.
+// The log determinant is computed based on the Cholesky decomposition.
+// The output is in the format needed for dmnorm_inv_ld function.
+NimArr<1, double> PDinverse_logdet(NimArr<2, double> &mat) {
+    int n = mat.dimSize(0);
+    NimArr<1, double> out;
+    out.setSize(n * n + 1);
+
+    NimArr<2, double> matCopy;
+    double* matPtr = nimArrCopyIfNeeded<2, double>(mat, matCopy).getPtr();
+
+    // Use the internal function for the actual computation
+    PDinverse_logdet_internal(matPtr, out.getPtr(), n);
+
+    return out;
+}
+
+// drafted by GitHub copilot (begin)
+double nimArr_dmnorm_inv_ld(NimArr<1, double> &x, NimArr<1, double> &mean,
+                              NimArr<2, double> &mat,
+                              NimArr<1, double> &inv_ld, int prec_param,
+                              int give_log, int overwrite_inputs) {
+    double *xptr, *meanptr, *matptr, *inv_ld_ptr;
+    NimArr<1, double> xCopy, meanCopy, inv_ldCopy;
+    NimArr<2, double> matCopy;
+    xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
+    int n = x.size();
+    meanptr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
+    if(mean.size() != n) {
+        _nimble_global_output<<"Error in nimArr_dmnorm_inv_ld: mean and x are different sizes.\n";
+        nimble_print_to_R(_nimble_global_output);
+    }
+    inv_ld_ptr = nimArrCopyIfNeeded<1, double>(inv_ld, inv_ldCopy).getPtr();
+    if(inv_ld.size() != n*n + 1) {
+        _nimble_global_output<<"Error in nimArr_dmnorm_inv_ld: inv_ld size ("<<inv_ld.size()<<") does not match n*n+1 ("<<(n*n+1)<<").\n";
+        nimble_print_to_R(_nimble_global_output);
+    }
+    matptr = nimArrCopyIfNeeded<2, double>(mat, matCopy).getPtr();
+    if((mat.dim()[0] != n) || (mat.dim()[1] != n)) {
+        _nimble_global_output<<"Error in nimArr_dmnorm_inv_ld: mat does not match size of x.\n";
+        nimble_print_to_R(_nimble_global_output);
+    }
+
+    double ans;
+    ans = dmnorm_inv_ld(xptr, meanptr, matptr, inv_ld_ptr, n, prec_param, give_log, overwrite_inputs);
+    return(ans);
+}
+
+void nimArr_rmnorm_inv_ld(NimArr<1, double> &ans, NimArr<1, double> &mean, 
+                            NimArr<2, double> &mat, NimArr<1, double> &inv_ld, int prec_param) {
+    NimArr<1, double> ansCopy, meanCopy, inv_ldCopy;
+    NimArr<2, double> matCopy;
+    double *ansPtr, *meanPtr, *matPtr, *inv_ldPtr;
+
+  int n_mean = mean.size();
+  int n_values = mat.dimSize(0);
+  if(!ans.isMap()) {
+      ans.setSize(n_values);
+  } else {
+      if(ans.size() != n_values) {
+          _nimble_global_output<<"Error in nimArr_rmnorm_inv_ld: answer size ("<< ans.size() <<") does not match mean size ("<<n_values<<").\n";
+          nimble_print_to_R(_nimble_global_output);
+        }
+    }
+    // Actually inv_ld is not used, so don't bother checking it,
+    //  and thus allow to not form it if not needed otherwise.
+    // if(inv_ld.size() != n*n + 1) {
+    //     _nimble_global_output<<"Error in nimArr_rmnorm_inv_ld: inv_ld size ("<<inv_ld.size()<<") does not match n*n+1 ("<<(n*n+1)<<").\n";
+    //     nimble_print_to_R(_nimble_global_output);
+    // }
+    if(mat.dim()[0] != mat.dim()[1]) {
+        _nimble_global_output<<"Error in nimArr_rmnorm_inv_ld: mat is not square.\n";
+        nimble_print_to_R(_nimble_global_output);
+    }
+    if(n_mean < n_values) {
+      meanPtr = new double[n_values];
+      int i_mean = 0;
+      for(int i = 0; i < n_values; i++) {
+        meanPtr[i] = mean[i_mean++];
+        if(i_mean == n_mean) i_mean = 0;
+      }
+    } else meanPtr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
+
+    ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
+    matPtr = nimArrCopyIfNeeded<2, double>(mat, matCopy).getPtr();
+    inv_ldPtr = nimArrCopyIfNeeded<1, double>(inv_ld, inv_ldCopy).getPtr();
+
+    rmnorm_inv_ld(ansPtr, meanPtr, matPtr, inv_ldPtr, n_values, prec_param);
+
+    if(ansPtr != ans.getPtr()) {ans = ansCopy;}
+    if(n_mean < n_values) 
+    delete [] meanPtr;
+    // if(ans.isMap()) {
+    //   ans = ansCopy;
+    // }
+}
+// drafted by GitHub copilot (end)
 
 // Begin multivariate t
 

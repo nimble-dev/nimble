@@ -196,13 +196,12 @@ nimOptimMethod("bobyqa",
         verbose = TRUE,
         verboseErrors = FALSE,
 
+        showCompilerOutput = FALSE,
+
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:
         ## buildConjugateSamplerFunctions()
-        verifyConjugatePosteriors = FALSE,
-
-        showCompilerOutput = FALSE,
-
+        MCMCverifyConjugatePosteriors = FALSE,
         MCMCprogressBar = TRUE,
         MCMCsaveHistory = FALSE,
         MCMCmultivariateNodesAsScalars = FALSE,
@@ -211,11 +210,15 @@ nimOptimMethod("bobyqa",
         MCMCorderPriorSamplesSamplersFirst = TRUE,
         MCMCorderPosteriorPredictiveSamplersLast = TRUE,
         MCMCusePredictiveDependenciesInCalculations = FALSE,
-        MCMCusePosteriorPredictiveSampler = TRUE,
+        MCMCassignSamplersToPosteriorPredictiveNodes = TRUE,  ## whether any samplers are assigned (by default) to PP nodes
+        MCMCusePosteriorPredictiveSampler = TRUE,             ## for PP nodes being sampled, use post_pred (or otherwise RW, etc)
         MCMCwarnUnsampledStochasticNodes = TRUE,
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
-        MCMCuseBarkerAsDefaultMV = FALSE, 
+        MCMCuseBarkerAsDefaultMV = FALSE,
+        MCMCreturnDerivedQuantities = TRUE,
+        
+        parameterTransformWarnUserDists = TRUE,
         useClearCompiledInADTesting = TRUE,
         unsupportedDerivativeHandling = 'error', # default is error, other options are 'warn' and 'ignore'. Handled in updateADproxyModelMethods in cppDefs_nimbleFunction.R
         errorIfMissingNFVariable = TRUE,
@@ -223,7 +226,9 @@ nimOptimMethod("bobyqa",
         useOldcWiseRule = FALSE, # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
         stripUnusedTypeDefs = TRUE,
         digits = NULL,
-        enableVirtualNodeFunctionDefs = FALSE
+        enableVirtualNodeFunctionDefs = FALSE,
+        checkDerivsArgs = TRUE,
+        useADdmnorm = TRUE
       )
 )
 
@@ -243,7 +248,7 @@ setNimbleOption <- function(name, value) {
 #' @export
 #' @return The value of the option.
 #' @examples
-#' getNimbleOption('verifyConjugatePosteriors')
+#' getNimbleOption('MCMCverifyConjugatePosteriors')
 getNimbleOption <- function(x) {
     option <- try(get(x, envir = .nimbleOptions), silent = TRUE)
     if(inherits(option, 'try-error'))
@@ -273,7 +278,7 @@ getNimbleOption <- function(x) {
 #'
 #' @examples
 #' # Set one option:
-#' nimbleOptions(verifyConjugatePosteriors = FALSE)
+#' nimbleOptions(MCMCverifyConjugatePosteriors = FALSE)
 #'
 #' # Compactly print all options:
 #' str(nimbleOptions(), max.level = 1)

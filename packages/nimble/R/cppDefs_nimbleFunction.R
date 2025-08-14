@@ -52,7 +52,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                        loaded = 'ANY',
                                        Cwritten = 'ANY',
                                        RCfunDefs = 'ANY'
-                                       
+
                                    ),
                                    methods = list(
                                        getDefs = function() {
@@ -183,7 +183,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                          pointerLine <- list()
                                          if(!(is.null(nimCompProc[['nimbleListObj']]))){
                                            flagText <- paste0('RCopiedFlag = false')
-                                           flagLine[[1]] <- substitute(FLAGTEXT, 
+                                           flagLine[[1]] <- substitute(FLAGTEXT,
                                                             list(FLAGTEXT = as.name(flagText)))
                                            pointerText <- paste0('RObjectPointer = NULL')
                                            pointerLine[[1]] <- substitute(POINTERTEXT,
@@ -214,7 +214,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           ),
                                           methods = list(
                                               getDefs = function() {
-                                                  c(callSuper(), SEXPmemberInterfaceFuns) 
+                                                  c(callSuper(), SEXPmemberInterfaceFuns)
                                               },
                                               getHincludes = function() {
                                                   c(callSuper(), unlist(lapply(SEXPmemberInterfaceFuns, function(x) x$getHincludes()), recursive = FALSE))
@@ -236,7 +236,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           inheritance <<- c(inheritance, 'nodeFun')
                                                           parentsSizeAndDims <<- environment(nfProc$nfGenerator)$parentsSizeAndDims
                                                           ADconstantsInfo <<- environment(nfProc$nfGenerator)$ADconstantsInfo
-                                                          
+
                                                       }
                                                   }
                                               },
@@ -260,7 +260,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                      )
                                                   SEXPmemberInterfaceFuns <<-
                                                       SEXPmemberInterfaceFuns[ !unlist(lapply(SEXPmemberInterfaceFuns, is.null)) ]
-                                                      
+
                                                   nimCompProc <<- nfProc
                                               },
                                               buildFunctionDefs = function() {
@@ -289,7 +289,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ##     functionDefs[[newFunName]] <<- res$fun
                                                   ##     useModelInfo$nodeFxnVector_name <- res[['nodeFxnVector_name']]
                                                   ## } else {
-                                                      ## We need a separate one for the "reconfigure" system that is non-static 
+                                                      ## We need a separate one for the "reconfigure" system that is non-static
 ##                                                      if(isTRUE(nimbleOptions('useADreconfigure'))) {
                                                   newFunName <- paste0(funName, '_AD2_')
                                                   res <- makeTypeTemplateFunction(newName = newFunName,
@@ -299,7 +299,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                   derivControl = derivControl)
                                                   functionDefs[[newFunName]] <<- res$fun
                                                   useModelInfo$nodeFxnVector_name <- res[['nodeFxnVector_name']]
-                                                  
+
 ##                                                      }
 ##                                                  }
                                                   useModelInfo
@@ -323,7 +323,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       ## Add meta-taping type template function of the new function
                                                       newMetaFunName <- paste0(funName, '_AD2__deriv_')
                                                       argTransName <- paste0(funName, '_ADargumentTransfer2__AD2_')
-                                                      
+
                                                       functionDefs[[newMetaFunName]] <<- make_deriv_function(regularFun,
                                                                                                              newMetaFunName,
                                                                                                              independentVarNames,
@@ -475,7 +475,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       add_deriv_function(funName,
                                                                          independentVarNames,
                                                                          derivControl)
-                                                      
+
                                                       funIndex + 1 ## function return value increments by one in non-meta case
                                                   } else {
                                                       funIndex ## but does not increment in meta case
@@ -531,7 +531,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   addInheritance("nimbleFunctionCppADbase")
                                                   addADinfoObjects(.self)
                                                 }
-                                                constructorCode                                                      
+                                                constructorCode
                                               },
                                               buildCmultiInterface = function(dll = NULL) {
                                                   sym <- if(!is.null(dll))
@@ -577,7 +577,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains
-                                                  
+
                                                   if(!is.null(baseClassObj)) {
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassName <- environment(baseClassObj)$name
@@ -592,9 +592,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                         updateADproxyModelMethods(.self)
                                                       }
                                                   }
-                                                  
+
                                                   addCopyFromRobject()
-                                                  
+
                                                   callSuper(where)
                                                   if(handleDerivs) {
                                                       if(!is.null(constructorCode)) { ## insert AD-related code to constructor
@@ -645,6 +645,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ## The next block of code has the initial setup for an AST processing stage
 ## to make modifications for AD based on context etc.
 modifyForAD_handlers <- c(list(
+    nimDerivs_dummy = 'modifyForAD_nimDerivs_dummy',
     `[` = 'modifyForAD_indexingBracket',
     # pow = 'modifyForAD_issuePowWarning',
     eigenBlock = 'modifyForAD_eigenBlock',
@@ -715,7 +716,7 @@ exprClasses_modifyForAD <- function(code, symTab,
                    workEnv[['nodeFxnVector_name']],
                    ", recordingInfo_.tape_id(), recordingInfo_.tape_handle());")))
                   ## ", TYPE_::get_tape_id_nimble(), TYPE_::get_tape_handle_nimble());")))
-        
+
 
             set_atomic_info_line <- RparseTree2ExprClasses(cppLiteral(
                 paste0("set_CppAD_atomic_info_for_model(",
@@ -734,7 +735,7 @@ exprClasses_modifyForAD <- function(code, symTab,
         setArg(code, 1, newExpr)
       }
     }
-  }  
+  }
   invisible(NULL)
 }
 
@@ -758,6 +759,23 @@ recurse_modifyForAD <- function(code, symTab, workEnv) {
   invisible(NULL)
 }
 
+modifyForAD_nimDerivs_dummy <- function(code, symTab, workEnv) {
+  # nimDerivs_dummy is a placeholder in the AST that does not get output in the genCpp step.
+  # In this handler, we need to look for make_vector_if_needed for numeric literals for the inDir and outDir arguments
+  # and wrap them in TYPE_.
+  for(argName in c('inDir', 'outDir')) {
+    if(!is.null(code$args[[argName]])) {
+      arg <- code$args[[argName]]
+      if(!inherits(arg, 'exprClass')) next
+      if(arg$isCall && arg$name == 'make_vector_if_necessary') {
+        if(length(arg$args) > 0 && is.numeric(arg$args[[1]]))
+          insertExprClassLayer(arg, 1, 'TYPE_')
+      }
+    }
+  }
+  invisible(NULL)
+}
+
 modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
   if(!isTRUE(workEnv$.anyAD)) return(invisible(NULL))
   if(is.null(code$type)) return(invisible(NULL)) # arises from constructions like setMap that lack type annotation
@@ -771,7 +789,7 @@ modifyForAD_indexingBracket <- function(code, symTab, workEnv) {
 }
 
 ## modifyForAD_issuePowWarning <- function(code, symTab, workEnv) {
-##   message("   [Note] Operator `pow` may cause derivative problems with negative arguments. If the exponent is guaranteed to be an integer, use `pow_int` instead.")
+##   message("  [Note] Operator `pow` may cause derivative problems with negative arguments. If the exponent is guaranteed to be an integer, use `pow_int` instead.")
 ##   invisible(NULL)
 ## }
 
@@ -821,7 +839,7 @@ modifyForAD_AssignEigenMap <- function(code, symTab, workEnv) {
   ## We extract the variable name by undoing the construction of the Eigen Map variable name.
   ## This would be nicer to do with generic functions that undo the label creation.
   ## At this time of this writing, hacking the solution here was more practical.
-  ## 
+  ##
   ## This method of extracting the name of the variable we are making a map into
   ## attempted to invert the name-generation and name-mangling steps that led to it.
   ## However, it is not fully general.  In addition, it is not clear if this would
@@ -935,12 +953,12 @@ modifyForAD_getDerivs_wrapper <- function(code, symTab, workEnv) {
 
 modifyForAD_nfMethod <- function(code, symTab, workEnv) {
   if(code$args[[1]]$name != "cppPointerDereference")
-    message("   [Note] In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
+    message("  [Note] In modifyForAD_nfMethod, was expecting cppPointerDereference.  There must be another case that needs implementation.")
   objName <- code$args[[1]]$args[[1]]$name
   NFsymObj <- workEnv$RsymTab$getSymbolObject(objName, TRUE)
   methodName <- code$args[[2]]
   if(!is.character(methodName))
-    message("   [Note] In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
+    message("  [Note] In modifyForAD_nfMethod, was expecting method name to be character.  There must be another case that needs implementation.")
   methodSymObj <- NFsymObj$nfProc$compileInfos[[methodName]]$newLocalSymTab$getSymbolObject(methodName, TRUE)
   buildDerivs <- methodSymObj$nfMethodRCobj$buildDerivs
   if(!is.null(buildDerivs))
@@ -1135,7 +1153,7 @@ makeSingleCopyCall <- function(varName, cppCopyType,
                                buildDerivs = FALSE) {
     switch(cppCopyType,
            'nimbleFunction' = {
-               cppLiteral(paste0("COPY_NIMBLE_FXN_FROM_R_OBJECT(\"", varName, "\");")) 
+               cppLiteral(paste0("COPY_NIMBLE_FXN_FROM_R_OBJECT(\"", varName, "\");"))
            },
            'numericVector' = {
                cppLiteral(paste0("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
@@ -1200,7 +1218,7 @@ makeCopyFromRobjectDef <- function(cppCopyTypes,
                                             objectDefs = localVars)
 
     copyFromRobjectInterfaceDef <- NULL
-    
+
     list(copyFromRobjectDef = copyFromRobjectDef,
          copyFromRobjectInterfaceDef = copyFromRobjectInterfaceDef)
 }

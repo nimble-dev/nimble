@@ -190,7 +190,23 @@ azmul(const AD<Base>& x, const AD<Base>& y)
         }
     }
     else if( dyn_x | dyn_y )
-    {   addr_t arg0 = x.taddr_;
+    { if( (! dyn_x) && IdenticalZero(x.value_) )
+      {   // result = 0 * dynamic
+      }
+      else if ( ( ! dyn_y ) && IdenticalZero(y.value_) )
+      {   // result = dynamic * 0
+      }
+      else if( ( ! dyn_x ) && IdenticalOne(x.value_) )
+      {   // result = 1 * dynamic
+         result.make_dynamic(y.tape_id_, y.taddr_);
+      }
+      else if( ( ! dyn_y ) && IdenticalOne(y.value_) )
+      {   // result = dynamic * 1
+         result.make_dynamic(x.tape_id_, x.taddr_ );
+      }
+      else
+      {
+        addr_t arg0 = x.taddr_;
         addr_t arg1 = y.taddr_;
         if( ! dyn_x )
             arg0 = tape->Rec_.put_con_par(x.value_);
@@ -203,6 +219,7 @@ azmul(const AD<Base>& x, const AD<Base>& y)
         );
         result.tape_id_ = tape_id;
         result.ad_type_ = dynamic_enum;
+      }
     }
     return result;
 }

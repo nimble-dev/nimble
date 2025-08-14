@@ -14,6 +14,7 @@
 #include "nimDerivs_atomic_log_pow_int.h"
 #include "nimDerivs_atomic_matmult.h"
 #include "nimDerivs_atomic_matinverse.h"
+#include "nimDerivs_atomic_PDinverse_logdet.h"
 #include "nimDerivs_atomic_backsolve.h"
 #include "nimDerivs_atomic_forwardsolve.h"
 #include "nimDerivs_atomic_cholesky.h"

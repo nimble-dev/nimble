@@ -162,9 +162,9 @@ class nimbleTimerClass_ {
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
 
-void checkLogProbWarn();
+void checkLogProbWarn(std::string target);
 
-static inline double checkLogProb(double logProb) { if(ISNAN(logProb))  return(-std::numeric_limits<double>::infinity()); if(logProb == std::numeric_limits<double>::infinity()) checkLogProbWarn(); return(logProb);}
+static inline double checkLogProb(double logProb, std::string target) { if(ISNAN(logProb))  return(-std::numeric_limits<double>::infinity()); if(logProb == std::numeric_limits<double>::infinity()) checkLogProbWarn(target); return(logProb);}
 
 
 void nimStop(string msg);
@@ -213,9 +213,31 @@ inline T nimDerivs_cloglog(T x){
 
 inline int nimEquals(double x1, double x2) {return(x1 == x2 ? 1 : 0);}
 //template<class T>
-inline T nimDerivs_nimEquals(T x1, T x2){
-  return(CondExpEq(x1, x2, T(1), T(0)));
-}
+// inline T nimDerivs_nimEquals(T x1, T x2){
+//   T cond = nimDerivs_nimStep(x1-x2) * nimDerivs_nimStep(x2-x1);
+//   return cond;
+// //  return(CondExpEq(x1, x2, T(1), T(0)));
+// }
+
+// inline T nimDerivs_CondExpGe(T x1, T x2, T y1, T y2) {
+//   T cond = nimDerivs_nimStep(x1-x2);
+//   return cond*y1 + (T(1) - cond)*y2;
+// }
+
+// inline T nimDerivs_CondExpGt(T x1, T x2, T y1, T y2) {
+//   T cond = 1-nimDerivs_nimStep(x2-x1);
+//   return cond*y1 + (T(1) - cond)*y2;
+// }
+
+// inline T nimDerivs_CondExpLe(T x1, T x2, T y1, T y2) {
+//   T cond = nimDerivs_nimStep(x2-x1);
+//   return cond*y1 + (T(1) - cond)*y2;
+// }
+
+// inline T nimDerivs_CondExpLt(T x1, T x2, T y1, T y2) {
+//   T cond = 1-nimDerivs_nimStep(x1-x2);
+//   return cond*y1 + (T(1) - cond)*y2;
+// }
 
 inline double nimbleIfElse(bool condition, double x1, double x2) {return(condition ? x1 : x2);}
 inline double lfactorial(double x) {return(lgammafn(x + 1));}
@@ -230,22 +252,26 @@ inline T nimDerivs_logit(T x) {
 inline double nimRound(double x) {return(round(x));}
 inline double pairmax(double x1, double x2) {return(x1 > x2 ? x1 : x2);}
 //template<class T>
-inline T nimDerivs_pairmax(T x1, T x2) {
-  return(CondExpGt(x1, x2, x1, x2));
-}
+// inline T nimDerivs_pairmax(T x1, T x2) {
+//   T cond = nimStep(x1-x2);
+//   return cond*x1 + (T(1) - cond)*x2;
+//   //  return(CondExpGt(x1, x2, x1, x2));
+// }
 
 inline double pairmin(double x1, double x2) {return(x1 < x2 ? x1 : x2);}
 //template<class T>
-inline T nimDerivs_pairmin(T x1, T x2) {
-  return(CondExpLt(x1, x2, x1, x2));
-}
+// inline T nimDerivs_pairmin(T x1, T x2) {
+//   T cond = nimStep(x1-x2);
+//   return (T(1)-cond)*x1 + cond*x2;
+// //  return(CondExpLt(x1, x2, x1, x2));
+// }
 
 //double phi(double x);
 inline int nimStep(double x) { return(x >= 0 ? 1 : 0);}
 //template<class T>
-inline T nimDerivs_nimStep(T x){
-	return(CondExpGe(x, T(0), T(1), T(0)));
-}
+//inline T nimDerivs_nimStep(T x){
+//	return(CondExpGe(x, T(0), T(1), T(0)));
+//}
 
 inline double cube(double x) {return(x*x*x);}
 //template<class T>

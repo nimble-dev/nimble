@@ -856,7 +856,8 @@ void nimbleGraph::exploreUp(vector<int> &deps,
         exploreDown(deps, thisParentCgraphID,
                     isGivenVec, isLatentVec, unknownsAsGiven, recursionDepth + 1);
     }
-    thisParentNode->touched = true; // Touch it now in case it was deterministic and hence not touched above
+    // Experimental: Commenting out this line to try fixing Issue #1564
+    // thisParentNode->touched = true; // Touch it now in case it was deterministic and hence not touched above
   }
   // myindent(recursionDepth);
   // std::cout<<"Exiting exploreUp from "<<thisGraphNode->name<<std::endl;
@@ -904,7 +905,9 @@ void nimbleGraph::exploreDown(vector<int> &deps,
     if(!isGiven) {
       exploreDown(deps, thisChildCgraphID,
                   isGivenVec, isLatentVec, unknownsAsGiven, recursionDepth + 1);
-      thisChildNode->touched = true;
+      // Experimental: Commenting out this line to try fixing Issue #1564
+      // Note that this touch setting would only impact !isGiven && !isStoch (because above !isGiven && isStoch is handled)
+      // thisChildNode->touched = true;
     }
   }
   // myindent(recursionDepth);

@@ -185,6 +185,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         result->hessian.initialize(NA_REAL, true, n, n);
     }
 
+
     // Parameters common to all methods.
     double* dpar = par.getPtr();
     double* X = result->par.getPtr();
@@ -248,7 +249,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
             SEXP Scontrol = PROTECT(Rf_allocVector(VECSXP, 6));
             SET_VECTOR_ELT(Scontrol, 0, PROTECT(double_2_SEXP(control_->abstol)));
             SET_VECTOR_ELT(Scontrol, 1, PROTECT(double_2_SEXP(control_->reltol)));
-            SET_VECTOR_ELT(Scontrol, 2, PROTECT(int_2_SEXP(control_->maxit)));
+            SET_VECTOR_ELT(Scontrol, 2, PROTECT(int_2_SEXP(working_maxit)));
             SET_VECTOR_ELT(Scontrol, 3, PROTECT(NimArr_2_SEXP<1>(working_parscale)));
             SET_VECTOR_ELT(Scontrol, 4, PROTECT(double_2_SEXP(control_->fnscale)));
             SET_VECTOR_ELT(Scontrol, 5, PROTECT(int_2_SEXP(control_->trace)));
@@ -321,7 +322,6 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         //  NIMERROR("Unknown method_: %s", method_.c_str());
         //}
     result->value *= control_->fnscale;
-
     // Compute Hessian.
     // Parameters are still on the optimization scale,
     // i.e. divided by parscale
