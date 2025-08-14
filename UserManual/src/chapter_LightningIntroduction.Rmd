@@ -166,6 +166,8 @@ the point of this example.
 Once you learn the MCMC system, you can write your own samplers and
 include them.  The entire system is written in nimbleFunctions.
 
+In addition to customizing samplers, you can also choose additional quantities (e.g., model log-probabilities) to generate in the MCMC output, using the MCMC derived quantities functionality (Section \@ref(sec:derived-quantities), introduced in NIMBLE version 1.4.0.
+
 ## Running MCEM {#sec:running-mcem}
 
 NIMBLE is a system for working with algorithms, not just an MCMC engine. So let's try maximizing the marginal likelihood for `alpha` and `beta` using Monte Carlo Expectation Maximization^[Note that for this model, one could analytically integrate over `theta` and then numerically maximize the resulting marginal likelihood.]. 

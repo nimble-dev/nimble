@@ -30,9 +30,10 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
           i. Add, remove, or re-order the list of samplers (Section \@ref(sec:samplers-provided) and `help(samplers)` in R for details), including adding your own samplers (Section \@ref(sec:user-samplers));
           i. Change the tuning parameters or adaptive properties of individual samplers;
           i. Change the variables to monitor (record for output) and thinning intervals for MCMC samples.
+          i. Choose additional "derived quantities" of interest to monitor.
   1. Use `buildMCMC` to build the MCMC object and its samplers either from the model (using default MCMC configuration) or from a customized MCMC configuration (Section \@ref(sec:build-compile-mcmc)).
   1. Compile the MCMC object (and the model), unless one is debugging and wishes to run the uncompiled MCMC.
-  1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
+  1. Run the MCMC and extract the samples and any derived quantities (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
   1. Optionally, calculate the WAIC (Section \@ref(sec:WAIC)).
 
 
@@ -82,7 +83,9 @@ The `nimbleMCMC` function provides control over the:
   - initial values, or a function for generating initial values for each chain;
   - setting the random number seed;
   - returning posterior samples as a matrix or a `coda` `mcmc` object;
-  - returning posterior summary statistics; and
+  - returning posterior summary statistics (calculated over thinned samples);
+  - returning means and variances (calculated over unthinned samples) of selected nodes;
+  - return model log-probabilities for selected nodes; and
   - returning a WAIC value calculated using post-burn-in samples from all chains.
 
 
@@ -90,13 +93,13 @@ This entry point for using `nimbleMCMC` is the `code`, `constants`, `data`, and 
 
 Based on its arguments, `nimbleMCMC` optionally returns any combination of
 
-
-  - Posterior samples,
-  - Posterior summary statistics, and
+  - posterior samples,
+  - posterior summary statistics,
+  - posterior means and variances,
+  - posterior log-probabilities, and
   - WAIC value.
 
-
-The above are calculated and returned for each MCMC chain, using the post-burn-in and thinned samples.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
+The above are calculated and returned for each MCMC chain, all using the post-burnin samples. The samples and log-probabilities are thinned and the summary statistics reported (but not the WAIC calculation) use the thinned samples.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
 
 Several example usages of `nimbleMCMC` are shown below:
 
@@ -110,29 +113,31 @@ code <- nimbleCode({
 data <- list(x = c(2, 5, 3, 4, 1, 0, 1, 3, 5, 3))
 initsFunction <- function() list(mu = rnorm(1,0,1), sigma = runif(1,0,10))
 
-# execute one MCMC chain, monitoring the "mu" and "sigma" variables,
-# with thinning interval 10.  fix the random number seed for reproducible
-# results.  by default, only returns posterior samples.
-mcmc.out <- nimbleMCMC(code = code, data = data, inits = initsFunction,
-                       monitors = c("mu", "sigma"), thin = 10,
+# Execute one MCMC chain, monitoring the `mu` and `sigma` variables and
+# the overall model log-probability, with thinning interval 10.
+# Fix the random number seed for reproducible
+# results. By default, only posterior samples are returned.
+mcmc_out <- nimbleMCMC(code = code, data = data, inits = initsFunction,
+                       monitors = c("mu", "sigma"), logProb = TRUE, thin = 10,
                        niter = 20000, nchains = 1, setSeed = TRUE)
 
-# note that the inits argument to nimbleModel must be a list of
-# initial values, whereas nimbleMCMC can accept inits as a function
+# Note that the `inits` argument to `nimbleModel` must be a list of
+# initial values, whereas `nimbleMCMC` can accept `inits` as a function
 # for generating new initial values for each chain.
 initsList <- initsFunction()
 Rmodel <- nimbleModel(code, data = data, inits = initsList)
 
-# using the existing Rmodel object, execute three MCMC chains with 
-# specified burn-in.  return samples, summary statistics, and WAIC.
-mcmc.out <- nimbleMCMC(model = Rmodel,
+# Using the existing Rmodel object, execute three MCMC chains with 
+# specified burn-in.  Return samples, overall log-probability,
+# summary statistics, and WAIC.
+mcmc_out <- nimbleMCMC(model = Rmodel,
                        niter = 20000, nchains = 3, nburnin = 2000,
-                       summary = TRUE, WAIC = TRUE)
+                       logProb = TRUE, summary = TRUE, WAIC = TRUE)
 
-# run ten chains, generating random initial values for each
+# Run ten chains, generating random initial values for each
 # chain using the inits function specified above.
-# only return summary statistics from each chain; not all the samples.
-mcmc.out <- nimbleMCMC(model = Rmodel, nchains = 10, inits = initsFunction,
+# Only return summary statistics from each chain; not all the samples.
+mcmc_out <- nimbleMCMC(model = Rmodel, nchains = 10, inits = initsFunction,
                        samples = FALSE, summary = TRUE)
 
 
@@ -141,18 +146,16 @@ mcmc.out <- nimbleMCMC(model = Rmodel, nchains = 10, inits = initsFunction,
 See `help(nimbleMCMC)` for further details.
 
 
-
-
-
 ## The MCMC configuration {#sec:mcmc-configuration}
 
 The MCMC configuration contains information needed for building an MCMC.  When no customization is needed, one can jump directly to the `buildMCMC` step below.  An MCMC configuration is an object of class `MCMCconf`, which includes:
 
 
-  - The model on which the MCMC will operate
-  - The model nodes which will be sampled (updated) by the MCMC
-  - The samplers and their internal configurations, called control parameters
-  - Two sets of variables that will be monitored (recorded) during execution of the MCMC and thinning intervals for how often each set will be recorded. Two sets are allowed because it can be useful to monitor different variables at different intervals
+  - The model on which the MCMC will operate.
+  - The model nodes which will be sampled (updated) by the MCMC.
+  - The samplers and their internal configurations, called control parameters.
+  - Two sets of variables that will be monitored (recorded) during execution of the MCMC and thinning intervals for how often each set will be recorded. Two sets are allowed because it can be useful to monitor different variables at different intervals.
+  - Optionally any derived quantities (e.g., model log-probabilities) to return as additional quantities of interest.
 
 
 ### Default MCMC configuration {#sec:default-mcmc-conf}
@@ -168,12 +171,12 @@ The default configuration will contain a single sampler for each node in the mod
 
 The default sampler assigned to a stochastic node is determined by the following, in order of precedence:
 
-  1. If the node has no data nodes in its entire downstream dependency network, a `posterior_predictive` sampler is assigned. This sampler updates the node in question and all downstream stochastic nodes by simulating new values from each node's conditional distribution. As of version 0.13.0, the operation of the `posterior_predictive` sampler has changed in order to improve MCMC mixing. See Section \@ref(sec:post-pred-sampling).
+  1. If the node has no data nodes in its entire downstream dependency network, a `posterior_predictive` sampler is assigned. This sampler updates the node in question and all downstream stochastic nodes by simulating new values from each node's conditional distribution. As of version 0.13.0, the operation of the `posterior_predictive` sampler changed in order to improve MCMC mixing. See Section \@ref(sec:post-pred-sampling).
   1. If the node has a conjugate relationship between its prior distribution and the distributions of its stochastic dependents, a `conjugate` (`Gibbs') sampler is assigned.
   1. If the node follows a multinomial distribution, then a `RW_multinomial` sampler is assigned.  This is a discrete random-walk sampler in the space of multinomial outcomes.
   1. If a node follows a Dirichlet distribution, then a `RW_dirichlet` sampler is assigned.  This is a random walk sampler in the space of the simplex defined by the Dirichlet.
   1. If a node follows an LKJ correlation distribution, then a `RW_block_lkj_corr_cholesky` sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of @Stan_Lang_2021.
-  1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997]. As of NIMBLE version 1.3.0, one can instead use the `barker` sampler if one sets `nimbleOptions(MCMCuseBarkerAsDefaultMV = TRUE)`.
+  1. If the node follows any other multivariate distribution, then a `RW_block` sampler is assigned for all elements.  This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal [@Roberts_Sahu_1997]. As of NIMBLE version 1.3.0, one can instead use the `barker` sampler in this case if one sets `nimbleOptions(MCMCuseBarkerAsDefaultMV = TRUE)`.
   1. If the node is binary-valued (strictly taking values 0 or 1), then a `binary` sampler is assigned.  This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.
   1. If the node is otherwise discrete-valued, then a `slice` sampler is assigned [@Neal2003].
   1. If none of the above criteria are satisfied, then a `RW` sampler is assigned.  This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.
@@ -191,7 +194,9 @@ The behavior of `configureMCMC` can be customized to control how samplers are as
 
 A posterior predictive node is a node that is not itself data and has no data nodes in its entire downstream (descendant) dependency network. Such nodes play no role in inference for model parameters but have often been included in BUGS models to accomplish posterior predictive checks and similar calculations. 
 
-As of version 0.13.0, NIMBLE's handling of posterior predictive nodes in MCMC sampling has changed in order to improve MCMC mixing. Samplers for nodes that are not posterior predictive nodes no longer condition on the values of the posterior predictive nodes. This produces a valid MCMC over the posterior distribution marginalizing over the posterior predictive nodes. This MCMC will generally mix better than an MCMC that conditions on the values of posterior predictive nodes, by reducing the dimensionality of the parameter space and removing the dependence between the sampled nodes and the posterior predictive nodes. At the end of each MCMC iteration, the posterior predictive nodes are sampled by  `posterior_predictive` sampler(s) based on their conditional distribution(s). 
+As of version 0.13.0, NIMBLE's handling of posterior predictive nodes in MCMC sampling has changed in order to improve MCMC mixing. Samplers for nodes that are not posterior predictive nodes no longer condition on the values of the posterior predictive nodes. This produces a valid MCMC over the posterior distribution marginalizing over the posterior predictive nodes. This MCMC will generally mix better than an MCMC that conditions on the values of posterior predictive nodes, by reducing the dimensionality of the parameter space and removing the dependence between the sampled nodes and the posterior predictive nodes. At the end of each MCMC iteration, the posterior predictive nodes are sampled by  `posterior_predictive` sampler(s) based on their conditional distribution(s).
+
+Note that predictive node sampling is done at each iteration. When thinning is used, this results in unneeded computation (the sampling computation for the iterations that excluded from the output). To avoid this, one can set `samplePredictiveNodes = FALSE` as an argument to `configureMCMC` and then add the `predictive` derived quantity to the MCMC configuration object via `addDerivedQuantity` (Section \@ref(sec:derived-quantities)). When doing so, samples for any predictive nodes will no longer be included with the MCMC samples array, but rather will appear as part of the `derived` MCMC output.
 
 #### Options to control default sampler assignments
 
@@ -434,7 +439,9 @@ mcmcConf$setThin2(100)
 
 The current lists of monitors and thinning intervals may be displayed using the `printMonitors` method.  Both sets of monitors (`monitors` and `monitors2`) may be reset to empty character vectors by calling the `resetMonitors` method.  The methods `getMonitors`  and `getMonitors2` return the currently specified `monitors` and `monitors2` as character vectors.
 
-#### Monitoring model log-probabilities
+#### Monitoring model log-probabilities 
+
+One can record log-probabilities for all the individual nodes in a given variable as discussed next. Alternatively, one can monitor log-probabilities for individual nodes or summed log-probabilities for sets of nodes using NIMBLE's derived quantities system (Section \@ref(sec:derived-quantities).
 
 To record model log-probabilities from an MCMC, one can add monitors for *logProb* variables (which begin with the prefix `logProb_`) that correspond to variables with (any) stochastic nodes.   For example, to record and extract log-probabilities for the variables `alpha`, `sigma_mu`, and `Y`:
 ```{r, eval=FALSE}
@@ -457,6 +464,337 @@ A set of numeric samples, perhaps generated from another MCMC algorithm, can be 
 mcmcConf <- configureMCMC(Rmodel)
 mcmcConf$addSampler(target = 'theta', type = 'prior_samples', samples = rnorm(100))
 ```
+
+### Setting up derived quantities for additional quantities of interest {#sec:derived-quantities}
+
+As of version 1.4.0, NIMBLE allows one to specify "derived quantities" to calculate or record additional quantities of interest. Potential derived quantities include:
+
+ - posterior means, 
+ - posterior variances, 
+ - log-probabilities (log-density values) for single or (summed) groups of nodes,
+ - posterior predictive samples for predictive nodes, and
+ - arbitrary calculations by providing a user-defined nimbleFunction that follows the required specification.
+
+User-defined derived quantity nimbleFunctions provide a general way for a user to intervene at the end of an MCMC iteration and do something. This would often be recording a value (to be returned at the end of the MCMC) or updating some summary statistic, but the derived quantities system doesn't require this, giving users flexibility.
+
+The operation of every derived quantity function is governed by an `interval` parameter. Each derived quantity function is executed at the end of every `interval` MCMC iterations. The default value for `interval` is given by the `thin` interval of the MCMC. This means that, by default, each derived quantity function will execute after all the MCMC samplers for the MCMC iterations for which samples are recorded. If `interval = 1` for a derived quantity function, then that derived quantity function will execute at the end of every MCMC sampling iteration. 
+
+Operation of derived quantity functions is entirely post-burnin. Derived quantity functions are not executed during the burnin period. 
+
+#### Specifying derived quantities
+
+Derived quantity functions can be added to an MCMC configuration object using the `addDerivedQuantity` method. Alternatively, the `mean`, `variance`, and `logProb` derived quantities are directly supported as arguments to `configureMCMC`, `buildMCMC`, and `nimbleMCMC`.
+
+When using `configureMCMC`, `buildMCMC`, and `nimbleMCMC`, one cannot modify the default `interval`, which is set equal to the MCMC `thin` interval.
+
+One can interact with derived quantities by using the following methods with an MCMC configuration object (analogous to similarly-named methods for interacting with the samplers in an MCMC configuration, such as `addSampler`).
+
+ - `addDerivedQuantity`
+ - `removeDerivedQuantity`
+ - `removeDerivedQuantities`
+ - `printDerivedQuantities`
+ - `getDerivedQuantities`
+ - `getDerivedQuantityDefinition`
+
+Detailed information on their use can be found using the R help system, e.g., `help(removeDerivedQuantity)`.
+
+
+#### Log-probability derived quantities
+
+The `logProb` derived quantity function calculates and stores the log-probability values (log-density values) for:
+
+ - any single nodes,
+ - any sets of nodes (summed), or
+ - all stochastic model nodes (summed).
+
+When the `nodes` argument is a character vector of node names, the log-probability of each node is recorded individually. We'll provide some examples using an old friend, the `pump` model. 
+
+```{r, include=FALSE}
+ln('devel')
+```
+```{r}
+pumpCode <- nimbleCode({ 
+    for(i in 1:N) {
+        theta[i] ~ dgamma(alpha, beta)
+        lambda[i] <- theta[i]*t[i]
+        x[i] ~ dpois(lambda[i])
+    }
+    alpha ~ dexp(1.0)
+    beta ~ dgamma(0.1, 1.0)
+})
+
+pumpConsts <- list(N = 10,
+                   t = c(94.3, 15.7, 62.9, 126, 5.24,
+                         31.4, 1.05, 1.05, 2.1, 10.5))
+pumpData <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
+pumpInits <- list(alpha = 1, beta = 1,
+                  theta = rep(0.1, pumpConsts$N))
+pumpModel <- nimbleModel(pumpCode, pumpConsts, pumpData, pumpInits)
+```
+
+Here's the use of the `logProb` derived quantity specified directly as an argument to `configureMCMC`.
+
+```{r}
+conf <- configureMCMC(pumpModel, logProb = c('alpha', 'beta'))
+
+conf$printDerivedQuantities()
+
+runMCMC(buildMCMC(conf), niter = 100, thin = 20)
+```
+
+We could also have added the `logProb` derived quantity to an existing MCMC configuration argument:
+
+```{r, eval=FALSE}
+conf <- configureMCMC(pumpModel)
+conf$addDerivedQuantity('logProb', nodes = c('alpha', 'beta'))
+```
+
+When the `nodes` argument is a list, each list element is treated as a group of nodes, and the summed log-probability of each group is recorded.
+
+The distinction between the character vector and list style argument for `nodes` is highlighted in the following two examples.
+These also demonstrate how the keyword `".all"` may be provided, corresponding to all stochastic model nodes (including data).
+
+
+```{r}
+conf <- configureMCMC(pumpModel, logProb = c('theta[1:3]', '.all'))
+
+runMCMC(buildMCMC(conf), niter = 3)
+
+conf <- configureMCMC(pumpModel,
+          logProb = list('theta[1:3]', '.all'))
+
+runMCMC(buildMCMC(conf), niter = 3)
+```
+
+If `nodes` is provided as an unnamed list, then some processing is done to give reasonable output column names, in the case of groups:
+
+```{r}
+conf <- configureMCMC(pumpModel,
+         logProb = list('alpha',
+                      'beta',
+                      c('alpha', 'beta'),
+                      'theta[1:5]',
+                      c('x[2]', 'x[5]'),
+                      '.all'))
+
+runMCMC(buildMCMC(conf), niter = 3)
+```
+
+Alternatively, if `nodes` is provided as a named list, then the list names are used as the output column names:
+
+```{r}
+conf <- configureMCMC(pumpModel,
+        logProb = list(alpha_node = 'alpha',
+                      beta_node  = 'beta',
+                      alpha_beta = c('alpha', 'beta'),
+                      `theta[1:5]` = 'theta[1:5]',
+                      x2_x5 = c('x[2]', 'x[5]'),
+                      joint_density = '.all'))
+
+runMCMC(buildMCMC(conf), niter = 3)
+```
+
+#### Mean and variance derived quantities
+
+These derived quantities allow one to calculate the posterior mean and variance of nodes of interest using all samples (without thinning). (Note that  using the `summary` argument to `runMCMC` or `nimbleMCMC` results in means and variances calculated using the thinned samples.) This can also allow one to avoid monitoring some variables if all ones wants is summary statistics. One can also also calculate running means and variances during a chain using the `recordingFrequency` option discussed at the end of this section.
+
+For example, here we add calculate the posterior means for nodes `theta[1:5]` and the posterior variances for another set of nodes:
+
+```{r}
+conf <- configureMCMC(pumpModel, monitors = 'theta',
+          mean = 'theta[1:5]',
+          variance = c('alpha', 'beta', 'theta[2]'))
+
+runMCMC(buildMCMC(conf), niter = 5)
+```
+
+An additional option for the mean and variance derived quantities is the `recordingFrequency` argument. This is subtly different from the `interval` argument:
+
+ - `interval` controls after how many MCMC iterations the derived quantity function is called, and therefore the current parameter values are used to update the statistic value.
+ - `recordingFrequency` controls after how many updates to the statistic the (current) value of the statistic is recorded. The default value of `recordingFrequency` is 0, which corresponds to the special case of only recording the statistic once - at the end of the MCMC chain.
+
+By way of example:
+
+ - `interval = 1` and `recordingFrequency = 0` (which is the default value of `recordingFrequency`) means that the value of the statistic is updated after every MCMC iteration, and only the final value of this statistic (at the end of the MCMC chain) is recorded.
+ - `interval = 4` and `recordingFrequency = 0` (which is the default value of `recordingFrequency`) means that only every fourth MCMC iteration will be used to update the value of the statistic, and only the final value of this statistic (at the end of the MCMC chain) is recorded.
+ - `interval = 1` and `recordingFrequency = 1` means that an updated value of the statistic is calculated after every MCMC iteration, and every such value is recorded.
+ - `interval = 4` and `recordingFrequency = 1` means that only every fourth MCMC iteration will be used to update the value of the statistic, and all of these updated values will be recorded. So, if an MCMC executes for 100 iterations, only 25 samples will be used to update the statistic, and all 25 updated values of the statistic will be recorded.
+ - `interval = 1` and `recordingFrequency = 5` means that an updated value of the statistic is calculated after every MCMC iteration, but the value of the statistic is only recorded after every five such calculations. So, if an MCMC executes for 100 iterations, all 100 samples are used to update the statistic, but only 20 values of the statistic will be recorded.
+ - `interval = 10` and `recordingFrequency = 2` means that every tenth MCMC iteration will be used to update the value of the statistic, and the value of the statistic is only recorded after every other such calculation. So, if an MCMC executes for 100 iterations, only 10 samples will be used for calculations, and of these 10, only 5 values will be recorded.
+
+Here's some example usage:
+
+```{r}
+conf <- configureMCMC(pumpModel)
+
+## Uses default interval = thinning interval (1).
+## Uses default recordingFrequency = 0 (only record value once, at end of the chain).
+conf$addDerivedQuantity('mean', nodes = 'alpha')
+
+## Uses default interval = thinning interval (1).
+## Records the value of the mean after every 10 updates (every 10 iterations).
+conf$addDerivedQuantity('mean', nodes = 'alpha', recordingFrequency = 10)
+
+## Specifies both interval and recordingFrequency.
+## Records the value of the mean after every 10 updates (every 20 iterations).
+conf$addDerivedQuantity('mean', nodes = 'alpha', interval = 2, recordingFrequency = 10)
+```
+
+#### Posterior predictive derived quantities
+
+The `predictive` derived quantity simulates the values of posterior predictive nodes and stores these simulated values. This is useful for reducing computation in models with posterior predictive nodes for which thinning is used. In NIMBLE's default MCMC configuration, predictive node sampling is done at each iteration. When thinning is used, this results in unneeded computation (the sampling for the iterations that are excluded from the output). To avoid this, one can set `samplePredictiveNodes = FALSE` as an argument to `configureMCMC` and add the `predictive` derived quantity to the MCMC configuration object as discussed here.
+
+The predictive derived quantity function may be assigned to any predictive nodes of interest and when executed it will simulate new values for these nodes and record the simulated values.
+
+The predictive function accepts a `nodes` argument, which has the names of the posterior predictive nodes to record. `nodes` should generally only specify posterior predictive model nodes, and a warning will be issued if `nodes` includes non-predictive nodes.
+
+If nodes is omitted, the default set of nodes will be all (non-data) terminal nodes (i.e., nodes in the model graph that have no children). If `nodes` is specified as `nodes = '.all'`, then all predictive model nodes (including both stochastic and deterministic and terminal and non-terminal) will be simulated and saved.
+
+The `predictive` derived quantity function will automatically determine the set of nodes that need to be simulated (based on the model graph structure) in order to correctly simulate the `nodes` specified. Alternatively, for additional user control in unusual situations, one can specify which nodes should be simulated using the `simNodes` argument. The set of nodes specified in `simNodes` will be simulated, in topological order, prior to saving the values of nodes. If simulation in the exact order specified in the `simNodes` argument is required, one may also provide the argument `sort = FALSE`. 
+
+The automatic determination of the set of nodes to simulate assumes a valid MCMC assignment of samplers to unobserved model nodes. If one removes samplers from the default MCMC configuration or otherwise does non-standard modifications to the set of MCMC samplers, then the automatic determination of nodes that need to be simulated may be incorrect. In this case, both the `nodes` and `simNodes` arguments should be carefully specified to ensure correct calculation.
+
+We introduce a toy model to demonstrate the functionality of the predictive derived quantity:
+
+```{r}
+toyCode <- nimbleCode({
+    mu ~ dunif(0, 10)    ## parameter
+    y ~ dnorm(mu, 1)     ## data
+    muSq <- mu^2         ## determistic, non-terminal predictive node
+    z ~ dnorm(muSq, 1)   ## stochastic, terminal predictive node
+})
+
+toyData <- list(y = 3)
+toyInits <- list(mu = 1, z = 3)
+toyModel <- nimbleModel(toyCode, data = toyData, inits = toyInits)
+```
+
+For the following examples, we use the argument `samplePredictiveNodes = FALSE` in `configureMCMC` to prevent the default assignment of a `posterior_predictive sampler` to `z` and predictive deterministic calculation of `muSq`. Instead we will do the predictive sampling via the derived quantity, thereby avoiding sampling during the thinned iterations. (Note that one can control `samplePredictiveNodes` generally with the NIMBLE option `MCMCassignSamplersToPosteriorPredictiveNodes`.)
+
+First, we apply the predictive derived quantity function to both `muSq` and `z`. New values of both `muSq` and `z` will be simulated and saved on each MCMC iteration.
+
+For this model, this is the same as if nodes were specified as `nodes = '.all'`.
+
+```{r}
+conf <- configureMCMC(toyModel, samplePredictiveNodes = FALSE)
+
+conf$addDerivedQuantity('predictive', nodes = c('muSq', 'z'))
+
+runMCMC(buildMCMC(conf), 10)
+```
+
+In the event that we don't want to save the intermediate value of `muSq`, we can instead specify `nodes = 'z'`. Now, the predictive function will still simulate both `muSq` and `z`, but only the values of `z` will be saved.
+
+For this model, this is the same as if `nodes` were omitted, in which case the default value of `nodes` will be all (non-data) terminal nodes, which is only `z`.
+
+We also change the value of `interval`, so the predictive simulation only takes place every fifth MCMC iteration (instead of defaulting to the thinning interval):
+
+```{r}
+conf <- configureMCMC(toyModel, samplePredictiveNodes = FALSE)
+
+conf$addDerivedQuantity('predictive',
+                        interval = 5,
+                        nodes = 'z')
+
+runMCMC(buildMCMC(conf), 10)
+```
+
+The warnings above about unsampled nodes may also be suppressed by setting `nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)`.
+
+#### User-defined derived quantities
+
+Any arbitrary quantity of interest can be calculated or recorded with a user-defined derived quantity, implemented as a nimbleFunction. The nimbleFunction must follow the nimbleFunction format below.
+
+Derived quantity nimbleFunctions must have:
+
+   - A `run` method, which is called when the MCMC executes this derived quantity function. The `run` method accepts a single argument called `timesRan`, which when the method runs will be equal to the number of  times this function has been called (including the present call) during the current MCMC chain.
+   - A `set_interval` method, which matches the definition shown below. This method sets the internal `interval` variable within the derived quantity nimbleFunction.
+   - A `get_results` method, to return a numeric matrix of results.
+   - A `get_names `method to return a character vector of column names (for the results matrix).
+
+There are several other optional methods of derived quantity functions, as well.
+
+The `before_chain` method, if present, executes at the onset of each MCMC chain. Note that its `niter` argument will be equal to the total number of MCMC iterations minus the number of burnin iterations. That said, the `before_chain` method also accepts the number of burnin iterations via the `nburnin`, so the function has access to how many MCMC iterations were run during burnin.
+
+The `after_chain` method, if present, executes at the conclusion of each MCMC chain, and accepts no arguments.
+
+Some additional comments are provided within this skeleton for a derived quantity nimbleFunction:
+
+```{r, eval=FALSE}
+derived_name <- nimbleFunction(
+    name = 'derived_name',
+    contains = derived_BASE,     ## All derived functions must contain (inherit from) the `derived_BASE` class.
+    setup = function(model, mcmc, interval, control) {
+        ## 
+        ## setup function must have these arguments, and has unrestricted access to:
+        ## - model
+        ## - mcmc
+        ## - interval (the MCMC sampling interval on which the run function will be executed)
+        ## - control (list of control arguments provided to this function)
+        ##
+        ## One can extract elements from `control` like this:
+        ## nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+    },
+    run = function(timesRan = double()) {
+        ## 
+        ## run fuction has one argument:
+        ## timesRan, which is the number of times this method has executed during the present MCMC chain,
+        ## including the present time.  This can be used as an index for a matrix of results.
+        ## 
+    },
+    methods = list(
+        set_interval = function(newInterval = double()) {
+            ##
+            ## REQUIRED `set_interval` method, which matches the definition below exactly.
+            ## this method is necessary, to allow the default value of 'interval' to
+            ## match the thinning interval of the MCMC.
+            ## 
+            interval <<- newInterval
+            ##
+        },
+        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
+            ## 
+            ## (optional) `before_chain` method,
+            ## must have must have these arguments specifications:
+            ## - niter (total number of *post-burnin* MCMC iterations)
+            ## - nburnin (number of burnin iterations for this MCMC chain)
+            ## - thin (a length=2 vector, containing the thinning intervals for mvSamples and mvSamples2)
+            ## - chain (the chain number of the current MCMC chain being run)
+            ## 
+        },
+        after_chain = function() {
+            ## 
+            ## (optional) `after_chain` method,
+            ## no arguments and no return value
+            ## 
+        },
+        get_results = function() {
+            ## 
+            ## REQUIRED `get_results` method,
+            ## which must return a dim=2 numeric array
+            ## 
+            returnType(double(2))
+        },
+        get_names = function() {
+            ## 
+            ## REQUIRED `get_names` method,
+            ## which must return a dim=1 character vector
+            ## 
+            returnType(character(1))
+        },
+        reset = function() {
+            ## 
+            ## (optional) `reset` method
+            ## no arguments and no return value
+            ## 
+        }
+    )
+)
+```
+
+Note that for derived quantities that record information regularly during the MCMC, one would generally need to set up a results matrix in `setup` and then put values into that matrix in `run`, indexing into the matrix using `timesRan`.
+
+When using a user-defined derived quantity function, one can pass additional arguments to `addDerivedQuantity` (similar to the use of `nodes` in the NIMBLE-provided derived quantities as seen above). These values will become part of the `control` list argument of the `setup` function, and the developer can extract such values from `control` in `setup` for later use in `setup` or use in `run` or any additional methods.
 
 
 ## Building and compiling the MCMC {#sec:build-compile-mcmc}
@@ -555,28 +893,28 @@ The following examples demonstrate some uses of `runMCMC`, and assume the existe
 
 ```{r, runMCMC, eval=FALSE}
 # run a single chain, and return a matrix of samples
-mcmc.out <- runMCMC(Cmcmc)
+mcmc_out <- runMCMC(Cmcmc)
 
 # run three chains of 10000 samples, discard initial burn-in of 1000,
 # record samples thereafter using a thinning interval of 10,
 # and return of list of sample matrices
-mcmc.out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
+mcmc_out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
 
 # run three chains, returning posterior samples, summary statistics,
 # and the WAIC value
-mcmc.out <- runMCMC(Cmcmc, nchains = 3, summary = TRUE, WAIC = TRUE)
+mcmc_out <- runMCMC(Cmcmc, nchains = 3, summary = TRUE, WAIC = TRUE)
 
 # run two chains, and specify the initial values for each
 initsList <- list(list(mu = 1, sigma = 1),
                   list(mu = 2, sigma = 10))
-mcmc.out <- runMCMC(Cmcmc, nchains = 2, inits = initsList)
+mcmc_out <- runMCMC(Cmcmc, nchains = 2, inits = initsList)
 
 # run ten chains of 100,000 iterations each, using a function to 
 # generate initial values and a fixed random number seed for each chain.
 # only return summary statistics from each chain; not all the samples.
 initsFunction <- function()
     list(mu = rnorm(1,0,1), sigma = runif(1,0,100))
-mcmc.out <- runMCMC(Cmcmc, niter = 100000, nchains = 10,
+mcmc_out <- runMCMC(Cmcmc, niter = 100000, nchains = 10,
                     inits = initsFunction, setSeed = TRUE,
                     samples = FALSE, summary = TRUE)
 ```
