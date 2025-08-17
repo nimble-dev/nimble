@@ -26,7 +26,7 @@ Using a packaged AD algorithm should be as simple as setting `buildDerivs=TRUE` 
 
 We will introduce NIMBLE's AD features step by step, from simply turning them on for a model to using them in your own nimbleFunctions. We will show you:
 
-1. how to turn on derivatives in a model for use in algorithms such as Laplace approximation (for Hamiltonian Monte Carlo (HMC), see \@ref(subsec:HMC)).
+1. how to turn on derivatives in a model for use in algorithms such as Laplace approximation (or Hamiltonian Monte Carlo (HMC), see \@ref(subsec:HMC)).
 2. how to modify user-defined functions and distributions to support derivatives.
 3. what functions are supported and not supported for derivatives.
 4. basics of obtaining derivatives in your own algorithms written as `nimbleFunctions`.
@@ -43,8 +43,6 @@ nimbleOptions(enableDerivs = TRUE)
 ## How to turn on derivatives in a model {#sec:use-derivs}
 
 To allow algorithms to use automatic derivatives for a model, include `buildDerivs=TRUE` in the call to `nimbleModel`. If you want derivatives to be set up for all models, you can run `nimbleOptions(buildModelDerivs = TRUE)` and omit the `buildDerivs` argument.
-
-
 
 ## How to support derivatives in user-defined functions and distributions {#sec:AD-user-def}
 
@@ -85,7 +83,7 @@ toyModel <- nimbleModel(toyCode, inits = list(mu = 0, sigma = 1, x = 0),
                         buildDerivs = TRUE)
 ```
 
-Now `toyModel` can be used in algorithms such as HMC and Laplace approximation, as above, or new ones you might write, as below.
+Now `toyModel` can be used in algorithms such as HMC or Laplace approximation, or new ones you might write.
 
 Note that in models, all model variables are implemented as doubles, even when they will actually only ever take integer values. Therefore all arguments to user-defined distributions and functions used in models should be declared as type `double`. The `ADbreak` method discussed in Section \@ref(sec:AD-holding-out) should be used if you want to stop derivative tracking on a model variable.
 
