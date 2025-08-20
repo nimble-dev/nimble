@@ -105,3 +105,80 @@ expmAv <- nimbleFunction(
   },
   buildDerivs = TRUE
 )
+
+#' Matrix Exponential
+#'
+#'   Compute the the matrix exponential expm(A)
+#'   by scaling and squaring.
+#' 
+#' @name expmA
+#' 
+#' @param A Infinitesimal Generator Matrix.
+#' @param tol level of accuracy required (default = 1e-8).
+#' @author Paul van Dam-Bates
+#' @details A, the generator matrix must have negative value diagonals.
+#'
+#' This function follows the scaling and squaring algorithm from Sherlock (2021), except that we compute the full
+#' matrix exponential. It differs from the standard Taylor scaling and squaring algorithm reviewed by Ruiz et al (2016) and found in common texts. 
+#' If using the matrix exponential to create a transition probability matrix in a HMM context just once, 
+#' this function is good. If dimension is large, we recommend avoiding the matrix exponential and using `expmAv` instead. 
+#' Note that for computation efficiency matrix uniformization is always done by A* = A + rho I, where rho = max(abs(diag(A))).
+#'
+#' @return \code{expmAv} gives a vector that is ans = exp(A) %*% v.
+#' @references 
+#' Sherlock, C. (2021). Direct statistical inference for finite Markov jump processes via the matrix exponential. Computational Statistics, 36(4), 2863-2887.
+#' 
+#' Ruiz, P., Sastre, J., Ibáñez, J., & Defez, E. (2016). High performance computing of the matrix exponential. 
+#' Journal of computational and applied mathematics, 291, 370-379.
+#'
+#' @examples
+#' A <- rbind(c(-1, 0.25, 0.75), c(0, -2, 2), c(0.25, 0.25, -0.5))
+#' Lambda <- diag(c(0.25, 0.1, 0))
+#' expmA((A-Lambda)*2.5)
+NULL
+
+
+#' @rdname expmA
+#' @export
+expmA <- nimbleFunction(
+  run = function(A = double(2), tol = double(0, default = 1e-8)){
+    returnType(double(2))
+    n <- dim(A)[1]
+    rho <- max(abs(diag(A)))
+    log2 <- log(2)
+    shat <- ceiling((log(rho)+log(log2))/log2)
+    smin <- max(c(0, shat))
+    smax <- smin+6;
+    rhosmall <- rho/exp(smin*log(2))
+    opt <- Inf
+    for( k in smin:smax ){
+      rhosmall <- rhosmall/2
+      test <- qpois(tol, rhosmall, lower.tail = FALSE) + k 
+      if(test < opt){
+        opt <- test
+        s <- k
+      }
+    }
+    twos <- 2^s
+    if(uniformization){
+      Msmall <- (A + rho*diag(n))/twos
+    }else{
+      Msmall <- A/twos
+    }
+    m <- qpois(tol, rho/twos, lower.tail = FALSE)
+
+    expMsmall <- diag(n) + Msmall
+    expMpro <- Msmall 
+    for( i in 2:m ) {
+      expMpro <- expMpro %*% Msmall / i
+      expMsmall <- expMsmall + expMpro
+    }
+
+    if(uniformization) 
+      expMsmall <- expMsmall * exp(-rho/twos)
+
+    expM <- expMsmall
+    for( i in 1:s ) expM <- expM %*% expM
+    return(expM)
+  }
+)
