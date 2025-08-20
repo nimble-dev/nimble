@@ -2,7 +2,7 @@
 % Please edit documentation in R/BNP_samplers.R
 \name{getSamplesDPmeasure}
 \alias{getSamplesDPmeasure}
-\title{Get posterior samples for a Dirichlet process measure}
+\title{Get posterior samples for a Dirichlet process distribution (measure)}
 \usage{
 getSamplesDPmeasure(
   MCMC,
@@ -14,25 +14,25 @@ getSamplesDPmeasure(
 \arguments{
 \item{MCMC}{an MCMC class object, either compiled or uncompiled.}
 
-\item{epsilon}{used for determining the truncation level of the representation of the random measure.}
+\item{epsilon}{used for determining the truncation level of the representation of the random distribution (measure).}
 
 \item{setSeed}{Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.}
 
 \item{progressBar}{Logical specifying whether to display a progress bar during execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}}
 }
 \description{
-This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
+This function obtains posterior samples from a Dirichlet process distributed random distribution (measure) of a model specified using the \code{dCRP} distribution.
 }
 \details{
-This function provides samples from a random measure having a Dirichlet process prior. Realizations are almost surely discrete and represented by a (finite) stick-breaking representation (Sethuraman, 1994), whose atoms (or point masses) are independent and identically distributed. This sampler can only be used with models containing a \code{dCRP} distribution. 
+This function provides samples from a random distribution (measure) having a Dirichlet process prior. Realizations are almost surely discrete and represented by a (finite) stick-breaking representation (Sethuraman, 1994), whose atoms (or point masses) are independent and identically distributed. This sampler can only be used with models containing a \code{dCRP} distribution. 
 
-The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the posterior samples to generate samples of the random measure. Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
+The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the posterior samples to generate samples of the random distribution (measure). Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
 
 The \code{epsilon} argument is optional and used to determine the truncation level of the random measure. \code{epsilon} is the tail probability of the random measure, which together with posterior samples of the concentration parameter, determines the truncation level. The default value is 1e-4.
  
-The output is a list of matrices. Each matrix represents a sample from the random measure. In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
+The output is a list of matrices. Each matrix represents a sample from the random distribution (measure). In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
 
-For more details about sampling the random measure and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
+For more details about sampling the random distribution (measure) and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
 }
 \examples{
 \dontrun{

@@ -22,7 +22,11 @@ nimbleMCMC(
   samples = TRUE,
   samplesAsCodaMCMC = FALSE,
   summary = FALSE,
-  WAIC = FALSE
+  mean = FALSE,
+  variance = FALSE,
+  logProb = FALSE,
+  WAIC = FALSE,
+  userEnv = parent.frame()
 )
 }
 \arguments{
@@ -58,8 +62,13 @@ nimbleMCMC(
 
 \item{samplesAsCodaMCMC}{Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects.  This argument is only used when \code{samples} is \code{TRUE}.  Default value is \code{FALSE}.  See details.}
 
-\item{summary}{Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
-z}
+\item{summary}{Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.}
+
+\item{mean}{Character or logical argument.  When a vector of node names is provided, the \code{mean} derived quantity function will be used to calculate the running mean for all node names specified.  If \code{TRUE}, the running mean will be calculated for nodes specified in \code{monitors}.}
+
+\item{variance}{Character or logical argument.  When a vector of node names is provided, the \code{variance} derived quantity function will be used to calculate the running variance for all node names specified.  If \code{TRUE}, the running variance will be calculated for nodes specified in \code{monitors}.}
+
+\item{logProb}{When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword \code{".all"} may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).}
 
 \item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}. Note that the version of WAIC used is the default WAIC conditional on random effects/latent states and without any grouping of data nodes. See \code{help(waic)} for more details. If a different version of WAIC is desired, do not use \code{nimbleMCMC}. Instead, specify the \code{controlWAIC} argument to \code{configureMCMC} or \code{buildMCMC}, and then use \code{runMCMC}.}
 }

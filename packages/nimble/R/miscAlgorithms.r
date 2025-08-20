@@ -122,9 +122,10 @@ expmAv <- nimbleFunction(
 #' matrix exponential. It differs from the standard Taylor scaling and squaring algorithm reviewed by Ruiz et al (2016) and found in common texts. 
 #' If using the matrix exponential to create a transition probability matrix in a HMM context just once, 
 #' this function is good. If dimension is large, we recommend avoiding the matrix exponential and using `expmAv` instead. 
-#' Note that for computation efficiency matrix uniformization is always done by A* = A + rho I, where rho = max(abs(diag(A))).
+#' Note that for computation efficiency matrix uniformization is always done by A* = A + rho I, where rho = max(abs(diag(A))). 
+#' Derivatives are currently not supported.
 #'
-#' @return \code{expmAv} gives a vector that is ans = exp(A) %*% v.
+#' @return \code{expmA} gives a matrix that is ans = exp(A).
 #' @references 
 #' Sherlock, C. (2021). Direct statistical inference for finite Markov jump processes via the matrix exponential. Computational Statistics, 36(4), 2863-2887.
 #' 
@@ -160,11 +161,7 @@ expmA <- nimbleFunction(
       }
     }
     twos <- 2^s
-    if(uniformization){
-      Msmall <- (A + rho*diag(n))/twos
-    }else{
-      Msmall <- A/twos
-    }
+    Msmall <- (A + rho*diag(n))/twos
     m <- qpois(tol, rho/twos, lower.tail = FALSE)
 
     expMsmall <- diag(n) + Msmall
@@ -174,8 +171,7 @@ expmA <- nimbleFunction(
       expMsmall <- expMsmall + expMpro
     }
 
-    if(uniformization) 
-      expMsmall <- expMsmall * exp(-rho/twos)
+    expMsmall <- expMsmall * exp(-rho/twos)
 
     expM <- expMsmall
     for( i in 1:s ) expM <- expM %*% expM

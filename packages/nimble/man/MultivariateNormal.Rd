@@ -2,10 +2,16 @@
 % Please edit documentation in R/distributions_implementations.R
 \name{MultivariateNormal}
 \alias{MultivariateNormal}
+\alias{dmnorm_inv_ld}
+\alias{rmnorm_inv_ld}
 \alias{dmnorm_chol}
 \alias{rmnorm_chol}
 \title{The Multivariate Normal Distribution}
 \usage{
+dmnorm_inv_ld(x, mean, mat, inv_ld, prec_param = TRUE, log = FALSE)
+
+rmnorm_inv_ld(n = 1, mean, mat, inv_ld, prec_param = TRUE)
+
 dmnorm_chol(x, mean, cholesky, prec_param = TRUE, log = FALSE)
 
 rmnorm_chol(n = 1, mean, cholesky, prec_param = TRUE)
@@ -15,13 +21,13 @@ rmnorm_chol(n = 1, mean, cholesky, prec_param = TRUE)
 
 \item{mean}{vector of values giving the mean of the distribution.}
 
-\item{cholesky}{upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).}
-
 \item{prec_param}{logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.}
 
 \item{log}{logical; if TRUE, probability density is returned on the log scale.}
 
 \item{n}{number of observations (only \code{n=1} is handled currently).}
+
+\item{cholesky}{upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).}
 }
 \value{
 \code{dmnorm_chol} gives the density and \code{rmnorm_chol} generates random deviates.

@@ -17,7 +17,7 @@ Allow the user to get the value of a global _option_
 that affects the way in which NIMBLE operates
 }
 \examples{
-getNimbleOption('verifyConjugatePosteriors')
+getNimbleOption('MCMCverifyConjugatePosteriors')
 }
 \author{
 Christopher Paciorek
