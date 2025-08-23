@@ -32,6 +32,9 @@ nimDerivs_dummy <- nimbleFunction(
 #' is included, one should also include the arguments \code{updateNodes} and
 #' \code{constantNodes} using the output obtained from running
 #' \code{makeModelDerivsInfo}.
+#' @param reset a logical specifying whether to reset the AD tape.
+#' See Section 16.5.5 of user manual for details.
+#' Not used/relevant for uncompiled execution. Defaults to \code{FALSE}.
 #' @param ... additional arguments intended for internal use only.
 #'
 #'@details Derivatives for uncompiled nimbleFunctions are calculated using the
@@ -63,6 +66,7 @@ nimDerivs <- function(call = NA,
                       wrt = NULL,
                       order = nimC(0,1,2),
                       model = NA,
+                      reset = FALSE,
                       ...){ ## ... absorbs compile-only params
   fxnEnv <- parent.frame()
   fxnCall <- match.call()

@@ -181,7 +181,7 @@ parameterTransform <- nimbleFunction(
                     next }
                 stop('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')')
             } else {   ## multivariate
-                if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper') ||    ## 6: multivariate {normal, t, CAR},
+                if(dist %in% c('dmnorm', 'dmnormAD', 'dmvt', 'dcar_normal', 'dcar_proper') ||    ## 6: multivariate {normal, t, CAR},
                    isUserDefined(dist))                                              ##    all multivariate user-defined distributions,
                 {                                                                    ##    and non-scalar determ nodes when allowDeterm is TRUE
                     if(isUserDefined(dist) && getNimbleOption('parameterTransformWarnUserDists'))

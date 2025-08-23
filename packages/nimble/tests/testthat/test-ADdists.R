@@ -74,7 +74,6 @@ dirch_test_log <- make_AD_test2(
   wrt = c('x', 'alpha'),
   inputs = list(record = list(x = c(log(.2/.5), log(.3/.5)), alpha = c(2, 4, 4), log = 1),
                 test   = list(x = c(log(.4/.45), log(.15/.45)), alpha = c(3, 2, 5), log = 0)))
-
 dirch_test_out <- test_AD2(dirch_test_log)
 
 ## Dirichlet without log argument
@@ -145,7 +144,7 @@ wish_test_log <- make_AD_test2(
       for(j in 1:4) {
         for(i in 1:j) {
           x2D[i,j] <- x2D[j,i] <- x[indOrig]
-          chol2D[i,j] <- chol[indOrig]  
+          chol2D[i,j] <- chol[indOrig]
           indOrig <- indOrig + 1
         }
       }
@@ -169,7 +168,7 @@ wish_test_out <- test_AD2(wish_test_log)
 
 ## inverse Wishart
 
-set.seed(123)  
+set.seed(123)
 
 wRec <- rinvwish_chol(1, cholRec, df = 7)
 wTest <- rinvwish_chol(1, cholTest, df = 7)
@@ -192,7 +191,7 @@ invwish_test_log <- make_AD_test2(
       for(j in 1:4) {
         for(i in 1:j) {
           x2D[i,j] <- x2D[j,i] <- x[indOrig]
-          chol2D[i,j] <- chol[indOrig] 
+          chol2D[i,j] <- chol[indOrig]
           indOrig <- indOrig + 1
         }
       }
@@ -225,10 +224,10 @@ lkj_test_log <- make_AD_test2(
     name = "dlkj_corr_cholesky manual",
     opParam = list(name = "dlkj_corr_cholesky manual"),
     expr = quote({
-      # correlation matrix inverse transform 
+      # correlation matrix inverse transform
       z <- nimMatrix(nrow = 5, ncol = 5)
       u <- nimMatrix(nrow = 5, ncol = 5)
-        
+
       j <- 1L
       i <- 1L
       cnt <- 1L
