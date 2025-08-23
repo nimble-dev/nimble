@@ -228,7 +228,7 @@ nimOptimMethod("bobyqa",
         digits = NULL,
         enableVirtualNodeFunctionDefs = FALSE,
         checkDerivsArgs = TRUE,
-        includeUnneededLatentsForMarg = FALSE
+        includeUnneededLatents = FALSE
       )
 )
 

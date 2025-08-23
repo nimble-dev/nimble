@@ -488,19 +488,19 @@ test_that("`setupMargNodes` handling of missing/extra latents", {
     ## This gives a warning.
     ## `b[2]` now in `paramNodes`, presumably since its `y`s are in calcNodes.
     expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b[1]', calcNodes = c('b[1]','y')),
-                   "they should be marginalized over")
+                   "they should be included")
     expect_identical(result$randomEffectsNodes, c("b[1]"))
     expect_identical(result$paramNodes, c("mu", "b[2]"))
  
-    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for marginalization")
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for the provided")
     expect_identical(result$randomEffectsNodes, c("b[1]", "b[2]"))
     expect_identical(result$paramNodes, c("mu"))
 
-    nimbleOptions(includeUnneededLatentsForMarg = TRUE)
-    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for marginalization")
+    nimbleOptions(includeUnneededLatents = TRUE)
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for the provided")
     expect_identical(result$randomEffectsNodes, c("b[1]", "b[2]", "b[3]"))
     expect_identical(result$paramNodes, c("mu"))
     ## Note `b[3]` is not in `calcNodes` because `predictiveNodes` are excluded.
-    nimbleOptions(includeUnneededLatentsForMarg = FALSE)
+    nimbleOptions(includeUnneededLatents = FALSE)
 })
     
