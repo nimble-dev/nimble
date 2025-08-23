@@ -624,6 +624,8 @@ Obtaining derivatives involving model calculations takes some special considerat
 
 We will use the Poisson GLMM above as an example model for which we want derivatives. We can obtain derivatives with respect to any variables for all or any subset of model calculations.
 
+Note that in any of the methods below, when order 0 (value) is requested, then any values of model variables (include `logProb` values) during derivative calculations will be changed in the model object, consistent with what would happen if the model calculations were done outside of getting derivatives. However, if order 0 is not requested, then values in the model will not be changed by doing derivative calculations.
+
 ### Method 1: `nimDerivs` of `model$calculate`
 
 Recall that `model$calculate(nodes)` returns the sum of the log probabilities of all stochastic nodes in `nodes`. Deterministic calculations are also executed; they contribute 0 to the sum of probabilities but may be needed for inputs to subsequent calculations. Calculations are done in the order of `nodes`, which should be a valid order for the model, often obtained from `model$getDependencies`.
