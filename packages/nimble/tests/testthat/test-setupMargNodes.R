@@ -464,3 +464,43 @@ test_that("regression tests that `getConditionallyIndependentSets` works with tr
     expect_length(m$getConditionallyIndependentSets(nodes = latents, givenNodes = given, unknownAsGiven = TRUE), 1)
 })
 
+test_that("`setupMargNodes` handling of missing/extra latents", {
+    code <- nimbleCode({
+        for(i in 1:5)
+            y[i] ~ dnorm(b[k[i]], 1)
+        for(i in 1:3)
+            b[i] ~ dnorm(mu,1)
+        mu ~ dnorm(0,1)
+    })
+    ## Only b[1] and b[2] have data dependents.
+    m <- nimbleModel(code, data = list(y = rnorm(5)), constants = list(k = c(1,1,1,2,2)))
+
+    expect_silent(result <- setupMargNodes(m))
+    expect_identical(result$randomEffectsNodes, c("b[1]","b[2]"))
+    expect_identical(result$paramNodes, c("mu"))
+
+    ## `b[2]` won't be marginalized over, and its dependent `y`s are not in calcNodes.
+    ## Could be user error, but we simply accept the user choices. 
+    expect_silent(result <- setupMargNodes(m, randomEffectsNodes = 'b[1]'))
+    expect_identical(result$randomEffectsNodes, c("b[1]"))
+    expect_identical(result$paramNodes, c("mu"))
+    
+    ## This gives a warning.
+    ## `b[2]` now in `paramNodes`, presumably since its `y`s are in calcNodes.
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b[1]', calcNodes = c('b[1]','y')),
+                   "they should be included")
+    expect_identical(result$randomEffectsNodes, c("b[1]"))
+    expect_identical(result$paramNodes, c("mu", "b[2]"))
+ 
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for the provided")
+    expect_identical(result$randomEffectsNodes, c("b[1]", "b[2]"))
+    expect_identical(result$paramNodes, c("mu"))
+
+    nimbleOptions(includeUnneededLatents = TRUE)
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for the provided")
+    expect_identical(result$randomEffectsNodes, c("b[1]", "b[2]", "b[3]"))
+    expect_identical(result$paramNodes, c("mu"))
+    ## Note `b[3]` is not in `calcNodes` because `predictiveNodes` are excluded.
+    nimbleOptions(includeUnneededLatents = FALSE)
+})
+    
