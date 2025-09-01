@@ -2204,28 +2204,24 @@ makeModelDerivsInfo_impl <- function(model,
   ## Gymnastics to convert to actual nodes for computational efficiency are needed because `setdiff` needs to
   ## operate on node components because `wrt` is in terms of components not nodes.
   nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)  # Node components here, since `calcNodes`, `wrtNodes` are as components upon input.
-####  nonWrtCalcActualNodes <- model$expandNodeNames(nonWrtCalcNodes)  # Nodes here. Can be costly for large multivar nodes (say 3 sec. for a 1m-element node).
   nonWrtStochCalcNodes <- nonWrtCalcNodes[ model$isStoch(nonWrtCalcNodes,
                                nodesAlreadyExpanded = TRUE) ] # Run `isStoch` on nodes not components (issue #1431). 
 
   ## Do next steps with nodes as otherwise can be inefficient when `parentNodes` has many components.
   ## `getImmediateParentNodes` can return components.  
-  parentNodes <- model$expandNodeNames(getImmediateParentNodes(calcNodes, model))   # Nodes here.
-  #### wrtActualNodes <- model$expandNodeNames(wrtNodes)     # Nodes here.  
+  parentNodes <- model$expandNodeNames(getImmediateParentNodes(calcNodes, model)) 
   neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodes)) 
   extraInputNodes <- c(neededParentNodes, nonWrtStochCalcNodes)
 
   constantNodes <- character()
   if(dataAsConstantNodes) {
     boolData <- model$isData(extraInputNodes)
-    constantNodes <- extraInputNodes[boolData] # , returnScalarComponents = TRUE, sort = TRUE) 
-    extraInputNodes <- extraInputNodes[!boolData] # , returnScalarComponents = TRUE, sort = TRUE)
+    constantNodes <- extraInputNodes[boolData]
+    extraInputNodes <- extraInputNodes[!boolData] 
     ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
     extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
     constantNodes <- setdiff(constantNodes, wrtNodes)  
   } else {
-      ## extraInputNodes <- model$expandNodeNames(extraInputNodes) # , returnScalarComponents = TRUE, sort = TRUE)
-      ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
       extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
   }
   list(updateNodes = model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE),
