@@ -2015,16 +2015,16 @@ nimDerivsInfoClass_init_impl <- function(.self
     .self$model <- model
 
     ## wrt nodes
-    wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+    wrtNodes <- model$expandNodeNames(wrtNodes) # , returnScalarComponents = TRUE)
+    browser()  # do we need expanded wrtNodes?
     wrtNodesAccessor <- modelVariableAccessorVector(model,
-                                               wrtNodes,
+                                               model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE),
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
     # See comment in makeModelDerivsInfo for explanation of why both of the next
     # two lines are necessary.
     calcNodes <- model$expandNodeNames(calcNodes)
-    calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
     derivsInfo <- makeModelDerivsInfo_impl(model,
                                       wrtNodes,
                                       calcNodes,
@@ -2063,7 +2063,6 @@ makeOutputNodes <- function(model,
   ## Presuming (and based on a simple test) that by now,
   ## input `calcNodes` would include all encompassing nodes
   ## and that this next step would not introduce any additional components.  
-  calcNodes <- model$expandNodeNames(calcNodes)
   logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodes)
   isDetermCalcNodes <- model$isDeterm(calcNodes, nodesAlreadyExpanded = TRUE)
   modelOutputNodes <- c(model$expandNodeNames(calcNodes[isDetermCalcNodes], returnScalarComponents = TRUE),
@@ -2219,18 +2218,18 @@ makeModelDerivsInfo_impl <- function(model,
   constantNodes <- character()
   if(dataAsConstantNodes) {
     boolData <- model$isData(extraInputNodes)
-    constantNodes <- model$expandNodeNames(extraInputNodes[boolData], returnScalarComponents = TRUE, sort = TRUE) 
-    extraInputNodes <- model$expandNodeNames(extraInputNodes[!boolData], returnScalarComponents = TRUE, sort = TRUE)
+    constantNodes <- extraInputNodes[boolData] # , returnScalarComponents = TRUE, sort = TRUE) 
+    extraInputNodes <- extraInputNodes[!boolData] # , returnScalarComponents = TRUE, sort = TRUE)
     ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
     extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
     constantNodes <- setdiff(constantNodes, wrtNodes)  
   } else {
-      extraInputNodes <- model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE)
+      ## extraInputNodes <- model$expandNodeNames(extraInputNodes) # , returnScalarComponents = TRUE, sort = TRUE)
       ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
       extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
   }
-  list(updateNodes = extraInputNodes,
-       constantNodes = constantNodes)
+  list(updateNodes = model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE),
+       constantNodes = model$expandNodeNames(constantNodes, returnScalarComponents = TRUE, sort = TRUE))
 }
 
 nimDerivsInfoClass_update_init_impl <- function(.self,
