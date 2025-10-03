@@ -718,3 +718,73 @@ test_that('Derivatives with double-taping, indices, and directions work',
     ## #c(-.3, -.7) %*% apply(correct$hessian, 1, \(H) H %*% c(-2, -1, -3))
   }
 )
+
+## test_that('Derivatives with double-taping, indices, and directions work',
+##   {
+##     ADfun1 <- nimbleFunction(
+##       setup = function(){},
+##       run = function(x = double(1)) {
+##         ans <- c(x[1]^3, x[2]^3, (x[1]^2*x[2]^2))
+##         return(ans)
+##         returnType(double(1))
+##       },
+##       methods = list(
+##         derivsRun = function(x = double(1),
+##                              wrt = double(1),
+##                              outInds = double(1),
+##                              inDir = double(1),
+##                              outDir = double(1),
+##                              order = double(1)) {
+##           ans <- derivs(run(x), wrt = wrt, outInds = outInds,
+##                         inDir = inDir, outDir = outDir, order = order)
+##           return(ans)
+##           returnType(ADNimbleList())
+##         },
+##         jacobianRun = function(x = double(1)) {
+##           out <- derivs(run(x), wrt = 1:2, order = 1)
+##           ans <- nimNumeric(length = 6, value = out$jacobian)
+##           returnType(double(1))
+##           return(ans)
+##         },
+
+##         metaDerivsRun = function(x = double(1),
+##                                  order = double(1)) {
+##           out <- derivs(jacobianRun(x), wrt = 1:2,
+##                         order = order)
+##           returnType(ADNimbleList())
+##           return(out)
+##         }
+##       ), buildDerivs = c('jacobianRun', 'run')
+##     )
+
+##     ADfunInst <- ADfun1()
+##     xRec <- c(2.2, 3.3)
+##     x <- c(1.6, 2.8)
+##     Rderivs <- ADfunInst$jacobianRun(x)
+##     Rderivs <- ADfunInst$metaDerivsRun(x, order = 1)
+##     temporarilyAssignInGlobalEnv(ADfunInst)
+##     cADfunInst <- compileNimble(ADfunInst)
+
+##     ## record
+##     cADfunInst$derivsRun(x = xRec,
+##                          wrt = 1:2,
+##                          outInds = numeric(),
+##                          inDir = numeric(),
+##                          outDir = numeric(),
+##                          order = 1:2)
+
+##     ## Future args:
+##     wrt <- list(1:2, 1, 2, c(2, 1), c(2, 1, 2))
+##     outInds <- list(1:3, 1, 2, 3, c(3, 1), c(3, 1, 3))
+##     inDirs <- list(c(-0.3, -0.7))
+##     outDirs <- list(c(-2, -1, -3))
+##     orders <- list(0, 1, 2, c(0, 1), c(0, 2), c(1, 2), 0:2)
+
+##     cADfunInst$derivsRun(x = xRec,
+##                          wrt = 1:2,
+##                          outInds = numeric(),
+##                          inDir = rep(inDirs[[1]], 4),
+##                          outDir = numeric(),
+##                          order = 1:2)
+
+##   })

@@ -72,7 +72,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
     //  for(size_t ijk = 0; ijk < wrtVector.size(); ++ijk)
     //    std::cout<<wrtVector[ijk]<<" ";
     //  std::cout<<std::endl;
-    
+
     #ifdef _TIME_AD_GENERAL
     derivs_getDerivs_timer_start();
     derivs_tick_id();
@@ -80,14 +80,14 @@ void getDerivs_internal(vector<BASE> &independentVars,
     #endif
     std::size_t n = independentVars.size();  // dim of independent vars
     std::size_t m = ADtape->Range();
-    
+
     int maxOrder;
     bool ordersFound[3];
     setOrdersFound(derivOrders, ordersFound, maxOrder);
-  
+
     // std::cout<<"orders: "<<ordersFound[0]<<" "<<ordersFound[1]<<" "<<ordersFound[2]<<std::endl;
     // std::cout<<"maxOrder = "<<maxOrder<<std::endl;
-  
+
     // std::cout<<"inDir info: size = "<<inDir.size()<<std::endl;
     // if(inDir.size() > 0) {
     //   std::cout<<"inDir[0] = "<<gd_getValue(inDir[0])<<std::endl;
@@ -110,12 +110,12 @@ void getDerivs_internal(vector<BASE> &independentVars,
         This results in the returned "y" dimension being 1.
       If wrt is provided (conceptually, this could be called "inputInds") *without* inDir,
         it is used to filter result "x" dimensions for any order. This means
-        for Forward mode only basis vectors in wrt directions will be used, and in 
-        Reverse mode, results will be filtered to only wrt directions. 
+        for Forward mode only basis vectors in wrt directions will be used, and in
+        Reverse mode, results will be filtered to only wrt directions.
         The returned "x" dimensions will be length(wrt).
       If wrt is provided *with* inDir,
         it is used to filter "x" dimension results from Reverse mode, whereas
-        Forward mode will go in the inDir direction for "x". This will result in 
+        Forward mode will go in the inDir direction for "x". This will result in
         Reverse 1 returning "x" dimension 1 and Reverse 2 returning "x" dimensions (1, length(wrt)).
       If inDir *is* provided *without* wrt,
         if order includes 1, the Jacobian "x" dimension will be 1.
@@ -125,7 +125,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
       If outInds is provided *without* outDir,
         it is used to filter result "y" dimensions for any order (including 0). This means
         for Reverse mode only basis vectors in outInds directions will be used, and in
-        Forward mode, results will be filtered to only outInds directions. 
+        Forward mode, results will be filtered to only outInds directions.
         The returned "y" dimensions will be length(outInds).
       If outInds is provided *with* outDir,
         it is used to filter "y" dimension results from Forward mode, whereas
@@ -153,10 +153,12 @@ void getDerivs_internal(vector<BASE> &independentVars,
       std::cout<<"Warning: Both wrt and inDir are provided, which is only meaningful for order 2 (not requested), so wrt will be ignored."<<std::endl;
       wrt_provided = false;
     }
-    if(inDir_provided){
-      if(inDir.size() != n) {
-        std::cout << "inDir must have the same length as independentVars." << std::endl;
+    size_t num_inDirs;
+    if(inDir_provided) {
+      if( (inDir.size() % n) != 0)  { //inDir.size() != n) {
+        std::cout << "length of inDir must be a multiple of length of independentVars." << std::endl;
       }
+      num_inDirs = inDir.size() / n;
     }
     if(outDir_provided){
       if(outDir.size() != m) {
@@ -183,8 +185,8 @@ void getDerivs_internal(vector<BASE> &independentVars,
       if(inDir_provided) {
         wrtAllx_o1 = false;  // not checked anyway
         wrtAllx1_o2 = false; // not checked anyway
-        res_dimx_o1 = 1;
-        res_dimx1_o2 = 1;
+        res_dimx_o1 = num_inDirs; //1
+        res_dimx1_o2 = num_inDirs; //1;
       }
     } else { // wrt_provided
       wrtAllx_o1 = false;
@@ -192,15 +194,15 @@ void getDerivs_internal(vector<BASE> &independentVars,
       wrtAllx2_o2 = false;
       res_dimx2_o2 = length_wrt;
       if(inDir_provided) { // inDir_provided
-        res_dimx_o1 = 1;
-        res_dimx1_o2 = 1;
+        res_dimx_o1 = num_inDirs; //1;
+        res_dimx1_o2 = num_inDirs; //1;
       } else {
         res_dimx_o1 = length_wrt;
         res_dimx1_o2 = length_wrt;
       }
     }
     if(outInds_provided) {
-      outAlly_o0 = false; 
+      outAlly_o0 = false;
       outAlly_o1 = false;
       outAlly_o2 = false;
       res_dimy_o0 = length_outInds;
@@ -217,18 +219,18 @@ void getDerivs_internal(vector<BASE> &independentVars,
         res_dimy_o1 = 1;
       }
     }
-    
+
     vector<BASE> value_ans;
     #ifdef _TIME_AD_GENERAL
     derivs_run_tape_timer_start();
     #endif
-        
+
     int strategy_zero = 1; // 1 means do it, 0 means skip.
-    int strategy_one = 0; // 0=skip. 1=forward regular. 2=reverse subgraph_rev_jac. 3=reverse normal 
+    int strategy_one = 0; // 0=skip. 1=forward regular. 2=reverse subgraph_rev_jac. 3=reverse normal
     int strategy_two= 0; // 0=skip. 1=reverse regular.
     if(maxOrder > 0) {
       if (ordersFound[1]) {
-        // At least Jacobian is needed. 
+        // At least Jacobian is needed.
         if(!ordersFound[2]) {
           // Hessian is not needed.
           if((m <= n || outDir_provided) && !inDir_provided) { // possibly we should compare to wrt_n, but we have use cases where comparing to n works better
@@ -239,7 +241,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
               strategy_one = 2; // use subgraph_rev_jac if jacobian is the final order
               if(!ordersFound[0]) {
                 // If value is not needed, we can skip Forward 0 because subgraph_rev_jac does it itself.
-                strategy_zero = 0; 
+                strategy_zero = 0;
               }
             } else {
               // m == 1, or outDir_provided, so we can use regular reverse mode.
@@ -260,7 +262,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
     }
     // std::cout<<"n: "<<n<<" m: "<<m<<" length_wrt: "<<length_wrt<<std::endl;
     // std::cout<<"strategy flags: "<<strategy_zero<<" "<<strategy_one<<" "<<strategy_two<<std::endl;
-    
+
     // to-do: get Forward(0) out of subgraph_rev_jac if both are needed/used.
     // For now we have to wastefully run Forward(0) even if it will be done again in subgraph_rev_jac.
     if(strategy_zero==1) {
@@ -285,7 +287,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
       value_ans.resize(m);
       std::fill(value_ans.begin(), value_ans.end(), 0.0);
     }
-    if(maxOrder > 0){ 
+    if(maxOrder > 0){
       // std::cout<<"entering maxOrder> 0\n";
       vector<bool> infIndicators(m, false); // default values will be false
       for(size_t inf_ind = 0; inf_ind < m; inf_ind++){
@@ -304,7 +306,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
       //std::cout<<"done setting hessian size\n";
       vector<BASE> cppad_derivOut;
       std::vector<BASE> w(m, 0);
-      
+
       // begin replacement
       if (maxOrder == 1) {
         if(strategy_one == 2) { // subgraph_rev_jac
@@ -331,7 +333,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
             int y_ind = outAlly_o1 ? i_out : outInds[i_out] - 1;
             select_range[y_ind] = true;
           }
-          
+
           std::vector<int> col_2_wrtVecm1;
           if(!wrtAllx_o1) {
             col_2_wrtVecm1.resize(n, -1);
@@ -371,7 +373,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
             if(y_ind < 0) {
               std::cout<<"Error: y_ind is negative. This should not happen."<<std::endl;
               continue; // skip this entry
-            } 
+            }
             LHS[x1_ind*m + y_ind] = matrix_out.val()[this_ind];
               // if(this_row > max_row) {
               //   max_row = this_row;
@@ -391,7 +393,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
           } // end k
             //std::cout<<"done filling jacobian\n";
         } // end strategy_one == 2
-          else if(strategy_one == 3) 
+          else if(strategy_one == 3)
         { // regular reverse mode, used for m == 1 or outDir_provided
           // std::cout<<"regular reverse version of jacobian\n";
           for(size_t i_out = 0; i_out < res_dimy_o1; i_out++) {
@@ -452,7 +454,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
                 #endif
             } else { // end use_wrt
               x1_ind = 0; // inDir is used, so we only need one input.
-              for(size_t ix = 0; ix < n; ix++) x1[ix] = inDir[ix];
+              for(size_t ix = 0; ix < n; ix++) x1[ix] = inDir[n*i_wrt + ix];
               cppad_derivOut = ADtape->Forward(1, x1);
             } // end use inDir.
             if (ordersFound[1]) { // will always be true if maxOrder == 1
@@ -476,7 +478,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
        // std::cout<<"Entering maxOrder > 1\n";
         // maxOrder > 1: outer loop over vec_ind, inner loop over dy_ind
         // strategy_one and strategy_two are actually ignored here for now, b/c we wouldn't be here if not needed.
-        std::vector<BASE> cppad_derivOut_F1;  
+        std::vector<BASE> cppad_derivOut_F1;
         std::vector<BASE> x1(n, 0);
         for (size_t i1_wrt = 0; i1_wrt < res_dimx1_o2; i1_wrt++) {
           int x1_ind(0);
@@ -492,7 +494,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
               #endif
           } else { // end use_wrt
             x1_ind = 0; // inDir is used, so we only need one input.
-            for(size_t ix = 0; ix < n; ix++) x1[ix] = inDir[ix];
+            for(size_t ix = 0; ix < n; ix++) x1[ix] = inDir[n*i1_wrt + ix];
             cppad_derivOut_F1 = ADtape->Forward(1, x1);
           } // end use inDir.
           // std::cout<<"contents of cppad_derivOut_F1: ";
@@ -532,20 +534,20 @@ void getDerivs_internal(vector<BASE> &independentVars,
               for (size_t i2_wrt = 0; i2_wrt < res_dimx2_o2; i2_wrt++) {
                 int x2_ind(0);
                 x2_ind = wrtAllx2_o2 ? i2_wrt : wrtVector[i2_wrt] - 1;
-                
-                ansList->hessian[res_dimx1_o2 * res_dimx2_o2 * i_out + res_dimx2_o2 * i1_wrt + i2_wrt] =
+
+                ansList->hessian[res_dimx1_o2 * res_dimx2_o2 * i_out + res_dimx1_o2 * i2_wrt + i1_wrt] =
                 cppad_derivOut[x2_ind * 2 + 1];
               }
             } else {
               for (size_t i2_wrt = 0; i2_wrt < res_dimx2_o2; i2_wrt++) {
-                ansList->hessian[res_dimx1_o2 * res_dimx2_o2 * i_out + res_dimx2_o2 * i1_wrt + i2_wrt] =
+                ansList->hessian[res_dimx1_o2 * res_dimx2_o2 * i_out + res_dimx1_o2 * i2_wrt + i1_wrt] =
                 CppAD::numeric_limits<BASE>::quiet_NaN();
               }
             }
               // end use_out2
             if(!outDir_provided) w[y_ind] = 0; // outDir is used, so we only need one output.
           } // end out_ind loop
-            
+
           if (ordersFound[1]) {
             BASE *LHS = ansList->jacobian.getPtr() + res_dimy_o1 * i1_wrt;
 
@@ -560,7 +562,7 @@ void getDerivs_internal(vector<BASE> &independentVars,
         }
       }
     } // end else
-      
+
       // end replacement
       #ifdef _TIME_AD_GENERAL
       derivs_getDerivs_timer_stop();
