@@ -281,8 +281,8 @@ timeConf$addSampler(target = c("a", "b", "c", "mu_0"), type = "RW_PF_block",
                                  latents = "x", pfOptimizeNparticles = TRUE))
 ```
   
-The  `type = "RW_PF"` and `type = "RW_PF*block"` samplers
-default to using a bootstrap filter.  The adapatation control
+The  `type = "RW_PF"` and `type = "RW_PF_block"` samplers
+default to using a bootstrap filter.  The adaptation control
 parameters `adaptive`, `adaptInterval`, and 
 `adaptScaleOnly` work in the same way as for an `RW` and `RW*block` samplers.
 However, it is not clear if the same approach to adaptation works well
