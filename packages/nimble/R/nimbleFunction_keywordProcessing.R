@@ -2016,7 +2016,6 @@ nimDerivsInfoClass_init_impl <- function(.self
 
     ## wrt nodes
     wrtNodes <- model$expandNodeNames(wrtNodes) # , returnScalarComponents = TRUE)
-    browser()  # do we need expanded wrtNodes?
     wrtNodesAccessor <- modelVariableAccessorVector(model,
                                                model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE),
                                                logProb = FALSE)
