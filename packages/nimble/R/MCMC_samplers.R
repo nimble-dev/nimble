@@ -3247,6 +3247,9 @@ sampler_polyagamma <- nimbleFunction(
     )
 )
 
+
+#' @rdname samplers
+#' @export
 sampler_barker <- nimbleFunction(
     name = 'sampler_barker',
     contains = sampler_BASE,
