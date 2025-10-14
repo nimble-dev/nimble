@@ -642,6 +642,7 @@ Details: If a provided value (or the current value in the model when only a name
                                            if(any(names(data) == ""))
                                                warning("setData: one or more elements of 'data' is unnamed.")
                                       origData <<- data
+                                      nonRHSonly <- getNodeNames(includeRHSonly = FALSE)
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
                                       for(iData in seq_along(data)) {
@@ -686,7 +687,10 @@ Details: If a provided value (or the current value in the model when only a name
                                           assign(varName, isDataVarValue, envir = isDataEnv)
 
                                           ## Nor are deterministic elements.
-                                          expandedNodeNames <- expandNodeNames(varName, returnScalarComponents = TRUE)
+                                          thisVarNonRHS <- intersect(expandNodeNames(varName), nonRHSonly)
+                                          if(length(thisVarNonRHS)) {
+                                          ## Avoid potentially costly check of `isDeterm` for RHSonly elements passed as input.
+                                          expandedNodeNames <- expandNodeNames(thisVarNonRHS, returnScalarComponents = TRUE)
                                           determElements <- .self$isDeterm(expandedNodeNames, includeRHSonly = FALSE, nodesAlreadyExpanded = TRUE)
                                           if(any(determElements)) {
                                               varValueEnv <- new.env(parent = baseenv())
@@ -700,7 +704,7 @@ Details: If a provided value (or the current value in the model when only a name
                                                             function(nn)
                                                                 eval(substitute(VALUE <- FALSE, list(VALUE = parse(text=nn, keep.source = FALSE)[[1]])),
                                                                      envir = isDataEnv))
-                                          }
+                                          }}
                                       }
                                    ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
                                       setPredictiveNodeIDs()
