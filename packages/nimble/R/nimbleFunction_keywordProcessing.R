@@ -2014,18 +2014,16 @@ nimDerivsInfoClass_init_impl <- function(.self
                                        , model) {
     .self$model <- model
 
-    ## wrt nodes
-    wrtNodes <- model$expandNodeNames(wrtNodes) # , returnScalarComponents = TRUE)
+    wrtNodeComps <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
     wrtNodesAccessor <- modelVariableAccessorVector(model,
-                                               model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE),
+                                                    wrtNodeComps,
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
-    # See comment in makeModelDerivsInfo for explanation of why both of the next
-    # two lines are necessary.
+    # See comment in makeModelDerivsInfo for discussion of nodes versus components.
     calcNodes <- model$expandNodeNames(calcNodes)
     derivsInfo <- makeModelDerivsInfo_impl(model,
-                                      wrtNodes,
+                                      wrtNodeComps,
                                       calcNodes,
                                       dataAsConstantNodes = TRUE)
     constantNodes <- derivsInfo$constantNodes
@@ -2059,9 +2057,7 @@ nimDerivsInfoClass_init_impl <- function(.self
 makeOutputNodes <- function(model,
                             calcNodes) {
   ## Need to do `isDeterm` on nodes, not node components (issue 1431).
-  ## Presuming (and based on a simple test) that by now,
-  ## input `calcNodes` would include all encompassing nodes
-  ## and that this next step would not introduce any additional components.  
+  calcNodes <- model$expandNodeNames(calcNodes)  # Ensure includes all encompassing nodes.  
   logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodes)
   isDetermCalcNodes <- model$isDeterm(calcNodes, nodesAlreadyExpanded = TRUE)
   modelOutputNodes <- c(model$expandNodeNames(calcNodes[isDetermCalcNodes], returnScalarComponents = TRUE),
@@ -2169,15 +2165,11 @@ makeModelDerivsInfo <- function(model,
                            wrtNodes,
                            calcNodes,
                            dataAsConstantNodes = TRUE) {
-  wrtNodes <- model$expandNodeNames(wrtNodes) #### , returnScalarComponents = TRUE)
+  wrtNodeComps <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
   # This ensures that elements of a non-scalar node become the entire non-scalar node.
   calcNodes <- model$expandNodeNames(calcNodes)
-  # And then this splits into scalar components.
-  # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
-  # the above call gets `mu[1:3]` and then the below call splits it.
-  #### calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE) 
   makeModelDerivsInfo_impl(model,
-                      wrtNodes,
+                      wrtNodeComps,
                       calcNodes,
                       dataAsConstantNodes)
 }
@@ -2197,34 +2189,37 @@ getImmediateParentNodes <- function(nodes, model) {
 }
 
 makeModelDerivsInfo_impl <- function(model,
-                                     wrtNodes,
+                                     wrtNodeComps,
                                      calcNodes,
                                      dataAsConstantNodes = TRUE) {
   ## Gymnastics to convert to actual nodes for computational efficiency are needed because `setdiff` needs to
-  ## operate on node components because `wrt` is in terms of components not nodes.
-  nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)  # Node components here, since `calcNodes`, `wrtNodes` are as components upon input.
+  ## operate on node components because `wrt` is inherently in terms of components not nodes.
+  calcNodeComps <- model$expandNodeNames(calcNodes)
+  nonWrtCalcNodeComps <- setdiff(calcNodeComps, wrtNodeComps)  
+
+  nonWrtCalcNodes <- model$expandNodeNames(nonWrtCalcNodeComps)  # Nodes here. Can be costly for large multivar nodes (say 3 sec. for a 1m-element node).
   nonWrtStochCalcNodes <- nonWrtCalcNodes[ model$isStoch(nonWrtCalcNodes,
                                nodesAlreadyExpanded = TRUE) ] # Run `isStoch` on nodes not components (issue #1431). 
 
   ## Do next steps with nodes as otherwise can be inefficient when `parentNodes` has many components.
-  ## `getImmediateParentNodes` can return components.  
   parentNodes <- model$expandNodeNames(getImmediateParentNodes(calcNodes, model)) 
-  neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodes)) 
+
+  neededParentNodes <- setdiff(parentNodes, c(model$expandNodeNames(wrtNodeComps), nonWrtCalcNodes)) 
   extraInputNodes <- c(neededParentNodes, nonWrtStochCalcNodes)
 
   constantNodes <- character()
   if(dataAsConstantNodes) {
     boolData <- model$isData(extraInputNodes)
-    constantNodes <- extraInputNodes[boolData]
-    extraInputNodes <- extraInputNodes[!boolData] 
-    ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
-    extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
-    constantNodes <- setdiff(constantNodes, wrtNodes)  
+    constantNodes <- model$expandNodeNames(extraInputNodes[boolData], returnScalarComponents = TRUE, sort = TRUE)
+    extraInputNodes <- model$expandNodeNames(extraInputNodes[!boolData], returnScalarComponents = TRUE, sort = TRUE)
+    ## "wrt" components could have crept in when initializing `extraInputNodes` based on nodes.
+    extraInputNodes <- setdiff(extraInputNodes, wrtNodeComps)
+    constantNodes <- setdiff(constantNodes, wrtNodeComps)  
   } else {
-      extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
+    extraInputNodes <- setdiff(model$expandNodeNames(extraInputNodes,returnScalarComponents = TRUE, sort = TRUE), wrtNodeComps)
   }
-  list(updateNodes = model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE),
-       constantNodes = model$expandNodeNames(constantNodes, returnScalarComponents = TRUE, sort = TRUE))
+  list(updateNodes = extraInputNodes, 
+       constantNodes = constantNodes)
 }
 
 nimDerivsInfoClass_update_init_impl <- function(.self,
