@@ -269,6 +269,17 @@ test_that('makeModelDerivsInfo works correctly', {
     expect_identical(result$updateNodes, c(lftChElems))
     expect_identical(result$constantNodes, character(0))
 
+    ## Case with wrt as node elements (to check bug introduced via PR 1590).
+    code <- nimbleCode({
+    p[1:3] ~ ddirch(alpha[1:3])
+    for(i in 1:3)
+        y[i] ~ dbern(p[i])
+    })
+    m <- nimbleModel(mc, data=list(y = c(0,1,0)))
+    makeModelDerivsInfo(m, wrtNodes = c('p[1]','p[2]'), calcNodes = c('p','y'))
+    
+    makeModelDerivsInfo(m, wrtNodes = c('alpha[2]','alpha[3]'), calcNodes = c('p'))
+
 })
 
 ## basic model, with lifted nodes
