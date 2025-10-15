@@ -279,10 +279,12 @@ Given the computations involved, it is best to have the number of parameters be 
 
 Note that the treatment of fixed effects differs between the nested approximation and NIMBLE's Laplace approximation. In Laplace approximation, fixed effects are treated as parameters of interest and maximized with respect to, rather than being marginalized over. In the nested approximation, they are marginalized over and inference on them can be done based on simulated values. One advantage of grouping fixed effects with random effects is that one can make simulation-based inference on quantities that depend on both sets of effects, such a regression-style linear predictors.
 
-It is also possible to choose which nodes go in which set (Section \@ref(subsec:nested-node-determ). One might choose to include fixed effects in the parameter set, akin to how Laplace approximation works. Another situation where one might configure this manually is if random effects in a model are specified in a "non-centered" parameterization such as:
+It is also possible to choose which nodes go in which set (Section \@ref(subsec:nested-node-determ)). One might choose to include fixed effects in the parameter set, akin to how Laplace approximation works. Another situation where one might configure this manually is if random effects in a model are specified in a "non-centered" parameterization such as:
 
 $$
-\eta_i = \mu + \sigma b_i \\
+\eta_i = \mu + \sigma b_i 
+$$
+$$
 b_i \sim \mathcal{N}(0, 1)
 $$
 
@@ -458,7 +460,7 @@ model <- nimbleModel(code, constants = list(n = n), data = list(y = y, x = x))
 approx <- buildNestedApprox(model)
 ```
 
-We see that NIMBLE has put the fixed effect (`beta1`) and random effects (`b[i]`) in the latent nodes and the random effects parameters, $mu$ and $sigma$, into the parameter set.
+We see that NIMBLE has put the fixed effect (`beta1`) and random effects (`b[i]`) in the latent nodes and the random effects parameters, $\mu$ and $\sigma$, into the parameter set.
 
 In the model above, the role of the overall intercept is played by the random effects mean. We could instead have centered the random effects on zero and introduced an explicit intercept.
 
