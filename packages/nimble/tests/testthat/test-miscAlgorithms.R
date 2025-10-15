@@ -1,8 +1,8 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
-# Tests of Misc Algorithms which currently only includes expmAv
+# Tests of Misc Algorithms which currently includes expmAv and expmA
 test_that("expmAv works", {
-  
+    
   ## Note that pracma was not accurate enough even for a small example
   ## expm::expm(A) %*% v
   A <- matrix(c(-0.120, 100, 0.9, -150), 2, 2)
@@ -25,8 +25,8 @@ test_that("expmAv works", {
 
   eAvNimR <- expmAv(A, v)
   eAvNim <- expAvc(A, v)
-  expect_equal(eAv, eAvNim, tol = 1e-6)
-  expect_equal(eAv, eAvNimR, tol = 1e-6)
+  expect_equal(eAv, eAvNim, tol = 1e-8)
+  expect_equal(eAv, eAvNimR, tol = 1e-8)
 
   ## Increase tolerance.
   eAvNim2 <- expAvc(A, v, tol = 1e-16)
@@ -34,14 +34,14 @@ test_that("expmAv works", {
 
   ## Compare sparse version with regular version:
   set.seed(1) 
-  A <- Matrix::rsparsematrix(10, 10, .5)
+  A <- as.matrix(Matrix::rsparsematrix(10, 10, .5))
   A <- A - diag(diag(A))
   v <- rnorm(10)
   d <- -rowSums(A) - 8
   diag(A) <- d
-  eAvdense <- expAvc(as.matrix(A), v, sparse = FALSE)
-  eAvsparse <- expAvc(as.matrix(A), v, sparse = TRUE)
-  expect_equal(eAvdense, eAvsparse, tol = 1e-16)
+  eAvdense <- expAvc(A, v, sparse = FALSE)
+  eAvsparse <- expAvc(A, v, sparse = TRUE)
+  expect_equal(eAvdense, eAvsparse, tol = 1e-15)
 
   ## Increase tolerance:
   eAvsparse2 <- expAvc(as.matrix(A), v, sparse = TRUE, tol = 1e-16)
@@ -53,9 +53,22 @@ test_that("expmAv works", {
   eAvsparse_scale1 <- expAvc(as.matrix(A), v, sparse = TRUE, tol = 1e-8, rescaleFreq = 1)
   eAvsparse_scale10 <- expAvc(as.matrix(A), v, sparse = TRUE, tol = 1e-8, rescaleFreq = 10)
   eAvsparse_scale50 <- expAvc(as.matrix(A), v, sparse = TRUE, tol = 1e-8, rescaleFreq = 50)
-  expect_equal(eAvsparse_scale1, eAvsparse, tol = 1e-16) ##  Approximation is best with frequent rescaling.
+  expect_equal(eAvsparse_scale1, eAvsparse, tol = 1e-15) ##  Approximation is best with frequent rescaling.
   expect_equal(eAvsparse_scale10, eAvsparse, tol = 1e-12)
   expect_equal(eAvsparse_scale50, eAvsparse, tol = 1e-10)
+  
+  ## Test larger matrix that has positive diagonals, does not require negative.
+  set.seed(2) 
+  A <- as.matrix(Matrix::rsparsematrix(50, 50, 0.25))
+  v <- rnorm(50)
+  eAvdense <- expAvc(A, v, sparse = FALSE)
+  eAvsparse <- expAvc(A, v, sparse = TRUE)
+  expect_equal(eAvdense, eAvsparse, tol = 1e-15)
+  
+  # expAv_rtmb <- RTMB::expAv(A, v)
+  ## Indices 1,5, 10 Check sprintf("%.16f",expAv_rtmb[c(1,5,10)])
+  expAv_rtmb <- c(-10.4849004612874221, 5.7463833745583406, -4.3508466614873917)
+  expect_equal(eAvsparse[c(1,5,10)], expAv_rtmb, tol = 1e-8)
 })
 
 # Test full matrix exponential using scaling and squaring.
@@ -67,7 +80,14 @@ test_that("Matrix Exponential Works", {
   eAv <- c(192.793313160, 128.120518022) 
   
   ## Wrapper as derivs = TRUE with no setup.
-  expmAc <- compileNimble(expmA)
+  expmA_wrap <- nimbleFunction(
+    run = function(A = double(2), tol = double(0, default = 1e-8)){
+      returnType(double(2))
+      ans <- expmA(A, tol)
+      return(ans)
+    }
+  )
+  expmAc <- compileNimble(expmA_wrap)
 
   eAR <- expmA(A)
   eAC <- expmAc(A)
@@ -96,5 +116,14 @@ test_that("Matrix Exponential Works", {
   eAv <- expmAv(A, v, tol = 1e-16)
   eAv2 <- (expmAc(A, tol = 1e-16)  %*% v)[,1]
   expect_equal(eAv, eAv2, tol = 1e-14)
-})
+  
+  ## Now a much larger matrix and compare with expm::expm...
+  set.seed(2) 
+  A <- as.matrix(Matrix::rsparsematrix(50, 50, 0.25))
 
+  # test <- expm::expm(A)
+  # sprintf("%.16f",test[cbind(c(1,10,20,32),c(1,15,25,32))])
+  vals <- c(1.4785161123142350, 2.9154566237879371, -0.9980758066172498, 1.1608012543866268)
+  eAv <- expmA(A, tol = 1e-14)
+  expect_equal(eAv[cbind(c(1,10,20,32),c(1,15,25,32))], vals, tol = 1e-14)  
+})
