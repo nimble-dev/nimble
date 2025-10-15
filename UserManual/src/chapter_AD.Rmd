@@ -16,7 +16,7 @@ require(igraph, warn.conflicts = FALSE, quietly = TRUE)  # same question
 eval <- TRUE
 ``` 
 
-As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package `nimbleHMC`), Laplace approximation, and fast optimization with methods that use function gradients.
+As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package `nimbleHMC`), Laplace (and AGHQ) approximation, and fast optimization with methods that use function gradients.
 
 Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations. When done this way, derivatives are numerically accurate to the precision of the computer. This is distinct from finite difference methods, used by R packages such as `numDeriv` [@gilbert-varadhan-19] and `pracma` [@borchers-22], which approximate derivatives by calculating function values at extremely nearby points. Finite difference methods are slower and less accurate than AD. It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD. NIMBLE uses the CppAD package [@bell-22] as its AD engine, following TMB's success in doing so [@kristensen-etal-16]. A general reference on AD is @griewank-walther-08.
 
