@@ -2194,7 +2194,7 @@ makeModelDerivsInfo_impl <- function(model,
                                      dataAsConstantNodes = TRUE) {
   ## Gymnastics to convert to actual nodes for computational efficiency are needed because `setdiff` needs to
   ## operate on node components because `wrt` is inherently in terms of components not nodes.
-  calcNodeComps <- model$expandNodeNames(calcNodes)
+  calcNodeComps <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
   nonWrtCalcNodeComps <- setdiff(calcNodeComps, wrtNodeComps)  
 
   nonWrtCalcNodes <- model$expandNodeNames(nonWrtCalcNodeComps)  # Nodes here. Can be costly for large multivar nodes (say 3 sec. for a 1m-element node).
@@ -2204,8 +2204,21 @@ makeModelDerivsInfo_impl <- function(model,
   ## Do next steps with nodes as otherwise can be inefficient when `parentNodes` has many components.
   parentNodes <- model$expandNodeNames(getImmediateParentNodes(calcNodes, model)) 
 
-  neededParentNodes <- setdiff(parentNodes, c(model$expandNodeNames(wrtNodeComps), nonWrtCalcNodes)) 
-  extraInputNodes <- c(neededParentNodes, nonWrtStochCalcNodes)
+  wrtNodes <- model$expandNodeNames(wrtNodeComps)
+  allWrtComps <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+  if(identical(wrtNodeComps, allWrtComps) && !exists('paciorek')) {
+      ## wrt consists of full nodes for computational efficiency.
+      ## If original wrtNodeComps has components, then this `setdiff` could incorrectly
+      ## exclude the components of the `wrtNodes` not in `wrtNodeComps` from `parentNodes`,
+      ## so we need the other branch here.
+      neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodes))
+      extraInputNodes <- c(neededParentNodes, nonWrtStochCalcNodes)
+  } else {
+      ## `expandNodeNames` can be costly, so only use this branch if necessary.
+      parentNodeComps <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+      neededParentNodeComps <- setdiff(parentNodeComps, c(wrtNodeComps, nonWrtCalcNodeComps))
+      extraInputNodes <- model$expandNodeNames(c(neededParentNodeComps, nonWrtStochCalcNodes))
+  }
 
   constantNodes <- character()
   if(dataAsConstantNodes) {
