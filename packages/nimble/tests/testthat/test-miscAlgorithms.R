@@ -1,7 +1,7 @@
 source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'nimble'))
 
 # Tests of Misc Algorithms which currently includes expmAv and expmA
-test_that("expmAv works", {
+test_that("expmAv works.", {
     
   ## Note that pracma was not accurate enough even for a small example
   ## expm::expm(A) %*% v

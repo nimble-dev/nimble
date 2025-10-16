@@ -150,8 +150,7 @@ expmAv <- nimbleFunction(
     ans <- exp(CR[1] + log_scale) * ans
     returnType(double(1))
     return(ans)
-  },
-  buildDerivs = TRUE
+  },# buildDerivs = TRUE
 )
 
 #' Matrix Exponential
@@ -240,5 +239,5 @@ expmA <- nimbleFunction(
 
     for( i in 1:s ) expMsmall <- expMsmall %*% expMsmall
     return(expMsmall)
-  }, buildDerivs = TRUE
+  }#, buildDerivs = TRUE
 )
