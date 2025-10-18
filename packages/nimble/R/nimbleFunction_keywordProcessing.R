@@ -2206,15 +2206,17 @@ makeModelDerivsInfo_impl <- function(model,
 
   wrtNodes <- model$expandNodeNames(wrtNodeComps)
   allWrtComps <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
-  if(identical(wrtNodeComps, allWrtComps) && !exists('paciorek')) {
+  if(identical(wrtNodeComps, allWrtComps)) {
       ## wrt consists of full nodes for computational efficiency.
       ## If original wrtNodeComps has components, then this `setdiff` could incorrectly
       ## exclude the components of the `wrtNodes` not in `wrtNodeComps` from `parentNodes`,
       ## so we need the other branch here.
+      usingNodes <- TRUE
       neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodes))
       extraInputNodes <- c(neededParentNodes, nonWrtStochCalcNodes)
   } else {
       ## `expandNodeNames` can be costly, so only use this branch if necessary.
+      usingNodes <- FALSE
       parentNodeComps <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
       neededParentNodeComps <- setdiff(parentNodeComps, c(wrtNodeComps, nonWrtCalcNodeComps))
       extraInputNodes <- model$expandNodeNames(c(neededParentNodeComps, nonWrtStochCalcNodes))
@@ -2223,16 +2225,24 @@ makeModelDerivsInfo_impl <- function(model,
   constantNodes <- character()
   if(dataAsConstantNodes) {
     boolData <- model$isData(extraInputNodes)
-    constantNodes <- model$expandNodeNames(extraInputNodes[boolData], returnScalarComponents = TRUE, sort = TRUE)
-    extraInputNodes <- model$expandNodeNames(extraInputNodes[!boolData], returnScalarComponents = TRUE, sort = TRUE)
     ## "wrt" components could have crept in when initializing `extraInputNodes` based on nodes.
-    extraInputNodes <- setdiff(extraInputNodes, wrtNodeComps)
-    constantNodes <- setdiff(constantNodes, wrtNodeComps)  
+    if(usingNodes) {  # Screen using nodes for efficiency, then get components.
+        constantNodes <- setdiff(extraInputNodes[boolData], wrtNodes)
+        extraInputNodes <- setdiff(extraInputNodes[!boolData], wrtNodes)
+        extraInputNodeComps <- model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE)
+        constantNodeComps <- model$expandNodeNames(constantNodes, returnScalarComponents = TRUE, sort = TRUE)      
+    } else {          # Screen using components.
+        constantNodeComps <- model$expandNodeNames(extraInputNodes[boolData], returnScalarComponents = TRUE, sort = TRUE)
+        extraInputNodeComps <- model$expandNodeNames(extraInputNodes[!boolData], returnScalarComponents = TRUE, sort = TRUE)
+        extraInputNodeComps <- setdiff(extraInputNodeComps, wrtNodeComps)
+        constantNodeComps <- setdiff(constantNodeComps, wrtNodeComps)
+    }
   } else {
-    extraInputNodes <- setdiff(model$expandNodeNames(extraInputNodes,returnScalarComponents = TRUE, sort = TRUE), wrtNodeComps)
+      extraInputNodeComps <- setdiff(model$expandNodeNames(extraInputNodes,returnScalarComponents = TRUE, sort = TRUE), wrtNodeComps)
+      constantNodeComps <- character()
   }
-  list(updateNodes = extraInputNodes, 
-       constantNodes = constantNodes)
+  list(updateNodes = extraInputNodeComps, 
+       constantNodes = constantNodeComps)
 }
 
 nimDerivsInfoClass_update_init_impl <- function(.self,
