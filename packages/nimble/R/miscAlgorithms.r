@@ -1,20 +1,28 @@
 
 ## Not exported function to get approximate number of iterations.
-getNPrec = nimbleFunction(
-  run = function(rho = double(), prec = double(0, default= 1e-8)) {
-  
-  logprec <- log(prec)
-  pi <- 3.14159265
-  logroot2pi <- 0.5*log(2*pi)
-  
-  mhi <- rho + (-logprec)/3.0*(1.0+sqrt(1.0+18.0*rho/(-logprec)))
-  A <- 2*rho*(1.0-mhi/rho+mhi/rho*log(mhi/rho))
-  mlo <- rho+sqrt(2*rho)*sqrt(-logroot2pi-logprec-1.5*log(A)+log(A-1))
-  returnType(integer())
-  return(ceiling((mlo+mhi)/2))
-}, buildDerivs = TRUE)
+## Based on Sherlock 2021 Appendix A and code from:
+## https://github.com/ChrisGSherlock/expQ/blob/master/rexpQ.cpp
+## get_m(). Switching back to qpois for now. Will turn use when 
+## buildDerivs = TRUE in next iteration.
+# getNPrec = nimbleFunction(
+  # run = function(rho = double(), prec = double(0, default= 1e-8)) {
+    
+    # logprec <- log(prec)
+    # pi <- 3.14159265
+    # logroot2pi <- 0.5*log(2*pi)
+    
+    # mhi <- rho + (-logprec)/3.0*(1.0+sqrt(1.0+18.0*rho/(-logprec)))
+    # A <- 2*rho*(1.0-mhi/rho+mhi/rho*log(mhi/rho))
+    # mlo <- rho+sqrt(2*rho)*sqrt(-logroot2pi-logprec-1.5*log(A)+log(A-1))
+    # returnType(integer())
+    # return(ceiling((mlo+mhi)/2))
+  # } #, buildDerivs = TRUE
+# )
 
 ## Not exported function to bound the spectrum of a square matrix:
+## Based on eigenDisc from RTMB, which allows for the 
+## generalization of the Sherlock 2021 algorithm for more than just 
+## generator matrices.
 spectrumBound <- nimbleFunction(
   run = function(A = double(2)){
     q <- dim(A)
@@ -33,16 +41,17 @@ spectrumBound <- nimbleFunction(
     ans[1] <- (Max + Min)/2
     ans[2] <- (Max - Min)/2
     return(ans)
-}, buildDerivs = TRUE)
+  }#, buildDerivs = TRUE
+)
 
 #' Matrix Exponential times a vector
 #'
 #'   Compute the combined term expm(A) %*% v
 #'   to avoid a full matrix exponentiation.
 #' 
-#' @name expmAv
+#' @name expAv
 #' 
-#' @param A Infinitesimal Generator Matrix.
+#' @param A Square matrix.
 #' @param v vector to multiply by the matrix exponential exp(A) %*% v.
 #' @param tol level of accuracy required (default = 1e-8).
 #' @param rescaleFreq How frequently should the terms be scaled to avoid underflow/overflow (default = 10).
@@ -54,13 +63,12 @@ spectrumBound <- nimbleFunction(
 #' This function follows the function `expAv` from the R package RTMB (Kristensen, 2025), and theory outlined in Sherlock (2021). It is developed for working with continuous times
 #' Markov chains. If using the matrix exponential to create a transition probability matrix in a HMM context just once, 
 #' this function may be slower than the one time call to compute the full matrix exponentiation. If a full matrix exponentiation is required, refer to 
-#' `expmA` to compute. Choosing sparse = TRUE will check which matrix A values are non-zero and do sparse linear algebra. 
-#' Note that for computation efficiency matrix uniformization is always done by A* = A + rho I, where rho = max(abs(diag(A))), see Algorithm 2#' in Sherlock (2021).
+#' `expm` to compute. Choosing sparse = TRUE will check which matrix A values are non-zero and do sparse linear algebra.
+#' Note that for computation efficiency matrix uniformization is done by A* = A + rho I, where rho = max(abs(diag(A))), see Algorithm 2' in Sherlock (2021).
 #' When the row sums of the matrix are not zero, then uniformization is not done, and the number of iterations to reach tolerance are approximated based on the
-#' a bound of the spectrum, similar to `RTMB'. We use a rough approximation for the number of iterations based on Sherlock (2021) Appendix A, but the mean of the 
-#' upper and lower bound which tracks closely to the true value.
+#' a bound of the spectrum, similar to `RTMB' (Kristensen, 2025).
 #'
-#' @return \code{expmAv} gives a vector that is ans = exp(A) %*% v.
+#' @return \code{expAv} gives a vector that is ans = exp(A) %*% v.
 #'
 #' @references 
 #' Sherlock, C. (2021). Direct statistical inference for finite Markov jump processes via the matrix exponential. Computational Statistics, 36(4), 2863-2887.
@@ -71,12 +79,12 @@ spectrumBound <- nimbleFunction(
 #' @examples
 #' A <- rbind(c(-1, 0.25, 0.75), c(0, -2, 2), c(0.25, 0.25, -0.5))
 #' v <- c(0.35, 0.25, 0.1)
-#' expmAv(A, v)
+#' expAv(A, v)
 NULL
 
-#' @rdname expmAv
+#' @rdname expAv
 #' @export
-expmAv <- nimbleFunction(
+expAv <- nimbleFunction(
   run = function(A = double(2), v = double(1),
                  tol = double(0, default = 1e-8), 
                  rescaleFreq = double(0, default = 10),
@@ -94,8 +102,9 @@ expmAv <- nimbleFunction(
     log_scale <- 0
     m <- 1L
     Niter <- 1L
-    R <- ADbreak(CR[2])
-    Niter <- getNPrec(R, tol)
+    # R <- ADbreak(CR[2])
+    # Niter <- getNPrec(CR[2], tol)
+    Niter <- qpois(tol, CR[2], lower.tail = FALSE)
     if(Niter > Nmax) Niter <- Nmax
     
     ## Check and build sparse matrix if sparsity exists.
@@ -158,23 +167,22 @@ expmAv <- nimbleFunction(
 #'   Compute the the matrix exponential expm(A)
 #'   by scaling and squaring.
 #' 
-#' @name expmA
+#' @name expm
 #' 
-#' @param A Square Matrix.
+#' @param A Square matrix.
 #' @param tol level of accuracy required (default = 1e-8).
 #' @author Paul van Dam-Bates
 #'
 #' @details
 #' This function follows the scaling and squaring algorithm from Sherlock (2021), except that we compute the full
-#' matrix exponential. It differs from the standard Taylor scaling and squaring algorithm reviewed by Ruiz et al (2016) and found in common texts. 
-#' If using the matrix exponential to create a transition probability matrix in a HMM context just once, 
-#' this function is good. If dimension is large, we recommend avoiding the matrix exponential and using `expmAv` instead. 
-#' Note that for computation efficiency matrix uniformization is always done by A* = A + rho I, where rho = max(abs(diag(A))).
-#' When the row sums of the matrix are not zero, then uniformization is not done, and the number of iterations to reach tolerance are approximated based on the
-#' a bound of the spectrum, similar to `RTMB'. We use a rough approximation for the number of iterations based on Sherlock (2021) Appendix A, but the mean of the 
-#' upper and lower bound which tracks closely to the true value.
+#' matrix exponential. It differs from the standard Taylor scaling and squaring algorithm reviewed by Ruiz et al (2016) and found in common texts,
+#' by doing uniformization if the matrix is a generator matrix from a continuous time Markov chain. If using the matrix exponential to create a 
+#' transition probability matrix in a HMM context just once, this function may be efficient. If dimension is large, we recommend avoiding the 
+#' matrix exponential and using `expAv` instead. Note that for computation efficiency, when the columns are non-positive, matrix uniformization 
+#' is done by A* = A + rho I, where rho = max(abs(diag(A))). When the row sums of the matrix are not zero, then uniformization is not done, 
+#' and the number of iterations to reach tolerance are approximated based on the a bound of the spectrum, similar to `RTMB' (Kristensen, 2025).
 #'
-#' @return \code{expmA} gives a matrix that is ans = exp(A).
+#' @return \code{expm} gives a matrix that is ans = exp(A).
 #'
 #' @references 
 #' Sherlock, C. (2021). Direct statistical inference for finite Markov jump processes via the matrix exponential. Computational Statistics, 36(4), 2863-2887.
@@ -188,13 +196,13 @@ expmAv <- nimbleFunction(
 #' @examples
 #' A <- rbind(c(-1, 0.25, 0.75), c(0, -2, 2), c(0.25, 0.25, -0.5))
 #' Lambda <- diag(c(0.25, 0.1, 0))
-#' expmA((A-Lambda)*2.5)
+#' expm((A-Lambda)*2.5)
 NULL
 
 
-#' @rdname expmA
+#' @rdname expm
 #' @export
-expmA <- nimbleFunction(
+expm <- nimbleFunction(
   run = function(A = double(2), tol = double(0, default = 1e-8)){
     returnType(double(2))
     
@@ -217,7 +225,8 @@ expmA <- nimbleFunction(
     opt <- Inf
     for( k in smin:smax ){
       rhosmall <- rhosmall/2
-      test <- getNPrec(rhosmall, tol) + k
+      # test <- getNPrec(rhosmall, tol) + k
+      test <- qpois(tol, rhosmall, lower.tail = FALSE) + k
       if(test < opt){
         opt <- test
         s <- k
@@ -225,7 +234,8 @@ expmA <- nimbleFunction(
     }
     twos <- 2^s
     Msmall <- (A - C*diag(n))/twos
-    m <- getNPrec(R/twos, tol)
+    # m <- getNPrec(R/twos, tol)
+    m <- qpois(tol, R/twos, lower.tail = FALSE)    
     m <- max(2, m)
     
     expMsmall <- diag(n) + Msmall
