@@ -23,10 +23,13 @@ all arguments to \code{nimFxn}.}
 corresponding to whether the function value, Jacobian, and Hessian should be
  returned respectively.  Defaults to \code{c(0, 1, 2)}.}
 
-\item{model}{(optional) for derivatives of a nimbleFunction that involves model.
-calculations, the uncompiled model that is used. This is needed in order
+\item{model}{(optional) the uncompiled model that is used, if taking derivatives
+of a nimbleFunction that involves model calculations. This is needed in order
 to be able to correctly restore values into the model when \code{order} does not
-include 0 (or in all cases when double-taping).}
+include 0 (or in all cases when double-taping). IMPORTANT: if \code{model}
+is included, one should also include the arguments \code{updateNodes} and
+\code{constantNodes} using the output obtained from running
+\code{makeModelDerivsInfo}.}
 
 \item{...}{additional arguments intended for internal use only.}
 }
@@ -43,6 +46,12 @@ Derivatives for uncompiled nimbleFunctions are calculated using the
 \code{numDeriv} package.  If this package is not installed, an error will
 be issued.  Derivatives for matrix valued arguments will be returned in 
 column-major order.
+
+As discussed above with the \code{model} argument, if taking derivatives
+of a nimbleFunction that involves model calculations (rather than directly
+taking derivatives of `calculate`), care needs to be taken to provide
+\code{model}, \code{updateNodes}, and \code{calcNodes} arguments. See
+Section 16.7.2 of the User Manual for more details.
 }
 \examples{
 

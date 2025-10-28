@@ -17,6 +17,8 @@ runMCMC(
   samples = TRUE,
   samplesAsCodaMCMC = FALSE,
   summary = FALSE,
+  derivedQuantities = (mcmc$getNumDerived() > 0) &&
+    getNimbleOption("MCMCreturnDerivedQuantities"),
   WAIC = FALSE,
   perChainWAIC = FALSE
 )
@@ -45,6 +47,8 @@ runMCMC(
 \item{samplesAsCodaMCMC}{Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects.  This argument is only used when \code{samples} is \code{TRUE}.  Default value is \code{FALSE}.  See details.}
 
 \item{summary}{Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.}
+
+\item{derivedQuantities}{Logical argument.  When \code{TRUE}, a list containing the derivedQuantity results will be returned.  This list has length equal to the number of derived quantity functions, and each element is the results matrix corresponding to one derived quantity function.  In the case of multiple MCMC chains, a list (of length nchains) is returned consisting of one such list for each MCMC chain.}
 
 \item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See \code{help(waic)}.}
 
