@@ -29,10 +29,10 @@ spectrumBound <- nimbleFunction(
     Min <- Inf
     Max <- -Inf
     for( i in 1:q[1] ){
-      centre <- A[i,i]
-      radius <- sum(abs(A[i,])) - abs(centre)
-      minC <- centre - radius
-      maxC <- centre + radius
+      center <- A[i,i]
+      radius <- sum(abs(A[i,])) - abs(center)
+      minC <- center - radius
+      maxC <- center + radius
       if(minC < Min) Min <- minC
       if(maxC > Max) Max <- maxC
     }
@@ -94,7 +94,7 @@ expAv <- nimbleFunction(
     if(q[2] != q[1])      stop("A must be a square matrix.")
     if(length(v) != q[1]) stop("Length of v must be equal to the number of columns of A.")
 
-    ## Only centre, perform uniformization, if no diag > 0.
+    ## Only center, perform uniformization, if no diag > 0.
     CR <- spectrumBound(A)
     diag(A) <- diag(A) - CR[1]
     ans <- v
@@ -209,7 +209,7 @@ expm <- nimbleFunction(
     if(dim(A)[1] != dim(A)[2]) stop("`A' must be a square matrix")
     # if(dim(tol)[1] > 1)  stop("`tol' must be a scalar.")
 
-    ## Only centre, perform uniformization, if no diag > 0.
+    ## Only center, perform uniformization, if no diag > 0.
     CR <- spectrumBound(A)
     Niter <- 1L
     C <- CR[1]
@@ -249,5 +249,5 @@ expm <- nimbleFunction(
 
     for( i in 1:s ) expMsmall <- expMsmall %*% expMsmall
     return(expMsmall)
-  }#, buildDerivs = TRUE
+  } #, buildDerivs = TRUE
 )
