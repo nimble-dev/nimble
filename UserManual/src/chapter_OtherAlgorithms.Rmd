@@ -6,9 +6,16 @@ require(nimble)
 require(nimbleSMC, quietly = TRUE, warn.conflicts = FALSE)
 ``` 
 
-# Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature {#cha-algos-provided}
+# Particle Filters, PMCMC, and MCEM {#cha-algos-provided}
 
-The NIMBLE algorithm library includes a suite of sequential Monte Carlo (particle filtering) algorithms (particle filters, PMCMC, iterated particle filter, and ensemble Kalman filter), Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation, Laplace approximation and adaptive Gauss-Hermite quadrature, and k-fold cross-validation. 
+The NIMBLE algorithm library includes a growing set of non-MCMC algorithms, including likelihood-based algorithms. These include:
+
+ - A suite of sequential Monte Carlo (particle filtering) algorithms (particle filters, particle MCMC, iterated particle filter, and ensemble Kalman filter);
+ - Monte Carlo expectation maximization (MCEM) for maximum likelihood estimation;
+ - Laplace approximation and adaptive Gauss-Hermite quadrature (AGHQ) for maximum likelihood estimation of Laplace/AGHQ-approximated marginal likelihood; and
+ - nested approximation of Bayesian models using INLA-like methods.
+
+In this chapter we discuss sequential Monte Carlo methods and MCEM and in the next chapter we discuss methods related to Laplace approximation.
  
 ## Particle filters / sequential Monte Carlo and iterated filtering
 
@@ -436,16 +443,4 @@ pumpCov <- CpumpMCEM$vcov(pumpMLE$par)
 pumpCov
 ``` 
 
-## Laplace approximation and adaptive Gauss-Hermite quadrature
 
-Many hierarchical models include continuous random effects that must be
-integrated over to obtain the (marginal) likelihood of the parameters given the
-data. Laplace approximation and adaptive Gauss-Hermite quadrature (AGHQ) are
-often accurate and fast approximations for doing so. Laplace is simply AGHQ with
-a single quadrature point (the conditional mode of the random effects).
-
-NIMBLE provides these algorithms via `buildLaplace` and `buildAGHQuad` (the
-former simply calls the latter), which take advantage of the automatic
-differentiation features introduced in version 1.0.0. Laplace approximation is
-introduced in section \@ref(sec:AD-laplace), while details for both can be found
-by `help(buildLaplace)`.

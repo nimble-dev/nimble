@@ -1325,7 +1325,7 @@ More information is available from the help pages, e.g. `help(nimbleHMC)`, `help
 
 Here we will configure and build an MCMC to use the `NUTS` HMC sampler on a GLMM example. In this case we'll use HMC sampling for the whole model, i.e., all parameters and latent states.
 
-We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC (and also for Laplace approximation in \@ref(sec:use-derivs)). There will be 10 groups (indexed by `i`) of 5 observations (indexed by `j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
+We'll use a Poisson Generalized Linear Mixed Model (GLMM) as a simple example model for HMC (and also for Laplace approximation in Section \@ref(sec:AD-laplace)). There will be 10 groups (indexed by `i`) of 5 observations (indexed by `j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
 
 ```{r eval=TRUE}
 model_code <- nimbleCode({

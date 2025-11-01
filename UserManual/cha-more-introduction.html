@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 3 More introduction | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.39 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 3 More introduction | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -30,7 +30,7 @@
   
 <link rel="prev" href="cha-lightning-intro.html"/>
 <link rel="next" href="cha-installing-nimble.html"/>
-<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="libs/jquery-3.6.1/jquery-3.6.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -64,7 +64,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -126,7 +126,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging div.csl-entry {
   margin-left:2em;
@@ -281,7 +280,7 @@ div.csl-indent {
 <li class="chapter" data-level="7.11.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.11.4</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
 </ul></li>
 <li class="chapter" data-level="7.12" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.12</b> Detailed MCMC example: <em>litters</em></a></li>
-<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a></li>
+<li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
 </ul></li>
 <li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
@@ -295,7 +294,18 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
-<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#laplace-approximation-and-adaptive-gauss-hermite-quadrature"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a></li>
+<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:AD-laplace"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a>
+<ul>
+<li class="chapter" data-level="8.3.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#glmm-example"><i class="fa fa-check"></i><b>8.3.1</b> GLMM example</a></li>
+<li class="chapter" data-level="8.3.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-laplace-approximation"><i class="fa fa-check"></i><b>8.3.2</b> Using Laplace approximation</a></li>
+<li class="chapter" data-level="8.3.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>8.3.3</b> Using the Laplace approximation methods directly</a></li>
+<li class="chapter" data-level="8.3.4" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>8.3.4</b> Changing the optimization methods</a></li>
+</ul></li>
+<li class="chapter" data-level="8.4" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:nested-approx"><i class="fa fa-check"></i><b>8.4</b> Nested approximation methods</a>
+<ul>
+<li class="chapter" data-level="8.4.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#overview-of-the-methodology"><i class="fa fa-check"></i><b>8.4.1</b> Overview of the methodology</a></li>
+<li class="chapter" data-level="8.4.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-nimbles-nested-approximation"><i class="fa fa-check"></i><b>8.4.2</b> Using NIMBLE’s nested approximation</a></li>
+</ul></li>
 </ul></li>
 <li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
 <ul>
@@ -446,33 +456,25 @@ div.csl-indent {
 <li class="part"><span><b>V Automatic Derivatives in NIMBLE</b></span></li>
 <li class="chapter" data-level="16" data-path="cha-AD.html"><a href="cha-AD.html"><i class="fa fa-check"></i><b>16</b> Automatic Derivatives</a>
 <ul>
-<li class="chapter" data-level="16.1" data-path="cha-AD.html"><a href="cha-AD.html#sec:use-derivs"><i class="fa fa-check"></i><b>16.1</b> How to turn on derivatives in a model</a>
+<li class="chapter" data-level="16.1" data-path="cha-AD.html"><a href="cha-AD.html#sec:use-derivs"><i class="fa fa-check"></i><b>16.1</b> How to turn on derivatives in a model</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.2</b> How to support derivatives in user-defined functions and distributions</a></li>
+<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.3</b> What operations are and aren’t supported for AD</a></li>
+<li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.4</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
-<li class="chapter" data-level="16.1.1" data-path="cha-AD.html"><a href="cha-AD.html#finish-setting-up-the-glmm-example"><i class="fa fa-check"></i><b>16.1.1</b> Finish setting up the GLMM example</a></li>
+<li class="chapter" data-level="16.4.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.4.1</b> Checking derivatives with uncompiled execution</a></li>
+<li class="chapter" data-level="16.4.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.4.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="16.4.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.4.3</b> Using AD with multiple nimbleFunctions</a></li>
+<li class="chapter" data-level="16.4.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.4.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="16.4.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.4.5</b> Resetting a <code>nimDerivs</code> call</a></li>
+<li class="chapter" data-level="16.4.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.4.6</b> A note on performance benchmarking</a></li>
 </ul></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-laplace"><i class="fa fa-check"></i><b>16.2</b> How to use Laplace approximation and adaptive Gauss-Hermite quadrature</a>
+<li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#advanced-uses-double-taping"><i class="fa fa-check"></i><b>16.5</b> Advanced uses: double taping</a></li>
+<li class="chapter" data-level="16.6" data-path="cha-AD.html"><a href="cha-AD.html#derivatives-involving-model-calculations"><i class="fa fa-check"></i><b>16.6</b> Derivatives involving model calculations</a>
 <ul>
-<li class="chapter" data-level="16.2.1" data-path="cha-AD.html"><a href="cha-AD.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>16.2.1</b> Using the Laplace approximation methods directly</a></li>
-<li class="chapter" data-level="16.2.2" data-path="cha-AD.html"><a href="cha-AD.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>16.2.2</b> Changing the optimization methods</a></li>
+<li class="chapter" data-level="16.6.1" data-path="cha-AD.html"><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate"><i class="fa fa-check"></i><b>16.6.1</b> Method 1: <code>nimDerivs</code> of <code>model$calculate</code></a></li>
+<li class="chapter" data-level="16.6.2" data-path="cha-AD.html"><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate"><i class="fa fa-check"></i><b>16.6.2</b> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code></a></li>
 </ul></li>
-<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.3</b> How to support derivatives in user-defined functions and distributions</a></li>
-<li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.4</b> What operations are and aren’t supported for AD</a></li>
-<li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.5</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
-<ul>
-<li class="chapter" data-level="16.5.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.5.1</b> Checking derivatives with uncompiled execution</a></li>
-<li class="chapter" data-level="16.5.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.5.2</b> Holding some local variables out of derivative tracking</a></li>
-<li class="chapter" data-level="16.5.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.5.3</b> Using AD with multiple nimbleFunctions</a></li>
-<li class="chapter" data-level="16.5.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.5.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
-<li class="chapter" data-level="16.5.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.5.5</b> Resetting a <code>nimDerivs</code> call</a></li>
-<li class="chapter" data-level="16.5.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.5.6</b> A note on performance benchmarking</a></li>
-</ul></li>
-<li class="chapter" data-level="16.6" data-path="cha-AD.html"><a href="cha-AD.html#advanced-uses-double-taping"><i class="fa fa-check"></i><b>16.6</b> Advanced uses: double taping</a></li>
-<li class="chapter" data-level="16.7" data-path="cha-AD.html"><a href="cha-AD.html#derivatives-involving-model-calculations"><i class="fa fa-check"></i><b>16.7</b> Derivatives involving model calculations</a>
-<ul>
-<li class="chapter" data-level="16.7.1" data-path="cha-AD.html"><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate"><i class="fa fa-check"></i><b>16.7.1</b> Method 1: <code>nimDerivs</code> of <code>model$calculate</code></a></li>
-<li class="chapter" data-level="16.7.2" data-path="cha-AD.html"><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate"><i class="fa fa-check"></i><b>16.7.2</b> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code></a></li>
-</ul></li>
-<li class="chapter" data-level="16.8" data-path="cha-AD.html"><a href="cha-AD.html#sec:parameter-transform"><i class="fa fa-check"></i><b>16.8</b> Parameter transformations</a></li>
+<li class="chapter" data-level="16.7" data-path="cha-AD.html"><a href="cha-AD.html#sec:parameter-transform"><i class="fa fa-check"></i><b>16.7</b> Parameter transformations</a></li>
 </ul></li>
 <li class="chapter" data-level="17" data-path="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><a href="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><i class="fa fa-check"></i><b>17</b> Example: maximum likelihood estimation using <code>optim</code> with gradients from <code>nimDerivs</code>.</a></li>
 <li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
@@ -672,43 +674,43 @@ functions and distributions written as nimbleFunctions in BUGS code.<a href="cha
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": null,
-"text": null
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": null,
-"text": null
-},
-"download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-},
-"toc_depth": 3
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": null,
+    "text": null
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  },
+  "toc_depth": 3
 });
 });
 </script>
