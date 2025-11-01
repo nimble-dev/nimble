@@ -26,7 +26,7 @@ Using a packaged AD algorithm should be as simple as setting `buildDerivs=TRUE` 
 
 We will introduce NIMBLE's AD features step by step, from simply turning them on for a model to using them in your own nimbleFunctions. We will show you:
 
-1. how to turn on derivatives in a model for use in algorithms such as Laplace approximation (or Hamiltonian Monte Carlo (HMC), see \@ref(subsec:HMC)).
+1. how to turn on derivatives in a model for use in algorithms such as Laplace approximation (Chapter \@ref(cha-laplace)) or Hamiltonian Monte Carlo (HMC) (Section \@ref(subsec:HMC)).
 2. how to modify user-defined functions and distributions to support derivatives.
 3. what functions are supported and not supported for derivatives.
 4. basics of obtaining derivatives in your own algorithms written as `nimbleFunctions`.
