@@ -317,7 +317,7 @@ nf_checkDSLcode_calcDerivsArgs <- function(code, methodsWithCalc, methodsDerivsO
                              "            If model calculations are done in the method being differentiated, the 'model'\n",
                              "            argument to 'nimDerivs' should be included to ensure correct restoration of\n",
                              "            values in the model, and the 'updateNodes' and 'constantNodes' arguments\n",
-                             "            should also be provided (see Section 16.7.2 of the User Manual).")
+                             "            should also be provided (see Section 17.6.2 of the User Manual).")
     }
     invisible(NULL)
 }

@@ -394,7 +394,16 @@ Note that for multivariate normal, multivariate t, Wishart, and Inverse Wishart,
 parameterization uses the Cholesky decomposition of one of the
 precision/inverse scale or covariance/scale matrix. For example, for the multivariate normal, if  `prec_param=TRUE`, the `cholesky` argument is treated as the Cholesky
 decomposition of a precision matrix.  Otherwise it is treated as the
-Cholesky decomposition of a covariance matrix. 
+Cholesky decomposition of a covariance matrix.
+
+Also note that for models that use AD, the Cholesky is not used because this
+would result in very inefficient AD calculations. Note that in this case,
+NIMBLE automatically determines  the inverse of the provided matrix (which
+could be either the precision or the covariance), so any model calculations
+that need that inverse can simply use `getParam` at no additional
+computational expense. 
+
+
 <!---  In some cases it may be more efficient to use that parameterization 
 directly.  % PdV removed this because it is obtuse: In what cases?
 Doesn't lifting of the cholesky computation take care of inefficiency? 

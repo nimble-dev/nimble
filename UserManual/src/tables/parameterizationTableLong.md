@@ -31,12 +31,16 @@ relationship to the *canonical* parameterization used in NIMBLE.
   `dlnorm(meanlog, taulog)` `dlnorm(meanlog, sdlog = 1 / sqrt(taulog))`
   `dlnorm(meanlog, varlog)` `dlnorm(meanlog, sdlog = sqrt(varlog))`
   `dmulti(prob, size)`      canonical
-  `dmnorm(mean, cholesky, ` canonical (precision)
+  `dmnorm(mean, cholesky, ` canonical, non-AD (precision)
   `...prec_param=1)` 
-  `dmnorm(mean, cholesky, ` canonical (covariance)
+  `dmnorm(mean, cholesky, ` canonical, non-AD (covariance)
   `...prec_param=0)`
   `dmnorm(mean, prec)`      `dmnorm(mean, cholesky = chol(prec), prec_param=1)` 
   `dmnorm(mean, cov)`       `dmnorm(mean, cholesky = chol(cov), prec_param=0)`
+  `dmnorm(mean, prec,`      canonical, AD (precision)
+  `...prec_param=1)` 
+  `dmnorm(mean, cov,`       canonical, AD (covariance)
+  `...prec_param=0)`
   `dmvt(mu, cholesky, df,`  canonical (precision/inverse scale)
   `...prec_param=1)`       
   `dmvt(mu, cholesky, df,`  canonical (scale)
