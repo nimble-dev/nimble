@@ -2996,8 +2996,11 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
             if(is(result, 'try-error')) 
                 message(geterrmessage()) 
     }
-    if(getNimbleOption('verbose')) message("Checking model sizes and dimensions")
-    model$checkBasics()
+    
+    if(getNimbleOption('checkModelBasics')) { 
+        if(getNimbleOption('verbose')) message("Checking model sizes and dimensions")
+        model$checkBasics()
+    }
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
         if(getNimbleOption('verbose')) message("Checking model calculations")
