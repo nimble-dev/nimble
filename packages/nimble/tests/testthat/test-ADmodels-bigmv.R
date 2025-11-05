@@ -21,11 +21,13 @@ code <- nimbleCode({
     Q[1:n,1:n] <- inverse(Sigma1[1:n, 1:n])
     y[4, 1:n] ~ dmnorm(mu4[1:n], Q[1:n,1:n])
 
-    Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
-    Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
-    y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
-    y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
-
+    ## `chol` parameterization not available with dmnormAD
+    # Uprec[1:n, 1:n] <- chol(Q[1:n,1:n])
+    # Ucov[1:n, 1:n] <- chol(Sigma1[1:n,1:n])
+    # y[5, 1:n] ~ dmnorm(mu5[1:n], cholesky = Uprec[1:n,1:n], prec_param = 1)
+    # y[6, 1:n] ~ dmnorm(mu6[1:n], cholesky = Ucov[1:n,1:n], prec_param = 0)
+    y[5, 1:n] ~ dmnorm(mu5[1:n], cov = Sigma1[1:n,1:n])
+    
     W1[1:n, 1:n] ~ dinvwish(R = R[1:n,1:n], df = nu)
 
     UR[1:n, 1:n] <- chol(R[1:n,1:n])
@@ -39,7 +41,7 @@ code <- nimbleCode({
     
     mu4[1:n] ~ dmnorm(z[1:n], W4[1:n,1:n])
     mu5[1:n] ~ dmnorm(z[1:n], W5[1:n,1:n])
-    mu6[1:n] ~ dmnorm(z[1:n], W6[1:n,1:n])
+    # mu6[1:n] ~ dmnorm(z[1:n], W6[1:n,1:n])
     rho ~ dgamma(2, 3)
     nu ~ dunif(0, 100)
 })
@@ -76,6 +78,9 @@ relTolTmp[5] <- 1e-10
 ## rOutput2d11 result can be wildly out of tolerance, so not checking it.
 
 ## Some of the comparison of compiled Jacobians are equal but not identical as of 2024-01-24.
+
+## 2025-11-04: a few out of tolerance hessian values that seem to come from uncompiled
+## deriv ca. 1e-7 where compiled is exactly zero.
 
 test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR,
                                                    W1 = newW1, W2 = newW2, W3 = newW3,
