@@ -89,7 +89,7 @@ conjugacyRelationshipsInputList <- list(
              dweib       = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           ),
              ddexp       = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   ),
              dcar_normal = list(param = 'tau',    contribution_shape = 'calc_dcar_normalConjugacyContributionShape(num, c, scale)',
-                                                  contribution_rate  = 'calc_dcar_normalConjugacyContributionRate(weights, value, scale)')),
+                                                  contribution_rate  = 'calc_dcar_normalConjugacyContributionRate(adj, weights, num, value, scale)')),
              ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
