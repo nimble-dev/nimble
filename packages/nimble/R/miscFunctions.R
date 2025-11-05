@@ -163,11 +163,12 @@ calc_dcar_normalConjugacyContributionRate <- nimbleFunction(
         for(i in 1:N) {
             if(num[i] > 0) {
                 for(j in 1:num[i]) {
-                    ans <- ans + weights[count] * (value[i] - value[adj[count]])^2 / 2
+                    ans <- ans + weights[count] * (value[i] - value[adj[count]])^2
                     count <- count + 1
                 }
             }
         }
+        ans <- ans / 2
         if(count != L+1)   stop('gamma-CAR conjugacy calculation internal error')
         return(ans)
         returnType(double())
