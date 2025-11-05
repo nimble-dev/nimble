@@ -137,3 +137,26 @@ calc_dwishAltParams <- nimbleFunction(
     }
 )
 
+
+
+## used in conjugacy definition for dgamma, to calculate 'contribution_shape' term:
+calc_dcar_normalConjugacyContributionShape <- nimbleFunction(
+    name = 'calc_dcar_normalConjugacyContributionShape',
+    run = function(num = double(1), c = double(), scale = double()) {
+        XXXXXXXXXXXXXXXXXXXXX
+        return(ans)
+        returnType(double())
+    }
+)
+
+
+
+## used in conjugacy definition for dgamma, to calculate 'contribution_rate' term:
+calc_dcar_normalConjugacyContributionRate <- nimbleFunction(
+    name = 'calc_dcar_normalConjugacyContributionRate',
+    run = function(weights = double(1), value = double(1), scale = double()) {
+        XXXXXXXXXXXXXXXxx
+        return(ans)
+        returnType(double())
+    }
+)

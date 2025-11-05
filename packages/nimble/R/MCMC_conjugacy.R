@@ -11,7 +11,7 @@ conjugacyRelationshipsInputList <- list(
              ## using 'stickbreaking' not 'stick_breaking' as link is now appended to dist with a '_' in realized conjugacy system
              ## Note that 'stick_breaking' is still the user-facing **function** name.
              dcat    = list(param = 'prob', link = 'stickbreaking', contribution_shape1 = 'value == offset',
-                                                                     contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
+                                                                    contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
 
@@ -74,20 +74,22 @@ conjugacyRelationshipsInputList <- list(
              dnorm  = list(param = 'sd',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff^2 * 2)'        ),
              dlnorm = list(param = 'sdlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff^2 * 2)')),
          posterior = 'dsqrtinvgamma(shape = -1/2 + contribution_shape,
-                             rate = 1 / contribution_scale)'),
+                                    rate  = 1 / contribution_scale)'),
          
     ## gamma
     list(prior = 'dgamma',
          link = 'multiplicative',
          dependents = list(
-             dpois     = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
-             dnorm     = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
-             dlnorm    = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
-             dgamma    = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-             dinvgamma = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
-             dexp      = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
-             dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           ),
-             ddexp     = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )),
+             dpois       = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+             dnorm       = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+             dlnorm      = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+             dgamma      = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+             dinvgamma   = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
+             dexp        = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+             dweib       = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           ),
+             ddexp       = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   ),
+             dcar_normal = list(param = 'tau',    contribution_shape = 'calc_dcar_normalConjugacyContributionShape(num, c, scale)',
+                                                  contribution_rate  = 'calc_dcar_normalConjugacyContributionRate(weights, value, scale)')),
              ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
@@ -103,7 +105,7 @@ conjugacyRelationshipsInputList <- list(
              dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     ),
              ddexp     = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'abs(value-location) / coeff'       )),
          posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
-                             rate = 1 / (prior_scale + contribution_scale))'),
+                                rate  = 1 / (prior_scale + contribution_scale))'),
     
     ## normal
     list(prior = 'dnorm',
@@ -133,7 +135,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
            ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)'),
+             dmnorm   = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)'),
              dmnormAD = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)')),
          ## LINK will be replaced with appropriate link via code processing
          ## original less efficient posterior definition:
@@ -149,7 +151,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
            ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)'),
+             dmnorm   = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)'),
              dmnormAD = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1, 0))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2, 0)')),
          ## LINK will be replaced with appropriate link via code processing
          ## original less efficient posterior definition:
@@ -175,7 +177,7 @@ conjugacyRelationshipsInputList <- list(
              ## changing to only use link='identity' case, since the link='linear' case was not correct
              ## -DT March 2017
              ## dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
-             dmnorm = list(param = 'prec', contribution_R = 'coeff * asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1'),
+             dmnorm   = list(param = 'prec', contribution_R = 'coeff * asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1'),
              dmnormAD = list(param = 'prec', contribution_R = 'coeff * asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
@@ -185,7 +187,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dinvwish',
          link = 'multiplicativeScalar',  # we only handle scalar 'coeff'; this naming is slightly awkward since for univar dists, link is of course scalar
          dependents = list(
-             dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) / coeff', contribution_df = '1'),
+             dmnorm   = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) / coeff', contribution_df = '1'),
              dmnormAD = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) / coeff', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
