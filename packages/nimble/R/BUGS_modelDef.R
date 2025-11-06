@@ -1076,6 +1076,8 @@ liftedCallsGetIndexingOther <- list(
     ## This is general in that it finds the number of elements of the matrix,
     ## but the input shouldn't be anything other than square.
     PDinverse_logdet = function(argList) {
+        if(length(argList[[1]]) < 3)
+            stop("Missing indexing in `", safeDeparse(argList[[1]]), "`.")
         getlen <- function(arg) length(eval(arg))
         list(substitute(1:N, list(N = prod(sapply(argList[[1]][3:length(argList[[1]])], getlen))+1)))
     }
