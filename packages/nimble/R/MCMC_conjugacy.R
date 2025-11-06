@@ -553,7 +553,7 @@ conjugacyClass <- setRefClass(
             }
             for(iDepCount in seq_along(dependentCounts)) {
                 distLinkName <- names(dependentCounts)[iDepCount]
-                tmp <- splitDistnameAndLink(distLinkName)
+                tmp <- splitDistLinkName(distLinkName)
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 functionBody$addCode({
@@ -606,7 +606,7 @@ conjugacyClass <- setRefClass(
                 targetCoeffNdim <- 0
             for(iDepCount in seq_along(dependentCounts)) {
                 distLinkName <- names(dependentCounts)[iDepCount]
-                tmp <- splitDistnameAndLink(distLinkName)
+                tmp <- splitDistLinkName(distLinkName)
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 if(currentLink %in% c('additive', 'multiplicative', 'multiplicativeScalar', 'linear') || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) {
@@ -633,7 +633,7 @@ conjugacyClass <- setRefClass(
 
             for(iDepCount in seq_along(dependentCounts)) {
                 distLinkName <- names(dependentCounts)[iDepCount]
-                tmp <- splitDistnameAndLink(distLinkName)
+                tmp <- splitDistLinkName(distLinkName)
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link
@@ -748,7 +748,7 @@ conjugacyClass <- setRefClass(
 
             for(iDepCount in seq_along(dependentCounts)) {
                 distLinkName <- names(dependentCounts)[iDepCount]
-                tmp <- splitDistnameAndLink(distLinkName)
+                tmp <- splitDistLinkName(distLinkName)
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 neededParams <- dependents[[distName]]$neededParamsForPosterior
@@ -780,7 +780,7 @@ conjugacyClass <- setRefClass(
             }
 
             targetNdim <- getDimension(prior)
-            allCurrentLinks <- sapply(names(dependentCounts), function(x) splitDistnameAndLink(x)[[2]])
+            allCurrentLinks <- sapply(names(dependentCounts), function(x) splitDistLinkName(x)[[2]])
 
             switch(as.character(targetNdim),
                    `0` = {
@@ -791,7 +791,7 @@ conjugacyClass <- setRefClass(
                            })
                            for(iDepCount in seq_along(dependentCounts)) {
                                distLinkName <- names(dependentCounts)[iDepCount]
-                               tmp <- splitDistnameAndLink(distLinkName)
+                               tmp <- splitDistLinkName(distLinkName)
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
                                
@@ -816,7 +816,7 @@ conjugacyClass <- setRefClass(
                            
                            for(iDepCount in seq_along(dependentCounts)) {
                                distLinkName <- names(dependentCounts)[iDepCount]
-                               tmp <- splitDistnameAndLink(distLinkName)
+                               tmp <- splitDistLinkName(distLinkName)
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
                                if(currentLink %in% c('multiplicative', 'linear') || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) {
@@ -851,7 +851,7 @@ conjugacyClass <- setRefClass(
                            
                            for(iDepCount in seq_along(dependentCounts)) {
                                distLinkName <- names(dependentCounts)[iDepCount]
-                               tmp <- splitDistnameAndLink(distLinkName)
+                               tmp <- splitDistLinkName(distLinkName)
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
 
@@ -882,7 +882,7 @@ conjugacyClass <- setRefClass(
                            
                            for(iDepCount in seq_along(dependentCounts)) {
                                distLinkName <- names(dependentCounts)[iDepCount]
-                               tmp <- splitDistnameAndLink(distLinkName)
+                               tmp <- splitDistLinkName(distLinkName)
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
                                if(currentLink %in% c('multiplicative', 'linear') || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) {
@@ -926,7 +926,7 @@ conjugacyClass <- setRefClass(
                            ## given current index values.
                            for(iDepCount in seq_along(dependentCounts)) {
                                distLinkName <- names(dependentCounts)[iDepCount]
-                               tmp <- splitDistnameAndLink(distLinkName)
+                               tmp <- splitDistLinkName(distLinkName)
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
                                if(currentLink == 'multiplicativeScalar' || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) 
@@ -950,7 +950,7 @@ conjugacyClass <- setRefClass(
                            
                            for(iDepCount in seq_along(dependentCounts)) {
                                distLinkName <- names(dependentCounts)[iDepCount]
-                               tmp <- splitDistnameAndLink(distLinkName)
+                               tmp <- splitDistLinkName(distLinkName)
                                distName <- tmp[[1]]
                                currentLink <- tmp[[2]]
                                if(currentLink == 'multiplicativeScalar'|| (getNimbleOption('allowDynamicIndexing') && doDependentScreen))
@@ -982,7 +982,7 @@ conjugacyClass <- setRefClass(
 
             for(iDepCount in seq_along(dependentCounts)) {
                 distLinkName <- names(dependentCounts)[iDepCount]
-                tmp <- splitDistnameAndLink(distLinkName)
+                tmp <- splitDistLinkName(distLinkName)
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
@@ -1646,7 +1646,7 @@ makeIndexedVariable <- function(varName, nDim, indexExpr, secondSize, thirdSize)
                          THIRDSIZE  = thirdSize)))
 }
 
-splitDistnameAndLink <- function(distLinkName) {
+splitDistLinkName <- function(distLinkName) {
     sp <- strsplit(distLinkName, '_')[[1]]
     N <- length(sp)
     distName <- paste(sp[-N], collapse = '_')
