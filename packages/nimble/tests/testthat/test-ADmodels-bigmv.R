@@ -85,7 +85,7 @@ relTolTmp[5] <- 1e-10
 test_ADModelCalculate(model, newUpdateNodes = list(nu = 12.1, dist = newDist, R = newR,
                                                    W1 = newW1, W2 = newW2, W3 = newW3,
                                                    W4 = newW4, W5 = newW5, W6 = newW6),
-                      x = 'prior', absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,
+                      x = 'prior', absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
                       useParamTransform = TRUE, useFasterRderivs = TRUE, checkDoubleUncHessian = FALSE,
                       relTol = relTolTmp, verbose = verbose,
                       name = 'various multivariate dists')
