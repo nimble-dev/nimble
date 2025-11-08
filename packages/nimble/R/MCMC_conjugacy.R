@@ -556,51 +556,57 @@ conjugacyClass <- setRefClass(
                 tmp <- splitDistLinkName(distLinkName)
                 distName <- tmp[[1]]
                 currentLink <- tmp[[2]]
+                distDimParams <- getDimension(distName, includeParams = TRUE)
+                distDim <- distDimParams[['value']]
+                neededParams <- dependents[[distName]]$neededParamsForPosterior
                 functionBody$addCode({
                     DEP_NODENAMES <- control$DEP_CONTROL_NAME
-                    N_DEP <- length(control$DEP_CONTROL_NAME)
+                    N_DEP <- length(DEP_NODENAMES)
                 }, list(DEP_NODENAMES    = as.name(paste0(  'dep_', distLinkName, '_nodeNames')),
                         N_DEP            = as.name(paste0('N_dep_', distLinkName)),
                         DEP_CONTROL_NAME = as.name(paste0(  'dep_', distLinkName))))
-                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
-                    if(getDimension(distName) > 0) {  ## usual case: dependent node is multivariate -> get sizes from dependent node names
+                mvParams <- c('value', neededParams)
+                mvParams <- mvParams[distDimParams[mvParams] > 0]
+                for(param in mvParams) {
+                    if(param == 'value') {
+                        ## particular call to extract sizes of the *node itself*
                         functionBody$addCode({
-                            DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
-                        }, list(DEP_NODESIZES   = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
-                                DEP_NODENAMES   = as.name(paste0('dep_', distLinkName, '_nodeNames'))))
-                    } else {  ## unusual case: dependent is univariate -> get sizes from dependent node's param (e.g., ddirch-dcat conjugacy)
+                            DEP_SIZES <- sapply(DEP_NAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
+                        }, list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes')),
+                                DEP_NAMES = as.name(paste0('dep_', distLinkName, '_nodeNames'))))
+                    } else {
+                        ## particular call to extract sizes of *parameters*
                         functionBody$addCode({
-                            DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(nimDim(model$getParam(node, MULTIVARIATE_PARAM_NAME))), USE.NAMES = FALSE)
-                        }, list(DEP_NODESIZES           = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
-                                DEP_NODENAMES           = as.name(paste0('dep_', distLinkName, '_nodeNames')),
-                                MULTIVARIATE_PARAM_NAME = names(which.max(getDimension(distName, includeParams = TRUE)))))
+                            DEP_SIZES <- sapply(DEP_NAMES, function(node) max(nimDim(model$getParam(node, PARAM))), USE.NAMES = FALSE)
+                        }, list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_', param, '_sizes')),
+                                DEP_NAMES = as.name(paste0('dep_', distLinkName, '_nodeNames')),
+                                PARAM     = param))
                     }
+                    ## now find the max size for each
                     functionBody$addCode({
-                        if(length(DEP_NODESIZES) == 1) DEP_NODESIZES <- c(DEP_NODESIZES, -1)    ## guarantee to be a vector, for indexing and size processing
-                        DEP_NODESIZEMAX <- max(DEP_NODESIZES)
-                    }, list(DEP_NODESIZES   = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
-                            DEP_NODESIZEMAX = as.name(paste0('dep_', distLinkName, '_nodeSizeMax'))))
+                        if(length(DEP_SIZES) == 1) DEP_SIZES <- c(DEP_SIZES, -1)    ## guarantee to be a vector, for indexing and size processing
+                        DEP_SIZEMAX <- max(DEP_SIZES)
+                    }, list(DEP_SIZES   = as.name(paste0('dep_', distLinkName, '_', param, '_sizes')),
+                            DEP_SIZEMAX = as.name(paste0('dep_', distLinkName, '_', param, '_sizeMax'))))
                 }
                 
                 ## declare() statements are removed from run() code,
                 ## and were replaced with setup output array() calls below.
                 ## July 2017
-                depNodeValueNdim <- getDimension(distName)
                 functionBody$addCode(DEP_VALUES_VAR <- array(0, dim = DECLARE_SIZE),
                                      list(DEP_VALUES_VAR = as.name(paste0('dep_', distLinkName, '_values')),
-                                          DECLARE_SIZE   = makeDeclareSizeField(as.name(paste0('N_dep_', distLinkName)), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), depNodeValueNdim)))
-                neededParams <- dependents[[distName]]$neededParamsForPosterior
+                                          DECLARE_SIZE   = makeDeclareSizeField(as.name(paste0('N_dep_', distLinkName)), as.name(paste0('dep_', distLinkName, '_value_sizeMax')), as.name(paste0('dep_', distLinkName, '_value_sizeMax')), distDim)))
                 for(param in neededParams) {
-                    depNodeParamNdim <- getDimension(distName, param)
                     functionBody$addCode(DEP_PARAM_VAR <- array(0, dim = DECLARE_SIZE),
                                          list(DEP_PARAM_VAR = as.name(paste0('dep_', distLinkName, '_', param)),
-                                              DECLARE_SIZE  = makeDeclareSizeField(as.name(paste0('N_dep_', distLinkName)), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), as.name(paste0('dep_', distLinkName, '_nodeSizeMax')), depNodeParamNdim)))
+                                              DECLARE_SIZE  = makeDeclareSizeField(as.name(paste0('N_dep_', distLinkName)), as.name(paste0('dep_', distLinkName, '_', param, '_sizeMax')), as.name(paste0('dep_', distLinkName, '_', param, '_sizeMax')), distDimParams[[param]])))
                 }
             }
             
+            browser()   ######  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
             ## more new array() setup outputs, instead of declare() statements, for offset and coeff variables
             ## July 2017
-            targetNdim <- getDimension(prior)
+            targetNdim <- as.numeric(getDimension(prior))
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
             if(targetCoeffNdim == 2 && link == 'multiplicativeScalar')   ## Handles wish/invwish. There are no cases where we allow non-scalar 'coeff'.
                 targetCoeffNdim <- 0
@@ -739,6 +745,7 @@ conjugacyClass <- setRefClass(
         },
 
         addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts, doDependentScreen = FALSE) {
+            browser()     ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
             ## get current value of prior parameters which appear in the posterior expression
             for(priorParam in posteriorObject$neededPriorParams) {
                 functionBody$addCode(PRIOR_PARAM_VAR <- model$getParam(target[1], PARAM_NAME),
