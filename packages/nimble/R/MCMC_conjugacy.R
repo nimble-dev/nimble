@@ -993,7 +993,6 @@ conjugacyClass <- setRefClass(
                    stop()
                    )
 
-            browser()     ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
             targetNdim <- getDimension(prior)
             ## contribution terms have been moved to be setup function outputs,
             ## but we still need to *zero these variables out* before adding contribution terms into them
@@ -1009,6 +1008,8 @@ conjugacyClass <- setRefClass(
                 distLinkName <- distLinkNameList[[iDepCount]]
                 distName <- distNameList[[iDepCount]]
                 currentLink <- currentLinkList[[iDepCount]]
+                distDimParams <- getDimension(distName, includeParams = TRUE)
+                distDim <- distDimParams[['value']]
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 if(targetCoeffNdim == 2 && link == 'multiplicativeScalar')   ## There are no cases where we allow non-scalar 'coeff'.
                     targetCoeffNdim <- 0
@@ -1016,31 +1017,34 @@ conjugacyClass <- setRefClass(
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                 depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
 
+                subList <- lapply(depParamsAvailable, function(param) {
+                    thisSizeExpr <- as.name(paste0(param, '_size'))
+                    makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_', param)), distDimParams[[param]], indexExpr = quote(iDep), secondSize = thisSizeExpr, thirdSize = thisSizeExpr)
+                })
+                names(subList) <- depParamsAvailable
+
                 ## don't allow ragged dependencies for 2D conjugate case.
                 ## no such cases exist, and it causes a runtime size check compiler warning.
-                ## nonRaggedSizeExpr used to replace quote(thisNodeSize) below.
+                ## valueSizeExpr used to replace quote(thisNodeSize) below.
                 ## August 2016
-                nonRaggedSizeExpr <- if(targetNdim < 2) quote(thisNodeSize) else quote(d)      ### YYYYYYYY thisNodeSize
-                subList <- lapply(depParamsAvailable, function(param)
-                    makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_', param)), getDimension(distName, param), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr))
-                names(subList) <- depParamsAvailable
-                
-                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), getDimension(distName), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                valueSizeExpr <- if(targetNdim < 2) quote(value_size) else quote(d)
+                subList$value <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), distDim, indexExpr = quote(iDep), secondSize = valueSizeExpr, thirdSize = valueSizeExpr)
                 if(currentLink %in% c('additive', 'linear', 'stickbreaking'))
-                    subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                    subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = valueSizeExpr, thirdSize = valueSizeExpr)
                 if(currentLink %in% c('multiplicative', 'multiplicativeScalar', 'linear') || (getNimbleOption('allowDynamicIndexing') && doDependentScreen))
-                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
+                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = valueSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
                 
-                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
-                    if(targetNdim == 1) ## 1D
-                        forLoopBody$addCode(thisNodeSize <- DEP_SIZES[iDep],      ### YYYYYYYY thisNodeSize
-                                            list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
-                    if(targetNdim == 2) ## 2D  ## formerly this was 'else', but for 'dcat' we have targetNdim=0 while max(getDimension(distName, includeParams = TRUE)) is 1 so need explicit check for 2D
-                        forLoopBody$addCode(if(DEP_SIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
-                                            list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
-                }
+                browser()     ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
+                ####maybe no longer necessary? ##### if(any(distDimParams > 0)) {
+                ####maybe no longer necessary? #####     if(targetNdim == 1) ## 1D
+                ####maybe no longer necessary? #####         forLoopBody$addCode(thisSize <- DEP_SIZES[iDep],
+                ####maybe no longer necessary? #####                             list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
+                ####maybe no longer necessary? #####     if(targetNdim == 2) ## 2D  ## formerly this was 'else', but for 'dcat' we have targetNdim=0 while max(distDimParams) is 1 so need explicit check for 2D
+                ####maybe no longer necessary? #####         forLoopBody$addCode(if(DEP_SIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
+                ####maybe no longer necessary? #####                             list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
+                ####maybe no longer necessary? ##### }
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
@@ -1059,25 +1063,41 @@ conjugacyClass <- setRefClass(
                         }
                         tmpExpr[[4]] <- cc_stripExpr(tmpExpr[[4]], offset = currentLink %in% c('identity','multiplicative'), coeff = FALSE)  # strip 'offset'
                         if(contributionName == 'contribution_mean') contributionExpr[[2]][[2]] <- tmpExpr else contributionExpr <- tmpExpr
-                    } else contributionExpr <- cc_stripExpr(contributionExpr, offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),
+                    } else contributionExpr <- cc_stripExpr(contributionExpr,
+                                                            offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),
                                                             coeff = currentLink %in% c('identity','additive'))
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=contributionExpr)))
+                    for(p in c('value', depParamsAvailable)) {
+                        if(distDimParams[[p]] > 0) {
+                            forLoopBody$addCode(SIZE_NAME <- SIZE_VALUE[iDep],
+                                                list(SIZE_NAME  = as.name(paste0(p, '_size')),
+                                                     SIZE_VALUE = as.name(paste0('dep_', distLinkName, '_', p, '_sizes'))))
+                        }
+                    }
+                    subList2 <- list(CONTRIB_NAME = as.name(contributionName),
+                                     CONTRIB_EXPR = contributionExpr)
+                    subList2$COEFF_EXPR <- subList$coeff      ## a separate case, for the situation where subList$coeff is NULL
                     if(getNimbleOption('allowDynamicIndexing') && doDependentScreen) { ## FIXME: would be nice to only have one if() here when we loop through multiple parameters
-                        if(targetCoeffNdim == 0)
-                            forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
-                                                list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
-                        else forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
-                                                 list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
-
-                    } else forLoopBody$addCode(CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
-                                               list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+                        if(targetCoeffNdim == 0) {
+                            forLoopBody$addCode(if(COEFF_EXPR != 0)
+                                                    CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
+                                                subList2)
+                        } else {
+                            forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0)
+                                                    CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
+                                                subList2)
+                        }
+                    } else {
+                        forLoopBody$addCode(CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
+                                            subList2)
+                    }
                 }
                 functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
                                      list(N_DEP       = as.name(paste0('N_dep_', distLinkName)),
                                           FORLOOPBODY = forLoopBody$getCode()))
             }
         }
-    )
+)
 )
 
 dependentClass <- setRefClass(
