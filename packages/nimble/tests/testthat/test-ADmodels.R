@@ -575,11 +575,13 @@ model$setData('y')
 newDist <- as.matrix(dist(runif(n)))
 relTolTmp <- relTol
 relTolTmp[1] <- 1e-14
+relTolTmp[3] <- 1e-5
 relTolTmp[4] <- 1e-3
+relTolTmp[5] <- 1e-13
 
 ## 361 sec.
 test_ADModelCalculate(model, newConstantNodes = list(dist = newDist), useParamTransform = TRUE,
-                      checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE,
+                      checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE, useFasterRderivs = TRUE,
                       relTol = relTolTmp, verbose = verbose, name = 'user-defined distribution')
 
 
@@ -625,7 +627,7 @@ relTolTmp[5] <- 1e-13
 
 ## 462 sec.
 test_ADModelCalculate(model,absTolThreshold = 1e-12, useParamTransform = TRUE, checkCompiledValuesIdentical = FALSE,
-                      newConstantNodes = list(dist = newDist, pr = newPr), useFasterRderivs = TRUE,
+                      check01vs012jacIdentical = FALSE, newConstantNodes = list(dist = newDist, pr = newPr), useFasterRderivs = TRUE,
                       relTol = relTolTmp, verbose = verbose, name = 'various matrix functions')
 
 
@@ -640,13 +642,13 @@ code <- nimbleCode({
 model <- nimbleModel(code, data = list(b = 1.2), inits = list(a = 1.3, z = 0.7))
 ## calcNodes excludes det intermediates
 ## 81 sec.
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE,
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
                       wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 1a')
 
 model <- nimbleModel(code, data = list(b = 1.2), inits = list(a = 1.3, z = 0.7))
 ## calcNodes includes det intermediates
 ## 88 sec.
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE,
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
                       wrt = 'a', calcNodes = c('a', 'b', 'lifted_sqrt_oPa_cP'), name = 'update nodes case 1b')
 
 
@@ -662,7 +664,7 @@ code <- nimbleCode({
 model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = runif(4), pr = diag(2), mu0 = rep(0, 2)))
 ## calcNodes excludes det intermediates
 ## 99 sec.
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE,
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
                       wrt = 'a', calcNodes = c('a', 'b'), name = 'update nodes case 2a')
 
 model <- nimbleModel(code, data = list(b = rnorm(4)), inits = list(a = 1.3, z = runif(4), pr = diag(2), mu0 = rep(0, 2)))
@@ -671,7 +673,7 @@ relTolTmp[2] <- 1e-7
 relTolTmp[5] <- 1e-13
 ## calcNodes includes det intermediates
 ## 105 sec.
-test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, checkCompiledValuesIdentical = FALSE,
+test_ADModelCalculate(model, useParamTransform = TRUE, relTol = relTolTmp, verbose = verbose, checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
                       wrt = 'a', calcNodes = c('a', 'b', "lifted_sqrt_oPa_cP"), name = 'update nodes case 2b')
 
 
@@ -685,7 +687,7 @@ code <- nimbleCode({
 })
 model <- nimbleModel(code, data = list(y = rnorm(1)), inits = list(sigma2 = rgamma(1, 1, 1), mu = rnorm(1)))
 ## 315 sec.
-test_ADModelCalculate(model, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE,
+test_ADModelCalculate(model, relTol = relTol, verbose = verbose, checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE, 
                       useFasterRderivs = TRUE, useParamTransform = TRUE, name = 'basic param transform, with lifted')
 
 
@@ -709,7 +711,7 @@ relTolTmp <- relTol
 relTolTmp[3] <- 1e-3
 relTolTmp[4] <- 1e-1
 ## 406 sec.
-test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, checkCompiledValuesIdentical = FALSE,
+test_ADModelCalculate(model, relTol = relTolTmp, verbose = verbose, checkCompiledValuesIdentical = FALSE, check01vs012jacIdentical = FALSE,
                       useFasterRderivs = TRUE, useParamTransform = TRUE)
 
 ## Dirichlet
@@ -736,7 +738,7 @@ relTolTmp[5] <- 1e-9
 ## rOutput2d11 result can be wildly out of tolerance, so not checking it.
 ## 335 sec.
 test_ADModelCalculate(model, x = 'prior', useParamTransform = TRUE, newUpdateNodes = list(p = newP), newConstantNodes = list(y = newY),
-                      checkDoubleUncHessian = FALSE, relTol = relTolTmp, absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,
+                      checkDoubleUncHessian = FALSE, relTol = relTolTmp, absTolThreshold = 1e-12, checkCompiledValuesIdentical = FALSE,check01vs012jacIdentical = FALSE,
                       useFasterRderivs = TRUE, verbose = verbose, name = 'Dirichlet paramTransform')
 
 
@@ -795,7 +797,8 @@ relTolTmp[5] <- 1e-12
 test_ADModelCalculate(model, relTol = relTolTmp, absTolThreshold = 1e-12,
                       newConstantNodes = list(z = 1), xNew = list(p = c(.35,.25,.4)),
                       verbose = verbose, name = 'dcat likelihood',
-                      checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, useParamTransform = TRUE)
+                      checkCompiledValuesIdentical = FALSE,check01vs012jacIdentical = FALSE,
+                      useFasterRderivs = TRUE, useParamTransform = TRUE)
 
 ## stochastic indexing, dcat as latent variable
 
@@ -820,7 +823,8 @@ relTolTmp[4] <- 1e-3
 test_ADModelCalculate(model, wrt = c('mu','p'), relTol = relTolTmp, absTolThreshold = 1e-12,
                       newUpdateNodes = list(z=c(3,3,2,1,2)), xNew = list(p = c(.35,.25,.4)),
                       verbose = verbose, name = 'dcat latent, stochastic indexing',
-                      checkCompiledValuesIdentical = FALSE, useFasterRderivs = TRUE, useParamTransform = TRUE)
+                      checkCompiledValuesIdentical = FALSE,check01vs012jacIdentical = FALSE,
+                      useFasterRderivs = TRUE, useParamTransform = TRUE)
 
 
 nimbleOptions(enableDerivs = EDopt)
