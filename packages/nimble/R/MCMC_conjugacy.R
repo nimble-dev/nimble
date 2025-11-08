@@ -563,6 +563,7 @@ conjugacyClass <- setRefClass(
                 distDimParams <- getDimension(distName, includeParams = TRUE)
                 distDim <- distDimParams[['value']]
                 neededParams <- dependents[[distName]]$neededParamsForPosterior
+                ##
                 functionBody$addCode({
                     DEP_NODENAMES <- control$DEP_CONTROL_NAME
                     N_DEP <- length(DEP_NODENAMES)
@@ -759,7 +760,6 @@ conjugacyClass <- setRefClass(
         },
 
         addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts, doDependentScreen = FALSE) {
-            browser()     ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
             ## get current value of prior parameters which appear in the posterior expression
             for(priorParam in posteriorObject$neededPriorParams) {
                 functionBody$addCode(PRIOR_PARAM_VAR <- model$getParam(target[1], PARAM_NAME),
@@ -776,27 +776,32 @@ conjugacyClass <- setRefClass(
                 distLinkName <- distLinkNameList[[iDepCount]]
                 distName <- distNameList[[iDepCount]]
                 currentLink <- currentLinkList[[iDepCount]]
+                distDimParams <- getDimension(distName, includeParams = TRUE)
+                distDim <- distDimParams[['value']]
                 neededParams <- dependents[[distName]]$neededParamsForPosterior
-                depNodeValueNdim <- getDimension(distName)
 
                 forLoopBody <- codeBlockClass()
 
                 ## get *value* of each dependent node
-                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
-                    forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
-                                        list(DEP_NODESIZES = as.name(paste0('dep_', distLinkName, '_nodeSizes'))))
+                if(distDim > 0) {
+                    forLoopBody$addCode(thisSize <- DEP_SIZES[iDep],
+                                        list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
                 }
-                forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[iDep], 'value'),
-                                    list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), depNodeValueNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize)),
-                                         DEP_NODENAMES = as.name(paste0('dep_', distLinkName,'_nodeNames'))))
+                forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <<- model$getParam(DEP_NAMES[iDep], 'value'),
+                                    list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_values')), distDim, indexExpr = quote(iDep), secondSize = quote(thisSize), thirdSize = quote(thisSize)),
+                                         DEP_NAMES = as.name(paste0('dep_', distLinkName, '_nodeNames'))))
 
                 for(param in neededParams) {
-                    depNodeParamNdim <- getDimension(distName, param)
+                    depNodeParamNdim <- distDimParams[[param]]
                     ## get *parameter values* for each dependent node
-                    forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
-                                        list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize)),
-                                             DEP_NODENAMES = as.name(paste0('dep_', distLinkName,'_nodeNames')),
-                                             PARAM_NAME    = param))
+                    if(depNodeParamNdim > 0) {
+                        forLoopBody$addCode(thisSize <- DEP_SIZES[iDep],
+                                            list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_', param, '_sizes'))))
+                    }
+                    forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <<- model$getParam(DEP_NAMES[iDep], PARAM_NAME),
+                                        list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep), secondSize = quote(thisSize), thirdSize = quote(thisSize)),
+                                             DEP_NAMES  = as.name(paste0('dep_', distLinkName, '_nodeNames')),
+                                             PARAM_NAME = param))
                 }
 
                 functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
@@ -804,9 +809,11 @@ conjugacyClass <- setRefClass(
                                           FORLOOPBODY = forLoopBody$getCode()))
             }
 
+            browser()     ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
             targetNdim <- getDimension(prior)
             allCurrentLinks <- sapply(names(dependentCounts), function(x) splitDistLinkName(x)[[2]])
 
+            ## determine the values of 'coeff' and 'offset'
             switch(as.character(targetNdim),
                    `0` = {
                        if(any(allCurrentLinks %in% c('additive', 'linear')) || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) {
@@ -824,7 +831,7 @@ conjugacyClass <- setRefClass(
                                                         DEP_OFFSET_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
                                                     list(N_DEP          = as.name(paste0('N_dep_', distLinkName)),
                                                          DEP_OFFSET_VAR = as.name(paste0('dep_', distLinkName, '_offset')),
-                                                         DEP_NODENAMES  = as.name(paste0('dep_', distLinkName,'_nodeNames')),
+                                                         DEP_NODENAMES  = as.name(paste0('dep_', distLinkName, '_nodeNames')),
                                                          PARAM_NAME     = dependents[[distName]]$param))
                            }
                        }
@@ -879,14 +886,14 @@ conjugacyClass <- setRefClass(
                                if(currentLink  %in% c('additive', 'linear') || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) 
                                    functionBody$addCode({
                                        for(iDep in 1:N_DEP) {
-                                           thisNodeSize <- DEP_NODESIZES[iDep]
-                                           DEP_OFFSET_VAR[iDep, 1:thisNodeSize] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)
+                                           thisNodeSize <- DEP_NODESIZES[iDep]      ### YYYYYYYY thisNodeSize
+                                           DEP_OFFSET_VAR[iDep, 1:thisNodeSize] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)      ### YYYYYYYY thisNodeSize
                                        }
                                    },
                                    list(N_DEP          = as.name(paste0('N_dep_', distLinkName)),
-                                        DEP_NODESIZES  = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
+                                        DEP_NODESIZES  = as.name(paste0('dep_', distLinkName, '_value_sizes')),
                                         DEP_OFFSET_VAR = as.name(paste0('dep_', distLinkName, '_offset')),
-                                        DEP_NODENAMES  = as.name(paste0('dep_', distLinkName,'_nodeNames')),
+                                        DEP_NODENAMES  = as.name(paste0('dep_', distLinkName, '_nodeNames')),
                                         PARAM_NAME     = dependents[[distName]]$param))
                            }
                        }
@@ -908,7 +915,7 @@ conjugacyClass <- setRefClass(
 
                                if(currentLink %in% c('multiplicative', 'linear') || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) {
                                    inputList <- list(N_DEP          = as.name(paste0('N_dep_', distLinkName)),
-                                                     DEP_NODESIZES  = as.name(paste0('dep_', distLinkName, '_nodeSizes')),
+                                                     DEP_NODESIZES  = as.name(paste0('dep_', distLinkName, '_value_sizes')),
                                                      DEP_COEFF_VAR  = as.name(paste0('dep_', distLinkName, '_coeff')),
                                                      DEP_NODENAMES  = as.name(paste0('dep_', distLinkName, '_nodeNames')),
                                                      PARAM_NAME     = dependents[[distName]]$param,
@@ -916,14 +923,14 @@ conjugacyClass <- setRefClass(
                                    if(currentLink == 'linear' || (getNimbleOption('allowDynamicIndexing') && doDependentScreen)) {
                                        forLoopBody$addCode(
                                                        for(iDep in 1:N_DEP) {
-                                                           thisNodeSize <- DEP_NODESIZES[iDep]
-                                                           DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep, 1:thisNodeSize]
+                                                           thisNodeSize <- DEP_NODESIZES[iDep]      ### YYYYYYYY thisNodeSize
+                                                           DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep, 1:thisNodeSize]      ### YYYYYYYY thisNodeSize
                                                        }, inputList)
                                    } else {
                                        forLoopBody$addCode(
                                                        for(iDep in 1:N_DEP) {
-                                                           thisNodeSize <- DEP_NODESIZES[iDep]
-                                                           DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)
+                                                           thisNodeSize <- DEP_NODESIZES[iDep]      ### YYYYYYYY thisNodeSize
+                                                           DEP_COEFF_VAR[iDep, 1:thisNodeSize, sizeIndex] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME)      ### YYYYYYYY thisNodeSize
                                                        }, inputList)
                                    }
                                }
@@ -1014,7 +1021,7 @@ conjugacyClass <- setRefClass(
                 ## no such cases exist, and it causes a runtime size check compiler warning.
                 ## nonRaggedSizeExpr used to replace quote(thisNodeSize) below.
                 ## August 2016
-                nonRaggedSizeExpr <- if(targetNdim < 2) quote(thisNodeSize) else quote(d)
+                nonRaggedSizeExpr <- if(targetNdim < 2) quote(thisNodeSize) else quote(d)      ### YYYYYYYY thisNodeSize
                 subList <- lapply(depParamsAvailable, function(param)
                     makeIndexedVariable(as.name(paste0('dep_', distLinkName, '_', param)), getDimension(distName, param), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr))
                 names(subList) <- depParamsAvailable
@@ -1029,11 +1036,11 @@ conjugacyClass <- setRefClass(
                 
                 if(any(getDimension(distName, includeParams = TRUE) > 0)) {
                     if(targetNdim == 1) ## 1D
-                        forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
-                                            list(DEP_NODESIZES = as.name(paste0('dep_', distLinkName, '_nodeSizes'))))
+                        forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],      ### YYYYYYYY thisNodeSize
+                                            list(DEP_NODESIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
                     if(targetNdim == 2) ## 2D  ## formerly this was 'else', but for 'dcat' we have targetNdim=0 while max(getDimension(distName, includeParams = TRUE)) is 1 so need explicit check for 2D
                         forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
-                                            list(DEP_NODESIZES = as.name(paste0('dep_', distLinkName, '_nodeSizes'))))
+                                            list(DEP_NODESIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
                 }
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
