@@ -23,6 +23,7 @@
 \alias{sampler_CAR_normal}
 \alias{sampler_CAR_proper}
 \alias{sampler_polyagamma}
+\alias{sampler_barker}
 \alias{samplers}
 \alias{sampler}
 \alias{binary}
@@ -49,7 +50,6 @@
 \alias{RW_PF_block}
 \alias{RW_lkj_corr_cholesky}
 \alias{RW_block_lkj_corr_cholesky}
-\alias{sampler_barker}
 \alias{barker}
 \alias{sampler_RJ_fixed_prior}
 \alias{sampler_RJ_indicator}
@@ -102,6 +102,8 @@ sampler_CAR_normal(model, mvSaved, target, control)
 sampler_CAR_proper(model, mvSaved, target, control)
 
 sampler_polyagamma(model, mvSaved, target, control)
+
+sampler_barker(model, mvSaved, target, control)
 
 sampler_RJ_fixed_prior(model, mvSaved, target, control)
 

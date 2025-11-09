@@ -46,29 +46,29 @@ spectrumBound <- nimbleFunction(
 
 #' Matrix Exponential times a vector
 #'
-#'   Compute the combined term expm(A) %*% v
-#'   to avoid a full matrix exponentiation.
+#' Compute the combined term \code{expm(A) \%*\% v} to avoid a full matrix exponentiation.
 #' 
 #' @name expAv
 #' 
 #' @param A Square matrix.
-#' @param v vector to multiply by the matrix exponential exp(A) %*% v.
+#' @param v vector to multiply by the matrix exponential \code{exp(A) \%*\% v}.
 #' @param tol level of accuracy required (default = 1e-8).
 #' @param rescaleFreq How frequently should the terms be scaled to avoid underflow/overflow (default = 10).
 #' @param Nmax Maximum number of iterations to compute (default = 10000).
 #' @param sparse (logical) specify if the matrix may be sparse and to do sparse computation (default = TRUE).
 #' @author Paul van Dam-Bates
-#' @details For large matrix exponentials it is much more efficient to compute exp(A) %*% v, than to actually compute the entire matrix exponential.
+#' @details
+#' For large matrix exponentials it is much more efficient to compute \code{exp(A) \%*\% v}, than to actually compute the entire matrix exponential.
 #'
-#' This function follows the function `expAv` from the R package RTMB (Kristensen, 2025), and theory outlined in Sherlock (2021). It is developed for working with continuous times
+#' This function follows the function \code{expAv} from the R package \pkg{RTMB} (Kristensen, 2025), and theory outlined in Sherlock (2021). It is developed for working with continuous times
 #' Markov chains. If using the matrix exponential to create a transition probability matrix in a HMM context just once, 
 #' this function may be slower than the one time call to compute the full matrix exponentiation. If a full matrix exponentiation is required, refer to 
-#' `expm` to compute. Choosing sparse = TRUE will check which matrix A values are non-zero and do sparse linear algebra.
-#' Note that for computation efficiency matrix uniformization is done by A* = A + rho I, where rho = max(abs(diag(A))), see Algorithm 2' in Sherlock (2021).
+#' \code{expm} to compute. Choosing \code{sparse = TRUE} will check which values of \code{A} are non-zero and do sparse linear algebra.
+#' Note that for computation efficiency matrix uniformization is done by \code{A* = A + rho I}, where \code{rho = max(abs(diag(A)))}; see Algorithm 2' in Sherlock (2021).
 #' When the row sums of the matrix are not zero, then uniformization is not done, and the number of iterations to reach tolerance are approximated based on the
-#' a bound of the spectrum, similar to `RTMB' (Kristensen, 2025).
+#' a bound of the spectrum, similar to \pkg{RTMB} (Kristensen, 2025).
 #'
-#' @return \code{expAv} gives a vector that is ans = exp(A) %*% v.
+#' @return the result as a vector.
 #'
 #' @references 
 #' Sherlock, C. (2021). Direct statistical inference for finite Markov jump processes via the matrix exponential. Computational Statistics, 36(4), 2863-2887.
@@ -164,8 +164,7 @@ expAv <- nimbleFunction(
 
 #' Matrix Exponential
 #'
-#'   Compute the the matrix exponential expm(A)
-#'   by scaling and squaring.
+#' Compute the the matrix exponential \code{expm(A)} by scaling and squaring.
 #' 
 #' @name expm
 #' 
@@ -178,11 +177,11 @@ expAv <- nimbleFunction(
 #' matrix exponential. It differs from the standard Taylor scaling and squaring algorithm reviewed by Ruiz et al (2016) and found in common texts,
 #' by doing uniformization if the matrix is a generator matrix from a continuous time Markov chain. If using the matrix exponential to create a 
 #' transition probability matrix in a HMM context just once, this function may be efficient. If dimension is large, we recommend avoiding the 
-#' matrix exponential and using `expAv` instead. Note that for computation efficiency, when the columns are non-positive, matrix uniformization 
-#' is done by A* = A + rho I, where rho = max(abs(diag(A))). When the row sums of the matrix are not zero, then uniformization is not done, 
-#' and the number of iterations to reach tolerance are approximated based on the a bound of the spectrum, similar to `RTMB' (Kristensen, 2025).
+#' matrix exponential and using \code{expAv} instead. Note that for computation efficiency, when the columns are non-positive, matrix uniformization 
+#' is done by \code{A* = A + rho I}, where \code{rho = max(abs(diag(A)))}. When the row sums of the matrix are not zero, then uniformization is not done, 
+#' and the number of iterations to reach tolerance are approximated based on the a bound of the spectrum, similar to \pkg{RTMB} (Kristensen, 2025).
 #'
-#' @return \code{expm} gives a matrix that is ans = exp(A).
+#' @return a matrix that is ans = exp(A).
 #'
 #' @references 
 #' Sherlock, C. (2021). Direct statistical inference for finite Markov jump processes via the matrix exponential. Computational Statistics, 36(4), 2863-2887.

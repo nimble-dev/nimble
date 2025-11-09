@@ -6,7 +6,14 @@
 \alias{AD}
 \title{Nimble Derivatives}
 \usage{
-nimDerivs(call = NA, wrt = NULL, order = nimC(0, 1, 2), model = NA, ...)
+nimDerivs(
+  call = NA,
+  wrt = NULL,
+  order = nimC(0, 1, 2),
+  model = NA,
+  reset = FALSE,
+  ...
+)
 }
 \arguments{
 \item{call}{a call to a \code{nimbleFunction} method with arguments
@@ -31,6 +38,10 @@ is included, one should also include the arguments \code{updateNodes} and
 \code{constantNodes} using the output obtained from running
 \code{makeModelDerivsInfo}.}
 
+\item{reset}{a logical specifying whether to reset the AD tape.
+See Section 17.4.5 of user manual for details.
+Not used/relevant for uncompiled execution. Defaults to \code{FALSE}.}
+
 \item{...}{additional arguments intended for internal use only.}
 }
 \value{
@@ -51,7 +62,7 @@ As discussed above with the \code{model} argument, if taking derivatives
 of a nimbleFunction that involves model calculations (rather than directly
 taking derivatives of `calculate`), care needs to be taken to provide
 \code{model}, \code{updateNodes}, and \code{calcNodes} arguments. See
-Section 16.7.2 of the User Manual for more details.
+Section 17.6.2 of the User Manual for more details.
 }
 \examples{
 

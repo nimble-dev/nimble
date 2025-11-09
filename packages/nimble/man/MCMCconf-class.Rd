@@ -21,6 +21,12 @@
 \alias{printMonitors}
 \alias{setThin}
 \alias{setThin2}
+\alias{addDerivedQuantity}
+\alias{removeDerivedQuantity}
+\alias{removeDerivedQuantities}
+\alias{printDerivedQuantities}
+\alias{getDerivedQuantities}
+\alias{getDerivedQuantityDefinition}
 \title{Class \code{MCMCconf}}
 \description{
 Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.

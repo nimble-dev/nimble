@@ -400,7 +400,7 @@ derived_predictive <- nimbleFunction(
 #'
 #' Details of the NIMBLE MCMC engine handles derived quantities, which are deterministic functions that can be calaculated and recorded after each MCMC sampling iteration.
 #'
-#' @section Mean and Variance
+#' @section Mean and variance:
 #'
 #' The \code{mean} and \code{variance} derived quantity functions calculate the running mean and variance, respectively, for each node specified in the \code{nodes} argument.  If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between calculations of the statistic.  When the statistic is calculated, only the current value of each node is used to update the statistic.  For example, if \code{interval} is 2, then every other MCMC iteration is used to calculate an updated value of the statistic.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
 #'
@@ -410,7 +410,7 @@ derived_predictive <- nimbleFunction(
 #' \item recordingFrequency. The frequency (number of calculations of the statistic) afer which the value of the statistic is saved.  For example, if \code{recordingFrequency} is 1, then the value of the statistic is saved after every update of its value.  But if \code{recordingFrequency} is 10, then the value of the statistic is only saved after every tenth update of its value.  The dafault value of \code{recordingFrequency} is 0, which corresponds to a special case: the value of the statistic is only recorded a single time, which is on the final iteration of the MCMC chain.
 #' }
 #'
-#' @section Model Log-Densities
+#' @section Model log-densities:
 #'
 #' The \code{logProb} derived quantity function calculates and records values of the log-density of individual nodes or (summed) groups of nodes.   If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between recordings of the log-density values.  For example, if \code{interval} is 2, then log-density values will be recorded upon every other MCMC iteration.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
 #'
@@ -420,7 +420,7 @@ derived_predictive <- nimbleFunction(
 #' \item silent.  By default, the \code{logProb} derived quantity function will issue a warning when the \code{nodes} argument includes node names which are not present in the model.  This warning may be suppressed by setting \code{silent} to \code{TRUE}.
 #' }
 #'
-#' @section Posterior Predictive Nodes and Derived Quantities
+#' @section Posterior predictive nodes and derived quantities:
 #'
 #' The \code{predictive} derived quantity function simulates the values of posterior predictive nodes in the model and stores these simulated values.  This may be useful when a model structure includes posterior predictive nodes (or deterministically defined posterior derived quantities), but for reasons of efficiency, these nodes may not undergo MCMC sampling.  In such cases, the \code{predictive} derived quantity function may be assigned to these nodes, and when executed it will simulate new values for these nodes and record the simulated values.
 #'
