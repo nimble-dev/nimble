@@ -1036,7 +1036,6 @@ conjugacyClass <- setRefClass(
                 
                 forLoopBody <- codeBlockClass()
                 
-                browser()     ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
                 ####maybe no longer necessary? ##### if(any(distDimParams > 0)) {
                 ####maybe no longer necessary? #####     if(targetNdim == 1) ## 1D
                 ####maybe no longer necessary? #####         forLoopBody$addCode(thisSize <- DEP_SIZES[iDep],
@@ -1045,6 +1044,15 @@ conjugacyClass <- setRefClass(
                 ####maybe no longer necessary? #####         forLoopBody$addCode(if(DEP_SIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
                 ####maybe no longer necessary? #####                             list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
                 ####maybe no longer necessary? ##### }
+
+                for(p in c('value', depParamsAvailable)) {
+                    if(distDimParams[[p]] > 0) {
+                        forLoopBody$addCode(SIZE_NAME <- SIZE_VALUE[iDep],
+                                            list(SIZE_NAME  = as.name(paste0(p, '_size')),
+                                                 SIZE_VALUE = as.name(paste0('dep_', distLinkName, '_', p, '_sizes'))))
+                    }
+                }
+                
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
@@ -1067,13 +1075,6 @@ conjugacyClass <- setRefClass(
                                                             offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),
                                                             coeff = currentLink %in% c('identity','additive'))
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=contributionExpr)))
-                    for(p in c('value', depParamsAvailable)) {
-                        if(distDimParams[[p]] > 0) {
-                            forLoopBody$addCode(SIZE_NAME <- SIZE_VALUE[iDep],
-                                                list(SIZE_NAME  = as.name(paste0(p, '_size')),
-                                                     SIZE_VALUE = as.name(paste0('dep_', distLinkName, '_', p, '_sizes'))))
-                        }
-                    }
                     subList2 <- list(CONTRIB_NAME = as.name(contributionName),
                                      CONTRIB_EXPR = contributionExpr)
                     subList2$COEFF_EXPR <- subList$coeff      ## a separate case, for the situation where subList$coeff is NULL
