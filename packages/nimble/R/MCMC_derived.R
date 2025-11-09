@@ -444,6 +444,9 @@ derived_predictive <- nimbleFunction(
 #' @aliases derived_mean derived_variance derived_logProb
 #'
 #' @examples
+#' \dontrun{
+#' conf <- configureMCMC(model)
+#'
 #' conf$addDerivedQuantity("mean", nodes = c("a", "b"))
 #' 
 #' conf$addDerivedQuantity("mean", nodes = "theta", interval = 5)
@@ -453,6 +456,7 @@ derived_predictive <- nimbleFunction(
 #' conf$addDerivedQuantity("logProb", nodes = c('alpha', 'beta'))
 #'
 #' conf <- configureMCMC(model, mean = 'a', variance = 'b', logProb = TRUE)
+#' }
 #' 
 #' @seealso \code{\link{configureMCMC}} \code{\link{addDerivedQuantity}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 #'
