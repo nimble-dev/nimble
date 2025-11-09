@@ -1036,14 +1036,10 @@ conjugacyClass <- setRefClass(
                 
                 forLoopBody <- codeBlockClass()
                 
-                ####maybe no longer necessary? ##### if(any(distDimParams > 0)) {
-                ####maybe no longer necessary? #####     if(targetNdim == 1) ## 1D
-                ####maybe no longer necessary? #####         forLoopBody$addCode(thisSize <- DEP_SIZES[iDep],
-                ####maybe no longer necessary? #####                             list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
-                ####maybe no longer necessary? #####     if(targetNdim == 2) ## 2D  ## formerly this was 'else', but for 'dcat' we have targetNdim=0 while max(distDimParams) is 1 so need explicit check for 2D
-                ####maybe no longer necessary? #####         forLoopBody$addCode(if(DEP_SIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
-                ####maybe no longer necessary? #####                             list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
-                ####maybe no longer necessary? ##### }
+                if(targetNdim == 2) {
+                    forLoopBody$addCode(if(DEP_SIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
+                                        list(DEP_SIZES = as.name(paste0('dep_', distLinkName, '_value_sizes'))))
+                }
 
                 for(p in c('value', depParamsAvailable)) {
                     if(distDimParams[[p]] > 0) {
