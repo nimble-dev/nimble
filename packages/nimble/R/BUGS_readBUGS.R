@@ -30,9 +30,9 @@ BUGSmodel <- function(code,
 
 
 
-#' Create a NIMBLE model from BUGS code
+#' Create a NIMBLE model from model code
 #'
-#' Processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
+#' Processes model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
 #'
 #' @param code code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{\link{quote}}
 #' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{\link{nimbleModel}} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
@@ -46,7 +46,7 @@ BUGSmodel <- function(code,
 #' @param calculate logical indicating whether to run \code{\link{calculate}} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
 #' @param buildDerivs logical indicating whether to build derivative capabilities for the model.
-#' @param userEnv environment in which if-then-else statements in BUGS code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only
+#' @param userEnv environment in which if-then-else statements in model code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only
 #' @author NIMBLE development team
 #' @export
 #' @details
@@ -87,18 +87,18 @@ nimbleModel <- function(code,
                                      nimbleModelID())
     name <- gsub("::", "_cc_", name) ## :: can arise from a call via do.call, for example, giving name with "base::quote_"...
     if(length(constants) && sum(names(constants) == ""))
-      stop("BUGSmodel: 'constants' must be a named list")
+      stop("nimbleModel: 'constants' must be a named list")
     if(length(dimensions) && sum(names(dimensions) == ""))
-      stop("BUGSmodel: 'dimensions' must be a named list")
+      stop("nimbleModel: 'dimensions' must be a named list")
     if(length(data) && sum(names(data) == ""))
-        stop("BUGSmodel: 'data' must be a named list")
+        stop("nimbleModel: 'data' must be a named list")
     if(any(!sapply(data, function(x) {
         is.numeric(x) || is.logical(x) ||
             (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
-        stop("BUGSmodel: elements of 'data' must be numeric")
+        stop("nimbleModel: elements of 'data' must be numeric")
     if(isTRUE(buildDerivs))
         if(!isTRUE(nimbleOptions("enableDerivs")))
-            stop("BUGSmodel: 'buildDerivs' cannot be set to TRUE if nimbleOptions[['enableDerivs']] is not TRUE.")
+            stop("nimbleModel: 'buildDerivs' cannot be set to TRUE if nimbleOptions[['enableDerivs']] is not TRUE.")
     md <- modelDefClass$new(name = name, buildDerivs = buildDerivs)
     messageIfVerbose("Defining model")
     md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits,
