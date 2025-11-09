@@ -1052,7 +1052,6 @@ conjugacyClass <- setRefClass(
                                                  SIZE_VALUE = as.name(paste0('dep_', distLinkName, '_', p, '_sizes'))))
                     }
                 }
-                
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- dependents[[distName]]$contributionExprs[[contributionName]]
@@ -1075,23 +1074,19 @@ conjugacyClass <- setRefClass(
                                                             offset = currentLink %in% c('identity','multiplicative','multiplicativeScalar'),
                                                             coeff = currentLink %in% c('identity','additive'))
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=contributionExpr)))
-                    subList2 <- list(CONTRIB_NAME = as.name(contributionName),
-                                     CONTRIB_EXPR = contributionExpr)
-                    subList2$COEFF_EXPR <- subList$coeff      ## a separate case, for the situation where subList$coeff is NULL
-                    if(getNimbleOption('allowDynamicIndexing') && doDependentScreen) { ## FIXME: would be nice to only have one if() here when we loop through multiple parameters
+                    if(getNimbleOption('allowDynamicIndexing') && doDependentScreen) {
                         if(targetCoeffNdim == 0) {
-                            forLoopBody$addCode(if(COEFF_EXPR != 0)
-                                                    CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
-                                                subList2)
+                            exprToUse <- quote(if(COEFF_EXPR != 0)   CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR)
                         } else {
-                            forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0)
-                                                    CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
-                                                subList2)
+                            exprToUse <- quote(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0)   CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR)
                         }
-                    } else {
-                        forLoopBody$addCode(CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
-                                            subList2)
-                    }
+                    } else
+                        exprToUse <- quote(CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR)
+                    eval(substitute(forLoopBody$addCode(EXPR, LIST),
+                               list(EXPR = exprToUse,
+                                    LIST = list(CONTRIB_NAME = as.name(contributionName),
+                                                CONTRIB_EXPR = contributionExpr,
+                                                COEFF_EXPR   = subList$coeff))))
                 }
                 functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
                                      list(N_DEP       = as.name(paste0('N_dep_', distLinkName)),
