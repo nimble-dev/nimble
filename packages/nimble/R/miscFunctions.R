@@ -163,7 +163,10 @@ calc_dcar_normalConjugacyContributionRate <- nimbleFunction(
         for(i in 1:N) {
             if(num[i] > 0) {
                 for(j in 1:num[i]) {
-                    ans <- ans + weights[count] * (value[i] - value[adj[count]])^2
+                    ## this prevents "double-counting" each pair of neighboring nodes:
+                    if(i < adj[count]) {
+                        ans <- ans + weights[count] * (value[i] - value[adj[count]])^2
+                    }
                     count <- count + 1
                 }
             }
