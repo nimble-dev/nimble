@@ -28,7 +28,7 @@ Authors@R: c(
     person("Claudia", "Wehrhahn Cortes", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Abel", "Rodr\u00edguez", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Duncan", "Temple Lang", role = "aut", comment = "packaging configuration"),
-    person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
+    person("Wei", "Zhang", role = "aut", comment = "node marginalization"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
     person("Paul", "van Dam-Bates", role = "aut", comment = "P\u00f3lya-Gamma sampler, nimIntegrate, matrix exponential"),
