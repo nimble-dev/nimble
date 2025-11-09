@@ -521,18 +521,20 @@ qdexp <- function(p, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE,
 
 #' The Multivariate Normal Distribution
 #'
-#' Density and random generation for the multivariate normal distribution, using the Cholesky factor of either the precision matrix or the covariance matrix.
+#' Density and random generation for the multivariate normal distribution, using the Cholesky factor of either the precision matrix or the covariance matrix (when not using AD) or the precision or covariance matrix (when using AD).
 #'
 #' @name MultivariateNormal
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
 #' @param mean vector of values giving the mean of the distribution.
-#' @param cholesky upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).
-#' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.
+#' @param cholesky in standard cases (when not using AD), upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).
+#' @param prec_param logical; in standard cases (when not using AD): if TRUE then \code{cholesky} is that of the precision matrix; otherwise, of the covariance matrix. When using AD: if TRUE then \code{mat} is the precision matrix; otherwise the covariance matrix.
+#' @param mat when using AD, either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).
+#' @param inv_ld when using AD, either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise) as a vector (ordered column-major) with an additional last element containing the log of the determinant of the covariance matrix (it must be of the covariance matrix). For the density calculation, only the log determinant element is used when \code{prec_param} is TRUE. Not used for random generation (but must exist and be of the correct length).
 #' @param log logical; if TRUE, probability density is returned on the log scale.
-#' @author Christopher Paciorek
-#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
+#' @author Christopher Paciorek, Perry de Valpine
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. Note that if one wishes to take derivatives (using AD) involving the distribution, one should use the "inv_ld" versions, as use of the Cholesky is computationally inefficient. 
 #' @return \code{dmnorm_chol} gives the density and \code{rmnorm_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 #' @seealso \link{Distributions} for other standard distributions
@@ -550,6 +552,28 @@ PDinverse_logdet <- function(mat) {
    storage.mode(mat) <- 'double'
   out <- .Call(C_PDinverse_logdet, mat)
   return(out)
+}
+
+
+#' @rdname MultivariateNormal
+#' @export
+dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
+  # cholesky should be upper triangular
+  # FIXME: allow cholesky to be lower tri
+    if(storage.mode(cholesky) != 'double')
+         storage.mode(cholesky) <- 'double'
+    .Call(C_dmnorm_chol, as.double(x), as.double(mean), cholesky, as.double(prec_param), as.logical(log))
+}
+
+#' @rdname MultivariateNormal
+#' @export
+rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
+ ## cholesky should be upper triangular
+ ## FIXME: allow cholesky to be lower tri
+    if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
+    if(storage.mode(cholesky) != 'double')
+         storage.mode(cholesky) <- 'double'
+    .Call(C_rmnorm_chol, as.double(mean), cholesky, as.double(prec_param))
 }
 
 #' @rdname MultivariateNormal
@@ -573,27 +597,6 @@ rmnorm_inv_ld <- function(n=1, mean, mat, inv_ld, prec_param = TRUE) {
          storage.mode(mat) <- 'double'
     .Call(C_rmnorm_inv_ld, as.double(mean), mat, inv_ld,
           as.double(prec_param))
-}
-
-#' @rdname MultivariateNormal
-#' @export
-dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
-  # cholesky should be upper triangular
-  # FIXME: allow cholesky to be lower tri
-    if(storage.mode(cholesky) != 'double')
-         storage.mode(cholesky) <- 'double'
-    .Call(C_dmnorm_chol, as.double(x), as.double(mean), cholesky, as.double(prec_param), as.logical(log))
-}
-
-#' @rdname MultivariateNormal
-#' @export
-rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
- ## cholesky should be upper triangular
- ## FIXME: allow cholesky to be lower tri
-    if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-    if(storage.mode(cholesky) != 'double')
-         storage.mode(cholesky) <- 'double'
-    .Call(C_rmnorm_chol, as.double(mean), cholesky, as.double(prec_param))
 }
 
 #' The Multivariate t Distribution
