@@ -398,8 +398,13 @@ derived_predictive <- nimbleFunction(
 
 #' MCMC Derived Quantities
 #'
-#' Details of the NIMBLE MCMC engine handles derived quantities, which are deterministic functions that can be calaculated and recorded after each MCMC sampling iteration.
+#' Details of the NIMBLE MCMC engine handling of derived quantities, which are deterministic functions that can be calaculated and recorded after each MCMC sampling iteration.
 #'
+#' @param model (uncompiled) model on which the MCMC is to be run
+#' @param mcmc (uncompiled) MCMC object
+#' @param interval interval (of MCMC iterations) at which the derived quantity is calculated
+#' @param control named list that controls the precise behavior of the derived quantity calculation, with elements specific to  type of derived quantity.
+#' 
 #' @section Mean and variance:
 #'
 #' The \code{mean} and \code{variance} derived quantity functions calculate the running mean and variance, respectively, for each node specified in the \code{nodes} argument.  If added to an MCMC configuration object using the \code{addDerivedQuantity} method, then a value of the \code{interval} argument may also be provided to \code{addDerivedQuantity}. In that case, the value of \code{interval} specifies the number of MCMC iterations between calculations of the statistic.  When the statistic is calculated, only the current value of each node is used to update the statistic.  For example, if \code{interval} is 2, then every other MCMC iteration is used to calculate an updated value of the statistic.  If no value of \code{interval} is provided as an argument to \code{addDerivedQuantity}, then the default value is the thinning interval \code{thin} of the MCMC.
