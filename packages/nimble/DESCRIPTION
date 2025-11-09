@@ -144,6 +144,7 @@ Collate:
     crossValidation.R
     BNP_distributions.R
     BNP_samplers.R
+    setupMargNodes.R
     NF_utils.R
     miscFunctions.R
     makevars.R
