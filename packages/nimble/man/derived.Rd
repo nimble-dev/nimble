@@ -19,8 +19,17 @@ derived_logProb(model, mcmc, interval, control)
 
 derived_predictive(model, mcmc, interval, control)
 }
+\arguments{
+\item{model}{(uncompiled) model on which the MCMC is to be run}
+
+\item{mcmc}{(uncompiled) MCMC object}
+
+\item{interval}{interval (of MCMC iterations) at which the derived quantity is calculated}
+
+\item{control}{named list that controls the precise behavior of the derived quantity calculation, with elements specific to  type of derived quantity.}
+}
 \description{
-Details of the NIMBLE MCMC engine handles derived quantities, which are deterministic functions that can be calaculated and recorded after each MCMC sampling iteration.
+Details of the NIMBLE MCMC engine handling of derived quantities, which are deterministic functions that can be calaculated and recorded after each MCMC sampling iteration.
 }
 \section{Mean and variance}{
 
@@ -63,6 +72,9 @@ The \code{predictive} derived quantity function accepts the following control li
 }
 
 \examples{
+\dontrun{
+conf <- configureMCMC(model)
+
 conf$addDerivedQuantity("mean", nodes = c("a", "b"))
 
 conf$addDerivedQuantity("mean", nodes = "theta", interval = 5)
@@ -72,6 +84,7 @@ conf$addDerivedQuantity("variance", nodes = "x[1:4]", control = list(recordingFr
 conf$addDerivedQuantity("logProb", nodes = c('alpha', 'beta'))
 
 conf <- configureMCMC(model, mean = 'a', variance = 'b', logProb = TRUE)
+}
 
 }
 \seealso{

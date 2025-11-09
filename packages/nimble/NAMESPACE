@@ -5,7 +5,7 @@ importFrom(igraph, plot.igraph, make_empty_graph, add_vertices, add_edges, topo_
 importFrom(R6, R6Class)
 importFrom(grDevices, dev.off, jpeg)
 importFrom(graphics, lines, plot, text)
-importFrom(stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile, integrate, optimHess)
+importFrom(stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile, integrate, optimHess, qpois)
 importFrom(utils, head, getAnywhere)
 importFrom(parallel, mclapply)
 importFrom(pracma, hessian)
