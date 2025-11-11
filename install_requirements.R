@@ -11,7 +11,8 @@ requirements <- c(
     'covr',     ## needed for code coverage reports
     'pracma',   ## for AD
     'numDeriv',  ## for AD
-    'mcmcse'    ## for MCEM
+    'mcmcse',    ## for MCEM
+    'nimbleQuad' ## for laplace for MCEM test
     # 'lme4'     ## for test-ADlaplace.R
     )     
 
