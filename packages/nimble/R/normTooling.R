@@ -46,7 +46,9 @@ emptyParam <- nimbleFunction(
 gaussParam <- nimbleFunction(
     contains = getParam_BASE,
     setup = function(model, nodeNames, gNodes) {
-    indexConvert <- cumsum(gNodes)
+        indexConvert <- cumsum(gNodes)
+        if(length(indexConvert) == 1)
+            indexConvert <- c(indexConvert, -1)
     },
     run = function() {},
     methods = list(
