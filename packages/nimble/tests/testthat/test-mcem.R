@@ -935,13 +935,14 @@ test_that("MCMC for simple LME case works", {
   m2$calculate()
 
   cm2 <- compileNimble(m2)
-  library(nimbleQuad)
+  if(FALSE) { # Temporarily off while get nimbleQuad on CRAN.
   Laplace <- buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
   print(class(Laplace))
   cLaplace <- compileNimble(Laplace, project = m2)
   MLE <- cLaplace$findMLE()
 
   expect_equal(MLE$value, cLaplace$calcLogLik(opt$par), tolerance = 0.04)
+  }
 })
 
 sink(NULL)

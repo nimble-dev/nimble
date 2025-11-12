@@ -27,8 +27,4 @@ for (package in requirements) {
 
 install.packages("lme4", type = "source")
 
-## later, remove below:
-install.packages('remotes')
-remotes::install_github('nimble-dev/nimbleQuad', ref = 'devel', subdir = 'nimbleQuad', INSTALL_opts = c("--install-tests"))
-## remove until here
 
