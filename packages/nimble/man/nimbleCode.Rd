@@ -35,13 +35,18 @@ code <- nimbleCode({
     mu ~ dnorm(0, sd = prior_sd)
 })
 
+code_new <- nimbleCode({
+    prior_sd ~ dhalfflat()
+})
+
 # Combine multiple previously saved code objects
-code2 <- nimbleCode(code, code)
+code2 <- nimbleCode(code, code_new)
 
 # Combine code and previously saved code objects
 code3 <- nimbleCode({
    y ~ dnorm(mu, sd = 1)
-}, code, code2)
+}, code, code_new)
+
 }
 \author{
 Daniel Turek and Ken Kellner

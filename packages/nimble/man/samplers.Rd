@@ -23,6 +23,7 @@
 \alias{sampler_CAR_normal}
 \alias{sampler_CAR_proper}
 \alias{sampler_polyagamma}
+\alias{sampler_barker}
 \alias{samplers}
 \alias{sampler}
 \alias{binary}
@@ -49,7 +50,6 @@
 \alias{RW_PF_block}
 \alias{RW_lkj_corr_cholesky}
 \alias{RW_block_lkj_corr_cholesky}
-\alias{sampler_barker}
 \alias{barker}
 \alias{sampler_RJ_fixed_prior}
 \alias{sampler_RJ_indicator}
@@ -103,6 +103,8 @@ sampler_CAR_proper(model, mvSaved, target, control)
 
 sampler_polyagamma(model, mvSaved, target, control)
 
+sampler_barker(model, mvSaved, target, control)
+
 sampler_RJ_fixed_prior(model, mvSaved, target, control)
 
 sampler_RJ_indicator(model, mvSaved, target, control)
@@ -142,7 +144,7 @@ As of Version 0.10.0 of NIMBLE, the \code{RW_PF} and \code{RW_PF_block} samplers
 \section{\code{sampler_base}}{
  base class for new samplers
 
-When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
+When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
 }
 
 \section{binary sampler}{

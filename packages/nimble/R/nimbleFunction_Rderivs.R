@@ -33,7 +33,7 @@ nimDerivs_dummy <- nimbleFunction(
 #' \code{constantNodes} using the output obtained from running
 #' \code{makeModelDerivsInfo}.
 #' @param reset a logical specifying whether to reset the AD tape.
-#' See Section 16.5.5 of user manual for details.
+#' See Section 17.4.5 of user manual for details.
 #' Not used/relevant for uncompiled execution. Defaults to \code{FALSE}.
 #' @param ... additional arguments intended for internal use only.
 #'
@@ -46,7 +46,7 @@ nimDerivs_dummy <- nimbleFunction(
 #' of a nimbleFunction that involves model calculations (rather than directly
 #' taking derivatives of `calculate`), care needs to be taken to provide
 #' \code{model}, \code{updateNodes}, and \code{calcNodes} arguments. See
-#' Section 16.7.2 of the User Manual for more details.
+#' Section 17.6.2 of the User Manual for more details.
 #' 
 #' @return an \code{ADNimbleList} with elements \code{value}, \code{jacobian},
 #' and \code{hessian}.

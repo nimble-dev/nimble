@@ -228,16 +228,18 @@ Supported distributions, listed by their 'd' function, include:
   - `dweibull(x, shape, scale, log)`
   - `ddirch(x, alpha, log)`
   - `dlkj_corr_cholesky(x, shape, size, log)`
-  - `dmnorm_chol(x, mean, cholesky, prec_param, log)`
+  - `dmnorm_inv_ld(x, mean, mat, prec_param, log)` (AD)
+  - `dmnorm_chol(x, mean, cholesky, prec_param, log)` (non-AD)
   - `dmvt_chol(x, mu, cholesky, df, prec_param, log)`
   - `dwish_chol(x, cholesky, df, scale_param, log)`
   - `dinvwish_chol(x, cholesky, df, scale_param, log)`
 
 
-
-In the last three, `cholesky` stands for Cholesky decomposition of the relevant matrix; 
+In the last four, `cholesky` stands for Cholesky decomposition of the relevant matrix; 
 `prec_param` is a logical indicating whether the Cholesky is of a
 precision matrix (TRUE) or covariance matrix (FALSE)^[For the multivariate t, these are more properly termed the 'inverse scale' and 'scale' matrices]; and `scale_param` is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).
+
+`dmnorm_inv_ld` is for use with AD (the standard `dmnorm_chol` results in very inefficient AD-based calculation). `prec_param` is a logical indicating whether `mat` is the precision matrix (TRUE) or covariance matrix (FALSE).
 
 ### Flow control: *if-then-else*, *for*,  *while*, and *stop* {#sec:basic-flow-control}
 

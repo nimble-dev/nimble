@@ -1076,6 +1076,8 @@ liftedCallsGetIndexingOther <- list(
     ## This is general in that it finds the number of elements of the matrix,
     ## but the input shouldn't be anything other than square.
     PDinverse_logdet = function(argList) {
+        if(length(argList[[1]]) < 3)
+            stop("Missing indexing in `", safeDeparse(argList[[1]]), "`.")
         getlen <- function(arg) length(eval(arg))
         list(substitute(1:N, list(N = prod(sapply(argList[[1]][3:length(argList[[1]])], getlen))+1)))
     }
@@ -2996,8 +2998,11 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
             if(is(result, 'try-error')) 
                 message(geterrmessage()) 
     }
-    if(getNimbleOption('verbose')) message("Checking model sizes and dimensions")
-    model$checkBasics()
+    
+    if(getNimbleOption('checkModelBasics')) { 
+        if(getNimbleOption('verbose')) message("Checking model sizes and dimensions")
+        model$checkBasics()
+    }
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
         if(getNimbleOption('verbose')) message("Checking model calculations")
