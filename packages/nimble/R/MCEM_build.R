@@ -859,6 +859,7 @@ buildMCEM <- nimbleFunction(
              "numReps", "forceNoConstraints", "verbose") %in% names(dotsList)))
       stop("From the arguments provided, it looks like you are trying to use the old version of buildMCEM.",
            " buildMCEM was rewritten for nimble 1.2.0.")
+    if(!requireNamespace('mcmcse')) stop("MCEM requires that package `mcmcse` be installed.")
     # Extract control elements or set defaults
     initMuse <- initMdefault <- extractControlElement(control, 'initM', 1000)
     MfactorUse <- MfactorDefault <- extractControlElement(control, 'Mfactor', 1/3)
