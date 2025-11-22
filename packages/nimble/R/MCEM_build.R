@@ -1069,7 +1069,10 @@ buildMCEM <- nimbleFunction(
                                         thin = thinDefault,
                                         control = mcmcControl, print = FALSE)
     }
+    warnOption <- getNimbleOption('MCMCwarnUnsampledStochasticNodes')
+    nimbleOptions('MCMCwarnUnsampledStochasticNodes' = FALSE)
     mcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
+    nimbleOptions('MCMCwarnUnsampledStochasticNodes' = warnOption)
     mvSamples <- mcmc_Latent$mvSamples
     setupOutputs(mvSamples)
     nimbleOptions(verbose = nimbleVerbose)
