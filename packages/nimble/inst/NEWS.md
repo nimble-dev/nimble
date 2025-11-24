@@ -5,9 +5,9 @@
 - Move Laplace/AGHQ approximation to new `nimbleQuad` package, as well as 
   adding new INLA-like deterministic nested posterior approximation.
   
-- Add ability to compute "derived quantities" in MCMC to calculate or record 
-  additional quantities of interest at every MCMC iteration (or some other
-  user-chosen interval). 
+- Add system for computing and storing "derived quantities" during MCMC execution,
+  for recording running means, variances, or model log-densities at every MCMC
+  iteration (or some other user-chosen interval).
   
 - Provide matrix exponential functionality via `expm` and `expAv`.
 
