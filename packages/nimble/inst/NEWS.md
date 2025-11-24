@@ -45,6 +45,9 @@
 
 - Improve MCEM messaging when divergence occurs (Issue #1535).
 
+- Added support for conjugate MCMC sampling of `tau` parameter of the
+  intrinsic CAR (`dcar_normal`) distribution (PR #1596).
+
 ## BUG FIXES
 
 - Fix bug in `makeModelDerivsInfo` for multiply-split LHSinferred nodes 
@@ -96,6 +99,10 @@
 - Set `replaceSamplers` to do lookup in parent frame (PR #1539).
 
 - Check for dollar sign in `cc_expandDetermNodesInExpr` (PR #1534).
+
+- Generalized system of dynamically generating conjugate MCMC samplers,
+  to allow for multivariate parameters of dependent distributions to have distinct
+  sizes from the dependent node itself (PR #1596).
 
 
 #                            CHANGES IN VERSION 1.3.0 (December 2024)
