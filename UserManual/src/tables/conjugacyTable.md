@@ -17,6 +17,7 @@ Table: (#tab:conjugacy) Conjugate relationships supported by NIMBLE’s MCMC eng
                       Exponential                             `rate`
                       Double Exponential                      `rate`
                       Weibull                                 `lambda`
+                      Intrinsic CAR                           `tau`
   Halfflat            Normal                                  `sd`
                       Lognormal                               `sdlog`
   Inverse Gamma       Normal                                  `var`
