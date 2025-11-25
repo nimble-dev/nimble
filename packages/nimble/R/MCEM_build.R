@@ -598,7 +598,10 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' that the initial states of one MCMC will be the last states from the previous
 #' MCMC, so they will often be good initial values after multiple iterations. Default=500.
 #'
-#' \item \code{thin} Thinning interval for the MCMC in step 1. Default=1.
+#' \item \code{thin} Thinning interval for the MCMC in step 1. Default=1. Note that
+#' the computational cost of the maximization step depends on the size of the MCMC sample.
+#' If chains are highly autocorrelated, thinning should be a good way to reduce the
+#' maximization cost while maintaining most of the statistical information in each sample.
 #'
 #' \item \code{alpha} Type I error rate for determining when step 2 has moved
 #' uphill. See above. Default=0.25.
@@ -792,6 +795,11 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' \item \code{resetControls}. Reset all control arguments to the values
 #' provided in the call to \code{buildMCEM}. The user does not normally need to
 #' call this.
+#'
+#' \item \code{getParamNodes}. Return a vector of the parameter node
+#' names. This facilitates being sure that the numeric vector of the MLE
+#' parameters can be properly interpreted. If there is only one parameter,
+#' an extra "_EXTRA_" will appear in the returned vector and should be ignored.
 #'
 #' }
 #'
@@ -1060,11 +1068,10 @@ buildMCEM <- nimbleFunction(
                                         thin = thinDefault,
                                         control = mcmcControl, print = FALSE)
     }
-warnOption <- getNimbleOption('MCMCwarnUnsampledStochasticNodes')
-nimbleOptions('MCMCwarnUnsampledStochasticNodes' = FALSE)
-one
+    warnOption <- getNimbleOption('MCMCwarnUnsampledStochasticNodes')
+    nimbleOptions('MCMCwarnUnsampledStochasticNodes' = FALSE)
+    on.exit(nimbleOptions('MCMCwarnUnsampledStochasticNodes' = warnOption))
     mcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
-    nimbleOptions('MCMCwarnUnsampledStochasticNodes' = warnOption)
     mvSamples <- mcmc_Latent$mvSamples
     setupOutputs(mvSamples)
     nimbleOptions(verbose = nimbleVerbose)
@@ -1367,7 +1374,7 @@ one
                   ## PARAMETERS ARE UPDATED IN THE MODEL HERE:
                   sample_logLiks_new <- E$llh_sample(paramsTrans) # Side effect: this puts the latest params into the model and calculates
                   # make nimbleRcall or other solution.
-                  sdDeltaQ <- R_MCEM_mcse(sample_logLiks_new - sample_logLiks_prev, m-burnInUse)
+                  sdDeltaQ <- R_MCEM_mcse(sample_logLiks_new - sample_logLiks_prev, m-burnInUse) # second argument is actually not used
                   varDeltaQ <- sdDeltaQ*sdDeltaQ
                   ##        varDeltaQ <- cvarCalc$run(m, params, paramsPrev)
                   ## sdDeltaQ <- sqrt(varDeltaQ) #asymptotic std. error
@@ -1426,7 +1433,7 @@ one
                 }
                 if(itNum == maxIterUse)
                   cat("  [Note] Stopping MCEM because maximum number of MCEM iterations\n",
-                      "(maxIter=", maxIterUse, ") was reached\n.")
+                      "(maxIter=", maxIterUse, ") was reached.\n")
               }
       finalM <<- m
       if(!returnTrans) {

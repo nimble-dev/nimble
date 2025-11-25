@@ -9,8 +9,7 @@ nimbleOptions(verbose = TRUE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
-context("Testing of MCEM")
-
+# tests begin with a cat() to help organize the gold file output
 goldFileName <- 'mcemTestLog_Correct.Rout'
 tempFileName <- 'mcemTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCEMtesting'))
@@ -65,6 +64,7 @@ pump_mle_trans <- pump_optim_trans$par
 pump_vcov_trans <- inverse(-pump_optim_trans$hessian)
 
 test_that("MCEM error-trapping", {
+  cat("MCEM error-trapping\n")
  pumpCode <- nimbleCode({
   for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta);
@@ -101,6 +101,7 @@ test_that("MCEM error-trapping", {
 })
 
 test_that("MCEM pump with all defaults (roxygen example)", {
+  cat("MCEM pump with all defaults (roxygen example)\n")
  pumpCode <- nimbleCode({
   for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta);
@@ -142,6 +143,7 @@ test_that("MCEM pump with all defaults (roxygen example)", {
 })
 
 test_that("MCEM with pump transform=FALSE",{
+  cat("MCEM with pump transform=FALSE\n")
   pumpCode <- nimbleCode({
     for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta)
@@ -239,6 +241,7 @@ test_that("MCEM with pump transform=FALSE",{
 })
 
 test_that("MCEM pump with transform=TRUE", {
+  cat("MCEM pump with transform=TRUE\n")
   # transformed version: Use parameter transformation
   ## build an MCEM algorithm with Ascent-based convergence criterion
   pumpCode <- nimbleCode({
@@ -286,7 +289,7 @@ test_that("MCEM pump with transform=TRUE", {
   set.seed(0)
   cpump$alpha <- pump$alpha
   cpump$beta <- pump$beta
-  out <- cpumpMCEM$findMLE(initM = 1000, returnTrans=TRUE)
+  out <- cpumpMCEM$findMLE(initM = 1000, returnTrans=TRUE, tol = 0.001)
   expect_equal(out$par, pump_mle_trans, tol=0.01)
   vc <- cpumpMCEM$vcov(out$par, trans = TRUE)
   expect_equal(vc, pump_vcov_trans, tol=0.02)
@@ -295,6 +298,7 @@ test_that("MCEM pump with transform=TRUE", {
 })
 
 test_that("MCEM pump without AD, with transform=FALSE", {
+  cat("MCEM pump without AD, with transform=FALSE\n")
   ####
   # version without AD
   pumpCode <- nimbleCode({
@@ -343,6 +347,7 @@ test_that("MCEM pump without AD, with transform=FALSE", {
 
 
 test_that("MCEM pump without AD, with transform=TRUE", {
+  cat("MCEM pump without AD, with transform=TRUE\n")
   ####
   # version without AD
   pumpCode <- nimbleCode({
@@ -398,6 +403,7 @@ test_that("MCEM pump without AD, with transform=TRUE", {
 ## are not related to missing data or latent states
 
 test_that("MCEM with pump transform=FALSE and some calcNodesOther",{
+  cat("MCEM with pump transform=FALSE and some calcNodesOther\n")
   pumpConsts <- list(N = 10,
                      t = c(94.3, 15.7, 62.9, 126, 5.24,
                            31.4, 1.05, 1.05, 2.1, 10.5))
@@ -486,6 +492,7 @@ test_that("MCEM with pump transform=FALSE and some calcNodesOther",{
 
 
 test_that("MCEM with pump transform=FALSE and some calcNodesOther, noAD",{
+  cat("MCEM with pump transform=FALSE and some calcNodesOther, noAD\n")
   pumpConsts <- list(N = 10,
                      t = c(94.3, 15.7, 62.9, 126, 5.24,
                            31.4, 1.05, 1.05, 2.1, 10.5))
@@ -578,6 +585,7 @@ test_that("MCEM with pump transform=FALSE and some calcNodesOther, noAD",{
 # Adopting some (far from all) tests from test-ADlaplace
 
 test_that("MCEM simplest 1D works", {
+  cat("MCEM simplest 1D works\n")
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(a, sd = 2)
@@ -598,6 +606,7 @@ test_that("MCEM simplest 1D works", {
 })
 
 test_that("MCEM simplest 1D with a constrained parameter works", {
+  cat("MCEM simplest 1D with a constrained parameter works\n")
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(a, sd = 2)
@@ -652,6 +661,7 @@ test_that("MCEM simplest 1D with a constrained parameter works", {
 # that we don't need to test here.
 
 test_that("MCEM simplest 1D with deterministic intermediates and multiple data works", {
+  cat("MCEM simplest 1D with deterministic intermediates and multiple data works\n")
   set.seed(1)
   m <- nimbleModel(
     nimbleCode({
@@ -706,6 +716,7 @@ test_that("MCEM simplest 1D with deterministic intermediates and multiple data w
 # Case "1D with deterministic intermediates works" from Laplace seems redundant
 
 test_that("MCEM 1D with a constrained parameter and deterministic intermediates works", {
+  cat("MCEM 1D with a constrained parameter and deterministic intermediates works\n")
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(0.2 * a, sd = 2)
@@ -773,6 +784,7 @@ test_that("MCEM 1D with a constrained parameter and deterministic intermediates 
 # Skipping "with deterministic intermediates and multiple data works"
 
 test_that("MCEM simplest 2x1D works, with multiple data for each", {
+  cat("MCEM simplest 2x1D works, with multiple data for each\n")
   set.seed(1)
   y <- matrix(rnorm(6, 4, 5), nrow = 2)
   m <- nimbleModel(
@@ -876,6 +888,7 @@ test_that("MCEM simplest 2x1D works, with multiple data for each", {
 ## })
 
 test_that("MCMC for simple LME case works", {
+  cat("MCMC for simple LME case works\n")
   set.seed(1)
   g <- rep(1:10, each = 5)
   n <- length(g)
@@ -950,6 +963,7 @@ test_that("MCMC for simple LME case works", {
 ## - nimDerivs did not have reset=TRUE for the first all in a findMLe run, although I don't have a regression test for that here.
 
 test_that("MCEM thin control entry works (simplest 1D case)",{
+  cat("MCEM thin control entry works (simplest 1D case)\n")
   nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=TRUE)
   on.exit(nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=FALSE))
   set.seed(1)
@@ -976,7 +990,8 @@ test_that("MCEM thin control entry works (simplest 1D case)",{
   expect_equal(dim(as.matrix(cMCEM$mcmc_Latent$mvSamples))[1], 2000/2) # PASSES only as of 1.4.0
 })
 
-test_that("MCEM simplest 1D with deterministic intermediates and multiple data works", {
+test_that("MCEM thin control and simplest 1D with deterministic intermediates and multiple data works", {
+  cat("MCEM thin control and simplest 1D with deterministic intermediates and multiple data works\n")
   nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=TRUE)
   on.exit(nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=FALSE))
   set.seed(1)
