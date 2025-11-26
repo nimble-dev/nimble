@@ -291,8 +291,8 @@ buildMCMC <- nimbleFunction(
             mvSamples2_copyRow <- 0
         } else {
             if(nburnin !=  0)   stop('cannot specify nburnin when using reset = FALSE.')
-            if(thin    != -1)   stop('cannot specify thin when using reset = FALSE.')
-            if(thin2   != -1)   stop('cannot specify thin2 when using reset = FALSE.')
+            if((thin  != -1) && (thin  != thinToUseVec[1]))   stop('cannot alter the value of thin, when using reset = FALSE.')
+            if((thin2 != -1) && (thin2 != thinToUseVec[2]))   stop('cannot alter the value of thin2, when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
             if (resetMV) {
                 mvSamples_copyRow  <- 0
