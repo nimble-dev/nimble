@@ -30,7 +30,7 @@ Authors:
   \item Claudia Wehrhahn Cortes (Bayesian nonparametrics system)
   \item Abel Rodríguez (Bayesian nonparametrics system)
   \item Duncan Temple Lang (packaging configuration)
-  \item Wei Zhang (Laplace approximation)
+  \item Wei Zhang (node marginalization)
   \item Sally Paganin (reversible jump MCMC)
   \item Joshua Hug (WAIC)
   \item Paul van Dam-Bates (Pólya-Gamma sampler, nimIntegrate, matrix exponential)
