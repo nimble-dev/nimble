@@ -2,17 +2,22 @@
 
 ## USER LEVEL CHANGES
 
-- Move Laplace/AGHQ approximation to new `nimbleQuad` package, as well as 
-  adding new INLA-like deterministic nested posterior approximation.
+- Move Laplace/AGHQ approximation to new `nimbleQuad` package, which also has
+  new INLA-like deterministic nested posterior approximation.
   
 - Add system for computing and storing "derived quantities" during MCMC execution,
-  for recording running means, variances, or model log-densities at every MCMC
-  iteration (or some other user-chosen interval).
+  for recording additional quantities of interest at every saved MCMC iteration 
+  (i.e., following thinning interval, or some other user-chosen 
+  interval). Derived quantities available provided by NIMBLE include means, 
+  variances, model log-densities, and predictive nodes. Users can also define 
+  their own derived quantities.
   
 - Provide matrix exponential functionality via `expm` and `expAv`.
 
 - Allow users to provide multiple code chunks to `nimbleCode` for greater
   flexibility in composing models.
+  
+- Greatly improve efficiency and memory use of AD system (PR #1574).
   
 - Remove some references to "BUGS" when referring to models.
 
@@ -24,7 +29,7 @@
 
 - Make minor improvements to Pólya-gamma sampler to check for infinities
   in design matrix, fix where `inflationNodes` defined, and avoid design 
-  matrix initializatin when passed by user (PR #1569).
+  matrix initialization when passed by user (PR #1569).
   
 - Add message when `addSampler` avoids assigning sampler for data nodes 
   (PR #1580).
@@ -41,9 +46,8 @@
 - Avoid parameter transformation system causing an error with user-defined
   multivariate distributions (PR #1532).
   
-- Error trap use of `c()` in nimbleFunction code (PR #1560).
-
-- Improve MCEM messaging when divergence occurs (Issue #1535).
+- Error trap use of `x <- c()` (empty concatenate to initialize a variable)
+  in nimbleFunction code (PR #1560).
 
 - Added support for conjugate MCMC sampling of `tau` parameter of the
   intrinsic CAR (`dcar_normal`) distribution (PR #1596).
@@ -66,9 +70,11 @@
 
 - Fix inconsistency in recycling rule for `rmnorm` (PR #1586).
 
-## DEVELOPER LEVEL CHANGES
+- In `buildMCEM`, fix use of `pStart`, when provided by user, make thinning 
+  conform to other MCMC uses, add new error trapping, and clean up other 
+  details (PR #1601).
 
-- Greatly improve efficiency and memory use of AD system (PR #1574).
+## DEVELOPER LEVEL CHANGES
 
 - Provide AD-optimized `dmnormAD`.
 
@@ -100,9 +106,13 @@
 
 - Check for dollar sign in `cc_expandDetermNodesInExpr` (PR #1534).
 
-- Generalized system of dynamically generating conjugate MCMC samplers,
-  to allow for multivariate parameters of dependent distributions to have distinct
-  sizes from the dependent node itself (PR #1596).
+- Generalize system of dynamically generating conjugate MCMC samplers,
+  to allow for multivariate parameters of dependent distributions to have 
+  distinct sizes from the dependent node itself (PR #1596).
+  
+- Make MCEM append new samples when increasing sample size using the 
+  ascent-based method, rather than starting a new sample (PR #1601).
+
 
 
 #                            CHANGES IN VERSION 1.3.0 (December 2024)
