@@ -1,3 +1,70 @@
+#' Placeholder for buildLaplace
+#'
+#' This function has been moved to the `nimbleQuad` package.
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildLaplace <- function(...)
+    cat("NIMBLE's Laplace/AGHQ functionality, including this function, now resides in the 'nimbleQuad' package.\n")
+
+#' Placeholder for buildAGHQ
+#'
+#' This function has been moved to the `nimbleQuad` package.
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+buildAGHQ <- function(...)
+    cat("NIMBLE's Laplace/AGHQ functionality, including this function, now resides in the 'nimbleQuad' package.\n")
+
+#' Placeholder for runLaplace
+#'
+#' This function has been moved to the `nimbleQuad` package.
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+runLaplace <- function(...)
+    cat("NIMBLE's Laplace/AGHQ functionality, including this function, now resides in the 'nimbleQuad' package.\n")
+
+#' Placeholder for runAGHQ
+#'
+#' This function has been moved to the `nimbleQuad` package.
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+runAGHQ <- function(...)
+    cat("NIMBLE's Laplace/AGHQ functionality, including this function, now resides in the 'nimbleQuad' package.\n")
+
+#' Placeholder for summaryLaplace
+#'
+#' This function has been moved to the `nimbleQuad` package.
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+summaryLaplace <- function(...)
+    cat("NIMBLE's Laplace/AGHQ functionality, including this function, now resides in the 'nimbleQuad' package.\n")
+
+#' Placeholder for summaryAGHQ
+#'
+#' This function has been moved to the `nimbleQuad` package.
+#'
+#' @param ... arguments
+#'
+#' @export
+#'
+summaryAGHQ <- function(...)
+    cat("NIMBLE's Laplace/AGHQ functionality, including this function, now resides in the 'nimbleQuad' package.\n")
+
+
 #' Placeholder for buildAuxiliaryFilter
 #'
 #' This function has been moved to the `nimbleSMC` package.

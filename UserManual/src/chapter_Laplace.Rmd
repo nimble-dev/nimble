@@ -3,7 +3,7 @@
 
 ```{r, echo=FALSE}
 require(nimble)
-require(nimbleSMC, quietly = TRUE, warn.conflicts = FALSE)
+require(nimbleQuad, quietly = TRUE, warn.conflicts = FALSE)
 ``` 
 
 # Laplace, AGHQ, and nested approximations {#cha-laplace}
