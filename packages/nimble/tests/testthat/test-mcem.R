@@ -875,8 +875,6 @@ test_that("MCEM simplest 2x1D works, with multiple data for each", {
 ##   opt <- cMCEM$findMLE(alpha = 0.1, maxIter = 300, maxM = 50000)
 ## })
 
-library(nimbleQuad)
-
 test_that("MCMC for simple LME case works", {
   set.seed(1)
   g <- rep(1:10, each = 5)
@@ -936,8 +934,7 @@ test_that("MCMC for simple LME case works", {
 
   cm2 <- compileNimble(m2)
   if(FALSE) { # Temporarily off while get nimbleQuad on CRAN.
-  Laplace <- buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
-  print(class(Laplace))
+  Laplace <- nimbleQuad::buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
   cLaplace <- compileNimble(Laplace, project = m2)
   MLE <- cLaplace$findMLE()
 
