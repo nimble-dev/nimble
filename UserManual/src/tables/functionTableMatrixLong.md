@@ -3,7 +3,7 @@ provided in NIMBLE.
 
   Usage                   Description                                Comments                         Status
   ----------------------- ------------------------------------------ -------------------------------- ------  
-  `inverse(x)`            matrix inverse                             $x$ symmetric, positive def.     yes
+  `inverse(x)`            matrix inverse                             $x$ symmetric, invertible        yes
   `chol(x)`               matrix Cholesky factorization              $x$ symmetric, positive def.     yes
                                                                      returns upper triang. matrix
   `t(x)`                  matrix transpose                           $x^\top$                         yes

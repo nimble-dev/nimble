@@ -92,6 +92,8 @@ nimbleModel <- function(code,
       stop("nimbleModel: 'dimensions' must be a named list")
     if(length(data) && sum(names(data) == ""))
         stop("nimbleModel: 'data' must be a named list")
+    if(is.function(inits))
+        stop("nimbleModel: `inits` must be a list, not a function")
     if(any(!sapply(data, function(x) {
         is.numeric(x) || is.logical(x) ||
             (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
