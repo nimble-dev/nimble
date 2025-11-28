@@ -3021,7 +3021,42 @@ test_that('assigning samplers to data and allowData argument', {
     expect_true(samps[[4]]$name == 'posterior_predictive')
 })
 
-
+test_that('asymptotic correct results from conjugate gamma - CAR_normal sampler', {
+    num1 <- c(1,   2,      2,      1)
+    adj1 <- c(2,   1, 3,   2, 4,   3)
+    num2 <- c(4,               2,        3,            1,      2,        2)
+    adj2 <- c(2, 4, 5, 6,      1, 3,     2, 5, 6,      1,      1, 3,     1, 3)
+    constants <- list(num1=num1, adj1=adj1, N1=length(num1), L1=length(adj1),
+                      num2=num2, adj2=adj2, N2=length(num2), L2=length(adj2))
+    data <- list(y = 1:6)
+    inits <- list(t=1, x1=1:length(num1), x2=1:length(num2))
+    code <- nimbleCode({
+        t ~ dgamma(2, 5)
+        x1[1:N1] ~ dcar_normal(adj=adj1[1:L1], num=num1[1:N1], tau=t/2)
+        x2[1:N2] ~ dcar_normal(adj=adj2[1:L2], num=num2[1:N2], tau=t/3)
+        y[1] ~ dnorm(x1[1], 1)
+        y[2] ~ dnorm(x2[1], 1)
+        y[3] ~ dnorm(x1[1]+x1[4], 1)
+        y[4] ~ dnorm(x2[1]+2*x2[6], 1)
+        y[5] ~ dexp(5*t)
+        y[6] ~ dpois(2*t)
+    })
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, monitors = c('t','x1','x2'), useConjugacy = FALSE)
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    summary_RW <- runMCMC(compiledList$mcmc, 500000, nburnin = 100000, samples = FALSE, summary = TRUE, setSeed = 0)
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, monitors = c('t','x1','x2'))
+    expect_true(grepl('^conjugate_dgamma_dcar_normal', conf$getSamplers('t')[[1]]$name))
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    summary_conj <- runMCMC(compiledList$mcmc, 500000, nburnin = 100000, samples = FALSE, summary = TRUE, setSeed = 0)
+    ##
+    expect_true(all(abs(summary_RW - summary_conj) < 0.04))
+})
 
 sink(NULL)
 
