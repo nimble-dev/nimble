@@ -51,6 +51,8 @@
 
 - Added support for conjugate MCMC sampling of `tau` parameter of the
   intrinsic CAR (`dcar_normal`) distribution (PR #1596).
+  
+- Error trap if `inits` provided to `nimbleModel()` as a function (Issue #1598).
 
 ## BUG FIXES
 
