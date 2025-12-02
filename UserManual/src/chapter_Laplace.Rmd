@@ -148,6 +148,10 @@ Cglmm_laplace$summary(MLE)$randomEffects$estimate
 summaryLaplace(Cglmm_laplace, MLE)$params
 ```
 
+To find the posterior mode (maximum a posteriori estimate), one can call `findMAP` instead of `findMLE`.
+
+To run a regularized regression that uses the prior as a penalty but excludes the Jacobian of the transformation, one can run `Cglmm_laplace$optimize` with `includePrior = TRUE` and `includeJacobian = FALSE`, e.g., `estimate <- Cglmm_laplace$optimize(c(0, 0, 1), includePrior = TRUE, includeJacobian = FALSE)`. (Note that `findMLE` and `findMAP` are equivalent to running `optimize` with `includePrior` and `includeJacobian` set appropriately.)
+
 ### Changing the optimization methods
 
 When finding the MLE via Laplace approximation or adaptive Gauss-Hermite quadrature (AGHQ), there are two numerical optimizations: (1) maximizing the joint log-likelihood of random effects and data given a set of parameter values to construct the approximation to the marginal log-likelihood at the given parameter values, and (2) maximizing the approximation to the marginal log-likelihood over the parameter values. Optimization (1) is the "inner" optimization and optimization (2) is the "outer" optimization.
