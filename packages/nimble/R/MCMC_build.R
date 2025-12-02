@@ -222,7 +222,7 @@ buildMCMC <- nimbleFunction(
         monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
         thinFromConfVec <- c(conf$thin, conf$thin2)  ## vector
         thinToUseVec <- c(0, 0)                      ## vector, needs to member data
-        samplerTimes <- c(0,0) ## establish as a vector
+        samplerTimes <- c(0, 0)  ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
         ##nimbleVerboseOption <- getNimbleOption('verbose')   ## not currently used anywhere
@@ -244,6 +244,7 @@ buildMCMC <- nimbleFunction(
             thinWAIC <- FALSE
             nburnin_extraWAIC <- 0
         }
+        iterationTotal <- 0
         firstRun <- TRUE
         setupOutputs(derivedTypes)
     },
@@ -287,12 +288,13 @@ buildMCMC <- nimbleFunction(
             for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$before_chain(niter,         nburnin,               chain)
             for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter-nburnin, nburnin, thinToUseVec, chain)
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
+            iterationTotal <<- 0
             mvSamples_copyRow  <- 0
             mvSamples2_copyRow <- 0
         } else {
             if(nburnin !=  0)   stop('cannot specify nburnin when using reset = FALSE.')
-            if(thin    != -1)   stop('cannot specify thin when using reset = FALSE.')
-            if(thin2   != -1)   stop('cannot specify thin2 when using reset = FALSE.')
+            if((thin  != -1) & (thin  != thinToUseVec[1]))   stop('cannot alter the value of thin, when using reset = FALSE.')
+            if((thin2 != -1) & (thin2 != thinToUseVec[2]))   stop('cannot alter the value of thin2, when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
             if (resetMV) {
                 mvSamples_copyRow  <- 0
@@ -304,8 +306,8 @@ buildMCMC <- nimbleFunction(
         }
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(onlineWAIC & resetWAIC)   waicFun[[1]]$reset()
-        resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
-        resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
+        resize(mvSamples,  floor((iterationTotal+niter-nburnin) / thinToUseVec[1]))
+        resize(mvSamples2, floor((iterationTotal+niter-nburnin) / thinToUseVec[2]))
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
         ##    lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
@@ -322,6 +324,7 @@ buildMCMC <- nimbleFunction(
         progressBarNextFloor <- floor(progressBarNext)
         if(niter < 1) return()
         for(iter in 1:niter) {
+            iterationTotal <<- iterationTotal + 1
             checkInterrupt()
             ## execute samplerFunctions
             if(time) {
@@ -337,7 +340,7 @@ buildMCMC <- nimbleFunction(
             }
             if(iter > nburnin) {
                 ## save samples
-                iterPostBurnin <- iter - nburnin
+                iterPostBurnin <- iterationTotal - nburnin
                 if(iterPostBurnin %% thinToUseVec[1] == 0) {
                     mvSamples_copyRow  <- mvSamples_copyRow  + 1
                     nimCopy(from = model, to = mvSamples,  row = mvSamples_copyRow,  nodes = monitors)
@@ -362,7 +365,7 @@ buildMCMC <- nimbleFunction(
                 }
             }
             ## progress bar
-            if(progressBar & (iter == progressBarNextFloor)) {
+            if(progressBar & (iter == progressBarNextFloor)) {    ## keep this one as 'iter'
                 cat('-')
                 progressBarNext <- progressBarNext + progressBarIncrement
                 progressBarNextFloor <- floor(progressBarNext)
