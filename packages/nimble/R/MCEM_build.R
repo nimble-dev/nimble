@@ -40,7 +40,7 @@ build_MCEM_expectation_noAD <- nimbleFunction(
         nimCopy(from = mvSamples, to = model, nodes = latentNodes, row = i)
         sample_LL <- model$calculate(allCalcNodes)
         if(is.na(sample_LL) | is.nan(sample_LL) | sample_LL == -Inf | sample_LL == Inf)
-          stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model. Note that if your model is maximizing over parameters whose bounds are not constant (i.e., depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting the control list element 'forceNoConstraints = TRUE'.")
+          stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (e.g., checking the parameter values and by calling calculate on subsets of the model parameters). Note that if your model is maximizing over parameters whose bounds are not constant (i.e., depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting the control list element 'forceNoConstraints = TRUE'.")
         sum_LL <- sum_LL + sample_LL
       }
       logLik <<- sum_LL / (nSamples - burnIn)
