@@ -1,4 +1,3 @@
-
 samplerConf <- setRefClass(
     Class = 'samplerConf',
     fields = list(
@@ -115,9 +114,9 @@ derivedConf <- setRefClass(
 #' conf$printMonitors()
 #' conf$printSamplers()
 MCMCconf <- setRefClass(
-    
-    Class = 'MCMCconf',                           
-    
+
+    Class = 'MCMCconf',
+
     fields = list(
         model               = 'ANY',
         monitors            = 'ANY',
@@ -137,9 +136,9 @@ MCMCconf <- setRefClass(
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
     ),
-    
+
     methods = list(
-        
+
         initialize = function(model, nodes, control = list(), ##rules,
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
@@ -199,7 +198,7 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 controlWAIC A named list of inputs that control the behavior of the WAIC calculation, passed as the \'control\' input to \'buildWAIC\'. See \'help(waic)\`.
 
-print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
+print: A logical argument specifying whether to print the monitors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
@@ -242,7 +241,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
                     }
                 }
             }
-            
+
             if(missing(nodes)) {
                 nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE, includePredictive = samplePredictiveNodes)
                 # Check of all(model$isStoch(nodes)) is not needed in this case
@@ -250,21 +249,21 @@ print: A logical argument specifying whether to print the montiors and samplers.
                 nodes <- character(0)
             } else   nodes <- filterOutDataNodes(nodes)   ## configureMCMC *never* assigns samplers to data nodes
             allowData_global <<- FALSE
-            
+
             addDefaultSampler(nodes = nodes,
                               useConjugacy = useConjugacy,
                               onlyRW = onlyRW,
                               onlySlice = onlySlice,
                               multivariateNodesAsScalars = multivariateNodesAsScalars,
                               print = FALSE)
-            
+
             if(isTRUE      (mean    ))   addDerivedQuantity('mean'    , control = list(nodes = monitors))
             if(is.character(mean    ))   addDerivedQuantity('mean'    , control = list(nodes = mean    ))
             if(isTRUE      (variance))   addDerivedQuantity('variance', control = list(nodes = monitors))
             if(is.character(variance))   addDerivedQuantity('variance', control = list(nodes = variance))
             if(isTRUE      (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = '.all'  ))
             if(!is.logical (logProb ))   addDerivedQuantity('logProb' , control = list(nodes = logProb ))
-            
+
             if(print)   show()    ##printSamplers()
         },
 
@@ -280,7 +279,7 @@ print: A logical argument specifying whether to print the montiors and samplers.
 For internal use.  Adds default MCMC samplers to the specified nodes.
 '
             useNewConfigureMCMC <- isTRUE(getNimbleOption("useNewConfigureMCMC"))
-            
+
             controlDefaultsArg <- list(...)
             for(i in seq_along(control))     controlDefaultsArg[[names(control)[i]]] <- control[[i]]
 
@@ -349,11 +348,11 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     nodes <- model$modelDef$maps$graphID_2_nodeName[nodeIDs]
                     nodesForPosteriorPredictiveSampler <- model$modelDef$maps$graphID_2_nodeName[predictiveNodeIDsToSample]
                 }
-                
+
                 if(useConjugacy) conjugacyResultsAll <- nimble:::conjugacyRelationshipsObject$checkConjugacy(model, nodeIDs) ## Later, this can go through model$checkConjugacy if we make it check whether nodes are already nodeIDs.  To isolate changes, I am doing it directly here.
                 nodeDeclIDs <- model$modelDef$maps$graphID_2_declID[nodeIDs] ## Below, nodeDeclIDs[i] gives the nodeDeclID.  We could add an interface to get this.
                 nodeDeclID_2_nodes <- split(nodes, nodeDeclIDs)
-                
+
                 uniqueNodeDeclIDs <- unique(nodeDeclIDs)
                 nodeTraits <- lapply(uniqueNodeDeclIDs,
                                      function(x) {
@@ -361,7 +360,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                          dist <- declInfo$distributionName
                                          distInfo <- getDistributionInfo(dist)
                                          discrete <- distInfo$discrete
-                                         ## Following can be replaced by an efficiency version model$isBinary 
+                                         ## Following can be replaced by an efficiency version model$isBinary
                                          binary <- dist == 'dbern'
                                          ## If dist == 'dbin', then binary-ness will be checked for each node, below
                                          ## This could be improved to see if they all have a literal "1", for example.
@@ -369,7 +368,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                          ## For nodeScalarComponents, we will check a single node
                                          ## We could use returnType = 'ids', but we have a warning generated in that case,
                                          ## for future investigation.
-                                         
+
                                          ## Determining nodeLength is a bit tricky.
                                          ## The only purpose is to determine scalar vs. non-scalar.
                                          ## In the future, we may want to make this available in distributionInfo.
@@ -393,11 +392,11 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                      }
                                      )
                 names(nodeTraits) <- as.character(uniqueNodeDeclIDs)
-                
+
                 allDists <- unlist(lapply(model$modelDef$declInfo, `[[`, 'distributionName'))
                 allDists <- allDists[!is.na(allDists)]
                 check_dCRP <- any(allDists == "dCRP")
-                
+
                 clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0; clusterNodeParams <- NULL
 
                 for(i in seq_along(nodes)) {
@@ -429,7 +428,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
 
                     ## if node is the root of a posterior predictive (entirely non-data) network of nodes, assign 'posterior_predictive' sampler
                     if(node %in% nodesForPosteriorPredictiveSampler) { addSampler(target = node, type = 'posterior_predictive', control = controlDefaultsArg);     next }
-                    
+
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
                         if(useConjugacy) {
@@ -472,10 +471,10 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                                addSampler(target = node, type = 'barker',   silent = TRUE, control = controlDefaultsArg);     next }
                         else { addSampler(target = node, type = 'RW_block', silent = TRUE, control = controlDefaultsArg);     next }
                     }
-                    
+
                     if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW',    control = controlDefaultsArg);     next }
                     if(onlySlice)             { addSampler(target = node, type = 'slice', control = controlDefaultsArg);     next }
-                    
+
                     ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
@@ -483,16 +482,16 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                             addConjugateSampler(conjugacyResult = conjugacyResult,
                                                 dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                     }
-                    
+
                     ## if node is discrete 0/1 (binary), assign 'binary' sampler
                     if(binary) { addSampler(target = node, type = 'binary', control = controlDefaultsArg);     next }
-                    
+
                     ## for categorical nodes, assign a 'categorical' sampler
                     if(nodeDist == 'dcat') { addSampler(target = node, type = 'categorical', control = controlDefaultsArg);     next }
-                    
+
                     ## if node distribution is discrete, assign 'slice' sampler
                     if(discrete) { addSampler(target = node, type = 'slice', control = controlDefaultsArg);     next }
-                    
+
                     ## if node distribution is dgamma and its dependency is dCRP, assign 'CRP_concentration' sampler
                     if(check_dCRP) {
                         if(nodeDist == 'dgamma'){
@@ -506,7 +505,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                             }
                         }
                     }
-                    
+
                     ## default: 'RW' sampler
                     addSampler(target = node, type = 'RW', control = controlDefaultsArg);     next
                 }
@@ -517,7 +516,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                 ## If anything contraindicates wrapping, we avoid it. E.g., a dangerous case is if a single hyperparameter is involved
                 ## in multiple sets of cluster parameters, but another hyperparameter is involved in one of those sets.
                 ## In that case, the processing of second hyperparameter could turn on the wrapping for some cluster parameters
-                ## which would mess up sampling of the first hyperparameter. 
+                ## which would mess up sampling of the first hyperparameter.
                 wrap <- TRUE
                 if(!is.null(clusterNodeInfo)) {
                     allClusterNodes <- lapply(clusterNodeInfo, function(x) x$clusterNodes)
@@ -536,7 +535,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                             if(!all(clusterNodeDeps %in%
                                     model$getDependencies(dcrpNode[[k]], stochOnly = TRUE, self = FALSE)))
                                 wrap <- FALSE
-                                
+
                             ## For now avoid wrapper if any overlap of clusterNodes, as hard to determine if cluster is occupied.
                             ## We'll need to come back to this to handle the mu[xi[i],eta[j]] case if we want to
                             ## avoid sampling empty clusters in that case.
@@ -589,7 +588,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
                     }
                 }
             }
-            
+
             setUnsampledNodes()
             if(print)   printSamplers(byType = TRUE)   ##show()    ##printSamplers()
         },
@@ -616,7 +615,7 @@ For internal use.  Adds default MCMC samplers to the specified nodes.
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
-        
+
         addSampler = function(target = character(),    ## target argument is *not* expanded (unless targetByNode = TRUE)
                               type = 'RW',
                               control = list(),
@@ -698,7 +697,7 @@ The second usage of \'multivariateNodesAsScalars\' occurs when \'default\' is TR
 
             if(!missing(expandTarget))       { messageIfVerbose('  [Warning] `expandTarget` argument name has been deprecated; please use `targetByNode.');                     targetByNode               <- expandTarget     }
             if(!missing(scalarComponents))   { messageIfVerbose('  [Warning] `scalarComponents` argument name has been deprecated; please use `multivariateNodesAsScalars.');   multivariateNodesAsScalars <- scalarComponents }
-            
+
             nameProvided <- !missing(name)
             if(is.character(type)) {
                 if(type == 'conjugate') {
@@ -764,7 +763,7 @@ The second usage of \'multivariateNodesAsScalars\' occurs when \'default\' is TR
             ##requiredControlNames <- controlNamesLibrary[[libraryTag]]
             controlArgs <- c(control, list(...))
             thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
-            
+
             if(!targetByNode) {
                 ## when targetByNode = FALSE,
                 ## no node expansion takes place
@@ -778,7 +777,7 @@ The second usage of \'multivariateNodesAsScalars\' occurs when \'default\' is TR
                     addOneSampler(thisSamplerName, samplerFunction, targetExpanded[i], thisControlList, allowData, print)
                 }
             }
-            
+
             return(invisible(samplerConfs))
         },
 
@@ -810,7 +809,7 @@ For internal use only
             nodes <- model$expandNodeNames(nodes)
             return(nodes[!model$isData(nodes)])
         },
-        
+
         removeSamplers = function(..., ind, print = FALSE) {
             '
 Removes one or more samplers from an MCMCconf object.
@@ -844,7 +843,7 @@ Alias for removeSamplers method
 '
             removeSamplers(...)
         },
-        
+
         ## Note: function prototype is identical to addSampler
         replaceSamplers = function(...) {
             '
@@ -877,7 +876,7 @@ Alias for replaceSamplers method
 '
             replaceSamplers(...)
         },
-        
+
         setSamplers = function(..., ind, print = FALSE) {
             '
 Sets the ordering of the list of MCMC samplers.
@@ -896,7 +895,7 @@ Alternatively, a character vector may be used to specify a set of model nodes an
 As another alternative, a list of samplerConf objects may be used as the argument, in which case this ordered list of samplerConf objects will define the samplers in this MCMC configuration object, completely over-writing the current list of samplers.  No checking is done to ensure the validity of the contents of these samplerConf objects; only that all elements of the list argument are, in fact, samplerConf objects.
 
 print: A logical argument specifying whether to print the new list of samplers (default FALSE).
-'   
+'
             if(missing(ind)) {
                 ind <- list(...)
                 ind <- unname(unlist(ind))
@@ -921,7 +920,7 @@ Alias for setSamplers method
 '
             setSamplers(...)
         },
-        
+
         printSamplers = function(..., ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE, byType = FALSE) {
             '
 Prints details of the MCMC samplers.
@@ -1185,11 +1184,11 @@ Invisibly returns a list of the current derived quantity function configurations
             if(length(interval) != 1) stop('derived quantity interval should be a single number')
             if(interval < 0) stop('derived quantity interval must be at least 1')    ## interval = 0 corresponds to matching thin interval
             if(floor(interval) != interval) stop('derived quantity interval must be an integer')
-            
+
             thisControlList <- c(control, list(...))
-            
+
             addOneDerivedQuantity(thisDerivedName, derivedFunction, interval, thisControlList, print)
-            
+
             return(invisible(derivedConfs))
         },
 
@@ -1327,7 +1326,7 @@ Details:
 
 See the initialize() function
             '
-            
+
             if(isMvSamplesReady(ind)){
             	messageIfVerbose('  [Note] Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
             	if(ind == 1)
@@ -1406,7 +1405,7 @@ See the initialize() function
             '
             setMonitors(..., ind = 2, print = print)
         },
-        
+
         resetMonitors = function() {
             '
 Resets the current monitors and monitors2 lists to nothing.
@@ -1417,17 +1416,17 @@ See the initialize() function
             '
             monitors  <<- character()
             monitors2 <<- character()
-            
+
             if(isMvSamplesReady(1) || isMvSamplesReady(2)){
             	message('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option.')
             	mvSamples1Conf <<- NULL
             	mvSamples2Conf <<- NULL
             }
 
-            
+
             return(invisible(NULL))
         },
-        
+
         printMonitors = function() {
             '
 Prints all current monitors and monitors2
@@ -1501,7 +1500,7 @@ See the initialize() function
         },
 
         getMvSamplesConf  = function(ind = 1){
-            
+
             if(isMvSamplesReady(ind) == TRUE) {
                 if(ind == 1) return(mvSamples1Conf)
                 return(mvSamples2Conf)
@@ -1515,13 +1514,13 @@ See the initialize() function
                 return(output)
             }
         },
-        
+
         isMvSamplesReady = function(ind){
             if(ind == 1) return(is(mvSamples1Conf, 'function'))		#Probably really want to give mvConfs there own class...
             if(ind == 2) return(is(mvSamples2Conf, 'function'))
             stop('invalid indicator for isMvSsamplesReady')
         },
-        
+
         makeMvSamplesConf = function(ind){
             modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()
             if(ind == 1) monitorNames = monitors
@@ -1529,9 +1528,9 @@ See the initialize() function
             if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
             thisModelValuesConf = modelValuesConf(symbolTable(symbols = modelSymbolObjects[monitorNames]))
             if(ind == 1) mvSamples1Conf <<- thisModelValuesConf
-            if(ind == 2) mvSamples2Conf <<- thisModelValuesConf     	
+            if(ind == 2) mvSamples2Conf <<- thisModelValuesConf
         },
-        
+
         setUnsampledNodes = function() {
             samplerTargetNodes <- model$expandNodeNames(unlist(lapply(samplerConfs, `[[`, 'target')))
             additionalNodesBeingSampled <- character()
@@ -1550,12 +1549,12 @@ See the initialize() function
             allNodesBeingSampled <- unique(c(samplerTargetNodes, additionalNodesBeingSampled))
             unsampledNodes <<- setdiff(model$getNodeNames(stochOnly = TRUE, includeData = FALSE), allNodesBeingSampled)
         },
-        
+
         getUnsampledNodes = function() {
             setUnsampledNodes()
             return(unsampledNodes)
         },
-        
+
         warnUnsampledNodes = function(includeConfGetUnsampledNodes = TRUE) {
             if(length(unsampledNodes)) {
                 numUnsampled <- length(unsampledNodes)
@@ -1635,10 +1634,10 @@ See the initialize() function
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
 #'@param ... Additional named control list elements for default samplers, or additional arguments to be passed to the \code{\link{autoBlock}} function when \code{autoBlock = TRUE}
 #'@author Daniel Turek
-#'@export 
+#'@export
 #'@details See \code{\link{MCMCconf}} for details on how to manipulate the \code{MCMCconf} object
 #'@seealso \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
-configureMCMC <- function(model, nodes, control = list(), 
+configureMCMC <- function(model, nodes, control = list(),
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
                           useConjugacy = getNimbleOption('MCMCuseConjugacy'),
                           onlyRW = FALSE, onlySlice = FALSE,
@@ -1651,16 +1650,16 @@ configureMCMC <- function(model, nodes, control = list(),
                           ## samplerAssignmentRules system deprecated Nov 2020 -DT
                           ##rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           ...) {
-    
+
     ## samplerAssignmentRules system deprecated Nov 2020 -DT
     ##if(!inherits(rules, 'samplerAssignmentRules')) stop('rules argument must be a samplerAssignmentRules object')
 
     if(!missing(oldConf)){
         if(!is(oldConf, 'MCMCconf'))
             stop('oldConf must be an MCMCconf object, as built by the configureMCMC function')
-        return(makeNewConfFromOldConf(oldConf))	
+        return(makeNewConfFromOldConf(oldConf))
     }
-    
+
     if(missing(model))        stop('Either oldConf or model must be supplied')
     if(missing(monitors))     monitors <- NULL
 
@@ -1677,6 +1676,3 @@ configureMCMC <- function(model, nodes, control = list(),
                          print = print, ...)
     return(invisible(thisConf))
 }
-
-
-
