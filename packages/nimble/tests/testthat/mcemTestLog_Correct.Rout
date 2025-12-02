@@ -102,7 +102,7 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Parameter Estimates: 
 0.817835
  1.24893
-  [Note] Convergence Criterion: 0.00483165.
+  [Note] Convergence Criterion: 0.00483164.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -679,12 +679,12 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
 -2.80731
-  [Note] Convergence Criterion: 0.00013719.
+  [Note] Convergence Criterion: 0.000137197.
   [Note] Iteration Number: 16.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
 -2.8166
-  [Note] Convergence Criterion: 0.000108494.
+  [Note] Convergence Criterion: 0.000108485.
 MCEM 1D with a constrained parameter and deterministic intermediates works
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
