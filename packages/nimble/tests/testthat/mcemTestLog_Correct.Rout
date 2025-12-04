@@ -1495,18 +1495,18 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 6823.
   [Note] Parameter Estimates: 
-1.18128
-  [Note] Convergence Criterion: 0.00836943.
+1.18051
+  [Note] Convergence Criterion: 0.00835559.
   [Note] Iteration Number: 2.
   [Note] Current number of MCMC iterations: 6823.
   [Note] Parameter Estimates: 
-0.978408
-  [Note] Convergence Criterion: 0.0134633.
+0.978406
+  [Note] Convergence Criterion: 0.0133898.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 6823.
   [Note] Parameter Estimates: 
 0.678763
-  [Note] Convergence Criterion: 0.0208968.
+  [Note] Convergence Criterion: 0.0208966.
   [Note] Iteration Number: 4.
   [Note] Current number of MCMC iterations: 6823.
   [Note] Parameter Estimates: 
@@ -1552,20 +1552,15 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 12.
   [Note] Current number of MCMC iterations: 11742.
   [Note] Parameter Estimates: 
--2.80128
-  [Note] Convergence Criterion: 0.00117352.
+-2.79519
+  [Note] Convergence Criterion: 0.00098595.
+Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 13.
-  [Note] Current number of MCMC iterations: 15490.
-  [Note] Parameter Estimates: 
--2.85236
-  [Note] Convergence Criterion: 0.000958239.
-Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 14.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
--2.87815
-  [Note] Convergence Criterion: 0.000367584.
+-2.82545
+  [Note] Convergence Criterion: 0.000420705.
 MCEM thin control and simplest 1D with deterministic intermediates and multiple data works
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
