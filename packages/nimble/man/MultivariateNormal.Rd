@@ -31,7 +31,7 @@ rmnorm_inv_ld(n = 1, mean, mat, inv_ld, prec_param = TRUE)
 
 \item{mat}{when using AD, either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).}
 
-\item{inv_ld}{when using AD, either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise) as a vector (ordered column-major) with an additional last element containing the log of the determinant of the covariance matrix (it must be of the covariance matrix). For the density calculation, only the log determinant element is used when \code{prec_param} is TRUE. Not used for random generation (but must exist and be of the correct length).}
+\item{inv_ld}{when using AD, the inverse of \code{mat}, as a vector (ordered column-major), with lower diagonal elements ignored (and typically set to 0), appended with an additional element containing the log of the determinant of the inverse of \code{mat}. \code{inv_ld} can be obtained by \code{inv_ld = PDinverse_logdet(mat)}. When \code{prec_param} is \code{FALSE} (or \code{0}), only the last element (log determinant) is used for density calculations (but the rest is still used for derivative calculations). \code{inv_ld} is not used for random generation but is included in the argument list because for use in nimble models the available arguments for density and random number generation must match.}
 }
 \value{
 \code{dmnorm_chol} gives the density and \code{rmnorm_chol} generates random deviates.

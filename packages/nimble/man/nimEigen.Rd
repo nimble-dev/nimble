@@ -13,7 +13,7 @@ nimEigen(x, symmetric = FALSE, only.values = FALSE)
 \item{symmetric}{if \code{TRUE}, the matrix is guarranteed to be symmetric, and only its lower triangle (diagonal included) is used.  Otherwise, the matrix
 is checked for symmetry.  Default is \code{FALSE}.}
 
-\item{only.values}{if \code{TRUE}, only the eigenvalues are computed, otherwise both eigenvalues and eigenvectors are computed. 
+\item{only.values}{if \code{TRUE}, only the eigenvalues are computed, otherwise both eigenvalues and eigenvectors are computed.
 Setting \code{only.values = TRUE} can speed up eigendecompositions, especially for large matrices.  Default is \code{FALSE}.}
 }
 \value{
@@ -27,7 +27,7 @@ The spectral decomposition of \code{x} is returned as a \code{\link{nimbleList}}
 Computes eigenvalues and eigenvectors of a numeric matrix.
 }
 \details{
-Computes the spectral decomposition of a numeric matrix using the Eigen C++ template library. 
+Computes the spectral decomposition of a numeric matrix using the Eigen C++ template library.
 In a nimbleFunction, \code{eigen} is identical to \code{nimEigen}.  If the matrix is symmetric, a faster and more accurate algorithm will be used to compute the eigendecomposition. Note that non-symmetric matrices can have complex eigenvalues,
 which are not supported by NIMBLE.  If a complex eigenvalue or a complex element of an eigenvector is detected, a warning will be issued and that element will be returned as \code{NaN}.
 

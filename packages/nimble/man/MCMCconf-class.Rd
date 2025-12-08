@@ -291,7 +291,7 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 controlWAIC A named list of inputs that control the behavior of the WAIC calculation, passed as the 'control' input to 'buildWAIC'. See 'help(waic)`.
 
-print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
+print: A logical argument specifying whether to print the monitors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.}
 
