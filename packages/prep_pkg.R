@@ -153,7 +153,7 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-math
 
 ### 4. Create final NAMESPACE file, which is careful about what is exported
 
-imports <- c("methods", "igraph")
+imports <- c("methods")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
 importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",

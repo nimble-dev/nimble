@@ -1,5 +1,4 @@
 import(methods)
-import(igraph)
 importFrom(coda, effectiveSize, as.mcmc, as.mcmc.list)
 importFrom(igraph, plot.igraph, make_empty_graph, add_vertices, add_edges, topo_sort, permute)
 importFrom(R6, R6Class)
