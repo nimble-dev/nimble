@@ -77,7 +77,11 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "samplesSummary",
                        "AGHQuad_params",
                        "AGHQuad_summary",
-                       "messageIfVerbose")
+                       "messageIfVerbose",
+                       "getParam_BASE",
+                       "emptyParam",
+                       "gaussParam",
+                       "multiGaussParam")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calc_dmnormAltParams",

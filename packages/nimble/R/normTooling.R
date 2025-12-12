@@ -1,6 +1,6 @@
 ## Tooling that allows us to use known derivative information for latent
 ## normal nodes in Laplace, rather than computing via AD.
-
+#' @export
 getParam_BASE <- nimbleFunctionVirtual(
     run = function() {},
     methods = list(
@@ -18,6 +18,7 @@ getParam_BASE <- nimbleFunctionVirtual(
 )
 
 ## A place holder to not take up much memory.
+#' @export
 emptyParam <- nimbleFunction(
     contains = getParam_BASE,
     setup = function() {},
@@ -43,6 +44,7 @@ emptyParam <- nimbleFunction(
 ## model that are dmnrom distributed gNodes (length of all randomEffectsNodes)
 ## indicates a 1 if dmnorm, 0 o/w.  This makes it easy to get the correct
 ## indices when I just pass it the random-effect index in a loop.
+#' @export
 gaussParam <- nimbleFunction(
     contains = getParam_BASE,
     setup = function(model, nodeNames, gNodes) {
@@ -80,6 +82,7 @@ gaussParam <- nimbleFunction(
 ## model that are dmnrom distributed gNodes (length of all randomEffectsNodes)
 ## indicates a 1 if dmnorm, 0 o/w.  This makes it easy to get the correct
 ## indices when I just pass it the random-effect index in a loop.
+#' @export
 multiGaussParam <- nimbleFunction(
     contains = getParam_BASE,
     setup = function(model, nodeNames, gNodes) {
