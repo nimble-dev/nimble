@@ -81,7 +81,8 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "getParam_BASE",
                        "emptyParam",
                        "gaussParam",
-                       "multiGaussParam")
+                       "multiGaussParam",
+                       "splitLatents")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calc_dmnormAltParams",

@@ -541,7 +541,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
        )
 }
 
-
+#' @export
 splitLatents <- function(model, paramNodes, latentNodes, calcNodes, calcNodesOther,
     control = list()) {
     stochNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
