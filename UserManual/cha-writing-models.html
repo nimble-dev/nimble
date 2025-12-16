@@ -53,8 +53,9 @@
 
 
 <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.3.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.0</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -254,6 +255,7 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="7.2.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:default-mcmc-conf"><i class="fa fa-check"></i><b>7.2.1</b> Default MCMC configuration</a></li>
 <li class="chapter" data-level="7.2.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:customizing-mcmc-conf"><i class="fa fa-check"></i><b>7.2.2</b> Customizing the MCMC configuration</a></li>
+<li class="chapter" data-level="7.2.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:derived-quantities"><i class="fa fa-check"></i><b>7.2.3</b> Setting up derived quantities for additional quantities of interest</a></li>
 </ul></li>
 <li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
 <li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:initMCMC"><i class="fa fa-check"></i><b>7.4</b> Initializing MCMC</a></li>
@@ -283,7 +285,7 @@ div.csl-indent {
 <li class="chapter" data-level="7.13" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.13</b> Comparing different MCMCs with <em>compareMCMCs</em></a></li>
 <li class="chapter" data-level="7.14" data-path="cha-mcmc.html"><a href="cha-mcmc.html#running-mcmc-chains-in-parallel"><i class="fa fa-check"></i><b>7.14</b> Running MCMC chains in parallel</a></li>
 </ul></li>
-<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, MCEM, Laplace approximation and quadrature</a>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Particle Filters, PMCMC, and MCEM</a>
 <ul>
 <li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo-and-iterated-filtering"><i class="fa fa-check"></i><b>8.1</b> Particle filters / sequential Monte Carlo and iterated filtering</a>
 <ul>
@@ -294,189 +296,192 @@ div.csl-indent {
 <ul>
 <li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the asymptotic covariance From MCEM</a></li>
 </ul></li>
-<li class="chapter" data-level="8.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:AD-laplace"><i class="fa fa-check"></i><b>8.3</b> Laplace approximation and adaptive Gauss-Hermite quadrature</a>
-<ul>
-<li class="chapter" data-level="8.3.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#glmm-example"><i class="fa fa-check"></i><b>8.3.1</b> GLMM example</a></li>
-<li class="chapter" data-level="8.3.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-laplace-approximation"><i class="fa fa-check"></i><b>8.3.2</b> Using Laplace approximation</a></li>
-<li class="chapter" data-level="8.3.3" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>8.3.3</b> Using the Laplace approximation methods directly</a></li>
-<li class="chapter" data-level="8.3.4" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>8.3.4</b> Changing the optimization methods</a></li>
 </ul></li>
-<li class="chapter" data-level="8.4" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:nested-approx"><i class="fa fa-check"></i><b>8.4</b> Nested approximation methods</a>
+<li class="chapter" data-level="9" data-path="cha-laplace.html"><a href="cha-laplace.html"><i class="fa fa-check"></i><b>9</b> Laplace, AGHQ, and nested approximations</a>
 <ul>
-<li class="chapter" data-level="8.4.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#overview-of-the-methodology"><i class="fa fa-check"></i><b>8.4.1</b> Overview of the methodology</a></li>
-<li class="chapter" data-level="8.4.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#using-nimbles-nested-approximation"><i class="fa fa-check"></i><b>8.4.2</b> Using NIMBLE’s nested approximation</a></li>
+<li class="chapter" data-level="9.1" data-path="cha-laplace.html"><a href="cha-laplace.html#sec:AD-laplace"><i class="fa fa-check"></i><b>9.1</b> Laplace approximation and adaptive Gauss-Hermite quadrature (AGHQ)</a>
+<ul>
+<li class="chapter" data-level="9.1.1" data-path="cha-laplace.html"><a href="cha-laplace.html#glmm-example"><i class="fa fa-check"></i><b>9.1.1</b> GLMM example</a></li>
+<li class="chapter" data-level="9.1.2" data-path="cha-laplace.html"><a href="cha-laplace.html#using-laplace-approximation"><i class="fa fa-check"></i><b>9.1.2</b> Using Laplace approximation</a></li>
+<li class="chapter" data-level="9.1.3" data-path="cha-laplace.html"><a href="cha-laplace.html#using-the-laplace-approximation-methods-directly"><i class="fa fa-check"></i><b>9.1.3</b> Using the Laplace approximation methods directly</a></li>
+<li class="chapter" data-level="9.1.4" data-path="cha-laplace.html"><a href="cha-laplace.html#changing-the-optimization-methods"><i class="fa fa-check"></i><b>9.1.4</b> Changing the optimization methods</a></li>
 </ul></li>
-</ul></li>
-<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a>
+<li class="chapter" data-level="9.2" data-path="cha-laplace.html"><a href="cha-laplace.html#sec:nested-approx"><i class="fa fa-check"></i><b>9.2</b> Nested approximation (INLA-like) methods</a>
 <ul>
-<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a>
-<ul>
-<li class="chapter" data-level="9.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>9.1.1</b> Specification and density</a></li>
-<li class="chapter" data-level="9.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>9.1.2</b> Example</a></li>
-</ul></li>
-<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a>
-<ul>
-<li class="chapter" data-level="9.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>9.2.1</b> Specification and density</a></li>
-<li class="chapter" data-level="9.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>9.2.2</b> Example</a></li>
-</ul></li>
-<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a>
-<ul>
-<li class="chapter" data-level="9.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>9.3.1</b> Initial values</a></li>
-<li class="chapter" data-level="9.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>9.3.2</b> Zero-neighbor regions</a></li>
-<li class="chapter" data-level="9.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>9.3.3</b> Zero-mean constraint</a></li>
+<li class="chapter" data-level="9.2.1" data-path="cha-laplace.html"><a href="cha-laplace.html#overview-of-the-methodology"><i class="fa fa-check"></i><b>9.2.1</b> Overview of the methodology</a></li>
+<li class="chapter" data-level="9.2.2" data-path="cha-laplace.html"><a href="cha-laplace.html#using-nimbles-nested-approximation"><i class="fa fa-check"></i><b>9.2.2</b> Using NIMBLE’s nested approximation</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a>
+<li class="chapter" data-level="10" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>10</b> Spatial models</a>
 <ul>
-<li class="chapter" data-level="10.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>10.1</b> Bayesian nonparametric mixture models</a></li>
-<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a>
+<li class="chapter" data-level="10.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>10.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a>
 <ul>
-<li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
-<li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
-<li class="chapter" data-level="10.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>10.2.3</b> Extensions</a></li>
+<li class="chapter" data-level="10.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>10.1.1</b> Specification and density</a></li>
+<li class="chapter" data-level="10.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>10.1.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a>
+<li class="chapter" data-level="10.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>10.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a>
 <ul>
-<li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
-<li class="chapter" data-level="10.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>10.3.2</b> Example</a></li>
+<li class="chapter" data-level="10.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="10.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
 </ul></li>
-<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a>
+<li class="chapter" data-level="10.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>10.3</b> MCMC Sampling of CAR models</a>
 <ul>
-<li class="chapter" data-level="10.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>10.4.1</b> Sampling CRP models</a></li>
-<li class="chapter" data-level="10.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>10.4.2</b> Sampling stick-breaking models</a></li>
+<li class="chapter" data-level="10.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>10.3.1</b> Initial values</a></li>
+<li class="chapter" data-level="10.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>10.3.2</b> Zero-neighbor regions</a></li>
+<li class="chapter" data-level="10.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>10.3.3</b> Zero-mean constraint</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>11</b> Bayesian nonparametric models</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>11.1</b> Bayesian nonparametric mixture models</a></li>
+<li class="chapter" data-level="11.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>11.2</b> Chinese Restaurant Process model</a>
+<ul>
+<li class="chapter" data-level="11.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>11.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="11.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>11.2.2</b> Example</a></li>
+<li class="chapter" data-level="11.2.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:extensionscrp"><i class="fa fa-check"></i><b>11.2.3</b> Extensions</a></li>
+</ul></li>
+<li class="chapter" data-level="11.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>11.3</b> Stick-breaking model</a>
+<ul>
+<li class="chapter" data-level="11.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>11.3.1</b> Specification and function</a></li>
+<li class="chapter" data-level="11.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>11.3.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="11.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>11.4</b> MCMC sampling of BNP models</a>
+<ul>
+<li class="chapter" data-level="11.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>11.4.1</b> Sampling CRP models</a></li>
+<li class="chapter" data-level="11.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>11.4.2</b> Sampling stick-breaking models</a></li>
 </ul></li>
 </ul></li>
 <li class="part"><span><b>IV Programming with NIMBLE</b></span></li>
 <li class="chapter" data-level="" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i>Overview</a></li>
-<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a>
+<li class="chapter" data-level="12" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>12</b> Writing simple nimbleFunctions</a>
 <ul>
-<li class="chapter" data-level="11.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>11.1</b> Introduction to simple nimbleFunctions</a></li>
-<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a>
+<li class="chapter" data-level="12.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>12.1</b> Introduction to simple nimbleFunctions</a></li>
+<li class="chapter" data-level="12.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>12.2</b> R functions (or variants) implemented in NIMBLE</a>
 <ul>
-<li class="chapter" data-level="11.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>11.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
-<li class="chapter" data-level="11.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>11.2.2</b> Basic operations</a></li>
-<li class="chapter" data-level="11.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>11.2.3</b> Math and linear algebra</a></li>
-<li class="chapter" data-level="11.2.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimble-dist-funs"><i class="fa fa-check"></i><b>11.2.4</b> Distribution functions</a></li>
-<li class="chapter" data-level="11.2.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-flow-control"><i class="fa fa-check"></i><b>11.2.5</b> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></a></li>
-<li class="chapter" data-level="11.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>11.2.6</b> <em>print</em> and <em>cat</em></a></li>
-<li class="chapter" data-level="11.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>11.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
-<li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
-<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#integration-integrate-and-nimintegrate"><i class="fa fa-check"></i><b>11.2.9</b> Integration: <em>integrate</em> and <em>nimIntegrate</em></a></li>
-<li class="chapter" data-level="11.2.10" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.10</b> ‘nim’ synonyms for some functions</a></li>
+<li class="chapter" data-level="12.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>12.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
+<li class="chapter" data-level="12.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>12.2.2</b> Basic operations</a></li>
+<li class="chapter" data-level="12.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>12.2.3</b> Math and linear algebra</a></li>
+<li class="chapter" data-level="12.2.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimble-dist-funs"><i class="fa fa-check"></i><b>12.2.4</b> Distribution functions</a></li>
+<li class="chapter" data-level="12.2.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-flow-control"><i class="fa fa-check"></i><b>12.2.5</b> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></a></li>
+<li class="chapter" data-level="12.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>12.2.6</b> <em>print</em> and <em>cat</em></a></li>
+<li class="chapter" data-level="12.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>12.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
+<li class="chapter" data-level="12.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>12.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
+<li class="chapter" data-level="12.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#integration-integrate-and-nimintegrate"><i class="fa fa-check"></i><b>12.2.9</b> Integration: <em>integrate</em> and <em>nimIntegrate</em></a></li>
+<li class="chapter" data-level="12.2.10" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>12.2.10</b> ‘nim’ synonyms for some functions</a></li>
 </ul></li>
-<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a>
+<li class="chapter" data-level="12.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>12.3</b> How NIMBLE handles types of variables</a>
 <ul>
-<li class="chapter" data-level="11.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>11.3.1</b> nimbleList data structures</a></li>
-<li class="chapter" data-level="11.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>11.3.2</b> How numeric types work</a></li>
+<li class="chapter" data-level="12.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>12.3.1</b> nimbleList data structures</a></li>
+<li class="chapter" data-level="12.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>12.3.2</b> How numeric types work</a></li>
 </ul></li>
-<li class="chapter" data-level="11.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:decl-argum-return"><i class="fa fa-check"></i><b>11.4</b> Declaring argument and return types</a></li>
-<li class="chapter" data-level="11.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:comp-nimbl-pass"><i class="fa fa-check"></i><b>11.5</b> Compiled nimbleFunctions pass arguments by reference</a></li>
-<li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
-<li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
+<li class="chapter" data-level="12.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:decl-argum-return"><i class="fa fa-check"></i><b>12.4</b> Declaring argument and return types</a></li>
+<li class="chapter" data-level="12.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:comp-nimbl-pass"><i class="fa fa-check"></i><b>12.5</b> Compiled nimbleFunctions pass arguments by reference</a></li>
+<li class="chapter" data-level="12.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>12.6</b> Calling external compiled code</a></li>
+<li class="chapter" data-level="12.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>12.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined distributions and functions for models</a>
+<li class="chapter" data-level="13" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>13</b> Creating user-defined distributions and functions for models</a>
 <ul>
-<li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
-<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a>
+<li class="chapter" data-level="13.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>13.1</b> User-defined functions</a></li>
+<li class="chapter" data-level="13.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>13.2</b> User-defined distributions</a>
 <ul>
-<li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
+<li class="chapter" data-level="13.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>13.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
 </ul></li>
-<li class="chapter" data-level="12.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>12.3</b> Advanced user-defined functions and distributions</a></li>
-<li class="chapter" data-level="12.4" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-macros"><i class="fa fa-check"></i><b>12.4</b> User-defined model macros</a></li>
+<li class="chapter" data-level="13.3" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:adv-user-def"><i class="fa fa-check"></i><b>13.3</b> Advanced user-defined functions and distributions</a></li>
+<li class="chapter" data-level="13.4" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-macros"><i class="fa fa-check"></i><b>13.4</b> User-defined model macros</a></li>
 </ul></li>
-<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a>
+<li class="chapter" data-level="14" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>14</b> Working with NIMBLE models</a>
 <ul>
-<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a>
+<li class="chapter" data-level="14.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>14.1</b> The variables and nodes in a NIMBLE model</a>
 <ul>
-<li class="chapter" data-level="13.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>13.1.1</b> Determining the nodes in a model</a></li>
-<li class="chapter" data-level="13.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>13.1.2</b> Understanding lifted nodes</a></li>
-<li class="chapter" data-level="13.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>13.1.3</b> Determining dependencies in a model</a></li>
+<li class="chapter" data-level="14.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>14.1.1</b> Determining the nodes in a model</a></li>
+<li class="chapter" data-level="14.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>14.1.2</b> Understanding lifted nodes</a></li>
+<li class="chapter" data-level="14.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>14.1.3</b> Determining dependencies in a model</a></li>
 </ul></li>
-<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a>
+<li class="chapter" data-level="14.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>14.2</b> Accessing information about nodes and variables</a>
 <ul>
-<li class="chapter" data-level="13.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>13.2.1</b> Getting distributional information about a node</a></li>
-<li class="chapter" data-level="13.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>13.2.2</b> Getting information about a distribution</a></li>
-<li class="chapter" data-level="13.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>13.2.3</b> Getting distribution parameter values for a node</a></li>
-<li class="chapter" data-level="13.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>13.2.4</b> Getting distribution bounds for a node</a></li>
+<li class="chapter" data-level="14.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>14.2.1</b> Getting distributional information about a node</a></li>
+<li class="chapter" data-level="14.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>14.2.2</b> Getting information about a distribution</a></li>
+<li class="chapter" data-level="14.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>14.2.3</b> Getting distribution parameter values for a node</a></li>
+<li class="chapter" data-level="14.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>14.2.4</b> Getting distribution bounds for a node</a></li>
 </ul></li>
-<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a>
+<li class="chapter" data-level="14.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>14.3</b> Carrying out model calculations</a>
 <ul>
-<li class="chapter" data-level="13.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>13.3.1</b> Core model operations: calculation and simulation</a></li>
-<li class="chapter" data-level="13.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>13.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
-<li class="chapter" data-level="13.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>13.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
-</ul></li>
-</ul></li>
-<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a>
-<ul>
-<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a>
-<ul>
-<li class="chapter" data-level="14.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>14.1.1</b> Creating modelValues objects</a></li>
-<li class="chapter" data-level="14.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>14.1.2</b> Accessing contents of modelValues</a></li>
-</ul></li>
-<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a>
-<ul>
-<li class="chapter" data-level="14.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:predef-nimbleLists"><i class="fa fa-check"></i><b>14.2.1</b> Pre-defined nimbleList types</a></li>
-<li class="chapter" data-level="14.2.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>14.2.2</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
+<li class="chapter" data-level="14.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>14.3.1</b> Core model operations: calculation and simulation</a></li>
+<li class="chapter" data-level="14.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>14.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
+<li class="chapter" data-level="14.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>14.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
 </ul></li>
 </ul></li>
-<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a>
+<li class="chapter" data-level="15" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>15</b> Data structures in NIMBLE</a>
 <ul>
-<li class="chapter" data-level="15.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>15.1</b> Overview</a></li>
-<li class="chapter" data-level="15.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>15.2</b> Using and compiling nimbleFunctions</a></li>
-<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a>
+<li class="chapter" data-level="15.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>15.1</b> The modelValues data structure</a>
 <ul>
-<li class="chapter" data-level="15.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>15.3.1</b> Useful tools for setup functions</a></li>
-<li class="chapter" data-level="15.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>15.3.2</b> Accessing and modifying numeric values from setup</a></li>
-<li class="chapter" data-level="15.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>15.3.3</b> Determining numeric types in nimbleFunctions</a></li>
-<li class="chapter" data-level="15.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>15.3.4</b> Control of setup outputs</a></li>
+<li class="chapter" data-level="15.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>15.1.1</b> Creating modelValues objects</a></li>
+<li class="chapter" data-level="15.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>15.1.2</b> Accessing contents of modelValues</a></li>
 </ul></li>
-<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a>
+<li class="chapter" data-level="15.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>15.2</b> The nimbleList data structure</a>
 <ul>
-<li class="chapter" data-level="15.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>15.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
-<li class="chapter" data-level="15.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>15.4.2</b> Getting and setting variable and node values</a></li>
-<li class="chapter" data-level="15.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>15.4.3</b> Getting parameter values and node bounds</a></li>
-<li class="chapter" data-level="15.4.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-model-modelv"><i class="fa fa-check"></i><b>15.4.4</b> Using modelValues objects</a></li>
-<li class="chapter" data-level="15.4.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-model-variable"><i class="fa fa-check"></i><b>15.4.5</b> Using model variables and modelValues in expressions</a></li>
-<li class="chapter" data-level="15.4.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:incl-other-meth"><i class="fa fa-check"></i><b>15.4.6</b> Including other methods in a nimbleFunction</a></li>
-<li class="chapter" data-level="15.4.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-other-nimbl"><i class="fa fa-check"></i><b>15.4.7</b> Using other nimbleFunctions</a></li>
-<li class="chapter" data-level="15.4.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl"><i class="fa fa-check"></i><b>15.4.8</b> Virtual nimbleFunctions and nimbleFunctionLists</a></li>
-<li class="chapter" data-level="15.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>15.4.9</b> Character objects</a></li>
-<li class="chapter" data-level="15.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>15.4.10</b> User-defined data structures</a></li>
+<li class="chapter" data-level="15.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:predef-nimbleLists"><i class="fa fa-check"></i><b>15.2.1</b> Pre-defined nimbleList types</a></li>
+<li class="chapter" data-level="15.2.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>15.2.2</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
 </ul></li>
-<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a>
+</ul></li>
+<li class="chapter" data-level="16" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>16</b> Writing nimbleFunctions to interact with models</a>
 <ul>
-<li class="chapter" data-level="15.5.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#user-defined-samplers-and-posterior-predictive-nodes"><i class="fa fa-check"></i><b>15.5.1</b> User-defined samplers and posterior predictive nodes</a></li>
+<li class="chapter" data-level="16.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>16.1</b> Overview</a></li>
+<li class="chapter" data-level="16.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>16.2</b> Using and compiling nimbleFunctions</a></li>
+<li class="chapter" data-level="16.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>16.3</b> Writing setup code</a>
+<ul>
+<li class="chapter" data-level="16.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>16.3.1</b> Useful tools for setup functions</a></li>
+<li class="chapter" data-level="16.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>16.3.2</b> Accessing and modifying numeric values from setup</a></li>
+<li class="chapter" data-level="16.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>16.3.3</b> Determining numeric types in nimbleFunctions</a></li>
+<li class="chapter" data-level="16.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>16.3.4</b> Control of setup outputs</a></li>
 </ul></li>
-<li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
-<li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
-<li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
-<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="16.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>16.4</b> Writing run code</a>
+<ul>
+<li class="chapter" data-level="16.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>16.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
+<li class="chapter" data-level="16.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>16.4.2</b> Getting and setting variable and node values</a></li>
+<li class="chapter" data-level="16.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>16.4.3</b> Getting parameter values and node bounds</a></li>
+<li class="chapter" data-level="16.4.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-model-modelv"><i class="fa fa-check"></i><b>16.4.4</b> Using modelValues objects</a></li>
+<li class="chapter" data-level="16.4.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-model-variable"><i class="fa fa-check"></i><b>16.4.5</b> Using model variables and modelValues in expressions</a></li>
+<li class="chapter" data-level="16.4.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:incl-other-meth"><i class="fa fa-check"></i><b>16.4.6</b> Including other methods in a nimbleFunction</a></li>
+<li class="chapter" data-level="16.4.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-other-nimbl"><i class="fa fa-check"></i><b>16.4.7</b> Using other nimbleFunctions</a></li>
+<li class="chapter" data-level="16.4.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl"><i class="fa fa-check"></i><b>16.4.8</b> Virtual nimbleFunctions and nimbleFunctionLists</a></li>
+<li class="chapter" data-level="16.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>16.4.9</b> Character objects</a></li>
+<li class="chapter" data-level="16.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>16.4.10</b> User-defined data structures</a></li>
+</ul></li>
+<li class="chapter" data-level="16.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>16.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a>
+<ul>
+<li class="chapter" data-level="16.5.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#user-defined-samplers-and-posterior-predictive-nodes"><i class="fa fa-check"></i><b>16.5.1</b> User-defined samplers and posterior predictive nodes</a></li>
+</ul></li>
+<li class="chapter" data-level="16.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>16.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
+<li class="chapter" data-level="16.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>16.7</b> Debugging nimbleFunctions</a></li>
+<li class="chapter" data-level="16.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>16.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
+<li class="chapter" data-level="16.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>16.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="16.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>16.10</b> Reducing memory usage</a></li>
 </ul></li>
 <li class="part"><span><b>V Automatic Derivatives in NIMBLE</b></span></li>
-<li class="chapter" data-level="16" data-path="cha-AD.html"><a href="cha-AD.html"><i class="fa fa-check"></i><b>16</b> Automatic Derivatives</a>
+<li class="chapter" data-level="17" data-path="cha-AD.html"><a href="cha-AD.html"><i class="fa fa-check"></i><b>17</b> Automatic Derivatives</a>
 <ul>
-<li class="chapter" data-level="16.1" data-path="cha-AD.html"><a href="cha-AD.html#sec:use-derivs"><i class="fa fa-check"></i><b>16.1</b> How to turn on derivatives in a model</a></li>
-<li class="chapter" data-level="16.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>16.2</b> How to support derivatives in user-defined functions and distributions</a></li>
-<li class="chapter" data-level="16.3" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>16.3</b> What operations are and aren’t supported for AD</a></li>
-<li class="chapter" data-level="16.4" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>16.4</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
+<li class="chapter" data-level="17.1" data-path="cha-AD.html"><a href="cha-AD.html#sec:use-derivs"><i class="fa fa-check"></i><b>17.1</b> How to turn on derivatives in a model</a></li>
+<li class="chapter" data-level="17.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-user-def"><i class="fa fa-check"></i><b>17.2</b> How to support derivatives in user-defined functions and distributions</a></li>
+<li class="chapter" data-level="17.3" data-path="cha-AD.html"><a href="cha-AD.html#what-operations-are-and-arent-supported-for-ad"><i class="fa fa-check"></i><b>17.3</b> What operations are and aren’t supported for AD</a></li>
+<li class="chapter" data-level="17.4" data-path="cha-AD.html"><a href="cha-AD.html#basics-of-obtaining-derivatives-in-nimblefunctions"><i class="fa fa-check"></i><b>17.4</b> Basics of obtaining derivatives in <code>nimbleFunctions</code></a>
 <ul>
-<li class="chapter" data-level="16.4.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>16.4.1</b> Checking derivatives with uncompiled execution</a></li>
-<li class="chapter" data-level="16.4.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>16.4.2</b> Holding some local variables out of derivative tracking</a></li>
-<li class="chapter" data-level="16.4.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>16.4.3</b> Using AD with multiple nimbleFunctions</a></li>
-<li class="chapter" data-level="16.4.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>16.4.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
-<li class="chapter" data-level="16.4.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>16.4.5</b> Resetting a <code>nimDerivs</code> call</a></li>
-<li class="chapter" data-level="16.4.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>16.4.6</b> A note on performance benchmarking</a></li>
+<li class="chapter" data-level="17.4.1" data-path="cha-AD.html"><a href="cha-AD.html#checking-derivatives-with-uncompiled-execution"><i class="fa fa-check"></i><b>17.4.1</b> Checking derivatives with uncompiled execution</a></li>
+<li class="chapter" data-level="17.4.2" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-holding-out"><i class="fa fa-check"></i><b>17.4.2</b> Holding some local variables out of derivative tracking</a></li>
+<li class="chapter" data-level="17.4.3" data-path="cha-AD.html"><a href="cha-AD.html#sec:AD-multiple-NF"><i class="fa fa-check"></i><b>17.4.3</b> Using AD with multiple nimbleFunctions</a></li>
+<li class="chapter" data-level="17.4.4" data-path="cha-AD.html"><a href="cha-AD.html#sec:understanding-more-AD"><i class="fa fa-check"></i><b>17.4.4</b> Understanding more about how AD works: <em>taping</em> of operations</a></li>
+<li class="chapter" data-level="17.4.5" data-path="cha-AD.html"><a href="cha-AD.html#resetting-a-nimderivs-call"><i class="fa fa-check"></i><b>17.4.5</b> Resetting a <code>nimDerivs</code> call</a></li>
+<li class="chapter" data-level="17.4.6" data-path="cha-AD.html"><a href="cha-AD.html#a-note-on-performance-benchmarking"><i class="fa fa-check"></i><b>17.4.6</b> A note on performance benchmarking</a></li>
 </ul></li>
-<li class="chapter" data-level="16.5" data-path="cha-AD.html"><a href="cha-AD.html#advanced-uses-double-taping"><i class="fa fa-check"></i><b>16.5</b> Advanced uses: double taping</a></li>
-<li class="chapter" data-level="16.6" data-path="cha-AD.html"><a href="cha-AD.html#derivatives-involving-model-calculations"><i class="fa fa-check"></i><b>16.6</b> Derivatives involving model calculations</a>
+<li class="chapter" data-level="17.5" data-path="cha-AD.html"><a href="cha-AD.html#advanced-uses-double-taping"><i class="fa fa-check"></i><b>17.5</b> Advanced uses: double taping</a></li>
+<li class="chapter" data-level="17.6" data-path="cha-AD.html"><a href="cha-AD.html#derivatives-involving-model-calculations"><i class="fa fa-check"></i><b>17.6</b> Derivatives involving model calculations</a>
 <ul>
-<li class="chapter" data-level="16.6.1" data-path="cha-AD.html"><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate"><i class="fa fa-check"></i><b>16.6.1</b> Method 1: <code>nimDerivs</code> of <code>model$calculate</code></a></li>
-<li class="chapter" data-level="16.6.2" data-path="cha-AD.html"><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate"><i class="fa fa-check"></i><b>16.6.2</b> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code></a></li>
+<li class="chapter" data-level="17.6.1" data-path="cha-AD.html"><a href="cha-AD.html#method-1-nimderivs-of-modelcalculate"><i class="fa fa-check"></i><b>17.6.1</b> Method 1: <code>nimDerivs</code> of <code>model$calculate</code></a></li>
+<li class="chapter" data-level="17.6.2" data-path="cha-AD.html"><a href="cha-AD.html#method-2-nimderivs-of-a-method-that-calls-modelcalculate"><i class="fa fa-check"></i><b>17.6.2</b> Method 2: <code>nimDerivs</code> of a method that calls <code>model$calculate</code></a></li>
 </ul></li>
-<li class="chapter" data-level="16.7" data-path="cha-AD.html"><a href="cha-AD.html#sec:parameter-transform"><i class="fa fa-check"></i><b>16.7</b> Parameter transformations</a></li>
+<li class="chapter" data-level="17.7" data-path="cha-AD.html"><a href="cha-AD.html#sec:parameter-transform"><i class="fa fa-check"></i><b>17.7</b> Parameter transformations</a></li>
 </ul></li>
-<li class="chapter" data-level="17" data-path="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><a href="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><i class="fa fa-check"></i><b>17</b> Example: maximum likelihood estimation using <code>optim</code> with gradients from <code>nimDerivs</code>.</a></li>
+<li class="chapter" data-level="18" data-path="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><a href="example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html"><i class="fa fa-check"></i><b>18</b> Example: maximum likelihood estimation using <code>optim</code> with gradients from <code>nimDerivs</code>.</a></li>
 <li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 </ul>
 
@@ -528,7 +533,7 @@ notation and <code>dinterval</code>.</li>
 <h3><span class="header-section-number">5.1.2</span> NIMBLE’s Extensions to BUGS and JAGS<a href="cha-writing-models.html#sec:extensions-bugs" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE extends the BUGS language in the following ways:</p>
 <ol style="list-style-type: decimal">
-<li>User-defined functions and distributions – written as nimbleFunctions – can be used in model code. See Chapter <a href="cha-user-defined.html#cha-user-defined">12</a>.</li>
+<li>User-defined functions and distributions – written as nimbleFunctions – can be used in model code. See Chapter <a href="cha-user-defined.html#cha-user-defined">13</a>.</li>
 <li>Multiple parameterizations for distributions, similar to those in R, can be used.</li>
 <li>Named parameters for distributions and functions, similar to R function calls, can be used.</li>
 <li>Linear algebra, including for vectorized
@@ -732,13 +737,13 @@ multiple nodes. Variables that define for-loop indices (<code>N</code> and <code
 normal distribution, with a named covariance matrix instead of BUGS’
 default of a precision matrix. As in R, curly braces for for-loop
 contents are only needed if there is more than one line.</li>
-<li><code>w</code> follows a user-defined distribution. See Chapter <a href="cha-user-defined.html#cha-user-defined">12</a>.</li>
+<li><code>w</code> follows a user-defined distribution. See Chapter <a href="cha-user-defined.html#cha-user-defined">13</a>.</li>
 <li><code>d1</code> is a scalar deterministic node that, when calculated, will be
 set to <code>a + b</code>.</li>
 <li><code>d2</code> is a vector deterministic node using matrix
 multiplication in R’s syntax.</li>
 <li><code>d3</code> is a deterministic node using a user-provided
-function. See Chapter <a href="cha-user-defined.html#cha-user-defined">12</a>.</li>
+function. See Chapter <a href="cha-user-defined.html#cha-user-defined">13</a>.</li>
 </ol>
 <div id="sec:indexing" class="section level4 hasAnchor" number="5.2.2.1">
 <h4><span class="header-section-number">5.2.2.1</span> More about indexing<a href="cha-writing-models.html#sec:indexing" class="anchor-section" aria-label="Anchor link to header"></a></h4>
@@ -767,7 +772,7 @@ a scalar index will result in dropping a dimension unless the argument
 <code>drop=FALSE</code> is provided. For example, <code>mymatrix[i, 1:3]</code> will
 be a vector of length 3, but <code>mymatrix[i, 1:3, drop=FALSE]</code> will be
 a <span class="math inline">\(1 \times 3\)</span> matrix. More about indexing and dimensions is
-discussed in Section <a href="cha-RCfunctions.html#sec:manag-dimens-sizes">11.3.2.7</a>.</p>
+discussed in Section <a href="cha-RCfunctions.html#sec:manag-dimens-sizes">12.3.2.7</a>.</p>
 </div>
 </div>
 <div id="subsec:vectorized-versus-scalar-declarations" class="section level3 hasAnchor" number="5.2.3">
@@ -800,7 +805,7 @@ JAGS. Table <a href="cha-writing-models.html#tab:distributions">5.1</a> lists th
 currently supported, with their default parameterizations, which match
 those of BUGS<a href="#fn15" class="footnote-ref" id="fnref15"><sup>15</sup></a>. NIMBLE also allows one to use alternative
 parameterizations for a variety of distributions as described next.
-See Section <a href="cha-user-defined.html#sec:user-distributions">12.2</a> to learn how to write new distributions using nimbleFunctions.</p>
+See Section <a href="cha-user-defined.html#sec:user-distributions">13.2</a> to learn how to write new distributions using nimbleFunctions.</p>
 <table>
 <caption><span id="tab:distributions">Table 5.1: </span> Distributions with their default order of parameters. The value of the random variable
 is given by <span class="math inline">\(x\)</span>.</caption>
@@ -859,7 +864,7 @@ is given by <span class="math inline">\(x\)</span>.</caption>
 <tr class="odd">
 <td align="left">CAR</td>
 <td align="left"><code>dcar_normal(adj, weights,</code></td>
-<td align="left">see chapter <a href="cha-spatial.html#cha-spatial">9</a> for details</td>
+<td align="left">see chapter <a href="cha-spatial.html#cha-spatial">10</a> for details</td>
 <td></td>
 <td></td>
 </tr>
@@ -873,7 +878,7 @@ is given by <span class="math inline">\(x\)</span>.</caption>
 <tr class="odd">
 <td align="left">CAR</td>
 <td align="left"><code>dcar_proper(mu, C, adj,</code></td>
-<td align="left">see chapter <a href="cha-spatial.html#cha-spatial">9</a> for details</td>
+<td align="left">see chapter <a href="cha-spatial.html#cha-spatial">10</a> for details</td>
 <td></td>
 <td></td>
 </tr>
@@ -1139,7 +1144,7 @@ is given by <span class="math inline">\(x\)</span>.</caption>
 <tr class="odd">
 <td align="left">Weibull</td>
 <td align="left"><code>dweib(shape = v, lambda =</code> <span class="math inline">\(\lambda\)</span><code>)</code></td>
-<td align="left"><span class="math inline">\(v \lambda x^{v - 1} \exp (- \lambda x^v)\)</span></td>
+<td align="left"><span class="math inline">\(v  \lambda  x^{v - 1} \exp (- \lambda x^v)\)</span></td>
 <td><span class="math inline">\(0\)</span></td>
 <td></td>
 </tr>
@@ -1193,7 +1198,7 @@ prior or require proper (normalized) densities.</p>
 <h5><span class="header-section-number">5.2.4.1.2</span> LKJ distribution for correlation matrices<a href="cha-writing-models.html#lkj-distribution-for-correlation-matrices" class="anchor-section" aria-label="Anchor link to header"></a></h5>
 <p>NIMBLE provides the LKJ distribution via <code>dlkj_corr_cholesky</code>
 for correlation matrices, discussed in Section 24 of <span class="citation">Stan Development Team (<a href="references.html#ref-Stan_Lang_Fun_2021">2021a</a>)</span> and based on
-<span class="citation">Lewandowski, Kurowicka, and Joe (<a href="references.html#ref-Lewandowski_etal_2009">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
+<span class="citation">Lewandowski et al. (<a href="references.html#ref-Lewandowski_etal_2009">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
 MCMC fitting perspective) over other prior distributions for correlation
 or covariance matrices such as the inverse Wishart distribution.</p>
 <p>For computational efficiency, the distribution is on the Cholesky factor
@@ -1380,7 +1385,7 @@ relationship to the <em>canonical</em> parameterization used in NIMBLE.</caption
 </tr>
 <tr class="even">
 <td align="left"><code>dmnorm(mean, cholesky,</code></td>
-<td align="left">canonical (precision)</td>
+<td align="left">canonical, non-AD (precision)</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>...prec_param=1)</code></td>
@@ -1388,7 +1393,7 @@ relationship to the <em>canonical</em> parameterization used in NIMBLE.</caption
 </tr>
 <tr class="even">
 <td align="left"><code>dmnorm(mean, cholesky,</code></td>
-<td align="left">canonical (covariance)</td>
+<td align="left">canonical, non-AD (covariance)</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>...prec_param=0)</code></td>
@@ -1401,6 +1406,22 @@ relationship to the <em>canonical</em> parameterization used in NIMBLE.</caption
 <tr class="odd">
 <td align="left"><code>dmnorm(mean, cov)</code></td>
 <td align="left"><code>dmnorm(mean, cholesky = chol(cov), prec_param=0)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>dmnorm(mean, prec,</code></td>
+<td align="left">canonical, AD (precision)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>...prec_param=1)</code></td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left"><code>dmnorm(mean, cov,</code></td>
+<td align="left">canonical, AD (covariance)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>...prec_param=0)</code></td>
+<td align="left"></td>
 </tr>
 <tr class="even">
 <td align="left"><code>dmvt(mu, cholesky, df,</code></td>
@@ -1536,12 +1557,18 @@ relationship to the <em>canonical</em> parameterization used in NIMBLE.</caption
 parameterization uses the Cholesky decomposition of one of the
 precision/inverse scale or covariance/scale matrix. For example, for the multivariate normal, if <code>prec_param=TRUE</code>, the <code>cholesky</code> argument is treated as the Cholesky
 decomposition of a precision matrix. Otherwise it is treated as the
-Cholesky decomposition of a covariance matrix.
+Cholesky decomposition of a covariance matrix.</p>
+<p>Also note that for models that use AD, the Cholesky is not used because this
+would result in very inefficient AD calculations. Note that in this case,
+NIMBLE automatically determines the inverse of the provided matrix (which
+could be either the precision or the covariance), so any model calculations
+that need that inverse can simply use <code>getParam</code> at no additional
+computational expense.</p>
 <!---  In some cases it may be more efficient to use that parameterization 
 directly.  % PdV removed this because it is obtuse: In what cases?
 Doesn't lifting of the cholesky computation take care of inefficiency? 
 % What does "use that parameterization directly" mean, when there is
-no meaning of "indirect" use of a parameterization?   --></p>
+no meaning of "indirect" use of a parameterization?   -->
 <p>In addition, NIMBLE supports alternative distribution names, known as aliases, as in JAGS, as specified in Table <a href="cha-writing-models.html#tab:densityAliases">5.3</a>.</p>
 <table>
 <caption><span id="tab:densityAliases">Table 5.3: </span> Distributions with alternative names (aliases)</caption>
@@ -1608,13 +1635,13 @@ Hard-coding these as not clear how to have tables here and in Chapter 11 use sam
 -->
 <!---  These are also available for `nimbleFunction` programming (see Chapter \@ref(cha-progr-with-models)).  In fact, BUGS model nodes are implemented as `nimbleFunction`s that are custom-generated from BUGS declarations, so it would be more correct to say that functions and operators available for `nimbleFunction`s are also available for the model declarations. -->
 Support for more general R expressions
-is covered in Chapter <a href="cha-RCfunctions.html#cha-RCfunctions">11</a> about programming
+is covered in Chapter <a href="cha-RCfunctions.html#cha-RCfunctions">12</a> about programming
 with nimbleFunctions.</p>
 <p>For the most part NIMBLE supports the functions used in BUGS and JAGS,
 with exceptions indicated in the table. Additional functions provided
 by NIMBLE are also listed. Note that we provide distribution functions
 for use in calculations, namely the ‘p’, ‘q’, and ‘d’ functions.
-See Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">11.2.4</a> for details on the syntax for using distribution functions as functions in deterministic calculations, as only some parameterizations are allowed and the names of some distributions differ from those used to define stochastic nodes in a model.
+See Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">12.2.4</a> for details on the syntax for using distribution functions as functions in deterministic calculations, as only some parameterizations are allowed and the names of some distributions differ from those used to define stochastic nodes in a model.
 <!---  TODO: CJP moved this material to Chap 9 - that's where it is most relevant  
 % so I thought it best to go into the caveats there -->
 <!--- Currently 'r' functions only return one random 
@@ -1994,7 +2021,7 @@ provided in NIMBLE.</caption>
 <tr class="odd">
 <td align="left"><code>inverse(x)</code></td>
 <td align="left">matrix inverse</td>
-<td align="left"><span class="math inline">\(x\)</span> symmetric, positive def.</td>
+<td align="left"><span class="math inline">\(x\)</span> symmetric, invertible</td>
 <td>yes</td>
 </tr>
 <tr class="even">
@@ -2112,6 +2139,18 @@ provided in NIMBLE.</caption>
 <td>no</td>
 </tr>
 <tr class="odd">
+<td align="left"><code>expm(A)</code></td>
+<td align="left">matrix exponential</td>
+<td align="left"><span class="math inline">\(e^A\)</span>; <span class="math inline">\(A\)</span> non-negative diags</td>
+<td>yes</td>
+</tr>
+<tr class="even">
+<td align="left"><code>expAv(A,v)</code></td>
+<td align="left">matrix exponential multiplied by vector</td>
+<td align="left"><span class="math inline">\(e^A v\)</span>; <span class="math inline">\(A\)</span> non-neg. diags</td>
+<td>yes</td>
+</tr>
+<tr class="odd">
 <td align="left"><code>eigen(x)$values</code></td>
 <td align="left">matrix eigenvalues</td>
 <td align="left"><span class="math inline">\(x\)</span> symmetric</td>
@@ -2144,7 +2183,7 @@ provided in NIMBLE.</caption>
 </tbody>
 </table>
 <!---  [NOTE: JAGS source package has the Tex files for Martyn's manual, so we can copy the table formatting - s doc/manual/jags_user_manual.md] -->
-<p>See Section <a href="cha-user-defined.html#sec:user-functions">12.1</a> to learn how to use nimbleFunctions to write new functions for use in BUGS code.</p>
+<p>See Section <a href="cha-user-defined.html#sec:user-functions">13.1</a> to learn how to use nimbleFunctions to write new functions for use in BUGS code.</p>
 </div>
 <div id="subsec:BUGS-link" class="section level3 hasAnchor" number="5.2.6">
 <h3><span class="header-section-number">5.2.6</span> Available link functions<a href="cha-writing-models.html#subsec:BUGS-link" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -2254,7 +2293,8 @@ as <code>data</code> with known values. Otherwise, the node may be simulated dur
 <span id="cb88-2"><a href="cha-writing-models.html#cb88-2" tabindex="-1"></a>mu2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
 <span id="cb88-3"><a href="cha-writing-models.html#cb88-3" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( mu1 <span class="sc">+</span> mu2 <span class="sc">&gt;</span> <span class="dv">0</span> )</span></code></pre></div>
 <p>with <code>constraint_data</code> set (as <code>data</code>) to 1. This is
-equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 + \mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>.
+equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 +
+\mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>.
 <!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. --></p>
 <p>Important: the model should be initialized so that the constraints are satisfied. Otherwise, NIMBLE will initialize from the prior, which may not produce a valid initial value and may cause algorithms (particularly) MCMC to fail.</p>
 <p>Formally, <code>dconstraint(cond)</code> is a probability distribution on <span class="math inline">\(\left\{ 0, 1 \right\}\)</span> such that <span class="math inline">\(P(1) = 1\)</span> if <code>cond</code> is <code>TRUE</code> and <span class="math inline">\(P(0) = 1\)</span> if <code>cond</code> is <code>FALSE</code>.
@@ -2400,7 +2440,7 @@ algorithms that are not tailored to the constraints may fail or be inefficient. 
 ##     &quot;# ----&quot;
 ##     sigma ~ dunif(0, 100)
 ## }</code></pre>
-<p>As discussed in Section <a href="cha-user-defined.html#sec:user-macros">12.4</a>, NIMBLE users can also create new macros to use in models.</p>
+<p>As discussed in Section <a href="cha-user-defined.html#sec:user-macros">13.4</a>, NIMBLE users can also create new macros to use in models.</p>
 
 <!--- % See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr -->
 </div>
@@ -2420,7 +2460,7 @@ not necessary for multivariate objects.<a href="cha-writing-models.html#fnref14"
 <li id="fn15"><p>Note that the same distributions are available
 for writing <code>nimbleFunction</code>s, but in that case the default
 parameterizations and function names match R’s when possible. Please
-see Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">11.2.4</a> for how to use distributions
+see Section <a href="cha-RCfunctions.html#sec:nimble-dist-funs">12.2.4</a> for how to use distributions
 in <code>nimbleFunctions</code>.<a href="cha-writing-models.html#fnref15" class="footnote-back">↩︎</a></p></li>
 <li id="fn16"><p>Usually this is the parameterization in the
 <code>Rmath</code> header of R’s C implementation of distributions.<a href="cha-writing-models.html#fnref16" class="footnote-back">↩︎</a></p></li>
