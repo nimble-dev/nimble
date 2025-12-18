@@ -509,9 +509,6 @@ The `logProb` derived quantity function calculates and stores the log-probabilit
 
 When the `nodes` argument is a character vector of node names, the log-probability of each node is recorded individually. We'll provide some examples using an old friend, the `pump` model. 
 
-```{r, include=FALSE}
-ln('devel')
-```
 ```{r}
 pumpCode <- nimbleCode({ 
     for(i in 1:N) {
