@@ -245,6 +245,8 @@ buildMCMC <- nimbleFunction(
             nburnin_extraWAIC <- 0
         }
         iterationTotal <- 0
+        iterUntilSave  <- 0
+        iterUntilSave2 <- 0
         firstRun <- TRUE
         setupOutputs(derivedTypes)
     },
@@ -268,6 +270,8 @@ buildMCMC <- nimbleFunction(
         if(nburnin > niter) stop('cannot specify nburnin > niter')
         if(firstRun)   reset <- TRUE       ## compulsory reset on first run of MCMC
         firstRun <<- FALSE
+        mvSamples_copyRow  <- 0
+        mvSamples2_copyRow <- 0
         if(reset) {
             if(initializeModel)   my_initializeModel$run()
             thinToUseVec <<- thinFromConfVec
@@ -289,25 +293,25 @@ buildMCMC <- nimbleFunction(
             for(i in seq_along(derivedFunctions))   derivedFunctions[[i]]$before_chain(niter-nburnin, nburnin, thinToUseVec, chain)
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
             iterationTotal <<- 0
-            mvSamples_copyRow  <- 0
-            mvSamples2_copyRow <- 0
+            iterUntilSave  <<- thinToUseVec[1]
+            iterUntilSave2 <<- thinToUseVec[2]
         } else {
             if(nburnin !=  0)   stop('cannot specify nburnin when using reset = FALSE.')
-            if((thin  != -1) & (thin  != thinToUseVec[1]))   stop('cannot alter the value of thin, when using reset = FALSE.')
-            if((thin2 != -1) & (thin2 != thinToUseVec[2]))   stop('cannot alter the value of thin2, when using reset = FALSE.')
+            ## when reset = FALSE, only permit changing the value of
+            ## thin when iterUntilSave == thinToUseVec[1], and thin2 when iterUntilSave2 == thinToUseVec[2]
+            ## (which means saving on the previous thinning interval just took place)
+            if((thin  != -1) & (thin  != thinToUseVec[1]) & (iterUntilSave  != thinToUseVec[1]))  stop('can only change value of thin after a complete thinning interval, when using reset = FALSE.')
+            if((thin2 != -1) & (thin2 != thinToUseVec[2]) & (iterUntilSave2 != thinToUseVec[2]))  stop('can only change value of thin2 after a complete thinning interval, when using reset = FALSE.')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
-            if (resetMV) {
-                mvSamples_copyRow  <- 0
-                mvSamples2_copyRow <- 0                
-            } else {
+            if(!resetMV) {
                 mvSamples_copyRow  <- getsize(mvSamples)
                 mvSamples2_copyRow <- getsize(mvSamples2)
             }
         }
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(onlineWAIC & resetWAIC)   waicFun[[1]]$reset()
-        resize(mvSamples,  floor((iterationTotal+niter-nburnin) / thinToUseVec[1]))
-        resize(mvSamples2, floor((iterationTotal+niter-nburnin) / thinToUseVec[2]))
+        resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
+        resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
         ##    lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
@@ -339,15 +343,19 @@ buildMCMC <- nimbleFunction(
                 }
             }
             if(iter > nburnin) {
+                iterUntilSave  <<- iterUntilSave  - 1
+                iterUntilSave2 <<- iterUntilSave2 - 1
                 ## save samples
                 iterPostBurnin <- iterationTotal - nburnin
-                if(iterPostBurnin %% thinToUseVec[1] == 0) {
+                if(iterUntilSave == 0) {
                     mvSamples_copyRow  <- mvSamples_copyRow  + 1
                     nimCopy(from = model, to = mvSamples,  row = mvSamples_copyRow,  nodes = monitors)
+                    iterUntilSave  <<- thinToUseVec[1]
                 }
-                if(iterPostBurnin %% thinToUseVec[2] == 0) {
+                if(iterUntilSave2 == 0) {
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
+                    iterUntilSave2 <<- thinToUseVec[1]
                 }
                 ## save WAIC
                 if(enableWAIC & onlineWAIC & iter > nburnin + nburnin_extraWAIC) {
