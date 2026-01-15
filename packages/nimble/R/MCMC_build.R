@@ -300,8 +300,12 @@ buildMCMC <- nimbleFunction(
             ## when reset = FALSE, only permit changing the value of
             ## thin when iterUntilSave == thinToUseVec[1], and thin2 when iterUntilSave2 == thinToUseVec[2]
             ## (which means saving on the previous thinning interval just took place)
-            if((thin  != -1) & (thin  != thinToUseVec[1]) & (iterUntilSave  != thinToUseVec[1]))  stop('can only change value of thin after a complete thinning interval, when using reset = FALSE.')
-            if((thin2 != -1) & (thin2 != thinToUseVec[2]) & (iterUntilSave2 != thinToUseVec[2]))  stop('can only change value of thin2 after a complete thinning interval, when using reset = FALSE.')
+            if((thin  != -1) & (thin  != thinToUseVec[1]) & (iterUntilSave  != thinToUseVec[1]))
+                ##stop('can only change value of thin after a complete thinning interval, when using reset = FALSE.')
+                cat('Warning: value of thin is being changed, in the midst of a thinning interval.\n')
+            if((thin2 != -1) & (thin2 != thinToUseVec[2]) & (iterUntilSave2 != thinToUseVec[2]))
+                ##stop('can only change value of thin2 after a complete thinning interval, when using reset = FALSE.')
+                cat('Warning: value of thin2 is being changed, in the midst of a thinning interval.\n')
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
             if(!resetMV) {
                 mvSamples_copyRow  <- getsize(mvSamples)
