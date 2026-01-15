@@ -950,6 +950,8 @@ test_that("MCMC for simple LME case works", {
       Laplace <- nimbleQuad::buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
       ## Work around nimble's namespace/lookup shortcomings.
       drop_algorithm <- nimbleQuad::drop_algorithm; quadGH <- nimbleQuad::quadGH
+      temporarilyAssignInGlobalEnv(drop_algorithm)
+      temporarilyAssignInGlobalEnv(quadGH)
       cLaplace <- compileNimble(Laplace, project = m2)
       MLE <- cLaplace$findMLE()
       
