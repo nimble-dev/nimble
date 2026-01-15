@@ -355,7 +355,7 @@ buildMCMC <- nimbleFunction(
                 if(iterUntilSave2 == 0) {
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
                     nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
-                    iterUntilSave2 <<- thinToUseVec[1]
+                    iterUntilSave2 <<- thinToUseVec[2]
                 }
                 ## save WAIC
                 if(enableWAIC & onlineWAIC & iter > nburnin + nburnin_extraWAIC) {
