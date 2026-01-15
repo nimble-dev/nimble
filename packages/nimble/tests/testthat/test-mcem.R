@@ -946,11 +946,15 @@ test_that("MCMC for simple LME case works", {
   m2$calculate()
 
   cm2 <- compileNimble(m2)
-  Laplace <- nimbleQuad::buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
-  cLaplace <- compileNimble(Laplace, project = m2)
-  MLE <- cLaplace$findMLE()
-
-  expect_equal(MLE$value, cLaplace$calcLogLik(opt$par), tolerance = 0.04)
+  if(requireNamespace('nimbleQuad')) {
+      Laplace <- nimbleQuad::buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
+      ## Work around nimble's namespace/lookup shortcomings.
+      drop_algorithm <- nimbleQuad::drop_algorithm; quadGH <- nimbleQuad::quadGH
+      cLaplace <- compileNimble(Laplace, project = m2)
+      MLE <- cLaplace$findMLE()
+      
+      expect_equal(MLE$value, cLaplace$calcLogLik(opt$par), tolerance = 0.04)
+  }
 })
 
 ## The next two tests are added as regression tests for fixes made in 1.4.0.
