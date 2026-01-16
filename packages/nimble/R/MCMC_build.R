@@ -246,6 +246,7 @@ buildMCMC <- nimbleFunction(
         }
         iterationTotal <- 0
         iterUntilSaveVec <- c(0, 0)
+        warnUnfinishedThinningInterval <- getNimbleOption('MCMCwarnUnfinishedThinningInterval')
         firstRun <- TRUE
         setupOutputs(derivedTypes)
     },
@@ -276,10 +277,6 @@ buildMCMC <- nimbleFunction(
             thinToUseVec <<- thinFromConfVec
             if(thin  != -1)   thinToUseVec[1] <<- thin
             if(thin2 != -1)   thinToUseVec[2] <<- thin2
-            for(iThin in 1:2) {
-                if(thinToUseVec[iThin] < 1)   stop('cannot use thin < 1')
-                if(thinToUseVec[iThin] != floor(thinToUseVec[iThin]))   stop('cannot use non-integer thin')
-            }
             for(i in seq_along(derivedFunctions)) {
                 if(derivedIntervals[i] == 0) {
                     derivedIntervals[i] <<- thinToUseVec[1]
@@ -294,21 +291,33 @@ buildMCMC <- nimbleFunction(
             iterationTotal <<- 0
             iterUntilSaveVec <<- thinToUseVec
         } else {
-            if(nburnin !=  0)   stop('cannot specify nburnin when using reset = FALSE.')
-            ## when reset = FALSE, only permit changing the value of
-            ## thin when iterUntilSaveVec[1] == thinToUseVec[1], and thin2 when iterUntilSaveVec[2] == thinToUseVec[2]
-            ## (which means saving on the previous thinning interval just took place)
-            if((thin  != -1) & (thin  != thinToUseVec[1]) & (iterUntilSaveVec[1] != thinToUseVec[1]))
-                ##stop('can only change value of thin after a complete thinning interval, when using reset = FALSE.')
-                cat('Warning: value of thin is being changed, in the midst of a thinning interval.\n')
-            if((thin2 != -1) & (thin2 != thinToUseVec[2]) & (iterUntilSaveVec[2] != thinToUseVec[2]))
-                ##stop('can only change value of thin2 after a complete thinning interval, when using reset = FALSE.')
-                cat('Warning: value of thin2 is being changed, in the midst of a thinning interval.\n')
+            if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
+            ## now allowing changing of thin and thin2, when reset = FALSE; Jan 2026.
+            ## when reset = FALSE and a new value of thin (or thin2) is provided,
+            ## issue a warning if the previous MCMC run didn't exactly finish a thinning/save cycle.
+            ## this is checked using iterUntilSaveVec[1] == thinToUseVec[1] or iterUntilSaveVec[2] == thinToUseVec[2],
+            ## which means saving on the previous thinning interval just took place.
+            if((thin  != -1) & (thin  != thinToUseVec[1])) {
+                if((iterUntilSaveVec[1] != thinToUseVec[1]) & warnUnfinishedThinningInterval)
+                    cat('Warning: value of thin is being changed, in the midst of a thinning interval.\n')
+                thinToUseVec[1]     <<- thin
+                iterUntilSaveVec[1] <<- thin
+            }
+            if((thin2 != -1) & (thin2 != thinToUseVec[2])) {
+                if((iterUntilSaveVec[2] != thinToUseVec[2]) & warnUnfinishedThinningInterval)
+                    cat('Warning: value of thin2 is being changed, in the midst of a thinning interval.\n')
+                thinToUseVec[2]     <<- thin2
+                iterUntilSaveVec[2] <<- thin2
+            }
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
             if(!resetMV) {
                 mvSamples_copyRow  <- getsize(mvSamples)
                 mvSamples2_copyRow <- getsize(mvSamples2)
             }
+        }
+        for(iThin in 1:2) {
+            if(thinToUseVec[iThin] < 1)   stop('cannot use thin < 1')
+            if(thinToUseVec[iThin] != floor(thinToUseVec[iThin]))   stop('cannot use non-integer thin')
         }
         nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(onlineWAIC & resetWAIC)   waicFun[[1]]$reset()
