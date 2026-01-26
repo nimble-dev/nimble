@@ -16,7 +16,7 @@ require(igraph, warn.conflicts = FALSE, quietly = TRUE)  # same question
 eval <- TRUE
 ``` 
 
-As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package `nimbleHMC`), Laplace approximation, and fast optimization with methods that use function gradients.
+As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package `nimbleHMC`), Laplace (and AGHQ) approximation, and fast optimization with methods that use function gradients.
 
 Automatic (or algorithmic) differentiation (AD) refers to the method of carrying derivative information through a set of mathematical operations. When done this way, derivatives are numerically accurate to the precision of the computer. This is distinct from finite difference methods, used by R packages such as `numDeriv` [@gilbert-varadhan-19] and `pracma` [@borchers-22], which approximate derivatives by calculating function values at extremely nearby points. Finite difference methods are slower and less accurate than AD. It is also distinct from writing separate functions for each derivative, which can become very complicated and sometimes slower than AD. NIMBLE uses the CppAD package [@bell-22] as its AD engine, following TMB's success in doing so [@kristensen-etal-16]. A general reference on AD is @griewank-walther-08.
 
@@ -26,7 +26,7 @@ Using a packaged AD algorithm should be as simple as setting `buildDerivs=TRUE` 
 
 We will introduce NIMBLE's AD features step by step, from simply turning them on for a model to using them in your own nimbleFunctions. We will show you:
 
-1. how to turn on derivatives in a model and use them in Laplace approximation (for Hamiltonian Monte Carlo (HMC), see \@ref(subsec:HMC)).
+1. how to turn on derivatives in a model for use in algorithms such as Laplace approximation (Chapter \@ref(cha-laplace)) or Hamiltonian Monte Carlo (HMC) (Section \@ref(subsec:HMC)).
 2. how to modify user-defined functions and distributions to support derivatives.
 3. what functions are supported and not supported for derivatives.
 4. basics of obtaining derivatives in your own algorithms written as `nimbleFunctions`.
@@ -43,112 +43,6 @@ nimbleOptions(enableDerivs = TRUE)
 ## How to turn on derivatives in a model {#sec:use-derivs}
 
 To allow algorithms to use automatic derivatives for a model, include `buildDerivs=TRUE` in the call to `nimbleModel`. If you want derivatives to be set up for all models, you can run `nimbleOptions(buildModelDerivs = TRUE)` and omit the `buildDerivs` argument.
-
-We'll re-introduce the simple Poisson Generalized Linear Mixed Model (GLMM) example model from \@ref(subsec:HMC-example) and use Laplace approximation on it. There will be 10 groups (`i`) of 5 observations (`j`) each. Each observation has a covariate, `X`, and each group has a random effect `ran_eff`. Here is the model code:
-```{r eval=TRUE}
-model_code <- nimbleCode({
-  # priors 
-  intercept ~ dnorm(0, sd = 100)
-  beta ~ dnorm(0, sd = 100)
-  sigma ~ dhalfflat()
-  # random effects and data  
-  for(i in 1:10) {
-    # random effects
-    ran_eff[i] ~ dnorm(0, sd = sigma)
-    for(j in 1:5) {
-      # data
-      y[i,j] ~ dpois(exp(intercept + beta*X[i,j] + ran_eff[i]))
-    }
-  }
-})
-```
-
-Note that we changed the prior on `sigma` to avoid having an upper bound. Prior distributions are not included in maximum likelihood using the Laplace approximation but do indicate the range of valid values. We recommend caution in using priors for variance  component parameters (standard deviations, variances, precisions) that have a finite upper bound (e.g., `sigma ~ dunif(0, 100)`), because the probit transformation applied in that case may result in poor optimization performance.
-
-We'll simulate some values for `X`.
-```{r eval=TRUE}
-set.seed(123)
-X <- matrix(rnorm(50), nrow = 10)
-```
-
-Next, we build the model, including `buildDerivs=TRUE`.
-```{r eval=eval}
-model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
-                     buildDerivs = TRUE) # Here is the argument needed for AD.
-```
-
-### Finish setting up the GLMM example
-
-As preparation for the Laplace examples below, we need to finish setting up the GLMM. We could have provided data in the call to `nimbleModel`, but instead we will simulate it using the model itself. Specifically, we will set parameter values, simulate data values, and then set those as the data to use.
-
-```{r eval=eval}
-model$intercept <- 0
-model$beta <- 0.2
-model$sigma <- 0.5
-model$calculate() # This will return NA because the model is not fully initialized.
-model$simulate(model$getDependencies('ran_eff'))
-model$calculate() # Now the model is fully initialized: all nodes have valid values.
-model$setData('y') # Now the model has y marked as data, with values from simulation.
-```
-
-If you are not very familiar with using a `nimble` model, that might have been confusing, but it was just for setting up the example.
-
-Finally, we will make a compiled version of the model.
-```{r eval=eval}
-Cmodel <- compileNimble(model)
-```
-
-
-## How to use Laplace approximation and adaptive Gauss-Hermite quadrature  {#sec:AD-laplace}
-
-Next we will show how to use nimble's Laplace approximation, which uses derivatives internally, to get maximum (approximate) likelihood estimates for the GLMM model above. Laplace approximation is equivalent to first-order adaptive Gauss-Hermite quadrature, which is also available, although here we will focus on Laplace approximation only. What Laplace approximation approximates in this context is the integral over continuous random effects needed to calculate the likelihood. Hence, it gives an approximate likelihood (often quite accurate) that can be used for maximum likelihood estimation. Note that the Laplace approximation uses second derivatives, and the gradient of the Laplace approximation (used for finding the MLE efficiently) uses third derivatives. These are described in detail by @skaug-fournier-06 and @fournier-etal-12.
-
-To create a Laplace approximation specialized to the parameters of interest for this model, we use the nimbleFunction `buildLaplace`. For many models, the setup code in `buildLaplace` will automatically determine the random effects to be integrated over and the associated nodes to calculate. In fact, if you omit the parameter nodes, it will assume that all top-level nodes in the model should be treated as parameters. If fine-grained control is needed, these various sets of nodes can be input directly into `buildLaplace`. To see what default handling of nodes is being done for your model, use `setupMargNodes` with the same node inputs as `buildLaplace`.
-
-```{r eval=eval}
-glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'))
-Cglmm_laplace <- compileNimble(glmm_laplace, project = model)
-```
-
-Now we are ready to use some of the methods provided by `buildLaplace`. These include calculating the Laplace approximation for some input parameter values, calculating its gradient, and maximizing the Laplace-approximated likelihood. Here we will show detailed steps for using the Laplace approximation, but see `help(runLaplace)` to combine the basic steps into one call.
-
-```{r eval=eval}
-# Get the Laplace approximation for one set of parameter values.
-Cglmm_laplace$calcLaplace(c(0, 0, 1)) 
-Cglmm_laplace$gr_Laplace(c(0, 0, 1)) # Get the corresponding gradient.
-MLE <- Cglmm_laplace$findMLE(c(0, 0, 1)) # Find the (approximate) MLE.
-MLE$par     # MLE parameter values
-MLE$value   # MLE log likelihood value
-```
-
-The final outputs show the MLE for `intercept`, `beta`, and `sigma`, followed by the maximum (approximate) likelihood.
-
-More information about the MLE can be obtained in two ways. The `summary` method
-can give estimated random effects and standard errors as well as the variance-covariance matrix
-for the parameters and/or the random effects. The `summaryLaplace` function
-returns similar information but with names included in a more useful way. For example:
-
-```{r eval=eval}
-Cglmm_laplace$summary(MLE)$randomEffects$estimates
-summaryLaplace(Cglmm_laplace, MLE)$params
-```
-
-`buildLaplace` actually offers several choices in how computations are done, differing in how they use *double taping* for derivatives or not. In some cases one or another choice might be more efficient. See `help(buildLaplace)` if you want to explore it further.
-
-Finally, let's confirm that it worked by comparing to results from package `glmmTMB`. In this case, nimble's Laplace approximation is faster than `glmmTMB` (on the machine used here), but that is not the point of this example. Here our interest is in checking that nimble's Laplace approximation worked correctly in a case where we have an established tool such as `glmmTMB`.
-
-```{r eval=eval}
-library(glmmTMB)
-y <- as.numeric(model$y) # Re-arrange inputs for call to glmmTMB
-X <- as.numeric(X)
-group <- rep(1:10, 5)
-data <- as.data.frame(cbind(X,y,group))
-tmb_fit <- glmmTMB(y ~ X + (1 | group), family = poisson, data = data)
-summary(tmb_fit)
-logLik(tmb_fit)
-```
-
-The results match within numerical tolerance typical of optimization problems. Specifically, the coefficients for `(Intercept)` and `X` match nimble's `Intercept` and `beta`, the random effects standard deviation for `group` matches nimble's `sigma`, and the standard errors match.
 
 ## How to support derivatives in user-defined functions and distributions {#sec:AD-user-def}
 
@@ -189,7 +83,7 @@ toyModel <- nimbleModel(toyCode, inits = list(mu = 0, sigma = 1, x = 0),
                         buildDerivs = TRUE)
 ```
 
-Now `toyModel` can be used in algorithms such as HMC and Laplace approximation, as above, or new ones you might write, as below.
+Now `toyModel` can be used in algorithms such as HMC or Laplace approximation, or new ones you might write.
 
 Note that in models, all model variables are implemented as doubles, even when they will actually only ever take integer values. Therefore all arguments to user-defined distributions and functions used in models should be declared as type `double`. The `ADbreak` method discussed in Section \@ref(sec:AD-holding-out) should be used if you want to stop derivative tracking on a model variable.
 
@@ -205,6 +99,7 @@ Features that are not supported for AD include:
 - random number generation;
 - some specific functions including `step`, `%%` (mod), `eigen`, `svd`, and `besselK`; and
 - most model operations (other than `model$calculate`, which is supported) including `model$calculateDiff`, `model$simulate`, `model$getBound`, and `model$getParam`.
+- dynamic indexing that would produce a nonscalar result, such as `p[z[i], 1:3]`. Dynamic indexing that produces a scalar result, such as `p[z[i], j]`, is allowed and can be used as a work-around, e.g., defining `ptmp` as `for(j in 1:3) ptmp[i,j] <- p[z[i],j]` and using it in place of `p[z[i], 1:3]`.
 
 Note that functions and distributions that are not supported can still be used in a model, as long as no algorithm tries to take derivatives with respect to node(s) that is (are) not supported. For example, `x ~ dcat(p[1:3])` declares `x` to be a discrete random variable following a categorical distribution. An algorithm can use derivatives with respect to `p[1:3]` (or with respect to parent nodes of `p[1:3]`) because the calculation of the log probability of `x` given `p[1:3]` is continuous with respect to `p`. However, derivatives with respect to `x` will not work. In the case of truncated distributions, derivatives with respect to neither the parameters nor to the random variable are supported.
 
@@ -557,6 +452,8 @@ Obtaining derivatives involving model calculations takes some special considerat
 
 We will use the Poisson GLMM above as an example model for which we want derivatives. We can obtain derivatives with respect to any variables for all or any subset of model calculations.
 
+Note that in any of the methods below, when order 0 (value) is requested, then any values of model variables (include `logProb` values) during derivative calculations will be changed in the model object, consistent with what would happen if the model calculations were done outside of getting derivatives. However, if order 0 is not requested, then values in the model will not be changed by doing derivative calculations.
+
 ### Method 1: `nimDerivs` of `model$calculate`
 
 Recall that `model$calculate(nodes)` returns the sum of the log probabilities of all stochastic nodes in `nodes`. Deterministic calculations are also executed; they contribute 0 to the sum of probabilities but may be needed for inputs to subsequent calculations. Calculations are done in the order of `nodes`, which should be a valid order for the model, often obtained from `model$getDependencies`.
@@ -587,9 +484,37 @@ In `derivs_nf`:
 
 Thus, `nimDerivs(model$calculate(calc_nodes), wrt = with_respect_to_nodes, <other args>)` takes derivatives of a function whose inputs are the values of `with_respect_to_nodes` (using their values in the model object) and whose output is the summed log probability returned by `model$calculate(calc_nodes)`. The internal handling of this case is distinct from other calls to `nimDerivs`.
 
-Now we can make an instance of `derivs_nf`, compile the model and nimbleFunction instance, and look at the results. We will assume the `model` was built as above in the Laplace example.
+Now we can make an instance of `derivs_nf`, compile the model and nimbleFunction instance, and look at the results. We will use the `model` from the HMC and Laplace examples.
 
 ```{r, eval=eval}
+model_code <- nimbleCode({
+  # priors 
+  intercept ~ dnorm(0, sd = 100)
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dhalfflat()
+  # random effects and data  
+  for(i in 1:10) {
+    # random effects
+    ran_eff[i] ~ dnorm(0, sd = sigma)
+    for(j in 1:5) {
+      # data
+      y[i,j] ~ dpois(exp(intercept + beta*X[i,j] + ran_eff[i]))
+    }
+  }
+})
+set.seed(123)
+X <- matrix(rnorm(50), nrow = 10)
+model <- nimbleModel(model_code, constants = list(X = X), calculate = FALSE,
+                     buildDerivs = TRUE) # Here is the argument needed for AD.
+
+model$intercept <- 0
+model$beta <- 0.2
+model$sigma <- 0.5
+model$calculate() # This will return NA because the model is not fully initialized.
+model$simulate(model$getDependencies('ran_eff'))
+model$calculate() # Now the model is fully initialized: all nodes have valid values.
+model$setData('y') # Now the model has y marked as data, with values from simulation.
+
 wrt_nodes <- c('intercept','beta', 'sigma')
 calc_nodes <- model$getDependencies(wrt_nodes)
 derivs_all <- derivs_nf(model, wrt_nodes, calc_nodes)
@@ -836,7 +761,7 @@ logLikelihood_nf <- nimbleFunction(
       return(transformer$transform(p))
       returnType(double(1))
     },
-    inverse = function(ptrans = double(1)) { # ... and its inverse.
+    inverseTransform = function(ptrans = double(1)) { # ... and its inverse.
       return(transformer$inverseTransform(ptrans))
       returnType(double(1))
     }
@@ -859,7 +784,7 @@ Now let's see how the parameter transformation works for this model. For `beta`,
 ```{r eval=eval}
 Cll_glm$transform(c(0.2, 1))
 # The inverse transformation goes back to the original parameters, within rounding:
-Cll_glm$inverse(c(-1.386294, 1)) 
+Cll_glm$inverseTransform(c(-1.386294, 1)) 
 ```
 
 Now we are ready to use the methods provided in `Cll_glm` in a call to R's `optim` to find the MLE.
@@ -887,8 +812,8 @@ logLik(glm_fit)
 We see that the coefficient for `X` matches `beta` (within numerical tolerance), and the maximum log likelihoods match. To understand the intercept, we need to be careful about the parameter transformation used in nimble. The inverse transformation will give `p`, and the log of that should match the intercept estimated by `glm.`
 
 ```{r eval=eval}
-Cll_glm$inverse(MLE$par)
-log(Cll_glm$inverse(MLE$par)[1]) # This should match glm's intercept
+Cll_glm$inverseTransform(MLE$par)
+log(Cll_glm$inverseTransform(MLE$par)[1]) # This should match glm's intercept
 ```
 
 It looks like it worked.

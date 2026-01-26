@@ -4,7 +4,8 @@ Description: A system for writing hierarchical statistical models largely
     compatible with 'BUGS' and 'JAGS', writing nimbleFunctions to operate models
     and do basic R-style math, and compiling both models and nimbleFunctions via
     custom-generated C++. 'NIMBLE' includes default methods for MCMC, Laplace
-    Approximation, Monte Carlo Expectation Maximization, and some other tools.
+    Approximation, deterministic nested approximations, Monte Carlo Expectation
+    Maximization, and some other tools.
     The nimbleFunction system makes it easy to do things like implement new MCMC
     samplers from R, customize the assignment of samplers to different parts of
     a model from R, and compile the new samplers automatically via C++ alongside
@@ -14,8 +15,8 @@ Description: A system for writing hierarchical statistical models largely
     of MCMC as the main goal of the 'BUGS'/'JAGS' language for writing models,
     one can use 'NIMBLE' for writing arbitrary other kinds of model-generic
     algorithms as well. A full User Manual is available at <https://r-nimble.org>.
-Version: 1.3.0
-Date: 2024-09-15
+Version: 1.4.1
+Date: 2025-12-12
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
     person("Perry", "de Valpine", role = "aut"),
@@ -27,10 +28,10 @@ Authors@R: c(
     person("Claudia", "Wehrhahn Cortes", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Abel", "Rodr\u00edguez", role = "aut", comment = "Bayesian nonparametrics system"),
     person("Duncan", "Temple Lang", role = "aut", comment = "packaging configuration"),
-    person("Wei", "Zhang", role = "aut", comment = "Laplace approximation"),
+    person("Wei", "Zhang", role = "aut", comment = "node marginalization"),
     person("Sally", "Paganin", role = "aut", comment = "reversible jump MCMC"),
     person("Joshua", "Hug", role = "aut", comment = "WAIC"),
-    person("Paul", "van Dam-Bates", role = "aut", comment = "AGHQ approximation, P\u00f3lya-Gamma sampler, nimIntegrate"),
+    person("Paul", "van Dam-Bates", role = "aut", comment = "P\u00f3lya-Gamma sampler, nimIntegrate, matrix exponential"),
     person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
     person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
     person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")
@@ -40,7 +41,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6,pracma,numDeriv
 Suggests:
-    testthat,mcmcse
+    testthat,mcmcse,nloptr,nimbleQuad
 URL: https://r-nimble.org, https://github.com/nimble-dev/nimble
 BugReports: https://github.com/nimble-dev/nimble/issues
 SystemRequirements: GNU make
@@ -128,12 +129,12 @@ Collate:
     initializeModel.R
     parameterTransform.R
     CAR.R
-    Laplace.R
     MCMC_utils.R
     MCMC_configuration.R
     MCMC_build.R
     MCMC_run.R
     MCMC_samplers.R
+    MCMC_derived.R
     MCMC_conjugacy.R
     MCMC_autoBlock.R
     MCMC_RJ.R
@@ -142,12 +143,14 @@ Collate:
     crossValidation.R
     BNP_distributions.R
     BNP_samplers.R
+    setupMargNodes.R
     NF_utils.R
     miscFunctions.R
+    normTooling.R
+    miscAlgorithms.R
     makevars.R
     setNimbleInternalFunctions.R
     registration.R
     nimble-package.r
-    QuadratureGrids.R
     zzz.R
 RoxygenNote: 7.3.2

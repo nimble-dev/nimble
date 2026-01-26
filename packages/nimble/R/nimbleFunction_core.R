@@ -15,7 +15,7 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 #'
 #' @export
 #'
-#' @details See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
+#' @details See the NIMBLE \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual} section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
 #'
 #' @seealso \code{\link{nimbleFunction}}
 #' 
@@ -61,7 +61,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @export
 #'
 #' @details
-#' This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}, so only a brief summary will be given here.
+#' This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual}, so only a brief summary will be given here.
 #'
 #' If a \code{setup} function is provided, then \code{nimbleFunction} returns a generator: a function that when called with arguments for the setup function will execute that function and return a specialized nimbleFunction.   The \code{run} and other methods can be called using \code{$} like in other R classes, e.g. \code{nf$run()}. The methods can use objects that were created in or passed to the \code{setup} function.
 #'
@@ -69,7 +69,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #'
 #' If one wants a generator but does not need any setup arguments or code, \code{setup = TRUE} can be used.
 #'
-#' See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for examples.
+#' See the NIMBLE \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual} for examples.
 #'
 #' For more information about the \code{contains} argument, see the section on nimbleFunctionLists.
 nimbleFunction <- function(setup         = NULL,
@@ -85,10 +85,25 @@ nimbleFunction <- function(setup         = NULL,
     force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
+    
     ## Check for correct entries in `buildDerivs` separately from `nfMethodRC$new()` because
     ## that only has access to `thisBuildDerivs`, and we need to check if `buildDerivs` is set
     ## for the method on which `nimDerivs` is called.
     tmp <- sapply(c(list(run = run), methods), nf_checkDSLcode_buildDerivs, buildDerivs)
+
+    ## Check that if a model calculate is in the code of `run` or another method on
+    ## which `derivs` is called, that the `model`, `updateNodes`,and `constantNodes`
+    ## arguments are provided.
+    if(getNimbleOption('checkDerivsArgs') && length(buildDerivs)) {
+        allMethods <- c(list(run = run), methods)
+        if(is.character(buildDerivs)) nms <- buildDerivs else nms <- names(buildDerivs)
+        methodsWithCalc <- sapply(allMethods[nms], nf_checkDSLcode_checkForCalc)
+        methodsWithCalc <- nms[methodsWithCalc]
+        methodsDerivsOf <- sapply(allMethods, nf_checkDSLcode_checkDerivsOf)
+        methodsDerivsOf <- methodsDerivsOf[!sapply(methodsDerivsOf, is.null)]
+        if(length(methodsWithCalc))
+            tmp <- sapply(c(list(run = run), methods), nf_checkDSLcode_calcDerivsArgs, methodsWithCalc, methodsDerivsOf)
+    }
     
     if(is.null(setup)) {
         if(length(methods) > 0) stop('Cannot provide multiple methods if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)

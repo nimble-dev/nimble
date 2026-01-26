@@ -1,6 +1,5 @@
 
 
-
 ####################################################################
 ### virtual nimbleFunction template, included for ALL samplers #####
 ####################################################################
@@ -125,16 +124,19 @@ sampler_binary <- nimbleFunction(
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
     },
     run = function() {
-        currentLogProb <- model$getLogProb(calcNodes)
+        currentLogProb <- checkLogProb(model$getLogProb(calcNodes), target)
         model[[target]] <<- 1 - model[[target]]
-        otherLogProbPrior <- model$calculate(target)
+        otherLogProbPrior <- checkLogProb(model$calculate(target), target)
         if(otherLogProbPrior == -Inf) {
             otherLogProb <- otherLogProbPrior
         } else {
-            otherLogProb <- otherLogProbPrior + model$calculate(calcNodesNoSelf)
+            otherLogProb <- otherLogProbPrior + checkLogProb(model$calculate(calcNodesNoSelf), target)
         }
-        acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
-        jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)
+        if(currentLogProb == -Inf & otherLogProb == -Inf)
+            stop("in binary sampler, all log probability density values are negative infinity and sampling cannot proceed")
+        logProbDiff <- currentLogProb - otherLogProb
+        acceptanceProb <- 1/(exp(logProbDiff) + 1)
+        jump <- (!is.nan(acceptanceProb)) & (runif(1,0,1) < acceptanceProb)  # `is.nan` probably not needed with use of `checkLogProb`.
         if(jump) {
             ##model$calculate(calcNodesPPomitted)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)
@@ -185,26 +187,23 @@ sampler_categorical <- nimbleFunction(
     },
     run = function() {
         currentValue <- model[[target]]
-        logProbs[currentValue] <<- model$getLogProb(calcNodes)
+        logProbs[currentValue] <<- checkLogProb(model$getLogProb(calcNodes), target)
         for(i in 1:k) {
             if(i != currentValue) {
                 model[[target]] <<- i
-                logProbPrior <- model$calculate(target)
+                logProbPrior <- checkLogProb(model$calculate(target), target)
                 if(logProbPrior == -Inf) {
                     logProbs[i] <<- -Inf
                 } else {
-                    if(is.nan(logProbPrior)) {
-                        logProbs[i] <<- -Inf
-                    } else {
-                        logProbs[i] <<- logProbPrior + model$calculate(calcNodesNoSelf)
-                        if(is.nan(logProbs[i])) logProbs[i] <<- -Inf
-                    }
+                    logProbs[i] <<- logProbPrior + checkLogProb(model$calculate(calcNodesNoSelf), target)
                 }
             }
         }
         maxLP <- max(logProbs)
-        if(maxLP == Inf | is.nan(maxLP))   cat("Warning: categorical sampler for '", target, "' encountered an invalid model density, and sampling results are likely invalid.\n")
+        if(maxLP ==  -Inf) stop("in categorical sampler, all log probability density values are negative infinity and sampling cannot proceed")
+        infLogProbs <- logProbs == Inf
         logProbs <<- logProbs - maxLP
+        logProbs[infLogProbs] <<- 0   ## Prevent NaN inputs into `rcat`.
         probs <<- exp(logProbs)
         newValue <- rcat(1, probs)   ## rcat normalizes the probabilities internally
         if(!is.na(newValue) & newValue != currentValue) {
@@ -364,12 +363,12 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
-        logMHR <- model$calculateDiff(target)
+        logMHR <- checkLogProb(model$calculateDiff(target), target)
         if(logMHR == -Inf) {
             jump <- FALSE
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
-            logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
+            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf), target) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
                 ##model$calculate(calcNodesPPomitted)
@@ -521,14 +520,14 @@ sampler_RW_noncentered <- nimbleFunction(
         }
         model[[target]] <<- propValue
 
-        logMHR <- model$calculateDiff(target)
+        logMHR <- checkLogProb(model$calculateDiff(target), target)
         if(logMHR == -Inf) {
             jump <- FALSE
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
         } else {
             ## Shift effects and add log-determinant of Jacobian of transformation. 
             logMHR <- logMHR + updateNoncentered(propValue, currentValue)
-            logMHR <- logMHR + model$calculateDiff(calcNodesNoSelf) + propLogScale
+            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf), target) + propLogScale
             jump <- decide(logMHR)
             if(jump) {
                 ##model$calculate(calcNodesPPomitted)
@@ -681,20 +680,22 @@ sampler_RW_block <- nimbleFunction(
         ## checks
         if(any(model$isDiscrete(target)))       warning('cannot use RW_block sampler on discrete-valued target')  # This will become an error once we fix the designation of distributions in nimbleSCR to not be discrete.
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
-        if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
+        if(storage.mode(propCov) != 'double')   stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')
         if(!isSymmetric(propCov))               stop('propCov matrix must be symmetric')
+        if(adaptInterval < 2)                   stop('sampler_RW_block: `adaptInterval` must be at least 2')
+        targetNames <- createNamesString(target)
     },
     run = function() {
         for(i in 1:tries) {
             propValueVector <- generateProposalVector()
             values(model, targetAsScalar) <<- propValueVector
-            lpD <- model$calculateDiff(calcNodesProposalStage)
+            lpD <- checkLogProb(model$calculateDiff(calcNodesProposalStage), targetNames)
             if(lpD == -Inf) {
                 jump <- FALSE
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
             } else {
-                lpD <- lpD + model$calculateDiff(calcNodesDepStage)
+                lpD <- lpD + checkLogProb(model$calculateDiff(calcNodesDepStage), targetNames)
                 jump <- decide(lpD)
                 if(jump) {
                     ##model$calculate(calcNodesPPomitted)
@@ -941,9 +942,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- model$calculate(target)
+            lp <- checkLogProb(model$calculate(target), target)
             if(lp == -Inf) return(-Inf) 
-            lp <- lp + model$calculate(calcNodesNoSelf)
+            lp <- lp + checkLogProb(model$calculate(calcNodesNoSelf), target)
             returnType(double())
             return(lp)
         },
@@ -1082,10 +1083,10 @@ sampler_slice_noncentered <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- model$calculate(target)
+            lp <- checkLogProb(model$calculate(target), target)
             if(lp == -Inf) return(-Inf)
             lp <- lp + updateNoncentered(value)
-            lp <- lp + model$calculate(calcNodesNoSelf)
+            lp <- lp + checkLogProb(model$calculate(calcNodesNoSelf), target)
             returnType(double())
             return(lp)
         },
@@ -1169,7 +1170,7 @@ essNF_multivariate <- nimbleFunction(
     name = 'essNF_multivariate',
     contains = essNFList_virtual,
     setup = function(model, node) {
-        if(!(model$getDistribution(node) == 'dmnorm'))   stop('something went wrong')
+        if(!(model$getDistribution(node) %in% c('dmnorm', 'dmnormAD')))   stop('sampler_ess: node `', node, '` does not have a dmnorm distribution')
     },
     run = function() {
         mean <- model$getParam(node, 'mean')
@@ -1200,10 +1201,11 @@ sampler_ess <- nimbleFunction(
         ## nested function and function list definitions
         essNFList <- nimbleFunctionList(essNFList_virtual)
         if(model$getDistribution(target) == 'dnorm')    essNFList[[1]] <- essNF_univariate(model, target)
-        if(model$getDistribution(target) == 'dmnorm')   essNFList[[1]] <- essNF_multivariate(model, target)
+        if(model$getDistribution(target) %in% c('dmnorm','dmnormAD'))   essNFList[[1]] <- essNF_multivariate(model, target)
         ## checks
         if(length(target) > 1)                                           stop('elliptical slice sampler only applies to one target node')
-        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm')))   stop('elliptical slice sampler only applies to normal distributions')
+        if(!(model$getDistribution(target) %in% c('dnorm', 'dmnorm', 'dmnormAD')))   stop('elliptical slice sampler only applies to normal distributions')
+        targetNames <- createNamesString(target)
     },
     run = function() {
         u <- model$getLogProb(calcNodesNoSelf) - rexp(1, 1)
@@ -1215,7 +1217,7 @@ sampler_ess <- nimbleFunction(
         theta_min <- theta - 2*Pi
         theta_max <- theta
         values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
-        lp <- model$calculate(calcNodesNoSelf)
+        lp <- checkLogProb(model$calculate(calcNodesNoSelf), targetNames)
         numContractions <- 0
         while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
             ## The checks for theta_max - theta_min small and max number of contractions are
@@ -1224,7 +1226,7 @@ sampler_ess <- nimbleFunction(
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
             values(model, target) <<- f[1:d]*cos(theta) + nu[1:d]*sin(theta) + target_mean[1:d]
-            lp <- model$calculate(calcNodesNoSelf)
+            lp <- checkLogProb(model$calculate(calcNodesNoSelf), targetNames)
             numContractions <- numContractions + 1
         }
         if(theta_max - theta_min <= eps | numContractions == maxContractions) {
@@ -1299,6 +1301,8 @@ sampler_AF_slice <- nimbleFunction(
         if(!inherits(widthVec, 'numeric') && !inherits(widthVec, 'integer'))
             stop('sliceWidths must be a numeric vector')
         if(length(widthVec) != d)          stop('sliceWidths must have length = ', d)
+        if(adaptFactorInterval < 2)        stop('sampler_AF_slice: `adaptFactorInterval` must be at least 2')
+        targetNames <- createNamesString(target)
     },
     run = function() {
         maxContractionsReached <- FALSE
@@ -1369,9 +1373,9 @@ sampler_AF_slice <- nimbleFunction(
                 for(i in 1:d)
                     if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])            
             values(model, target) <<- targetValues
-            lp <- model$calculate(calcNodesProposalStage)
+            lp <- checkLogProb(model$calculate(calcNodesProposalStage), targetNames)
             if(lp == -Inf) return(lp)
-            lp <- lp + model$calculate(calcNodesDepStage)
+            lp <- lp + checkLogProb(model$calculate(calcNodesDepStage), targetNames)
             returnType(double())
             return(lp)
         },
@@ -1492,21 +1496,16 @@ sampler_crossLevel <- nimbleFunction(
             lowConjugateGetLogDensityFunctions[[iLN]] <- getPosteriorDensityFromConjSampler(lowConjugateSamplerFunctions[[iLN]])
         }
         my_setAndCalculateTop <- setAndCalculate(model, target)
+        targetNames <- createNamesString(target)
     },
     run = function() {
         modelLP0 <- model$getLogProb(calcNodes)
         propLP0 <- 0
         for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP0 <- propLP0 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
         propValueVector <- topRWblockSamplerFunction$generateProposalVector()
-        topLP <- my_setAndCalculateTop$run(propValueVector)
-        if(is.na(topLP)) {
-            logMHR <- -Inf
-            jump <- decide(logMHR)
-            if(jump) {
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-            } else {
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
-            }
+        topLP <- checkLogProb(my_setAndCalculateTop$run(propValueVector), targetNames)
+        if(topLP == -Inf) {
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         }
         else {
             for(iSF in seq_along(lowConjugateSamplerFunctions))
@@ -1515,7 +1514,7 @@ sampler_crossLevel <- nimbleFunction(
             propLP1 <- 0
             for(iSF in seq_along(lowConjugateGetLogDensityFunctions))
                 propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run()
-            logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
+            logMHR <- checkLogProb(modelLP1, targetNames) - checkLogProb(modelLP0, targetNames) - checkLogProb(propLP1, targetNames) + checkLogProb(propLP0, targetNames)
             jump <- decide(logMHR)
             if(jump) {
                 nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -1576,8 +1575,9 @@ sampler_RW_llFunction_block <- nimbleFunction(
         ## checks
         if(!inherits(propCov, 'matrix'))        stop('propCov must be a matrix\n')
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric\n')
-        if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
-        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+        if(!all(dim(propCov) == d))             stop('propCov matrix must have dimension ', d, 'x', d, '\n')
+        if(!isSymmetric(propCov))               stop('propCov matrix must be symmetric')
+        if(adaptInterval < 2)                   stop('sampler_RW_llFunction_block: `adaptInterval` must be at least 2')
     },
     run = function() {
         modelLP0 <- llFunction$run()
@@ -1714,6 +1714,7 @@ sampler_RW_dirichlet <- nimbleFunction(
         ## checks
         if(length(model$expandNodeNames(target)) > 1)    stop('RW_dirichlet sampler only applies to one target node')
         if(model$getDistribution(target) != 'ddirch')    stop('can only use RW_dirichlet sampler for dirichlet distributions')
+        targetNames <- createNamesString(target)
     },
     run = function() {
         if(thetaVec[1] == 0)   thetaVec <<- values(model, target)   ## initialization
@@ -1726,7 +1727,7 @@ sampler_RW_dirichlet <- nimbleFunction(
                 thetaVecProp <- thetaVec
                 thetaVecProp[i] <- propValue
                 values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + model$calculateDiff(calcNodesNoSelf)
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + checkLogProb(model$calculateDiff(calcNodesNoSelf), targetNames)
                 jump <- decide(logMHR)
             } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
@@ -1818,6 +1819,8 @@ sampler_RW_wishart <- nimbleFunction(
         if(!inherits(propCov[1,1], 'numeric'))  stop('propCov matrix must be numeric')
         if(!all(dim(propCov) == nTheta))      stop('propCov matrix must have dimension ', d, 'x', d)
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+        if(adaptInterval < 2)                   stop('sampler_RW_wishart: `adaptInterval` must be at least 2')
+        targetNames <- createNamesString(target)
     },
     run = function() {
         currentValue <<- model[[target]]
@@ -1845,7 +1848,7 @@ sampler_RW_wishart <- nimbleFunction(
         ## matrix multiply to get proposal value (matrix)
         model[[target]] <<- t(propValue_chol) %*% propValue_chol
         ## decide and jump
-        logMHR <- model$calculateDiff(calcNodes)
+        logMHR <- checkLogProb(model$calculateDiff(calcNodes), targetNames)
         deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]
         for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
         jump <- decide(logMHR)
@@ -1943,6 +1946,7 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
         if(dist != 'dlkj_corr_cholesky') stop('RW_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
         if(d < 2)                        stop('RW_lkj_corr_cholesky sampler requires target node dimension to be at least 2x2.')
         if(adaptFactorExponent < 0)      stop('Cannot use RW_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
+        targetNames <- createNamesString(target)
     },
     run = function() {
         ## calculate transformed values (in unconstrained space) and partial sums in each column
@@ -1968,7 +1972,8 @@ sampler_RW_lkj_corr_cholesky <- nimbleFunction(
                     propValue[jprime] <<- z[jprime, i] * sqrt(partialSumsProp[jprime])
                 }
                 model[[target]][j:i, i] <<- propValue[j:i] 
-                logMHR <- calculateDiff(model, calcNodesNoSelf) + calculateDiff(model, target)
+                logMHR <- checkLogProb(calculateDiff(model, calcNodesNoSelf), targetNames) +
+                            checkLogProb(calculateDiff(model, target), targetNames)
                 ## Adjust MHR to account for non-symmetric proposal by adjusting prior on U to transformed scale (i.e., y).
                 ## cosh component is for dz/dy and other component is for du/dz  where 'u' is the corr matrix.
                 ## This follows Stan reference manual Section 10.12 (for version 2.27).
@@ -2102,7 +2107,9 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
         if(dist != 'dlkj_corr_cholesky') stop('RW_block_lkj_corr_cholesky sampler can only be used with the dlkj_corr_cholesky distribution.')
         if(d < 3)                        stop('RW_block_lkj_corr_cholesky sampler requires target node dimension to be at least 3x3.')
         if(adaptFactorExponent < 0)      stop('Cannot use RW_block_lkj_corr_cholesky sampler with adaptFactorExponent control parameter less than 0.')
+        if(adaptInterval < 2)            stop('sampler_RW_block_lkj_corr_cholesky: `adaptInterval` must be at least 2')
 
+        targetNames <- createNamesString(target)
     },
     run = function() {
         transform(model[[target]])  # compute z and partialSums
@@ -2139,12 +2146,12 @@ sampler_RW_block_lkj_corr_cholesky <- nimbleFunction(
             ## Adjust for log determinant term from initial values
             logMHR <- logMHR - logDetJac
 
-            lpD <- calculateDiff(model, calcNodesProposalStage)
+            lpD <- checkLogProb(calculateDiff(model, calcNodesProposalStage), targetNames)
             if(lpD == -Inf) {
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
                 jump <- FALSE
             } else {
-                logMHR <- logMHR + lpD + calculateDiff(model, calcNodesDepStage)
+                logMHR <- logMHR + lpD + checkLogProb(calculateDiff(model, calcNodesDepStage), targetNames)
                 jump <- decide(logMHR)
                 if(jump) {
                     nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -2419,7 +2426,7 @@ CAR_scalar_RW <- nimbleFunction(
         propValue <- rnorm(1, mean = model[[targetScalar]], sd = scale)
         model[[targetScalar]] <<- propValue
         lp1 <- dcarList[[1]]$run() + model$calculate(depNodes)
-        logMHR <- lp1 - lp0
+        logMHR <- checkLogProb(lp1, targetScalar) - checkLogProb(lp0, targetScalar)
         jump <- decide(logMHR)
         if(jump) {
             model$calculate(targetScalar)
@@ -2735,83 +2742,6 @@ samplePolyaGamma <- nimbleFunction(
 )
 
 
-## Tooling for dealing with allowing both dnorm and dmnorm nodes.
-## Copied from INLA work; eventually consider handling as general tool.
-
-getParam_BASE <- nimbleFunctionVirtual(
-  run = function() {},
-  methods = list(
-      getMean = function(index = integer()) { returnType(double(1)) },
-      getPrecision = function(index = integer()) { returnType(double(2)) }
-  )
-)
-
-## A place holder to not take up much memory.
-emptyParam <- nimbleFunction(
-    contains = getParam_BASE,
-    setup = function() {},
-    run = function() {},
-    methods = list(
-        getPrecision = function(index = integer()){
-            returnType(double(2))
-            return(matrix(1, nrow = 1, ncol = 1))
-        },
-        getMean = function(index = integer()){
-            returnType(double(1))
-            return(numeric(1, length = 1))
-        }
-    )
-)
-
-## Need at least one dnorm to use this.
-## NodeNames relate to node names in the model that are dnorm distributed
-## gNodes indicates a 1 if dnorm, 0 o/w. 
-## This makes it easy to get the correct indices when pass in the node index in a loop.
-gaussParam <- nimbleFunction(
-    contains = getParam_BASE,
-    setup = function(model, nodeNames, gNodes) {
-        indexConvert <- cumsum(gNodes)
-        if(length(indexConvert) == 1)
-            indexConvert <- c(indexConvert, -1)
-    },
-    run = function() {},
-    methods = list(
-        getPrecision = function(index = integer()){
-            i <- indexConvert[index]
-            return(matrix(model$getParam(nodeNames[i], "tau"), nrow = 1, ncol = 1))
-            returnType(double(2))
-        },
-        getMean = function(index = integer()){
-            i <- indexConvert[index]
-            return(numeric(model$getParam(nodeNames[i], "mean"), length = 1))
-            returnType(double(1))
-        }
-    )
-)
-
-## Need at least one dmnorm to use this.
-multiGaussParam <- nimbleFunction(
-    contains = getParam_BASE,
-    setup = function(model, nodeNames, gNodes) {
-        indexConvert <- cumsum(gNodes)
-        if(length(indexConvert) == 1)
-            indexConvert <- c(indexConvert, -1)
-    },
-    run = function(){},
-    methods = list(
-        getPrecision = function(index = integer()){
-            i <- indexConvert[index]
-            return(model$getParam(nodeNames[i], "prec"))
-            returnType(double(2))
-        },
-        getMean = function(index = integer()){
-            i <- indexConvert[index]
-            return(model$getParam(nodeNames[i], "mean"))
-            returnType(double(1))
-        }
-    )
-)
-
 ####################################################################
 ### Polya-Gamma Data Augmentation ##################################
 ####################################################################
@@ -2855,7 +2785,7 @@ sampler_polyagamma <- nimbleFunction(
 
         ## Conjugacy checking, part 1.
         if(check) {
-            if(!all(targetDists %in% c("dnorm", "dmnorm")))
+            if(!all(targetDists %in% c("dnorm", "dmnorm", "dmnormAD")))
                 stop("polyagamma sampler: all target nodes must have `dnorm` or `dmnorm` priors. ", checkMessage)
             if(!all(model$getDistribution(yNodes) %in% c("dbern", "dbin")) ) 
                 stop("polyagamma sampler: response nodes must be distributed `dbern` or `dbin`. ", checkMessage)
@@ -2870,7 +2800,10 @@ sampler_polyagamma <- nimbleFunction(
         sizeNodes <- setdiff(probAndSizeNodes, probNodes)
 
         zeroInflated <- FALSE
-        
+        ## Zero-Inflation node detection:
+        inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
+        if(length(inflationNodes)) inflationNodes <- setdiff(inflationNodes, nonTarget)
+
         ## Conjugacy checking, part 2.
         ## Make sure any stochastic dependencies between target and y are Bernoulli (i.e. only zero-inflation allowed)
         ## and that zero-inflation variable multiplies the baseline probability.
@@ -2878,12 +2811,10 @@ sampler_polyagamma <- nimbleFunction(
         ## First we need some processing to make sure that we can simply check inflation based only on `probNodes[1]`,
         ## to avoid costly checking.
         if(check) {
-            inflationNodes <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE)
             if(length(inflationNodes)) {
                 ## Check that inflation probabilities are directly specified as parents of `probNodes`
                 ## to avoid having to check multiple declarations. Seemingly anything otherwise would be
                 ## an unusual zero inflation construction.
-                inflationNodes <- setdiff(inflationNodes, nonTarget)
                 test <- model$getParents(probNodes, omit = c(target, nonTarget), stochOnly = TRUE, immediateOnly = TRUE)
                 test <- setdiff(test, nonTarget)
                 if(!identical(test, inflationNodes))  # So we need to only consider a single declaration.
@@ -2922,12 +2853,12 @@ sampler_polyagamma <- nimbleFunction(
                 linearityCheck  <- cc_checkLinearity(linearityCheckExpr, node)
                 linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
                 if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
-                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. ", checkMessage)
+                    stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
             }
             linearityCheck  <- cc_checkLinearity(linearityCheckExprRaw, probNodes[1])
             linkCheck <- cc_linkCheck(linearityCheck, 'multiplicative')
-            if(check && (is.null(linkCheck) || linkCheck != 'multiplicative'))
-                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. ", checkMessage)
+            if(check && (length(intersect(probNodes[1], target)) || is.null(linkCheck) || linkCheck != 'multiplicative'))
+                stop("polyagamma sampler: with zero inflation, probability must be specified as the product of one or more Bernoulli random variables and the expit-transformed linear predictor. The latter must be defined in its own line of model code.", checkMessage)
         } else {
             ## Placeholders to allow compilation.
             ones <- rep(1, 2)
@@ -2974,7 +2905,7 @@ sampler_polyagamma <- nimbleFunction(
         singleSize <- FALSE
 
         dnormNodes <- targetDists == "dnorm"
-        dmnormNodes <- targetDists == "dmnorm"
+        dmnormNodes <- targetDists %in% c("dmnorm", "dmnormAD")
         n_dnorm <- sum(dnormNodes)
         n_dmnorm <- sum(dmnormNodes)
         
@@ -3013,6 +2944,8 @@ sampler_polyagamma <- nimbleFunction(
             }
             if(all(fixedColumns)) 
                 fixed <- TRUE
+
+            initializeX <- TRUE ## Initialize Design Matrix on first run
         } else {
             X <- control$designMatrix
             if(ncol(X) != nCoef)
@@ -3021,10 +2954,10 @@ sampler_polyagamma <- nimbleFunction(
                 stop("polyagamma sampler: number of rows of design matrix, ", nrow(X), ", doesn't match number of Bernoulli observations, ", N)
             fixed <- TRUE
             fixedColumns <- rep(TRUE, nCoef)
+            initializeX <- FALSE ## Don't Initialize Design Matrix on first run
         }
 
         initializeSize <- TRUE
-        initializeX <- TRUE
         pgSampler <- samplePolyaGamma()
 
         Q <- matrix(0, nrow = nCoef, ncol = nCoef)
@@ -3165,6 +3098,14 @@ sampler_polyagamma <- nimbleFunction(
                 values(model, inflationNodes) <<- inflationValuesSaved
                 values(model, inflationNodesDeps) <<- inflationDepsValuesSaved
             }
+            ## Check to see if covariates need to be scaled:
+            if(initializeX) {
+              for(j in 1:nCoef){
+                if( any(abs(X[, j]) == Inf) ){
+                  stop("Infinite values constructed in the design matrix of the polyagamma sampler. Please consider scaling the covariate or providing the design matrix.\n")
+                }
+              }
+            }
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = FALSE)
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
             initializeX <<- FALSE
@@ -3229,6 +3170,292 @@ sampler_polyagamma <- nimbleFunction(
     )
 )
 
+
+#' @rdname samplers
+#' @export
+sampler_barker <- nimbleFunction(
+    name = 'sampler_barker',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        scale                <- extractControlElement(control, 'scale',                1         )  # global scale, adapted during iterations.
+        sigma                <- extractControlElement(control, 'sigma',                0.1       )  # sd for default bimodal proposal distribution.
+        adaptive             <- extractControlElement(control, 'adaptive',             TRUE      )
+        adaptScaleOnly       <- extractControlElement(control, 'adaptScaleOnly',       FALSE     )
+        adaptInterval        <- extractControlElement(control, 'adaptInterval',        1         )  # interval for global scale and when diagonal proposal used.
+        adaptFactorExponent  <- extractControlElement(control, 'adaptFactorExponent',  0.6       )  # Per Livingstone & Zanella 2022.
+        adaptCov             <- extractControlElement(control, 'adaptCov',             TRUE      )
+        adaptIntervalCov     <- extractControlElement(control, 'adaptIntervalCov',     10        )  # interval when full dense covariance proposal used.
+        propCov              <- extractControlElement(control, 'propCov',              'identity')  # Scalar or vector proposal variance(s) or full proposal covariance.
+        bimodal              <- extractControlElement(control, 'bimodal',              TRUE      )  # Use bimodal proposal, following Vogrinc et al. 2023.
+        targetAcceptanceRate <- extractControlElement(control, 'targetAcceptanceRate', 0.574     )  # Per Vogrinc et al. 2023.
+        adaptDelayCov        <- extractControlElement(control, 'adaptDelayCov',        100       )  # Window for initial diagonal-only adaptation.
+        ## Set adaptation weighting to be roughly invariant to change in adaptation interval length.
+        ## On examples, not using this and having adaptIntervalCov=10 seemed to generally work well/best.
+        invariantWeight      <- extractControlElement(control, 'invariantWeight',      FALSE     )
+
+        if(adaptInterval != 1)
+            stop("sampler_barker: values of `adaptInterval` other than one are not yet implemented")
+        if(adaptCov && adaptScaleOnly)
+            stop("sampler_barker: one cannot specify `adaptCov` and `adaptScaleOnly` to both be `TRUE`")
+        
+        ## node list generation
+        targetNodes <- model$expandNodeNames(target)
+        targetNodesAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(targetNodes)
+
+        ## check validity of target and dependent nodes (early, before parameterTransform is specialized)
+        mcmc_checkTargetAD(model, targetNodes, 'Barker')
+        ## processing of bounds and transformations
+        my_parameterTransform <- parameterTransform(model, targetNodesAsScalars)
+        d <- my_parameterTransform$getTransformedLength()
+        d2 <- max(d, 2) ## for pre-allocating vectors
+        nimDerivs_wrt <- 1:d
+        derivsInfo_return <- makeModelDerivsInfo(model, targetNodes, calcNodes)
+        nimDerivs_updateNodes   <- derivsInfo_return$updateNodes
+        nimDerivs_constantNodes <- derivsInfo_return$constantNodes
+
+        if(adaptCov && adaptDelayCov > 0) 
+            if(propCov != "identity" && !(length(propCov) == 1 || length(propCov) == d)) 
+                stop("sampler_barker: when delaying adaptation via `propCov`, one cannot specify a full proposal covariance matrix")
+        if(adaptCov) {
+            if(is.character(propCov)) {
+                if(propCov == 'identity') propCov <- diag(d) else stop("sampler_barker: unrecognized `propCov` control list argument")
+            } else {
+                if(is.null(dim(propCov))) 
+                    if(length(propCov) == 1) {
+                        propCov <- diag(rep(propCov, d))
+                    } else {
+                        if(length(propCov) != d)
+                            stop("sampler_barker: `propCov` must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix, in the transformed parameter space")
+                        propCov <- diag(propCov)
+                    }
+            }
+            propVar <- nimNumeric(2) # Dummy object for compilation; not used.
+            if(!inherits(propCov, 'matrix'))        stop('sampler_barker: propCov must be a matrix')
+            if(!inherits(propCov[1,1], 'numeric'))  stop('sampler_barker: propCov matrix must be numeric')
+            if(!all(dim(propCov) == d))             stop('sampler_barker: must be a scalar, a vector of length equal to number of target elements, or a full covariance matrix, in the transformed parameter space')
+            if(!isSymmetric(propCov))               stop('sampler_barker: propCov matrix must be symmetric')
+        } else {
+            if(is.character(propCov)) {
+                if(propCov == 'identity') propVar <- nimNumeric(d2, value = 1) else stop("sampler_barker: unrecognized `propCov` control list argument")
+            } else {
+                if(length(propCov) == 1) {
+                    propVar <- nimNumeric(d2, value = propCov)
+                } else propVar <- propCov
+            }
+            if(length(propVar) != d2 || !is.null(dim(propVar)))
+                stop("sampler_barker: `propCov` must be a scalar or vector of length equal to number of target elements, in the transformed parameter space, when using diagonal proposal covariance")
+            propCov <- diag(2)  # Dummy object for compilation; not used.
+        }
+
+        propCovOriginal <- propCov
+        U <- chol(propCov)
+        L <- t(U)
+
+        scaleOriginal <- scale
+        propVarOriginal <- propVar
+        
+        means <- numeric(d2)
+        sdValues <- sqrt(propVar)
+        
+        empirSamp <- matrix(0, nrow = adaptIntervalCov, ncol = d)
+        timesRan <- 0
+        timesRanInWindow <- 0
+        zeros <- nimNumeric(d2, value = 0)
+        
+        proposalMean <- sqrt(1-sigma^2)
+        gradCurrent <- numeric(d2)
+        gradProposed <- numeric(d2)
+        ## checks
+        if(!isTRUE(nimbleOptions('enableDerivs')))   stop('must enable NIMBLE derivatives, set nimbleOptions(enableDerivs = TRUE)', call. = FALSE)
+        if(!isTRUE(model$modelDef[['buildDerivs']])) stop('must set buildDerivs = TRUE when building model',  call. = FALSE)
+        targetNames <- createNamesString(target)
+    },
+    run = function() {
+        current <- my_parameterTransform$transform(values(model, targetNodes))
+        oldLogDetJacobian <- my_parameterTransform$logDetJacobian(current)
+
+        if(timesRan == 0) {
+            ## Reduce all pre-allocated vectors to correct size (d).
+            means <<- current  # Initialize at initial value, not zero.
+            gradCurrent <<- gradCurrent[1:d]
+            gradProposed <<- gradProposed[1:d]
+            zeros <<- zeros[1:d]
+            sdValues <<- sdValues[1:d]
+            propVar <<- propVar[1:d]
+        }
+        gradCurrent <<- gradient(current)
+        z <- sample()
+
+        if(!adaptCov) {
+            z <- sdValues * z
+            noflipProb <- expit(gradCurrent*z)
+            noflip <- 2 * (runif(d) < noflipProb) - 1
+            diff <- noflip * z
+            proposal <- current + diff
+        } else {
+            noflipProb <- expit((U%*%gradCurrent)[,1]*z)
+            noflip <- 2 * (runif(d) < noflipProb) - 1
+            diff <- noflip * z
+            proposal <- current + (L %*% diff)[,1]
+        }
+
+        values(model, targetNodes) <<- my_parameterTransform$inverseTransform(proposal)
+
+        gradProposed <<- gradient(proposal)
+        newLogDetJacobian <- my_parameterTransform$logDetJacobian(proposal)
+        lpD <- checkLogProb(model$calculateDiff(calcNodes), targetNames) + checkLogProb(newLogDetJacobian, targetNames) -
+            checkLogProb(oldLogDetJacobian, targetNames) + checkLogProb(calculateLogHastingsRatio(diff), targetNames)
+        jump <- decide(lpD)
+
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(min(1,exp(lpD)))
+    },
+    methods = list(
+        sample = function() {
+            if(bimodal) {
+                ## Per Sam Livingstone (and straightforward to verify)
+                ## explicit bimodal here is equivalent in distribution to unimodal after
+                ## passing through Barker flipping step in `$run`.
+                ## sign <- 2*(runif(d) > 0.5) -1
+                ## return(scale * (rnorm(d, 0, sigma) + sign*proposalMean))
+                return(scale * rnorm(d, proposalMean, sigma))
+            } else return(scale * rnorm(d, 0, 1))
+            returnType(double(1))
+        },
+        jacobian = function() {
+            ## Not currently used now that parameter transform is in place.
+            ## Could consider using in simplified case where no transformations need be done
+            ## as it would be a bit faster.
+            derivsOutput <- nimDerivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
+            return(derivsOutput$jacobian[1, 1:d])
+            returnType(double(1))
+        },
+        gradient_aux = function(values = double(1)) {
+            derivsOutput <- nimDerivs(calcLogProb(values), order = 1, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
+            returnType(double(1))
+            return(derivsOutput$jacobian[1, 1:d])
+        },
+        gradient = function(values = double(1)) {
+            derivsOutput <- nimDerivs(gradient_aux(values), order = 0, wrt = nimDerivs_wrt, model = model, updateNodes = nimDerivs_updateNodes, constantNodes = nimDerivs_constantNodes)
+            returnType(double(1))
+            return(derivsOutput$value)
+        },
+        inverseTransformStoreCalculate = function(values = double(1)) {
+            values(model, targetNodes) <<- my_parameterTransform$inverseTransform(values)
+            lp <- model$calculate(calcNodes)
+            returnType(double())
+            return(lp)
+        },
+        calcLogProb = function(values = double(1)) {
+            ans <- inverseTransformStoreCalculate(values) + my_parameterTransform$logDetJacobian(values)  
+            returnType(double())
+            return(ans)
+        },       
+        calculateLogHastingsRatio = function(diff = double(1)) {
+            if(!adaptCov) { 
+                beta1 <- gradProposed * diff
+                beta2 <- - gradCurrent * diff
+            } else {
+                beta1 <- (U %*% gradProposed)[,1] * diff
+                beta2 <- - (U %*% gradCurrent)[,1] * diff
+
+            }
+            result <- sum(pmax(beta2, zeros) - pmax(beta1, zeros)) +
+                sum(log1p(exp(-abs(beta2))) - log1p(exp(-abs(beta1))))
+            ## (nimble issue 1488)
+            ## There is some sort of Eigen compilation failure if try to implement
+            ## the above directly as:
+#            return(sum(
+#                -(pmax(beta1, zeros)+log1p(exp(-abs(beta1)))) +
+#                 (pmax(beta2, zeros)+log1p(exp(-abs(beta2)))) ))
+            return(result)
+            returnType(double())
+        },
+        adaptiveProcedure = function(acceptProb = double()) {
+            if(is.nan(acceptProb))
+                acceptProb <- 0
+            timesRan <<- timesRan + 1
+            timesRanInWindow <<- timesRanInWindow + 1
+            gammaValue <- (timesRan+2)^(-adaptFactorExponent)  # +2 follows usage in Giacomo Zanella's code.
+            current <- my_parameterTransform$transform(values(model, targetNodes))
+            scale <<- sqrt(exp( 2*log(scale) + gammaValue*(acceptProb-targetAcceptanceRate) ))
+            means <<- means + gammaValue * (current - means)
+            if(!adaptCov & !adaptScaleOnly) {
+                propVar <<- (1-gammaValue) * propVar + gammaValue * ((current-means)^2)
+                sdValues <<- sqrt(propVar)
+            }
+            if(adaptCov) {
+                if(timesRan <= adaptDelayCov) {  
+                    ## Only adapt diagonal for initial window.
+                    for(i in 1:d) { 
+                        propCov[i,i] <<- (1-gammaValue) * propCov[i,i] + gammaValue * ((current[i]-means[i])^2)
+                        U[i,i] <<- sqrt(propCov[i,i])
+                        L[i,i] <<- U[i,i]
+                    }
+                    timesRanInWindow <<- 0
+                }
+                if(timesRan > adaptDelayCov) {
+                    empirSamp[timesRanInWindow, 1:d] <<- current - means
+                    ## Todo: consider whether to learn something about covariance from initial window samples? (E.g., as in Haario et al. 2001.)
+                    if(timesRanInWindow %% adaptIntervalCov == 0) {
+                        if(invariantWeight) {  # Set up weights so that roughly unaffected by adaptation interval.
+                            wgt <- (1-gammaValue)^adaptIntervalCov
+                            propCov <<- wgt * propCov + ((1-wgt)/adaptIntervalCov) * t(empirSamp) %*% empirSamp 
+                        } else {
+                            ## Analogous to RW_block. This would seemingly downweight new empirical contribution too much,
+                            ## but it seems to work rather better in practice.
+                            propCov <<- (1-gammaValue) * propCov + gammaValue * ((t(empirSamp) %*% empirSamp)/adaptIntervalCov)
+                        }
+                        U <<- chol(propCov)
+                        L <<- t(U)
+                        timesRanInWindow <<- 0
+                    }
+                }
+            }
+        },
+        setScale = function(newScale = double()) {
+            scale         <<- newScale
+            scaleOriginal <<- newScale
+        },
+        setPropVar = function(newPropVar = double(1)) {
+            if(!adaptCov) {
+                propVar        <<- newPropVar
+                propVarOriginal <<- newPropVar
+                sdValues <<- sqrt(propVar)
+            } else stop("sampler_barker: to set the full proposal covariance when adapting the full covariance, use `setPropCov`")
+        },
+        setPropCov = function(newPropCov = double(2)) {
+            if(adaptCov) {
+                propCov         <<- newPropCov
+                propCovOriginal <<- newPropCov
+                U <<- chol(propCov)
+                L <<- t(U)
+            } else stop("sampler_barker: to set the proposal variances when not adapting the full covariance, use `setPropVar`")
+        },
+        reset = function() {
+            timesRan <<- 0
+            timesRanInWindow <<- 0
+            scale <<- scaleOriginal
+            propVar <<- propVarOriginal
+            propCov <<- propCovOriginal
+            means <<- numeric(d)
+            sdValues <<- sqrt(propVar)
+            U <<- chol(propCov)
+            L <<- t(U)
+            empirSamp <<- matrix(0, nrow = adaptIntervalCov, ncol = d)
+        }
+    ),
+    buildDerivs = list(
+        inverseTransformStoreCalculate = list(),
+        calcLogProb = list(),
+        gradient_aux = list()
+    )
+)
+
+
 ####################################################################
 ### partially observed multivariate normal sampler #################
 ####################################################################
@@ -3236,52 +3463,49 @@ sampler_polyagamma <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_partial_mvn <- nimbleFunction(
-  name = 'sampler_partial_mvn',
-  contains = sampler_BASE,
-  setup = function(model, mvSaved, target, control) {
-    ## control list extraction
-    multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', error = 'The control list must include the argument multivariateNodesAsScalars')
-    ## node list generation
-    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    partObsTru <- sapply(targetAsScalar, function(targetAsScalar) !eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
-    targetUnobservedComponents <- targetAsScalar[partObsTru]
-    
-    ## nested function and function list definitions
-    samplerList <- nimbleFunctionList(sampler_BASE)
-    
-    if(multivariateNodesAsScalars) {
-      for(i in seq_along(targetUnobservedComponents)) {
-        samplerList[[i]] <- sampler_RW(model, mvSaved, targetUnobservedComponents[i], control)
-      }
-    } else {
-      if(length(targetUnobservedComponents) == 1) {
-        samplerList[[1]] <- sampler_RW(model, mvSaved, targetUnobservedComponents, control)
-      } else {
-        samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetUnobservedComponents, control)
-      }
-    }
-    ## checks
-    if (model$getDistribution(target) != "dmnorm")       stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
-    if (!model$isMixedData(target))                       stop(paste0('The target node ', target, ' is not partially observed.'))
-  },
-  
-  run = function() {
-    for (i in seq_along(samplerList)) {
-      samplerList[[i]]$run()
-    }
-  },
-  methods = list(
-    reset = function() {
-      for (i in seq_along(samplerList)) {
-        samplerList[[i]]$reset()
-      }
-    }
-  ) 
+    name = 'sampler_partial_mvn',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', error = 'The control list must include the argument multivariateNodesAsScalars')
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        partObsTru <- sapply(targetAsScalar, function(targetAsScalar) !eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
+        targetUnobservedComponents <- targetAsScalar[partObsTru]
+        ## nested function and function list definitions
+        samplerList <- nimbleFunctionList(sampler_BASE)
+        if(multivariateNodesAsScalars) {
+            for(i in seq_along(targetUnobservedComponents)) {
+                samplerList[[i]] <- sampler_RW(model, mvSaved, targetUnobservedComponents[i], control)
+            }
+        } else {
+            if(length(targetUnobservedComponents) == 1) {
+                samplerList[[1]] <- sampler_RW(model, mvSaved, targetUnobservedComponents, control)
+            } else {
+                samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetUnobservedComponents, control)
+            }
+        }
+        ## checks
+        if (model$getDistribution(target) != "dmnorm")       stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
+        if (!model$isMixedData(target))                       stop(paste0('The target node ', target, ' is not partially observed.'))
+    },
+    run = function() {
+        for (i in seq_along(samplerList)) {
+            samplerList[[i]]$run()
+        }
+    },
+    methods = list(
+        reset = function() {
+            for (i in seq_along(samplerList)) {
+                samplerList[[i]]$reset()
+            }
+        }
+    ) 
 )
 
 #' MCMC Sampling Algorithms
 #'
-#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package.
+#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package. Additional details, including some recommendations for samplers that may perform better than the samplers that NIMBLE assigns by default are provided in Section 7.11 of the User Manual.
 #'
 #'
 #' @param model (uncompiled) model on which the MCMC is to be run
@@ -3299,7 +3523,7 @@ sampler_partial_mvn <- nimbleFunction(
 #' 
 #' @section \code{sampler_base}: base class for new samplers
 #'
-#' When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
+#' When you write a new sampler for use in a NIMBLE MCMC (see \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual}), you must include \code{contains = sampler_BASE}.
 #'
 #' @section binary sampler:
 #'
@@ -3333,7 +3557,7 @@ sampler_partial_mvn <- nimbleFunction(
 #'
 #' The RW sampler cannot be used with options log=TRUE and reflective=TRUE, i.e. it cannot do reflective sampling on a log scale.
 #'
-#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
+#' After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value to which the proposal standard deviation is reset, at the onset of a new MCMC chain.
 #'
 #' @section RW_block sampler:
 #'
@@ -3350,12 +3574,49 @@ sampler_partial_mvn <- nimbleFunction(
 #' \item tries. The number of times this sampler will repeatedly operate on each MCMC iteration.  Each try consists of a new proposed transition and an accept/reject decision of this proposal.  Specifying tries > 1 can help increase the overall sampler acceptance rate and therefore chain mixing. (default = 1)
 #' }
 #'
-#' After an MCMC algorithm has been configuration and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
+#' After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
 #'
 #' Operating analogous to the setScale method, the RW_block sampler also has a setPropCov method.  This method accepts a single matrix-valued argument, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal covariance.
 #'
 #' Note that modifying elements of the control list may greatly affect the performance of this sampler. In particular, the sampler can take a long time to find a good proposal covariance when the elements being sampled are not on the same scale. We recommend providing an informed value for \code{propCov} in this case (possibly simply a diagonal matrix that approximates the relative scales), as well as possibly providing a value of \code{scale} that errs on the side of being too small. You may also consider decreasing \code{adaptFactorExponent} and/or \code{adaptInterval}, as doing so has greatly improved performance in some cases. 
 #'
+#' @section Barker proposal sampler:
+#'
+#' The Barker proposal sampler implements a (multivariate) gradient-based sampling scheme, following the work of Livingstone and Zanella (2022) and Vogrinc et al. (2023). This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. The sampler uses an gradient-based adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution, which can use a full proposal covariance matrix (recommended for most problems) or a diagonal matrix. To use the Barker sampler, you must set \code{buildDerivs = TRUE} when creating your model via \code{nimbleModel}.
+#'
+#' The Barker sampler accepts the following control list elements:
+#'
+#' \itemize{
+#' \item \code{adaptive}. A logical argument, specifying whether the sampler should adapt the scalar global scale (a coefficient scaling the entire proposal covariance matrix) and (possibly) the multivariate normal proposal covariance matrix throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as \code{TRUE}. (default = TRUE)
+#' \item \code{adaptScaleOnly}. A logical argument, specifying whether adaption should be done only for the global scale and not for the covariance matrix.  This argument is only relevant when \code{adaptive = TRUE}. When \code{adaptScaleOnly = TRUE}, only the scale is adapted, tuned to achieve a theoretically good acceptance rate (specified by \code{targetAcceptanceRate}). (default = FALSE)
+#' \item \code{adaptCov}. A logical argument, specifying whether adaption should be done for the full proposal covariance matrix (\code{TRUE}) or only for the diagonal of the matrix (the proposal variances) (\code{FALSE}). This argument is only relevant when \code{adaptive = TRUE} and \code{adaptScaleOnly = FALSE}. The full covariance matrix or diagonal values are tuned to mimic the full covariance or the variances, respectively, of the empirical samples from the posterior.
+#' \item \code{scale}. Initial multiplier that scales the step-size of the proposal steps. If adaptation is turned off, this determines the step-size. (default = 1)
+#' \item \code{propCov}. Initial value for proposal covariance. This can be the string "identity" (indicating the identity matrix), a single number that scales the identity matrix, a vector of values that provides the diagonal values (variances) of the matrix (of length equal to the number of parameters in the transformed space), or a full proposal covariance matrix (with number of rows and columns equal to the number of parameters in the transformed space). (default = 1)
+#' \item \code{adaptInterval}. The interval on which to perform adaptation of the scale (and diagonal variance values when \code{adaptCov = FALSE}). At the moment only the value 1 is allowed.
+#' \item \code{adaptIntervalCov}. The interval on which to perform adaptation of the full proposal covariance. This only has effect when \code{adaptCov = TRUE}. The default of 10 was chosen based on performance on various examples but other values may improve mixing in specific cases. Note that if \code{invariantWeight = FALSE}, changing this value also has the effect of modifying the influence of the most recent set of empirical samples relative to the current proposal covariance. (default = 10)
+#'
+#' \item \code{adaptDelayCov}. The number of initial iterations in which the off-diagonal elements of the proposal covariance are not adapted. In experiments, adapting the full covariance from the first iteration can produce an algorithm that performs poorly as the covariances may be adapted while the chain is still burning in, during whih the samples are not reflective of the posterior. Only relevant if \code{adaptCov = TRUE}. The default of 100 was chosen based on performance on various examples but other values may improve mixing in specific cases. (default = 100)
+#' \item \code{adaptFactorExponent}. Exponent controlling the rate of decay of the scale adaptation factor. As suggested in Livingstone and Zanella (2022), the default is 0.6.
+#' \item \code{targetAcceptanceRate}. Acceptance rate targeted when adapting the global scale. As suggested in Vogrinc et al. (2023) the default is 0.574, as in the MALA algorithm.
+#' \item \code{bimodal}. A logical argument indicating whether to use the bimodal proposal of Vogrinc et al. (2023) (\code{TRUE}) or simply a normal distribution (\code{FALSE}). (default = TRUE)
+#' \item \code{sigma}. The value of \code{sigma} in the bimodal Barker proposal suggested in Vogrinc et al. (2023). Only used if \code{bimodal = TRUE}. (default = 0.1)
+#' \item \code{invariantWeight}. A logical argument indicating whether to modify the relative weight of the most recent set of empirical samples relative to the current proposal covariance such that changing \code{adaptIntervalCov} has little effect on the weighting. While in principle setting this to \code{TRUE} makes sense, in experiments this tended to make MCMC performance worse, so the default is \code{FALSE}.
+#' }
+#'
+#' The Barker proposal provides a gradient-based Metropolis-Hastings algorithm demonstrated to be more robust to tuning parameters than other gradient-based methods, in particular the Metropolis-adjusted Langevin algorithm (MALA). The approach tends to do a better job of adjusting to heterogeneity in the scaling of the target elements and to bad (particularly overly large) initial proposal variance(s) than random walk Metropolis-Hastings (i.e., the \code{RW_block} sampler).
+#'
+#' For some problems without strong dependence, adapting only the diagonal of the proposal covariance (\code{adaptCov = FALSE}) may perform well, but for most problems, use of the full proposal covariance matrix is expected to perform better. The implementation of the proposal covariance for the Barker proposal is derived based on the use of preconditioning to transform the parameters to be approximately linearly independent. This is equivalent to and implemented as a dense proposal covariance matrix.
+#'
+#' Adaptation of the full proposal covariance matrix (i.e., of the off-diagonal elements) starting from the first iteration of the MCMC can cause poor MCMC performance by adapting the covariances based on samples in which the MCMC is burning in, which can prevent the sampler from burning in and from finding a good proposal covariance in a reasonable number of iterations. For this reason, by default the sampler only adapts the global scale and proposal variances for the first \code{adaptDelayCov} iterations, defaulting to 100 iterations.
+#'
+#' The Barker proposal uses the gradient of the log posterior density with respect to the parameters, using nimble's automatic differentiation (AD) system. Given this, elements of the target vector that are constrained in some fashion (either by their prior or relative to other elements, such as sampling the elements of a Dirichlet-distributed vector or the elements of a positive definite matrix) are transformed to an unconstrained space using nimble's automatic parameter transformation system. Thus the proposal covariance is with respect to this transformed space.  
+#'
+#' To use this sampler instead of `RW_block` as the default multivariate sampler for continuous distributions, set \code{nimbleOptions(MCMCuseBarkerAsDefaultMV = TRUE)}
+#'
+#' After an MCMC algorithm has been configured and built, the value of the global scale of a Barker sampler can be modified using the \code{setScale method} of the sampler object.  This use the scalar argument to will modify the current value of the scale, as well as modifying the initial (pre-adaptation) value which the scale is reset to, at the onset of a new MCMC chain.
+#'
+#' Operating analogous to the \code{setScale} method, the Barker sampler also has a \code{setPropVar} (for when \code{adaptCov = FALSE}) and \code{setPropCov} (for when \code{adaptCov = TRUE}). These method accept a single vector- and matrix-valued argument, respectively, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal variances or covariance, respectively.
+#' 
 #' @section RW_llFunction sampler:
 #'
 #' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010).  The RW_llFunction sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
@@ -3690,7 +3951,7 @@ sampler_partial_mvn <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky partial_mvn sampler_partial_mvn
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky sampler_barker barker sampler_partial_mvn partial_mvn
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
@@ -3735,6 +3996,8 @@ sampler_partial_mvn <- nimbleFunction(
 #'
 #' Knorr-Held, L. and Rue, H. (2003). On block updating in Markov random field models for disease mapping. \emph{Scandinavian Journal of Statistics}, 29, 597-614.
 #'
+#' Livingstone, S. and Zanella G. (2022). The Barker proposal: combining robustness and efficiency in gradient-based MCMC. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 84(2): 496-523.
+#' 
 #' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
 #'
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
@@ -3759,6 +4022,8 @@ sampler_partial_mvn <- nimbleFunction(
 #'
 #' van Dyk, D.A. and T. Park. (2008). Partially collapsed Gibbs Samplers. \emph{Journal of the American Statistical Association}, 103(482), 790-796.
 #'
+#' Vogrinc, J., Livingstone, S., and Zanella, G. (2023). Optimal design of the Barker proposal and other locally balanced Metropolis–Hastings algorithms. \emph{Biometrika},  110(3): 579-595.
+#' 
 #' Yu, Y. and Meng, X. L. (2011). To center or not to center: That is not the question - An ancillarity-sufficiency interweaving strategy (ASIS) for boosting MCMC efficiency. Journal of Computational and Graphical Statistics, 20(3), 531–570. https://doi.org/10.1198/jcgs.2011.203main
 #' 
 NULL

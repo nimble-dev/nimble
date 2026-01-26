@@ -97,7 +97,7 @@ parameterTransform <- nimbleFunction(
         ## 3: scalar interval-constrained (0, 1)
         ## 4: scalar semi-interval (-Inf, b) or (a, Inf)
         ## 5: scalar interval-constrained (a, b)
-        ## 6: multivariate {normal, t, CAR}
+        ## 6: multivariate {normal, t, CAR} and multivariate user-defined distributions
         ## 7: multivariate {wishart, inverse-wishart}
         ## 8: multivariate dirichlet
         ## 9: LKJ 
@@ -171,15 +171,27 @@ parameterTransform <- nimbleFunction(
                         if(length(all.vars(lowerBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant lower bound, which cannot be used in parameterTransform.')
                         if(length(all.vars(upperBdExpr)) > 0) stop('Node ', node, ' appears to have a non-constant upper bound, which cannot be used in parameterTransform.')
                     } else {   ## some other distribution with finite support
-                        message('  [Warning] `parameterTransform` system cannot process the ', dist, ' distribution of node ', node, '.\n         The upper and lower bounds of the ', dist, ' distribution must be constant.\n         If you\'re uncertain about this, please get in touch with the NIMBLE development team.')
+                        messageIfVerbose('  [Warning] `parameterTransform` system cannot process the `', dist, '`\n',
+                                         '            distribution for node `', node, '. The upper and lower bounds\n',
+                                         '            of `', dist, '` must be constant.\n')
                     }
                     transformType[i] <- 5L
                     transformData[i,DATA1] <- bounds[1]               ## formerly lowerBound
                     transformData[i,DATA2] <- bounds[2] - bounds[1]   ## formerly range
                     next }
-                stop(paste0('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
+                stop('`parameterTransform` system doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')')
             } else {   ## multivariate
-                if(dist %in% c('dmnorm', 'dmvt', 'dcar_normal', 'dcar_proper')) {               ## 6: multivariate {normal, t, CAR}; also set for non-scalar determ nodes when allowDeterm is TRUE
+                if(dist %in% c('dmnorm', 'dmnormAD', 'dmvt', 'dcar_normal', 'dcar_proper') ||    ## 6: multivariate {normal, t, CAR},
+                   isUserDefined(dist))                                              ##    all multivariate user-defined distributions,
+                {                                                                    ##    and non-scalar determ nodes when allowDeterm is TRUE
+                    if(isUserDefined(dist) && getNimbleOption('parameterTransformWarnUserDists'))
+                        messageIfVerbose(
+                            '  [Warning] `parameterTransform` system detected multivariate user-defined\n',
+                            '            distribution `', dist, '`. No transformation will be applied\n',
+                            '            to any dimension of the `x` values of `', dist, '`.\n',
+                            '            If some values of  `x` are not valid, you may encounter errors.\n',
+                            '            This warning can be disabled using\n',
+                            '            `nimbleOptions(parameterTransformWarnUserDists = FALSE)`.')
                     transformType[i] <- 6L
                     d <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                     transformData[i,NIND2] <- transformData[i,NIND1] + d - 1
@@ -211,7 +223,7 @@ parameterTransform <- nimbleFunction(
                     transformData[i,DATA1] <- d
                     transformData[i,DATA2] <- p
                     next }
-                stop(paste0('parameterTransform doesn\'t handle \'', dist, '\' distributions.'), call. = FALSE)
+                stop('parameterTransform doesn\'t handle \'', dist, '\' distributions.', call. = FALSE)
             }
         }
         if(nNodes == 0) {
@@ -233,6 +245,7 @@ parameterTransform <- nimbleFunction(
             ## argument values(model, nodes), return vector on unconstrained scale
             transformed <- nimNumeric(tLength)
             if(nNodes == 0)   return(transformed)
+            iNode <- 1L; i <- 1L; j <- 1L; dd <- 1L; pp <- 1L   ## integer types
             for(iNode in 1:nNodes) {
                 theseValues <- nodeValuesFromModel[transformData[iNode,NIND1]:transformData[iNode,NIND2]]
                 thisType <- transformType[iNode]
@@ -251,14 +264,14 @@ parameterTransform <- nimbleFunction(
                               ## DT: there has to be a better way to do this procedure, below,
                               ## creating the vector of the log-Cholesky transformed values.
                               theseTransformed <- nimNumeric(transformData[iNode,DATA2])
-                              tInd <- 1
+                              tInd <- 1L
                               for(j in 1:dd) {
                                   for(i in 1:dd) {
-                                      if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1 }
-                                      if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1 } } }
+                                      if(i==j) { theseTransformed[tInd] <- log(U[i,j]); tInd <- tInd+1L }
+                                      if(i< j) { theseTransformed[tInd] <-     U[i,j];  tInd <- tInd+1L } } }
                           },
                           {                                        ## 8: multivariate dirichlet
-                              dd <- transformData[iNode,DATA1] - 1
+                              dd <- transformData[iNode,DATA1] - 1L
                               theseTransformed <- nimNumeric(dd)
                               theseTransformed[1] <- logit( theseValues[1] )
                               if(dd > 1) {
@@ -275,13 +288,13 @@ parameterTransform <- nimbleFunction(
                               theseTransformed <- nimNumeric(pp)
                               theseValuesMatrix <- nimArray(theseValues, dim = c(dd, dd))  # U in matrix form
                               if(dd > 1) {
-                                  cnt <- 1
+                                  cnt <- 1L
                                   ## Length of each column of U is 1.
                                   ## We first produce the canonical partial correlations and then apply atanh()
                                   ## to make the unconstrained parameters..
                                   for(j in 2:dd) {
                                       theseTransformed[cnt] <- atanh(theseValuesMatrix[1, j])
-                                      cnt <- cnt + 1
+                                      cnt <- cnt + 1L
                                       if(j > 2) {
                                           partialSum <- 1
                                           for(i in 2:(j-1)) {
@@ -289,7 +302,7 @@ parameterTransform <- nimbleFunction(
                                               ## Transformed value is atanh of the proportion of the
                                               ## remaining correlation (which is in 'partialSum').
                                               theseTransformed[cnt] <- atanh(theseValuesMatrix[i, j] / sqrt(partialSum))
-                                              cnt <- cnt + 1
+                                              cnt <- cnt + 1L
                                           }
                                       }
                                   }
@@ -458,6 +471,6 @@ parameterTransform <- nimbleFunction(
             return(lp)
         }
     ),
-    buildDerivs = list(inverseTransform = list(),
+    buildDerivs = list(inverseTransform = list(), transform = list(),
                        logDetJacobian = list(ignore = c('iNode','j','dd','ddm1','i')))
 )

@@ -62,7 +62,9 @@ library(devtools)
 install.packages("nimble", type = "source", repos = "https://r-nimble.org")
 ```
 
-Note that NIMBLE's sequential Monte Carlo (SMC; aka particle filtering) methods are now (as of version 0.10.0) in the `nimbleSMC` package.
+Note that NIMBLE's Laplace approximation-related methods are (as of version 1.4.0) in the `nimbleQuad` package.
+
+Note that NIMBLE's sequential Monte Carlo (SMC; aka particle filtering) methods are (as of version 0.10.0) in the `nimbleSMC` package.
 
 Note that `MCMCsuite` and `compareMCMCs` have been migrated to the `compareMCMCs` package, now available on CRAN.
 
@@ -77,7 +79,7 @@ NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://d
 
 In published work that uses NIMBLE, please also cite the package version:
 
-de Valpine, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodriguez, D. Temple Lang, W. Zhang, S. Paganin, and P. van Dam-Bates. 2024. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 1.2.1, https://cran.r-project.org/package=nimble.
+de Valpine, P., C. Paciorek, D. Turek, N. Michaud, C. Anderson-Bergman, F. Obermeyer, C. Wehrhahn Cortes, A. Rodriguez, D. Temple Lang, W. Zhang, S. Paganin, and P. van Dam-Bates. 2024. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190. R package version 1.4.0, https://cran.r-project.org/package=nimble.
 
 To help us track usage to justify funding support for NIMBLE, please include the DOI in the citation.
 

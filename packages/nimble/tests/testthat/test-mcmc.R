@@ -79,32 +79,32 @@ test_mcmc('dugongs', numItsC = 1000, resampleData = TRUE)
 
 
 test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
-              data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
 # looks ok
 
 test_mcmc('epil', model = 'epil3.bug', inits = 'epil-inits.R',
-              data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
 # looks ok
 
 test_mcmc('seeds', model = 'seedsuni.bug', inits = 'seeds-init.R',
-              data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine - intervals for b's seem a bit large but probably ok
 # particularly since default seeds.bug seems fine
 # results compared to JAGS look fine
 test_mcmc('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
-              data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine - intervals for b's seem a bit large but probably ok
 
 test_mcmc('birats', model = 'birats1.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # seems fine
 
 test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
-              data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # seems fine
 
 test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
-            data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine now that values() returns in order
 # result changes as of v0.4 because in v0.3-1 'omega.beta' was found
 # as both topNode and nontopNode and was being simulated into
@@ -118,22 +118,22 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 # are simulated from their priors to have large magnitude values
 
 test_that('ice example reworked', {
-                                        # rework ice example so that beta[1] and beta[2] will be top nodes
+    # rework ice example so that beta[1] and beta[2] will be top nodes
     system.in.dir(paste("sed 's/tau\\*1.0E-6/1.0E-6/g' icear.bug > ", file.path(tempdir(), "icear.bug")), dir = system.file('classic-bugs','vol2','ice', package = 'nimble'))
     test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
-                                        # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
+    # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
 })
 
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
           data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
-                                        # getting warning; deterministic model node is NA or NaN in model initialization
-                                        # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
+# getting warning; deterministic model node is NA or NaN in model initialization
+# weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
 
 test_that('leuk example setup', {
     writeLines(c("var","Y[N,T],","dN[N,T];"), con = file.path(tempdir(), "leuk.bug")) ## echo doesn't seem to work on Windows
-                                        # need nimStep in data block as we no longer have step
+    # need nimStep in data block as we no longer have step
     system.in.dir(paste("cat leuk.bug >> ", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk',package = 'nimble'))
-                                        # need nimStep in data block as we no longer have step
+    # need nimStep in data block as we no longer have step
     system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
     
     test_mcmc(model = file.path(tempdir(), "leuk.bug"), name = 'leuk', inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
@@ -145,14 +145,14 @@ test_that('salm example setup', {
     writeLines(paste("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
     system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
     test_mcmc(model = file.path(tempdir(), "salm.bug"), name = 'salm', inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
-                                        # looks good compared to JAGS
+    # looks good compared to JAGS
 })
 
 test_that('air example setup', {
     file.copy(system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), file.path(tempdir(), "air.bug"), overwrite=TRUE)
     system.in.dir(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
     test_mcmc(model = file.path(tempdir(), "air.bug"), name = 'air', inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
-                                        # theta[2] posterior is a bit off from JAGS - would be worth more investigation
+    # theta[2] posterior is a bit off from JAGS - would be worth more investigation
 })
 
 test_that('jaw-linear setup', {
@@ -160,7 +160,7 @@ test_that('jaw-linear setup', {
     test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE) # , knownFailures = list('R MCMC' = 'Cholesky of NA matrix fails in R 3.4.2 in calculate(model) of initializeModel() but not in R 3.4.1'))
 })
 ## note R MCMC used to fail when tried to do Cholesky of 0 matrix in 2-point method, but no longer doing multiplicative link for Wishart targets
-                                      
+
 test_mcmc('pump',
           resampleData = TRUE,
           results = list(mean = list(
@@ -229,53 +229,53 @@ test_that('very simple example setup', {
 ### linear Gaussian state-space model (of length 5)
 
 test_that('linear Gaussian state-space model MCMC works', {
-  set.seed(0)
-  n <- 5
-  a <- 6
-  b <- 0.8
-  sigmaPN <- 2
-  sigmaOE <- 4
-  set.seed(0)
-  x <- numeric(n)
-  y <- numeric(n)
-  x[1] <- 1
-  y[1] <- rnorm(1, x[1], sigmaOE)
-  for(i in 2:n) {
-    x[i] <- rnorm(1, a+b*x[i-1], sigmaPN)
-    y[i] <- rnorm(1, x[i], sigmaOE)
-  }
-  code <- nimbleCode({
-    a ~ dnorm(0, sd = 10000)
-    b ~ dnorm(0, sd = 10000)
-    sigmaPN ~ dunif(0, 10000)
-    sigmaOE ~ dunif(0, 10000)
-    x[1] ~ dnorm(0, sd = 10000)
-    y[1] ~ dnorm(x[1], sd = sigmaOE)
-    for(t in 2:N) {
-      x[t] ~ dnorm(a + b*x[t-1], sd = sigmaPN)
-      y[t] ~ dnorm(x[t], sd = sigmaOE)
+    set.seed(0)
+    n <- 5
+    a <- 6
+    b <- 0.8
+    sigmaPN <- 2
+    sigmaOE <- 4
+    set.seed(0)
+    x <- numeric(n)
+    y <- numeric(n)
+    x[1] <- 1
+    y[1] <- rnorm(1, x[1], sigmaOE)
+    for(i in 2:n) {
+        x[i] <- rnorm(1, a+b*x[i-1], sigmaPN)
+        y[i] <- rnorm(1, x[i], sigmaOE)
     }
-  })
-  constants <- list(N = length(y))
-  data <- list(y = y)
-  inits <- list(a=6, b=0.8, sigmaOE=4, sigmaPN=2, x=y+rnorm(length(y)))
+    code <- nimbleCode({
+        a ~ dnorm(0, sd = 10000)
+        b ~ dnorm(0, sd = 10000)
+        sigmaPN ~ dunif(0, 10000)
+        sigmaOE ~ dunif(0, 10000)
+        x[1] ~ dnorm(0, sd = 10000)
+        y[1] ~ dnorm(x[1], sd = sigmaOE)
+        for(t in 2:N) {
+            x[t] ~ dnorm(a + b*x[t-1], sd = sigmaPN)
+            y[t] ~ dnorm(x[t], sd = sigmaOE)
+        }
+    })
+    constants <- list(N = length(y))
+    data <- list(y = y)
+    inits <- list(a=6, b=0.8, sigmaOE=4, sigmaPN=2, x=y+rnorm(length(y)))
 
-  test_mcmc(model = code,
-            name = 'linear Gaussian state-space model',
-            data = c(data, constants),
-            inits = inits,
-            seed = 123,
-            resampleData = FALSE,
-            results = list(
-              mean = list(a = 37.36, b = -2.26, sigmaPN = 5.27, sigmaOE = 5.08),
-              sd = list(a = 30.14, b = 2.60, sigmaPN = 6.54, sigmaOE = 2.96)),
-            ## The expected results come from exactly these run conditions,
-            ## so they are essentially exact MCMC chain replication results.
-            ## For that reason, tolerances are all set to the precision with
-            ## which the numbers were entered, to nearest 0.01.
-            resultsTolerance = list(mean = list(a = .01, b = .01, sigmaPN=0.01, sigmaOE=0.01),
-                                    sd = list(a = .01, b = .01, sigmaPN=0.01, sigmaOE=0.01)),
-            avoidNestedTest = TRUE)
+    test_mcmc(model = code,
+              name = 'linear Gaussian state-space model',
+              data = c(data, constants),
+              inits = inits,
+              seed = 123,
+              resampleData = FALSE,
+              results = list(
+                  mean = list(a = 37.36, b = -2.26, sigmaPN = 5.27, sigmaOE = 5.08),
+                  sd = list(a = 30.14, b = 2.60, sigmaPN = 6.54, sigmaOE = 2.96)),
+              ## The expected results come from exactly these run conditions,
+              ## so they are essentially exact MCMC chain replication results.
+              ## For that reason, tolerances are all set to the precision with
+              ## which the numbers were entered, to nearest 0.01.
+              resultsTolerance = list(mean = list(a = .01, b = .01, sigmaPN=0.01, sigmaOE=0.01),
+                                      sd = list(a = .01, b = .01, sigmaPN=0.01, sigmaOE=0.01)),
+              avoidNestedTest = TRUE)
 })
 
 
@@ -368,7 +368,7 @@ test_that('slice sampler example setup', {
               avoidNestedTest = TRUE)
     
     nimbleOptions(MCMCusePredictiveDependenciesInCalculations = nimbleUsePredictiveDependenciesSetting)
-    })
+})
 
 
 ### elliptical slice sampler 'ess'
@@ -403,7 +403,7 @@ test_that('elliptical slice sampler setup', {
               numItsC = 100000,
               samplers = list(list(type = 'ess', target = 'x')), avoidNestedTest = TRUE)
     
-    })
+})
 
 
 ### demo2 of check conjugacy
@@ -463,7 +463,7 @@ test_that('Weibull-gamma conjugacy setup', {
     conf <- configureMCMC(m)
     samplers <- conf$getSamplers()
     expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dweib_multiplicative',
-                                   info = "dweibull-dgamma conjugacy with dependency using lambda not detected")
+                     info = "dweibull-dgamma conjugacy with dependency using lambda not detected")
     mcmc <- buildMCMC(conf)
     comp <- compileNimble(m, mcmc)
     set.seed(0)
@@ -481,18 +481,18 @@ test_that('Weibull-gamma conjugacy setup', {
     smpMan <- manualSampler(10, y, depShape, c, shape, rate)
 
     expect_identical(smp[,1], smpMan,
-                                   info = "NIMBLE gamma-Weibull conjugate sampler and manual sampler results differ")
+                     info = "NIMBLE gamma-Weibull conjugate sampler and manual sampler results differ")
 })    
 
 test_that('Dirichlet-multinomial conjugacy setup', {
-### Dirichlet-multinomial conjugacy
+    ### Dirichlet-multinomial conjugacy
 
-# as of v0.4, exact numerical results here have changed because
-# ddirch now sometimes returns NaN rather than -Inf (when an
-# alpha is proposed to be negative) -- this changes the RNG
-# sequence because NaN values result in no runif() call in decide()
+    # as of v0.4, exact numerical results here have changed because
+    # ddirch now sometimes returns NaN rather than -Inf (when an
+    # alpha is proposed to be negative) -- this changes the RNG
+    # sequence because NaN values result in no runif() call in decide()
 
-# single multinomial
+    # single multinomial
     set.seed(0)
     n <- 100
     alpha <- c(10, 30, 15, 60, 1)
@@ -517,7 +517,7 @@ test_that('Dirichlet-multinomial conjugacy setup', {
               resultsTolerance = list(mean = list(p = rep(.06, K))), avoidNestedTest = TRUE)
 })
 ## bad mixing for alphas; probably explains why posterior estimates for alphas changed so much as of v 0.4
-  
+
 ## with replication
 test_that('Dirichlet-multinomial with replication setup', {
     set.seed(0)
@@ -552,7 +552,7 @@ test_that('Dirichlet-multinomial with replication setup', {
               resultsTolerance = list(mean = list(p = matrix(.05, m, K),
                                                   alpha = c(5,10,10,20,.5))),
               knownFailures = list('MCMC match to known posterior: p mean 39' = 'KNOWN ISSUE: two samples outside resultsTolerance',
-                                  'MCMC match to known posterior: p mean 76' = 'KNOWN ISSUE: two samples outside resultsTolerance'), avoidNestedTest = TRUE)
+                                   'MCMC match to known posterior: p mean 76' = 'KNOWN ISSUE: two samples outside resultsTolerance'), avoidNestedTest = TRUE)
 })
 # note alphas mix poorly (and are highly correlated),
 # presumably because of cross-level dependence between
@@ -560,9 +560,9 @@ test_that('Dirichlet-multinomial with replication setup', {
 # or, of course, integrating over the p's
 
 test_that('Dirichlet-categorical conjugacy setup', {
-### Dirichlet-categorical conjugacy
+    ### Dirichlet-categorical conjugacy
 
-# single multinomial represented as categorical
+    # single multinomial represented as categorical
     set.seed(0)
     n <- 100
     alpha <- c(10, 30, 15, 60, 1)
@@ -573,7 +573,7 @@ test_that('Dirichlet-categorical conjugacy setup', {
     
     code <- function() {
         for(i in 1:n)
-          y[i] ~ dcat(p[1:K])
+            y[i] ~ dcat(p[1:K])
         p[1:K] ~ ddirch(alpha[1:K])
         for(i in 1:K) {
             alpha[i] ~ dgamma(.001, .001);
@@ -613,7 +613,7 @@ test_that('block sampler on MVN node setup', {
                                       var = list(x = c(.1, .03, .01))),
               samplers = list(
                   list(type = 'RW_block', target = 'x[1:3]')), avoidNestedTest = TRUE)
-                                        # caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
+    # caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
     if(FALSE) {
         Rmodel <- nimbleModel(code, constants = list(Q=Q))
         mcmcspec <- MCMCspec(Rmodel, nodes = NULL)
@@ -643,7 +643,7 @@ test_that('block sampler on MVN node setup', {
 })
 
 test_that('second block sampler on multivariate node', {
-### DT's model
+    ### DT's model
     mu <- c(1,2,3)
     corr <- matrix(c(1,.8,0.3,.8,1,0,0.3,0,1), nrow=3)
     varr <- c(1,2,3)
@@ -663,10 +663,10 @@ test_that('second block sampler on multivariate node', {
                                       var = list(x = c(.1,.1,.1))),
               samplers = list(
                   list(type = 'RW_block', target = 'x[1:3]')), avoidNestedTest = TRUE)
-    })
+})
 
 test_that('MVN conjugate setup', {
-### MVN conjugate update
+    ### MVN conjugate update
     
     set.seed(0)
     mu0 = 1:3
@@ -675,7 +675,7 @@ test_that('MVN conjugate setup', {
     a = c(-2, .5, 1)
     B = matrix(rnorm(9), 3)
     
-##### not currently working - see Perry's email of ~ 10/6/14
+    ##### not currently working - see Perry's email of ~ 10/6/14
     ## code <- nimbleCode({
     ##   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
     ##   y[1:3] ~ dmnorm(asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3]), Q[1:3, 1:3])
@@ -689,7 +689,7 @@ test_that('MVN conjugate setup', {
     
     
     mu <- mu0 + chol(solve(Q0)) %*% rnorm(3)
-                                        # make sure y is a vec not a 1-col matrix or get a dimensionality error
+    # make sure y is a vec not a 1-col matrix or get a dimensionality error
     y <- c(a + B%*%mu + chol(solve(Q)) %*% rnorm(3))
     data = list(mu0 = mu0, Q0 = Q0, Q = Q, a = a, B = B, y = y)
     
@@ -703,7 +703,7 @@ test_that('MVN conjugate setup', {
                                       cov = list(mu = matrix(.01, 3, 3))), avoidNestedTest = TRUE)
     
 
-### scalar RW updates in place of conjugate mv update
+    ### scalar RW updates in place of conjugate mv update
 
     test_mcmc(model = code, name = 'two-level multivariate normal with scalar updaters', data = data, seed = 0, numItsC = 100000,
               results = list(mean = list(mu = muMeanTrue),
@@ -839,7 +839,7 @@ test_that('conjugate Wishart setup', {
                              sd = list(Omega = OmegaSimTrueSDs)),
               resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
                                       sd = list(Omega = matrix(0.06, M, M))), avoidNestedTest = TRUE)
-                                        # issue with Chol in R MCMC - probably same issue as in jaw-linear
+    # issue with Chol in R MCMC - probably same issue as in jaw-linear
     
 })
 
@@ -889,7 +889,7 @@ test_that('conjugate Wishart setup with scaling', {
                              sd = list(Omega = OmegaSimTrueSDs)),
               resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
                                       sd = list(Omega = matrix(0.06, M, M))), avoidNestedTest = TRUE)
-                                        # issue with Chol in R MCMC - probably same issue as in jaw-linear
+    # issue with Chol in R MCMC - probably same issue as in jaw-linear
     
 })
 
@@ -1146,7 +1146,7 @@ test_that('using LKJ randomw walk samplers', {
     outSigma <- matrix(0, nrow(out), p*p)
     for(i in 1:nrow(outSigma))
         outSigma[i,] <- t(matrix(out[i,], p, p)) %*% matrix(out[i,],p,p)
-                
+    
     conf <- configureMCMC(m, nodes = NULL, thin = 10)
     conf$addSampler('Ustar', 'RW_lkj_corr_cholesky', control = list(scale = .1))
     mcmc <- buildMCMC(conf)
@@ -1374,7 +1374,7 @@ test_that('conjugate MVN with ragged dependencies', {
     expect_true(all(abs(pmean - obsmean) / pmean < 0.01), info = 'ragged dmnorm conjugate posterior mean')
     expect_true(all(abs(pprec - obsprec) / pprec < 0.005), info = 'ragged dmnorm conjugate posterior precision')    
 })
-    
+
 ## testing binary sampler
 test_that('binary sampler setup', {
     cat('===== Starting MCMC test for binary sampler. =====')
@@ -1441,8 +1441,8 @@ test_that('binary sampler setup', {
     expect_lt(abs(means[['h']] - 0.5), tol)
     
 })
-    
-    ## testing the binary sampler handles 'out of bounds' ok
+
+## testing the binary sampler handles 'out of bounds' ok
 test_that('binary sampler handles out of bounds', {
     cat('===== Starting MCMC test for binary sampler handles out of bounds. =====')
     code <- nimbleCode({
@@ -1596,9 +1596,9 @@ test_that('RW_dirichlet sampler consistent with conjugate multinomial sampler', 
     means <- apply(Csamples, 2, mean)
 
     expect_lt(max(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')])), 0.001,
-                label = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
+              label = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
 })
-    
+
 ## testing RW_dirichlet sampler
 ## more complicated -- intermediate deterministic nodes, and non-conjugate
 ## test agreement between RW_dirichlet sampler, and writing model with component gammas
@@ -1663,8 +1663,8 @@ test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
     m = nimbleModel(code, inits = list(pr0 = diag(3), pr = diag(3)))
     conf <- configureMCMC(m)
     expect_failure(expect_match(conf$getSamplers()[[1]]$name, "conjugate_dmnorm_dnorm",
-         info = "failed to detect dmnorm-dnorm conjugacy"),
-         info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dmnorm dependents of dnorm target")
+                                info = "failed to detect dmnorm-dnorm conjugacy"),
+                   info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dmnorm dependents of dnorm target")
 
     code = nimbleCode({
         for(i in 1:3)
@@ -1675,8 +1675,8 @@ test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
     m = nimbleModel(code, inits = list(z = rep(0,3), pr = diag(3)))
     conf <- configureMCMC(m)
     expect_failure(expect_match(conf$getSamplers()[[2]]$name, "conjugate_dnorm_dmnorm",
-         info = "failed to detect dmnorm-dnorm conjugacy"),
-         info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dnorm dependents of dmnorm target")
+                                info = "failed to detect dmnorm-dnorm conjugacy"),
+                   info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dnorm dependents of dmnorm target")
 })
 
 ## dnorm prior in vectorized regression mean (inprod, matrix multiplication)
@@ -1697,7 +1697,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
-                                   info = "conjugacy with inprod not detected")
+                     info = "conjugacy with inprod not detected")
 
     code <- nimbleCode({
         for(i in 1:n) 
@@ -1712,7 +1712,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
-                                   info = "conjugacy with inprod not detected")
+                     info = "conjugacy with inprod not detected")
 
 
     ## compare to conjugate sampler using summed contributions
@@ -1731,7 +1731,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
-                                   info = "conjugacy with sum not detected")
+                     info = "conjugacy with sum not detected")
 
 
     ## compare to conjugate sampler using summed contributions
@@ -1766,7 +1766,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'RW',
-                                   info = "conjugacy with inprod improperly detected")
+                     info = "conjugacy with inprod improperly detected")
 
     code <- nimbleCode({
         for(i in 1:n) 
@@ -1778,7 +1778,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'RW',
-                                   info = "conjugacy with inprod improperly detected")
+                     info = "conjugacy with inprod improperly detected")
 
     code <- nimbleCode({
         for(i in 1:n) 
@@ -1790,7 +1790,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'RW',
-                                   info = "conjugacy with sum improperly detected")
+                     info = "conjugacy with sum improperly detected")
 
     code <- nimbleCode({
         for(i in 1:n) 
@@ -1802,7 +1802,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
-                                   info = "conjugacy with matrix multiplication not detected")
+                     info = "conjugacy with matrix multiplication not detected")
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
@@ -1835,8 +1835,8 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
-                                   info = "conjugacy with inprod not detected")
-   
+                     info = "conjugacy with inprod not detected")
+    
     code <- nimbleCode({
         for(i in 1:n) 
             y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
@@ -1854,7 +1854,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
-                                   info = "conjugacy with inprod not detected")
+                     info = "conjugacy with inprod not detected")
 
     code <- nimbleCode({
         for(i in 1:n) 
@@ -1873,7 +1873,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm_linear',
                      info = "conjugacy with inprod not detected")
 
-   code <- nimbleCode({
+    code <- nimbleCode({
         for(i in 1:n) 
             y[i] ~ dnorm(b0 + inprod(zbeta[1:p], X[i, 1:p]), 1)
         for(i in 1:p) {
@@ -1893,11 +1893,11 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
                      info = "conjugacy with inprod mistakenly detected")
 
     expect_identical(nimble:::cc_checkLinearity(
-        quote(structureExpr(z[1] * exp(w * beta[1]), z[2] * exp(w * beta[2]))),
-        'beta[2]'), NULL)
+                                  quote(structureExpr(z[1] * exp(w * beta[1]), z[2] * exp(w * beta[2]))),
+                                  'beta[2]'), NULL)
     output <- nimble:::cc_checkLinearity(
-        quote(structureExpr(z[1] * exp(w * beta[1]), a + z[2] * (d + w * beta[2]))),
-        'beta[2]')
+                           quote(structureExpr(z[1] * exp(w * beta[1]), a + z[2] * (d + w * beta[2]))),
+                           'beta[2]')
     expect_identical(is.list(output), TRUE)  ## should be a list with scale/offset
 })
 
@@ -1987,15 +1987,15 @@ test_that('cc_checkScalar operates correctly', {
 test_that('cc_stripExpr operates correctly', {
     expr <- 'coeff * (log(value) - offset) * taulog'
     expect_identical(deparse(nimble:::cc_stripExpr(parse(text = 'coeff^2 * tau')[[1]], TRUE, TRUE)),
-                 '1 * tau')
+                     '1 * tau')
     expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], TRUE, TRUE)),
-                 '(log(value)) * taulog')
+                     '(log(value)) * taulog')
     expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], TRUE, FALSE)),
-                 'coeff * (log(value)) * taulog')
+                     'coeff * (log(value)) * taulog')
     expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], FALSE, TRUE)),
-                 '(log(value) - offset) * taulog')
+                     '(log(value) - offset) * taulog')
     expect_identical(deparse(nimble:::cc_stripExpr(parse(text = expr)[[1]], FALSE, FALSE)),
-                 expr)
+                     expr)
 })
 
 
@@ -2016,7 +2016,7 @@ test_that("realized conjugacy links are working", {
         mu[2] ~ dnorm(0,1)
     })
     m <- nimbleModel(code, data = list (y1 = rnorm(2),
-                               y2=rnorm(2), y3=rnorm(2), y4= rnorm(2), y5 = rnorm(2)),
+                                        y2=rnorm(2), y3=rnorm(2), y4= rnorm(2), y5 = rnorm(2)),
                      inits = list(mu = rnorm(2), x = matrix(rnorm(4), 2)))
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
@@ -2028,13 +2028,13 @@ test_that("realized conjugacy links are working", {
     expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dnorm_linear, 4L)
 
     expect_identical(c('dep_dnorm_identity_coeff', 'dep_dnorm_additive_coeff') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
     expect_identical(c('dep_dnorm_multiplicative_coeff', 'dep_dnorm_linear_coeff') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
     expect_identical(c('dep_dnorm_identity_offset', 'dep_dnorm_multiplicative_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
     expect_identical(c('dep_dnorm_additive_offset', 'dep_dnorm_linear_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
 
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_identity_nodeNames, c('y1[1]', 'y1[2]'))
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_additive_nodeNames, c('y2[1]', 'y2[2]'))
@@ -2054,7 +2054,7 @@ test_that("realized conjugacy links are working", {
         tau ~ dgamma(1, 1)
     })
     m <- nimbleModel(code, data = list (y1 = rnorm(2),
-                               y2=rnorm(2), y3= rpois(2, 1), y4 = rpois(2, 1)),
+                                        y2=rnorm(2), y3= rpois(2, 1), y4 = rpois(2, 1)),
                      inits = list(mu = rnorm(1), tau = 1))
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
@@ -2066,13 +2066,13 @@ test_that("realized conjugacy links are working", {
     expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dpois_multiplicative, 2L)
 
     expect_identical(c('dep_dnorm_identity_offset', 'dep_dnorm_multiplicative_offset', 'dep_dnorm_additive_offset', 'dep_dnorm_linear_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 4))
+                     ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 4))
     expect_identical(c('dep_dnorm_identity_coeff', 'dep_dnorm_multiplicative_coeff', 'dep_dnorm_additive_coeff', 'dep_dnorm_linear_coeff') %in%
-                ls(mcmc$samplerFunctions[[1]]), c(FALSE, TRUE, FALSE, FALSE))
+                     ls(mcmc$samplerFunctions[[1]]), c(FALSE, TRUE, FALSE, FALSE))
     expect_identical(c('dep_dpois_identity_offset', 'dep_dpois_multiplicative_offset', 'dep_dpois_additive_offset', 'dep_dpois_linear_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 4))
+                     ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 4))
     expect_identical(c('dep_dpois_identity_coeff', 'dep_dpois_multiplicative_coeff', 'dep_dpois_additive_coeff', 'dep_dpois_linear_coeff') %in%
-                ls(mcmc$samplerFunctions[[1]]), c(FALSE, TRUE, FALSE, FALSE))
+                     ls(mcmc$samplerFunctions[[1]]), c(FALSE, TRUE, FALSE, FALSE))
 
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_identity_nodeNames, c('y1[1]', 'y1[2]'))
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dnorm_multiplicative_nodeNames, c('y2[1]', 'y2[2]'))
@@ -2098,9 +2098,9 @@ test_that("realized conjugacy links are working", {
         }
     })
     m <- nimbleModel(code, data = list (y1 = matrix(rnorm(6),2),
-                               y2 = matrix(rnorm(6),2),
-                               y3 = matrix(rnorm(6),2),
-                               y4 = matrix(rnorm(6),2)),
+                                        y2 = matrix(rnorm(6),2),
+                                        y3 = matrix(rnorm(6),2),
+                                        y4 = matrix(rnorm(6),2)),
                      inits = list(b0 = rnorm(3), A=matrix(1:9, 3), pr = diag(3)))
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
@@ -2112,13 +2112,13 @@ test_that("realized conjugacy links are working", {
     expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_linear, 2L)
 
     expect_identical(c('dep_dmnorm_identity_coeff', 'dep_dmnorm_additive_coeff') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
     expect_identical(c('dep_dmnorm_multiplicative_coeff', 'dep_dmnorm_linear_coeff') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
     expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_multiplicative_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
     expect_identical(c('dep_dmnorm_additive_offset', 'dep_dmnorm_linear_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(TRUE, 2))
 
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_identity_nodeNames, c('y1[1, 1:3]', 'y1[2, 1:3]'))
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_additive_nodeNames, c('y2[1, 1:3]', 'y2[2, 1:3]'))
@@ -2137,7 +2137,7 @@ test_that("realized conjugacy links are working", {
         pr[1:3,1:3] ~ dwish(R[1:3,1:3], 8)
     })
     m <- nimbleModel(code, data = list (y1 = matrix(rnorm(6),2),
-                               y2 = matrix(rnorm(6),2)),
+                                        y2 = matrix(rnorm(6),2)),
                      inits = list(pr = diag(3), R = diag(3)))
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
@@ -2147,11 +2147,11 @@ test_that("realized conjugacy links are working", {
     expect_identical(mcmc$samplerFunctions[[1]]$N_dep_dmnorm_multiplicativeScalar, 2L)
 
     expect_identical('dep_dmnorm_identity_coeff' %in%
-                ls(mcmc$samplerFunctions[[1]]), FALSE)
+                     ls(mcmc$samplerFunctions[[1]]), FALSE)
     expect_identical('dep_dmnorm_multiplicativeScalar_coeff' %in%
-                ls(mcmc$samplerFunctions[[1]]), TRUE)
+                     ls(mcmc$samplerFunctions[[1]]), TRUE)
     expect_identical(c('dep_dmnorm_identity_offset', 'dep_dmnorm_multiplicativeScalar_offset') %in%
-                ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
+                     ls(mcmc$samplerFunctions[[1]]), rep(FALSE, 2))
 
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_identity_nodeNames, c('y1[1, 1:3]', 'y1[2, 1:3]'))
     expect_identical(mcmc$samplerFunctions[[1]]$dep_dmnorm_multiplicativeScalar_nodeNames, c('y2[1, 1:3]', 'y2[2, 1:3]'))
@@ -2865,8 +2865,8 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(length(conf$getSamplers()) == 1)
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
-    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered an invalid model density, and sampling results are likely invalid')
-    expect_true(all(samples == 2))
+    expect_output(samples <- runMCMC(Rmcmc, 10), 'encountered a log probability density value of infinity')
+
     ##
     code <- nimbleCode({
         x ~ dcat(prob = a[1:3])
@@ -2882,8 +2882,7 @@ test_that('Categorical sampler issues a warning for invalid model likelihood val
     expect_true(length(conf$getSamplers()) == 1)
     expect_true(conf$getSamplers()[[1]]$name == 'categorical')
     Rmcmc <- buildMCMC(conf)
-    expect_output(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'encountered an invalid model density, and sampling results are likely invalid')
-    expect_true(all(samples == 2))
+    expect_output(expect_error(suppressWarnings(samples <- runMCMC(Rmcmc, 10)), 'all log probability density values are negative infinity'))  # Use of `expect_output` prevents warnings about NAs from going into gold file.
 })
 
 test_that('prior_samples sampler operates correctly', {
@@ -3022,344 +3021,481 @@ test_that('assigning samplers to data and allowData argument', {
     expect_true(samps[[4]]$name == 'posterior_predictive')
 })
 
+
 test_that('partial_mvn sampler was given to dmnorm distribution when dependent on a node without being depended on by another node', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    for(i in 1:5) {
-      mu[i] <- alpha+i
-    }
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  conf <- configureMCMC(model, nodes = 'y[1:5]')
-  
-  expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             for(i in 1:5) {
+                                 mu[i] <- alpha+i
+                             }
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    conf <- configureMCMC(model, nodes = 'y[1:5]')
+    
+    expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
 })
 
 
 test_that('partial_mvn sampler was given to dmnorm distribution when not dependent on nodes in the model', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dnorm(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dexp(lambda[i])
-  }
-    alpha ~ dpois(1.0)
-    beta ~ dunif(0.1,1.0)
-    y[1:10]~dmnorm(mu[1:10], Sigma[1:10,1:10])
-  })
-  consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4:10))
-  
-  model <- nimbleModel(code = code, name = "model", constants = consts, data = data)
-  
-  conf <- configureMCMC(model, nodes = 'y[1:10]')
-  
-  expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dnorm(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dexp(lambda[i])
+                         }
+                             alpha ~ dpois(1.0)
+                             beta ~ dunif(0.1,1.0)
+                             y[1:10]~dmnorm(mu[1:10], Sigma[1:10,1:10])
+    })
+    consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4:10))
+    
+    model <- nimbleModel(code = code, name = "model", constants = consts, data = data)
+    
+    conf <- configureMCMC(model, nodes = 'y[1:10]')
+    
+    expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
 })
 
 test_that('partial_mvn sampler was given to dmnorm distribution when intermediate in a model', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    for(i in 1:5) {
-      mu[i] <- alpha+i
-    }
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-    h[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  conf <- configureMCMC(model, nodes = 'y[1:5]')
-  
-  expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             for(i in 1:5) {
+                                 mu[i] <- alpha+i
+                             }
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+                             h[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    conf <- configureMCMC(model, nodes = 'y[1:5]')
+    
+    expect_true(any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn', info= "partial_mvn sampler not assigned to dmnorm distribution"))
 })
 
 test_that('partial_mvn sampler was given to each dmnorm distribution', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    for(i in 1:5) {
-      mu[i] <- alpha+i
-      me[i] <- beta-i
-    }
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-    z[1:5]~dmnorm(me[1:5], Sigmo[1:5,1:5])
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5), z=c(1:3, rep(NA,2)))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  conf <- configureMCMC(model, nodes = model$getNodeNames()[26:27])
-  
-  expect_true(sum(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn')==2, info= "partial_mvn sampler not assigned to each dmnorm distribution")
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             for(i in 1:5) {
+                                 mu[i] <- alpha+i
+                                 me[i] <- beta-i
+                             }
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+                             z[1:5]~dmnorm(me[1:5], Sigmo[1:5,1:5])
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5), z=c(1:3, rep(NA,2)))
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    conf <- configureMCMC(model, nodes = model$getNodeNames()[26:27])
+    
+    expect_true(sum(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn')==2, info= "partial_mvn sampler not assigned to each dmnorm distribution")
 })
 
 test_that('partial_mvn sampler was given to each partially obs dmnorm distribution when both are at intermediate level in a model', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    for(i in 1:5) {
-      mu[i] <- alpha+i
-      me[i] <- beta-i
-    }
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-    z[1:5]~dmnorm(me[1:5], Sigmo[1:5,1:5])
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             for(i in 1:5) {
+                                 mu[i] <- alpha+i
+                                 me[i] <- beta-i
+                             }
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+                             z[1:5]~dmnorm(me[1:5], Sigmo[1:5,1:5])
+                             
+                             a[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
+                             b[1:5]~dmvt(z[1:5], Sigmo[1:5,1:5], df = 10)
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5), z=c(1:3, rep(NA,2)))
     
-    a[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
-    b[1:5]~dmvt(z[1:5], Sigmo[1:5,1:5], df = 10)
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5), z=c(1:3, rep(NA,2)))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  conf <- configureMCMC(model, nodes = model$getNodeNames()[26:27])
-  
-  expect_true(sum(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn')==2, info= "partial_mvn sampler not assigned to each dmnorm distribution")
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    conf <- configureMCMC(model, nodes = model$getNodeNames()[26:27])
+    
+    expect_true(sum(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn')==2, info= "partial_mvn sampler not assigned to each dmnorm distribution")
 })
 
 test_that('an error is given when trying to assign sampler to partially observed dmvt dist', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    y[1:5]~dmvt(mu[1:5], Sigma[1:5,1:5], df=10)
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  expect_error(configureMCMC(model, nodes = 'y[1:5]', print = FALSE), info = "partially observed dmvt node given a sampler")
-  expect_error(configureMCMC(model, print = FALSE), info = "model with partially observed dmvt given a sampler for every node" )
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             y[1:5]~dmvt(mu[1:5], Sigma[1:5,1:5], df=10)
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    expect_error(configureMCMC(model, nodes = 'y[1:5]', print = FALSE), info = "partially observed dmvt node given a sampler")
+    expect_error(configureMCMC(model, print = FALSE), info = "model with partially observed dmvt given a sampler for every node" )
 })
 
 test_that('an error is given when trying to assign a sampler to partially observed dmvt dist when it is intermediate in a model', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    for(i in 1:5) {
-      mu[i] <- alpha+i
-    }
-    y[1:5]~dmvt(mu[1:5], Sigma[1:5,1:5], df = 10)
-    h[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  expect_error(configureMCMC(model, print = FALSE), info = "model with dmvt given a sampler for every node" )
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             for(i in 1:5) {
+                                 mu[i] <- alpha+i
+                             }
+                             y[1:5]~dmvt(mu[1:5], Sigma[1:5,1:5], df = 10)
+                             h[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    expect_error(configureMCMC(model, print = FALSE), info = "model with dmvt given a sampler for every node" )
 })
 
 test_that('trying to give a sampler to an observed node doesnt yield an error from configureMCMC', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    y[1:5]~dmvt(mu[1:5], Sigma[1:5,1:5], df=10)
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  expect_error(configureMCMC(model, nodes = 'alpha', print = FALSE), NA, info = "observed node in model given a sampler")
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             y[1:5]~dmvt(mu[1:5], Sigma[1:5,1:5], df=10)
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    expect_error(configureMCMC(model, nodes = 'alpha', print = FALSE), NA, info = "observed node in model given a sampler")
 })
 
 test_that('partial_mvn sampler was not given to non dmnorm dist', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i]
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
-  
-  model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-  
-  conf <- configureMCMC(model)
-  
-  expect_true(!any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn'), info = "partial_mvn sampler assigned as sampler to non dmnorm distribution")
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i]
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
+    
+    conf <- configureMCMC(model)
+    
+    expect_true(!any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn'), info = "partial_mvn sampler assigned as sampler to non dmnorm distribution")
 })
 
 test_that('partial_mvn sampler was not given to non dmnorm distribution from model that has dmnorm distribution', {
-  code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dnorm(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dexp(lambda[i])
-  }
-    alpha ~ dpois(1.0)
-    beta ~ dunif(0.1,1.0)
-    y[1:10]~dmnorm(mu[1:10], Sigma[1:10,1:10])
-  })
-  consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-  data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4:10))
-  
-  model <- nimbleModel(code = code, name = "model", constants = consts, data = data)
-  
-  conf <- configureMCMC(model)
-  
-  expect_true(!any(sapply(conf$getSamplers(), function(sc) sc$name)[head(seq_along(sapply(conf$getSamplers(), function(sc) sc$name)), -1)]=='partial_mvn'), info="partial_mvn sampler assigned as sampler to non dmnorm node in model with dmnorm")
+    code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dnorm(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dexp(lambda[i])
+                         }
+                             alpha ~ dpois(1.0)
+                             beta ~ dunif(0.1,1.0)
+                             y[1:10]~dmnorm(mu[1:10], Sigma[1:10,1:10])
+    })
+    consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
+    data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4:10))
+    
+    model <- nimbleModel(code = code, name = "model", constants = consts, data = data)
+    
+    conf <- configureMCMC(model)
+    
+    expect_true(!any(sapply(conf$getSamplers(), function(sc) sc$name)[head(seq_along(sapply(conf$getSamplers(), function(sc) sc$name)), -1)]=='partial_mvn'), info="partial_mvn sampler assigned as sampler to non dmnorm node in model with dmnorm")
 })
 
 test_that('Values change at different rows for unobserved parts of partially observed node when multivariateNodesAsScalars = TRUE', {
-  Code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
-  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
-  
-  Cmodel <- compileNimble(model)
-  
-  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = TRUE)
-  conf$addMonitors("y")
-  
-  modelMCMC <- buildMCMC(conf)
-  CmodelMCMC <- compileNimble(modelMCMC, project = model)
-  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
-  
-  
-  onezro=apply(modrun[,3:5], 2, diff)!=0
-  
-  expect_true(any(apply(onezro, 1, function(x) any(x) && !all(x))), info= "Values of MCMC sampled nodes change at same time as other nodes")
+    Code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+    model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+    
+    Cmodel <- compileNimble(model)
+    
+    conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = TRUE)
+    conf$addMonitors("y")
+    
+    modelMCMC <- buildMCMC(conf)
+    CmodelMCMC <- compileNimble(modelMCMC, project = model)
+    modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+    
+    
+    onezro=apply(modrun[,3:5], 2, diff)!=0
+    
+    expect_true(any(apply(onezro, 1, function(x) any(x) && !all(x))), info= "Values of MCMC sampled nodes change at same time as other nodes")
 })
 
 test_that('Values change at same rows for unobserved parts of partially observed node when multivariateNodesAsScalars = FALSE', {
-  Code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
-  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
-  
-  Cmodel <- compileNimble(model)
-  
-  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = FALSE)
-  conf$addMonitors("y")
-  
-  modelMCMC <- buildMCMC(conf)
-  CmodelMCMC <- compileNimble(modelMCMC, project = model)
-  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
-  
-  onezro <- apply(modrun[,3:5], 2, diff)!=0
-  
-  expect_true(all(apply(onezro, 1, function(x) all(x) || all(!x))), info= "Values of MCMC sampled nodes change at same time as other nodes")
+    Code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+    model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+    
+    Cmodel <- compileNimble(model)
+    
+    conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = FALSE)
+    conf$addMonitors("y")
+    
+    modelMCMC <- buildMCMC(conf)
+    CmodelMCMC <- compileNimble(modelMCMC, project = model)
+    modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+    
+    onezro <- apply(modrun[,3:5], 2, diff)!=0
+    
+    expect_true(all(apply(onezro, 1, function(x) all(x) || all(!x))), info= "Values of MCMC sampled nodes change at same time as other nodes")
 })
 
 
 test_that('Values do not change for data when multivariateNodesAsScalars = TRUE', {
-  Code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
-  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
-  
-  Cmodel <- compileNimble(model)
-  
-  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = TRUE)
-  conf$addMonitors("y")
-  
-  modelMCMC <- buildMCMC(conf)
-  CmodelMCMC <- compileNimble(modelMCMC, project = model)
-  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
-  
-  onezro <- apply(modrun[,c(1,2,6,7)], 2, diff)!=0
-  
-  expect_true(all(apply(onezro, 1, function(x) !any(x))), info= "Values of data do not change when MCMC sampling")
+    Code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+    model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+    
+    Cmodel <- compileNimble(model)
+    
+    conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = TRUE)
+    conf$addMonitors("y")
+    
+    modelMCMC <- buildMCMC(conf)
+    CmodelMCMC <- compileNimble(modelMCMC, project = model)
+    modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+    
+    onezro <- apply(modrun[,c(1,2,6,7)], 2, diff)!=0
+    
+    expect_true(all(apply(onezro, 1, function(x) !any(x))), info= "Values of data do not change when MCMC sampling")
 })
 
 
 test_that('Values do not change for data when multivariateNodesAsScalars = FALSE', {
-  Code <- nimbleCode({ for (i in 1:N){
-    theta[i] ~ dgamma(alpha,beta) 
-    lambda[i] <- theta[i]*t[i] 
-    x[i] ~ dpois(lambda[i])
-  }
-    alpha ~ dexp(1.0)
-    beta ~ dgamma(0.1,1.0)
-    y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-  })
-  Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
-  Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-  Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
-  model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
-  
-  Cmodel <- compileNimble(model)
-  
-  conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = FALSE)
-  conf$addMonitors("y")
-  
-  modelMCMC <- buildMCMC(conf)
-  CmodelMCMC <- compileNimble(modelMCMC, project = model)
-  modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
-  
-  onezro <- apply(modrun[,c(1,2,6,7)], 2, diff)!=0
-  
-  expect_true(all(apply(onezro, 1, function(x) !any(x))), info= "Values of data do not change when MCMC sampling")
+    Code <- nimbleCode({ for (i in 1:N){
+                             theta[i] ~ dgamma(alpha,beta) 
+                             lambda[i] <- theta[i]*t[i] 
+                             x[i] ~ dpois(lambda[i])
+                         }
+                             alpha ~ dexp(1.0)
+                             beta ~ dgamma(0.1,1.0)
+                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+    })
+    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
+    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
+    Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
+    model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
+    
+    Cmodel <- compileNimble(model)
+    
+    conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = FALSE)
+    conf$addMonitors("y")
+    
+    modelMCMC <- buildMCMC(conf)
+    CmodelMCMC <- compileNimble(modelMCMC, project = model)
+    modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
+    
+    onezro <- apply(modrun[,c(1,2,6,7)], 2, diff)!=0
+    
+    expect_true(all(apply(onezro, 1, function(x) !any(x))), info= "Values of data do not change when MCMC sampling")
 })
 
+test_that('asymptotic correct results from conjugate gamma - CAR_normal sampler', {
+    num1 <- c(1,   2,      2,      1)
+    adj1 <- c(2,   1, 3,   2, 4,   3)
+    num2 <- c(4,               2,        3,            1,      2,        2)
+    adj2 <- c(2, 4, 5, 6,      1, 3,     2, 5, 6,      1,      1, 3,     1, 3)
+    constants <- list(num1=num1, adj1=adj1, N1=length(num1), L1=length(adj1),
+                      num2=num2, adj2=adj2, N2=length(num2), L2=length(adj2))
+    data <- list(y = 1:6)
+    inits <- list(t=1, x1=1:length(num1), x2=1:length(num2))
+    code <- nimbleCode({
+        t ~ dgamma(2, 5)
+        x1[1:N1] ~ dcar_normal(adj=adj1[1:L1], num=num1[1:N1], tau=t/2)
+        x2[1:N2] ~ dcar_normal(adj=adj2[1:L2], num=num2[1:N2], tau=t/3)
+        y[1] ~ dnorm(x1[1], 1)
+        y[2] ~ dnorm(x2[1], 1)
+        y[3] ~ dnorm(x1[1]+x1[4], 1)
+        y[4] ~ dnorm(x2[1]+2*x2[6], 1)
+        y[5] ~ dexp(5*t)
+        y[6] ~ dpois(2*t)
+    })
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, monitors = c('t','x1','x2'), useConjugacy = FALSE)
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    summary_RW <- runMCMC(compiledList$mcmc, 500000, nburnin = 100000, samples = FALSE, summary = TRUE, setSeed = 0)
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel, monitors = c('t','x1','x2'))
+    expect_true(grepl('^conjugate_dgamma_dcar_normal', conf$getSamplers('t')[[1]]$name))
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    summary_conj <- runMCMC(compiledList$mcmc, 500000, nburnin = 100000, samples = FALSE, summary = TRUE, setSeed = 0)
+    ##
+    expect_true(all(abs(summary_RW - summary_conj) < 0.04))
+})
+
+test_that("correct handling of changing `thin` value with `reset=FALSE`", {
+    code <- nimbleCode({
+        y ~ dnorm(mu, sd = sigma)
+        mu ~ dnorm(0,1)
+        sigma ~ dunif(0,5)
+    })
+
+    m <- nimbleModel(code, data = list(y=0), inits = list(mu = 0, sigma = 1))
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m, thin = 1)
+    cmcmc <- compileNimble(mcmc, project = m)
+
+    set.seed(1)
+    cmcmc$run(niter = 20)
+    gold <- as.matrix(cmcmc$mvSamples)
+
+    ## thin=1 -> thin=2
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8)
+    expect_silent(cmcmc$run(niter = 12, thin = 2, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(1:8,seq(10,20,by=2)),])
+
+    ## thin=2 -> thin=1
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 2)
+    expect_silent(cmcmc$run(niter = 12, thin = 1, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(seq(2,8,by=2),9:20),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 9, thin = 2)
+    expect_output(cmcmc$run(niter = 11, thin = 1, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(seq(2,8,by=2),10:20),])
+
+    ## thin=5 -> thin=1
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 10, thin = 5)
+    expect_silent(cmcmc$run(niter = 10, thin = 1, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(5,10,11:20),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 5)
+    expect_output(cmcmc$run(niter = 12, thin = 1, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(5,9:20),])
+
+    ## thin=4 -> thin=3
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 4)
+    expect_silent(cmcmc$run(niter = 12, thin = 3, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,seq(11,20,by=3)),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 9, thin = 4)
+    expect_output(cmcmc$run(niter = 11, thin = 3, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,seq(12,18,by=3)),])
+
+    ## thin=4 -> thin=5
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 4)
+    expect_silent(cmcmc$run(niter = 12, thin = 5, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,13,18),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 9, thin = 4)
+    expect_output(cmcmc$run(niter = 11, thin = 5, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,14,19),])
+
+})
 
 sink(NULL)
 

@@ -27,7 +27,7 @@ with no arguments to see a list of available opions.
 }
 \examples{
 # Set one option:
-nimbleOptions(verifyConjugatePosteriors = FALSE)
+nimbleOptions(MCMCverifyConjugatePosteriors = FALSE)
 
 # Compactly print all options:
 str(nimbleOptions(), max.level = 1)

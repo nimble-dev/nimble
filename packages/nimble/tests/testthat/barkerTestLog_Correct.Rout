@@ -1,0 +1,20 @@
+Test passed 😀
+── Failure: Barker sampler seems to work with variations on the adaptation scheme ──
+all(...) is not TRUE
+
+`actual`:   FALSE
+`expected`: TRUE 
+
+Error:
+! Test failed
+Backtrace:
+    ▆
+ 1. ├─base::source("/var/tmp/nimble-dev/nimble/packages/nimble/tests/testthat/test-barker.R")
+ 2. │ ├─base::withVisible(eval(ei, envir))
+ 3. │ └─base::eval(ei, envir)
+ 4. │   └─base::eval(ei, envir)
+ 5. ├─testthat::test_that(...) at tests/testthat/test-barker.R:60:1
+ 6. │ └─withr (local) `<fn>`() at tests/testthat/test-barker.R:60:1
+ 7. └─reporter$stop_if_needed()
+ 8.   └─rlang::abort("Test failed", call = NULL)
+[1] "Mon Dec  9 08:36:18 2024"

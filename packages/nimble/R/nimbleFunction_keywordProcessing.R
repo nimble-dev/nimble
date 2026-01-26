@@ -11,7 +11,7 @@ keywordInfoClass <- setRefClass('keywordInfoClass',
                                     processor = 'ANY'))
 
 
-# setupCodeTemplateClass is a class that contains the template for generating 
+# setupCodeTemplateClass is a class that contains the template for generating
 # new setupCode. Objects of this class are used by the function addNecessarySetupCode
 setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
                                       fields = list(
@@ -28,13 +28,13 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 
 
 ### KEYWORD INFO OBJECTS
-		
+
 d_gamma_keywordInfo <- keywordInfoClass(
     keyword = 'dgamma',
     processor = function(code, nfProc, RCfunProc){
         code <- handleScaleAndRateForGamma(code)
 	return(code)
-    }) 
+    })
 
 pq_gamma_keywordInfo <- keywordInfoClass(
     keyword = 'pq_gamma',
@@ -56,7 +56,7 @@ d_exp_nimble_keywordInfo <- keywordInfoClass(
 	processor = function(code, nfProc, RCfunProc){
 		code <- handleScaleAndRateForExpNimble(code)
 	return(code)
-	}) 
+	})
 
 pq_exp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'pq_exp_nimble',
@@ -105,7 +105,7 @@ nimSeq_keywordInfo <- keywordInfoClass(
         return(newRunCode)
     }
 )
-    
+
 
 values_keywordInfo <- keywordInfoClass(
     keyword = 'values',
@@ -114,28 +114,28 @@ values_keywordInfo <- keywordInfoClass(
       	return(code)
       if(isCodeArgBlank(code, 'model'))
       	stop('model argument missing from values call, with no accessor argument supplied')
-      
+
       accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE, logProbOnly = FALSE)
 
       useAccessorVectorByIndex <- FALSE
-      if(hasBracket(accessArgList$nodes)) { 
+      if(hasBracket(accessArgList$nodes)) {
             useAccessorVectorByIndex <- TRUE
             if(length(accessArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- accessArgList$nodes[[3]]
             accessArgList$nodes <- accessArgList$nodes[[2]]
-            accessArgList$sortUnique <- FALSE   
+            accessArgList$sortUnique <- FALSE
       }
 
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
       if(!useAccessorVectorByIndex)
-          newRunCode <- substitute(values(accessor = ACCESS_NAME), 
+          newRunCode <- substitute(values(accessor = ACCESS_NAME),
                                list(ACCESS_NAME = as.name(accessName)))
         else
             newRunCode <- substitute(values(accessor = ACCESS_NAME, accessorIndex = ACCESSVECINDEX),
                                  list(ACCESS_NAME = as.name(accessName), ACCESSVECINDEX = nodesIndexExpr))
       return(newRunCode)
-    })                                    
+    })
 
 getParam_keywordInfo <- keywordInfoClass(
     keyword = 'getParam',
@@ -174,7 +174,7 @@ getParam_keywordInfo <- keywordInfoClass(
         wh <- which(!paramVars %in% nfProc$setupSymTab$getSymbolNames())
         if(length(wh))
             stop("`param` argument in `getParam` contains variables not found in setup code: ", paste(paramVars[wh], collapse = ", "), ".")
-            
+
         paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param, hasIndex = useNodeFunctionVectorByIndex) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
 
         paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
@@ -188,7 +188,7 @@ getParam_keywordInfo <- keywordInfoClass(
         else
             newRunCode <- substitute(getParam(nodeFunction = NODEFUNVEC_NAME, paramID = PARAMID_NAME, paramInfo = PARAMINFO_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName), PARAMID_NAME = as.name(paramIDname), PARAMINFO_NAME = as.name(paramInfoName), NODEFUNVECINDEX = nodesIndexExpr))
-        
+
         return(newRunCode)
     }
 )
@@ -236,7 +236,7 @@ getBound_keywordInfo <- keywordInfoClass(
         else
             newRunCode <- substitute(getBound(nodeFunction = NODEFUNVEC_NAME, boundID = BOUNDID_NAME, boundInfo = BOUNDINFO_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName), BOUNDID_NAME = as.name(boundIDname), BOUNDINFO_NAME = as.name(boundInfoName), NODEFUNVECINDEX = nodesIndexExpr))
-                                               
+
         return(newRunCode)
     }
 )
@@ -261,7 +261,7 @@ calculate_keywordInfo <- keywordInfoClass(
           buildDerivs <- !is.null(derivControl) | !is.null(code$wrt)
           withDerivsOutputOnly <- buildDerivs & is.null(code$wrt) ## This is the case of *not* nimDerivs(model$calculate)
         }
-        
+
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, wrtNodes = code$wrt,
                                    includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
 
@@ -296,10 +296,10 @@ calculate_keywordInfo <- keywordInfoClass(
         }
 
         if(!withDerivsOutputOnly) { ## This is regular mode, including without derivs at all and with buildDerivs but not nimDerivs(model$calculate...)
-          nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+          nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
           addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         } else {
-          nodeFunName <- nodeFunctionVector_WithDerivsOutput_SetupTemplate$makeName(nodeFunVec_ArgList)	
+          nodeFunName <- nodeFunctionVector_WithDerivsOutput_SetupTemplate$makeName(nodeFunVec_ArgList)
           addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_WithDerivsOutput_SetupTemplate, nfProc)
         }
         if(!useNodeFunctionVectorByIndex){
@@ -329,7 +329,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
                 stop('nodes argument cannot be provided to calculateDiff if nodeFunctionIndex is specified')
             return(code) ## no modification needed!
         }
-        
+
         if(isCodeArgBlank(code, 'model'))
             stop('model argument missing from calculateDiff, with no accessor argument supplied')
         if(isCodeArgBlank(code, 'nodes')){
@@ -346,8 +346,8 @@ calculateDiff_keywordInfo <- keywordInfoClass(
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE
         }
-        
-        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
         addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         if(!useNodeFunctionVectorByIndex)
             newRunCode <- substitute(calculateDiff(nodeFxnVector = NODEFUNVEC_NAME),
@@ -355,7 +355,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
         else
             newRunCode <- substitute(calculateDiff(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
                                  list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
-        return(newRunCode)	
+        return(newRunCode)
     }
 )
 
@@ -391,8 +391,8 @@ simulate_keywordInfo <- keywordInfoClass(
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
             nodeFunVec_ArgList$sortUnique <- FALSE # If includeData = FALSE, this can trigger error from nodeFunctionVector if nodes does contain data
         }
-  
-        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
         addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         if(!useNodeFunctionVectorByIndex)
             newRunCode <- substitute(simulate(nodeFxnVector = NODEFUNVEC_NAME),
@@ -400,8 +400,8 @@ simulate_keywordInfo <- keywordInfoClass(
         else
             newRunCode <- substitute(simulate(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
                                  list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
-        
-        return(newRunCode)	
+
+        return(newRunCode)
     }
 )
 
@@ -434,7 +434,7 @@ getLogProb_keywordInfo <- keywordInfoClass(
             nodeFunVec_ArgList$sortUnique <- FALSE
         }
 
-        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
         addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         if(!useNodeFunctionVectorByIndex)
             newRunCode <- substitute(getLogProb(nodeFxnVector = NODEFUNVEC_NAME),
@@ -442,9 +442,9 @@ getLogProb_keywordInfo <- keywordInfoClass(
         else
             newRunCode <- substitute(getLogProb(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
-        return(newRunCode)	
+        return(newRunCode)
     }
-)    
+)
 
 nimCopy_keywordInfo <- keywordInfoClass(
 	keyword = 'nimCopy',
@@ -455,10 +455,10 @@ nimCopy_keywordInfo <- keywordInfoClass(
 		accessTypes <- c('symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
 		from_ArgList <- list(name = code$from, class = symTypeFromSymTab(code$from, nfProc$setupSymTab, options = possibleObjects))
 		to_ArgList <- list(name = code$to, class = symTypeFromSymTab(code$to, nfProc$setupSymTab, options = possibleObjects))
-		if(is.null(from_ArgList$class)) 
-			stop("Error in nimCopy: '", code$from, "' is not a recognized model or modelValues object.") 		
-		if(is.null(to_ArgList$class)) 
-			stop("Error in nimCopy: '", code$to, "' is not a recognized model or modelValues object.") 		
+		if(is.null(from_ArgList$class))
+			stop("Error in nimCopy: '", code$from, "' is not a recognized model or modelValues object.")
+		if(is.null(to_ArgList$class))
+			stop("Error in nimCopy: '", code$to, "' is not a recognized model or modelValues object.")
 		if(from_ArgList$class %in% modelValuesTypes){
 			if(isCodeArgBlank(code, 'row'))		stop('row argument missing in copy call')
 			from_ArgList$row = code$row
@@ -485,12 +485,12 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			from_ArgList$nodes <- as.name(allNodes_name)
 		}
 		else	from_ArgList$nodes <- code$nodes
-		
+
 		if(isCodeArgBlank(code, 'nodesTo'))		to_ArgList$nodes <- from_ArgList$nodes
 		else									to_ArgList$nodes <- code$nodesTo
-				
+
 		if(from_ArgList$class == 'symbolModel'){
-                    isMVfrom <- 0 
+                    isMVfrom <- 0
                     accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly)
                     accessFrom_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
                     addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
@@ -502,10 +502,10 @@ nimCopy_keywordInfo <- keywordInfoClass(
                     addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(from_ArgList$class %in% accessTypes) {
-                    isMVfrom <- as.integer(from_ArgList$class == 'symbolModelValuesAccessorVector') 
+                    isMVfrom <- as.integer(from_ArgList$class == 'symbolModelValuesAccessorVector')
                     accessFrom_name <- as.character(code$from)
                 }
-        
+
 		if(to_ArgList$class == 'symbolModel'){
                     isMVto <- 0
                     accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, logProbOnly = code$logProbOnly)
@@ -519,18 +519,18 @@ nimCopy_keywordInfo <- keywordInfoClass(
                     addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class %in% accessTypes) {
-                    isMVto <- as.integer(to_ArgList$class == 'symbolModelValuesAccessorVector') 
-                    accessTo_name <- as.character(code$to) 
+                    isMVto <- as.integer(to_ArgList$class == 'symbolModelValuesAccessorVector')
+                    accessTo_name <- as.character(code$to)
                 }
         if(getNimbleOption('useNewNimCopy')) {
             copierVector_ArgList <- list(accessFrom_name = accessFrom_name, accessTo_name = accessTo_name, isMVto = isMVto, isMVfrom = isMVfrom)
             copierVector_name <- copierVector_setupCodeTemplate$makeName(copierVector_ArgList)
-            addNecessarySetupCode(copierVector_name, copierVector_ArgList, copierVector_setupCodeTemplate, nfProc) 
+            addNecessarySetupCode(copierVector_name, copierVector_ArgList, copierVector_setupCodeTemplate, nfProc)
         }
-        
+
         if(!getNimbleOption('useNewNimCopy')) {
-            ##What happens below is a bit convoluted and really for backwards compatibility 	
-            runCode <- substitute(nimCopy(from = FROM_ACCESS, rowFrom = NA, to = TO_ACCESS, rowTo = NA), 
+            ##What happens below is a bit convoluted and really for backwards compatibility
+            runCode <- substitute(nimCopy(from = FROM_ACCESS, rowFrom = NA, to = TO_ACCESS, rowTo = NA),
                                   list(FROM_ACCESS = as.name(accessFrom_name), TO_ACCESS = as.name(accessTo_name)))
             if(from_ArgList$class %in% modelValuesTypes)
                 runCode$rowFrom = from_ArgList$row
@@ -545,7 +545,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
                 unusedArg <- NA
                 NA
             }
-            runCode <- substitute(nimCopy(copierVector = COPIER_VECTOR, rowFrom = ROWFROM, rowTo = ROWTO, unused = UNUSED), 
+            runCode <- substitute(nimCopy(copierVector = COPIER_VECTOR, rowFrom = ROWFROM, rowTo = ROWTO, unused = UNUSED),
                                   list(COPIER_VECTOR = as.name(copierVector_name),
                                        ROWFROM = rowFromArg, ROWTO = rowToArg, UNUSED  = unusedArg))
         }
@@ -555,7 +555,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
 
 
 doubleBracket_keywordInfo <- keywordInfoClass(
-	keyword = '[[', 
+	keyword = '[[',
     processor = function(code, nfProc, RCfunProc){
         callerCode <- code[[2]]
         if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
@@ -570,7 +570,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
         if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
             return(code)
         if(class == 'symbolNimbleList'){
-          #	Code is of the form 
+          #	Code is of the form
           #  myNimbleList[['myVar']]
           nl_charName <- as.character(callerCode)
           nl_fieldName <-as.character(code[[3]])
@@ -588,7 +588,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
                                 " is too long.  It can only have one element."),
                          call. = FALSE)
                 varAndIndices <- nimbleInternalFunctions$getVarAndIndices(nodeArg)
-                
+
                 allNDims <- lapply(nfProc$instances, function(x) {
                     model <- eval(singleAccess_ArgList$model,
                                   envir = x)
@@ -610,7 +610,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
                          call. = FALSE)
                 nDim <- allNDims[[1]]
                 useMap <- nDim > 0
-                
+
                 ## ##
                 ## ## If input is of the form model[['a']]
                 ## ## and a is non-scalar,
@@ -634,7 +634,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             if(useMap){
                 accessName <- map_SetupTemplate$makeName(singleAccess_ArgList)
-                addNecessarySetupCode(accessName, singleAccess_ArgList, map_SetupTemplate, nfProc)	
+                addNecessarySetupCode(accessName, singleAccess_ArgList, map_SetupTemplate, nfProc)
                 ans <- makeMapAccessExpr(accessName, as.name(accessName), nDim)
             }
             else{
@@ -643,7 +643,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
                                         #ans <- substitute(ACCESSNAME[MFLATINDEX], list(ACCESSNAME = as.name(accessName), MFLATINDEX = as.name(paste0(accessName, '_flatIndex'))))
                 ans <- makeSingleIndexAccessExpr(accessName, as.name(accessName))
             }
-            return(ans)			
+            return(ans)
         }
         stop("Incorrect use of double brackets in: '", deparse(code), "'.")
     })
@@ -665,14 +665,14 @@ dollarSign_keywordInfo <- keywordInfoClass(
     keyword = '$',
     processor = function(code, nfProc, RCfunProc){
         callerCode <- code[[2]]
-        
-        if(is.null(nfProc)) { 
+
+        if(is.null(nfProc)) {
 
             nl_fieldName <-as.character(code[[3]])
             newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
             return(newRunCode)
         }
-        
+
         doubleBracketCase <- FALSE
         if(length(callerCode) > 1) {
             if(deparse(callerCode[[1]] == '[[')) {
@@ -683,7 +683,7 @@ dollarSign_keywordInfo <- keywordInfoClass(
         if(!doubleBracketCase)
             symObj <- getSymObj_recurse(callerCode, nfProc$setupSymTab)
 
-        class <- class(symObj)[1] ## symObj is allowed to be NULL       
+        class <- class(symObj)[1] ## symObj is allowed to be NULL
 
                                         #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
         if(length(callerCode) > 1){
@@ -693,12 +693,12 @@ dollarSign_keywordInfo <- keywordInfoClass(
         }
                                         #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
                                         #       May be a better way to do this
-        
+
 
         if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
             nl_fieldName <-as.character(code[[3]])
             newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
-            return(newRunCode)				
+            return(newRunCode)
         }
         if(class == 'symbolNimbleFunctionList'){
              nf_fieldName <-as.character(code[[3]])
@@ -712,50 +712,50 @@ dollarSign_keywordInfo <- keywordInfoClass(
             return(as.name(accessName))
         }
         if(class == 'symbolNimbleFunction'){
-            
+
                                         #	Code is of the form myNimbleFunction$myMethod
                                         #   or myNimbleFunction$myVar
-            
-            
+
+
                                         #	Note that we have cut off '()' in the case of myMethod, so we must inspect the
                                         #   nested symbol for myMethod to determine whether it is a method or variable
-            
+
             nf_fieldName <-as.character(code[[3]])
             objectSymbol = symObj$nfProc$setupSymTab$getSymbolObject(nf_fieldName)
             if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
-                newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = callerCode, METHODNAME = nf_fieldName))				
+                newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = callerCode, METHODNAME = nf_fieldName))
                 return(newRunCode)
             }
             else {
-                                        # We *assume* that if its not a member function, it should be treated with 
+                                        # We *assume* that if its not a member function, it should be treated with
                                         # nfVar
                 newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = callerCode, VARNAME = nf_fieldName))
                 return(newRunCode)
             }
         }
         if(class == 'symbolNimbleList'){
-                                        #	Code is of the form 
+                                        #	Code is of the form
                                         #  myNimbleList$myVar
             nl_fieldName <-as.character(code[[3]])
             newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
             return(newRunCode)
         }
         if(class == 'symbolNimbleFunctionList'){
-            
+
                                         #	Code is of the form myNimbleFunctionList[[i]]$foo	(foo should be a method)
                                         #	At this point, we cannot access variables of a nimble function list, ie
                                         #	myNimbleFunctionList[[i]]$myVariable is not allowed
                                         #	If we add this functionality, we will need to look up what foo as we do
                                         #	for the nimbleFunction case above
-            
+
             nf_name <-code[[2]]
             nf_fieldName <- as.character(code[[3]])
             newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
-            return(newRunCode)				
+            return(newRunCode)
         }
     }
 )
-    
+
 singleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[',
     processor = function(code, nfProc, RCfunProc){
@@ -772,12 +772,12 @@ singleBracket_keywordInfo <- keywordInfoClass(
                 indexExpr = code[[4]]
             else
                 indexExpr = substitute(1)
-            
+
             return(substitute(ACCESS[INDEX], list(ACCESS = as.name(accessName), INDEX = indexExpr) ) )
         }
         return(code)
     }
-)    
+)
 
 length_char_keywordInfo <- keywordInfoClass(
     keyword = 'length',
@@ -797,7 +797,7 @@ length_char_keywordInfo <- keywordInfoClass(
 nimIntegrate_keywordInfo <- keywordInfoClass(
     keyword = 'nimIntegrate',
     processor = function(code, nfProc, RCfunProc) {
-        if(code$abs.tol == quote(rel.tol)) 
+        if(code$abs.tol == quote(rel.tol))
             code$abs.tol = code$rel.tol
         iTols <- which(names(code) %in% c('rel.tol','abs.tol'))
         for(i in iTols) {
@@ -818,11 +818,14 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     ## First check to see if nimFxn argument is a method.
     fxnCall <- code[[2]][[1]]
     order <- code[['order']]
+    outInds <- code[['outInds']]
+    inDir <- code[['inDir']]
+    outDir <- code[['outDir']]
 
     calculateCase <- FALSE
     if(deparse(fxnCall) == 'calculate'){
         calculateCase <- TRUE
-    } 
+    }
     else if(length(fxnCall) == 3 &&
             (deparse(fxnCall[[1]]) == '$' &&
              deparse(fxnCall[[3]]) == 'calculate')){
@@ -831,7 +834,15 @@ nimDerivs_keywordInfo <- keywordInfoClass(
         code[[2]] <- matchKeywordCode(code[[2]], nfProc)
         calculateCase <- TRUE
     }
+    non_NA_arg <- function(arg) {
+        if(is.call(arg)) return(TRUE)
+        if(is.name(arg)) return(TRUE)
+        !isTRUE(all(is.na(arg)))
+    }
     if(calculateCase) {
+        if(non_NA_arg(outInds) || non_NA_arg(inDir) || non_NA_arg(outDir)) {
+            warning("nimDerivs with calculate() does not support outInds, inDir, or outDir arguments. They will be ignored.")
+        }
         innerCode <- code[[2]]
         if(length(code$wrt)==1)
           if(!is.name(code$wrt))
@@ -852,6 +863,28 @@ nimDerivs_keywordInfo <- keywordInfoClass(
 
       ## Only make the wrt substitution if the names are baked in as character
       wrtArg <- code$wrt
+
+      # For extending to outInds, inDir, and outDir, we will
+      # 1. Give warnings if either wrt and inDir are given
+      #   or outInds and outDir are given.
+      #   Treat wrt and outInds as over-riding the others.
+      # 2. I think we can leave the rest as is, except set NAs to -1s for an easier flag inside C++.
+      #    wrt gets more handling here, resulting in default (-1, -1) if wrt is NULL.
+      #    But sizeProcessing with do makeVectorIfNeeded so the others can be left as is.
+
+        ## We thought about some argument warnings here, but any warnings need to be run-time.
+        ## wrt and inDir don't make sense in one call, but they can both be run-time so can change betwen calls.
+        ## outDir and outInds are similar and are even both allowed because in the (run-time) case or order=2
+        ## the outInds are used for the Jacobian and the outDir for the Hessian reverse.
+        for(nameToCheck in c('outInds')) { ## Oops, general loop but only one case.
+            if(!non_NA_arg(code[[nameToCheck]]))
+             code[[nameToCheck]] <- substitute(A, list(A=-1)) # get -1 as a number, not parse tree of -(1)
+        }
+        for(nameToCheck in c('inDir', 'outDir')) {
+            if(!non_NA_arg(code[[nameToCheck]]))
+             code[[nameToCheck]] <- as.numeric(NA) # ensure it is a numeric NA.
+        }
+
       doPreprocess <- FALSE
       if(is.numeric(wrtArg) | is.logical(wrtArg)) {
         if(any(is.na(wrtArg[1]))) { ## wrt = NULL (default), set to NA, which will become -1 by convertWrtArgToIndices and then c(-1, -1) in the setup code
@@ -916,7 +949,7 @@ derivInfo_keywordInfo <- keywordInfoClass(
     calculateCase <- FALSE
     if(deparse(fxnCall) == 'calculate'){
       calculateCase <- TRUE
-    } 
+    }
     else if(length(fxnCall) == 3 &&
               (deparse(fxnCall[[1]]) == '$' &&
                  deparse(fxnCall[[3]]) == 'calculate')){
@@ -996,15 +1029,15 @@ keywordListModelMemberFuns[['getBound']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
-matchFunctions[['setSize']] <- function(var, ..., copy = TRUE, fillZeros = TRUE){} 
+matchFunctions[['setSize']] <- function(var, ..., copy = TRUE, fillZeros = TRUE){}
 matchFunctions[['nimC']] <- nimC
 matchFunctions[['nimRep']] <- function(x, times = 1, length.out, each = 1) {}
 matchFunctions[['nimSeq']] <- nimSeq
-matchFunctions[['nimNumeric']] <- nimNumeric 
-matchFunctions[['nimInteger']] <- nimInteger 
-matchFunctions[['nimLogical']] <- nimLogical 
-matchFunctions[['nimMatrix']] <- nimMatrix 
-matchFunctions[['nimArray']] <- nimArray 
+matchFunctions[['nimNumeric']] <- nimNumeric
+matchFunctions[['nimInteger']] <- nimInteger
+matchFunctions[['nimLogical']] <- nimLogical
+matchFunctions[['nimMatrix']] <- nimMatrix
+matchFunctions[['nimArray']] <- nimArray
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['getParam']] <- getParam
 matchFunctions[['getBound']] <- getBound
@@ -1024,7 +1057,8 @@ matchFunctions[['nimDerivs']] <- function(call = NA,
                                           order = nimC(0,1,2),
                                           wrt = NA,
                                           model = NA, updateNodes = NA, constantNodes = NA,
-                                          do_update = TRUE, reset = FALSE) {}
+                                          do_update = TRUE, reset = FALSE,
+                                          outInds=NA, inDir=NA, outDir=NA) {}
 matchFunctions[['derivInfo']] <- derivInfo
 matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
@@ -1087,7 +1121,7 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 		qFun <- paste0('q', thisDist)
 		rFun <- paste0('r', thisDist)
 		dFun <- paste0('d', thisDist)
-		
+
                 eval(substitute(matchFunctions[[dFun]] <- DFUN, list(DFUN = as.name(dFun))))
                 eval(substitute(matchFunctions[[rFun]] <- RFUN, list(RFUN = as.name(rFun))))
                 if(exists(qFun))
@@ -1096,7 +1130,7 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
                     eval(substitute(matchFunctions[[pFun]] <- PFUN, list(PFUN = as.name(pFun))))
 	}
 }
-          
+
 
 addDistList2matchFunctions(matchDistList, matchFunctions)
 
@@ -1114,7 +1148,7 @@ processKeywordCodeMemberFun <- function(code, nfProc, RCfunProc) { ## handle cas
     ## model$calculate(nodes)
     dollarSignPart <- code[[1]]
     objectPart <- dollarSignPart[[2]]
-    
+
     isModel <- FALSE
     if(length(objectPart) != 1) isModel <- FALSE ## a case like a[[i]]$b(), which can only be a nimbleFunction list
     else {
@@ -1156,13 +1190,13 @@ processKeywords_recurse <- function(code, nfProc = NULL, RCfunProc) {
         }
         return(code)
     }
-    
+
     if(length(code[[1]]) == 1) {
         code <- processKeyword(code, nfProc, RCfunProc)
     }
-    
+
     cl = length(code)
-    
+
     if(is.call(code)) {
         if(length(code[[1]]) > 1) {
             if(deparse(code[[1]][[1]] == '$')) {
@@ -1233,9 +1267,9 @@ copierVector_setupCodeTemplate <- setupCodeTemplateClass(
              ACCESS_FROM = as.name(argList$accessFrom_name),
              ACCESS_TO   = as.name(argList$accessTo_name),
              ISMVFROM    = as.integer(argList$isMVfrom),
-             ISMVTO      = as.integer(argList$isMVto)) 
+             ISMVTO      = as.integer(argList$isMVto))
     })
-    
+
 
 modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are modelValues, nodes and logProb
@@ -1268,7 +1302,7 @@ nodeFunctionVector_WithDerivsOutput_SetupTemplate <- setupCodeTemplateClass(
       calcNodes = CALCNODES,
       excludeData = EXCLUDEDATA,
       sortUnique = SORTUNIQUE)
-  ), 
+  ),
   makeCodeSubList = function(resultName, argList){
     list(NODEFXNVECNAME = as.name(resultName),
          MODEL = argList$model,
@@ -1293,7 +1327,7 @@ nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate <- setupCodeTemplateClas
       model = MODEL,
       updateNodes = UPDATENODES,
       constantNodes = CONSTANTNODES)
-  ), 
+  ),
   makeCodeSubList = function(resultName, argList){
     list(NODEFXNVECNAME = as.name(resultName),
          MODEL = argList$model,
@@ -1304,7 +1338,7 @@ nodeFunctionVector_DerivsModelUpdateNodes_SetupTemplate <- setupCodeTemplateClas
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
                                         #Note to programmer: required fields of argList are model, nodes and includeData
-    
+
     makeName = function(argList){
         Rname2CppName(paste(deparse(argList$model),
                             deparse(argList$nodes),
@@ -1321,7 +1355,7 @@ nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
                                                       excludeData = EXCLUDEDATA,
                                                       sortUnique = SORTUNIQUE,
                                                       errorContext = ERRORCONTEXT)
-    ), 
+    ),
     makeCodeSubList = function(resultName, argList){
         list(NODEFXNVECNAME = as.name(resultName),
              MODEL = argList$model,
@@ -1380,7 +1414,7 @@ allLHSNodes_SetupTemplate <- setupCodeTemplateClass(
 		list(NODENAMES = as.name(resultName),
 			MODEL = argList$model)
 	})
-	
+
 allModelNodes_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model
 
@@ -1391,24 +1425,24 @@ allModelNodes_SetupTemplate <- setupCodeTemplateClass(
 	makeCodeSubList = function(resultName, argList){
 		list(NODENAMES = as.name(resultName),
 			MODEL = argList$model)
-	})	
-	
+	})
+
 allModelValuesVars_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are modelValues
 
 	makeName = function(argList){
 		Rname2CppName(paste('allMVVars', deparse(argList$modelValues), sep = '_'))
 	},
-	codeTemplate = quote(NODENAMES <- MODELVALUES$getVarNames(includeLogProb = FALSE)),	
-		
+	codeTemplate = quote(NODENAMES <- MODELVALUES$getVarNames(includeLogProb = FALSE)),
+
 	makeCodeSubList = function(resultName, argList){
 		list(NODENAMES = as.name(resultName),
 			MODELVALUES = argList$modelValues)
-	})	
-	
+	})
+
 code2Name_fromArgList <- function(argList)
-	Rname2CppName(deparse(argList$code))	
-	
+	Rname2CppName(deparse(argList$code))
+
 singleVarAccess_SetupTemplate <- setupCodeTemplateClass(
 	#Note to progammer: required fields of argList are 'code' (raw code to be processed), model and var
 
@@ -1419,14 +1453,14 @@ singleVarAccess_SetupTemplate <- setupCodeTemplateClass(
 	makeCodeSubList = function(resultName, argList){
 		list(SINGLEACCESSOR = as.name(resultName),
 			MODEL = argList$model,
-			VAR = argList$var)	
-	})	
-	
+			VAR = argList$var)
+	})
+
 singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 	#Note to progammer: required fields of argList are code, varAndIndices, node (character) and model(expression)
 	makeOtherNames = function(name, argList){ paste0(name, '_flatIndex')},
 	makeName = code2Name_fromArgList,
-	
+
 	codeTemplate = quote({
 		VARANDINDICES <- nimble:::nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
@@ -1441,7 +1475,7 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 			MFLATINDEX = as.name(paste0(resultName, '_flatIndex')),
 			MODELVAREXPR = argList$model)
 	})
-	
+
 map_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are code, model
 	makeName  = code2Name_fromArgList,
@@ -1473,7 +1507,7 @@ map_SetupTemplate <- setupCodeTemplateClass(
 
                      MSIZES = as.name(paste0(resultName, '_sizes')))
 	})
-	
+
 singleModelValuesAccessor_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are modelValues, var, row, code
 	makeName = code2Name_fromArgList,
@@ -1548,7 +1582,7 @@ symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
     if(length(options) == 0)
         return(class)
     if(!(class %in% options))
-        return(NULL)  ## nimbleList that was not constructed in setup code 
+        return(NULL)  ## nimbleList that was not constructed in setup code
     return(class)
 }
 
@@ -1571,7 +1605,7 @@ matchAndFill.call <- function(def, call){
 
     if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
     indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
-    
+
     for(thisArgName in formalNames){					# This is to get the order of the arguments correctly and to insert unmatched arguemnts to ... location if appropriate
         if(thisArgName == '...') {
             for(thisIndex in indexAdditionalArgs) {
@@ -1582,13 +1616,13 @@ matchAndFill.call <- function(def, call){
                     newCall[[thisName]] <- matchedCall[[thisName]]
                 }
             }
-        } else {        
+        } else {
             thisArg <- matchedCall[[thisArgName]]
             if(!is.null(thisArg))
                 newCall[[thisArgName]] <- thisArg
         }
     }
-    
+
     return(newCall)
 }
 
@@ -1650,7 +1684,7 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
                         symObj <- nfProc$setupSymTab$getSymbolObject(nfListName)
                     }
                 }
-                
+
             }
         } else {
             symTab <- nfProc$setupSymTab
@@ -1659,7 +1693,7 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     } else {
         symTab <- symObj <- NULL
     }
-    
+
     if(memFunName=='new') { ## this is unique because in non-nested mode, this can be looking for a nlDef in global environment (or possibly elsewhere, but not dealt with)
         ## symObj can be null here
         if(is.null(symObj)) {
@@ -1687,13 +1721,13 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     }
 
     if(is.null(symObj)) stop('Problem looking up object')
-    
+
     if(symObj$type == 'nimbleFunction') {
-        thisRCfunProc <- symObj$nfProc$RCfunProcs[[memFunName]] 
+        thisRCfunProc <- symObj$nfProc$RCfunProcs[[memFunName]]
         if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
         thisFunctionMatch <- thisRCfunProc$RCfun$template
         return(matchAndFill.call(thisFunctionMatch, code ) )
-    } 
+    }
     if(inherits(symObj, 'symbolModel')) {
         if(nestedLeftSide) stop('Access to a model cannot be nested.')
         thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
@@ -1705,7 +1739,7 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
         thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
         return(matchAndFill.call(thisFunctionMatch, code ) )
     }
-    stop(paste0("Cannot handle this expression: ", deparse(code))) 
+    stop(paste0("Cannot handle this expression: ", deparse(code)))
 }
 
 
@@ -1725,7 +1759,7 @@ matchKeywordCode <- function(code, nfProc){
             }
         }
     }
-    
+
     ## see if this is a call to an RCfunction
     if(is.null(thisFunctionMatch)) {
         if(exists(callName)) {
@@ -1735,7 +1769,7 @@ matchKeywordCode <- function(code, nfProc){
             }
         }
     }
-    
+
     if(!is.null(thisFunctionMatch))
         return(matchAndFill.call(thisFunctionMatch, code ) )
     return(code)
@@ -1744,7 +1778,7 @@ matchKeywordCode <- function(code, nfProc){
 matchKeywords_recurse <- function(code, nfProc = NULL) {
     cl = length(code)
     if(cl == 1){ ## There are no arguments
-        if(is.call(code)){  
+        if(is.call(code)){
             if(length(code[[1]]) > 1) {
                 if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc)
                 else
@@ -1756,7 +1790,7 @@ matchKeywords_recurse <- function(code, nfProc = NULL) {
     }
     if(length(code[[1]]) == 1) ## a simple call like a(b,c), not a$b(c)
         code <- matchKeywordCode(code, nfProc)
-    
+
     if(is.call(code)) {
         if(length(code[[1]]) > 1) {
             if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc) ## handle a$b(c) as one unit
@@ -1910,7 +1944,7 @@ handleScaleAndRateForGamma <- function(code){
   dist <- substring(codeName, 2, nchar(codeName))
   if(dist == 'invgamma' || dist == 'sqrtinvgamma') {  ## For [drpq]invgamma
     if(is.null(rateArg)) {
-      rateArg <- substitute(1.0/(A), list(A = code$scale)) 
+      rateArg <- substitute(1.0/(A), list(A = code$scale))
       code$scale <- rateArg
       names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
     }
@@ -1924,14 +1958,14 @@ handleScaleAndRateForGamma <- function(code){
     if(!is.null(scaleArg) & !is.null(rateArg)) setScaleArg <- TRUE ## Both are there, so set scale from the provided rate
     if(setScaleArg) {
       code$scale <- NULL
-      scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
+      scaleArg <- substitute(1.0/(A), list(A = code$rate))
       code$rate <- scaleArg
       names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
     }
     code$rate <- NULL
   } else { # dgamma
     if(is.null(scaleArg)) {
-      scaleArg <- substitute(1.0/(A), list(A = code$rate)) 
+      scaleArg <- substitute(1.0/(A), list(A = code$rate))
       code$rate <- scaleArg
       names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
     }
@@ -1945,7 +1979,7 @@ handleScaleAndRateForExpNimble <- function(code){
     rateArg <- code$rate
     if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dexp_nimble')
     if(is.null(rateArg)) {
-        rateArg <- substitute(1.0/(A), list(A = code$scale)) 
+        rateArg <- substitute(1.0/(A), list(A = code$scale))
         code$scale <- rateArg
         names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
     }
@@ -1980,24 +2014,21 @@ nimDerivsInfoClass_init_impl <- function(.self
                                        , model) {
     .self$model <- model
 
-    ## wrt nodes
-    wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+    wrtNodeComps <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
     wrtNodesAccessor <- modelVariableAccessorVector(model,
-                                               wrtNodes,
+                                                    wrtNodeComps,
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
-    # See comment in makeModelDerivsInfo for explanation of why both of the next
-    # two lines are necessary.
+    # See comment in makeModelDerivsInfo for discussion of nodes versus components.
     calcNodes <- model$expandNodeNames(calcNodes)
-    calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
     derivsInfo <- makeModelDerivsInfo_impl(model,
-                                      wrtNodes,
+                                      wrtNodeComps,
                                       calcNodes,
                                       dataAsConstantNodes = TRUE)
     constantNodes <- derivsInfo$constantNodes
     updateNodes <- derivsInfo$updateNodes
-    
+
     extraInputNodesAccessor <- modelVariableAccessorVector(model,
                                                            updateNodes,
                                                            logProb = FALSE)
@@ -2009,12 +2040,12 @@ nimDerivsInfoClass_init_impl <- function(.self
                                                          logProb = FALSE)
     .self$constantMapInfo <- makeMapInfoFromAccessorVectorFaster(constantNodesAccessor)
 
-    
+
     ## output nodes: deterministic nodes in calcNodes plus logProb nodes
     ##   but not the actual data nodes.
 
     modelOutputNodes <- makeOutputNodes(model, calcNodes)
-    
+
     modelOutputNodesAccessor <- modelVariableAccessorVector(model,
                                                             modelOutputNodes,
                                                             logProb = FALSE)
@@ -2026,10 +2057,7 @@ nimDerivsInfoClass_init_impl <- function(.self
 makeOutputNodes <- function(model,
                             calcNodes) {
   ## Need to do `isDeterm` on nodes, not node components (issue 1431).
-  ## Presuming (and based on a simple test) that by now,
-  ## input `calcNodes` would include all encompassing nodes
-  ## and that this next step would not introduce any additional components.  
-  calcNodes <- model$expandNodeNames(calcNodes)
+  calcNodes <- model$expandNodeNames(calcNodes)  # Ensure includes all encompassing nodes.
   logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodes)
   isDetermCalcNodes <- model$isDeterm(calcNodes, nodesAlreadyExpanded = TRUE)
   modelOutputNodes <- c(model$expandNodeNames(calcNodes[isDetermCalcNodes], returnScalarComponents = TRUE),
@@ -2045,7 +2073,7 @@ nimDerivsInfoClass_output_init_impl <- function(.self,
                                                   character(),
                                                   logProb = FALSE)
   .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
-  
+
   constantNodesAccessor <- modelVariableAccessorVector(model,
                                                        character(),
                                                        logProb = FALSE)
@@ -2137,71 +2165,98 @@ makeModelDerivsInfo <- function(model,
                            wrtNodes,
                            calcNodes,
                            dataAsConstantNodes = TRUE) {
-  wrtNodes <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+  wrtNodeComps <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
   # This ensures that elements of a non-scalar node become the entire non-scalar node.
   calcNodes <- model$expandNodeNames(calcNodes)
-  # And then this splits into scalar components.
-  # E.g. if calcNodes is 'mu[1]' but 'mu[1:3]' is a vector node,
-  # the above call gets `mu[1:3]` and then the below call splits it.
-  calcNodes <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE) 
   makeModelDerivsInfo_impl(model,
-                      wrtNodes,
+                      wrtNodeComps,
                       calcNodes,
                       dataAsConstantNodes)
 }
 
-getImmediateParentNodes <- function(nodes, model) { 
+getImmediateParentNodes <- function(nodes, model) {
   ## adapted from BUGS_modelDef creation of edgesFrom2To
   maps <- model$modelDef$maps
   maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
-  
   edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
   fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
   edgesTo2From <- split(maps$edgesFrom, fedgesTo)
   nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
   fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
   fromNodes <- maps$graphID_2_nodeName[fromIDs]
+  ## See Issue 1151. For "unusual" kinds of splitting, we can encounter a name with "%.s%"
+  ## which means we need to extract the disjoint set of element names it includes
+  boolSplit <- grepl("\\%\\.s\\%", fromNodes)
+  if(any(boolSplit)) {
+    iSplit <- which(boolSplit)
+    graphIDsplit <- fromIDs[iSplit]
+    fixedSplitNodes <- unlist(lapply(graphIDsplit, function(i) maps$elementNames[which(maps$elementID_2_vertexID==i)]))
+    fromNodes <- unique(c(fromNodes[!boolSplit], fixedSplitNodes))
+  }
   fromNodes
 }
 
 makeModelDerivsInfo_impl <- function(model,
-                                     wrtNodes,
+                                     wrtNodeComps,
                                      calcNodes,
                                      dataAsConstantNodes = TRUE) {
   ## Gymnastics to convert to actual nodes for computational efficiency are needed because `setdiff` needs to
-  ## operate on node components because `wrt` is in terms of components not nodes.
-  nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)  # Node components here, since `calcNodes`, `wrtNodes` are as components upon input.
-  nonWrtCalcActualNodes <- model$expandNodeNames(nonWrtCalcNodes)  # Nodes here. Can be costly for large multivar nodes (say 3 sec. for a 1m-element node).
-  nonWrtStochCalcNodes <- nonWrtCalcActualNodes[ model$isStoch(nonWrtCalcActualNodes,
-                               nodesAlreadyExpanded = TRUE) ] # Run `isStoch` on nodes not components (issue #1431). 
+  ## operate on node components because `wrt` is inherently in terms of components not nodes.
+  calcNodeComps <- model$expandNodeNames(calcNodes, returnScalarComponents = TRUE)
+  nonWrtCalcNodeComps <- setdiff(calcNodeComps, wrtNodeComps)
 
-  parentNodes <- getImmediateParentNodes(calcNodes, model)
-  parentNodes <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
-  neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodes)) 
-    
-  extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
-                                             nonWrtStochCalcNodes)) # Need as nodes so `isData` below run on nodes for efficiency.
+  nonWrtCalcNodes <- model$expandNodeNames(nonWrtCalcNodeComps)  # Nodes here. Can be costly for large multivar nodes (say 3 sec. for a 1m-element node).
+  nonWrtStochCalcNodes <- nonWrtCalcNodes[ model$isStoch(nonWrtCalcNodes,
+                               nodesAlreadyExpanded = TRUE) ] # Run `isStoch` on nodes not components (issue #1431).
+
+  ## Do next steps with nodes as otherwise can be inefficient when `parentNodes` has many components.
+  parentNodes <- model$expandNodeNames(getImmediateParentNodes(calcNodes, model))
+
+  wrtNodes <- model$expandNodeNames(wrtNodeComps)
+  allWrtComps <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+  if(identical(wrtNodeComps, allWrtComps)) {
+      ## wrt consists of full nodes for computational efficiency.
+      ## If original wrtNodeComps has components, then this `setdiff` could incorrectly
+      ## exclude the components of the `wrtNodes` not in `wrtNodeComps` from `parentNodes`,
+      ## so we need the other branch here.
+      usingNodes <- TRUE
+      neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodes))
+      extraInputNodes <- c(neededParentNodes, nonWrtStochCalcNodes)
+  } else {
+      ## `expandNodeNames` can be costly, so only use this branch if necessary.
+      usingNodes <- FALSE
+      parentNodeComps <- model$expandNodeNames(parentNodes, returnScalarComponents = TRUE)
+      neededParentNodeComps <- setdiff(parentNodeComps, c(wrtNodeComps, nonWrtCalcNodeComps))
+      extraInputNodes <- model$expandNodeNames(c(neededParentNodeComps, nonWrtStochCalcNodes))
+  }
+
   constantNodes <- character()
   if(dataAsConstantNodes) {
     boolData <- model$isData(extraInputNodes)
-    constantNodes <- model$expandNodeNames(extraInputNodes[boolData], returnScalarComponents = TRUE, sort = TRUE) 
-    extraInputNodes <- model$expandNodeNames(extraInputNodes[!boolData], returnScalarComponents = TRUE, sort = TRUE)
-    ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
-    extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
-    constantNodes <- setdiff(constantNodes, wrtNodes)  
+    ## "wrt" components could have crept in when initializing `extraInputNodes` based on nodes.
+    if(usingNodes) {  # Screen using nodes for efficiency, then get components.
+        constantNodes <- setdiff(extraInputNodes[boolData], wrtNodes)
+        extraInputNodes <- setdiff(extraInputNodes[!boolData], wrtNodes)
+        extraInputNodeComps <- model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE)
+        constantNodeComps <- model$expandNodeNames(constantNodes, returnScalarComponents = TRUE, sort = TRUE)
+    } else {          # Screen using components.
+        constantNodeComps <- model$expandNodeNames(extraInputNodes[boolData], returnScalarComponents = TRUE, sort = TRUE)
+        extraInputNodeComps <- model$expandNodeNames(extraInputNodes[!boolData], returnScalarComponents = TRUE, sort = TRUE)
+        extraInputNodeComps <- setdiff(extraInputNodeComps, wrtNodeComps)
+        constantNodeComps <- setdiff(constantNodeComps, wrtNodeComps)
+    }
   } else {
-      extraInputNodes <- model$expandNodeNames(extraInputNodes, returnScalarComponents = TRUE, sort = TRUE)
-      ## `wrtNodes` components could have crept in when initializing `extraInputNodes` based on nodes.
-      extraInputNodes <- setdiff(extraInputNodes, wrtNodes)
+      extraInputNodeComps <- setdiff(model$expandNodeNames(extraInputNodes,returnScalarComponents = TRUE, sort = TRUE), wrtNodeComps)
+      constantNodeComps <- character()
   }
-  list(updateNodes = extraInputNodes,
-       constantNodes = constantNodes)
+  list(updateNodes = extraInputNodeComps,
+       constantNodes = constantNodeComps)
 }
 
 nimDerivsInfoClass_update_init_impl <- function(.self,
                                                 updateNodes = NULL,
                                                 constantNodes = NULL,
-                                                model) {  
+                                                model) {
   if(is.null(updateNodes)) updateNodes <- character()
   if(is.null(constantNodes)) constantNodes <- character()
 
@@ -2210,7 +2265,7 @@ nimDerivsInfoClass_update_init_impl <- function(.self,
                                                   character(),
                                                   logProb = FALSE)
   .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
-  
+
   constantNodesAccessor <- modelVariableAccessorVector(model,
                                                        constantNodes,
                                                        logProb = FALSE)
@@ -2221,7 +2276,7 @@ nimDerivsInfoClass_update_init_impl <- function(.self,
                                                          logProb = FALSE)
   .self$extraInputMapInfo <-
     makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
-  
+
   modelOutputNodesAccessor <- modelVariableAccessorVector(model,
                                                           character(),
                                                           logProb = FALSE)
@@ -2258,12 +2313,12 @@ nimDerivsInfoClass <- setRefClass(
                                                                    wrtNodes = wrtNodes,
                                                                    calcNodes = calcNodes,
                                                                    model = thisModel),
-                 
+
                  updateOnly = nimDerivsInfoClass_update_init_impl(.self = .self,
                                                                   updateNodes = updateNodes,
                                                                   constantNodes = constantNodes,
                                                                   model = thisModel),
-                 
+
                  outputOnly = nimDerivsInfoClass_output_init_impl(.self = .self,
                                                                   calcNodes = calcNodes,
                                                                   model = thisModel)

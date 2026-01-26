@@ -899,7 +899,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                 ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
                 ok <- !is.null(ans)
             }
-            if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
+            if(!ok) stop("There is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an existing project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
 
             ans
         },
@@ -1106,7 +1106,7 @@ clearCompiled <- function(obj) { # for now just take one obj as input
 #'
 #' The control list can contain the following named elements, each with \code{TRUE} or \code{FALSE}: debug, which sets a debug mode for the compiler for development purposes; debugCpp, which inserts an output message before every line of C++ code for debugging purposes; compileR, which determines whether the R-only steps of compilation should be executed; writeCpp, which determines whether the C++ files should be generated; compileCpp, which determines whether the C++ should be compiled;  loadSO, which determines whether the DLL or shared object should be loaded and interfaced; and returnAsList, which determines whether calls to the compiled nimbleFunction should return only the returned value of the call (\code{returnAsList = FALSE}) or whether a list including the input arguments, possibly modified, should be returned in a list with the returned value of the call at the end (\code{returnAsList = TRUE}).  The control list is mostly for developer use, although \code{returnAsArgs} may be useful to a user.  An example of developer use is that one can have the compiler write the C++ files but not compile them, then modify them by hand, then have the C++ compiler do the subsequent steps without over-writing the files.
 #'
-#' See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} Manual for examples
+#' See the NIMBLE \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual} Manual for examples
 #' 
 #' @return If there is only one compilation unit (one model or nimbleFunction), an R interface object is returned.  This object can be used like the uncompiled model or nimbleFunction, but execution will call the corresponding compiled objects or functions.  If there are multiple compilation units, they will be returned as a list of interface objects, in the order provided.  If names were included in the arguments, or in a list if any elements of \code{...} are lists, those names will be used for the corresponding element of the returned list.  Otherwise an attempt will be made to generate names from the argument code.  For example \code{compileNimble(A = fun1, B = fun2, project = myModel)} will return a list with named elements A and B, while \code{compileNimble(fun1, fun2, project = myModel)} will return a list with named elements fun1 and fun2.
 #'
@@ -1160,7 +1160,8 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     for(i in names(controlDefaults)) {
         if(!i %in% names(control)) control[[i]] <- controlDefaults[[i]]
     }
-    
+
+    nimbleUserNamespace$.checkedNames <- new.env()  # Memoization for checking nf name conflicts in `checkNameConflict()`.
 
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
     if(!showCompilerOutput) {

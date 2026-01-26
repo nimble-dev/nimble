@@ -42,7 +42,7 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' The \code{type} argument can be chosen from among \code{character}, \code{double}, \code{integer}, and \code{logical},
 #' or can be the name of a previously created \code{\link{nimbleList} definition}.
 #' 
-#' See the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual} for additional examples.
+#' See the NIMBLE \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual} for additional examples.
 #' 
 #' @examples 
 #' nimbleTypeList <- list()
@@ -533,8 +533,8 @@ optimControlNimbleList <- nimbleList(
 AGHQuad_params <- nimbleList(
   list(
     nimbleType('names','character', 1),
-    nimbleType('estimates', 'double', 1),
-    nimbleType('stdErrors', 'double', 1)
+    nimbleType('estimate', 'double', 1),
+    nimbleType('stdError', 'double', 1)
   ),
   name = "AGHQuad_params",
   predefined = TRUE
@@ -546,7 +546,7 @@ AGHQuad_summary <- nimbleList(
     nimbleType('params','AGHQuad_params', 0),
     nimbleType('randomEffects', 'AGHQuad_params', 0),
     nimbleType('vcov','double',2),
-    nimbleType('scale','character',0)
+    nimbleType('originalScale','logical',1)
   ),
   name = 'AGHQuad_summary',
   predefined = TRUE

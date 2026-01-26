@@ -26,6 +26,7 @@ ATOMIC_NEW_DELETE_(backsolve)
 ATOMIC_NEW_DELETE_(cholesky)
 ATOMIC_NEW_DELETE_(forwardsolve)
 ATOMIC_NEW_DELETE_(matinverse)
+ATOMIC_NEW_DELETE_(PDinverse_logdet)
 ATOMIC_NEW_DELETE_(matmult)
 ATOMIC_NEW_DELETE_(pow_int)
 ATOMIC_NEW_DELETE_(zround)
@@ -33,6 +34,7 @@ ATOMIC_NEW_DELETE_(floor)
 ATOMIC_NEW_DELETE_(ceil)
 ATOMIC_NEW_DELETE_(ftrunc)
 ATOMIC_NEW_DELETE_(nimRound)
+ATOMIC_NEW_DELETE_(nimStep)
 ATOMIC_NEW_DELETE_(log_pow_int)
 ATOMIC_NEW_DELETE_(zb_over_a)
 ATOMIC_NEW_DELETE_(probit)
@@ -147,6 +149,19 @@ atomic_nimRound_class *nimble_CppAD_tape_mgr::get_atomic_nimRound(std::vector<Cp
     nimRound_exists = true;
   }
   return dynamic_cast<atomic_nimRound_class*>(atomic_ptrs[nimRound_index].first);
+}
+
+atomic_nimStep_class *track_atomic_nimStep(void* tape_mgr_ptr,
+					   std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  return reinterpret_cast<nimble_CppAD_tape_mgr*>(tape_mgr_ptr)->get_atomic_nimStep(vec_ptr);
+}
+atomic_nimStep_class *nimble_CppAD_tape_mgr::get_atomic_nimStep(std::vector<CppAD::local::atomic_index_info>* vec_ptr) {
+  if(!nimStep_exists) {
+    nimStep_index = atomic_ptrs.size();
+    atomic_ptrs.push_back(atomic_pair(new_atomic_nimStep("atomic_nimStep_managed"), vec_ptr) );
+    nimStep_exists = true;
+  }
+  return dynamic_cast<atomic_nimStep_class*>(atomic_ptrs[nimStep_index].first);
 }
 
 atomic_probit_class *track_atomic_probit(void* tape_mgr_ptr,

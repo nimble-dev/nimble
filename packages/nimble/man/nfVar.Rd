@@ -31,7 +31,7 @@ When \code{nimbleFunction} is called and a \code{setup} function is provided, th
 
 For internal access to methods of \code{nf}, see \code{\link{nfMethod}}.
 
-For more information, see \code{?nimbleFunction} and the NIMBLE \href{https://r-nimble.org/html_manual/cha-welcome-nimble.html}{User Manual}.
+For more information, see \code{?nimbleFunction} and the NIMBLE \href{https://r-nimble.org/manual/cha-welcome-nimble.html}{User Manual}.
 }
 \examples{
 nfGen1 <- nimbleFunction(

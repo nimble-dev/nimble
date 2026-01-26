@@ -3,7 +3,8 @@
 
 toEigenizeNoCalls <- c('dim',
                        'run.time',
-                       'nimOptimDefaultControl')
+                       'nimOptimDefaultControl',
+                       'checkLogProbWarn')
 
 toEigenizeYesCalls <- c(paste0('nimDiagonal', c('D','I','B')),
                         'diagonal',
@@ -23,6 +24,7 @@ toEigenizeYesCalls <- c(paste0('nimDiagonal', c('D','I','B')),
 
 toEigenizeMaybeCalls <- c('map',
                           c('decide',
+                            'checkLogProb',
                             'size',
                             'getsize',
                             'getNodeFunctionIndexedInfo',
@@ -32,7 +34,7 @@ toEigenizeMaybeCalls <- c('map',
                             'getPtr',
                             'startNimbleTimer'))
 
-toEigenizeUseRuleCalls <- c('nimPrint')
+toEigenizeUseRuleCalls <- c('nimPrint', 'nimCat')
 
 toEigenCalls <- c(
     makeCallList(binaryOperators, 'toEigenBinaryCwise'),             
@@ -89,6 +91,7 @@ toEigenCalls <- c(
     makeCallList(c('nim_IsNA',
                    'nim_IsNaN'), 'toEigenScalarRecurse'),
     makeCallList(c('nimArr_dmnorm_chol',
+                   'nimArr_dmnorm_inv_ld',
                    'nimArr_dmvt_chol',
                    'nimArr_dlkj_corr_cholesky',
                    'nimArr_dwish_chol',
@@ -98,6 +101,7 @@ toEigenCalls <- c(
                    'nimArr_dinterval',
                    'nimArr_ddirch'), 'toEigenScalarRecurse'),
     makeCallList(c('nimArr_rmnorm_chol',
+                   'nimArr_rmnorm_inv_ld',
                    'nimArr_rmvt_chol',
                    'nimArr_rlkj_corr_cholesky',
                    'nimArr_rwish_chol',

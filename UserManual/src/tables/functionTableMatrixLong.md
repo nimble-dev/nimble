@@ -3,7 +3,7 @@ provided in NIMBLE.
 
   Usage                   Description                                Comments                         Status
   ----------------------- ------------------------------------------ -------------------------------- ------  
-  `inverse(x)`            matrix inverse                             $x$ symmetric, positive def.     yes
+  `inverse(x)`            matrix inverse                             $x$ symmetric, invertible        yes
   `chol(x)`               matrix Cholesky factorization              $x$ symmetric, positive def.     yes
                                                                      returns upper triang. matrix
   `t(x)`                  matrix transpose                           $x^\top$                         yes
@@ -23,3 +23,5 @@ provided in NIMBLE.
   `pmin(x, y), pmax(x,y)` vector of mins (maxs) of elements of                                        yes
                           `x` and `y`
   `interp.lin(x, v1, v2)` linear interpolation                                                        no
+  `expm(A)`               matrix exponential                         $e^A$; $A$ non-negative diags    yes
+  `expAv(A,v)`            matrix exponential multiplied by vector    $e^A v$; $A$ non-neg. diags      yes

@@ -4,33 +4,43 @@
 \alias{MultivariateNormal}
 \alias{dmnorm_chol}
 \alias{rmnorm_chol}
+\alias{dmnorm_inv_ld}
+\alias{rmnorm_inv_ld}
 \title{The Multivariate Normal Distribution}
 \usage{
 dmnorm_chol(x, mean, cholesky, prec_param = TRUE, log = FALSE)
 
 rmnorm_chol(n = 1, mean, cholesky, prec_param = TRUE)
+
+dmnorm_inv_ld(x, mean, mat, inv_ld, prec_param = TRUE, log = FALSE)
+
+rmnorm_inv_ld(n = 1, mean, mat, inv_ld, prec_param = TRUE)
 }
 \arguments{
 \item{x}{vector of values.}
 
 \item{mean}{vector of values giving the mean of the distribution.}
 
-\item{cholesky}{upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).}
+\item{cholesky}{in standard cases (when not using AD), upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).}
 
-\item{prec_param}{logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.}
+\item{prec_param}{logical; in standard cases (when not using AD): if TRUE then \code{cholesky} is that of the precision matrix; otherwise, of the covariance matrix. When using AD: if TRUE then \code{mat} is the precision matrix; otherwise the covariance matrix.}
 
 \item{log}{logical; if TRUE, probability density is returned on the log scale.}
 
 \item{n}{number of observations (only \code{n=1} is handled currently).}
+
+\item{mat}{when using AD, either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).}
+
+\item{inv_ld}{when using AD, the inverse of \code{mat}, as a vector (ordered column-major), with lower diagonal elements ignored (and typically set to 0), appended with an additional element containing the log of the determinant of the inverse of \code{mat}. \code{inv_ld} can be obtained by \code{inv_ld = PDinverse_logdet(mat)}. When \code{prec_param} is \code{FALSE} (or \code{0}), only the last element (log determinant) is used for density calculations (but the rest is still used for derivative calculations). \code{inv_ld} is not used for random generation but is included in the argument list because for use in nimble models the available arguments for density and random number generation must match.}
 }
 \value{
 \code{dmnorm_chol} gives the density and \code{rmnorm_chol} generates random deviates.
 }
 \description{
-Density and random generation for the multivariate normal distribution, using the Cholesky factor of either the precision matrix or the covariance matrix.
+Density and random generation for the multivariate normal distribution, using the Cholesky factor of either the precision matrix or the covariance matrix (when not using AD) or the precision or covariance matrix (when using AD).
 }
 \details{
-See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al.
+See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. Note that if one wishes to take derivatives (using AD) involving the distribution, one should use the "inv_ld" versions, as use of the Cholesky is computationally inefficient.
 }
 \examples{
 mean <- c(-10, 0, 10)
@@ -46,5 +56,5 @@ Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Dat
 \link{Distributions} for other standard distributions
 }
 \author{
-Christopher Paciorek
+Christopher Paciorek, Perry de Valpine
 }

@@ -116,6 +116,29 @@ nimOptimMethod("nlminb",
                }
                )
 
+nimOptimMethod("bobyqa",
+               function(par, fn, gr, he, lower, upper, control, hessian) {
+                 control_bobyqa <- list(
+                     xtol_rel = control$reltol,
+                     maxeval = control$maxit  # Not exactly the same quantity, but seems ok to repurpose.
+                 )
+                 invalid <- function(x) is.null(x) || is.na(x) || is.infinite(x)
+                 if(invalid(control_bobyqa$xtol_rel)) control_bobyqa$xtol_rel <- 1e-6
+                 if(invalid(control_bobyqa$maxeval)) control_bobyqa$maxeval <- 1000
+                 # NB: control$parscale and control$fnscale are applied internally.
+                 p <- length(par)
+                 if(length(lower) != p)
+                     lower <- rep(lower, p)
+                 if(length(upper) != p)
+                     upper <- rep(upper, p)
+                 if(!requireNamespace('nloptr')) stop("The `nloptr` package must be installed to use `bobyqa` for optimization")
+                   result <- nloptr::bobyqa(par, fn = fn, lower = lower, upper = upper,
+                                            control=control_bobyqa)
+                 result$counts <- c(0, 0)
+                 result
+               }
+               )
+
 # options used for NIMBLE package
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
@@ -134,7 +157,7 @@ nimOptimMethod("nlminb",
         oldConjugacyChecking = FALSE,
         disallow_multivariate_argument_expressions = TRUE,
         stop_after_processing_model_code = FALSE,
-        enableModelMacros = FALSE,
+        enableMacros = TRUE,
         enableMacroComments = FALSE,
         codeInMacroComments = FALSE,
         allowDynamicIndexing = TRUE,
@@ -173,13 +196,12 @@ nimOptimMethod("nlminb",
         verbose = TRUE,
         verboseErrors = FALSE,
 
+        showCompilerOutput = FALSE,
+
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:
         ## buildConjugateSamplerFunctions()
-        verifyConjugatePosteriors = FALSE,
-
-        showCompilerOutput = FALSE,
-
+        MCMCverifyConjugatePosteriors = FALSE,
         MCMCprogressBar = TRUE,
         MCMCsaveHistory = FALSE,
         MCMCmultivariateNodesAsScalars = FALSE,
@@ -188,10 +210,16 @@ nimOptimMethod("nlminb",
         MCMCorderPriorSamplesSamplersFirst = TRUE,
         MCMCorderPosteriorPredictiveSamplersLast = TRUE,
         MCMCusePredictiveDependenciesInCalculations = FALSE,
-        MCMCusePosteriorPredictiveSampler = TRUE,
+        MCMCassignSamplersToPosteriorPredictiveNodes = TRUE,  ## whether any samplers are assigned (by default) to PP nodes
+        MCMCusePosteriorPredictiveSampler = TRUE,             ## for PP nodes being sampled, use post_pred (or otherwise RW, etc)
         MCMCwarnUnsampledStochasticNodes = TRUE,
+        MCMCwarnUnfinishedThinningInterval = TRUE,
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
+        MCMCuseBarkerAsDefaultMV = FALSE,
+        MCMCreturnDerivedQuantities = TRUE,
+        
+        parameterTransformWarnUserDists = TRUE,
         useClearCompiledInADTesting = TRUE,
         unsupportedDerivativeHandling = 'error', # default is error, other options are 'warn' and 'ignore'. Handled in updateADproxyModelMethods in cppDefs_nimbleFunction.R
         errorIfMissingNFVariable = TRUE,
@@ -199,7 +227,11 @@ nimOptimMethod("nlminb",
         useOldcWiseRule = FALSE, # This is a safety toggle for one change in sizeBinaryCwise, 1/24/23. After a while we can remove this.
         stripUnusedTypeDefs = TRUE,
         digits = NULL,
-        enableVirtualNodeFunctionDefs = FALSE
+        enableVirtualNodeFunctionDefs = FALSE,
+        checkDerivsArgs = TRUE,
+        includeUnneededLatents = FALSE,
+        useADdmnorm = TRUE,
+        checkModelBasics = TRUE
       )
 )
 
@@ -219,7 +251,7 @@ setNimbleOption <- function(name, value) {
 #' @export
 #' @return The value of the option.
 #' @examples
-#' getNimbleOption('verifyConjugatePosteriors')
+#' getNimbleOption('MCMCverifyConjugatePosteriors')
 getNimbleOption <- function(x) {
     option <- try(get(x, envir = .nimbleOptions), silent = TRUE)
     if(inherits(option, 'try-error'))
@@ -249,7 +281,7 @@ getNimbleOption <- function(x) {
 #'
 #' @examples
 #' # Set one option:
-#' nimbleOptions(verifyConjugatePosteriors = FALSE)
+#' nimbleOptions(MCMCverifyConjugatePosteriors = FALSE)
 #'
 #' # Compactly print all options:
 #' str(nimbleOptions(), max.level = 1)

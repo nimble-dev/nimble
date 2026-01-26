@@ -14,12 +14,12 @@ getNsave <- nimbleFunction(
 ##  Wrapper function for sampleDPmeasure
 ##-----------------------------------------
 
-#' Get posterior samples for a Dirichlet process measure
+#' Get posterior samples for a Dirichlet process distribution (measure)
 #'
-#' This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
+#' This function obtains posterior samples from a Dirichlet process distributed random distribution (measure) of a model specified using the \code{dCRP} distribution.
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
-#' @param epsilon  used for determining the truncation level of the representation of the random measure.
+#' @param epsilon  used for determining the truncation level of the representation of the random distribution (measure).
 #' @param setSeed Logical or numeric argument. If a single numeric value is provided, R's random number seed will be set to this value. In the case of a logical value, if \code{TRUE}, then R's random number seed will be set to \code{1}. Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0}.  Default value is \code{FALSE}.
 #'
 #' @param progressBar Logical specifying whether to display a progress bar during execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}
@@ -28,15 +28,15 @@ getNsave <- nimbleFunction(
 #' 
 #' @export
 #' @details
-#' This function provides samples from a random measure having a Dirichlet process prior. Realizations are almost surely discrete and represented by a (finite) stick-breaking representation (Sethuraman, 1994), whose atoms (or point masses) are independent and identically distributed. This sampler can only be used with models containing a \code{dCRP} distribution. 
+#' This function provides samples from a random distribution (measure) having a Dirichlet process prior. Realizations are almost surely discrete and represented by a (finite) stick-breaking representation (Sethuraman, 1994), whose atoms (or point masses) are independent and identically distributed. This sampler can only be used with models containing a \code{dCRP} distribution. 
 #'
-#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the posterior samples to generate samples of the random measure. Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
+#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the posterior samples to generate samples of the random distribution (measure). Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
 #' 
 #' The \code{epsilon} argument is optional and used to determine the truncation level of the random measure. \code{epsilon} is the tail probability of the random measure, which together with posterior samples of the concentration parameter, determines the truncation level. The default value is 1e-4.
 #'  
-#' The output is a list of matrices. Each matrix represents a sample from the random measure. In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
+#' The output is a list of matrices. Each matrix represents a sample from the random distribution (measure). In order to reduce the output's dimensionality, the weights of identical atoms are added up. The stick-breaking weights are named \code{weights} and the atoms are named based on the cluster variables in the model.
 #' 
-#' For more details about sampling the random measure and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
+#' For more details about sampling the random distribution (measure) and determining its truncation level, see Section 3 in Gelfand, A.E. and Kottas, A. 2002.
 #' 
 #' @seealso \code{\link{buildMCMC}}, \code{\link{configureMCMC}}, 
 #' @references
@@ -210,17 +210,13 @@ sampleDPmeasure <- nimbleFunction(
       parentNodesXiDeps <- dcrpNode 
     }
     
-    dataNodes <- model$getDependencies(dcrpNode, stochOnly = TRUE, self = FALSE)
     N <- length(model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE))
     
     p <- length(tildeVars)
-    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    dimTildeVarsNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array) (dimTildeVarsNim=dimTildeNim)
     dimTildeVars <- numeric(p+1) # dimension to be used in run code (dimTildeVars=dimTilde)
-    for(i in 1:p) {
-      dimTildeVarsNim[i] <- model$getDimension(clusterVarInfo$clusterNodes[[i]][1])
-      dimTildeVars[i] <- lengthData^(dimTildeVarsNim[i]) 
-    }
+    for(i in 1:p) 
+        dimTildeVars[i] <- length(model$expandNodeNames(clusterVarInfo$clusterNodes[[i]][[1]],
+                                                        returnScalarComponents = TRUE))
     nTildeVarsPerCluster <-  clusterVarInfo$numNodesPerCluster
     nTilde <- numeric(p+1)
     nTilde[1:p] <- clusterVarInfo$nTilde / nTildeVarsPerCluster
@@ -1426,7 +1422,10 @@ sampler_CRP <- nimbleFunction(
         stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
     min_nTilde <- nTilde[1]
     if(min_nTilde < n)
-      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.')
+      messageIfVerbose('  [Warning] sampler_CRP: The number of clusters based on the cluster parameters\n',
+                       '            is less than the number of potential clusters. The MCMC is not\n',
+                       '            strictly valid if it ever proposes more components than cluster\n',
+                       '            parameters exist; NIMBLE will warn you if this occurs.')
     
     ## Determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function).
     ## This is used in truncated case to tell user if model is proper or not.
@@ -1594,7 +1593,6 @@ sampler_CRP <- nimbleFunction(
   
   
   run = function() {
-    
     conc <- model$getParam(target, 'conc')
     helperFunctions[[1]]$storeParams()
     
@@ -1640,7 +1638,7 @@ sampler_CRP <- nimbleFunction(
     
     
     for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
-      
+      sampledNonconjugate <- FALSE
       xi <- model[[target]]
       xiCounts[xi[i]] <- xiCounts[xi[i]] - 1
       
@@ -1667,6 +1665,7 @@ sampler_CRP <- nimbleFunction(
         model[[target]][i] <<- xi[i] # <<- label of new component
         if(sampler == 'CRP_nonconjugate'){ # simulate tildeVars[xi[i]] # do this everytime there is a singleton so we ensure this comes always from the prior
           helperFunctions[[1]]$sample(i, model[[target]][i])
+          sampledNonconjugate <- TRUE  
           if(nIntermClusNodesPerClusID > 0) {
             model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
           }
@@ -1677,6 +1676,17 @@ sampler_CRP <- nimbleFunction(
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # <<- probability of sampling a new label, only k components because xi_i is a singleton
         
         ## Sample new cluster.
+        if(any_nan(curLogProb[1:k]))   
+            curLogProb[is.nan(curLogProb[1:k])] <<- -Inf
+        if(all(curLogProb[1:k] == -Inf))
+            stop('CRP_sampler: sampler encountered case where the log probability density values corresponding to all potential cluster memberships are negative infinity. This is likely caused by numerical overflow or underflow. You might consider using the stickbreaking representation rather than the CRP.')
+        isInf <- curLogProb[1:k] == Inf
+        if(any(isInf)) {
+            if(sum(isInf) > 1)
+              nimCat('CRP_sampler: sampler encountered values of infinity for the log probability density corresponding to multiple potential cluster memberships. Results of sampling may not be valid.\n')
+            curLogProb[isInf] <<- 0
+            curLogProb[!isInf] <<- -Inf
+        }
         index <- rcat( n=1, exp(curLogProb[1:k]-max(curLogProb[1:k])) )
         if(index == k) {
           newLab <- xi[i] 
@@ -1703,6 +1713,7 @@ sampler_CRP <- nimbleFunction(
           model[[target]][i] <<- kNew 
           if(sampler == 'CRP_nonconjugate'){
             helperFunctions[[1]]$sample(i, model[[target]][i])
+            sampledNonconjugate <- TRUE  
             if(nIntermClusNodesPerClusID > 0) {
               model$calculate(intermNodes[((i-1)*nIntermClusNodesPerClusID+1):(i*nIntermClusNodesPerClusID)]) 
             }
@@ -1714,6 +1725,17 @@ sampler_CRP <- nimbleFunction(
         }
         
         # sample an index from 1 to (k+1)
+        if(any_nan(curLogProb[1:(k+1)]))
+            curLogProb[is.nan(curLogProb[1:(k+1)])] <<- -Inf
+        if(all(curLogProb[1:(k+1)] == -Inf))
+            stop('CRP_sampler: sampler encountered case where the log probability density values corresponding to all potential cluster memberships are negative infinity. This is likely caused by numerical overflow or underflow. You might consider using the stickbreaking representation rather than the CRP.')
+        isInf <- curLogProb[1:(k+1)] == Inf
+        if(any(isInf)) {
+            if(sum(isInf) > 1)
+               nimCat('CRP_sampler: sampler encountered values of infinity for the log probability density corresponding to multiple potential cluster memberships. Results of sampling may not be valid.\n')
+            curLogProb[isInf] <<- 0
+            curLogProb[!isInf] <<- -Inf
+         }
         index <- rcat( n=1, exp(curLogProb[1:(k+1)]-max(curLogProb[1:(k+1)])) )
         if(index == (k+1)) {
           newLab <- kNew
@@ -1756,7 +1778,9 @@ sampler_CRP <- nimbleFunction(
       } else { # an existing label is sampled
         ## Reset to previous marginalized node value; we choose to store information on what elements to be restored in sample()
         ## but an alternative would be to have i=0 determine reset and pass j=kNew here.
-        if(sampler == 'CRP_nonconjugate')   
+        ## Check for `sampledNonconjugate` fixes issue 1513, to avoid resetting
+        ## if no sampling of marginalizedNodes done because at upper limit of number of clusters.  
+        if(sampler == 'CRP_nonconjugate' & sampledNonconjugate)   
           helperFunctions[[1]]$sample(i, 0)
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1

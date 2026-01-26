@@ -1,3 +1,5 @@
+MCEM error-trapping
+MCEM pump with all defaults (roxygen example)
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -53,9 +55,10 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 8.
   [Note] Current number of MCMC iterations: 9400.
   [Note] Parameter Estimates: 
-0.823025
- 1.26278
-  [Note] Convergence Criterion: 0.000165076.
+0.822968
+ 1.26253
+  [Note] Convergence Criterion: 0.000157632.
+MCEM with pump transform=FALSE
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -74,9 +77,9 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2188.
   [Note] Parameter Estimates: 
-0.818181
- 1.25068
-  [Note] Convergence Criterion: 0.0049061.
+0.817874
+ 1.24692
+  [Note] Convergence Criterion: 0.0041643.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 500.
   [Note] Parameter Estimates: 
@@ -84,8 +87,8 @@ Monte Carlo error too big: increasing MCMC sample size.
  1.12139
   [Note] Convergence Criterion: 0.662289.
   [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.  [Note] Iteration Number: 1.
+(maxIter=1) was reached.
+  [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
 0.808784
@@ -93,12 +96,13 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Convergence Criterion: 0.0356889.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 2.
-  [Note] Current number of MCMC iterations: 1546.
+  [Note] Current number of MCMC iterations: 1962.
   [Note] Parameter Estimates: 
-0.817103
-  1.2491
-  [Note] Convergence Criterion: 0.00535501.
+0.817835
+ 1.24893
+  [Note] Convergence Criterion: 0.00483164.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -106,67 +110,49 @@ Monte Carlo error too big: increasing MCMC sample size.
  1.12136
   [Note] Convergence Criterion: 0.670036.
   [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.  [Note] Iteration Number: 1.
+(maxIter=1) was reached.
+  [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
 0.821669
   1.2273
   [Note] Convergence Criterion: 0.0335632.
   [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.  [Note] Iteration Number: 1.
+(maxIter=1) was reached.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 2663.
   [Note] Parameter Estimates: 
-0.819348
- 1.25075
-  [Note] Convergence Criterion: 0.00341703.
+0.819054
+ 1.24727
+  [Note] Convergence Criterion: 0.00284864.
   [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.  [Note] Iteration Number: 1.
+(maxIter=1) was reached.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 8277.
   [Note] Parameter Estimates: 
-0.825168
- 1.27138
-  [Note] Convergence Criterion: 0.000994448.
+0.82409
+1.26675
+  [Note] Convergence Criterion: 0.000942662.
   [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.  [Note] Iteration Number: 1.
+(maxIter=1) was reached.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
-0.824445
-  1.2667
-  [Note] Convergence Criterion: 0.000112564.
+0.824414
+ 1.26661
+  [Note] Convergence Criterion: 1.3166e-05.
   [Note] Stopping MCEM because maximum number of MCEM iterations
-(maxIter=1) was reached
-.  [Note] Iteration Number: 1.
+(maxIter=1) was reached.
+  [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
 0.810924
@@ -226,15 +212,15 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.819486
- 1.24728
-  [Note] Convergence Criterion: 0.00296793.
+0.819425
+ 1.24522
+  [Note] Convergence Criterion: 0.00260915.
   [Note] Iteration Number: 4.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.819365
- 1.25064
-  [Note] Convergence Criterion: 0.000266769.
+0.819229
+  1.2499
+  [Note] Convergence Criterion: 0.000392739.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -253,57 +239,58 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.819486
- 1.24728
-  [Note] Convergence Criterion: 0.00296793.
+0.819425
+ 1.24522
+  [Note] Convergence Criterion: 0.00260915.
   [Note] Iteration Number: 4.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.819365
- 1.25064
-  [Note] Convergence Criterion: 0.000266769.
+0.819229
+  1.2499
+  [Note] Convergence Criterion: 0.000392739.
   [Note] Iteration Number: 5.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.826071
- 1.27092
-  [Note] Convergence Criterion: 0.00144698.
+0.826009
+ 1.27067
+  [Note] Convergence Criterion: 0.00149861.
   [Note] Iteration Number: 6.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.824685
- 1.27635
-  [Note] Convergence Criterion: 0.000616001.
+0.824662
+ 1.27626
+  [Note] Convergence Criterion: 0.000627415.
   [Note] Iteration Number: 7.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.825622
- 1.27394
-  [Note] Convergence Criterion: 0.000277843.
+0.825615
+ 1.27392
+  [Note] Convergence Criterion: 0.000275094.
   [Note] Iteration Number: 8.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
-0.833176
+0.833173
  1.29178
-  [Note] Convergence Criterion: 0.00114422.
+  [Note] Convergence Criterion: 0.00114573.
   [Note] Iteration Number: 9.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
 0.824275
  1.28081
-  [Note] Convergence Criterion: 0.00104714.
+  [Note] Convergence Criterion: 0.0010469.
   [Note] Iteration Number: 10.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
 0.824481
  1.26263
-  [Note] Convergence Criterion: 0.00215988.
+  [Note] Convergence Criterion: 0.0021597.
   [Note] Iteration Number: 11.
   [Note] Current number of MCMC iterations: 2000.
   [Note] Parameter Estimates: 
 0.826653
  1.26951
-  [Note] Convergence Criterion: 0.000385994.
+  [Note] Convergence Criterion: 0.000386032.
+MCEM pump with transform=TRUE
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -323,9 +310,9 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2516.
   [Note] Parameter Estimates: 
-0.819206
- 1.24929
-  [Note] Convergence Criterion: 0.00320976.
+0.818707
+ 1.24532
+  [Note] Convergence Criterion: 0.00263509.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -345,9 +332,30 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2516.
   [Note] Parameter Estimates: 
-0.819206
- 1.24929
-  [Note] Convergence Criterion: 0.00320976.
+0.818707
+ 1.24532
+  [Note] Convergence Criterion: 0.00263509.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 4.
+  [Note] Current number of MCMC iterations: 9642.
+  [Note] Parameter Estimates: 
+0.823945
+ 1.26618
+  [Note] Convergence Criterion: 0.00101863.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 5.
+  [Note] Current number of MCMC iterations: 20000.
+  [Note] Parameter Estimates: 
+0.824171
+ 1.26615
+  [Note] Convergence Criterion: 7.78593e-06.
+MCEM pump without AD, with transform=FALSE
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -366,9 +374,10 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2188.
   [Note] Parameter Estimates: 
-0.818182
- 1.25068
-  [Note] Convergence Criterion: 0.0049061.
+0.817876
+ 1.24692
+  [Note] Convergence Criterion: 0.0041643.
+MCEM pump without AD, with transform=TRUE
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -387,9 +396,9 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2188.
   [Note] Parameter Estimates: 
-0.818185
- 1.25068
-  [Note] Convergence Criterion: 0.00490643.
+0.817883
+ 1.24693
+  [Note] Convergence Criterion: 0.0041649.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -408,9 +417,10 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2188.
   [Note] Parameter Estimates: 
-0.818185
- 1.25068
-  [Note] Convergence Criterion: 0.00490643.
+0.817883
+ 1.24693
+  [Note] Convergence Criterion: 0.0041649.
+MCEM with pump transform=FALSE and some calcNodesOther
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -429,18 +439,18 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2188.
   [Note] Parameter Estimates: 
-1.06877
-2.21092
-  [Note] Convergence Criterion: 0.00617455.
-Monte Carlo error too big: increasing MCMC sample size.
+1.06593
+2.19633
+  [Note] Convergence Criterion: 0.00470096.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 4.
-  [Note] Current number of MCMC iterations: 6197.
+  [Note] Current number of MCMC iterations: 4298.
   [Note] Parameter Estimates: 
-1.07893
-2.25326
-  [Note] Convergence Criterion: 0.00137602.
+ 1.0764
+2.24303
+  [Note] Convergence Criterion: 0.00181612.
+MCEM with pump transform=FALSE and some calcNodesOther, noAD
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -459,18 +469,18 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 2188.
   [Note] Parameter Estimates: 
-1.06877
-2.21093
-  [Note] Convergence Criterion: 0.00617451.
-Monte Carlo error too big: increasing MCMC sample size.
+1.06593
+2.19633
+  [Note] Convergence Criterion: 0.00470093.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 4.
-  [Note] Current number of MCMC iterations: 6197.
+  [Note] Current number of MCMC iterations: 4298.
   [Note] Parameter Estimates: 
-1.07893
-2.25326
-  [Note] Convergence Criterion: 0.00137595.
+ 1.0764
+2.24303
+  [Note] Convergence Criterion: 0.00181607.
+MCEM simplest 1D works
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -502,13 +512,9 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 4.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
-4.00374
-  [Note] Convergence Criterion: 5.52622e-05.
-  [Note] Iteration Number: 5.
-  [Note] Current number of MCMC iterations: 20000.
-  [Note] Parameter Estimates: 
-3.99762
-  [Note] Convergence Criterion: 1.55888e-05.
+4.00925
+  [Note] Convergence Criterion: 3.39403e-05.
+MCEM simplest 1D with a constrained parameter works
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -525,33 +531,28 @@ Monte Carlo error too big: increasing MCMC sample size.
 4.03535
   [Note] Convergence Criterion: 0.0125879.
 Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 4.
-  [Note] Current number of MCMC iterations: 1167.
-  [Note] Parameter Estimates: 
-3.94797
-  [Note] Convergence Criterion: 0.00145563.
 Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 4.
+  [Note] Current number of MCMC iterations: 9400.
+  [Note] Parameter Estimates: 
+4.01069
+  [Note] Convergence Criterion: 0.000113579.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 5.
-  [Note] Current number of MCMC iterations: 2611.
-  [Note] Parameter Estimates: 
-4.00733
-  [Note] Convergence Criterion: 0.000591767.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 6.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
-3.99967
-  [Note] Convergence Criterion: 1.94222e-05.
+4.01258
+  [Note] Convergence Criterion: 4.30593e-06.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -568,33 +569,29 @@ Monte Carlo error too big: increasing MCMC sample size.
 4.03535
   [Note] Convergence Criterion: 0.0125879.
 Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 4.
-  [Note] Current number of MCMC iterations: 1167.
-  [Note] Parameter Estimates: 
-3.94797
-  [Note] Convergence Criterion: 0.00145563.
 Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 4.
+  [Note] Current number of MCMC iterations: 9400.
+  [Note] Parameter Estimates: 
+4.01069
+  [Note] Convergence Criterion: 0.000113579.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 5.
-  [Note] Current number of MCMC iterations: 2611.
-  [Note] Parameter Estimates: 
-4.00733
-  [Note] Convergence Criterion: 0.000591767.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 6.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
-3.99967
-  [Note] Convergence Criterion: 1.94222e-05.
+4.01258
+  [Note] Convergence Criterion: 4.30593e-06.
+MCEM simplest 1D with deterministic intermediates and multiple data works
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -609,90 +606,86 @@ Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 2.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
-1.39417
-  [Note] Convergence Criterion: 0.00496179.
+1.3734
+  [Note] Convergence Criterion: 0.00753366.
   [Note] Iteration Number: 3.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
-1.10611
-  [Note] Convergence Criterion: 0.0182309.
+1.2447
+  [Note] Convergence Criterion: 0.00713057.
   [Note] Iteration Number: 4.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
-0.673105
-  [Note] Convergence Criterion: 0.038268.
+0.931467
+  [Note] Convergence Criterion: 0.0232516.
   [Note] Iteration Number: 5.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
-0.26249
-  [Note] Convergence Criterion: 0.0340481.
+0.514863
+  [Note] Convergence Criterion: 0.0396897.
   [Note] Iteration Number: 6.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--0.0389393
-  [Note] Convergence Criterion: 0.0201176.
+0.0685438
+  [Note] Convergence Criterion: 0.045638.
   [Note] Iteration Number: 7.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--0.552011
-  [Note] Convergence Criterion: 0.0506355.
+-0.435173
+  [Note] Convergence Criterion: 0.0555813.
   [Note] Iteration Number: 8.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--1.0231
-  [Note] Convergence Criterion: 0.0413861.
+-1.01771
+  [Note] Convergence Criterion: 0.0656141.
   [Note] Iteration Number: 9.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--1.49505
-  [Note] Convergence Criterion: 0.0410266.
+-1.33294
+  [Note] Convergence Criterion: 0.0212339.
   [Note] Iteration Number: 10.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--1.95698
-  [Note] Convergence Criterion: 0.0380804.
+-1.81544
+  [Note] Convergence Criterion: 0.0459213.
   [Note] Iteration Number: 11.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--2.30157
-  [Note] Convergence Criterion: 0.021926.
+-2.22244
+  [Note] Convergence Criterion: 0.0324886.
   [Note] Iteration Number: 12.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--2.53196
-  [Note] Convergence Criterion: 0.0106752.
+-2.57693
+  [Note] Convergence Criterion: 0.0274394.
   [Note] Iteration Number: 13.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--2.71536
-  [Note] Convergence Criterion: 0.0072198.
+-2.68666
+  [Note] Convergence Criterion: 0.00336188.
   [Note] Iteration Number: 14.
-  [Note] Current number of MCMC iterations: 12367.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
--2.81595
-  [Note] Convergence Criterion: 0.00263783.
+-2.79567
+  [Note] Convergence Criterion: 0.00352499.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 15.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
--2.8345
-  [Note] Convergence Criterion: 0.000251499.
+-2.80731
+  [Note] Convergence Criterion: 0.000137197.
   [Note] Iteration Number: 16.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
--2.87312
-  [Note] Convergence Criterion: 0.000558247.
-  [Note] Iteration Number: 17.
-  [Note] Current number of MCMC iterations: 20000.
-  [Note] Parameter Estimates: 
--2.88834
-  [Note] Convergence Criterion: 0.000177332.
+-2.8166
+  [Note] Convergence Criterion: 0.000108485.
+MCEM 1D with a constrained parameter and deterministic intermediates works
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -808,47 +801,47 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 23.
   [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-35.0047
-  [Note] Convergence Criterion: 0.00513322.
+34.9424
+  [Note] Convergence Criterion: 0.00398613.
   [Note] Iteration Number: 24.
   [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-35.6171
-  [Note] Convergence Criterion: 0.0105147.
+35.5599
+  [Note] Convergence Criterion: 0.0106472.
   [Note] Iteration Number: 25.
   [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-36.0888
-  [Note] Convergence Criterion: 0.00738943.
+36.0364
+  [Note] Convergence Criterion: 0.00749461.
   [Note] Iteration Number: 26.
   [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-36.4474
-  [Note] Convergence Criterion: 0.004954.
+36.3993
+  [Note] Convergence Criterion: 0.00503566.
   [Note] Iteration Number: 27.
   [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-37.4108
-  [Note] Convergence Criterion: 0.0215292.
+37.3667
+  [Note] Convergence Criterion: 0.0216714.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 28.
   [Note] Current number of MCMC iterations: 1687.
   [Note] Parameter Estimates: 
-37.7451
-  [Note] Convergence Criterion: 0.0040169.
+37.6673
+  [Note] Convergence Criterion: 0.0034711.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 29.
   [Note] Current number of MCMC iterations: 2611.
   [Note] Parameter Estimates: 
-38.0069
-  [Note] Convergence Criterion: 0.00245493.
+37.8566
+  [Note] Convergence Criterion: 0.00158479.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 30.
   [Note] Current number of MCMC iterations: 3315.
   [Note] Parameter Estimates: 
-38.2099
-  [Note] Convergence Criterion: 0.00159944.
+38.0445
+  [Note] Convergence Criterion: 0.00144046.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
@@ -857,268 +850,264 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 31.
   [Note] Current number of MCMC iterations: 12367.
   [Note] Parameter Estimates: 
-38.3511
-  [Note] Convergence Criterion: 0.000616037.
+38.1405
+  [Note] Convergence Criterion: 0.00035821.
   [Note] Iteration Number: 32.
   [Note] Current number of MCMC iterations: 12367.
   [Note] Parameter Estimates: 
-38.4734
-  [Note] Convergence Criterion: 0.000497953.
+38.2801
+  [Note] Convergence Criterion: 0.000602561.
   [Note] Iteration Number: 33.
   [Note] Current number of MCMC iterations: 12367.
   [Note] Parameter Estimates: 
-38.6567
-  [Note] Convergence Criterion: 0.00091512.
+38.4794
+  [Note] Convergence Criterion: 0.00103894.
   [Note] Iteration Number: 34.
   [Note] Current number of MCMC iterations: 12367.
   [Note] Parameter Estimates: 
-38.7284
-  [Note] Convergence Criterion: 0.000243766.
+38.5658
+  [Note] Convergence Criterion: 0.000311096.
   [Note] Iteration Number: 35.
   [Note] Current number of MCMC iterations: 12367.
   [Note] Parameter Estimates: 
-38.901
-  [Note] Convergence Criterion: 0.000831227.
+38.7518
+  [Note] Convergence Criterion: 0.000930625.
   [Note] Iteration Number: 36.
   [Note] Current number of MCMC iterations: 12367.
   [Note] Parameter Estimates: 
-38.9998
-  [Note] Convergence Criterion: 0.000372776.
+38.8629
+  [Note] Convergence Criterion: 0.000438304.
   [Note] Iteration Number: 37.
   [Note] Current number of MCMC iterations: 12367.
   [Note] Parameter Estimates: 
-39.0785
-  [Note] Convergence Criterion: 0.000274747.
+38.9529
+  [Note] Convergence Criterion: 0.00032834.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 38.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
-39.1399
-  [Note] Convergence Criterion: 0.000166908.
-  [Note] Iteration Number: 39.
-  [Note] Current number of MCMC iterations: 20000.
-  [Note] Parameter Estimates: 
-39.1567
-  [Note] Convergence Criterion: 3.56707e-05.
+39.0072
+  [Note] Convergence Criterion: 0.000142358.
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-3.88796
-  [Note] Convergence Criterion: 0.199104.
+3.61819
+  [Note] Convergence Criterion: 0.172391.
   [Note] Iteration Number: 2.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-6.70707
-  [Note] Convergence Criterion: 0.144179.
+6.56944
+  [Note] Convergence Criterion: 0.156342.
   [Note] Iteration Number: 3.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-8.93779
-  [Note] Convergence Criterion: 0.095655.
+9.05379
+  [Note] Convergence Criterion: 0.115103.
   [Note] Iteration Number: 4.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-11.0122
-  [Note] Convergence Criterion: 0.0853815.
+11.5595
+  [Note] Convergence Criterion: 0.11775.
   [Note] Iteration Number: 5.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-13.5612
-  [Note] Convergence Criterion: 0.121944.
+14.1227
+  [Note] Convergence Criterion: 0.122365.
   [Note] Iteration Number: 6.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-15.7403
-  [Note] Convergence Criterion: 0.0919451.
+16.3636
+  [Note] Convergence Criterion: 0.0961715.
   [Note] Iteration Number: 7.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-17.4694
-  [Note] Convergence Criterion: 0.0610221.
+18.6672
+  [Note] Convergence Criterion: 0.101793.
   [Note] Iteration Number: 8.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-19.1703
-  [Note] Convergence Criterion: 0.0596965.
+20.5049
+  [Note] Convergence Criterion: 0.0673011.
   [Note] Iteration Number: 9.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-20.5289
-  [Note] Convergence Criterion: 0.0404434.
+22.0339
+  [Note] Convergence Criterion: 0.0509787.
   [Note] Iteration Number: 10.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-22.3118
-  [Note] Convergence Criterion: 0.0623274.
+23.1647
+  [Note] Convergence Criterion: 0.0304122.
   [Note] Iteration Number: 11.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-23.4629
-  [Note] Convergence Criterion: 0.0311416.
+24.1035
+  [Note] Convergence Criterion: 0.0233678.
   [Note] Iteration Number: 12.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-24.8283
-  [Note] Convergence Criterion: 0.0416213.
+25.4908
+  [Note] Convergence Criterion: 0.043811.
   [Note] Iteration Number: 13.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-26.3874
-  [Note] Convergence Criterion: 0.0516532.
+26.4272
+  [Note] Convergence Criterion: 0.023357.
   [Note] Iteration Number: 14.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-27.7639
-  [Note] Convergence Criterion: 0.0429361.
+27.1034
+  [Note] Convergence Criterion: 0.0142114.
   [Note] Iteration Number: 15.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-28.7151
-  [Note] Convergence Criterion: 0.0237817.
+28.1416
+  [Note] Convergence Criterion: 0.0265473.
   [Note] Iteration Number: 16.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-29.3797
-  [Note] Convergence Criterion: 0.0137453.
+29.2719
+  [Note] Convergence Criterion: 0.0305335.
   [Note] Iteration Number: 17.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-30.173
-  [Note] Convergence Criterion: 0.0178812.
+29.8921
+  [Note] Convergence Criterion: 0.0123142.
   [Note] Iteration Number: 18.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
-30.6031
-  [Note] Convergence Criterion: 0.00746577.
+30.6213
+  [Note] Convergence Criterion: 0.0161238.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 19.
-  [Note] Current number of MCMC iterations: 1000.
+  [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-31.1897
-  [Note] Convergence Criterion: 0.0115362.
+30.9228
+  [Note] Convergence Criterion: 0.00394432.
   [Note] Iteration Number: 20.
-  [Note] Current number of MCMC iterations: 1000.
+  [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-31.821
-  [Note] Convergence Criterion: 0.01316.
+31.3233
+  [Note] Convergence Criterion: 0.00542803.
   [Note] Iteration Number: 21.
-  [Note] Current number of MCMC iterations: 1000.
+  [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-32.5598
-  [Note] Convergence Criterion: 0.0157753.
+31.8851
+  [Note] Convergence Criterion: 0.0092428.
   [Note] Iteration Number: 22.
-  [Note] Current number of MCMC iterations: 1000.
+  [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-33.2559
-  [Note] Convergence Criterion: 0.0149313.
+32.4052
+  [Note] Convergence Criterion: 0.00841461.
   [Note] Iteration Number: 23.
-  [Note] Current number of MCMC iterations: 1000.
+  [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-33.8701
-  [Note] Convergence Criterion: 0.0122046.
+32.6848
+  [Note] Convergence Criterion: 0.00356841.
   [Note] Iteration Number: 24.
-  [Note] Current number of MCMC iterations: 1000.
+  [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-34.7837
-  [Note] Convergence Criterion: 0.0217216.
+33.3674
+  [Note] Convergence Criterion: 0.0125512.
   [Note] Iteration Number: 25.
-  [Note] Current number of MCMC iterations: 1000.
+  [Note] Current number of MCMC iterations: 1390.
   [Note] Parameter Estimates: 
-35.3102
-  [Note] Convergence Criterion: 0.00996641.
+34.1309
+  [Note] Convergence Criterion: 0.0150872.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 26.
-  [Note] Current number of MCMC iterations: 1167.
+  [Note] Current number of MCMC iterations: 1687.
   [Note] Parameter Estimates: 
-35.665
-  [Note] Convergence Criterion: 0.00533183.
+34.412
+  [Note] Convergence Criterion: 0.00318845.
+Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 27.
-  [Note] Current number of MCMC iterations: 1167.
-  [Note] Parameter Estimates: 
-36.1096
-  [Note] Convergence Criterion: 0.00711728.
-Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 28.
-  [Note] Current number of MCMC iterations: 1390.
-  [Note] Parameter Estimates: 
-36.3998
-  [Note] Convergence Criterion: 0.00374219.
-  [Note] Iteration Number: 29.
-  [Note] Current number of MCMC iterations: 1390.
-  [Note] Parameter Estimates: 
-36.962
-  [Note] Convergence Criterion: 0.00938013.
-Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 30.
-  [Note] Current number of MCMC iterations: 1687.
-  [Note] Parameter Estimates: 
-37.3095
-  [Note] Convergence Criterion: 0.00434664.
-  [Note] Iteration Number: 31.
-  [Note] Current number of MCMC iterations: 1687.
-  [Note] Parameter Estimates: 
-37.7594
-  [Note] Convergence Criterion: 0.00620774.
-  [Note] Iteration Number: 32.
-  [Note] Current number of MCMC iterations: 1687.
-  [Note] Parameter Estimates: 
-37.9889
-  [Note] Convergence Criterion: 0.00245218.
-Monte Carlo error too big: increasing MCMC sample size.
-  [Note] Iteration Number: 33.
   [Note] Current number of MCMC iterations: 2083.
   [Note] Parameter Estimates: 
-38.2551
-  [Note] Convergence Criterion: 0.0027239.
+34.6108
+  [Note] Convergence Criterion: 0.00184824.
+  [Note] Iteration Number: 28.
+  [Note] Current number of MCMC iterations: 2083.
+  [Note] Parameter Estimates: 
+35.0625
+  [Note] Convergence Criterion: 0.00582845.
+  [Note] Iteration Number: 29.
+  [Note] Current number of MCMC iterations: 2083.
+  [Note] Parameter Estimates: 
+35.4323
+  [Note] Convergence Criterion: 0.00435585.
+  [Note] Iteration Number: 30.
+  [Note] Current number of MCMC iterations: 2083.
+  [Note] Parameter Estimates: 
+35.9355
+  [Note] Convergence Criterion: 0.00684756.
 Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 31.
+  [Note] Current number of MCMC iterations: 2611.
+  [Note] Parameter Estimates: 
+36.2229
+  [Note] Convergence Criterion: 0.00278768.
+  [Note] Iteration Number: 32.
+  [Note] Current number of MCMC iterations: 2611.
+  [Note] Parameter Estimates: 
+36.5298
+  [Note] Convergence Criterion: 0.00302671.
+  [Note] Iteration Number: 33.
+  [Note] Current number of MCMC iterations: 2611.
+  [Note] Parameter Estimates: 
+36.959
+  [Note] Convergence Criterion: 0.0049841.
   [Note] Iteration Number: 34.
-  [Note] Current number of MCMC iterations: 3315.
+  [Note] Current number of MCMC iterations: 2611.
   [Note] Parameter Estimates: 
-38.4409
-  [Note] Convergence Criterion: 0.00139352.
+37.2769
+  [Note] Convergence Criterion: 0.00318619.
   [Note] Iteration Number: 35.
-  [Note] Current number of MCMC iterations: 3315.
+  [Note] Current number of MCMC iterations: 2611.
   [Note] Parameter Estimates: 
-38.6373
-  [Note] Convergence Criterion: 0.00150371.
+37.7139
+  [Note] Convergence Criterion: 0.00520789.
   [Note] Iteration Number: 36.
-  [Note] Current number of MCMC iterations: 3315.
+  [Note] Current number of MCMC iterations: 2611.
   [Note] Parameter Estimates: 
-38.8325
-  [Note] Convergence Criterion: 0.00149478.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
-Monte Carlo error too big: increasing MCMC sample size.
+38.0998
+  [Note] Convergence Criterion: 0.00426572.
   [Note] Iteration Number: 37.
-  [Note] Current number of MCMC iterations: 20000.
+  [Note] Current number of MCMC iterations: 2611.
   [Note] Parameter Estimates: 
-38.9006
-  [Note] Convergence Criterion: 0.000192296.
+38.2964
+  [Note] Convergence Criterion: 0.00165787.
   [Note] Iteration Number: 38.
-  [Note] Current number of MCMC iterations: 20000.
+  [Note] Current number of MCMC iterations: 2611.
   [Note] Parameter Estimates: 
-39.0068
-  [Note] Convergence Criterion: 0.00035607.
+38.5742
+  [Note] Convergence Criterion: 0.00268214.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 39.
-  [Note] Current number of MCMC iterations: 20000.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
-39.0837
-  [Note] Convergence Criterion: 0.000225167.
+38.6901
+  [Note] Convergence Criterion: 0.000555406.
   [Note] Iteration Number: 40.
-  [Note] Current number of MCMC iterations: 20000.
+  [Note] Current number of MCMC iterations: 7175.
   [Note] Parameter Estimates: 
-39.2204
-  [Note] Convergence Criterion: 0.00051648.
+38.7954
+  [Note] Convergence Criterion: 0.000493818.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 41.
   [Note] Current number of MCMC iterations: 20000.
   [Note] Parameter Estimates: 
-39.2688
-  [Note] Convergence Criterion: 0.000124143.
+38.802
+  [Note] Convergence Criterion: 1.29801e-05.
+MCEM simplest 2x1D works, with multiple data for each
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -1146,8 +1135,9 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 5.
   [Note] Current number of MCMC iterations: 2083.
   [Note] Parameter Estimates: 
-9.65659
-  [Note] Convergence Criterion: 0.00057379.
+9.65931
+  [Note] Convergence Criterion: 0.000549532.
+MCMC for simple LME case works
   [Note] Iteration Number: 1.
   [Note] Current number of MCMC iterations: 1000.
   [Note] Parameter Estimates: 
@@ -1396,95 +1386,211 @@ Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 28.
   [Note] Current number of MCMC iterations: 1546.
   [Note] Parameter Estimates: 
- 2.33427
-0.135925
- 9.71458
-0.288106
- 0.18677
-  [Note] Convergence Criterion: 0.00610788.
+ 2.33425
+0.136228
+ 9.71434
+0.288558
+0.186775
+  [Note] Convergence Criterion: 0.00466801.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 29.
   [Note] Current number of MCMC iterations: 1962.
   [Note] Parameter Estimates: 
- 2.33724
-0.134264
- 9.71506
-0.288378
-0.187002
-  [Note] Convergence Criterion: 0.00439994.
+ 2.33717
+0.134718
+ 9.71501
+0.288453
+0.186971
+  [Note] Convergence Criterion: 0.00387192.
   [Note] Iteration Number: 30.
   [Note] Current number of MCMC iterations: 1962.
   [Note] Parameter Estimates: 
- 2.33678
-0.132272
- 9.71363
-0.289139
-0.186554
-  [Note] Convergence Criterion: 0.00660849.
+ 2.33672
+0.132695
+  9.7136
+0.289208
+0.186539
+  [Note] Convergence Criterion: 0.00667758.
   [Note] Iteration Number: 31.
   [Note] Current number of MCMC iterations: 1962.
   [Note] Parameter Estimates: 
- 2.33568
-0.130075
- 9.71343
-0.290403
-0.187144
-  [Note] Convergence Criterion: 0.00787739.
+ 2.33563
+0.130473
+  9.7134
+0.290466
+0.187132
+  [Note] Convergence Criterion: 0.00794951.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 32.
   [Note] Current number of MCMC iterations: 3255.
   [Note] Parameter Estimates: 
- 2.33573
-   0.129
- 9.71202
-0.291863
-0.187177
-  [Note] Convergence Criterion: 0.00342782.
+ 2.33567
+0.129721
+  9.7121
+0.291513
+0.187156
+  [Note] Convergence Criterion: 0.00211147.
   [Note] Iteration Number: 33.
   [Note] Current number of MCMC iterations: 3255.
   [Note] Parameter Estimates: 
- 2.33624
-0.127576
- 9.71232
-0.292143
-0.186954
-  [Note] Convergence Criterion: 0.00305783.
+ 2.33617
+0.128259
+ 9.71249
+0.291841
+0.186934
+  [Note] Convergence Criterion: 0.00316764.
   [Note] Iteration Number: 34.
   [Note] Current number of MCMC iterations: 3255.
   [Note] Parameter Estimates: 
- 2.33712
-0.125168
- 9.71289
-0.292336
-0.187388
-  [Note] Convergence Criterion: 0.00699576.
+ 2.33704
+ 0.12581
+ 9.71303
+0.292071
+ 0.18737
+  [Note] Convergence Criterion: 0.00713368.
   [Note] Iteration Number: 35.
   [Note] Current number of MCMC iterations: 3255.
   [Note] Parameter Estimates: 
-  2.3366
-0.124069
- 9.71384
-0.290924
-0.187017
-  [Note] Convergence Criterion: 0.00385993.
+ 2.33652
+0.124687
+ 9.71398
+0.290678
+0.187001
+  [Note] Convergence Criterion: 0.00386159.
   [Note] Iteration Number: 36.
   [Note] Current number of MCMC iterations: 3255.
   [Note] Parameter Estimates: 
- 2.33804
-0.124058
- 9.71217
-0.293027
-0.187268
-  [Note] Convergence Criterion: 0.00386721.
+ 2.33798
+0.124657
+ 9.71228
+0.292821
+0.187255
+  [Note] Convergence Criterion: 0.00395005.
+Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
 Monte Carlo error too big: increasing MCMC sample size.
   [Note] Iteration Number: 37.
-  [Note] Current number of MCMC iterations: 5554.
+  [Note] Current number of MCMC iterations: 7306.
   [Note] Parameter Estimates: 
- 2.33613
-0.123456
- 9.71184
-0.292731
-0.187387
-  [Note] Convergence Criterion: 0.000937941.
+ 2.33632
+0.124165
+ 9.71177
+0.293147
+0.187335
+  [Note] Convergence Criterion: 0.000695707.
+MCEM thin control entry works (simplest 1D case)
+  [Note] Iteration Number: 1.
+  [Note] Current number of MCMC iterations: 1000.
+  [Note] Parameter Estimates: 
+1.33036
+  [Note] Convergence Criterion: 0.146406.
+  [Note] Stopping MCEM because maximum number of MCEM iterations
+(maxIter=1) was reached.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 1.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+1.18051
+  [Note] Convergence Criterion: 0.00835559.
+  [Note] Iteration Number: 2.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+0.978406
+  [Note] Convergence Criterion: 0.0133898.
+  [Note] Iteration Number: 3.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+0.678763
+  [Note] Convergence Criterion: 0.0208966.
+  [Note] Iteration Number: 4.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+0.23017
+  [Note] Convergence Criterion: 0.0460741.
+  [Note] Iteration Number: 5.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+-0.155733
+  [Note] Convergence Criterion: 0.0331282.
+  [Note] Iteration Number: 6.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+-0.709289
+  [Note] Convergence Criterion: 0.0655549.
+  [Note] Iteration Number: 7.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+-1.24358
+  [Note] Convergence Criterion: 0.0564287.
+  [Note] Iteration Number: 8.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+-1.67465
+  [Note] Convergence Criterion: 0.0372498.
+  [Note] Iteration Number: 9.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+-2.04859
+  [Note] Convergence Criterion: 0.0297808.
+  [Note] Iteration Number: 10.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+-2.34762
+  [Note] Convergence Criterion: 0.0187838.
+  [Note] Iteration Number: 11.
+  [Note] Current number of MCMC iterations: 6823.
+  [Note] Parameter Estimates: 
+-2.74534
+  [Note] Convergence Criterion: 0.0311541.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 12.
+  [Note] Current number of MCMC iterations: 11742.
+  [Note] Parameter Estimates: 
+-2.79519
+  [Note] Convergence Criterion: 0.00098595.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 13.
+  [Note] Current number of MCMC iterations: 20000.
+  [Note] Parameter Estimates: 
+-2.82545
+  [Note] Convergence Criterion: 0.000420705.
+MCEM thin control and simplest 1D with deterministic intermediates and multiple data works
+  [Note] Iteration Number: 1.
+  [Note] Current number of MCMC iterations: 1000.
+  [Note] Parameter Estimates: 
+1.33442
+  [Note] Convergence Criterion: 0.145608.
+  [Note] Stopping MCEM because maximum number of MCEM iterations
+(maxIter=1) was reached.
+  [Note] Iteration Number: 1.
+  [Note] Current number of MCMC iterations: 1000.
+  [Note] Parameter Estimates: 
+1.33442
+  [Note] Convergence Criterion: 0.145608.
+  [Note] Stopping MCEM because maximum number of MCEM iterations
+(maxIter=1) was reached.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+Monte Carlo error too big: increasing MCMC sample size.
+  [Note] Iteration Number: 1.
+  [Note] Current number of MCMC iterations: 535.
+  [Note] Parameter Estimates: 
+1.47333
+  [Note] Convergence Criterion: 0.11241.
+  [Note] Stopping MCEM because maximum number of MCEM iterations
+(maxIter=1) was reached.
+  [Note] Iteration Number: 1.
+  [Note] Current number of MCMC iterations: 1000.
+  [Note] Parameter Estimates: 
+1.33036
+  [Note] Convergence Criterion: 0.146406.
+  [Note] Stopping MCEM because maximum number of MCEM iterations
+(maxIter=1) was reached.

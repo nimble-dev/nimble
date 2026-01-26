@@ -218,7 +218,10 @@ al. (2015). Default=1/3.
 that the initial states of one MCMC will be the last states from the previous
 MCMC, so they will often be good initial values after multiple iterations. Default=500.
 
-\item \code{thin} Thinning interval for the MCMC in step 1. Default=1.
+\item \code{thin} Thinning interval for the MCMC in step 1. Default=1. Note that
+the computational cost of the maximization step depends on the size of the MCMC sample.
+If chains are highly autocorrelated, thinning should be a good way to reduce the
+maximization cost while maintaining most of the statistical information in each sample.
 
 \item \code{alpha} Type I error rate for determining when step 2 has moved
 uphill. See above. Default=0.25.
@@ -371,7 +374,9 @@ the method of Louis (1982). It takes the following arguments:
      last sample from \code{findMLE} will be used. If MLE convergence was
      reasonable, this sample can be used. However, if the last MCEM step made
      a big move in parameter space (e.g. if convergence was not achieved),
-     the last MCMC sample may not be accurate for obtaining \code{vcov}. Default=FALSE.
+     the last MCMC sample may not be accurate for obtaining \code{vcov}. Note that
+     \code{thin} and \code{burnin} will be used from the most recent call to `findMLE`,
+     or their defaults set in the `control` list provided to `buildMCEM`. Default=FALSE.
 
      \item \code{atMLE}. Logical indicating whether you believe the
      \code{params} represents the MLE. If TRUE, one part of the computation
@@ -412,6 +417,11 @@ vector to an unconstrained parameter space and vice-versa, if
 \item \code{resetControls}. Reset all control arguments to the values
 provided in the call to \code{buildMCEM}. The user does not normally need to
 call this.
+
+\item \code{getParamNodes}. Return a vector of the parameter node
+names. This facilitates being sure that the numeric vector of the MLE
+parameters can be properly interpreted. If there is only one parameter,
+an extra "_EXTRA_" will appear in the returned vector and should be ignored.
 
 }
 }

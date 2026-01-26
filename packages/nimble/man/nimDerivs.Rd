@@ -6,7 +6,14 @@
 \alias{AD}
 \title{Nimble Derivatives}
 \usage{
-nimDerivs(call = NA, wrt = NULL, order = nimC(0, 1, 2), model = NA, ...)
+nimDerivs(
+  call = NA,
+  wrt = NULL,
+  order = nimC(0, 1, 2),
+  model = NA,
+  reset = FALSE,
+  ...
+)
 }
 \arguments{
 \item{call}{a call to a \code{nimbleFunction} method with arguments
@@ -23,15 +30,22 @@ all arguments to \code{nimFxn}.}
 corresponding to whether the function value, Jacobian, and Hessian should be
  returned respectively.  Defaults to \code{c(0, 1, 2)}.}
 
-\item{model}{(optional) for derivatives of a nimbleFunction that involves model.
-calculations, the uncompiled model that is used. This is needed in order
+\item{model}{(optional) the uncompiled model that is used, if taking derivatives
+of a nimbleFunction that involves model calculations. This is needed in order
 to be able to correctly restore values into the model when \code{order} does not
-include 0 (or in all cases when double-taping).}
+include 0 (or in all cases when double-taping). IMPORTANT: if \code{model}
+is included, one should also include the arguments \code{updateNodes} and
+\code{constantNodes} using the output obtained from running
+\code{makeModelDerivsInfo}.}
+
+\item{reset}{a logical specifying whether to reset the AD tape.
+See Section 17.4.5 of user manual for details.
+Not used/relevant for uncompiled execution. Defaults to \code{FALSE}.}
 
 \item{...}{additional arguments intended for internal use only.}
 }
 \value{
-a \code{nimbleList} with elements \code{value}, \code{jacobian},
+an \code{ADNimbleList} with elements \code{value}, \code{jacobian},
 and \code{hessian}.
 }
 \description{
@@ -43,6 +57,12 @@ Derivatives for uncompiled nimbleFunctions are calculated using the
 \code{numDeriv} package.  If this package is not installed, an error will
 be issued.  Derivatives for matrix valued arguments will be returned in 
 column-major order.
+
+As discussed above with the \code{model} argument, if taking derivatives
+of a nimbleFunction that involves model calculations (rather than directly
+taking derivatives of `calculate`), care needs to be taken to provide
+\code{model}, \code{updateNodes}, and \code{calcNodes} arguments. See
+Section 17.6.2 of the User Manual for more details.
 }
 \examples{
 

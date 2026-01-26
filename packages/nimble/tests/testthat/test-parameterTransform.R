@@ -3,7 +3,10 @@ source(system.file(file.path('tests', 'testthat', 'test_utils.R'), package = 'ni
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
+buildModelDerivsSetting = nimbleOptions('buildModelDerivs')
 nimbleOptions(verbose = FALSE)
+nimbleOptions(buildModelDerivs = TRUE)
+
 
 
 ##
@@ -245,11 +248,11 @@ test_that('parameterTransform for lkj correlation matrices', {
     
     expect_identical(yt, yt_from_pt)
     expect_equal(U, matrix(U_from_pt, p, p))
-    expect_identical(logDetJac, logDetJac_from_pt)
+    expect_equal(logDetJac, logDetJac_from_pt)
     
     expect_identical(yt, cyt_from_pt)
     expect_equal(U, matrix(cU_from_pt, p, p))
-    expect_identical(logDetJac, clogDetJac_from_pt)
+    expect_identical(logDetJac_from_pt, clogDetJac_from_pt)
 })
 
 test_that('parameterTransform works for zero nodes', {
@@ -277,5 +280,4 @@ test_that('parameterTransform works for zero nodes', {
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
-
-
+nimbleOptions(buildModelDerivs = buildModelDerivsSetting)

@@ -4,7 +4,7 @@
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+nimbleOptions(verbose = TRUE)
 
 ## Test getConditionallyIndependentSets
 test_that("getConditionallyIndependentSets works in model with a couple of sets", {
@@ -51,10 +51,12 @@ test_that("getConditionallyIndependentSets works in model with a couple of sets"
   expect_identical(SMN$paramNodes, character())
   expect_identical(SMN$calcNodes, c("mu","x[1]","x[2]"))
 
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = character(),
-                                       randomEffectsNodes = "x[1]", calcNodes = c("x[1]", "y[1]")))
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("mu"),
-                                       randomEffectsNodes = "y[1]", calcNodes = c("y[1]", "z[1]")))
+  expect_message(SMN <- setupMargNodes(m, paramNodes = character(),
+                                      randomEffectsNodes = "x[1]", calcNodes = c("x[1]", "y[1]")),
+                "some `randomEffectsNodes` provided")
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("mu"),
+                                      randomEffectsNodes = "y[1]", calcNodes = c("y[1]", "z[1]")),
+                "included in `randomEffectsNodes`")
 
 })
 
@@ -73,10 +75,14 @@ test_that("setupMargNodes/GCIS works in model with an extra edge among random ef
   expect_identical(SMN$paramNodes, c("mu", "sigma"))
   expect_identical(SMN$randomEffectsNodes, c("x[1]", "x[2]", "y[1]", "y[2]"))
 
-  expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "z[1]"))
-  expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("y[1]", "z[1]")))
-  expect_warning(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("x[1]","y[1]", "z[1]")))
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = "mu", randomEffectsNodes = "y[1]"))
+  expect_message(SMN <- setupMargNodes(m, randomEffectsNodes = "z[1]"),
+                 "some `randomEffectsNodes` provided")
+  expect_message(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("y[1]", "z[1]")),
+                 "included in `randomEffectsNodes`")
+  expect_message(SMN <- setupMargNodes(m, randomEffectsNodes = "x[1]", calcNodes = c("x[1]","y[1]", "z[1]")),
+                 "included in `randomEffectsNodes`")
+  expect_message(SMN <- setupMargNodes(m, paramNodes = "mu", randomEffectsNodes = "y[1]"),
+                 "included in `randomEffectsNodes`")
   SMN <- setupMargNodes(m, paramNodes = "x[1]", randomEffectsNodes = "y[1]")
   expect_identical(SMN$calcNodes,c('y[1]','lifted_y_oBi_cB_plus_x_oBi_cB_L6[1]','z[1]'))
 })
@@ -104,7 +110,8 @@ test_that("setupMargNodes/GCIS works in model with an extra edge from param to r
   expect_identical(SMN$givenNodes, c('sigma','y[2]','x[2]','y[1]','z[1]','z[2]'))
 
   # Warning from missing deterministic nodes
-  expect_warning(SMN <- setupMargNodes(m, calcNodes = c("x[1]","x[2]","y[1]","y[2]","z[1]","z[2]")))
+  expect_message(SMN <- setupMargNodes(m, calcNodes = c("x[1]","x[2]","y[1]","y[2]","z[1]","z[2]")),
+                 "included in the `calcNodes`")
 
   SMN <- setupMargNodes(m, calcNodes = m$getDependencies('x',downstream=TRUE))
   expect_identical(SMN$paramNodes, c("mu","sigma"))
@@ -121,7 +128,7 @@ test_that("setupMargNodes/GCIS catches discrete randomEffectsNode", {
   })
   Rmodel <- nimbleModel(code, data = list(y = 1))
 
-  expect_warning(SMN <- setupMargNodes(Rmodel, 'p'))
+  expect_message(SMN <- setupMargNodes(Rmodel, 'p'), "discrete")
   expect_identical(SMN$randomEffectsNodes, c('re1','re3'))
 })
 
@@ -381,13 +388,16 @@ test_that("setupMargNodes/GCIS works with random effects without parameters", {
   expect_identical(SMN$randomEffectsSets, list('RE[1]', 'RE[2]'))
   expect_identical(SMN$paramNodes, c("P", "sigma"))
 
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P", "sigma"), randomEffectsNodes = 'RE',
-                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P"), randomEffectsNodes = 'RE',
-                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("P", "sigma"), randomEffectsNodes = 'RE',
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")),
+                 "included in the `calcNodes`")
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("P"), randomEffectsNodes = 'RE',
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")),
+                 "included in the `calcNodes`")
                                         # The next one can't really create meaningful results anyway.
-  expect_warning(SMN <- setupMargNodes(m, paramNodes = c("P"),
-                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")))
+  expect_message(SMN <- setupMargNodes(m, paramNodes = c("P"),
+                                       calcNodes = c("RE[1]", "mu[1]", "Y[1]")),
+                 "some `calcNodes` provided")
 })
 
 test_that("setupMargNodes works with determimistic node as parameter", {
@@ -429,3 +439,68 @@ test_that("setupMargNodes finds correct randomEffectsNodes based on calcNodes in
   expect_identical(SMN$randomEffectsNodes, c("r[1]","r[2]"))
   expect_identical(SMN$paramNodes, c("p[1]","p[2]"))
 })
+
+test_that("regression tests that `getConditionallyIndependentSets` works with traversal of determ nodes", {
+    code <- nimbleCode({
+        for(i in 1:5) {
+            y[i] ~ dnorm(b1*x[i] + mu[i], sd = exp(b2*x[i]+ mu2[i]))
+            mu[i] ~ dnorm(0, tau)
+            mu2[i] ~ dnorm(0, tau2)
+        }
+        b1~dflat()
+        b2 ~dflat()
+        tau ~ dhalfflat()
+        tau2~dhalfflat()
+    })
+    m <- nimbleModel(code, data = list(y = rnorm(5)))
+    given <- c('tau','tau2',paste0('y[', 1:5, ']'))
+    
+    ## Correct
+    latents <- c('b1','b2',paste0('mu[', 1:5, ']'),paste0('mu2[', 1:5, ']'))
+    expect_length(m$getConditionallyIndependentSets(nodes = latents, givenNodes = given, unknownAsGiven = TRUE), 1)
+    
+    ## In issue 1564, incorrect with different order for the latents: `mu2[1]` split out into its own set
+    latents <- c(paste0('mu[', 1:5, ']'),paste0('mu2[', 1:5, ']'),'b1','b2')
+    expect_length(m$getConditionallyIndependentSets(nodes = latents, givenNodes = given, unknownAsGiven = TRUE), 1)
+})
+
+test_that("`setupMargNodes` handling of missing/extra latents", {
+    code <- nimbleCode({
+        for(i in 1:5)
+            y[i] ~ dnorm(b[k[i]], 1)
+        for(i in 1:3)
+            b[i] ~ dnorm(mu,1)
+        mu ~ dnorm(0,1)
+    })
+    ## Only b[1] and b[2] have data dependents.
+    m <- nimbleModel(code, data = list(y = rnorm(5)), constants = list(k = c(1,1,1,2,2)))
+
+    expect_silent(result <- setupMargNodes(m))
+    expect_identical(result$randomEffectsNodes, c("b[1]","b[2]"))
+    expect_identical(result$paramNodes, c("mu"))
+
+    ## `b[2]` won't be marginalized over, and its dependent `y`s are not in calcNodes.
+    ## Could be user error, but we simply accept the user choices. 
+    expect_silent(result <- setupMargNodes(m, randomEffectsNodes = 'b[1]'))
+    expect_identical(result$randomEffectsNodes, c("b[1]"))
+    expect_identical(result$paramNodes, c("mu"))
+    
+    ## This gives a warning.
+    ## `b[2]` now in `paramNodes`, presumably since its `y`s are in calcNodes.
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b[1]', calcNodes = c('b[1]','y')),
+                   "they should be included")
+    expect_identical(result$randomEffectsNodes, c("b[1]"))
+    expect_identical(result$paramNodes, c("mu", "b[2]"))
+ 
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for the provided")
+    expect_identical(result$randomEffectsNodes, c("b[1]", "b[2]"))
+    expect_identical(result$paramNodes, c("mu"))
+
+    nimbleOptions(includeUnneededLatents = TRUE)
+    expect_message(result <- setupMargNodes(m, randomEffectsNodes = 'b'), "they are not needed for the provided")
+    expect_identical(result$randomEffectsNodes, c("b[1]", "b[2]", "b[3]"))
+    expect_identical(result$paramNodes, c("mu"))
+    ## Note `b[3]` is not in `calcNodes` because `predictiveNodes` are excluded.
+    nimbleOptions(includeUnneededLatents = FALSE)
+})
+    

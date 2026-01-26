@@ -9,8 +9,7 @@ nimbleOptions(verbose = TRUE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
-context("Testing of MCEM")
-
+# tests begin with a cat() to help organize the gold file output
 goldFileName <- 'mcemTestLog_Correct.Rout'
 tempFileName <- 'mcemTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCEMtesting'))
@@ -65,6 +64,7 @@ pump_mle_trans <- pump_optim_trans$par
 pump_vcov_trans <- inverse(-pump_optim_trans$hessian)
 
 test_that("MCEM error-trapping", {
+  cat("MCEM error-trapping\n")
  pumpCode <- nimbleCode({
   for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta);
@@ -101,6 +101,7 @@ test_that("MCEM error-trapping", {
 })
 
 test_that("MCEM pump with all defaults (roxygen example)", {
+  cat("MCEM pump with all defaults (roxygen example)\n")
  pumpCode <- nimbleCode({
   for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta);
@@ -142,6 +143,7 @@ test_that("MCEM pump with all defaults (roxygen example)", {
 })
 
 test_that("MCEM with pump transform=FALSE",{
+  cat("MCEM with pump transform=FALSE\n")
   pumpCode <- nimbleCode({
     for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta)
@@ -239,6 +241,7 @@ test_that("MCEM with pump transform=FALSE",{
 })
 
 test_that("MCEM pump with transform=TRUE", {
+  cat("MCEM pump with transform=TRUE\n")
   # transformed version: Use parameter transformation
   ## build an MCEM algorithm with Ascent-based convergence criterion
   pumpCode <- nimbleCode({
@@ -286,7 +289,7 @@ test_that("MCEM pump with transform=TRUE", {
   set.seed(0)
   cpump$alpha <- pump$alpha
   cpump$beta <- pump$beta
-  out <- cpumpMCEM$findMLE(initM = 1000, returnTrans=TRUE)
+  out <- cpumpMCEM$findMLE(initM = 1000, returnTrans=TRUE, tol = 0.001)
   expect_equal(out$par, pump_mle_trans, tol=0.01)
   vc <- cpumpMCEM$vcov(out$par, trans = TRUE)
   expect_equal(vc, pump_vcov_trans, tol=0.02)
@@ -295,6 +298,7 @@ test_that("MCEM pump with transform=TRUE", {
 })
 
 test_that("MCEM pump without AD, with transform=FALSE", {
+  cat("MCEM pump without AD, with transform=FALSE\n")
   ####
   # version without AD
   pumpCode <- nimbleCode({
@@ -343,6 +347,7 @@ test_that("MCEM pump without AD, with transform=FALSE", {
 
 
 test_that("MCEM pump without AD, with transform=TRUE", {
+  cat("MCEM pump without AD, with transform=TRUE\n")
   ####
   # version without AD
   pumpCode <- nimbleCode({
@@ -398,6 +403,7 @@ test_that("MCEM pump without AD, with transform=TRUE", {
 ## are not related to missing data or latent states
 
 test_that("MCEM with pump transform=FALSE and some calcNodesOther",{
+  cat("MCEM with pump transform=FALSE and some calcNodesOther\n")
   pumpConsts <- list(N = 10,
                      t = c(94.3, 15.7, 62.9, 126, 5.24,
                            31.4, 1.05, 1.05, 2.1, 10.5))
@@ -486,6 +492,7 @@ test_that("MCEM with pump transform=FALSE and some calcNodesOther",{
 
 
 test_that("MCEM with pump transform=FALSE and some calcNodesOther, noAD",{
+  cat("MCEM with pump transform=FALSE and some calcNodesOther, noAD\n")
   pumpConsts <- list(N = 10,
                      t = c(94.3, 15.7, 62.9, 126, 5.24,
                            31.4, 1.05, 1.05, 2.1, 10.5))
@@ -578,6 +585,7 @@ test_that("MCEM with pump transform=FALSE and some calcNodesOther, noAD",{
 # Adopting some (far from all) tests from test-ADlaplace
 
 test_that("MCEM simplest 1D works", {
+  cat("MCEM simplest 1D works\n")
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(a, sd = 2)
@@ -598,6 +606,7 @@ test_that("MCEM simplest 1D works", {
 })
 
 test_that("MCEM simplest 1D with a constrained parameter works", {
+  cat("MCEM simplest 1D with a constrained parameter works\n")
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(a, sd = 2)
@@ -652,6 +661,7 @@ test_that("MCEM simplest 1D with a constrained parameter works", {
 # that we don't need to test here.
 
 test_that("MCEM simplest 1D with deterministic intermediates and multiple data works", {
+  cat("MCEM simplest 1D with deterministic intermediates and multiple data works\n")
   set.seed(1)
   m <- nimbleModel(
     nimbleCode({
@@ -706,6 +716,7 @@ test_that("MCEM simplest 1D with deterministic intermediates and multiple data w
 # Case "1D with deterministic intermediates works" from Laplace seems redundant
 
 test_that("MCEM 1D with a constrained parameter and deterministic intermediates works", {
+  cat("MCEM 1D with a constrained parameter and deterministic intermediates works\n")
   m <- nimbleModel(
     nimbleCode({
       y ~ dnorm(0.2 * a, sd = 2)
@@ -773,6 +784,7 @@ test_that("MCEM 1D with a constrained parameter and deterministic intermediates 
 # Skipping "with deterministic intermediates and multiple data works"
 
 test_that("MCEM simplest 2x1D works, with multiple data for each", {
+  cat("MCEM simplest 2x1D works, with multiple data for each\n")
   set.seed(1)
   y <- matrix(rnorm(6, 4, 5), nrow = 2)
   m <- nimbleModel(
@@ -876,6 +888,7 @@ test_that("MCEM simplest 2x1D works, with multiple data for each", {
 ## })
 
 test_that("MCMC for simple LME case works", {
+  cat("MCMC for simple LME case works\n")
   set.seed(1)
   g <- rep(1:10, each = 5)
   n <- length(g)
@@ -933,11 +946,166 @@ test_that("MCMC for simple LME case works", {
   m2$calculate()
 
   cm2 <- compileNimble(m2)
-  Laplace <- buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
-  cLaplace <- compileNimble(Laplace, project = m2)
-  MLE <- cLaplace$findMLE()
+  if(requireNamespace('nimbleQuad')) {
+      Laplace <- nimbleQuad::buildLaplace(model=m2, randomEffectsNodes = c("random_int", "random_slope"))
+      ## Work around nimble's namespace/lookup shortcomings.
+      drop_algorithm <- nimbleQuad::drop_algorithm; quadGH <- nimbleQuad::quadGH
+      temporarilyAssignInGlobalEnv(drop_algorithm)
+      temporarilyAssignInGlobalEnv(quadGH)
+      cLaplace <- compileNimble(Laplace, project = m2)
+      MLE <- cLaplace$findMLE()
+      
+      expect_equal(MLE$value, cLaplace$calcLogLik(opt$par), tolerance = 0.04)
+  }
+})
 
-  expect_equal(MLE$value, cLaplace$calcLogLik(opt$par), tolerance = 0.04)
+## The next two tests are added as regression tests for fixes made in 1.4.0.
+## Prior to 1.4.0, there were several small problems:
+## - control list "thin" element was not used during sampling
+## - when increasing M, new samples were not appended by rather a full new sample was generated
+## - in vcov with resetSamples=TRUE, thin was not used.
+## - burnin was applied post-thinning instead of pre-thinning (which would be consistent with runMCMC etc.)
+## - reset vs resetMV was not used, although I don't have a regression test for that here.
+## - nimDerivs did not have reset=TRUE for the first all in a findMLe run, although I don't have a regression test for that here.
+
+test_that("MCEM thin control entry works (simplest 1D case)",{
+  cat("MCEM thin control entry works (simplest 1D case)\n")
+  nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=TRUE)
+  on.exit(nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=FALSE))
+  set.seed(1)
+  m <- nimbleModel(
+    nimbleCode({
+      mu ~ dnorm(0, sd = 5)
+      a ~ dexp(rate = exp(0.5 * mu))
+      for (i in 1:5){
+        y[i] ~ dnorm(0.2 * a, sd = 2)
+      }
+    }), data = list(y = rnorm(5, 1, 2)), inits = list(mu = 2, a = 1),
+    buildDerivs = TRUE
+  )
+  MCEM <- buildMCEM(model = m, control=list(thin=2))
+  cm <- compileNimble(m)
+  cMCEM <- compileNimble(MCEM, project = m)
+  set.seed(1)
+  expect_no_error(opt <- cMCEM$findMLE(maxIter = 1, ascent=FALSE)) # PASSES only as of 1.4.0
+  # We should have "effective burnin" = burnin/thin = 250; this is E$burnIn
+  expect_equal(cMCEM$E$burnIn, 250) # PASSES only as of 1.4.0
+  opt <- cMCEM$findMLE(C = 2, initM = 2000, burnin = 500, thin = 2)
+  expect_equal(opt$par, -2.856, .04)
+  vcov <- cMCEM$vcov(opt$par, trans=FALSE, resetSamples = TRUE, M = 2000)
+  expect_equal(dim(as.matrix(cMCEM$mcmc_Latent$mvSamples))[1], 2000/2) # PASSES only as of 1.4.0
+})
+
+test_that("MCEM thin control and simplest 1D with deterministic intermediates and multiple data works", {
+  cat("MCEM thin control and simplest 1D with deterministic intermediates and multiple data works\n")
+  nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=TRUE)
+  on.exit(nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions=FALSE))
+  set.seed(1)
+  m <- nimbleModel(
+    nimbleCode({
+      mu ~ dnorm(0, sd = 5)
+      a ~ dexp(rate = exp(0.5 * mu))
+      for (i in 1:5){
+        y[i] ~ dnorm(0.2 * a, sd = 2)
+      }
+    }), data = list(y = rnorm(5, 1, 2)), inits = list(mu = 2, a = 1),
+    buildDerivs = TRUE
+  )
+  MCEM <- buildMCEM(model = m)
+  cm <- compileNimble(m)
+  cMCEM <- compileNimble(MCEM, project = m)
+
+  expect_identical(cMCEM$getParamNodes()[1], "mu") # NEW FEATURE in 1.4.0
+
+  ## First, check that MCMC is replicable.
+  ## This should work and is being checked to be cautious.
+  for(v in m$getVarNames())
+    cm[[v]] <- m[[v]]
+  cm$calculate()
+  cm$mu <- 2
+  set.seed(1)
+  cMCEM$doMCMC(1000, 1, TRUE)
+  firstSamples <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+
+  for(v in m$getVarNames())
+    cm[[v]] <- m[[v]]
+  cm$calculate()
+  cm$mu <- 2
+  set.seed(1)
+  cMCEM$doMCMC(1000, 1, TRUE)
+  secondSamples <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+
+  expect_identical(firstSamples, secondSamples)
+
+  ## Next, check that with reset=FALSE, samples are appended, so the
+  ## first 1000 are the same as above. This is a regression test for
+  ## nimble 1.4.0. Prior to this version, samples were not appended,
+  ## but rather a full new sample was obtained. This was inefficient but
+  ## not wrong.
+  cMCEM$doMCMC(500, 1, FALSE)
+  thirdSamples <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+  expect_identical(firstSamples[1:1000], thirdSamples[1:1000, 1])
+
+  ## Second, test that samples are reproducible and
+  ## additional samples are appended when running fully
+  ## in the algorithm.
+  for(v in m$getVarNames())
+    cm[[v]] <- m[[v]]
+  cm$calculate()
+  cm$mu <- 2
+  set.seed(1)
+  opt <- cMCEM$findMLE(maxIter = 1, ascent=FALSE)
+  firstSamples <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+
+  for(v in m$getVarNames())
+    cm[[v]] <- m[[v]]
+  cm$calculate()
+  cm$mu <- 2
+  set.seed(1)
+  opt <- cMCEM$findMLE(maxIter = 1, ascent=FALSE)
+  secondSamples <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+
+  expect_identical(firstSamples, secondSamples)
+
+  for(v in m$getVarNames())
+    cm[[v]] <- m[[v]]
+  cm$calculate()
+  cm$mu <- 2
+  set.seed(1)
+  # by choosing only 10 more samples than burnin, we are
+  # forcing the adaptive increase of samples and can check that
+  # it appends to rather than replaces previous samples.
+  opt <- cMCEM$findMLE(initM = 510, maxIter = 1, ascent=TRUE )
+  thirdSamples <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+  nThird <- dim(thirdSamples)[1]
+  expect_identical(firstSamples[1:nThird], thirdSamples[1:nThird, 1]) # PASSES only as of 1.4.0
+
+  ## Next, check that thinning is respected
+  for(v in m$getVarNames())
+    cm[[v]] <- m[[v]]
+  cm$mu <- 2
+  cm$calculate()
+  set.seed(1)
+  opt <- cMCEM$findMLE(maxIter = 1, ascent=FALSE, thin = 2) ## PASSES only as of 1.4.0
+  firstSamplesT <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+  expect_equal(firstSamples[seq(2, 1000, by=2)], firstSamplesT[1:500])
+  expect_equal(dim(firstSamplesT)[1], 500)
+  expect_equal(cMCEM$E$burnIn, 250) # PASSES only as of 1.4.0
+
+  # and that appending samples works correctly with thinning
+  # Nope: This test is disabled because in fact when niter is not a
+  #  multiple of thin, even with reset=FALSE the MCMC samples will
+  #  not match but will be offset by niter %% thin at the junction
+  #  of the first and second runs.
+  ## for(v in m$getVarNames())
+  ##   cm[[v]] <- m[[v]]
+  ## cm$mu <- 2
+  ## cm$calculate()
+  ## set.seed(1)
+  ## opt <- cMCEM$findMLE(initM = 510, maxIter = 1, ascent=TRUE, thin = 2)
+  ## thirdSamplesT <- as.matrix(cMCEM$mcmc_Latent$mvSamples)
+  ## nThird <- dim(thirdSamplesT)[1]
+  ## expect_identical(firstSamplesT[1:nThird], thirdSamplesT[1:nThird, 1])
 })
 
 sink(NULL)

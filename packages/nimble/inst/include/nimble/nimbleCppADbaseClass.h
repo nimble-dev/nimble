@@ -17,28 +17,40 @@ public:
   void getDerivs(nimbleCppADinfoClass &ADinfo,
                  const NimArr<1, double> &derivOrders,
                  const NimArr<1, double> &wrtVector,
+                 const NimArr<1, double> &outInds,
+                 const NimArr<1, double> &inDir,
+                 const NimArr<1, double> &outDir,
                  nimSmartPtr<NIMBLE_ADCLASS> &ansList);
 
   nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
                                                 const NimArr<1, double> &derivOrders,
-                                                const NimArr<1, double> &wrtVector){
+                                                const NimArr<1, double> &wrtVector,
+                                                const NimArr<1, double> &outInds,
+                                                const NimArr<1, double> &inDir,
+                                                const NimArr<1, double> &outDir){
     nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
-    getDerivs(ADinfo, derivOrders, wrtVector, ansList);
+    getDerivs(ADinfo, derivOrders, wrtVector, outInds, inDir, outDir, ansList);
     return(ansList);
   }
 
   void getDerivs_meta(nimbleCppADinfoClass &ADinfo,
                       const NimArr<1, double> &derivOrders,
                       const NimArr<1, double> &wrtVector,
+                      const NimArr<1, double> &outInds,
+                      const NimArr<1, CppAD::AD<double> > &inDir,
+                      const NimArr<1, CppAD::AD<double> > &outDir,
                       const nimbleCppADrecordingInfoClass &nimRecInfo,
                       nimSmartPtr<NIMBLE_ADCLASS_META> &ansList);
 
   nimSmartPtr<NIMBLE_ADCLASS_META> getDerivs_wrapper_meta(nimbleCppADinfoClass &ADinfo,
                                                           const NimArr<1, double> &derivOrders,
                                                           const NimArr<1, double> &wrtVector,
+                                                          const NimArr<1, double> &outInds,
+                                                          const NimArr<1, CppAD::AD<double> > &inDir,
+                                                          const NimArr<1, CppAD::AD<double> > &outDir,
                                                           const nimbleCppADrecordingInfoClass &nimRecInfo){
     nimSmartPtr<NIMBLE_ADCLASS_META> ansList = new NIMBLE_ADCLASS_META;
-    getDerivs_meta(ADinfo, derivOrders, wrtVector, nimRecInfo, ansList);
+    getDerivs_meta(ADinfo, derivOrders, wrtVector, outInds, inDir, outDir, nimRecInfo, ansList);
     return(ansList);
   }
 

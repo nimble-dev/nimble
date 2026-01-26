@@ -22,7 +22,11 @@ nimbleMCMC(
   samples = TRUE,
   samplesAsCodaMCMC = FALSE,
   summary = FALSE,
-  WAIC = FALSE
+  mean = FALSE,
+  variance = FALSE,
+  logProb = FALSE,
+  WAIC = FALSE,
+  userEnv = parent.frame()
 )
 }
 \arguments{
@@ -52,16 +56,23 @@ nimbleMCMC(
 
 \item{setSeed}{Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.}
 
-\item{progressBar}{Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is defined by the nimble package option MCMCprogressBar..}
+\item{progressBar}{Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is defined by the nimble package option \code{MCMCprogressBar}.}
 
 \item{samples}{Logical argument.  If \code{TRUE}, then posterior samples are returned from each MCMC chain.  These samples are optionally returned as \code{coda} \code{mcmc} objects, depending on the \code{samplesAsCodaMCMC} argument.  Default value is \code{TRUE}.  See details.}
 
 \item{samplesAsCodaMCMC}{Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects.  This argument is only used when \code{samples} is \code{TRUE}.  Default value is \code{FALSE}.  See details.}
 
-\item{summary}{Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
-z}
+\item{summary}{Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  These are calculated over the thinned samples. Default value is \code{FALSE}.  See details.}
+
+\item{mean}{Character or logical argument.  When a vector of node names is provided, the \code{mean} derived quantity function will be used to calculate the (posterior) mean for all node names specified, calculated across all (unthinned) samples.  If \code{TRUE}, the mean will be calculated for nodes specified in \code{monitors}.}
+
+\item{variance}{Character or logical argument.  When a vector of node names is provided, the \code{variance} derived quantity function will be used to calculate the (posterior) variance for all node names specified, calculated across all (unthinned) samples.  If \code{TRUE}, the  variance will be calculated for nodes specified in \code{monitors}.}
+
+\item{logProb}{When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword \code{".all"} may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).}
 
 \item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}. Note that the version of WAIC used is the default WAIC conditional on random effects/latent states and without any grouping of data nodes. See \code{help(waic)} for more details. If a different version of WAIC is desired, do not use \code{nimbleMCMC}. Instead, specify the \code{controlWAIC} argument to \code{configureMCMC} or \code{buildMCMC}, and then use \code{runMCMC}.}
+
+\item{userEnv}{environment in which if-then-else statements in model code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only.}
 }
 \value{
 A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.

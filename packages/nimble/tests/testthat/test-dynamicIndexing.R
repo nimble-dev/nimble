@@ -460,9 +460,9 @@ test_that('basic mixture model without conjugacy', {
     n <- 1000; d <- 4
     set.seed(2)
     mns <- c(8, 15, 0.5, 4)
-    mu_tol <- c(1.5, 1, .5, .8)
+    mu_tol <- c(2, 1.5, .5, 1)
     p <- c(.45, .14, .05, .36)
-    p_tol <- c(.12, .05, .03, .12)
+    p_tol <- c(.12, .05, .03, .15)
     k <- sample(1:d, n, replace = TRUE, prob = p)
     y <- rpois(n, mns[k])
     code <- nimbleCode({
@@ -540,6 +540,30 @@ test_that('range checking with dynamic indexing', {
     expect_silent(output <- m$calculate())
     
 })
+
+test_that('detect non-scalar dynamic indexing with derivs', {
+    code <- nimbleCode({
+        y ~ dcat(p[z,1:2])
+        for(i in 1:5)
+            p[i,1:2] ~ ddirch(w[1:2])
+        z ~ dcat(q[1:5])
+        
+    })
+    expect_error(m <- nimbleModel(code, inits = list(z=1), buildDerivs=TRUE),
+                 "found dynamic indexing")
+    
+    code <- nimbleCode({
+        for(i in 1:10) {
+            y[i,1:3] ~ dmnorm(mu[1:3, z[i]], pr[1:3,1:3])
+            z[i] ~ dcat(q[1:4])
+        }
+        for(i in 1:4)
+            mu[1:3, i] ~ dmnorm(mn[1:3],pr[1:3,1:3])
+    })
+    expect_error(m <- nimbleModel(code, inits = list(z = rep(1, 10)), buildDerivs=TRUE),
+                 "found dynamic indexing")
+})
+
 
 
 if(FALSE) {

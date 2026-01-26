@@ -77,12 +77,19 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "samplesSummary",
                        "AGHQuad_params",
                        "AGHQuad_summary",
-                       "messageIfVerbose")
+                       "messageIfVerbose",
+                       "getParam_BASE",
+                       "emptyParam",
+                       "gaussParam",
+                       "multiGaussParam",
+                       "splitLatents")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calc_dmnormAltParams",
+                       "calc_dmnorm_inv_ld_AltParams",
                        "calc_dwishAltParams",
                        "calc_dcatConjugacyContributions",
+                       "PDinverse_logdet",
                        "CAR_calcM",
                        "CAR_calcC",
                        "CAR_calcCmatrix",
@@ -151,7 +158,7 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-math
 
 ### 4. Create final NAMESPACE file, which is careful about what is exported
 
-imports <- c("methods", "igraph")
+imports <- c("methods")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
 importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
@@ -159,8 +166,8 @@ importFroms <- c("coda, effectiveSize, as.mcmc, as.mcmc.list",
                  "R6, R6Class",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
-                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile, integrate, optimHess",
-                 "utils, head",
+                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile, integrate, optimHess, qpois",
+                 "utils, head, getAnywhere",
                  "parallel, mclapply",
                  "pracma, hessian",
                  "numDeriv, genD, grad, jacobian"

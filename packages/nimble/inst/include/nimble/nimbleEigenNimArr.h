@@ -215,6 +215,7 @@ template<typename NimArrOutput, typename NimArrInput>
 template<typename NimArrOutput, typename NimArrInput>
   void copyNimArrToNimArrInternal(NimArrOutput &output, NimArrInput &input, int totSize, bool fillZeros, bool recycle) {
   int sizeToCopy;
+  if((totSize == 0) || input.size() == 0) return;
   if(input.size() < totSize) {
     //     _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output);
       sizeToCopy = input.size();

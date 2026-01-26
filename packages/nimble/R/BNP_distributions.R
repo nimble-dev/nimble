@@ -95,7 +95,7 @@ rCRP <- nimbleFunction(
         }
 
         x <- nimNumeric(size) 
-        x[1] <- 1
+        if(size > 0) x[1] <- 1
         if(size > 1) {
             numComponents <- 1
             ones <- rep(1, size)

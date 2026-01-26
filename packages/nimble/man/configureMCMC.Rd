@@ -16,6 +16,10 @@ configureMCMC(
   onlyRW = FALSE,
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
+  samplePredictiveNodes = getNimbleOption("MCMCassignSamplersToPosteriorPredictiveNodes"),
+  mean = FALSE,
+  variance = FALSE,
+  logProb = FALSE,
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
   controlWAIC = list(),
   print = getNimbleOption("verbose"),
@@ -56,6 +60,14 @@ The default value is an empty character vector, i.e. no values will be recorded.
 \item{onlySlice}{A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.}
 
 \item{multivariateNodesAsScalars}{A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.}
+
+\item{samplePredictiveNodes}{A logical argument.  When TRUE, samplers will be assigned by default to update posterior predictive model nodes.  When FALSE, no samplers will be assigned to predictive nodes.  The default value of this argument is given by the nimble option \code{MCMCassignSamplersToPosteriorPredictiveNodes}, which itself has a default value of TRUE.}
+
+\item{mean}{Character or logical argument.  When a vector of node names is provided, the \code{mean} derived quantity function will be used to calculate the (posterior) mean for all node names specified, calculated across all (unthinned) samples.  If \code{TRUE}, the mean will be calculated for nodes specified in \code{monitors}.}
+
+\item{variance}{Character or logical argument.  When a vector of node names is provided, the \code{variance} derived quantity function will be used to calculate the (posterior) variance for all node names specified, calculated across all (unthinned) samples.  If \code{TRUE}, the variance will be calculated for nodes specified in \code{monitors}.}
+
+\item{logProb}{When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword \code{".all"} may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).}
 
 \item{enableWAIC}{A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('MCMCenableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{\link{configureMCMC}} and \code{\link{buildMCMC}}.}
 

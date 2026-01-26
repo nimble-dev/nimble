@@ -1,3 +1,198 @@
+#              CHANGES IN VERSION 1.4.0 (December 2025)
+
+## USER LEVEL CHANGES
+
+- Move Laplace/AGHQ approximation to new `nimbleQuad` package, which also has
+  new INLA-like deterministic nested posterior approximation.
+  
+- Add system for computing and storing "derived quantities" during MCMC execution,
+  for recording additional quantities of interest at every saved MCMC iteration 
+  (i.e., following thinning interval, or some other user-chosen 
+  interval). Derived quantities available provided by NIMBLE include means, 
+  variances, model log-densities, and predictive nodes. Users can also define 
+  their own derived quantities.
+  
+- Provide matrix exponential functionality via `expm` and `expAv`.
+
+- Allow users to provide multiple code chunks to `nimbleCode` for greater
+  flexibility in composing models.
+  
+- Greatly improve efficiency and memory use of AD system (PR #1574).
+  
+- Remove some references to "BUGS" when referring to models.
+
+- Allow users to turn off `model$checkBasics` via a new option.
+
+- Improve MCEM non-convergence error message (Issue #1535).
+
+- Better handle inconsistencies between `inits` and `dimensions` (PR #1571).
+
+- Make minor improvements to Pólya-gamma sampler to check for infinities
+  in design matrix, fix where `inflationNodes` defined, and avoid design 
+  matrix initialization when passed by user (PR #1569).
+  
+- Add message when `addSampler` avoids assigning sampler for data nodes 
+  (PR #1580).
+  
+- Add additional checks for correct usage of derivative calls (PR #1566).
+  
+- Improve messaging when `checkLogProb` warning invoked (PR #1559).
+
+- Error trap use of negation in indexing in nimbleFunction code (PR #1561).
+
+- Error trap disallowed use of parentheses in indexing in model code 
+  (PR #1556).
+  
+- Avoid parameter transformation system causing an error with user-defined
+  multivariate distributions (PR #1532).
+  
+- Error trap use of `x <- c()` (empty concatenate to initialize a variable)
+  in nimbleFunction code (PR #1560).
+
+- Added support for conjugate MCMC sampling of `tau` parameter of the
+  intrinsic CAR (`dcar_normal`) distribution (PR #1596).
+  
+- Error trap if `inits` provided to `nimbleModel()` as a function (Issue #1598).
+
+## BUG FIXES
+
+- Fix bug in `makeModelDerivsInfo` for multiply-split LHSinferred nodes 
+  (PR #1594).
+  
+- Fix bug in `getConditionallyIndependentSets` arising with corner case 
+  involving particular order of `nodes` (PR #1576).
+  
+- Fix bug in initial types in `nimOptimDefaultControl` (PR #1581).
+  
+- Fix `rCRP` to return zero length if `size` is zero.
+
+- Fix dimension issue in `sampleDPmeasure` (PR #1572).
+
+- Fix compilation issue with min/max under some circumstances (PR #1557).
+
+- Fix inconsistency in recycling rule for `rmnorm` (PR #1586).
+
+- In `buildMCEM`, fix use of `pStart`, when provided by user, make thinning 
+  conform to other MCMC uses, add new error trapping, and clean up other 
+  details (PR #1601).
+
+## DEVELOPER LEVEL CHANGES
+
+- Provide AD-optimized `dmnormAD`.
+
+- Greatly improve efficiency of `makeModelDerivsInfo_impl` by working with
+  nodes rather than scalarComponents as much as possible (PR #1590).
+  
+- Greatly improve efficiency in `setData` by omitting RHS-only elements
+  (Issue #1589).
+  
+- Omit unneeded marginalization nodes in `setupMargNodes` and rework 
+  messaging for setupMargNodes warnings (Issue #1582).
+
+- Synthesize some Laplace-related tools useful more generally in 
+  `normTooling.R` and `setupMargNodes.R`.
+  
+- Document `reset` arg to `nimDerivs` (Issue #1555).
+
+- Add derivative building for `transform` method of parameterTransform 
+  (PR #1565).
+  
+- Fix scoping for `nimbleMCMC` (PR #1554).
+
+- Trap error in `buildMacro` when `use3pieces=TRUE` but the provided code
+  is not an assignment (PR #1529).
+  
+- Improve efficiency of checking for nimbleFunction name conflicts (PR #1553).
+
+- Set `replaceSamplers` to do lookup in parent frame (PR #1539).
+
+- Check for dollar sign in `cc_expandDetermNodesInExpr` (PR #1534).
+
+- Generalize system of dynamically generating conjugate MCMC samplers,
+  to allow for multivariate parameters of dependent distributions to have 
+  distinct sizes from the dependent node itself (PR #1596).
+  
+- Make MCEM append new samples when increasing sample size using the 
+  ascent-based method, rather than starting a new sample (PR #1601).
+
+
+
+#                            CHANGES IN VERSION 1.3.0 (December 2024)
+
+## USER LEVEL CHANGES
+
+- Provide the Barker proposal sampler as an alternative to the `RW_block`
+  (block Metropolis) sampler. The Barker sampler uses
+  gradient information and may improve adaptation behavior, including
+  better mixing when parameter are on different scales or the initial
+  proposal scale is too large (PR #1492).
+
+- Improve Laplace/AGHQ implementation in various ways, including use 
+  of nlminb for both inner and outer optimization (for better
+  optimization performance), improved messaging and output naming,
+  returning the log-likelihood and degrees of freedom for model 
+  selection calculations, and unified control of optimization method and
+  other controls at either the build stage or through the `updateSettings` 
+  method (PR #1496).
+
+- Add BOBYQA as an optimization method available through `nimOptim`, 
+  registered via `nimOptimMethod` (PR #1496).
+
+- Prevent use of nimbleFunction method names and nimbleFunction
+  names that conflict with names in the nimble language (DSL) (PRs #1517
+  and #1519).
+
+- More carefully check for and warn of cases of NaN and non-finite
+  log probability values in various samplers that in some cases may indicate invalid
+  MCMC sampling (PR #1512).
+
+- More carefully handle NaN and non-finite log probability values in
+  the CRP sampler, in particular error out if all values are minus
+  infinity and warning if multiple values are infinity (PR #1509).
+
+- Error trap cases of dynamic indices producing a non-scalar result in
+  AD-enabled models, and provide a suggested work-around (PR #1515).
+
+- Error trap use of non-existent nimbleList (PR #1518).
+
+- Prevent use of a single seed when running multiple chains via
+  `runMCMC` (PR #1494).
+
+- Improve messaging related to lack of derivative support for
+  functions (PR #1502).
+
+- Add information about model macros to the manual (PR #1499).
+
+- Add an argument to `deregisterDistributions` to turn off warning
+  that a distribution being deregistered does not exist.
+
+## BUG FIXES
+
+- Fix bug in caching values in `sampler_CRP` when maximum number of
+  clusters is exceeded, which would have caused incorrect sampling (albeit 
+  with the user having been warned that they should increase the maximum number
+  of clusters) (PR #1513).
+
+- Fix issue preventing use of nimbleList elements in `nimCat` (PR
+  #1518).
+
+- Prevent adaptation interval of one for various block samplers for
+  which an interval of one leads to an error. 
+
+- Allow `runLaplace` to use an uncompiled Laplace object (PR #1496).
+
+## DEVELOPER LEVEL CHANGES
+
+- Improve and provide additional infrastructure for model macros (PR #1502).
+
+- Add new model method, `MixedDataNodeNames` to retrieve node names
+  which are partially observed (whose elements are partially but not
+  entirely data) (PR #1489).
+  
+- Turn off the use of `--preclean` during C++ compilation when
+  `nimbleExternalCall` is invoked to avoid removing .o files that
+  might have been created by `Rcpp` (PR #1520).
+
 #                            CHANGES IN VERSION 1.2.1 (July 2024) 
 
 ## USER LEVEL CHANGES

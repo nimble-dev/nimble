@@ -1,6 +1,6 @@
 build_MCEM_expectation_noAD <- nimbleFunction(
   setup = function(model, mvSamples, burnInDefault, paramNodes,
-                   latentNodes, calcNodes, calcNodesOther,
+                   latentNodes, calcNodes, calcNodesOther, paramDeps,
                    useTransform, transformer,
                    lengthParams, lengthParamsTrans,
                    derivsDelta = 0.0001) {
@@ -9,19 +9,6 @@ build_MCEM_expectation_noAD <- nimbleFunction(
     if(lengthParamsTrans == 1) {
       lastParamsTrans <- c(-Inf, -1) # reset will be called first anyway
     }
-    paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE, self=FALSE)
-    if(length(paramDeps) > 0) {
-      keep_paramDeps <- logical(length(paramDeps))
-      for(i in seq_along(paramDeps)) {
-        if(any(paramDeps[i] == calcNodes)) keep_paramDeps[i] <- FALSE
-        else {
-          nextDeps <- model$getDependencies(paramDeps[i])
-          keep_paramDeps[i] <- any(nextDeps %in% calcNodes)
-        }
-      }
-      paramDeps <- paramDeps[keep_paramDeps]
-    }
-
     allCalcNodes <- model$topologicallySortNodes(c(paramDeps, calcNodes))
     useOther <- length(calcNodesOther) > 0
 
@@ -31,6 +18,7 @@ build_MCEM_expectation_noAD <- nimbleFunction(
     reset = function() {
       lastParamsTrans <<- rep(-Inf, lengthParamsTrans)
     },
+    resetDerivs = function() {},
     set_burnIn = function(new_burnIn = integer()) {
       burnIn <<- new_burnIn
     },
@@ -52,7 +40,7 @@ build_MCEM_expectation_noAD <- nimbleFunction(
         nimCopy(from = mvSamples, to = model, nodes = latentNodes, row = i)
         sample_LL <- model$calculate(allCalcNodes)
         if(is.na(sample_LL) | is.nan(sample_LL) | sample_LL == -Inf | sample_LL == Inf)
-          stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (accessible as 'name_of_model$CobjectInterface') and determine which parameter values are causing the invalid log-likelihood by calling 'calculate' with subsets of the model parameters (e.g., 'name_of_model$CobjectInterface$calculate('y[3]')' to see if node 'y[3]' is the cause of the problem). Note that if your model is maximizing over parameters whose bounds are not constant (i.e., depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting 'forceNoConstraints = TRUE'.")
+          stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (e.g., checking the parameter values and by calling calculate on subsets of the model parameters). Note that if your model is maximizing over parameters whose bounds are not constant (i.e., depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting the control list element 'forceNoConstraints = TRUE'.")
         sum_LL <- sum_LL + sample_LL
       }
       logLik <<- sum_LL / (nSamples - burnIn)
@@ -241,7 +229,7 @@ build_MCEM_expectation_noAD <- nimbleFunction(
 
 build_MCEM_expectation <- nimbleFunction(
   setup = function(model, mvSamples, burnInDefault, paramNodes,
-                   latentNodes, calcNodes, calcNodesOther,
+                   latentNodes, calcNodes, calcNodesOther, paramDeps,
                    useTransform, transformer,
                    lengthParams, lengthParamsTrans) {
     logLik <- as.numeric(0)
@@ -253,30 +241,27 @@ build_MCEM_expectation <- nimbleFunction(
     }
     transform_wrt <- as.integer(1:lengthParamsTrans)
 
-    paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE, self=FALSE)
-    if(length(paramDeps) > 0) {
-      keep_paramDeps <- logical(length(paramDeps))
-      for(i in seq_along(paramDeps)) {
-        if(any(paramDeps[i] == calcNodes)) keep_paramDeps[i] <- FALSE
-        else {
-          nextDeps <- model$getDependencies(paramDeps[i])
-          keep_paramDeps[i] <- any(nextDeps %in% calcNodes)
-        }
-      }
-      paramDeps <- paramDeps[keep_paramDeps]
-    }
-
+    # We do not calculate paramDeps separately
     allCalcNodes <- model$topologicallySortNodes(c(paramDeps, calcNodes))
     useOther <- length(calcNodesOther) > 0
 
     burnIn <- burnInDefault
+    resetDerivs_ <- TRUE
+    resetDerivsOther_ <- TRUE
   },
   methods = list(
     reset = function() {
       lastParamsTrans <<- rep(-Inf, lengthParamsTrans)
       gradientLik <<- rep(-Inf, lengthParamsTrans) # perhaps unnecessary
     },
+    resetDerivs = function() {
+      resetDerivs_ <<- TRUE
+      resetDerivsOther_ <<- TRUE
+    },
     set_burnIn = function(new_burnIn = integer()) {
+      # burnin here should be provided as burnin/thin from the original MCMC,
+      # because this determines the number of samples from the mvSamples,
+      # which is really the original niter/thin.
       burnIn <<- new_burnIn
     },
     ##
@@ -298,7 +283,8 @@ build_MCEM_expectation <- nimbleFunction(
       values(model, paramNodes) <<- params
       for(i in (burnIn+1):nSamples){
         nimCopy(from = mvSamples, to = model, nodes = latentNodes, row = i)
-        sample_derivs <- nimDerivs(model$calculate(allCalcNodes), wrt = paramNodes, order = c(0, 1))
+        sample_derivs <- nimDerivs(model$calculate(allCalcNodes), wrt = paramNodes, order = c(0, 1), reset=resetDerivs_)
+        resetDerivs_ <<- FALSE
         sample_LL <- sample_derivs$value[1]
         if(is.na(sample_LL) | is.nan(sample_LL) | sample_LL == -Inf | sample_LL == Inf)
           stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (accessible as 'name_of_model$CobjectInterface') and determine which parameter values are causing the invalid log-likelihood by calling 'calculate' with subsets of the model parameters (e.g., 'name_of_model$CobjectInterface$calculate('y[3]')' to see if node 'y[3]' is the cause of the problem). Note that if your model is maximizing over parameters whose bounds are not constant (i.e., depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting 'forceNoConstraints = TRUE'.")
@@ -311,7 +297,8 @@ build_MCEM_expectation <- nimbleFunction(
       sum_jacobian <- sum_jacobian / (nSamples - burnIn) # now this is mean of jacobian
 
       if(useOther) {
-        other_llh_derivs <- nimDerivs(model$calculate(calcNodesOther), wrt = paramNodes, order = c(0,1))
+        other_llh_derivs <- nimDerivs(model$calculate(calcNodesOther), wrt = paramNodes, order = c(0,1), reset=resetDerivsOther_)
+        resetDerivsOther_ <<- FALSE
         logLik <<- logLik + other_llh_derivs$value[1]
         sum_jacobian <- sum_jacobian + other_llh_derivs$jacobian
       }
@@ -611,7 +598,10 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' that the initial states of one MCMC will be the last states from the previous
 #' MCMC, so they will often be good initial values after multiple iterations. Default=500.
 #'
-#' \item \code{thin} Thinning interval for the MCMC in step 1. Default=1.
+#' \item \code{thin} Thinning interval for the MCMC in step 1. Default=1. Note that
+#' the computational cost of the maximization step depends on the size of the MCMC sample.
+#' If chains are highly autocorrelated, thinning should be a good way to reduce the
+#' maximization cost while maintaining most of the statistical information in each sample.
 #'
 #' \item \code{alpha} Type I error rate for determining when step 2 has moved
 #' uphill. See above. Default=0.25.
@@ -762,7 +752,9 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #'      last sample from \code{findMLE} will be used. If MLE convergence was
 #'      reasonable, this sample can be used. However, if the last MCEM step made
 #'      a big move in parameter space (e.g. if convergence was not achieved),
-#'      the last MCMC sample may not be accurate for obtaining \code{vcov}. Default=FALSE.
+#'      the last MCMC sample may not be accurate for obtaining \code{vcov}. Note that
+#'      \code{thin} and \code{burnin} will be used from the most recent call to `findMLE`,
+#'      or their defaults set in the `control` list provided to `buildMCEM`. Default=FALSE.
 #'
 #'      \item \code{atMLE}. Logical indicating whether you believe the
 #'      \code{params} represents the MLE. If TRUE, one part of the computation
@@ -803,6 +795,11 @@ R_MCEM_mcse <- nimbleRcall(function(samples = double(1), m = integer()) {},
 #' \item \code{resetControls}. Reset all control arguments to the values
 #' provided in the call to \code{buildMCEM}. The user does not normally need to
 #' call this.
+#'
+#' \item \code{getParamNodes}. Return a vector of the parameter node
+#' names. This facilitates being sure that the numeric vector of the MLE
+#' parameters can be properly interpreted. If there is only one parameter,
+#' an extra "_EXTRA_" will appear in the returned vector and should be ignored.
 #'
 #' }
 #'
@@ -858,7 +855,9 @@ buildMCEM <- nimbleFunction(
              "buffer", "alpha", "beta", "gamma", "C",
              "numReps", "forceNoConstraints", "verbose") %in% names(dotsList)))
       stop("From the arguments provided, it looks like you are trying to use the old version of buildMCEM.",
-           " buildMCEM was rewritten for nimble 1.2.0.")
+           " buildMCEM was rewritten for nimble 1.2.0. Some arguments were moved to the control list. See help(buildMCEM).")
+    if(!requireNamespace('mcmcse')) stop("MCEM requires that package `mcmcse` be installed.")
+
     # Extract control elements or set defaults
     initMuse <- initMdefault <- extractControlElement(control, 'initM', 1000)
     MfactorUse <- MfactorDefault <- extractControlElement(control, 'Mfactor', 1/3)
@@ -1069,19 +1068,29 @@ buildMCEM <- nimbleFunction(
                                         thin = thinDefault,
                                         control = mcmcControl, print = FALSE)
     }
+    warnOption <- getNimbleOption('MCMCwarnUnsampledStochasticNodes')
+    nimbleOptions('MCMCwarnUnsampledStochasticNodes' = FALSE)
+    on.exit(nimbleOptions('MCMCwarnUnsampledStochasticNodes' = warnOption))
     mcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
     mvSamples <- mcmc_Latent$mvSamples
     setupOutputs(mvSamples)
     nimbleOptions(verbose = nimbleVerbose)
 
+    ## New approach to setting up paramDeps borrowed from Laplace/AGHQ
+    paramDeps <- model$getDependencies(paramNodes, determOnly = TRUE, self=FALSE)
+    if(length(paramDeps)) {
+      calcNodesParents <- model$getParents(calcNodes, determOnly = TRUE)
+      paramDeps <- paramDeps[!paramDeps %in% calcNodes & paramDeps %in% calcNodesParents]
+    }
+
     if(useDerivs) {
       E <- build_MCEM_expectation(model, mvSamples, burnInDefault, paramNodes,
-                                latentNodes, calcNodes, calcNodesOther,
+                                latentNodes, calcNodes, calcNodesOther, paramDeps,
                                 useTransform, transformer,
                                 lengthParams, lengthParamsTrans)
     } else {
       E <- build_MCEM_expectation_noAD(model, mvSamples, burnInDefault, paramNodes,
-                                latentNodes, calcNodes, calcNodesOther,
+                                latentNodes, calcNodes, calcNodesOther, paramDeps,
                                 useTransform, transformer,
                                 lengthParams, lengthParamsTrans,
                                 derivsDeltaUse)
@@ -1093,8 +1102,14 @@ buildMCEM <- nimbleFunction(
     if(length(lastParamsTrans)==1) lastParamsTrans <- c(lastParamsTrans, -1)
     finalM <- 0L
     lastDiffQ <- 0
+    paramNodesForUser <- paramNodesScalar
+    if(length(paramNodesForUser)==1) paramNodesForUser <- c(paramNodesForUser, "_EXTRA_")
   },
   methods = list(
+    getParamNodes = function() {
+      return(paramNodesForUser)
+      returnType(character(1))
+    },
     fix_one_vec = function(x = double(1)) {
       if(length(x) == 2) {
         if(x[2] == -1) {
@@ -1144,7 +1159,8 @@ buildMCEM <- nimbleFunction(
         if(M == -1) M <- finalM
         lastParamsTrans <<- paramsTrans
         values(model, paramNodes) <<- paramsActual
-        doMCMC(M, TRUE)
+        model$calculate(paramDeps)
+        doMCMC(M, thin = thinUse, reset = TRUE)
       }
       FI <- E$fisherInfrmtn(params, trans, returnTrans, atMLE)
       vc <- inverse(FI)
@@ -1152,7 +1168,11 @@ buildMCEM <- nimbleFunction(
       returnType(double(2))
     },
     doMCMC = function(M = integer(), thin = integer(), reset = logical(0, default = TRUE)) {
-      mcmc_Latent$run(M, thin = thin, reset = reset, progressBar = MCMCprogressBarUse)
+      # MCMC$run errors out if reset=FALSE and thin is not the default of -1
+      if(reset)
+        mcmc_Latent$run(M, thin = thin, reset = reset, progressBar = MCMCprogressBarUse)
+      else
+        mcmc_Latent$run(M, thin = -1, reset = reset, progressBar = MCMCprogressBarUse)
     },
     transform = function(params = double(1)) {
       if(useTransform)
@@ -1221,7 +1241,7 @@ buildMCEM <- nimbleFunction(
       }
       ## In case parameter nodes are not properly initialized
       if(any_na(pStart) | any_nan(pStart) | any(abs(pStart)==Inf))
-        stop("  [Warning] For findMLE, pStart has some invalid values.")
+        stop("  [Warning] For findMLE, pStart has some invalid values. If you did not provide the pStart argument, current values in the model were used.")
 
       if(!continue) resetControls()
       else
@@ -1247,8 +1267,20 @@ buildMCEM <- nimbleFunction(
 
       if(burnInUse >= initMuse)
         stop('mcem quitting: burnIn > initM value')
-      E$set_burnIn(burnInUse)
-      if(!continue) doMCMC(0, TRUE) # To get valid initial values
+
+      # To be consistent with runMCMC:
+      # samples returned are floor((M-burnin)/thin)
+      # With automated increases in M, the floor may really matter
+      # The "E" object looks at the samples to get the post-thinning M, without burnin applied
+      # And we then use a burnin there that is effectively post-thinning.
+      # To get that right, we calculate here the burnin_post_thin as
+      # the number of recorded samples - the number of samples consistent with runMCMC use of burnin
+      # Actually I think it is redundant to do these right here as they are done below too.
+      M_post_thin <- floor(initMuse / thinUse)
+      burnin_post_thin <- M_post_thin - floor((initMuse-burnInUse) / thinUse)
+      E$set_burnIn(burnin_post_thin)
+      # no iterations, so thin doesn't matter here
+      if(!continue) doMCMC(0, thin = 1, reset = TRUE) # To get valid initial values
       params <- pStart
 
       if(!continue) {
@@ -1270,8 +1302,9 @@ buildMCEM <- nimbleFunction(
               }
             }
           }
-          values(model, paramNodes) <<- params
         }
+        values(model, paramNodes) <<- params
+        model$calculate(paramDeps)
       }
       m <- initMuse
       finalM <<- m
@@ -1288,6 +1321,7 @@ buildMCEM <- nimbleFunction(
       zGamma <<- qnorm(gammaUse, 0, 1, lower.tail=FALSE)
       hitMaxM <- FALSE
       paramsTrans <- transform(params)
+      E$resetDerivs()
       while(((numberOfTimesFlat < Cuse) & (itNum < maxIterUse)) |
               (itNum < minIterUse)) {  # || itNum <= 1) { #endCrit > C){ # We forced at least 2 iterations. Why?
                 checkInterrupt()
@@ -1301,13 +1335,16 @@ buildMCEM <- nimbleFunction(
                   hitMaxM <- TRUE
                 }
                 lastParamsTrans <<- paramsTrans # records params used for the latent state MCMC sample
-                doMCMC(m, thin = thin, reset = TRUE) # initial mcmc run of size m
+                M_post_thin <- floor(m / thinUse)
+                burnin_post_thin <- M_post_thin - floor((m-burnInUse) / thinUse)
+                E$set_burnIn(burnin_post_thin)
+                # First time through: params were set above
+                # Later times through: params were set below:
+                #     at E$llh_sample(paramTrans)
+                # In the event of ascent with increasing M, we only get back here after a uphill move
+                #    is determined, in which case E$llh_sample(paramTrans) will have been last use of model.
+                doMCMC(m, thin = thinUse, reset = TRUE) # initial mcmc run of size m
                 #    paramsPrev <- params  #store previous params value
-                paramsTransPrev <- paramsTrans
-                ## if(itNum == 1) {
-                ##   sample_logLiks_new <- E$llh_sample(paramsTransPrev)
-                ## }
-                ## sample_logLiks_prev <- sample_logLiks_new
                 while(!acceptThisIter){
                   E$reset()
                   if(useDerivs) {
@@ -1330,12 +1367,14 @@ buildMCEM <- nimbleFunction(
                     }
                   }
                   paramsTrans = optimOutput$par
-                  # In the future, we could revise this to append llh_sample values when M is being extended.
+                  # In the future, we could revise this to calculate only from appended samples
                   # For now, we simply recalculate them all. This should be minor compared to cost of optim.
-                  sample_logLiks_prev <- E$llh_sample(paramsTransPrev)
-                  sample_logLiks_new <- E$llh_sample(paramsTrans) # Side effect: this puts the latest params into the model
+                  # We compare to the parameters of the MCMC sampling.
+                  sample_logLiks_prev <- E$llh_sample(lastParamsTrans)
+                  ## PARAMETERS ARE UPDATED IN THE MODEL HERE:
+                  sample_logLiks_new <- E$llh_sample(paramsTrans) # Side effect: this puts the latest params into the model and calculates
                   # make nimbleRcall or other solution.
-                  sdDeltaQ <- R_MCEM_mcse(sample_logLiks_new - sample_logLiks_prev, m-burnInUse)
+                  sdDeltaQ <- R_MCEM_mcse(sample_logLiks_new - sample_logLiks_prev, m-burnInUse) # second argument is actually not used
                   varDeltaQ <- sdDeltaQ*sdDeltaQ
                   ##        varDeltaQ <- cvarCalc$run(m, params, paramsPrev)
                   ## sdDeltaQ <- sqrt(varDeltaQ) #asymptotic std. error
@@ -1358,7 +1397,17 @@ buildMCEM <- nimbleFunction(
                         hitMaxM <- TRUE
                       }
                       m <- m + mAdd
-                      doMCMC(mAdd, thin = thin, reset = FALSE)
+                      M_post_thin <- floor(m / thinUse)
+                      burnin_post_thin <- M_post_thin - floor((m-burnInUse) / thinUse)
+                      E$set_burnIn(burnin_post_thin)
+                      # We need to revert to parameters used during sampling to continue sampling with the same parameters
+                      tempParams <- inverseTransform(lastParamsTrans) # use same params as from doMCMC above
+                      values(model, paramNodes) <<- tempParams
+                      model$calculate(paramDeps)
+
+                      doMCMC(mAdd, thin = thinUse, reset = FALSE)
+                      # Now we are guaranteed to back to the optim step, so we do not need to
+                      # reset the model parameters right here (post-MCMC)
                     } else {
                       acceptThisIter <- TRUE
                       stronglyFlat <- diffQ + zGamma*sdDeltaQ <= tolUse # We reject H0:DeltaQ==tol (one-sided to H0:DeltaQ < tol) with (low) Type I error rate gamma. i.e. we believe  true diffQ < tol, so we did not move uphill more than tol, so we stayed flat. Using low Type I error rate means we have good evidence that true diffQ < tol.
@@ -1381,10 +1430,10 @@ buildMCEM <- nimbleFunction(
                       cat("  [Note] Convergence Criterion: ", diffQ+zGamma*sdDeltaQ, ".\n", sep = "")
                     }
                   }
-                  if(itNum == maxIterUse)
-                    cat("  [Note] Stopping MCEM because maximum number of MCEM iterations\n",
-                        "(maxIter=", maxIterUse, ") was reached\n.")
                 }
+                if(itNum == maxIterUse)
+                  cat("  [Note] Stopping MCEM because maximum number of MCEM iterations\n",
+                      "(maxIter=", maxIterUse, ") was reached.\n")
               }
       finalM <<- m
       if(!returnTrans) {

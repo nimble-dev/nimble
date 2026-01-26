@@ -18,7 +18,7 @@
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
 #'
-#' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
+#' @param setSeed Logical or numeric argument.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain, and if \code{FALSE}, the random number seed is never set or modified.  The case of providing a single numeric value for this argument is not supported, except in the case when \code{nchains = 1}.  If the same starting seed is desired for each chain, use \code{setSeed = rep(seed, nchains)}.  Default value is \code{FALSE}.
 #'
 #' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is defined by the nimble package option MCMCprogressBar.
 #'
@@ -27,6 +27,8 @@
 #' @param samplesAsCodaMCMC Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects.  This argument is only used when \code{samples} is \code{TRUE}.  Default value is \code{FALSE}.  See details.
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
+#'
+#' @param derivedQuantities Logical argument.  When \code{TRUE}, a list containing the derivedQuantity results will be returned.  This list has length equal to the number of derived quantity functions, and each element is the results matrix corresponding to one derived quantity function.  In the case of multiple MCMC chains, a list (of length nchains) is returned consisting of one such list for each MCMC chain.
 #'
 #' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See \code{help(waic)}.
 #'
@@ -93,12 +95,13 @@ runMCMC <- function(mcmc,
                     samples = TRUE,
                     samplesAsCodaMCMC = FALSE,
                     summary = FALSE,
+                    derivedQuantities = (mcmc$getNumDerived()>0) && getNimbleOption('MCMCreturnDerivedQuantities'),
                     WAIC = FALSE,
                     perChainWAIC = FALSE) {
     if(missing(mcmc)) stop('must provide a NIMBLE MCMC algorithm')
     if(!identical(nfGetDefVar(mcmc, 'name'), 'MCMC')) stop('mcmc argument must be a NIMBLE MCMC algorithm')
     if(!is.Cnf(mcmc)) messageIfVerbose('  [Warning] Running an uncompiled MCMC algorithm.  Use compileNimble() for faster execution.')
-    if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
+    if(!samples && !summary && !derivedQuantities && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, derivedQuantities = TRUE, or WAIC = TRUE')
     if(nchains < 1) stop('must have nchains > 0')
     if(!missing(inits)) {
         if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
@@ -114,6 +117,7 @@ runMCMC <- function(mcmc,
     hasMonitors2 <- length(if(is.Cnf(mcmc)) mcmc$Robject$monitors2 else mcmc$monitors2) > 0
     samplesList  <- vector('list', nchains); names(samplesList)  <- paste0('chain', 1:nchains)
     samplesList2 <- vector('list', nchains); names(samplesList2) <- paste0('chain', 1:nchains)
+    derivedList  <- vector('list', nchains); names(derivedList)  <- paste0('chain', 1:nchains)
     thinToUseVec <- c(0, 0)
     thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
     thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
@@ -124,31 +128,48 @@ runMCMC <- function(mcmc,
     ## if(thinToUseVec[1] > 1 && nburnin > 0) message("runMCMC's handling of nburnin changed in nimble version 0.6-11. Previously, nburnin samples were discarded *post-thinning*.  Now nburnin samples are discarded *pre-thinning*.  The number of samples returned will be floor((niter-nburnin)/thin).")
     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
     ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
-    for(i in 1:nchains) {
-        messageIfVerbose('running chain ', i, '...')
-        ##if(setSeed) set.seed(i)
+    numDerived <- mcmc$getNumDerived()
+    for(chain in 1:nchains) {
+        messageIfVerbose('running chain ', chain, '...')
         if(is.numeric(setSeed)) {
-            if(length(setSeed) == 1) {
-                set.seed(setSeed)
-            } else { if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains.') }
-        } else if(setSeed) set.seed(i)
+            if(length(setSeed) != nchains) stop('setSeed argument has different length from nchains.')
+            set.seed(setSeed[chain])
+        } else if(setSeed) set.seed(chain)
         if(!missing(inits)) {
             if(is.function(inits)) {
                 theseInits <- inits()
             } else if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]])) {
-                theseInits <- inits[[i]]
+                theseInits <- inits[[chain]]
             } else theseInits <- inits
             model$setInits(theseInits)
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
-        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, resetWAIC = ifelse(i == 1, TRUE, FALSE), chain = i) #, samplerExecutionOrder = samplerExecutionOrderToUse)
+        mcmc$run(niter,
+                 nburnin = nburnin,
+                 thin = thinToUseVec[1],
+                 thin2 = thinToUseVec[2],
+                 progressBar = progressBar,
+                 resetWAIC = ifelse(chain == 1, TRUE, FALSE),
+                 chain = chain
+                 ## samplerExecutionOrder = samplerExecutionOrderToUse
+                 )
         tmp <- as.matrix(mcmc$mvSamples)
         if(!is.null(tmp))
-            samplesList[[i]] <- tmp 
+            samplesList[[chain]] <- tmp
         if(hasMonitors2) {
             tmp <- as.matrix(mcmc$mvSamples2)
             if(!is.null(tmp))
-                samplesList2[[i]] <- tmp 
+                samplesList2[[chain]] <- tmp
+        }
+        if(derivedQuantities && (numDerived>0)) {
+            tempList <- lapply(1:numDerived, function(i) mcmc$getDerivedQuantityResults(i))
+            for(i in 1:numDerived) {
+                theseNames <- mcmc$getDerivedQuantityNames(i)
+                if(ncol(tempList[[i]]) > 0)
+                    colnames(tempList[[i]]) <- theseNames[1:ncol(tempList[[i]])]
+            }
+            names(tempList) <- mcmc$derivedTypes
+            derivedList[[chain]] <- tempList
         }
     }
     if(WAIC) {
@@ -186,6 +207,8 @@ runMCMC <- function(mcmc,
         if(hasMonitors2)
             if(length(samplesList2))
                 samplesList2 <- samplesList2[[1]] else samplesList2 <- NULL  ## returns matrix when nchains = 1
+        if(derivedQuantities)
+            derivedList <- derivedList[[1]] else derivedList <- NULL   ## returns matrix when nchains = 1
     }
     if(summary) {
         if(nchains == 1) {
@@ -208,6 +231,7 @@ runMCMC <- function(mcmc,
     if(summary)   retList$summary <- summaryObject
     if(WAIC)      retList$WAIC    <- WAICvalue
     if(perChainWAIC) retList$perChainWAIC <- perChainWAICvalue
+    if(derivedQuantities) retList$derived <- derivedList
     if(length(retList) == 1) retList <- retList[[1]]
     return(retList)
 }
@@ -245,15 +269,23 @@ runMCMC <- function(mcmc,
 #' 
 #' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
 #'
-#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is defined by the nimble package option MCMCprogressBar..
+#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is defined by the nimble package option \code{MCMCprogressBar}.
 #'
 #' @param samples Logical argument.  If \code{TRUE}, then posterior samples are returned from each MCMC chain.  These samples are optionally returned as \code{coda} \code{mcmc} objects, depending on the \code{samplesAsCodaMCMC} argument.  Default value is \code{TRUE}.  See details.
 #'
 #' @param samplesAsCodaMCMC Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects.  This argument is only used when \code{samples} is \code{TRUE}.  Default value is \code{FALSE}.  See details.
 #' 
-#' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
-#'z
+#' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  These are calculated over the thinned samples. Default value is \code{FALSE}.  See details.
+#'
+#' @param mean Character or logical argument.  When a vector of node names is provided, the \code{mean} derived quantity function will be used to calculate the (posterior) mean for all node names specified, calculated across all (unthinned) samples.  If \code{TRUE}, the mean will be calculated for nodes specified in \code{monitors}.
+#' 
+#' @param variance Character or logical argument.  When a vector of node names is provided, the \code{variance} derived quantity function will be used to calculate the (posterior) variance for all node names specified, calculated across all (unthinned) samples.  If \code{TRUE}, the  variance will be calculated for nodes specified in \code{monitors}.
+#' 
+#' @param logProb When \code{TRUE}, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the \code{logProb} derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword \code{".all"} may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).
+#' 
 #' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}. Note that the version of WAIC used is the default WAIC conditional on random effects/latent states and without any grouping of data nodes. See \code{help(waic)} for more details. If a different version of WAIC is desired, do not use \code{nimbleMCMC}. Instead, specify the \code{controlWAIC} argument to \code{configureMCMC} or \code{buildMCMC}, and then use \code{runMCMC}.
+#'
+#' @param userEnv environment in which if-then-else statements in model code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only.
 #' 
 #' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a WAIC summary object is returned.
 #'
@@ -315,7 +347,11 @@ nimbleMCMC <- function(code,
                        samples = TRUE,
                        samplesAsCodaMCMC = FALSE,
                        summary = FALSE,
-                       WAIC = FALSE) {
+                       mean = FALSE,
+                       variance = FALSE,
+                       logProb = FALSE,
+                       WAIC = FALSE,
+                       userEnv = parent.frame()) {
     #### process 'code' argument, to accept a filename, or a function
     ##if(is.character(code) || is.function(code)) {
     ##    if(is.function(code)) modelText <- mergeMultiLineStatements(deparse(body(code)))
@@ -329,8 +365,8 @@ nimbleMCMC <- function(code,
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
     if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
-    Rmodel <- mcmc_createModelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check)
-    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC, print = FALSE)
+    Rmodel <- mcmc_createModelObject(model, inits, nchains, setSeed, code, constants, data, dimensions, check, userEnv = userEnv)
+    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, mean = mean, variance = variance, logProb = logProb, enableWAIC = WAIC, print = FALSE)
     Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
     Cmcmc <- compiledList$Rmcmc

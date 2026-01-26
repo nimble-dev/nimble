@@ -21,6 +21,12 @@
 \alias{printMonitors}
 \alias{setThin}
 \alias{setThin2}
+\alias{addDerivedQuantity}
+\alias{removeDerivedQuantity}
+\alias{removeDerivedQuantities}
+\alias{printDerivedQuantities}
+\alias{getDerivedQuantities}
+\alias{getDerivedQuantityDefinition}
 \title{Class \code{MCMCconf}}
 \description{
 Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.
@@ -40,6 +46,35 @@ See documentation below for method initialize() for details of creating an MCMCc
   print = TRUE,
   ...
 )}}{For internal use.  Adds default MCMC samplers to the specified nodes.}
+
+\item{\code{addDerivedQuantity(
+  type,
+  interval = 0,
+  control = list(),
+  print = FALSE,
+  name,
+  ...
+)}}{Adds a derived quantity function to the MCMCconf object.
+
+Arguments:
+
+type: Character string, specifying the type of derived quantity function to add.  This character string should correspond to the name of a derived quantity nimbleFunction.  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the 'name' argument may also be supplied to provide a meaningful name for this function.  This argument has no default value, and must be provided.
+
+interval: A numeric value, specifying the number of MCMC iterations between each time this derived quantity function will execute.  For example, if 'interval' is 1, then this derived quantity function will execute at the end of every MCMC sampling iteration, and if 'interval' is 10, then this derived quantity function will execute at the end of MCMC sampling iterations 10, 20, 30, etc.  If 'interval' is omitted, then the default behavior (the default frequency of execution) will match the thinning interval ('thin') on which samples are saved.
+
+control: An optional list of control arguments to derived quantity function.
+
+print: Logical argument, specifying whether to print the details of newly added function.
+
+name: Optional character string name for the derived quantity function, which is used by the printDerivedQuantities method.  If 'name' is not provided, the 'type' argument is used to generate the name.
+
+...: Additional named arguments passed through ... will be used as additional control list elements.
+
+Details:
+
+Derived quantity functions are added to the end of the list for this MCMCconf object, and do not replace any existing functions.  Derived quantity functions can be removed using the removeDerivedQuantities method.
+
+Invisibly returns a list of the current derived quantity function configurations, which are derivedConf reference class objects.}
 
 \item{\code{addMonitors(..., ind = 1, print = TRUE)}}{Adds variables to the list of monitors.
 
@@ -66,6 +101,14 @@ Details:
 
 See the initialize() function
             }
+
+\item{\code{addOneDerivedQuantity(
+  thisDerivedName,
+  derivedFunction,
+  interval,
+  thisControlList,
+  print
+)}}{For internal use only}
 
 \item{\code{addOneSampler(
   thisSamplerName,
@@ -135,6 +178,20 @@ Invisibly returns a list of the current sampler configurations, which are sample
 
 The second usage of 'multivariateNodesAsScalars' occurs when 'default' is TRUE, and therefore samplers are assigned according to the default logic of configureMCMC, which is further controlled by the arguments 'useConjugacy', 'onlyRW', 'onlySlice' and 'multivariateNodesAsScalars'.  In this second usage, if 'multivariateNodesAsScalars' is TRUE, then multivariate nodes will be decomposed into their scalar components, and separate samplers assigned to each scalar element.  Note, however, that multivariate nodes appearing in conjugate relationships will still be assigned the corresponding conjugate sampler (provided 'useConjugacy' is TRUE), regardless of the value of this argument.  If 'multivariateNodesAsScalars' is FALSE, then a single multivarate sampler will be assigned to update each multivariate node.  The default value of this argument can be controlled using the nimble option 'MCMCmultivariateNodesAsScalars'.}
 
+\item{\code{getDerivedQuantities(ind)}}{Returns a list of derivedConf objects.
+
+Arguments:
+
+ind: A numeric vector used to specify the indices of the derivedConf objects to return.  If omitted, then all derivedConf objects in this MCMC configuration object are returned.}
+
+\item{\code{getDerivedQuantityDefinition(ind, print = FALSE)}}{Returns the nimbleFunction definition of aa derived quantity function.
+
+Arguments:
+
+ind: A numeric index used to specify the index of the derived quantity function definition to return.  If more than one derived quantity function is specified, only the first is returned.
+
+Returns a list object, containing the setup function, run function, and additional member methods for the specified derived quantity nimbleFunction.}
+
 \item{\code{getMonitors()}}{Returns a character vector of the current monitors
 
 Details:
@@ -179,6 +236,10 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
   onlyRW = FALSE,
   onlySlice = FALSE,
   multivariateNodesAsScalars = getNimbleOption("MCMCmultivariateNodesAsScalars"),
+  samplePredictiveNodes = getNimbleOption("MCMCassignSamplersToPosteriorPredictiveNodes"),
+  mean = FALSE,
+  variance = FALSE,
+  logProb = FALSE,
   enableWAIC = getNimbleOption("MCMCenableWAIC"),
   controlWAIC = list(),
   print = TRUE,
@@ -218,13 +279,33 @@ onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, 
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
+samplePredictiveNodes: A logical argument.  When TRUE, samplers will be assigned by default to update posterior predictive model nodes.  When FALSE, no samplers will be assigned to predictive nodes.  The default value of this argument is given by the nimble option 'MCMCassignSamplersToPosteriorPredictiveNodes', which itself has a default value of TRUE.
+
+mean: Character or logical argument.  When a vector of node names is provided, the 'mean' derived quantity function will be used to calculate the running mean for all node names specified.  If TRUE, the running mean will be calculated for nodes specified in monitors.
+
+variance: Character or logical argument.  When a vector of node names is provided, the 'variance' derived quantity function will be used to calculate the running variance for all node names specified.  If TRUE, the running variance will be calculated for nodes specified in monitors.
+
+logProb: When TRUE, the summed log-density of all stochastic model nodes (including data nodes) will be calculated and returned, using the logProb derived quantity function.  When provided as a character vector, the individual log density of each node in this vector will be recorded.  When provided as a list, each list element may contain one or mode node names, and separately for the node(s) in each element of the list, the summed log-density list will be calculated.  In addition, the keyword '.all' may also be provided in either the vector or list argument, which corresponds to the set of all stochastic model nodes (including data).
+
 enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions('MCMCenableWAIC'), which in turn defaults to FALSE.  Setting nimbleOptions('MCMCenableWAIC' = TRUE) will ensure that WAIC is enabled for all calls to `configureMCMC` and `buildMCMC`.
 
 controlWAIC A named list of inputs that control the behavior of the WAIC calculation, passed as the 'control' input to 'buildWAIC'. See 'help(waic)`.
 
-print: A logical argument specifying whether to print the montiors and samplers.  Default is TRUE.
+print: A logical argument specifying whether to print the monitors and samplers.  Default is TRUE.
 
 ...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.}
+
+\item{\code{printDerivedQuantities(ind, type, displayNonScalars = FALSE, byType = FALSE)}}{Prints details of derived quantity functions.
+
+Arguments:
+
+ind: A numeric vector, used to specify the indices of the derived quantity functions to print.  If omitted, then all derived quantity functions are printed.
+
+type: A character vector containing derived quantity function types.  Only derived quantity functions with one of these specified types will be displayed.  Regular expression matching is also used.
+
+displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
+
+byType: A logical argument, specifying whether a summary of the derived quantity functions should be printed, instead of the details of each individual function (default FALSE).}
 
 \item{\code{printMonitors()}}{Prints all current monitors and monitors2
 
@@ -250,7 +331,7 @@ Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers('x') will print all samplers whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplers are printed.
 
-type: a character vector containing sampler type names.  Only samplers with one of these specified types, as printed by this printSamplers method, will be displayed.  Standard regular expression mathing using is also applied.
+type: A character vector containing sampler type names.  Only samplers with one of these specified types will be displayed.  Regular expression matching is also used.
 
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 
@@ -259,6 +340,18 @@ displayNonScalars: A logical argument, specifying whether to display the values 
 executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).
 
 byType: A logical argument, specifying whether the nodes being sampled should be printed, sorted and organized according to the type of sampler (the sampling algorithm) which is acting on the nodes (default FALSE).}
+
+\item{\code{removeDerivedQuantities(..., ind, print = FALSE)}}{Removes one or more derived quantity functions from an MCMCconf object.
+
+Arguments:
+
+...: Numeric indices, used to specify the indices of the derived quantity functions to remove.
+
+ind: A numeric vector specifying the indices of the derived quantity functions to remove.  If omitted, and no indices are provided via the ... argument, then all derived quantity functions are removed.
+
+print: A logical argument specifying whether to print the current list of derived quantity functions once the removal has been done (default FALSE).}
+
+\item{\code{removeDerivedQuantity(...)}}{Alias for removeDerivedQuantities method}
 
 \item{\code{removeSampler(...)}}{Alias for removeSamplers method}
 

@@ -4,23 +4,50 @@
 \alias{nimbleCode}
 \title{Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}}
 \usage{
-nimbleCode(code)
+nimbleCode(...)
 }
 \arguments{
-\item{code}{expression providing the code for the model}
+\item{...}{One or more R code expressions or objects containing R code, providing the code for the model. See details.}
 }
 \description{
-Simply keeps model code as an R call object, the form needed by \code{\link{nimbleModel}} and optionally usable by \code{\link{readBUGSmodel}}.
+Takes one or more R expressions or code objects, combines them if necessary, and returns the 
+resulting code as an R call object in the form needed by \code{\link{nimbleModel}}
+and optionally usable by \code{\link{readBUGSmodel}}.
 }
 \details{
-It is equivalent to use the R function \code{\link{quote}}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
+You may provide code to \code{nimbleCode} in two ways. The first way
+is to provide the code as an argument directly, wrapped in curly brackets (\{\}).
+The second is to create an object containing code with either \code{nimbleCode} or \code{quote},
+and pass that object to \code{nimbleCode}. You may mix and match these two approaches.
+Note that code provided directly but not wrapped in \{\} will be rejected.
+When multiple pieces of code are provided as arguments, they will be combined into
+a single code object by \code{nimbleCode} and unnecessary curly brackets will be
+automatically removed.
+
+When providing a single block of code directly, the result from \code{nimbleCode}
+is equivalent to using the R function \code{\link{quote}}.  \code{nimbleCode} is 
+simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
 }
 \examples{
+# Provide a single block of code directly
 code <- nimbleCode({
     x ~ dnorm(mu, sd = 1)
     mu ~ dnorm(0, sd = prior_sd)
 })
+
+code_new <- nimbleCode({
+    prior_sd ~ dhalfflat()
+})
+
+# Combine multiple previously saved code objects
+code2 <- nimbleCode(code, code_new)
+
+# Combine code and previously saved code objects
+code3 <- nimbleCode({
+   y ~ dnorm(mu, sd = 1)
+}, code, code_new)
+
 }
 \author{
-Daniel Turek
+Daniel Turek and Ken Kellner
 }

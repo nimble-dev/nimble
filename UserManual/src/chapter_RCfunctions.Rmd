@@ -228,16 +228,18 @@ Supported distributions, listed by their 'd' function, include:
   - `dweibull(x, shape, scale, log)`
   - `ddirch(x, alpha, log)`
   - `dlkj_corr_cholesky(x, shape, size, log)`
-  - `dmnorm_chol(x, mean, cholesky, prec_param, log)`
+  - `dmnorm_inv_ld(x, mean, mat, prec_param, log)` (AD)
+  - `dmnorm_chol(x, mean, cholesky, prec_param, log)` (non-AD)
   - `dmvt_chol(x, mu, cholesky, df, prec_param, log)`
   - `dwish_chol(x, cholesky, df, scale_param, log)`
   - `dinvwish_chol(x, cholesky, df, scale_param, log)`
 
 
-
-In the last three, `cholesky` stands for Cholesky decomposition of the relevant matrix; 
+In the last four, `cholesky` stands for Cholesky decomposition of the relevant matrix; 
 `prec_param` is a logical indicating whether the Cholesky is of a
 precision matrix (TRUE) or covariance matrix (FALSE)^[For the multivariate t, these are more properly termed the 'inverse scale' and 'scale' matrices]; and `scale_param` is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).
+
+`dmnorm_inv_ld` is for use with AD (the standard `dmnorm_chol` results in very inefficient AD-based calculation). `prec_param` is a logical indicating whether `mat` is the precision matrix (TRUE) or covariance matrix (FALSE).
 
 ### Flow control: *if-then-else*, *for*,  *while*, and *stop* {#sec:basic-flow-control}
 
@@ -303,8 +305,8 @@ integral, such as certain point process and survival models.
 
 One could also consider using `nimIntegrate` to numerically integrate over a
 parameter in a model, such as to remove a parameter that is not mixing well in
-an MCMC. Note that NIMBLE Laplace approximation and adaptive Gauss-Hermite
-quadrature for integrating over continuous parameters such as random effects.
+an MCMC. Note that NIMBLE provides Laplace (and the closely-related adaptive Gauss-Hermite
+quadrature) approximation for integrating over continuous parameters such as random effects.
 See section \@ref(sec:AD-laplace) and `help(Laplace)` for more information on those.
 
 Here is an example of using `nimIntegrate` to implement a vectorized von Mises
