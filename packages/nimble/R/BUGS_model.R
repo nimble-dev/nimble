@@ -502,9 +502,10 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                   getMixedDataNodeNames = function(returnType = 'names') {
                                       multivariateStochBool <- sapply(modelDef$declInfo,
                                                                       function(di) di$type == 'stoch' && grepl(':', deparse(di$targetExpr)))
-                                      multivariateStochIDs <- sapply(modelDef$declInfo[multivariateStochBool], `[[`, 'graphIDs')
+                                      multivariateStochIDsList <- lapply(modelDef$declInfo[multivariateStochBool], `[[`, 'graphIDs')
+                                      multivariateStochIDs <- unlist(multivariateStochIDsList)
                                       if(length(multivariateStochIDs) == 0)   multivariateStochIDs <- numeric()   ## length=0 case, make a numeric vector
-                                      isDataResult <- isDataFromGraphID(multivariateStochIDs, includeMixed = TRUE)    ## values are in {0, 1, 2}
+                                      isDataResult <- isDataFromGraphID(multivariateStochIDs, includeMixed = TRUE)    ## values are in {0, 1, 2}, where 0=FALSE, 1=TRUE, 2=MIXED
                                       mixedDataIDs <- multivariateStochIDs[isDataResult == 2]
                                       if(returnType == 'ids')   return(mixedDataIDs)
                                       if(returnType == 'names') return(modelDef$maps$graphID_2_nodeName[mixedDataIDs])
