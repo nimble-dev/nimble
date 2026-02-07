@@ -34,7 +34,7 @@ quarto render nimbleQuad.qmd --to html
 Copy files to website repo:
 
 ```
-cp Quadrature.html site/vignettes/
+cp Quadrature.html site/vignettes/nimbleQuad.html
 cp -pr Quadrature_files site/vignettes/
 ```
 
