@@ -3058,6 +3058,106 @@ test_that('asymptotic correct results from conjugate gamma - CAR_normal sampler'
     expect_true(all(abs(summary_RW - summary_conj) < 0.04))
 })
 
+test_that("correct handling of changing `thin` value with `reset=FALSE`", {
+    code <- nimbleCode({
+        y ~ dnorm(mu, sd = sigma)
+        mu ~ dnorm(0,1)
+        sigma ~ dunif(0,5)
+    })
+
+    m <- nimbleModel(code, data = list(y=0), inits = list(mu = 0, sigma = 1))
+    cm <- compileNimble(m)
+
+    mcmc <- buildMCMC(m, thin = 1)
+    cmcmc <- compileNimble(mcmc, project = m)
+
+    set.seed(1)
+    cmcmc$run(niter = 20)
+    gold <- as.matrix(cmcmc$mvSamples)
+
+    ## thin=1 -> thin=2
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8)
+    expect_silent(cmcmc$run(niter = 12, thin = 2, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(1:8,seq(10,20,by=2)),])
+
+    ## thin=2 -> thin=1
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 2)
+    expect_silent(cmcmc$run(niter = 12, thin = 1, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(seq(2,8,by=2),9:20),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 9, thin = 2)
+    expect_output(cmcmc$run(niter = 11, thin = 1, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(seq(2,8,by=2),10:20),])
+
+    ## thin=5 -> thin=1
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 10, thin = 5)
+    expect_silent(cmcmc$run(niter = 10, thin = 1, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(5,10,11:20),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 5)
+    expect_output(cmcmc$run(niter = 12, thin = 1, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(5,9:20),])
+
+    ## thin=4 -> thin=3
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 4)
+    expect_silent(cmcmc$run(niter = 12, thin = 3, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,seq(11,20,by=3)),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 9, thin = 4)
+    expect_output(cmcmc$run(niter = 11, thin = 3, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,seq(12,18,by=3)),])
+
+    ## thin=4 -> thin=5
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 8, thin = 4)
+    expect_silent(cmcmc$run(niter = 12, thin = 5, reset = FALSE))
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,13,18),])
+
+    set.seed(1)
+    cm$mu <- 0
+    cm$sigma <- 1
+    cmcmc$run(niter = 9, thin = 4)
+    expect_output(cmcmc$run(niter = 11, thin = 5, reset = FALSE),
+                  "thin is being changed")
+    expect_identical(as.matrix(cmcmc$mvSamples),
+                     gold[c(4,8,14,19),])
+
+})
+
 sink(NULL)
 
 if(!generatingGoldFile) {
