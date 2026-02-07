@@ -213,6 +213,7 @@ nimOptimMethod("bobyqa",
         MCMCassignSamplersToPosteriorPredictiveNodes = TRUE,  ## whether any samplers are assigned (by default) to PP nodes
         MCMCusePosteriorPredictiveSampler = TRUE,             ## for PP nodes being sampled, use post_pred (or otherwise RW, etc)
         MCMCwarnUnsampledStochasticNodes = TRUE,
+        MCMCwarnUnfinishedThinningInterval = TRUE,
         MCMCRJcheckHyperparam = TRUE,
         MCMCenableWAIC = FALSE,
         MCMCuseBarkerAsDefaultMV = FALSE,

@@ -28,7 +28,7 @@ Of course, NIMBLE is open source, so we also hope you'll contribute to
 its development.
 
 Please join the mailing lists
-(see [R-nimble.org/more/issues-and-groups](https://r-nimble.org/more/issues-and-groups)) and help improve NIMBLE by
+(see [R-nimble.org/groups-and-issues](https://r-nimble.org/groups-and-issues)) and help improve NIMBLE by
 telling us what you want to do with it, what you like, and what could
 be better.  We have a lot of ideas for how to improve it, but we want
 your help and ideas too.  You can also follow and contribute to
