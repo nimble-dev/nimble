@@ -39,8 +39,6 @@ cp -pr Quadrature_files site/vignettes/
 ```
 
 
-
-
 ## Update manual
 
 Update manual as additional "tests" and because we need it updated.
