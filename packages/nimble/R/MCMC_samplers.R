@@ -3467,11 +3467,15 @@ sampler_partial_mvn <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', error = 'The control list must include the argument multivariateNodesAsScalars')
+        browser()
+        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', default = getNimbleOption('MCMCmultivariateNodesAsScalars'))
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        partObsTru <- sapply(targetAsScalar, function(targetAsScalar) !eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
-        targetUnobservedComponents <- targetAsScalar[partObsTru]
+        isdataBool <- sapply(targetAsScalar, function(targetAsScalar) eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
+        targetNonDataComponents <- targetAsScalar[!isdataBool]
+        predictiveBool <- sapply(targetNonDataComponents, function(n) length(model$getDependencies(n, self=FALSE, downstream=TRUE, dataOnly=TRUE)) == 0)
+        targetNonDataPP <- targetNonDataComponents[ predictiveBool]
+        targetNonDataNP <- targetNonDataComponents[!predictiveBool]
         ## nested function and function list definitions
         samplerList <- nimbleFunctionList(sampler_BASE)
         if(multivariateNodesAsScalars) {
@@ -3486,8 +3490,8 @@ sampler_partial_mvn <- nimbleFunction(
             }
         }
         ## checks
-        if (model$getDistribution(target) != "dmnorm")       stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
-        if (!model$isMixedData(target))                       stop(paste0('The target node ', target, ' is not partially observed.'))
+        if (model$getDistribution(target) != "dmnorm")   stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
+        if (!model$isMixedData(target))                  stop(paste0('The target node ', target, ' is not partially observed.'))
     },
     run = function() {
         for (i in seq_along(samplerList)) {
