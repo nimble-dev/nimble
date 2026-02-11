@@ -3528,12 +3528,11 @@ sampler_partial_mvn_pp <- nimbleFunction(
         mu  <- numeric(nTotal )
         muT <- numeric(nTarget)
         muG <- numeric(nGiven )
-        sigma   <- array(0, c(nTotal,  nTotal ))
-        sigmaTT <- array(0, c(nTarget, nTarget))
-        sigmaTG <- array(0, c(nTarget, nGiven ))
-        sigmaGT <- array(0, c(nGiven,  nTarget))
-        sigmaGG <- array(0, c(nGiven,  nGiven ))
-        sigmaPP <- array(0, c(nTarget, nTarget))
+        Sigma   <- array(0, c(nTotal,  nTotal ))
+        SigmaTT <- array(0, c(nTarget, nTarget))
+        SigmaTG <- array(0, c(nTarget, nGiven ))
+        SigmaGT <- array(0, c(nGiven,  nTarget))
+        SigmaGG <- array(0, c(nGiven,  nGiven ))
         indT <- match(target, mvNodeComponents)
         indG <- match(given,  mvNodeComponents)
         ## checks
@@ -3544,16 +3543,16 @@ sampler_partial_mvn_pp <- nimbleFunction(
         mu  <<- model$getParam(mvNode, 'mean')
         muT <<- mu[indT]
         muG <<- mu[indG]
-        sigma <<- model$getParam(mvNode, 'cov')
-        sigmaTT <<- sigma[indT, indT]
-        sigmaTG <<- sigma[indT, indG]
-        sigmaGT <<- sigma[indG, indT]
-        sigmaGG <<- sigma[indG, indG]
-        sigmaTG <<- sigmaTG %*% solve(sigmaGG)
-        muT <<- muT + sigmaTG %*% (values(model,given) - muG)
-        sigmaTT <<- sigmaTT - sigmaTG %*% sigmaGT
-        sigmaTT <<- chol(sigmaTT)
-        values(model, target) <<- rmnorm_chol(1, muT, sigmaTT, prec_param = 0)
+        Sigma <<- model$getParam(mvNode, 'cov')
+        SigmaTT <<- Sigma[indT, indT]
+        SigmaTG <<- Sigma[indT, indG]
+        SigmaGT <<- Sigma[indG, indT]
+        SigmaGG <<- Sigma[indG, indG]
+        SigmaTG <<- SigmaTG %*% inverse(SigmaGG)
+        muT <<- muT + (SigmaTG %*% (values(model,given) - muG))[,1]
+        SigmaTT <<- SigmaTT - SigmaTG %*% SigmaGT
+        SigmaTT <<- chol(SigmaTT)
+        values(model, target) <<- rmnorm_chol(1, muT, SigmaTT, prec_param = 0)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
