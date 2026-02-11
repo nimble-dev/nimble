@@ -3491,7 +3491,11 @@ sampler_partial_mvn <- nimbleFunction(
                 if(length(targetNonDataNP) == 1) {
                     samplerList[[1]] <- sampler_RW(model, mvSaved, targetNonDataNP, control)
                 } else {
-                    samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetNonDataNP, control)
+                    if(getNimbleOption('MCMCuseBarkerAsDefaultMV')) {
+                        samplerList[[1]] <- sampler_barker  (model, mvSaved, targetNonDataNP, control)
+                    } else {
+                        samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetNonDataNP, control)
+                    }
                 }
             }
         }
