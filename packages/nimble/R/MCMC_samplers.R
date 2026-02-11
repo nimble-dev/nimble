@@ -3515,44 +3515,45 @@ sampler_partial_mvn_pp <- nimbleFunction(
     name = 'sampler_partial_mvn_pp',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target) {
-        browser()
         ## node list generation
         mvNode <- model$expandNodeNames(target)
         mvNodeComponents <- model$expandNodeNames(mvNode, returnScalarComponents = TRUE)
         given <- setdiff(mvNodeComponents, target)
         calcNodes <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE)
         ## numeric value generation
-        nTarget <- length(target)
-        nGiven  <- length(given)
-        nTotal  <- nTarget + nGiven
-        mu  <- numeric(nTotal )
-        muT <- numeric(nTarget)
-        muG <- numeric(nGiven )
-        Sigma   <- array(0, c(nTotal,  nTotal ))
-        SigmaTT <- array(0, c(nTarget, nTarget))
-        SigmaTG <- array(0, c(nTarget, nGiven ))
-        SigmaGT <- array(0, c(nGiven,  nTarget))
-        SigmaGG <- array(0, c(nGiven,  nGiven ))
-        indT <- match(target, mvNodeComponents)
-        indG <- match(given,  mvNodeComponents)
+        n1 <- length(target)
+        n2 <- length(given)
+        n  <- n1 + n2
+        mu  <- array(0, c(n , 1))
+        mu1 <- array(0, c(n1, 1))
+        mu2 <- array(0, c(n2, 1))
+        Sigma   <- array(0, c(n,  n ))
+        Sigma11 <- array(0, c(n1, n1))
+        Sigma12 <- array(0, c(n1, n2))
+        Sigma21 <- array(0, c(n2, n1))
+        Sigma22 <- array(0, c(n2, n2))
+        ind1 <- match(target, mvNodeComponents)
+        ind2 <- match(given,  mvNodeComponents)
         ## checks
-        if(length(mvNode) != 1)   stop('something went wrong in sampler_partial_mvn_pp setup')
-        if(nTarget*nGiven == 0)   stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(length(mvNode) != 1)                         stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(model$getDistribution(mvNode) != 'dmnorm')   stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(n != length(mvNodeComponents))               stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(n1*n2 == 0)                                  stop('something went wrong in sampler_partial_mvn_pp setup')
     },
     run = function() {
-        mu  <<- model$getParam(mvNode, 'mean')
-        muT <<- mu[indT]
-        muG <<- mu[indG]
-        Sigma <<- model$getParam(mvNode, 'cov')
-        SigmaTT <<- Sigma[indT, indT]
-        SigmaTG <<- Sigma[indT, indG]
-        SigmaGT <<- Sigma[indG, indT]
-        SigmaGG <<- Sigma[indG, indG]
-        SigmaTG <<- SigmaTG %*% inverse(SigmaGG)
-        muT <<- muT + (SigmaTG %*% (values(model,given) - muG))[,1]
-        SigmaTT <<- SigmaTT - SigmaTG %*% SigmaGT
-        SigmaTT <<- chol(SigmaTT)
-        values(model, target) <<- rmnorm_chol(1, muT, SigmaTT, prec_param = 0)
+        mu[,1] <<- model$getParam(mvNode, 'mean')
+        Sigma  <<- model$getParam(mvNode, 'cov' )
+        mu1[,1] <<- mu[ind1,1]
+        mu2[,1] <<- mu[ind2,1]
+        Sigma11[1:n1,1:n1] <<- Sigma[ind1, ind1]
+        Sigma12[1:n1,1:n2] <<- Sigma[ind1, ind2]
+        Sigma21[1:n2,1:n1] <<- Sigma[ind2, ind1]
+        Sigma22[1:n2,1:n2] <<- Sigma[ind2, ind2]
+        Sigma12 <<- Sigma12 %*% inverse(Sigma22)
+        mu1[,1] <<- mu1[,1] + (Sigma12 %*% (values(model,given) - mu2[,1]))[,1]
+        Sigma11 <<- Sigma11 - Sigma12 %*% Sigma21
+        Sigma11 <<- chol(Sigma11)
+        values(model, target) <<- rmnorm_chol(1, mu1[,1], Sigma11, prec_param = 0)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
