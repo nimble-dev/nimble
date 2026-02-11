@@ -22,6 +22,23 @@ make -B all
 
 The `-B` flag forces rebuilding  even if the underlying qmd/Rmd files haven't changed (i.e., with updated nimble).
 
+## Update nimbleQuad vignette
+
+Render vignette in nimbleQuad repo:
+
+```
+cd nimbleQuad/vignettes
+quarto render nimbleQuad.qmd --to html
+```
+
+Copy files to website repo:
+
+```
+cp Quadrature.html site/vignettes/nimbleQuad.html
+cp -pr Quadrature_files site/vignettes/
+```
+
+
 ## Update manual
 
 Update manual as additional "tests" and because we need it updated.
@@ -237,6 +254,8 @@ Git add and commit the file.
 Before running `quarto publish gh-pages`, copy `blog/index-r.xml` to `feed`, as R-bloggers looks at https://r-nimble.org/feed.
 
 Run `quarto publish gh-pages`. Check that post appears on site, including in left sidebar.
+
+Note: As of January 2026, R-bloggers is not picking up our posts.
 
 Check the next day that it appeared in R-bloggers.
 

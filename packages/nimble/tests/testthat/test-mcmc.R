@@ -3397,6 +3397,41 @@ test_that('asymptotic correct results from conjugate gamma - CAR_normal sampler'
     expect_true(all(abs(summary_RW - summary_conj) < 0.04))
 })
 
+test_that('conjugate correct dimensions for dim=1 target nodes', {
+    code <- nimbleCode({
+        for(k in 1:ncomponents) {
+            for(v in 1:Nn) {
+                Nprob[Ni[v]:Nf[v], k] ~ ddirch(alpha = Nalpha0[Ni[v]:Nf[v]])
+            }
+        }
+        for(d in 1:npoints) {
+            K[d] ~ dcat(prob = W[1:ncomponents])
+            for(v in 1:Nn) {
+                Ndata[d, v] ~ dcat(prob = Nprob[Ni[v]:Nf[v], K[d]])
+            }
+        }
+    })
+    ##
+    constants <- list(
+        ncomponents = 32,
+        npoints = 5,
+        Nn = 1,
+        Ni = c(1, NA_integer_),
+        Nf = c(5, NA_integer_),
+        Nalpha0 = rep(0.2, 5))
+    data <- list(Ndata = matrix(1:5, nrow = 5, ncol = 1))
+    inits <- list(W = rep(1/32, 32), K = 1:5, Nprob = matrix(0.2, nrow = 5, ncol = 32))
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    ##
+    expect_no_error(conf <- configureMCMC(Rmodel))
+    expect_no_error(Rmcmc <- buildMCMC(conf))
+    expect_no_error(Cmodel <- compileNimble(Rmodel))
+    expect_no_error(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
+    expect_no_error(Rmcmc$run(1))
+    expect_no_error(Cmcmc$run(1))
+})
+                      
 test_that("correct handling of changing `thin` value with `reset=FALSE`", {
     code <- nimbleCode({
         y ~ dnorm(mu, sd = sigma)

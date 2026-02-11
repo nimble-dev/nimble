@@ -189,6 +189,7 @@ nimOptimMethod("bobyqa",
         compileOnly = FALSE,
         buildInterfacesForCompiledNestedNimbleFunctions = FALSE,   ## provides interfaces, i.e. named access in R, to all variables in nested compiled nimbleFunctions
         clearNimbleFunctionsAfterCompiling = FALSE,
+        doRStudioHangingFix = FALSE,      ## causes implementation of the str method for all dynamically generated classes, to prevent hanging in RStudio
         checkModel = FALSE,
         checkNimbleFunction = TRUE,
         checkDuplicateNodeDefinitions = TRUE,

@@ -2932,7 +2932,7 @@ modelDefClass$methods(buildSymbolTable = function() {
 })
 
 
-modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), calculate = TRUE, debug = FALSE) {
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), calculate = TRUE, debug = FALSE, rstudioFix = getNimbleOption('doRStudioHangingFix')) {
     if(debug) browser()
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')
@@ -3006,7 +3006,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
         if(getNimbleOption('verbose')) message("Checking model calculations")
         model$check()
     }
-    fixRStudioHanging(model)
+    if(rstudioFix)   fixRStudioHanging(model)
     return(model)
 })
 

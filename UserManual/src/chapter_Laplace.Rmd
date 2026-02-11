@@ -10,7 +10,7 @@ require(nimbleQuad, quietly = TRUE, warn.conflicts = FALSE)
 
 The NIMBLE algorithm library includes a growing set of non-MCMC algorithms including likelihood-based algorithms.
 
-In this chapter we discuss Laplace approximation and the closely related adaptive Gauss-Hermite quadrature (AGHQ) approximation for maximum likelihood estimation, as well as INLA-like nested approximations that use Laplace/AGHQ methods for approximate marginalization for deterministic Bayesian estimation. 
+In this chapter we discuss Laplace approximation and the closely related adaptive Gauss-Hermite quadrature (AGHQ) approximation for maximum likelihood estimation, as well as INLA-like nested approximations that use Laplace/AGHQ methods for approximate marginalization for deterministic Bayesian estimation. These methods are available in the `nimbleQuad` package. The [vignette for the nimbleQuad package](https://r-nimble.org/vignettes/nimbleQuad.html) provides additional information.
 
 
 ## Laplace approximation and adaptive Gauss-Hermite quadrature (AGHQ) {#sec:AD-laplace}

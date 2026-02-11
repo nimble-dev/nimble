@@ -527,6 +527,7 @@ pumpData <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
 pumpInits <- list(alpha = 1, beta = 1,
                   theta = rep(0.1, pumpConsts$N))
 pumpModel <- nimbleModel(pumpCode, pumpConsts, pumpData, pumpInits)
+cpumpModel <- compileNimble(pumpModel)
 ```
 
 Here's the use of the `logProb` derived quantity specified directly as an argument to `configureMCMC`.
@@ -536,7 +537,9 @@ conf <- configureMCMC(pumpModel, logProb = c('alpha', 'beta'))
 
 conf$printDerivedQuantities()
 
-runMCMC(buildMCMC(conf), niter = 100, thin = 20)
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = pumpModel)
+runMCMC(cmcmc, niter = 100, thin = 20)
 ```
 
 We could also have added the `logProb` derived quantity to an existing MCMC configuration argument:
@@ -555,12 +558,16 @@ These also demonstrate how the keyword `".all"` may be provided, corresponding t
 ```{r}
 conf <- configureMCMC(pumpModel, logProb = c('theta[1:3]', '.all'))
 
-runMCMC(buildMCMC(conf), niter = 3)
+mcmc2 <- buildMCMC(conf)
+cmcmc2 <- compileNimble(mcmc2)
+runMCMC(cmcmc2, niter = 3)
 
 conf <- configureMCMC(pumpModel,
           logProb = list('theta[1:3]', '.all'))
 
-runMCMC(buildMCMC(conf), niter = 3)
+mcmc3 <- buildMCMC(conf)
+cmcmc3 <- compileNimble(mcmc3)
+runMCMC(cmcmc3, niter = 3)
 ```
 
 If `nodes` is provided as an unnamed list, then some processing is done to give reasonable output column names, in the case of groups:
@@ -574,7 +581,9 @@ conf <- configureMCMC(pumpModel,
                       c('x[2]', 'x[5]'),
                       '.all'))
 
-runMCMC(buildMCMC(conf), niter = 3)
+mcmc4 <- buildMCMC(conf)
+cmcmc4 <- compileNimble(mcmc4, project = pumpModel, resetFunctions = TRUE)
+runMCMC(cmcmc4, niter = 3)
 ```
 
 Alternatively, if `nodes` is provided as a named list, then the list names are used as the output column names:
@@ -588,7 +597,9 @@ conf <- configureMCMC(pumpModel,
                       x2_x5 = c('x[2]', 'x[5]'),
                       joint_density = '.all'))
 
-runMCMC(buildMCMC(conf), niter = 3)
+mcmc5 <- buildMCMC(conf)
+cmcmc5 <- compileNimble(mcmc5, project = pumpModel, resetFunctions = TRUE)
+runMCMC(cmcmc5, niter = 3)
 ```
 
 #### Mean and variance derived quantities
@@ -602,7 +613,9 @@ conf <- configureMCMC(pumpModel, monitors = 'theta',
           mean = 'theta[1:5]',
           variance = c('alpha', 'beta', 'theta[2]'))
 
-runMCMC(buildMCMC(conf), niter = 5)
+mcmc6 <- buildMCMC(conf)
+cmcmc6 <- compileNimble(mcmc6, project = pumpModel, resetFunctions = TRUE)
+runMCMC(cmcmc6, niter = 5)
 ```
 
 An additional option for the mean and variance derived quantities is the `recordingFrequency` argument. This is subtly different from the `interval` argument:
@@ -677,7 +690,11 @@ conf <- configureMCMC(toyModel, samplePredictiveNodes = FALSE)
 
 conf$addDerivedQuantity('predictive', nodes = c('muSq', 'z'))
 
-runMCMC(buildMCMC(conf), 10)
+mcmc <- buildMCMC(conf)
+
+ctoyModel <- compileNimble(toyModel)
+cmcmc <- compileNimble(mcmc, project = toyModel)
+runMCMC(cmcmc, 10)
 ```
 
 In the event that we don't want to save the intermediate value of `muSq`, we can instead specify `nodes = 'z'`. Now, the predictive function will still simulate both `muSq` and `z`, but only the values of `z` will be saved.
@@ -693,7 +710,9 @@ conf$addDerivedQuantity('predictive',
                         interval = 5,
                         nodes = 'z')
 
-runMCMC(buildMCMC(conf), 10)
+mcmc2 <- buildMCMC(conf)
+cmcmc2 <- compileNimble(mcmc2, project = toyModel, resetFunctions = TRUE)
+runMCMC(cmcmc2, 10)
 ```
 
 The warnings above about unsampled nodes may also be suppressed by setting `nimbleOptions(MCMCwarnUnsampledStochasticNodes = FALSE)`.
