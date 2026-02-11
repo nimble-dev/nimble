@@ -3470,11 +3470,16 @@ sampler_partial_mvn <- nimbleFunction(
         multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', default = getNimbleOption('MCMCmultivariateNodesAsScalars'))
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        isdataBool <- sapply(targetAsScalar, function(targetAsScalar) eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
-        targetNonDataComponents <- targetAsScalar[!isdataBool]
-        predictiveBool <- sapply(targetNonDataComponents, function(n) length(model$getDependencies(n, self=FALSE, downstream=TRUE, dataOnly=TRUE)) == 0)
-        targetNonDataPP <- targetNonDataComponents[ predictiveBool]    ##     predictive
-        targetNonDataNP <- targetNonDataComponents[!predictiveBool]    ## not predictive
+        isDataBool <- sapply(targetAsScalar, function(targetAsScalar) eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
+        targetNonDataComponents <- targetAsScalar[!isDataBool]
+        if(length(model$getDependencies(target, self = FALSE, downstream = TRUE, dataOnly = TRUE)) > 0) {
+            predictiveBool <- sapply(targetNonDataComponents, function(n) length(model$getDependencies(n, self = FALSE, downstream = TRUE, dataOnly = TRUE)) == 0)
+            targetNonDataPP <- targetNonDataComponents[ predictiveBool]    ##     predictive
+            targetNonDataNP <- targetNonDataComponents[!predictiveBool]    ## not predictive
+        } else {
+            targetNonDataPP <- targetNonDataComponents                     ## entirely predictive
+            targetNonDataNP <- character()
+        }
         ## nested function and function list definitions
         samplerList <- nimbleFunctionList(sampler_BASE)
         if(length(targetNonDataNP) > 0) {
@@ -3494,8 +3499,8 @@ sampler_partial_mvn <- nimbleFunction(
             samplerList[[ length(samplerList)+1 ]] <- sampler_partial_mvn_pp(model, mvSaved, targetNonDataPP)
         }
         ## checks
-        if(model$getDistribution(target) != 'dmnorm')   stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
-        if(!model$isMixedData(target))                  stop(paste0('The target node ', target, ' is not partially observed.'))
+        if(model$getDistribution(target) != 'dmnorm')   stop('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.')
+        if(!model$isMixedData(target))                  stop('The target node ', target, ' is not partially observed.')
     },
     run = function() {
         for(i in seq_along(samplerList)) {
@@ -3535,10 +3540,10 @@ sampler_partial_mvn_pp <- nimbleFunction(
         ind1 <- match(target, mvNodeComponents)
         ind2 <- match(given,  mvNodeComponents)
         ## checks
-        if(length(mvNode) != 1)                         stop('something went wrong in sampler_partial_mvn_pp setup')
-        if(model$getDistribution(mvNode) != 'dmnorm')   stop('something went wrong in sampler_partial_mvn_pp setup')
-        if(n != length(mvNodeComponents))               stop('something went wrong in sampler_partial_mvn_pp setup')
-        if(n1*n2 == 0)                                  stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(length(mvNode) != 1)                         stop('unexpected error in sampler_partial_mvn_pp')
+        if(model$getDistribution(mvNode) != 'dmnorm')   stop('unexpected error in sampler_partial_mvn_pp')
+        if(n != length(mvNodeComponents))               stop('unexpected error in sampler_partial_mvn_pp')
+        if(n1*n2 == 0)                                  stop('unexpected error in sampler_partial_mvn_pp')
     },
     run = function() {
         mu[,1] <<- model$getParam(mvNode, 'mean')
