@@ -3537,6 +3537,8 @@ sampler_partial_mvn_pp <- nimbleFunction(
         Sigma12 <- array(0, c(n1, n2))
         Sigma21 <- array(0, c(n2, n1))
         Sigma22 <- array(0, c(n2, n2))
+        tmp <- array(0, c(n1, 1))
+        tmp2 <- array(0, c(n2, n1))
         ind1 <- match(target, mvNodeComponents)
         ind2 <- match(given,  mvNodeComponents)
         ## checks
@@ -3554,9 +3556,14 @@ sampler_partial_mvn_pp <- nimbleFunction(
         Sigma12[1:n1,1:n2] <<- Sigma[ind1, ind2]
         Sigma21[1:n2,1:n1] <<- Sigma[ind2, ind1]
         Sigma22[1:n2,1:n2] <<- Sigma[ind2, ind2]
-        Sigma12 <<- Sigma12 %*% inverse(Sigma22)
-        mu1[,1] <<- mu1[,1] + (Sigma12 %*% (values(model,given) - mu2[,1]))[,1]
-        Sigma11 <<- Sigma11 - Sigma12 %*% Sigma21
+        Sigma22 <<- chol(Sigma22)
+        ## Sigma12 <<- Sigma12 %*% inverse(Sigma22)
+        ## mu1[,1] <<- mu1[,1] + (Sigma12 %*% (values(model,given) - mu2[,1]))[,1]
+        tmp[,1] <<- backsolve(Sigma22, forwardsolve(t(Sigma22), values(model,given) - mu2[,1]))
+        mu1[,1] <<- mu1[,1] + (Sigma12 %*% tmp)[,1]
+        ## Sigma11 <<- Sigma11 - Sigma12 %*% Sigma21
+        tmp2 <<- forwardsolve(t(Sigma22), Sigma21)
+        Sigma11 <<- Sigma11 - t(tmp2)%*%tmp2
         Sigma11 <<- chol(Sigma11)
         values(model, target) <<- rmnorm_chol(1, mu1[,1], Sigma11, prec_param = 0)
         model$calculate(calcNodes)
