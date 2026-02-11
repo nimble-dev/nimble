@@ -3467,41 +3467,101 @@ sampler_partial_mvn <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', error = 'The control list must include the argument multivariateNodesAsScalars')
+        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', default = getNimbleOption('MCMCmultivariateNodesAsScalars'))
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        partObsTru <- sapply(targetAsScalar, function(targetAsScalar) !eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
-        targetUnobservedComponents <- targetAsScalar[partObsTru]
+        isdataBool <- sapply(targetAsScalar, function(targetAsScalar) eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
+        targetNonDataComponents <- targetAsScalar[!isdataBool]
+        predictiveBool <- sapply(targetNonDataComponents, function(n) length(model$getDependencies(n, self=FALSE, downstream=TRUE, dataOnly=TRUE)) == 0)
+        targetNonDataPP <- targetNonDataComponents[ predictiveBool]    ##     predictive
+        targetNonDataNP <- targetNonDataComponents[!predictiveBool]    ## not predictive
         ## nested function and function list definitions
         samplerList <- nimbleFunctionList(sampler_BASE)
-        if(multivariateNodesAsScalars) {
-            for(i in seq_along(targetUnobservedComponents)) {
-                samplerList[[i]] <- sampler_RW(model, mvSaved, targetUnobservedComponents[i], control)
-            }
-        } else {
-            if(length(targetUnobservedComponents) == 1) {
-                samplerList[[1]] <- sampler_RW(model, mvSaved, targetUnobservedComponents, control)
+        if(length(targetNonDataNP) > 0) {
+            if(multivariateNodesAsScalars) {
+                for(i in seq_along(targetNonDataNP)) {
+                    samplerList[[i]] <- sampler_RW(model, mvSaved, targetNonDataNP[i], control)
+                }
             } else {
-                samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetUnobservedComponents, control)
+                if(length(targetNonDataNP) == 1) {
+                    samplerList[[1]] <- sampler_RW(model, mvSaved, targetNonDataNP, control)
+                } else {
+                    samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetNonDataNP, control)
+                }
             }
         }
+        if(length(targetNonDataPP) > 0) {
+            samplerList[[ length(samplerList)+1 ]] <- sampler_partial_mvn_pp(model, mvSaved, targetNonDataPP)
+        }
         ## checks
-        if (model$getDistribution(target) != "dmnorm")       stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
-        if (!model$isMixedData(target))                       stop(paste0('The target node ', target, ' is not partially observed.'))
+        if(model$getDistribution(target) != 'dmnorm')   stop(paste0('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.'))
+        if(!model$isMixedData(target))                  stop(paste0('The target node ', target, ' is not partially observed.'))
     },
     run = function() {
-        for (i in seq_along(samplerList)) {
+        for(i in seq_along(samplerList)) {
             samplerList[[i]]$run()
         }
     },
     methods = list(
         reset = function() {
-            for (i in seq_along(samplerList)) {
+            for(i in seq_along(samplerList)) {
                 samplerList[[i]]$reset()
             }
         }
     ) 
 )
+
+sampler_partial_mvn_pp <- nimbleFunction(
+    name = 'sampler_partial_mvn_pp',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target) {
+        ## node list generation
+        mvNode <- model$expandNodeNames(target)
+        mvNodeComponents <- model$expandNodeNames(mvNode, returnScalarComponents = TRUE)
+        given <- setdiff(mvNodeComponents, target)
+        calcNodes <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE)
+        ## numeric value generation
+        n1 <- length(target)
+        n2 <- length(given)
+        n  <- n1 + n2
+        mu  <- array(0, c(n , 1))
+        mu1 <- array(0, c(n1, 1))
+        mu2 <- array(0, c(n2, 1))
+        Sigma   <- array(0, c(n,  n ))
+        Sigma11 <- array(0, c(n1, n1))
+        Sigma12 <- array(0, c(n1, n2))
+        Sigma21 <- array(0, c(n2, n1))
+        Sigma22 <- array(0, c(n2, n2))
+        ind1 <- match(target, mvNodeComponents)
+        ind2 <- match(given,  mvNodeComponents)
+        ## checks
+        if(length(mvNode) != 1)                         stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(model$getDistribution(mvNode) != 'dmnorm')   stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(n != length(mvNodeComponents))               stop('something went wrong in sampler_partial_mvn_pp setup')
+        if(n1*n2 == 0)                                  stop('something went wrong in sampler_partial_mvn_pp setup')
+    },
+    run = function() {
+        mu[,1] <<- model$getParam(mvNode, 'mean')
+        Sigma  <<- model$getParam(mvNode, 'cov' )
+        mu1[,1] <<- mu[ind1,1]
+        mu2[,1] <<- mu[ind2,1]
+        Sigma11[1:n1,1:n1] <<- Sigma[ind1, ind1]
+        Sigma12[1:n1,1:n2] <<- Sigma[ind1, ind2]
+        Sigma21[1:n2,1:n1] <<- Sigma[ind2, ind1]
+        Sigma22[1:n2,1:n2] <<- Sigma[ind2, ind2]
+        Sigma12 <<- Sigma12 %*% inverse(Sigma22)
+        mu1[,1] <<- mu1[,1] + (Sigma12 %*% (values(model,given) - mu2[,1]))[,1]
+        Sigma11 <<- Sigma11 - Sigma12 %*% Sigma21
+        Sigma11 <<- chol(Sigma11)
+        values(model, target) <<- rmnorm_chol(1, mu1[,1], Sigma11, prec_param = 0)
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    )
+)
+
 
 #' MCMC Sampling Algorithms
 #'
