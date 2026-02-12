@@ -4018,7 +4018,7 @@ sampler_partial_mvn_pp <- nimbleFunction(
 #' 
 #' @section partial_mvn sampler:
 #'
-#' The partial_mvn sampler is designed to sample multivariate normal distributions that are partially observed.  That is, some dimensions of the target node are observed data values, some dimensions are not data. For dimensions that have no data nodes dependent on them, sampling is done from the conditional multivariate normal predictive distribution. Otherwise, sampling is accomplished using either univariate or multivariate random walk Metropolis Hastings of the unobserved dimensions, as determined by the \code{multivariateNodesAsScalars} argument (or using the Barker sampler based on the `code{MCMCuseBarkerAsDefaultMV} nimble option).
+#' The partial_mvn sampler is designed to sample multivariate normal distributions that are partially observed.  That is, some dimensions of the target node are observed data values, some dimensions are not data. For dimensions that have no data nodes dependent on them, sampling is done from the conditional multivariate normal predictive distribution. Otherwise, sampling is accomplished using either univariate or multivariate random walk Metropolis Hastings of the unobserved dimensions, as determined by the \code{multivariateNodesAsScalars} argument (or using the Barker sampler based on the \code{MCMCuseBarkerAsDefaultMV} nimble option).
 #'
 #' The \code{partial_mvn} sampler accepts the following control list elements:
 #' \itemize{
