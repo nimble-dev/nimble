@@ -17,7 +17,7 @@ Performs initialization of nimble model node values and log probabilities
 \details{
 This nimbleFunction may be used at the beginning of nimble algorithms to perform model initialization.
 The intended usage is to specialize an instance of this nimbleFunction in the setup function of an algorithm,
-then execute that specialied function at the beginning of the algorithm run function.
+then execute that specialized function at the beginning of the algorithm run function.
 The specialized function takes no arguments.
 
 Executing this function ensures that all right-hand-side only nodes have been assigned real values,

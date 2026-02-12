@@ -3456,7 +3456,141 @@ sampler_barker <- nimbleFunction(
 )
 
 
-    
+####################################################################
+### partially observed multivariate normal sampler #################
+####################################################################
+
+#' @rdname samplers
+#' @export
+sampler_partial_mvn <- nimbleFunction(
+    name = 'sampler_partial_mvn',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', default = getNimbleOption('MCMCmultivariateNodesAsScalars'))
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        isDataBool <- sapply(targetAsScalar, function(targetAsScalar) eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))
+        targetNonDataComponents <- targetAsScalar[!isDataBool]
+        if(length(model$getDependencies(target, self = FALSE, downstream = TRUE, dataOnly = TRUE)) > 0) {
+            predictiveBool <- sapply(targetNonDataComponents, function(n) length(model$getDependencies(n, self = FALSE, downstream = TRUE, dataOnly = TRUE)) == 0)
+            targetNonDataPP <- targetNonDataComponents[ predictiveBool]    ##     predictive
+            targetNonDataNP <- targetNonDataComponents[!predictiveBool]    ## not predictive
+        } else {
+            targetNonDataPP <- targetNonDataComponents                     ## entirely predictive
+            targetNonDataNP <- character()
+        }
+        ## nested function and function list definitions
+        samplerList <- nimbleFunctionList(sampler_BASE)
+        if(length(targetNonDataNP) > 0) {
+            if(multivariateNodesAsScalars) {
+                for(i in seq_along(targetNonDataNP)) {
+                    samplerList[[i]] <- sampler_RW(model, mvSaved, targetNonDataNP[i], control)
+                }
+            } else {
+                if(length(targetNonDataNP) == 1) {
+                    samplerList[[1]] <- sampler_RW(model, mvSaved, targetNonDataNP, control)
+                } else {
+                    if(getNimbleOption('MCMCuseBarkerAsDefaultMV')) {
+                        samplerList[[1]] <- sampler_barker  (model, mvSaved, targetNonDataNP, control)
+                    } else {
+                        samplerList[[1]] <- sampler_RW_block(model, mvSaved, targetNonDataNP, control)
+                    }
+                }
+            }
+        }
+        if(length(targetNonDataPP) > 0) {
+            samplerList[[ length(samplerList)+1 ]] <- sampler_partial_mvn_pp(model, mvSaved, targetNonDataPP)
+        }
+        ## checks
+        if(model$getDistribution(target) != 'dmnorm')   stop('The node ', target, ' is parially observed. NIMBLE only handles this case for multivariate normal distibutions.')
+        if(!model$isMixedData(target))                  stop('The target node ', target, ' is not partially observed.')
+    },
+    run = function() {
+        for(i in seq_along(samplerList)) {
+            samplerList[[i]]$run()
+        }
+    },
+    methods = list(
+        reset = function() {
+            for(i in seq_along(samplerList)) {
+                samplerList[[i]]$reset()
+            }
+        }
+    ) 
+)
+
+sampler_partial_mvn_pp <- nimbleFunction(
+    name = 'sampler_partial_mvn_pp',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target) {
+        ## node list generation
+        mvNode <- model$expandNodeNames(target)
+        mvNodeComponents <- model$expandNodeNames(mvNode, returnScalarComponents = TRUE)
+        given <- setdiff(mvNodeComponents, target)
+        calcNodes <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE)
+        cholNode <- deparse(model$getParamExpr(mvNode, 'cholesky'))
+        meanNode <- deparse(model$getParamExpr(mvNode, 'mean'    ))
+        ## numeric value generation
+        n1 <- length(target)
+        n2 <- length(given)
+        n  <- n1 + n2
+        mu  <- array(0, c(n , 1))
+        mu1 <- array(0, c(n1, 1))
+        mu2 <- array(0, c(n2, 1))
+        Sigma   <- array(0, c(n,  n ))
+        Sigma11 <- array(0, c(n1, n1))
+        Sigma12 <- array(0, c(n1, n2))
+        Sigma21 <- array(0, c(n2, n1))
+        Sigma22 <- array(0, c(n2, n2))
+        tmp <- array(0, c(n2, n1))
+        ind1 <- match(target, mvNodeComponents)
+        ind2 <- match(given,  mvNodeComponents)
+        sgConst <- length(model$getParents(cholNode, self = TRUE, upstream = TRUE, stochOnly = TRUE)) == 0
+        muConst <- length(model$getParents(meanNode, self = TRUE, upstream = TRUE, stochOnly = TRUE)) == 0
+        firstRun <- TRUE
+        ## checks
+        if(length(mvNode) != 1)                         stop('unexpected error in sampler_partial_mvn_pp')
+        if(model$getDistribution(mvNode) != 'dmnorm')   stop('unexpected error in sampler_partial_mvn_pp')
+        if(n != length(mvNodeComponents))               stop('unexpected error in sampler_partial_mvn_pp')
+        if(n1*n2 == 0)                                  stop('unexpected error in sampler_partial_mvn_pp')
+    },
+    run = function() {
+        ## Sigma12 <<- Sigma12 %*% inverse(Sigma22)
+        ## mu1[,1] <<- mu1[,1] + (Sigma12 %*% (values(model,given) - mu2[,1]))[,1]
+        ## Sigma11 <<- Sigma11 - Sigma12 %*% Sigma21
+        if(!sgConst | firstRun) {
+            Sigma <<- model$getParam(mvNode, 'cov' )
+            Sigma11[1:n1,1:n1] <<- Sigma[ind1, ind1]
+            Sigma12[1:n1,1:n2] <<- Sigma[ind1, ind2]
+            Sigma21[1:n2,1:n1] <<- Sigma[ind2, ind1]
+            Sigma22[1:n2,1:n2] <<- Sigma[ind2, ind2]
+            Sigma22 <<- chol(Sigma22)
+            tmp <<- forwardsolve(t(Sigma22), Sigma21)
+            Sigma11 <<- Sigma11 - t(tmp) %*% tmp
+            Sigma11 <<- chol(Sigma11)
+        }
+        if(!muConst | firstRun) {
+            mu[,1] <<- model$getParam(mvNode, 'mean')
+            mu1[,1] <<- mu[ind1,1]
+            mu2[,1] <<- mu[ind2,1]
+        }
+        if(!sgConst | !muConst | firstRun) {
+            mu1[,1] <<- mu1[,1] + (Sigma12 %*% backsolve(Sigma22, forwardsolve(t(Sigma22), values(model,given) - mu2[,1])))[,1]
+        }
+        if(firstRun)   firstRun <<- FALSE
+        values(model, target) <<- rmnorm_chol(1, mu1[,1], Sigma11, prec_param = 0)
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() {
+            firstRun <<- TRUE
+        }
+    )
+)
+
+
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine; HMC samplers are in the \code{nimbleHMC} package and particle filter samplers are in the \code{nimbleSMC} package. Additional details, including some recommendations for samplers that may perform better than the samplers that NIMBLE assigns by default are provided in Section 7.11 of the User Manual.
@@ -3881,6 +4015,15 @@ sampler_barker <- nimbleFunction(
 #' The posterior_predictive sampler functions by simulating new values for all downstream (dependent) nodes using their conditional distributions, as well as updating the associated model probabilities.  A posterior_predictive sampler will automatically be assigned to all trailing non-data stochastic nodes in a model, or when possible, to any node at a point in the model after which all downstream (dependent) stochastic nodes are non-data.
 #'
 #' The posterior_predictive sampler accepts no control list arguments.
+#' 
+#' @section partial_mvn sampler:
+#'
+#' The partial_mvn sampler is designed to sample multivariate normal distributions that are partially observed.  That is, some dimensions of the target node are observed data values, some dimensions are not data. Sampling is accomplished using either univariate or multivariate random walk Metropolis Hastings of the unobserved dimensions, as determined by the \code{multivariateNodesAsScalars} argument.
+#'
+#' The \code{partial_mvn} sampler accepts the following control list elements:
+#' \itemize{
+#' \item multivariateNodesAsScalars. A logical argument, specifying whether the sampler should sample the unobserved parts of a partially observed node jointly or independently (default = FALSE).
+#' }
 #'
 #' @section RJ_fixed_prior sampler:
 #'
@@ -3896,7 +4039,7 @@ sampler_barker <- nimbleFunction(
 #' 
 #' @name samplers
 #'
-#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky sampler_barker barker
+#' @aliases sampler binary categorical prior_samples posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block sampler_prior_samples sampler_posterior_predictive sampler_binary sampler_categorical sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block CRP CRP_concentration DPmeasure RJ_fixed_prior RJ_indicator RJ_toggled RW_PF RW_PF_block RW_lkj_corr_cholesky sampler_RW_lkj_corr_cholesky RW_block_lkj_corr_cholesky sampler_RW_block_lkj_corr_cholesky sampler_barker barker sampler_partial_mvn partial_mvn
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():

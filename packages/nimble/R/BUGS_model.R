@@ -499,6 +499,22 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       }
                                       return(ans)
                                   },
+                                  getMixedDataNodeNames = function(returnType = 'names') {
+                                      multivariateStochBool <- sapply(modelDef$declInfo,
+                                                                      function(di) di$type == 'stoch' && grepl(':', deparse(di$targetExpr)))
+                                      multivariateStochIDsList <- lapply(modelDef$declInfo[multivariateStochBool], `[[`, 'graphIDs')
+                                      multivariateStochIDs <- unlist(multivariateStochIDsList)
+                                      if(length(multivariateStochIDs) == 0)   multivariateStochIDs <- numeric()   ## length=0 case, make a numeric vector
+                                      isDataResult <- isDataFromGraphID(multivariateStochIDs, includeMixed = TRUE)    ## values are in {0, 1, 2}, where 0=FALSE, 1=TRUE, 2=MIXED
+                                      mixedDataIDs <- multivariateStochIDs[isDataResult == 2]
+                                      if(returnType == 'ids')   return(mixedDataIDs)
+                                      if(returnType == 'names') return(modelDef$maps$graphID_2_nodeName[mixedDataIDs])
+                                      stop('returnType argument to getMixedDataNodeNames was invalid')
+                                  },
+                                  isMixedData = function(nodeNames) {
+                                      ids <- expandNodeNames(nodeNames, returnType = 'ids')
+                                      return(isDataFromGraphID(ids, includeMixed = TRUE) == 2)
+                                  },
                                   safeUpdateValidValues = function(validValues, idsVec_only, idsVec_exclude) {
                                       if(!missing(idsVec_only) && !missing(idsVec_exclude)) stop()
                                       if(!missing(idsVec_only)) {
@@ -787,15 +803,23 @@ Details: The variable or node names specified is expanded into a vector of model
                                   		return(isDataFromGraphID(g_id))
                                   },
 
-                                  isDataFromGraphID = function(g_id){
-                                      ## returns TRUE if any elements are flagged as data
+                                  isDataFromGraphID = function(g_id, includeMixed = FALSE) {
+                                      ## default behaviour: returns TRUE if any elements are flagged as data
+                                      ## when includeMixed=TRUE: 0 for FALSE, 1 for TRUE, or 2 for MIXED
                                       nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]
-                                  	ret <- unlist(lapply(as.list(nodeNames),
-                                                  function(nn)
-                                                    return(any(eval(parse(text=nn, keep.source = FALSE)[[1]],
-                                                                                envir=isDataEnv)))))
-                                    if(is.null(ret))   ret <- logical(0)
-                                    return(ret)
+                                      if(includeMixed) {
+                                          f <- function(nn) {
+                                              vals <- eval(parse(text=nn, keep.source = FALSE)[[1]], envir=isDataEnv)
+                                              if(!any(vals))   return(0)
+                                              if(all(vals))    return(1)
+                                              return(2)
+                                          }
+                                      } else {
+                                          f <- function(nn) return(any(eval(parse(text=nn, keep.source = FALSE)[[1]], envir=isDataEnv)))
+                                      }
+                                      ret <- unlist(lapply(as.list(nodeNames), f))
+                                      if(is.null(ret))   ret <- logical(0)
+                                      return(ret)
                                   },
 
                                   getDependenciesList = function(returnNames = TRUE, sort = TRUE) {

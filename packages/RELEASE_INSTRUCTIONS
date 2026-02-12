@@ -85,11 +85,13 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 
 Officially this should be done on a development build of R, so this is just a first pass and we check with r-devel via winbuilder or r-hub below.
 
-Recently I've been getting this warning on my Ubuntu machine:
+Recently I've been getting warnings like this on my Ubuntu machine:
 
 ```
 Compilation used the following non-portable flag(s):
   ‘-Wdate-time’ ‘-Werror=format-security’ ‘-Wformat’
+Compilation used the following non-portable flag(s):
+  ‘-mno-omit-leaf-frame-pointer’
 ```
 
 Seems like it might just be my local system as it doesn't show up on winbuilder or r-hub checking.
