@@ -3567,7 +3567,7 @@ sampler_partial_mvn_pp <- nimbleFunction(
         mu1[,1] <<- mu1[,1] + (Sigma12 %*% tmp)[,1]
         ## Sigma11 <<- Sigma11 - Sigma12 %*% Sigma21
         tmp2 <<- forwardsolve(t(Sigma22), Sigma21)
-        Sigma11 <<- Sigma11 - t(tmp2)%*%tmp2
+        Sigma11 <<- Sigma11 - t(tmp2) %*% tmp2
         Sigma11 <<- chol(Sigma11)
         values(model, target) <<- rmnorm_chol(1, mu1[,1], Sigma11, prec_param = 0)
         model$calculate(calcNodes)
