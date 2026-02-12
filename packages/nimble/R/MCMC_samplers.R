@@ -3541,7 +3541,7 @@ sampler_partial_mvn_pp <- nimbleFunction(
         Sigma12 <- array(0, c(n1, n2))
         Sigma21 <- array(0, c(n2, n1))
         Sigma22 <- array(0, c(n2, n2))
-        tmp <- array(0, c(n2, 1))
+        tmp  <- array(0, c(n2,  1))
         tmp2 <- array(0, c(n2, n1))
         ind1 <- match(target, mvNodeComponents)
         ind2 <- match(given,  mvNodeComponents)
