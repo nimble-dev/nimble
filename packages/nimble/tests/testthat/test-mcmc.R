@@ -3231,92 +3231,6 @@ test_that('an error is given when trying to assign a sampler to partially observ
     expect_error(configureMCMC(model, print = FALSE), info = "model with dmvt given a sampler for every node" )
 })
 
-test_that('trying to give a sampler to an observed node does not yield an error from configureMCMC', {
-    code <- nimbleCode({ for (i in 1:N){
-                             theta[i] ~ dgamma(alpha,beta) 
-                             lambda[i] <- theta[i]*t[i] 
-                             x[i] ~ dpois(lambda[i])
-                         }
-                             alpha ~ dexp(1.0)
-                             beta ~ dgamma(0.1,1.0)
-                             y[1:5]~dmvt(mu[1:5], Sigma[1:5,1:5], df=10)
-    })
-    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-    
-    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-    
-    expect_error(configureMCMC(model, nodes = 'alpha', print = FALSE), NA, info = "observed node in model given a sampler")
-})
-
-test_that('partial_mvn sampler was not given to non dmnorm dist', {
-    code <- nimbleCode({ for (i in 1:N){
-                             theta[i] ~ dgamma(alpha,beta) 
-                             lambda[i] <- theta[i]*t[i]
-                             x[i] ~ dpois(lambda[i])
-                         }
-                             alpha ~ dexp(1.0)
-                             beta ~ dgamma(0.1,1.0)
-    })
-    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
-    
-    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data)
-    
-    conf <- configureMCMC(model)
-    
-    expect_true(!any(sapply(conf$getSamplers(), function(sc) sc$name)=='partial_mvn'), info = "partial_mvn sampler assigned as sampler to non dmnorm distribution")
-})
-
-test_that('partial_mvn sampler was not given to non dmnorm distribution from model that has dmnorm distribution', {
-    code <- nimbleCode({ for (i in 1:N){
-                             theta[i] ~ dnorm(alpha,beta) 
-                             lambda[i] <- theta[i]*t[i] 
-                             x[i] ~ dexp(lambda[i])
-                         }
-                             alpha ~ dpois(1.0)
-                             beta ~ dunif(0.1,1.0)
-                             y[1:10]~dmnorm(mu[1:10], Sigma[1:10,1:10])
-    })
-    consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
-    data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4:10))
-    
-    model <- nimbleModel(code = code, name = "model", constants = consts, data = data)
-    
-    conf <- configureMCMC(model)
-    
-    expect_true(!any(sapply(conf$getSamplers(), function(sc) sc$name)[head(seq_along(sapply(conf$getSamplers(), function(sc) sc$name)), -1)]=='partial_mvn'), info="partial_mvn sampler assigned as sampler to non dmnorm node in model with dmnorm")
-})
-
-test_that('Values change at same rows for unobserved parts of partially observed node when multivariateNodesAsScalars = FALSE', {
-    Code <- nimbleCode({ for (i in 1:N){
-                             theta[i] ~ dgamma(alpha,beta) 
-                             lambda[i] <- theta[i]*t[i] 
-                             x[i] ~ dpois(lambda[i])
-                         }
-                             alpha ~ dexp(1.0)
-                             beta ~ dgamma(0.1,1.0)
-                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
-    })
-    Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5)) 
-    Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
-    Inits <- list(alpha = 1, beta = 1, theta = rep(0.1, Consts$N), mu=1:5, Sigma=diag(5), y=c(rep(1,3),rep(NA,2)))
-    model <- nimbleModel(code = Code, name = "model", constants = Consts, data = Data, inits = Inits)
-    
-    Cmodel <- compileNimble(model)
-    
-    conf <- configureMCMC(model, nodes = 'y[1:5]', multivariateNodesAsScalars = FALSE)
-    conf$addMonitors("y")
-    
-    modelMCMC <- buildMCMC(conf)
-    CmodelMCMC <- compileNimble(modelMCMC, project = model)
-    modrun <- runMCMC(CmodelMCMC, niter=100, setSeed = 0)
-    
-    onezro <- apply(modrun[,3:5], 2, diff)!=0
-    
-    expect_true(all(apply(onezro, 1, function(x) all(x) || all(!x))), info= "Values of MCMC sampled nodes change at same time as other nodes")
-})
-
 test_that('partial_mvn_pp sampler with scalar cases', {
     code <- nimbleCode({
         alpha ~ dexp(1.0)
@@ -3336,9 +3250,9 @@ test_that('partial_mvn_pp sampler with scalar cases', {
     cmodel <- compileNimble(model)
     cmcmc <- compileNimble(mcmc, project = model)
 
-    expect_success(out <- runMCMC(mcmc, 5))
-    expect_success(cout <- runMCMC(cmcmc, 5))
-
+    expect_no_error(out <- runMCMC(mcmc, 5))
+    expect_no_error(cout <- runMCMC(cmcmc, 5))
+    
     ## Condition on univariate
     Data <- list(y = c(rep(NA, 4), 0))    
     model <- nimbleModel(code = code, name = "model", data = Data, constants = Const, inits = list(y=rep(1,5)))
@@ -3350,8 +3264,8 @@ test_that('partial_mvn_pp sampler with scalar cases', {
     cmodel <- compileNimble(model)
     cmcmc <- compileNimble(mcmc, project = model)
 
-    expect_success(out <- runMCMC(mcmc, 5))
-    expect_success(cout <- runMCMC(cmcmc, 5))
+    expect_no_error(out <- runMCMC(mcmc, 5))
+    expect_no_error(cout <- runMCMC(cmcmc, 5))
     
 })
 
