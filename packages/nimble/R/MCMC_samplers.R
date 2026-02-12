@@ -3467,7 +3467,7 @@ sampler_partial_mvn <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', default = getNimbleOption('MCMCmultivariateNodesAsScalars'))
+        multivariateNodesAsScalars <- extractControlElement(control, 'multivariateNodesAsScalars', defaultValue = getNimbleOption('MCMCmultivariateNodesAsScalars'))
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         isDataBool <- sapply(targetAsScalar, function(targetAsScalar) eval(parse(text = targetAsScalar)[[1]], envir = model$isDataEnv))

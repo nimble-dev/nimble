@@ -576,7 +576,7 @@ The prior_samples sampler provides two options for selection of the value to use
 
 If the default of sequential selection of values is used, and the number of MCMC iterations exceeds the length of the \code{samples} vector (scalar case) or the number of rows of the \code{samples} matrix, then \code{samples} will be recycled as necessary for the number of MCMC iterations.  A message to this effect is also printed at the beginning of the MCMC chain.
 
-Logically, prior_samples samplers might want to operate first, in advance of other samplers, on every MCMC iteration.  By default, at the time of MCMC building, all prior_samples samplers are re-ordered to appear first in the list of MCMC samplers.  This behaviour can be subverted, however, by setting nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE).
+Logically, prior_samples samplers might want to operate first, in advance of other samplers, on every MCMC iteration.  By default, at the time of MCMC building, all prior_samples samplers are re-ordered to appear first in the list of MCMC samplers.  This behavior can be subverted, however, by setting \code{nimbleOptions(MCMCorderPriorSamplesSamplersFirst = FALSE)}.
 
 The prior_samples sampler can be assigned to non-stochastic model nodes (nodes which are not assigned a prior distribution in the model). In fact, it is recommended that nodes being assigned a prior_samples are not provided with a prior distribution in the model, and rather, that these nodes only appear on the right-hand-side of model declaration lines.  In such case that a prior_samples sampler is assigned to a nodes with a prior distribution, the prior distribution will be overridden by the sample values provided to the sampler; however, the node will still be a stochastic node for other purposes, and will contribute to the model joint-density (using the sample values provided relative to the prior distribution), will have an MCMC sampler assigned to it by default, and also may introduce potential for confusion.  In this case, a message is issued at the time of MCMC building.
 
@@ -602,7 +602,7 @@ The posterior_predictive sampler accepts no control list arguments.
 \section{partial_mvn sampler}{
 
 
-The partial_mvn sampler is designed to sample multivariate normal distributions that are partially observed.  That is, some dimensions of the target node are observed data values, some dimensions are not data. Sampling is accomplished using either univariate or multivariate random walk Metropolis Hastings of the unobserved dimensions, as determined by the \code{multivariateNodesAsScalars} argument.
+The partial_mvn sampler is designed to sample multivariate normal distributions that are partially observed.  That is, some dimensions of the target node are observed data values, some dimensions are not data. For dimensions that have no data nodes dependent on them, sampling is done from the conditional multivariate normal predictive distribution. Otherwise, sampling is accomplished using either univariate or multivariate random walk Metropolis Hastings of the unobserved dimensions, as determined by the \code{multivariateNodesAsScalars} argument (or using the Barker sampler based on the `code{MCMCuseBarkerAsDefaultMV} nimble option).
 
 The \code{partial_mvn} sampler accepts the following control list elements:
 \itemize{
