@@ -3574,6 +3574,8 @@ sampler_partial_mvn_pp <- nimbleFunction(
             mu[,1] <<- model$getParam(mvNode, 'mean')
             mu1[,1] <<- mu[ind1,1]
             mu2[,1] <<- mu[ind2,1]
+        }
+        if(!sgConst | !muConst | firstRun) {
             mu1[,1] <<- mu1[,1] + (Sigma12 %*% backsolve(Sigma22, forwardsolve(t(Sigma22), values(model,given) - mu2[,1])))[,1]
         }
         if(firstRun)   firstRun <<- FALSE
