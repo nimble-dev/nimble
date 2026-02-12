@@ -3529,6 +3529,8 @@ sampler_partial_mvn_pp <- nimbleFunction(
         mvNodeComponents <- model$expandNodeNames(mvNode, returnScalarComponents = TRUE)
         given <- setdiff(mvNodeComponents, target)
         calcNodes <- model$getDependencies(target, downstream = TRUE, includePredictive = TRUE)
+        cholNode <- deparse(model$getParamExpr(mvNode, 'cholesky'))
+        meanNode <- deparse(model$getParamExpr(mvNode, 'mean'    ))
         ## numeric value generation
         n1 <- length(target)
         n2 <- length(given)
@@ -3541,10 +3543,12 @@ sampler_partial_mvn_pp <- nimbleFunction(
         Sigma12 <- array(0, c(n1, n2))
         Sigma21 <- array(0, c(n2, n1))
         Sigma22 <- array(0, c(n2, n2))
-        tmp  <- array(0, c(n2,  1))
-        tmp2 <- array(0, c(n2, n1))
+        tmp <- array(0, c(n2, n1))
         ind1 <- match(target, mvNodeComponents)
         ind2 <- match(given,  mvNodeComponents)
+        sgConst <- length(model$getParents(cholNode, self = TRUE, upstream = TRUE, stochOnly = TRUE)) == 0
+        muConst <- length(model$getParents(meanNode, self = TRUE, upstream = TRUE, stochOnly = TRUE)) == 0
+        firstRun <- TRUE
         ## checks
         if(length(mvNode) != 1)                         stop('unexpected error in sampler_partial_mvn_pp')
         if(model$getDistribution(mvNode) != 'dmnorm')   stop('unexpected error in sampler_partial_mvn_pp')
@@ -3552,29 +3556,35 @@ sampler_partial_mvn_pp <- nimbleFunction(
         if(n1*n2 == 0)                                  stop('unexpected error in sampler_partial_mvn_pp')
     },
     run = function() {
-        mu[,1] <<- model$getParam(mvNode, 'mean')
-        Sigma  <<- model$getParam(mvNode, 'cov' )
-        mu1[,1] <<- mu[ind1,1]
-        mu2[,1] <<- mu[ind2,1]
-        Sigma11[1:n1,1:n1] <<- Sigma[ind1, ind1]
-        Sigma12[1:n1,1:n2] <<- Sigma[ind1, ind2]
-        Sigma21[1:n2,1:n1] <<- Sigma[ind2, ind1]
-        Sigma22[1:n2,1:n2] <<- Sigma[ind2, ind2]
-        Sigma22 <<- chol(Sigma22)
         ## Sigma12 <<- Sigma12 %*% inverse(Sigma22)
         ## mu1[,1] <<- mu1[,1] + (Sigma12 %*% (values(model,given) - mu2[,1]))[,1]
-        tmp[,1] <<- backsolve(Sigma22, forwardsolve(t(Sigma22), values(model,given) - mu2[,1]))
-        mu1[,1] <<- mu1[,1] + (Sigma12 %*% tmp)[,1]
         ## Sigma11 <<- Sigma11 - Sigma12 %*% Sigma21
-        tmp2 <<- forwardsolve(t(Sigma22), Sigma21)
-        Sigma11 <<- Sigma11 - t(tmp2) %*% tmp2
-        Sigma11 <<- chol(Sigma11)
+        if(!sgConst | firstRun) {
+            Sigma <<- model$getParam(mvNode, 'cov' )
+            Sigma11[1:n1,1:n1] <<- Sigma[ind1, ind1]
+            Sigma12[1:n1,1:n2] <<- Sigma[ind1, ind2]
+            Sigma21[1:n2,1:n1] <<- Sigma[ind2, ind1]
+            Sigma22[1:n2,1:n2] <<- Sigma[ind2, ind2]
+            Sigma22 <<- chol(Sigma22)
+            tmp <<- forwardsolve(t(Sigma22), Sigma21)
+            Sigma11 <<- Sigma11 - t(tmp) %*% tmp
+            Sigma11 <<- chol(Sigma11)
+        }
+        if(!muConst | firstRun) {
+            mu[,1] <<- model$getParam(mvNode, 'mean')
+            mu1[,1] <<- mu[ind1,1]
+            mu2[,1] <<- mu[ind2,1]
+            mu1[,1] <<- mu1[,1] + (Sigma12 %*% backsolve(Sigma22, forwardsolve(t(Sigma22), values(model,given) - mu2[,1])))[,1]
+        }
+        if(firstRun)   firstRun <<- FALSE
         values(model, target) <<- rmnorm_chol(1, mu1[,1], Sigma11, prec_param = 0)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
-        reset = function() { }
+        reset = function() {
+            firstRun <<- TRUE
+        }
     )
 )
 
