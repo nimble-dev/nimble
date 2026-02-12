@@ -3033,7 +3033,7 @@ test_that('partial_mvn sampler was given to dmnorm distribution when dependent o
                              for(i in 1:5) {
                                  mu[i] <- alpha+i
                              }
-                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+                             y[1:5]~dmnorm(mu[1:5], cov = Sigma[1:5,1:5])
     })
     Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
     Data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4,5))
@@ -3061,7 +3061,7 @@ test_that('partial_mvn sampler was given to dmnorm distribution when node is int
                              for(i in 1:10) {
                                  mu[i] <- alpha+i
                              }
-                             y[1:10]~dmnorm(mu[1:10], Sigma[1:10,1:10])
+                             y[1:10]~dmnorm(mu[1:10], cov = Sigma[1:10,1:10])
                              for(i in 1:3)
                              z[i] ~ dnorm(y[i], 1)
     })
@@ -3091,7 +3091,7 @@ test_that('partial_mvn sampler was given to dmnorm distribution when not depende
                          }
                              alpha ~ dpois(1.0)
                              beta ~ dunif(0.1,1.0)
-                             y[1:10]~dmnorm(mu[1:10], Sigma[1:10,1:10])
+                             y[1:10]~dmnorm(mu[1:10], cov = Sigma[1:10,1:10])
     })
     consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
     data <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22), y=c(rep(NA,3),4:10))
@@ -3116,7 +3116,7 @@ test_that('partial_mvn sampler was given to dmnorm distribution when intermediat
                              for(i in 1:5) {
                                  mu[i] <- alpha+i
                              }
-                             y[1:5]~dmnorm(mu[1:5], Sigma[1:5,1:5])
+                             y[1:5]~dmnorm(mu[1:5], cov = Sigma[1:5,1:5])
                              h[1:5]~dmvt(y[1:5], Sigma[1:5,1:5], df = 10)
     })
     Consts <- list(N = 10, t = c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 1.05, 2.1, 10.5))
@@ -3257,7 +3257,6 @@ test_that('partial_mvn_pp sampler with scalar cases', {
     Data <- list(y = c(rep(NA, 4), 0))    
     model <- nimbleModel(code = code, name = "model", data = Data, constants = Const, inits = list(y=rep(1,5)))
 
-    ## Sample univariate
     conf <- configureMCMC(model, nodes = 'y[1:5]', monitors = 'y')
     mcmc <- buildMCMC(conf)
 
@@ -3269,8 +3268,41 @@ test_that('partial_mvn_pp sampler with scalar cases', {
     
 })
 
+test_that('correctness of partial_mvn_pp', {
+    set.seed(1)
+    code <- nimbleCode({
+        y[1:N]~dmnorm(mu[1:N], cov = Sigma[1:N,1:N])
+    })
+    N <- 10
+    tmp <- matrix(rnorm(N^2), N)
+    Sigma <- crossprod(tmp)
+    Consts <- list(N = N, mu = rnorm(N), Sigma = Sigma)
+    y <- rnorm(N)
+    missing <- c(2,4,7)
+    y[missing] <- NA
+    Data <- list(y = y)
+    
+    model <- nimbleModel(code = code, name = "model", constants = Consts, data = Data, inits = list(y = rnorm(N)))
+    cmodel <- compileNimble(model)
+    mcmc <- buildMCMC(model, monitors='y')
+    cmcmc <- compileNimble(mcmc)
+    samples <- runMCMC(cmcmc, 100000)
 
+    nonmissing <- c(1,3,5:6,8:10)
+    mu1 <- Consts$mu[missing]
+    mu2 <- Consts$mu[nonmissing]
+    Sigma11 <- Sigma[missing,missing]
+    Sigma22 <- Sigma[nonmissing,nonmissing]
+    Sigma12 <- Sigma[missing,nonmissing]
+    mu1_cond <- mu1 + Sigma12 %*% solve(Sigma22, y[nonmissing]-mu2)
+    Sigma_cond <- Sigma11 - Sigma12 %*% solve(Sigma22, t(Sigma12))
 
+    colnames(samples) <- NULL
+    expect_equal(colMeans(samples[,missing]), mu1_cond[,1], tol = .005)
+    expect_equal(cov(samples[,missing]), Sigma_cond, tol = .05)
+})
+
+ 
 test_that('asymptotic correct results from conjugate gamma - CAR_normal sampler', {
     num1 <- c(1,   2,      2,      1)
     adj1 <- c(2,   1, 3,   2, 4,   3)
