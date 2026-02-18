@@ -160,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.0</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -912,7 +912,8 @@ Named elements in the <code>control</code> argument will be used for all default
 <span id="cb166-14"><a href="cha-mcmc.html#cb166-14" tabindex="-1"></a>pumpData <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))</span>
 <span id="cb166-15"><a href="cha-mcmc.html#cb166-15" tabindex="-1"></a>pumpInits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">beta =</span> <span class="dv">1</span>,</span>
 <span id="cb166-16"><a href="cha-mcmc.html#cb166-16" tabindex="-1"></a>                  <span class="at">theta =</span> <span class="fu">rep</span>(<span class="fl">0.1</span>, pumpConsts<span class="sc">$</span>N))</span>
-<span id="cb166-17"><a href="cha-mcmc.html#cb166-17" tabindex="-1"></a>pumpModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(pumpCode, pumpConsts, pumpData, pumpInits)</span></code></pre></div>
+<span id="cb166-17"><a href="cha-mcmc.html#cb166-17" tabindex="-1"></a>pumpModel <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(pumpCode, pumpConsts, pumpData, pumpInits)</span>
+<span id="cb166-18"><a href="cha-mcmc.html#cb166-18" tabindex="-1"></a>cpumpModel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(pumpModel)</span></code></pre></div>
 <p>Here’s the use of the <code>logProb</code> derived quantity specified directly as an argument to <code>configureMCMC</code>.</p>
 <div class="sourceCode" id="cb167"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb167-1"><a href="cha-mcmc.html#cb167-1" tabindex="-1"></a>conf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(pumpModel, <span class="at">logProb =</span> <span class="fu">c</span>(<span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>))</span></code></pre></div>
 <pre><code>## ===== Monitors =====
@@ -927,7 +928,9 @@ Named elements in the <code>control</code> argument will be used for all default
 ## - logProb (1)</code></pre>
 <div class="sourceCode" id="cb169"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb169-1"><a href="cha-mcmc.html#cb169-1" tabindex="-1"></a>conf<span class="sc">$</span><span class="fu">printDerivedQuantities</span>()</span></code></pre></div>
 <pre><code>## [1] derived quantity: logProb,  execution interval: thin,  nodes: c(alpha, beta)</code></pre>
-<div class="sourceCode" id="cb171"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb171-1"><a href="cha-mcmc.html#cb171-1" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="at">niter =</span> <span class="dv">100</span>, <span class="at">thin =</span> <span class="dv">20</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb171"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb171-1"><a href="cha-mcmc.html#cb171-1" tabindex="-1"></a>mcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb171-2"><a href="cha-mcmc.html#cb171-2" tabindex="-1"></a>cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc, <span class="at">project =</span> pumpModel)</span>
+<span id="cb171-3"><a href="cha-mcmc.html#cb171-3" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc, <span class="at">niter =</span> <span class="dv">100</span>, <span class="at">thin =</span> <span class="dv">20</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##          alpha      beta
 ## [1,] 0.8545092 0.7039245
@@ -961,7 +964,9 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 ##   - theta[]  (10 elements)
 ## ===== DerivedQ =====
 ## - logProb (1)</code></pre>
-<div class="sourceCode" id="cb176"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb176-1"><a href="cha-mcmc.html#cb176-1" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb176"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb176-1"><a href="cha-mcmc.html#cb176-1" tabindex="-1"></a>mcmc2 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb176-2"><a href="cha-mcmc.html#cb176-2" tabindex="-1"></a>cmcmc2 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc2)</span>
+<span id="cb176-3"><a href="cha-mcmc.html#cb176-3" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc2, <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##          alpha      beta
 ## [1,] 0.7408072 0.4136291
@@ -986,7 +991,9 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 ##   - theta[]  (10 elements)
 ## ===== DerivedQ =====
 ## - logProb (1)</code></pre>
-<div class="sourceCode" id="cb180"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb180-1"><a href="cha-mcmc.html#cb180-1" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb180"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb180-1"><a href="cha-mcmc.html#cb180-1" tabindex="-1"></a>mcmc3 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb180-2"><a href="cha-mcmc.html#cb180-2" tabindex="-1"></a>cmcmc3 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc3)</span>
+<span id="cb180-3"><a href="cha-mcmc.html#cb180-3" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc3, <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##          alpha     beta
 ## [1,] 0.6894996 1.078876
@@ -1017,7 +1024,9 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 ##   - theta[]  (10 elements)
 ## ===== DerivedQ =====
 ## - logProb (1)</code></pre>
-<div class="sourceCode" id="cb184"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb184-1"><a href="cha-mcmc.html#cb184-1" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb184"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb184-1"><a href="cha-mcmc.html#cb184-1" tabindex="-1"></a>mcmc4 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb184-2"><a href="cha-mcmc.html#cb184-2" tabindex="-1"></a>cmcmc4 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc4, <span class="at">project =</span> pumpModel, <span class="at">resetFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb184-3"><a href="cha-mcmc.html#cb184-3" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc4, <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##          alpha      beta
 ## [1,] 0.7352728 0.4605132
@@ -1048,7 +1057,9 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 ##   - theta[]  (10 elements)
 ## ===== DerivedQ =====
 ## - logProb (1)</code></pre>
-<div class="sourceCode" id="cb188"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb188-1"><a href="cha-mcmc.html#cb188-1" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb188"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb188-1"><a href="cha-mcmc.html#cb188-1" tabindex="-1"></a>mcmc5 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb188-2"><a href="cha-mcmc.html#cb188-2" tabindex="-1"></a>cmcmc5 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc5, <span class="at">project =</span> pumpModel, <span class="at">resetFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb188-3"><a href="cha-mcmc.html#cb188-3" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc5, <span class="at">niter =</span> <span class="dv">3</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##          alpha      beta
 ## [1,] 0.7065300 0.9813577
@@ -1080,7 +1091,9 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 ## ===== DerivedQ =====
 ## - mean (1)
 ## - variance (1)</code></pre>
-<div class="sourceCode" id="cb192"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb192-1"><a href="cha-mcmc.html#cb192-1" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="at">niter =</span> <span class="dv">5</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb192"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb192-1"><a href="cha-mcmc.html#cb192-1" tabindex="-1"></a>mcmc6 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb192-2"><a href="cha-mcmc.html#cb192-2" tabindex="-1"></a>cmcmc6 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc6, <span class="at">project =</span> pumpModel, <span class="at">resetFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb192-3"><a href="cha-mcmc.html#cb192-3" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc6, <span class="at">niter =</span> <span class="dv">5</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##        theta[1]   theta[2]   theta[3]   theta[4]  theta[5]  theta[6]  theta[7]
 ## [1,] 0.06065150 0.13464632 0.04842264 0.10152348 0.8376498 0.4999227 1.3984057
@@ -1170,7 +1183,11 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 ## ===== Comments =====</code></pre>
 <div class="sourceCode" id="cb200"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb200-1"><a href="cha-mcmc.html#cb200-1" tabindex="-1"></a>conf<span class="sc">$</span><span class="fu">addDerivedQuantity</span>(<span class="st">&#39;predictive&#39;</span>, <span class="at">nodes =</span> <span class="fu">c</span>(<span class="st">&#39;muSq&#39;</span>, <span class="st">&#39;z&#39;</span>))</span>
 <span id="cb200-2"><a href="cha-mcmc.html#cb200-2" tabindex="-1"></a></span>
-<span id="cb200-3"><a href="cha-mcmc.html#cb200-3" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="dv">10</span>)</span></code></pre></div>
+<span id="cb200-3"><a href="cha-mcmc.html#cb200-3" tabindex="-1"></a>mcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb200-4"><a href="cha-mcmc.html#cb200-4" tabindex="-1"></a></span>
+<span id="cb200-5"><a href="cha-mcmc.html#cb200-5" tabindex="-1"></a>ctoyModel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(toyModel)</span>
+<span id="cb200-6"><a href="cha-mcmc.html#cb200-6" tabindex="-1"></a>cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc, <span class="at">project =</span> toyModel)</span>
+<span id="cb200-7"><a href="cha-mcmc.html#cb200-7" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc, <span class="dv">10</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##             mu
 ##  [1,] 1.483458
@@ -1211,7 +1228,9 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 <span id="cb204-2"><a href="cha-mcmc.html#cb204-2" tabindex="-1"></a>                        <span class="at">interval =</span> <span class="dv">5</span>,</span>
 <span id="cb204-3"><a href="cha-mcmc.html#cb204-3" tabindex="-1"></a>                        <span class="at">nodes =</span> <span class="st">&#39;z&#39;</span>)</span>
 <span id="cb204-4"><a href="cha-mcmc.html#cb204-4" tabindex="-1"></a></span>
-<span id="cb204-5"><a href="cha-mcmc.html#cb204-5" tabindex="-1"></a><span class="fu">runMCMC</span>(<span class="fu">buildMCMC</span>(conf), <span class="dv">10</span>)</span></code></pre></div>
+<span id="cb204-5"><a href="cha-mcmc.html#cb204-5" tabindex="-1"></a>mcmc2 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(conf)</span>
+<span id="cb204-6"><a href="cha-mcmc.html#cb204-6" tabindex="-1"></a>cmcmc2 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc2, <span class="at">project =</span> toyModel, <span class="at">resetFunctions =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb204-7"><a href="cha-mcmc.html#cb204-7" tabindex="-1"></a><span class="fu">runMCMC</span>(cmcmc2, <span class="dv">10</span>)</span></code></pre></div>
 <pre><code>## $samples
 ##             mu
 ##  [1,] 4.437618
