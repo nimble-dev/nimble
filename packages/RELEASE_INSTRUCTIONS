@@ -217,7 +217,7 @@ Add new tarball to /src/contrib and link to it from `archived-versions-of-nimble
 
 run `Rscript -e "tools::write_PACKAGES()"` in that `/src/contrib` to set the location up for installs by users.
 
-Move most recent older tarball to /src/contrib/Archive.
+Move most recent older tarball to /src/contrib/Archive (using `git mv`).
 
 Update `archived-versions-of-nimble-and-the-user-manual.qmd` to reflect the new version and above file changes.
 
@@ -249,11 +249,15 @@ Using the blurb, format as email to send to `nimble-users` and `nimble-announce`
 
 Make a qmd file with a blog post about the release in `blog`. Format similar to previous posts. Have it include the "R" category so that it is picked up by R-bloggers. Note that we have `blog/index.qmd` set up so that an overall feed is produced at `blog/index.xml` and a separate one is at `blog/index-r.xml`. This allows us to make blog posts that are not picked up by R-bloggers by not adding the "R" category.
 
-It's best to point with a hyperlink to the info on versions/news on webpage not to NEWS file. 
+It's best to point with a hyperlink to the info on versions/news on webpage not to NEWS file.
 
-Git add and commit the file.
+Add the new post info to `_quarto.yml`.
 
-Before running `quarto publish gh-pages`, copy `blog/index-r.xml` to `feed`, as R-bloggers looks at https://r-nimble.org/feed.
+Git add and commit the files.
+
+Not sure how I make sure the new blog post gets into feed files and therefore at what stage I might need to copy  `blog/index-r.xml` to `feed`.
+
+I have `feed` symlinked to `blog/index-r.xml`, as R-bloggers looks at https://r-nimble.org/feed. When I publish the site, I think `/feed` has the new blog post info, but I am not sure of the mechanics of how this happens.
 
 Run `quarto publish gh-pages`. Check that post appears on site, including in left sidebar.
 
