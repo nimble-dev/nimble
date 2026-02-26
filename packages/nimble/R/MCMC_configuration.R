@@ -1081,7 +1081,15 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
             if(length(samplerConfs) == 0) return(integer())
             nodes <- model$expandNodeNames(nodes, returnScalarComponents = TRUE, sort = TRUE)
             samplerConfNodesList <- lapply(samplerConfs, function(sc) sc$targetAsScalar)
-            return(unique(unlist(lapply(nodes, function(n) which(unlist(lapply(samplerConfNodesList, function(scn) n %in% scn)))))))
+
+            # Match requested nodes in the flattened node list and map matches back to sampler indices.
+            samplerIndices <- 1:length(samplerConfs)
+            samplerConfNodesLengths <- unlist(lapply(samplerConfNodesList, length))
+            flatSamplerConfNodes <- unlist(samplerConfNodesList)
+            flatSamplerIndices <- rep.int(samplerIndices, times = samplerConfNodesLengths)
+            flatNodePositions <- unlist(lapply(nodes, function(n) which(n == flatSamplerConfNodes)))
+            matchedSamplerIndices <- flatSamplerIndices[flatNodePositions]
+            unique(matchedSamplerIndices)
         },
 
         getSamplerDefinition = function(ind, print = FALSE) {
