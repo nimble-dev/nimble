@@ -3,17 +3,17 @@
  * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
  * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
  * Duncan Temple Lang.
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, a copy is available at
  * https://www.R-project.org/Licenses/
@@ -46,7 +46,7 @@ vector<int> getSEXPdims(SEXP Sx) {
   if(!Rf_isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
   if(!Rf_isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
   if(!Rf_isArray(Sx) && !Rf_isMatrix(Sx)) {
-    vector<int> ans; 
+    vector<int> ans;
     ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
   }
   return(SEXP_2_vectorInt(Rf_getAttrib(Sx, R_DimSymbol), 0));
@@ -54,7 +54,7 @@ vector<int> getSEXPdims(SEXP Sx) {
 
 string STRSEXP_2_string(SEXP Ss, int i) {
   if(!Rf_isString(Ss)) {
-    PRINTF("Error: STRSEXP_2_string called for SEXP that is not a string!\n"); 
+    PRINTF("Error: STRSEXP_2_string called for SEXP that is not a string!\n");
     return(string(""));
   }
   if(LENGTH(Ss) <= i) {
@@ -68,7 +68,7 @@ string STRSEXP_2_string(SEXP Ss, int i) {
 
 void STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans) {
   if(!Rf_isString(Ss)) {
-    PRINTF("Error: STRSEXP_2_vectorString called for SEXP that is not a string!\n"); 
+    PRINTF("Error: STRSEXP_2_vectorString called for SEXP that is not a string!\n");
     return;
   }
   int nn = LENGTH(Ss);
@@ -122,7 +122,7 @@ double SEXP_2_double(SEXP Sn, int i) {
   if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_double called for element %i >= length of %i.\n", i, LENGTH(Sn));
   if(Rf_isReal(Sn)) {
     return(REAL(Sn)[i]);
-  } 
+  }
   if(Rf_isInteger(Sn) || Rf_isLogical(Sn)) {
     if(Rf_isInteger(Sn))
       return(static_cast<double>(INTEGER(Sn)[i]));
@@ -214,7 +214,7 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     if(offset == 0) copy(iSn, iSn + nn, ans.begin());
     else {
-      std::transform(iSn, iSn + nn, ans.begin(), opIntegerShift(offset)); 
+      std::transform(iSn, iSn + nn, ans.begin(), opIntegerShift(offset));
     }
   } else {
     if(Rf_isReal(Sn)) {
@@ -288,7 +288,7 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 
 // bool checkString(SEXP Ss, int len) {
 //   if(!Rf_isString(Ss)) {
-//     PRINTF("Error: something that was supposed to be a string is not\n"); 
+//     PRINTF("Error: something that was supposed to be a string is not\n");
 //     return(false);
 //   }
 //   if(LENGTH(Ss) < len) {
@@ -322,10 +322,10 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //     if(nn > lengthCpp) nn = lengthCpp;
 //   }
 //   double *value = REAL(Svalue);
-//   std::copy(value, value + nn, &(vecPtr->v[0]) );	
+//   std::copy(value, value + nn, &(vecPtr->v[0]) );
 //   return(R_NilValue);
 // }
-  
+
 // SEXP getVec(SEXP Sextptr) {
 //   if(!R_ExternalPtrAddr(Sextptr)) {
 //     PRINTF("Error: Sextptr is not a valid external pointer\n");
@@ -335,12 +335,12 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //   NimArrBase<double> *vecPtr = static_cast< NimArrBase<double> * >(R_ExternalPtrAddr(Sextptr));
 
 //   int len = vecPtr->size();
-//   SEXP Sans;  
-  
+//   SEXP Sans;
+
 //   PROTECT(Sans = Rf_allocVector(REALSXP, len));
 //   //std::copy(vecPtr->v.begin(), vecPtr->v.end() , REAL(Sans) );
 //   std::copy(vecPtr->v, vecPtr->v + len , REAL(Sans) );
-  
+
 //   int numDims = vecPtr->numDims();
 //   if(numDims > 1) {
 //     SEXP Sdim;
@@ -350,7 +350,7 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //     UNPROTECT(2);
 //   } else {
 //     UNPROTECT(1);
-//   } 
+//   }
 //  return(Sans);
 // }
 
@@ -362,11 +362,11 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //   NimArrBase<int> *vecPtr = *static_cast< NimArrBase<int> ** >(R_ExternalPtrAddr(Sextptr));
 //   SEXP Sans;
 //   int len = vecPtr->size();
-  
+
 //   PROTECT(Sans = Rf_allocVector(REALSXP, len));
 //   //  std::copy(vecPtr->v.begin(), vecPtr->v.end(), INTEGER(Sans) );
-//   std::copy(vecPtr->v, vecPtr->v + len, INTEGER(Sans) );  
-  
+//   std::copy(vecPtr->v, vecPtr->v + len, INTEGER(Sans) );
+
 //   int numDims = vecPtr->numDims();
 //   if(numDims > 1) {
 //     SEXP Sdim;
@@ -376,7 +376,7 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //     UNPROTECT(2);
 //   } else {
 //     UNPROTECT(1);
-//   } 
+//   }
 //  return(Sans);
 // }
 
@@ -447,7 +447,7 @@ SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
     else if(cRefNum == 2)
         cPtr = (*static_cast<int**> ( vPtr ) );
     else return(R_NilValue);
-    
+
     populate_SEXP_2_int_internal(cPtr, rScalar);
     return(R_NilValue);
 }
@@ -526,7 +526,7 @@ SEXP extract_double_2_SEXP(SEXP rPtr, SEXP refNum){
     }
     SEXP Sans;
     PROTECT(Sans = Rf_allocVector(REALSXP, 1));
-    REAL(Sans)[0] = (*cPtr);    
+    REAL(Sans)[0] = (*cPtr);
     UNPROTECT(1);
     return(Sans);
 }
@@ -597,15 +597,15 @@ SEXP fastMatrixInsert(SEXP matrixInto, SEXP matrix, SEXP rowStart, SEXP colStart
 	PROTECT(RdimInto);
 	int Iinto = INTEGER(RdimInto)[0];
 	int Jinto = INTEGER(RdimInto)[1];
-	
+
 	SEXP Rdim = Rf_getAttrib(matrix, R_DimSymbol);
 	PROTECT(Rdim);
 	int I = INTEGER(Rdim)[0];
 	int J = INTEGER(Rdim)[1];
-	
+
 	int cRowStart = INTEGER(rowStart)[0] - 1;
 	int cColStart = INTEGER(colStart)[0] - 1;
-	
+
 	if((I + cRowStart > Iinto) || (J + cColStart > Jinto)){
 		UNPROTECT(2);
 		PRINTF("Matrix copying not allowed for given indices\n");
@@ -628,12 +628,12 @@ SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,
 	for(int i = 0; i < cNRows; i++){
 	SEXP row = PROTECT(Rf_allocVector(REALSXP, len) ) ;
 	Rf_setAttrib(row, R_DimSymbol, dims);
-		for(int j = 0; j <  len; j++){		
+		for(int j = 0; j <  len; j++){
 			REAL(row)[j] = REAL(matrix)[i + cNRows * j];
 			}
 		SET_VECTOR_ELT(list, i, row);
 	UNPROTECT(1);
-	}	
+	}
 	return(R_NilValue);
 }
 
@@ -646,12 +646,12 @@ SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  S
 	for(int i = 0; i < cNRows; i++){
 	SEXP row = PROTECT(Rf_allocVector(INTSXP, len) ) ;
 	Rf_setAttrib(row, R_DimSymbol, dims);
-		for(int j = 0; j <  len; j++){		
+		for(int j = 0; j <  len; j++){
 			INTEGER(row)[j] = INTEGER(matrix)[i + cNRows * j];
 			}
 		SET_VECTOR_ELT(list, i, row);
 	UNPROTECT(1);
-	}	
+	}
 	return(R_NilValue);
 }
 
@@ -685,10 +685,10 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent
   cdf[N] = sum + 1;
   vector<double> sampP(c_samps + 1);
   sampP[0] = 1 - exp( log( unif_rand() ) / c_samps );
-	
+
   sampP[0] = sampP[0] * sum;
   sampP[c_samps] = sum + 1;
-	
+
   for(int i = 1; i < c_samps ; i++)
     sampP[i] = (1 - exp(  log(unif_rand()) / (c_samps - i)   ) )* (sum - sampP[i-1]) + sampP[i-1];
   int curP = 0;
@@ -699,17 +699,17 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent
 	curP++;
       }
     }
-    return;	
+    return;
   }
   // unsort must be true to get here
-  vector<double> sortAns(c_samps);	
+  vector<double> sortAns(c_samps);
   for(int i = 1; i <= N; i++){
     while(cdf[i] > (sampP[curP])){
       sortAns[curP] = i;
       curP++;
     }
   }
-	
+
   vector<int> newOrder(c_samps);
   for(int i = 0; i < c_samps;i++)
     newOrder[i] = i;
@@ -875,7 +875,7 @@ SEXP varAndIndices_2_LANGSXP(const varAndIndicesClass &varAndInds) {
       } else {
 	_nimble_global_output<<"problem in varAndIndices_2_LANGSXP: there is badly formed input\n";
 	nimble_print_to_R(_nimble_global_output);
-	
+
       }
     }
   }
@@ -903,7 +903,7 @@ SEXP makeNewNimbleList(SEXP S_listName) {
   SEXP SnimbleInternalFunctionsEnv;
   SEXP call;
   SnimbleInternalFunctionsEnv =
-    PROTECT(Rf_eval(PROTECT(Rf_findVar(Rf_install("nimbleInternalFunctions"), R_GlobalEnv)), R_GlobalEnv));
+    PROTECT(Rf_eval(PROTECT(NIM_FINDVAR(Rf_install("nimbleInternalFunctions"), R_GlobalEnv)), R_GlobalEnv));
   call = PROTECT(Rf_allocVector(LANGSXP, 2));
   SETCAR(call, Rf_install("makeNewNimListSEXPRESSIONFromC"));
   SETCADR(call, S_listName);
