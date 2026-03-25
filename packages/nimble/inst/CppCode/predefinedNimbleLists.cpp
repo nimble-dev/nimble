@@ -111,22 +111,22 @@ void OptimResultNimbleList::copyFromSEXP(SEXP S_nimList_) {
   R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
-  PROTECT(S_par = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+  PROTECT(S_par = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                     Rf_install("par")));
   PROTECT(S_value =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("value")));
   PROTECT(S_counts =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("counts")));
   PROTECT(S_convergence =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("convergence")));
   PROTECT(S_message =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("message")));
   PROTECT(S_hessian =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("hessian")));
   SEXP_2_NimArr<1>(S_par, par);
   value = SEXP_2_double(S_value);
@@ -273,50 +273,50 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_trace =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("trace")));
   PROTECT(S_fnscale =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("fnscale")));
   PROTECT(S_parscale =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("parscale")));
   PROTECT(S_ndeps =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("ndeps")));
   PROTECT(S_maxit =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("maxit")));
   PROTECT(S_abstol =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("abstol")));
   PROTECT(S_reltol =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("reltol")));
   PROTECT(S_alpha =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("alpha")));
-  PROTECT(S_beta = Rf_findVarInFrame(
+  PROTECT(S_beta = NIM_FINDVARINFRAME(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("beta")));
   PROTECT(S_gamma =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("gamma")));
   PROTECT(S_REPORT =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("REPORT")));
-  PROTECT(S_type = Rf_findVarInFrame(
+  PROTECT(S_type = NIM_FINDVARINFRAME(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("type")));
-  PROTECT(S_lmm = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+  PROTECT(S_lmm = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                     Rf_install("lmm")));
   PROTECT(S_factr =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("factr")));
   PROTECT(S_pgtol =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("pgtol")));
-  PROTECT(S_temp = Rf_findVarInFrame(
+  PROTECT(S_temp = NIM_FINDVARINFRAME(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("temp")));
-  PROTECT(S_tmax = Rf_findVarInFrame(
+  PROTECT(S_tmax = NIM_FINDVARINFRAME(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("tmax")));
   trace = SEXP_2_int(S_trace);
   fnscale = SEXP_2_double(S_fnscale);
@@ -527,13 +527,13 @@ void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_value =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("value")));
   PROTECT(S_jacobian =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("jacobian")));
   PROTECT(S_hessian =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("hessian")));
   SEXP_2_NimArr<1>(S_value, value);
   SEXP_2_NimArr<2>(S_jacobian, jacobian);
@@ -649,12 +649,12 @@ void waicNimbleList::copyFromSEXP(SEXP S_nimList_) {
   R_PreserveObject(RObjectPointer = S_nimList_);
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
-  PROTECT(S_WAIC = Rf_findVarInFrame(
+  PROTECT(S_WAIC = NIM_FINDVARINFRAME(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("WAIC")));
-  PROTECT(S_lppd = Rf_findVarInFrame(
+  PROTECT(S_lppd = NIM_FINDVARINFRAME(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("lppd")));
   PROTECT(S_pWAIC =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("pWAIC")));
   WAIC = SEXP_2_double(S_WAIC);
   lppd = SEXP_2_double(S_lppd);
@@ -775,39 +775,39 @@ void waicDetailsNimbleList::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_marginal =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("marginal")));
   PROTECT(S_niterMarginal =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("niterMarginal")));
-  PROTECT(S_thin = Rf_findVarInFrame(
+  PROTECT(S_thin = NIM_FINDVARINFRAME(
               PROTECT(GET_SLOT(S_nimList_, S__dot_xData)), Rf_install("thin")));
   PROTECT(S_online =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("online")));
   PROTECT(S_nburnin_extra =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("nburnin_extra")));
   PROTECT(S_WAIC_partialMC =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("WAIC_partialMC")));
   PROTECT(S_lppd_partialMC =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("lppd_partialMC")));
   PROTECT(S_pWAIC_partialMC =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("pWAIC_partialMC")));
   PROTECT(S_niterMarginal_partialMC =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("niterMarginal_partialMC")));
   PROTECT(S_WAIC_elements =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("WAIC_elements")));
   PROTECT(S_lppd_elements =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("lppd_elements")));
   PROTECT(S_pWAIC_elements =
-              Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+              NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                                 Rf_install("pWAIC_elements")));
   marginal = SEXP_2_bool(S_marginal);
   niterMarginal = SEXP_2_double(S_niterMarginal);
@@ -987,13 +987,13 @@ void AGHQuad_params::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_names =
-          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+          NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("names")));
   PROTECT(S_estimate =
-          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+          NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("estimate")));
   PROTECT(S_stdError =
-          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+          NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("stdError")));
   STRSEXP_2_vectorString(S_names, names);
   SEXP_2_NimArr<1>(S_estimate, estimate);
@@ -1042,7 +1042,7 @@ void AGHQuad_params::copyFromRobject(SEXP Robject) {
   SETUP_S_xData;
   // There is no macro for a string vector, so do it by hand here
   std::string svarName("names");
-  STRSEXP_2_vectorString(PROTECT(Rf_findVarInFrame(S_xData,
+  STRSEXP_2_vectorString(PROTECT(NIM_FINDVARINFRAME(S_xData,
                                                    Rf_install("names"))),
                          *static_cast< std::vector<string>* >(getObjectPtr(svarName)));
   COPY_NUMERIC_VECTOR_FROM_R_OBJECT("estimate");
@@ -1114,16 +1114,16 @@ void AGHQuad_summary::copyFromSEXP(SEXP S_nimList_) {
   PROTECT(S__dot_xData = Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(S__dot_xData, 0, PROTECT(Rf_mkChar(".xData")));
   PROTECT(S_params =
-          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+          NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("params")));
   PROTECT(S_randomEffects =
-          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+          NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("randomEffects")));
   PROTECT(S_vcov =
-          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+          NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("vcov")));
   PROTECT(S_originalScale =
-          Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
+          NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S__dot_xData)),
                             Rf_install("originalScale")));
   params = new AGHQuad_params;
   params->copyFromSEXP(S_params);

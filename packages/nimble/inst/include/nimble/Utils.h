@@ -3,17 +3,17 @@
  * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
  * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
  * Duncan Temple Lang.
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, a copy is available at
  * https://www.R-project.org/Licenses/
@@ -30,6 +30,50 @@
 #include<string>
 #include<time.h>
 #include<cppad/cppad.hpp>
+
+#include <Rversion.h>
+// chicken-and-egg: we need to check version, but the R_Version macro won't be there in old versions
+#ifndef R_Version
+#define R_Version(a,b,c) (((a) << 16) + ((b) << 8) + (c))
+#endif
+
+
+#if R_VERSION < R_Version(4, 5, 0)
+// #define NIM_FINDVARINFRAME(env, sym) \
+//    Rf_findVarInFrame(env, sym)
+static inline SEXP NIM_FINDVARINFRAME(SEXP Senv, SEXP Ssym) {
+    return Rf_findVarInFrame(Senv, Ssym);
+}
+static inline SEXP NIM_FINDVAR(SEXP Senv, SEXP Ssym) {
+    return Rf_findVar(Senv, Ssym);
+}
+// #define NIM_FINDVAR(env, sym) \
+//    Rf_findVar(env, sym)
+#else
+// #define NIM_FINDVARINFRAME(env, sym) \
+//     SEXP sym_ = TYPEOF(sym) == SYMSXP ? (sym) : Rf_install(CHAR(Rf_asChar(sym))); \
+//     R_getVarEx(sym_, env, FALSE, R_UnboundValue)
+// #define NIM_FINDVAR(env, sym) \
+//     SEXP sym_ = TYPEOF(sym) == SYMSXP ? (sym) : Rf_install(CHAR(Rf_asChar(sym))); \
+//     R_getVar(sym_, env, TRUE)
+static inline SEXP NIM_FINDVARINFRAME(SEXP Senv, SEXP Ssym) {
+    if (TYPEOF(Senv) != ENVSXP) {
+        Rf_error("Senv was of type %s (a)",
+                 Rf_type2char(TYPEOF(Senv)));
+    }
+    SEXP sym__ = TYPEOF(Ssym) == SYMSXP ? Ssym : Rf_install(CHAR(Rf_asChar(Ssym)));
+    return R_getVarEx(sym__, Senv, FALSE, R_UnboundValue);
+}
+static inline SEXP NIM_FINDVAR(SEXP Ssym, SEXP Senv) {
+    if (TYPEOF(Senv) != ENVSXP) {
+        Rf_error("Senv was of type %s (b)",
+                 Rf_type2char(TYPEOF(Senv)));
+    }
+    SEXP sym__ = TYPEOF(Ssym) == SYMSXP ? Ssym : Rf_install(CHAR(Rf_asChar(Ssym)));
+    return R_getVar(sym__, Senv, TRUE);
+}
+#endif
+
 using std::string;
 
 //using namespace std;
@@ -76,7 +120,7 @@ class nimbleTimerClass_ {
                 #my_array " has wrong size: expected %d, actual %d", n, \
                 my_array.dimSize(0));
 
-// code copied from nmath.h - useful utilities 
+// code copied from nmath.h - useful utilities
 # define MATHLIB_ERROR(fmt,x)		Rf_error(fmt,x);
 # define MATHLIB_WARNING(fmt,x)		Rf_warning(fmt,x)
 # define MATHLIB_WARNING2(fmt,x,x2)	Rf_warning(fmt,x,x2)

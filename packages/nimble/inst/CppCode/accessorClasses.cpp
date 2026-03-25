@@ -3,17 +3,17 @@
  * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
  * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
  * Duncan Temple Lang.
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, a copy is available at
  * https://www.R-project.org/Licenses/
@@ -111,13 +111,13 @@ set_CppAD_tape_info_for_model::~set_CppAD_tape_info_for_model() {
 // 					 nimbleCppADrecordingInfoClass &recordingInfo) {
 //   //   std::cout <<"entering calculate_ADproxyModel"<< std::endl;
 //   //  std::cout<<"handle address: "<<CppAD::AD<double>::get_handle_address_nimble()<<std::endl;
-  
+
 //   CppAD::AD<double> ans = 0;
 //   const vector<NodeInstruction> &instructions = nodes.getInstructions();
 //   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
 //   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
 //   // std::cout<<"starting node calcs in calculate_ADproxyModel"<<std::endl;
-  
+
 //   for(; iNode != iNodeEnd; iNode++)
 //     ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
 //   if(includeExtraOutputStep && recordingInfo.recording()) {
@@ -420,7 +420,7 @@ void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
   if(nimCurrent != nimEnd)
     PRINTF("Warning: after completing nimArr_2_ManyModelAccessIndex, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
-  
+
 ///////////////
 // [accessors]_2_nimArr
 // nimArr is "to". SMVAPtr is "from"
@@ -538,7 +538,7 @@ void getValues_AD_AD(NimArr<1, CppAD::AD<double> > &nimArr, ManyVariablesMapAcce
 
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<double>(MVA, nimArr, index-1);
-} 
+}
 
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<int>(MVA, nimArr, index-1);
@@ -593,7 +593,7 @@ void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesM
   iTo =  toAccessors->begin();
   int i = 0;
   for(iFrom = fromAccessors->begin(); iFrom != iFromEnd; iFrom++) {
-    copyVector[i] = makeOneCopyClass(*iFrom, *iTo, isFromMV, isToMV); 
+    copyVector[i] = makeOneCopyClass(*iFrom, *iTo, isFromMV, isToMV);
     iTo++;
     i++;
   }
@@ -609,7 +609,7 @@ copierVectorClass::~copierVectorClass() {
 }
 
 
-void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to) { 
+void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to) {
 
   vector<SingleVariableMapAccessBase *> *fromAccessors = &(from.getMapAccessVector());
   vector<SingleVariableMapAccessBase *> *toAccessors = &(to.getMapAccessVector());
@@ -929,9 +929,9 @@ void populateNodeFxnVectorNew_copyFromRobject_forDerivs(void *nodeFxnVec_to, SEX
   SEXP S_rowIndices;
   PROTECT(S_rowIndices = VECTOR_ELT(S_indexingInfo, 1));
   SEXP S_numberedPtrs;
-  PROTECT(S_numberedPtrs = PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
-							      PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
-												 PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
+  PROTECT(S_numberedPtrs = PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+							      PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+												 PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
 																    VECTOR_ELT(S_nodeFxnVec_from,
 																	       2
 																	       ),
@@ -990,9 +990,9 @@ void populateNodeFxnVectorNew_copyFromRobject(void *nodeFxnVec_to, SEXP S_nodeFx
   SEXP S_numberedPtrs;
  // equivalent to S_nodeFxnVec_from[["model"]]$CobjectInterface$.nodeFxnPointers_byDeclID$.ptr
   // implemented by S_nodeFxnVec_from[[2]]@.xData[["CobjectInterface"]]@.xData[[".nodeFxnPointers_byDeclID"]]@.xData[[".ptr"]]
-  S_numberedPtrs = PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
-							     PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
-													PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(
+  S_numberedPtrs = PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+							     PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+													PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
 																    VECTOR_ELT(S_nodeFxnVec_from,
 																	       2
 																	       ),
@@ -1211,7 +1211,7 @@ void populateValueMapAccessorsFromNodeNames_internal(ManyVariablesMapAccessorBas
   SEXP SoneSizesAndNdims;
   mapInfoClass mapInfo;
   int totalLength = 0;
-  
+
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
   _nimble_global_output<<"New: "<<numNames<<"\n";
   nimble_print_to_R(_nimble_global_output);
@@ -1395,4 +1395,4 @@ indexedNodeInfo generateDummyIndexedNodeInfo(){
 	dummyVec.push_back(0);
 	indexedNodeInfo dummyInfo = dummyVec;
 	return(dummyInfo);
-};	
+};
