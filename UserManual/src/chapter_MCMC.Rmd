@@ -739,70 +739,78 @@ Some additional comments are provided within this skeleton for a derived quantit
 ```{r, eval=FALSE}
 derived_name <- nimbleFunction(
     name = 'derived_name',
-    contains = derived_BASE,     ## All derived functions must contain (inherit from) the `derived_BASE` class.
+    ## All derived functions must contain (inherit from) the `derived_BASE` class.
+    contains = derived_BASE,     
     setup = function(model, mcmc, interval, control) {
-        ## 
-        ## setup function must have these arguments, and has unrestricted access to:
-        ## - model
-        ## - mcmc
-        ## - interval (the MCMC sampling interval on which the run function will be executed)
-        ## - control (list of control arguments provided to this function)
-        ##
-        ## One can extract elements from `control` like this:
-        ## nodes <- extractControlElement(control, 'nodes', defaultValue = character())
+      ## 
+      ## setup function must have these arguments, and has unrestricted access to:
+      ## - model
+      ## - mcmc
+      ## - interval (the MCMC sampling interval on which the run function will
+      ##     be executed)
+      ## - control (list of control arguments provided to this function)
+      ##
+      ## One can extract elements from `control` like this:
+      ## nodes <- extractControlElement(control, 'nodes',
+      ##             defaultValue = character())
     },
     run = function(timesRan = double()) {
-        ## 
-        ## run fuction has one argument:
-        ## timesRan, which is the number of times this method has executed during the present MCMC chain,
-        ## including the present time.  This can be used as an index for a matrix of results.
-        ## 
+      ## 
+      ## run fuction has one argument:
+      ## timesRan, which is the number of times this method has executed during
+      ##   the present MCMC chain,
+      ## including the present time.  This can be used as an index for a matrix
+      ##   of results.
+      ## 
     },
     methods = list(
         set_interval = function(newInterval = double()) {
-            ##
-            ## REQUIRED `set_interval` method, which matches the definition below exactly.
-            ## this method is necessary, to allow the default value of 'interval' to
-            ## match the thinning interval of the MCMC.
-            ## 
-            interval <<- newInterval
-            ##
+          ##
+          ## REQUIRED `set_interval` method, which matches the definition below
+          ##   exactly.
+          ## this method is necessary, to allow the default value of 'interval' to
+          ## match the thinning interval of the MCMC.
+          ## 
+          interval <<- newInterval
+          ##
         },
-        before_chain = function(niter = double(), nburnin = double(), thin = double(1), chain = double()) {
-            ## 
-            ## (optional) `before_chain` method,
-            ## must have must have these arguments specifications:
-            ## - niter (total number of *post-burnin* MCMC iterations)
-            ## - nburnin (number of burnin iterations for this MCMC chain)
-            ## - thin (a length=2 vector, containing the thinning intervals for mvSamples and mvSamples2)
-            ## - chain (the chain number of the current MCMC chain being run)
-            ## 
+        before_chain = function(niter = double(), nburnin = double(),
+                         thin = double(1), chain = double()) {
+          ## 
+          ## (optional) `before_chain` method,
+          ## must have must have these arguments specifications:
+          ## - niter (total number of *post-burnin* MCMC iterations)
+          ## - nburnin (number of burnin iterations for this MCMC chain)
+          ## - thin (a length=2 vector, containing the thinning intervals for
+          ##     mvSamples and mvSamples2)
+          ## - chain (the chain number of the current MCMC chain being run)
+          ## 
         },
         after_chain = function() {
-            ## 
-            ## (optional) `after_chain` method,
-            ## no arguments and no return value
-            ## 
+          ## 
+          ## (optional) `after_chain` method,
+          ## no arguments and no return value
+          ## 
         },
         get_results = function() {
-            ## 
-            ## REQUIRED `get_results` method,
-            ## which must return a dim=2 numeric array
-            ## 
-            returnType(double(2))
+          ## 
+          ## REQUIRED `get_results` method,
+          ## which must return a dim=2 numeric array
+          ## 
+          returnType(double(2))
         },
         get_names = function() {
-            ## 
-            ## REQUIRED `get_names` method,
-            ## which must return a dim=1 character vector
-            ## 
-            returnType(character(1))
+          ## 
+          ## REQUIRED `get_names` method,
+          ## which must return a dim=1 character vector
+          ## 
+          returnType(character(1))
         },
         reset = function() {
-            ## 
-            ## (optional) `reset` method
-            ## no arguments and no return value
-            ## 
+          ## 
+          ## (optional) `reset` method
+          ## no arguments and no return value
+          ## 
         }
     )
 )
