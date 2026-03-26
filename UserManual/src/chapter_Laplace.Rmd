@@ -208,22 +208,22 @@ glmm_laplace <- buildLaplace(model, c('intercept','beta','sigma'),
 
 ## Nested approximation (INLA-like) methods{#sec:nested-approx}
 
-NIMBLE version 1.4.0 introduces a nested approximation method that provides approximate posterior inference using methodology similar to the well-known INLA approach [@rue2009approximate; @martins2013bayesian], implemented in the R-INLA package and to the related methods for extended Gaussian latent models (EGLMs) of @stringer2023fast, implemented in the `aghq` R package.
+NIMBLE version 1.4.0 introduces a nested approximation method that provides approximate posterior inference using methodology similar to the well-known INLA approach [@rue2009approximate; @martins2013bayesian], implemented in the R-INLA package and to the related methods for extended latent Gaussian models (ELGMs) of @stringer2023fast, implemented in the `aghq` R package.
 
 In general, such nested approximations build on Laplace approximation, which provides an approximate marginal posterior for model (hyper)parameters, integrating (marginalizing) over latent nodes. Then instead of maximizing the approximation, one approximates the marginal posterior of the (hyper)parameters on a carefully-chosen set of points. Inference for individual (hyper)parameters is done by numerical approximation, numerical integration, or sampling from an approximation to the marginal posterior. Inference for the latent nodes is done via numerical integration or via sampling from a mixture (over the hyperparameter points) of multivariate normal distributions.
 
-Our implementation in NIMBLE borrows heavily from the INLA and EGLM approaches.
+Our implementation in NIMBLE borrows heavily from the INLA and ELGM approaches.
 
-Here we list some of the similarities and differences from INLA and the EGLM approach (`aghq` package):
+Here we list some of the similarities and differences from INLA and the ELGM approach (`aghq` package):
 
- - Like EGLM, we use automatic differentiation to calculate the Laplace-approximated marginal likelihood.
- - Like EGLM, we take the latent nodes to be only the latent stochastic parameters in the model, without including the additive predictor values as done in INLA.
- - For marginal inference on a chosen univariate (hyper)parameter we provide the univariate asymmetric Gaussian approximation used by INLA and also (for increased accuracy at additional computational expense) numerical integration via AGHQ as in EGLM.
+ - Like ELGM, we use automatic differentiation to calculate the Laplace-approximated marginal likelihood.
+ - Like ELGM, we take the latent nodes to be only the latent stochastic parameters in the model, without including the additive predictor values as done in INLA.
+ - For marginal inference on a chosen univariate (hyper)parameter we provide the univariate asymmetric Gaussian approximation used by INLA and also (for increased accuracy at additional computational expense) numerical integration via AGHQ as in ELGM.
  - For joint inference on the (hyper)parameters we provide simulation from the joint asymmetric Gaussian approximation as done in INLA.
- - For inference on the latent nodes, we provide joint simulation from a multivariate normal mixture over the (hyper)parameter grid points as done in EGLM and also available in INLA. Unlike in INLA, we do not provide univariate latent inference using deterministic nested Laplace approximation. The simulation-based approach may not be as accurate, but it allows for joint inference, including inference on quantities that depend on more than one latent node.
- - Unlike either EGLM or INLA, latent nodes are not required to have a joint normal distribution, though accuracy may be less when the latent nodes have other distributions.
+ - For inference on the latent nodes, we provide joint simulation from a multivariate normal mixture over the (hyper)parameter grid points as done in ELGM and also available in INLA. Unlike in INLA, we do not provide univariate latent inference using deterministic nested Laplace approximation. The simulation-based approach may not be as accurate, but it allows for joint inference, including inference on quantities that depend on more than one latent node.
+ - Unlike either ELGM or INLA, latent nodes are not required to have a joint normal distribution, though accuracy may be less when the latent nodes have other distributions.
  - For latent nodes whose conditional distributions factor into univariate conditionally independent sets, the Laplace approximation is a product of univariate approximations, and one can instead use NIMBLE's AGHQ approximation for higher accuracy.
- - We allow the user to choose the grid used for the (hyper)parameters. By default for $d>2$ parameters, we use the CCD grid used by INLA, but one can choose to use the AGHQ grid as used in EGLM or provide one's own grid. 
+ - We allow the user to choose the grid used for the (hyper)parameters. By default for $d>2$ parameters, we use the CCD grid used by INLA, but one can choose to use the AGHQ grid as used in ELGM or provide one's own grid. 
  
 
 ### Overview of the methodology
@@ -240,7 +240,7 @@ In the case that the conditional distributions of the latent nodes factor into u
 
 In order to simulate from the posterior distribution for the latent nodes (or to estimate the marginal likelihood), one needs to evaluate the joint parameter posterior density on a grid of points.
 
-NIMBLE primarily offers the options of using a CCD grid (as used by INLA) or an AGHQ grid (as used in the EGLM approach). While the AGHQ grid is expected to be more accurate, the CCD grid uses fewer points and is therefore less computationally intensive.
+NIMBLE primarily offers the options of using a CCD grid (as used by INLA) or an AGHQ grid (as used in the ELGM approach). While the AGHQ grid is expected to be more accurate, the CCD grid uses fewer points and is therefore less computationally intensive.
 
 For $d <= 2$ NIMBLE defaults to the AGHQ grid and otherwise uses the CCD grid.
 
