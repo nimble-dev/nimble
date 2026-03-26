@@ -3,17 +3,17 @@
  * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
  * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
  * Duncan Temple Lang.
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, a copy is available at
  * https://www.R-project.org/Licenses/
@@ -25,7 +25,7 @@
 #include "NimArr.h"
 #include "RcppUtils.h"
 
-/* The following two macros are for use by copyFromRobject methods 
+/* The following two macros are for use by copyFromRobject methods
    in compiled nimbleFunctions. */
 #define SETUP_S_xData \
   SEXP S_string_xData; \
@@ -38,7 +38,7 @@
   { \
   std::string svarName(varName); \
   SEXP_2_Nim_for_copyFromRobject(getObjectPtr(svarName),\
-				 PROTECT(Rf_findVarInFrame(S_xData,	\
+				 PROTECT(NIM_FINDVARINFRAME(S_xData,	\
 							   Rf_install(varName)))); \
   }
 
@@ -47,7 +47,7 @@
   std::string svarName(varName); \
   std::string svarName_AD_(svarName + "_AD_"); \
   populateValueMapAccessorsFromNodeNames_copyFromRobject(getObjectPtr(svarName), \
-							 PROTECT(Rf_findVarInFrame(S_xData, \
+							 PROTECT(NIM_FINDVARINFRAME(S_xData, \
 										   Rf_install(varName))), \
 							 derivsEnabled, \
 							 getObjectPtr(svarName_AD_, false) \
@@ -58,7 +58,7 @@
   { \
   std::string svarName(varName); \
   populateNodeFxnVectorNew_copyFromRobject(getObjectPtr(svarName),\
-					   PROTECT(Rf_findVarInFrame(S_xData, \
+					   PROTECT(NIM_FINDVARINFRAME(S_xData, \
 								     Rf_install(varName)))); \
                     }
 
@@ -66,7 +66,7 @@
   { \
   std::string svarName(varName); \
   populateNodeFxnVectorNew_copyFromRobject_forDerivs(getObjectPtr(svarName),\
-					   PROTECT(Rf_findVarInFrame(S_xData, \
+					   PROTECT(NIM_FINDVARINFRAME(S_xData, \
 								     Rf_install(varName)))); \
                     }
 
@@ -74,7 +74,7 @@
   { \
   std::string svarName(varName); \
   setNimbleFxnPtr_copyFromRobject(getObjectPtr(svarName),\
-					    PROTECT(Rf_findVarInFrame(S_xData, \
+					    PROTECT(NIM_FINDVARINFRAME(S_xData, \
 								      Rf_install(varName)))); \
   }
 
@@ -82,7 +82,7 @@
   { \
   std::string svarName(varName); \
   populate_SEXP_2_double_for_copyFromRobject(getObjectPtr(svarName),\
-					     PROTECT(Rf_findVarInFrame(S_xData, \
+					     PROTECT(NIM_FINDVARINFRAME(S_xData, \
 								     Rf_install(varName)))); \
   }
 
@@ -90,7 +90,7 @@
   { \
   std::string svarName(varName); \
   populate_SEXP_2_int_for_copyFromRobject(getObjectPtr(svarName),\
-					     PROTECT(Rf_findVarInFrame(S_xData, \
+					     PROTECT(NIM_FINDVARINFRAME(S_xData, \
 								     Rf_install(varName)))); \
   }
 
@@ -98,7 +98,7 @@
   { \
   std::string svarName(varName); \
   populate_SEXP_2_bool_for_copyFromRobject(getObjectPtr(svarName),\
-					     PROTECT(Rf_findVarInFrame(S_xData, \
+					     PROTECT(NIM_FINDVARINFRAME(S_xData, \
 								     Rf_install(varName)))); \
   }
 
@@ -126,7 +126,7 @@ extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromDoublePtr(SEXP SdoublePtr, SEXP SsinglePtr);
-  
+
   SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);
   SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded);
   SEXP getNRow(SEXP Sextptr);
@@ -145,36 +145,36 @@ extern "C" {
   //	Just for use in demos
   // 	To get a pointer to an element from sampleClass, use
   //	getModelObjectPtr (from the NamedObjects.cpp file)
-  
+
   SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers);	//	Returns SEXP object with correct data type and dimensions. NumRefers
   //  should be an integer with the number of dereferencing required for rPtr
   //	So if rPtr is a pointer to a NimArr, NumRefers = 1
   //	If rPtr is a pointer to a pointer to a NimArr, NumRefers = 2
   //	Currently only NumRefers = 1 and 2 are allowed, but easily updated
   //	by extending "getNimTypePtr" function
-  
+
   SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize); //	Copies values from rValues to NimArr. Same behavior
   // 	with NumRefers as above. Also, type checking is done
   // 	by R.internals functions INTEGER and REAL
-  
-  //  SEXP Nim_2_Nim(SEXP rPtrFrom, SEXP numRefFrom, SEXP rPtrTo, SEXP numRefTo);	
+
+  //  SEXP Nim_2_Nim(SEXP rPtrFrom, SEXP numRefFrom, SEXP rPtrTo, SEXP numRefTo);
   //  Copies from one NimArr to another. Type checks
   //	For now, both NimArr's must be either double or int. We can add other
-  //  types or allow conversion by extending Nim_2_Nim and the cNim_2_Nim options 
-  
+  //  types or allow conversion by extending Nim_2_Nim and the cNim_2_Nim options
+
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
-  
+
   SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);// This is a utility for looking up a field of an environment
   // sString is a character vector with the field name we want
   // sEnv is the environment
   // sIndex is the index of the sString that contains the name
-  // we actually want to use. 
+  // we actually want to use.
   //	Look up by sString[sIndex] is done to allow for easy looping
-  //Important Note: sIndex = 1 looks up the first name (i.e. use R indexing, not C) 
+  //Important Note: sIndex = 1 looks up the first name (i.e. use R indexing, not C)
   SEXP getEnvVar(SEXP sString, SEXP sEnv);	// Same as above, but uses sIndex = 1 (i.e. sString is a single character string)
-  														 
-  SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex);	//Same as getEnvVar_Sindex, but this function sets rather than gets														
+
+  SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex);	//Same as getEnvVar_Sindex, but this function sets rather than gets
   SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal);						//Same as above but uses sIndex = 1
 
   SEXP register_VecNimArr_Finalizer(SEXP Sp, SEXP Dll);
@@ -204,10 +204,10 @@ NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
 
 /*
   Apparently partial specialization of function templates is not allowed.
-  So these are witten for doubles, and when we get to integers and logicals we can 
+  So these are witten for doubles, and when we get to integers and logicals we can
   use overlaoding or different names.
  */
-/* Try overloading these for all needed copy operations */ 
+/* Try overloading these for all needed copy operations */
 void SEXP_2_NimArr(SEXP Sn, double &x);
 void SEXP_2_NimArr(SEXP Sn, int &x);
 void SEXP_2_NimArr(SEXP Sn, bool &x);

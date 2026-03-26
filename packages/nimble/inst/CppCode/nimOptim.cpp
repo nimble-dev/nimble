@@ -3,17 +3,17 @@
  * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
  * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
  * Duncan Temple Lang.
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, a copy is available at
  * https://www.R-project.org/Licenses/
@@ -290,7 +290,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
             SET_NEXT_LANG_ARG(SLANGpiece,
                               PROTECT(R_MakeExternalPtr(this, R_NilValue, R_NilValue)));
             SEXP SnimbleInternalFunctionsEnv =
-                PROTECT(Rf_eval(PROTECT(Rf_findVar(Rf_install("nimbleInternalFunctions"),
+                PROTECT(Rf_eval(PROTECT(NIM_FINDVAR(Rf_install("nimbleInternalFunctions"),
                                                    R_GlobalEnv)),
                                 R_GlobalEnv));
 
@@ -396,17 +396,17 @@ The .External2 format passes the R call in a standard four arguments, of which t
 The actual optimization algorithms such as nmmin and vmmin can be found in src/appl/optim.c.
 
 optimhess calculates the Hessian.  We see that it uses finite element method for the gradient at points p + eps and p - eps, where eps comes from the
- control list argument ndeps, which acccording to help(optim) can be user supplied or defaults to 0.001.  
+ control list argument ndeps, which acccording to help(optim) can be user supplied or defaults to 0.001.
 
 The gradient is evaluated via fmingr, which either uses the supplied gradient function or uses finite element differences of +/- eps.
 
   For the finite element case, this means in effect that the function (fminfn) is evaluated at p + 2*eps, p [twice, once in each call to fmingr], and p - 2*eps.
 
-The exception is for a case with bounds (L-BFGS-B), in which case, inside fmingr, the p + eps and p-eps are reduced to upper boundary or lower boundary, 
-respectively, and the corresponding epsilons are adjusted. 
+The exception is for a case with bounds (L-BFGS-B), in which case, inside fmingr, the p + eps and p-eps are reduced to upper boundary or lower boundary,
+respectively, and the corresponding epsilons are adjusted.
 
 fminfn and fmingr are defined in the same file as optim and optimhess.  (Our gr function above mimics the behavior of fmingr.)
 
-These functions wrap calls to the R evaluator for the provided 
+These functions wrap calls to the R evaluator for the provided
 objective and gradient functions, respectively.  Within these functions, parscale and fnscale are applied. (Our fn and gr use fnscale but not parscale.)
 */
