@@ -28,7 +28,7 @@ Render vignette in nimbleQuad repo:
 
 ```
 cd nimbleQuad/vignettes
-quarto render nimbleQuad.qmd --to html
+quarto render Quadrature.qmd --to html
 ```
 
 Copy files to website repo:
