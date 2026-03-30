@@ -52,7 +52,7 @@ static inline SEXP NIM_FINDVAR(SEXP Senv, SEXP Ssym) {
 #else
 // #define NIM_FINDVARINFRAME(env, sym) \
 //     SEXP sym_ = TYPEOF(sym) == SYMSXP ? (sym) : Rf_install(CHAR(Rf_asChar(sym))); \
-//     R_getVarEx(sym_, env, FALSE, R_UnboundValue)
+//     R_getVar(sym_, env, FALSE)
 // #define NIM_FINDVAR(env, sym) \
 //     SEXP sym_ = TYPEOF(sym) == SYMSXP ? (sym) : Rf_install(CHAR(Rf_asChar(sym))); \
 //     R_getVar(sym_, env, TRUE)
@@ -62,7 +62,7 @@ static inline SEXP NIM_FINDVARINFRAME(SEXP Senv, SEXP Ssym) {
                  Rf_type2char(TYPEOF(Senv)));
     }
     SEXP sym__ = TYPEOF(Ssym) == SYMSXP ? Ssym : Rf_install(CHAR(Rf_asChar(Ssym)));
-    return R_getVarEx(sym__, Senv, FALSE, R_UnboundValue);
+    return R_getVar(sym__, Senv, FALSE);
 }
 static inline SEXP NIM_FINDVAR(SEXP Ssym, SEXP Senv) {
     if (TYPEOF(Senv) != ENVSXP) {

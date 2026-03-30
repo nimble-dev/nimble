@@ -49,7 +49,10 @@ vector<int> getSEXPdims(SEXP Sx) {
     vector<int> ans;
     ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
   }
-  return(SEXP_2_vectorInt(Rf_getAttrib(Sx, R_DimSymbol), 0));
+  SEXP dims = PROTECT(Rf_getAttrib(Sx, R_DimSymbol));
+  vector<int> result = SEXP_2_vectorInt(dims, 0);
+  UNPROTECT(1);
+  return result;
 }
 
 string STRSEXP_2_string(SEXP Ss, int i) {
@@ -858,7 +861,7 @@ SEXP varAndIndices_2_LANGSXP(const varAndIndicesClass &varAndInds) {
     Sans = PROTECT(Rf_install(varAndInds.varName.c_str()));
   } else {
     t = Sans = PROTECT(Rf_allocVector(LANGSXP, ansLen));
-    SETCAR(t, R_BracketSymbol); t = CDR(t);
+    SETCAR(t, Rf_install("[")); t = CDR(t);
     SETCAR(t, Rf_install(varAndInds.varName.c_str())); t = CDR(t);
     for(size_t i = 0; i < varAndInds.indices.size(); ++i) {
       if(varAndInds.indices[i].size() == 0) { // blank
