@@ -1,3 +1,15 @@
+#              CHANGES IN VERSION 1.4.2 (March 2026)
+
+## USER LEVEL CHANGES
+
+- Improve efficiency of `findSamplersOnNodes`, which is used in finding
+samplers assigned to node(s) (PR #1614; thanks to 'hoxo-m').
+
+## DEVELOPER LEVEL CHANGES
+
+- Switch to using `R_getVar` and `R_getVarEx` in place of `Rf_findVar` and
+`Rf_findVarInFrame` in C++ code at request of CRAN (PR #1616).
+
 #              CHANGES IN VERSION 1.4.1 (February 2026)
 
 ## USER LEVEL CHANGES
