@@ -1204,7 +1204,7 @@ makeCopyFromRobjectDef <- function(cppCopyTypes,
                             quote = TRUE
                             )
     } else {
-        unprotectCount <- 2 + length(copyCalls) ## 2 from SETUP_S_xData
+        unprotectCount <- length(copyCalls) ## 0 extra from SETUP_S_xData (1 PROTECT, covered by the +1 below)
         allRcode <- do.call('call',
                             c(list('{'),
                               list(cppLiteral("SETUP_S_xData;")),

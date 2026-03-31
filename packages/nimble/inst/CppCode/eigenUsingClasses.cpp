@@ -71,17 +71,14 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
 
 /*EIGEN_EIGEN class functions below */
 SEXP  EIGEN_EIGENCLASS_R::copyToSEXP (  )  {
-	SEXP S_pxData;
 	SEXP S_values;
 	SEXP S_vectors;
 
-	PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
-	SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
 	PROTECT(S_values = NimArr_2_SEXP<1>(values));
 	PROTECT(S_vectors = NimArr_2_SEXP<2>(vectors));
-	Rf_defineVar(Rf_install("values"), S_values, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-	Rf_defineVar(Rf_install("vectors"), S_vectors, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-	UNPROTECT(5);
+	Rf_defineVar(Rf_install("values"), S_values, PROTECT(R_do_slot(RObjectPointer, Rf_install(".xData"))));
+	Rf_defineVar(Rf_install("vectors"), S_vectors, PROTECT(R_do_slot(RObjectPointer, Rf_install(".xData"))));
+	UNPROTECT(4);
 
 	return(RObjectPointer);
 }
@@ -97,36 +94,30 @@ void  EIGEN_EIGENCLASS_R::createNewSEXP (  )  {
 }
 
 void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
-	SEXP S_pxData;
 	SEXP S_values;
 	SEXP S_vectors;
 	RObjectPointer =  S_nimList_;
-	PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
-	SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
-	PROTECT(S_values = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S_pxData)), Rf_install("values")));
-	PROTECT(S_vectors = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S_pxData)), Rf_install("vectors")));
+	PROTECT(S_values = NIM_FINDVARINFRAME(PROTECT(R_do_slot(S_nimList_, Rf_install(".xData"))), Rf_install("values")));
+	PROTECT(S_vectors = NIM_FINDVARINFRAME(PROTECT(R_do_slot(S_nimList_, Rf_install(".xData"))), Rf_install("vectors")));
 	SEXP_2_NimArr<1>(S_values, values);
 	SEXP_2_NimArr<2>(S_vectors, vectors);
-	UNPROTECT(5);
+	UNPROTECT(4);
 }
 
 
 /*EIGEN_SVD class functions below */
  SEXP  EIGEN_SVDCLASS_R::copyToSEXP (  )  {
- 	SEXP S_pxData;
  	SEXP S_d;
  	SEXP S_u;
  	SEXP S_v;
 
- 	PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
- 	SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
  	PROTECT(S_d = NimArr_2_SEXP<1>(d));
  	PROTECT(S_u = NimArr_2_SEXP<2>(u));
  	PROTECT(S_v = NimArr_2_SEXP<2>(v));
- 	Rf_defineVar(Rf_install("d"), S_d, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
- 	Rf_defineVar(Rf_install("u"), S_u, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
- 	Rf_defineVar(Rf_install("v"), S_v, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
- 	UNPROTECT(7);
+ 	Rf_defineVar(Rf_install("d"), S_d, PROTECT(R_do_slot(RObjectPointer, Rf_install(".xData"))));
+ 	Rf_defineVar(Rf_install("u"), S_u, PROTECT(R_do_slot(RObjectPointer, Rf_install(".xData"))));
+ 	Rf_defineVar(Rf_install("v"), S_v, PROTECT(R_do_slot(RObjectPointer, Rf_install(".xData"))));
+ 	UNPROTECT(6);
 
  	return(RObjectPointer);
  }
@@ -142,20 +133,17 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
  }
 
  void  EIGEN_SVDCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
- 	SEXP S_pxData;
  	SEXP S_d;
  	SEXP S_v;
  	SEXP S_u;
  	RObjectPointer =  S_nimList_;
- 	PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
- 	SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
- 	PROTECT(S_d = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S_pxData)), Rf_install("d")));
- 	PROTECT(S_v = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S_pxData)), Rf_install("v")));
- 	PROTECT(S_u = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(S_nimList_, S_pxData)), Rf_install("u")));
+ 	PROTECT(S_d = NIM_FINDVARINFRAME(PROTECT(R_do_slot(S_nimList_, Rf_install(".xData"))), Rf_install("d")));
+ 	PROTECT(S_v = NIM_FINDVARINFRAME(PROTECT(R_do_slot(S_nimList_, Rf_install(".xData"))), Rf_install("v")));
+ 	PROTECT(S_u = NIM_FINDVARINFRAME(PROTECT(R_do_slot(S_nimList_, Rf_install(".xData"))), Rf_install("u")));
  	SEXP_2_NimArr<1>(S_d, d);
  	SEXP_2_NimArr<2>(S_v, v);
  	SEXP_2_NimArr<2>(S_u, u);
- 	UNPROTECT(7);
+ 	UNPROTECT(6);
  }
 
 SEXP C_nimEigen(SEXP S_x, SEXP S_symmetric, SEXP S_valuesOnly, SEXP returnList) {

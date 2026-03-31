@@ -54,16 +54,13 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
 void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
   void **doublePtr = static_cast<void **>(nf_to);
   SEXP Scnf, SsinglePtr;
-  SEXP S_pxData;
-   PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
-   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
   // environment(modelVar)$.CobjectInterface
-   PROTECT(Scnf = NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+   PROTECT(Scnf = NIM_FINDVARINFRAME(PROTECT(R_do_slot(
 						       S_NF_from,
-						       S_pxData)),
+						       Rf_install(".xData"))),
 				    Rf_install(".CobjectInterface"))
 	   );
-   int unprotectCount = 3;
+   int unprotectCount = 2;
    if(Rf_isNewList(Scnf)) {
     // multi-interface
     //Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
@@ -72,10 +69,10 @@ void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
     int index = (Rf_isInteger(Sindex) ? INTEGER(Sindex)[0] : REAL(Sindex)[0]);
     index--; // From 1-based to 0-based indexing
     PROTECT(SsinglePtr = VECTOR_ELT(
-				    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+				    NIM_FINDVARINFRAME(PROTECT(R_do_slot(
 								       VECTOR_ELT(Scnf,
 										  0),
-								       S_pxData)),
+								       Rf_install(".xData"))),
 						      Rf_install("basePtrList")),
 				    index
 				    )
@@ -85,9 +82,9 @@ void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
     // printf("in non-list\n");
     // full interface
     // Cnf$.basePtr
-    PROTECT(SsinglePtr =  NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+    PROTECT(SsinglePtr =  NIM_FINDVARINFRAME(PROTECT(R_do_slot(
 							     Scnf,
-							     S_pxData)),
+							     Rf_install(".xData"))),
 					    Rf_install(".basePtr")));
     unprotectCount += 2;
   }

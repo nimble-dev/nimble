@@ -794,27 +794,23 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   /*   // 6. Sift derivatives into return object */
   /* } */
   void populateDerivsInfo(SEXP SderivsInfo) {
-    SEXP SpxData;
     SEXP Smodel, SCobjInt, SbasePtr, SADptrs, SbasePtrAD;
-
-    PROTECT(SpxData = Rf_allocVector(STRSXP, 1));
-    SET_STRING_ELT(SpxData, 0, Rf_mkChar(".xData"));
 
     //Smodel <- SderivsInfo$model
     PROTECT(Smodel =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(SderivsInfo, Rf_install(".xData"))),
 			      Rf_install("model")));
     //SCobjInt <- Smodel$CobjectInterface
     PROTECT(SCobjInt =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(Smodel, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(Smodel, Rf_install(".xData"))),
 			      Rf_install("CobjectInterface")));
     // SbasePtr <- SCobjInt$.basePtr
     PROTECT(SbasePtr =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(SCobjInt, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(SCobjInt, Rf_install(".xData"))),
 			      Rf_install(".basePtr")));
     // SADptrs <- SCobjInt$.ADptrs
     PROTECT(SADptrs =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(SCobjInt, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(SCobjInt, Rf_install(".xData"))),
 			      Rf_install(".ADptrs")));
     // SbasePtrAD <- SADptrs[[".ADptrs"]]
     PROTECT(SbasePtrAD =
@@ -825,7 +821,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     SEXP Swrt;
     SEXP SwrtNodeNames, SwrtSizesAndNdims;
     PROTECT(Swrt =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(SderivsInfo, Rf_install(".xData"))),
 			      Rf_install("wrtMapInfo")));
     // SwrtNodeNames = Swrt[[1]]
     PROTECT(SwrtNodeNames = VECTOR_ELT(Swrt, 0));
@@ -846,7 +842,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     SEXP SextraInput;
     SEXP SextraInputNodeNames, SextraInputSizesAndNdims;
     PROTECT(SextraInput =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(SderivsInfo, Rf_install(".xData"))),
 			      Rf_install("extraInputMapInfo")));
     // SextraInputNodeNames = SextraInput[[1]]
     PROTECT(SextraInputNodeNames = VECTOR_ELT(SextraInput, 0));
@@ -867,7 +863,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     SEXP SmodelOutput;
     SEXP SmodelOutputNodeNames, SmodelOutputSizesAndNdims;
     PROTECT(SmodelOutput =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(SderivsInfo, Rf_install(".xData"))),
 			      Rf_install("modelOutputMapInfo")));
     // SmodelOutputNodeNames = SmodelOutput[[1]]
     PROTECT(SmodelOutputNodeNames = VECTOR_ELT(SmodelOutput, 0));
@@ -888,7 +884,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     SEXP Sconstant;
     SEXP SconstantNodeNames, SconstantSizesAndNdims;
     PROTECT(Sconstant =
-	    NIM_FINDVARINFRAME(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
+	    NIM_FINDVARINFRAME(PROTECT(R_do_slot(SderivsInfo, Rf_install(".xData"))),
 			      Rf_install("constantMapInfo")));
     // SconstantNodeNames = Sconstant[[1]]
     PROTECT(SconstantNodeNames = VECTOR_ELT(Sconstant, 0));
@@ -906,7 +902,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 						    SbasePtrAD);
 
 
-    UNPROTECT(26);
+    UNPROTECT(25);
   }
 };
 

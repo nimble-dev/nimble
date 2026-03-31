@@ -920,27 +920,24 @@ void populateNodeFxnVectorNew_internal_forDerivs(NodeVectorClassNew_derivs* nfv,
 
 void populateNodeFxnVectorNew_copyFromRobject_forDerivs(void *nodeFxnVec_to, SEXP S_nodeFxnVec_from ) {
    SEXP S_indexingInfo;
-   SEXP S_pxData;
-   PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
-   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
   PROTECT(S_indexingInfo = VECTOR_ELT(S_nodeFxnVec_from, 1));
   SEXP S_declIDs;
   PROTECT(S_declIDs = VECTOR_ELT(S_indexingInfo, 0));
   SEXP S_rowIndices;
   PROTECT(S_rowIndices = VECTOR_ELT(S_indexingInfo, 1));
   SEXP S_numberedPtrs;
-  PROTECT(S_numberedPtrs = PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
-							      PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
-												 PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+  PROTECT(S_numberedPtrs = PROTECT(NIM_FINDVARINFRAME(PROTECT(R_do_slot(
+							      PROTECT(NIM_FINDVARINFRAME(PROTECT(R_do_slot(
+												 PROTECT(NIM_FINDVARINFRAME(PROTECT(R_do_slot(
 																    VECTOR_ELT(S_nodeFxnVec_from,
 																	       2
 																	       ),
-																    S_pxData)),
+																    Rf_install(".xData"))),
 														   Rf_install("CobjectInterface")
 														   )),
-												 S_pxData)),
+												 Rf_install(".xData"))),
 										Rf_install(".nodeFxnPointers_byDeclID"))),
-							      S_pxData)),
+							      Rf_install(".xData"))),
 					     Rf_install(".ptr")
 					     ))
   );
@@ -948,7 +945,7 @@ void populateNodeFxnVectorNew_copyFromRobject_forDerivs(void *nodeFxnVec_to, SEX
   PROTECT(SderivInfo = VECTOR_ELT(S_nodeFxnVec_from, 3));
   NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(nodeFxnVec_to);
   populateNodeFxnVectorNew_internal_forDerivs(nfv_derivs, S_declIDs, S_numberedPtrs, S_rowIndices, SderivInfo);
-  UNPROTECT(12);
+  UNPROTECT(11);
 }
 
 SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo){
@@ -979,9 +976,6 @@ void populateNodeFxnVectorNew_internal(NodeVectorClassNew* nfv, SEXP S_GIDs, SEX
 
 void populateNodeFxnVectorNew_copyFromRobject(void *nodeFxnVec_to, SEXP S_nodeFxnVec_from ) {
   SEXP S_indexingInfo;
-   SEXP S_pxData;
-   S_pxData = PROTECT(Rf_allocVector(STRSXP, 1));
-   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
    S_indexingInfo = PROTECT(VECTOR_ELT(S_nodeFxnVec_from, 1));
   SEXP S_declIDs;
   S_declIDs = PROTECT(VECTOR_ELT(S_indexingInfo, 0));
@@ -990,24 +984,24 @@ void populateNodeFxnVectorNew_copyFromRobject(void *nodeFxnVec_to, SEXP S_nodeFx
   SEXP S_numberedPtrs;
  // equivalent to S_nodeFxnVec_from[["model"]]$CobjectInterface$.nodeFxnPointers_byDeclID$.ptr
   // implemented by S_nodeFxnVec_from[[2]]@.xData[["CobjectInterface"]]@.xData[[".nodeFxnPointers_byDeclID"]]@.xData[[".ptr"]]
-  S_numberedPtrs = PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
-							     PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
-													PROTECT(NIM_FINDVARINFRAME(PROTECT(GET_SLOT(
+  S_numberedPtrs = PROTECT(NIM_FINDVARINFRAME(PROTECT(R_do_slot(
+							     PROTECT(NIM_FINDVARINFRAME(PROTECT(R_do_slot(
+													PROTECT(NIM_FINDVARINFRAME(PROTECT(R_do_slot(
 																    VECTOR_ELT(S_nodeFxnVec_from,
 																	       2
 																	       ),
-																    S_pxData)),
+																    Rf_install(".xData"))),
 														   Rf_install("CobjectInterface")
 														   )),
-												 S_pxData)),
+												 Rf_install(".xData"))),
 										       Rf_install(".nodeFxnPointers_byDeclID"))),
-							      S_pxData)),
+							      Rf_install(".xData"))),
 					     Rf_install(".ptr")
 					     )
 	  );
   NodeVectorClassNew* nfv = static_cast<NodeVectorClassNew*>(nodeFxnVec_to);
   populateNodeFxnVectorNew_internal(nfv, S_declIDs, S_numberedPtrs, S_rowIndices);
-  UNPROTECT(10);
+  UNPROTECT(9);
 }
 
 SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS){

@@ -28,11 +28,8 @@
 /* The following two macros are for use by copyFromRobject methods
    in compiled nimbleFunctions. */
 #define SETUP_S_xData \
-  SEXP S_string_xData; \
   SEXP S_xData; \
-  PROTECT(S_string_xData = Rf_allocVector(STRSXP, 1)); \
-  SET_STRING_ELT(S_string_xData, 0, PROTECT(Rf_mkChar(".xData"))); \
-  PROTECT(S_xData = GET_SLOT(Robject, S_string_xData));
+  PROTECT(S_xData = R_do_slot(Robject, Rf_install(".xData")));
 
 #define COPY_NUMERIC_VECTOR_FROM_R_OBJECT(varName) \
   { \
