@@ -30,7 +30,7 @@
   
 <link rel="prev" href="cha-installing-nimble.html"/>
 <link rel="next" href="cha-building-models.html"/>
-<script src="libs/jquery-3.6.1/jquery-3.6.1.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -53,9 +53,8 @@
 
 
 <style type="text/css">
-html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -160,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -1144,7 +1143,7 @@ is given by <span class="math inline">\(x\)</span>.</caption>
 <tr class="odd">
 <td align="left">Weibull</td>
 <td align="left"><code>dweib(shape = v, lambda =</code> <span class="math inline">\(\lambda\)</span><code>)</code></td>
-<td align="left"><span class="math inline">\(v  \lambda  x^{v - 1} \exp (- \lambda x^v)\)</span></td>
+<td align="left"><span class="math inline">\(v \lambda x^{v - 1} \exp (- \lambda x^v)\)</span></td>
 <td><span class="math inline">\(0\)</span></td>
 <td></td>
 </tr>
@@ -1198,7 +1197,7 @@ prior or require proper (normalized) densities.</p>
 <h5><span class="header-section-number">5.2.4.1.2</span> LKJ distribution for correlation matrices<a href="cha-writing-models.html#lkj-distribution-for-correlation-matrices" class="anchor-section" aria-label="Anchor link to header"></a></h5>
 <p>NIMBLE provides the LKJ distribution via <code>dlkj_corr_cholesky</code>
 for correlation matrices, discussed in Section 24 of <span class="citation">Stan Development Team (<a href="references.html#ref-Stan_Lang_Fun_2021">2021a</a>)</span> and based on
-<span class="citation">Lewandowski et al. (<a href="references.html#ref-Lewandowski_etal_2009">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
+<span class="citation">Lewandowski, Kurowicka, and Joe (<a href="references.html#ref-Lewandowski_etal_2009">2009</a>)</span>. This distribution has various advantages (both from a modeling perspective and an
 MCMC fitting perspective) over other prior distributions for correlation
 or covariance matrices such as the inverse Wishart distribution.</p>
 <p>For computational efficiency, the distribution is on the Cholesky factor
@@ -2293,8 +2292,7 @@ as <code>data</code> with known values. Otherwise, the node may be simulated dur
 <span id="cb88-2"><a href="cha-writing-models.html#cb88-2" tabindex="-1"></a>mu2 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>) </span>
 <span id="cb88-3"><a href="cha-writing-models.html#cb88-3" tabindex="-1"></a>constraint_data <span class="sc">~</span> <span class="fu">dconstraint</span>( mu1 <span class="sc">+</span> mu2 <span class="sc">&gt;</span> <span class="dv">0</span> )</span></code></pre></div>
 <p>with <code>constraint_data</code> set (as <code>data</code>) to 1. This is
-equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 +
-\mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>.
+equivalent to a half-normal distribution on the half-plane <span class="math inline">\(\mu_1 + \mu_2 &gt; 0\)</span>. Nodes following <code>dconstraint</code> should be provided as data for the same reason of avoiding unintended initialization described above for <code>dinterval</code>.
 <!--- If one simulates from the model using the `simulate` functions and the condition is not satisfied, then `const` will be 0 and the log probability of `const` (and therefore of the model as whole) will be $-\infty$. --></p>
 <p>Important: the model should be initialized so that the constraints are satisfied. Otherwise, NIMBLE will initialize from the prior, which may not produce a valid initial value and may cause algorithms (particularly) MCMC to fail.</p>
 <p>Formally, <code>dconstraint(cond)</code> is a probability distribution on <span class="math inline">\(\left\{ 0, 1 \right\}\)</span> such that <span class="math inline">\(P(1) = 1\)</span> if <code>cond</code> is <code>TRUE</code> and <span class="math inline">\(P(0) = 1\)</span> if <code>cond</code> is <code>FALSE</code>.

@@ -30,7 +30,7 @@
   
 <link rel="prev" href="overview.html"/>
 <link rel="next" href="cha-user-defined.html"/>
-<script src="libs/jquery-3.6.1/jquery-3.6.1.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -53,9 +53,8 @@
 
 
 <style type="text/css">
-html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -160,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -1659,14 +1658,14 @@ and will be re-sized for the result.</li>
 <h4><span class="header-section-number">12.3.2.8</span> Size warnings and the potential for crashes<a href="cha-RCfunctions.html#sec:size-warn-potent" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <p>For matrix algebra, NIMBLE cannot ensure perfect behavior because
 sizes are not known until run time. Therefore, it is possible for you
-to write code that will crash your R session. In Version 1.4.1, NIMBLE
+to write code that will crash your R session. In Version 1.4.2, NIMBLE
 attempts to issue a warning if sizes are not compatible, but it does not
 halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication,
 NIMBLE will output a warning that the number of rows of <code>M1</code> does not
 match the number of columns of <code>M2</code>. After that warning the statement
 will be executed and may result in a crash. Another easy way to write
 code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to
-prevent crashes, but in Version 1.4.1 we limit ourselves to trying to provide
+prevent crashes, but in Version 1.4.2 we limit ourselves to trying to provide
 useful information.</p>
 </div>
 </div>

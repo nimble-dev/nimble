@@ -30,7 +30,7 @@
   
 <link rel="prev" href="cha-spatial.html"/>
 <link rel="next" href="overview.html"/>
-<script src="libs/jquery-3.6.1/jquery-3.6.1.min.js"></script>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
@@ -53,9 +53,8 @@
 
 
 <style type="text/css">
-html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -160,7 +159,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.1</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -669,7 +668,7 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 </div>
 <div id="mcmc-sampling-of-bnp-models" class="section level2 hasAnchor" number="11.4">
 <h2><span class="header-section-number">11.4</span> MCMC sampling of BNP models<a href="cha-bnp.html#mcmc-sampling-of-bnp-models" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">11.2.2</a> and <a href="cha-bnp.html#sec:exsb">11.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(<a href="references.html#ref-neal_2000">Neal 2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_2001">2001</a>)</span> and <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002">2002</a>)</span>.</p>
+<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">11.2.2</a> and <a href="cha-bnp.html#sec:exsb">11.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(<a href="references.html#ref-neal_2000">R. Neal 2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Hemant Ishwaran and James (<a href="references.html#ref-ishwaran_2001">2001</a>)</span> and <span class="citation">H. Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002">2002</a>)</span>.</p>
 <div id="sec:mcmcdcrp" class="section level3 hasAnchor" number="11.4.1">
 <h3><span class="header-section-number">11.4.1</span> Sampling CRP models<a href="cha-bnp.html#sec:mcmcdcrp" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE’s MCMC engine provides specialized samplers for the <code>dCRP</code> distribution, updating each component of the membership vector sequentially. Internally, the sampler is assigned based on inspection of the model structure, evaluating conjugacy between the mixture kernel and the baseline distribution, as follows:</p>
