@@ -32,8 +32,7 @@ sampler_prior_samples <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        samples     <- extractControlElement(control, 'samples',     error = '  [Error] prior_samples sampler missing required control argument: samples')
-        randomDraws <- extractControlElement(control, 'randomDraws', FALSE)   ## default is taking sequential draws
+        samples <- extractControlElement(control, 'samples', error = '  [Error] prior_samples sampler missing required control argument: samples')
         ## node list generation
         targetExpanded <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(targetExpanded, returnScalarComponents = TRUE)
@@ -43,7 +42,6 @@ sampler_prior_samples <- nimbleFunction(
         k <- length(targetAsScalar)
         if(is.null(dim(samples)))   samples <- matrix(samples, ncol = 1)    ## make vectors into 1-column array
         nSamples <- dim(samples)[1]
-        ind <- 0
         ## checks
         if(length(dim(samples)) != 2)   stop('prior_samples sampler \'samples\' control argument must be a 2-dimensional array, but value provided was a ', length(dim(samples)), '-dimensional array')
         if(!(storage.mode(samples) %in% c('integer', 'double')))   stop('prior_samples sampler \'samples\' control argument must be numeric or integer type')
@@ -51,26 +49,28 @@ sampler_prior_samples <- nimbleFunction(
         if(any(model$getNodeType(target) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
     },
     run = function() {
-        if(randomDraws) {
-            ind <<- ceiling(runif(1, 0, nSamples))   ## random draws
-        } else {
-            ind <<- ind + 1                          ## sequential draws (the default)
-            if(ind > nSamples)   ind <<- 1           ## recycle sequential draws, if necessary
-        }
+        ind <- ceiling(runif(1, 0, nSamples))   ## random draw for proposal
         values(model, targetExpanded) <<- samples[ind, 1:k]
-        model$calculate(calcNodes)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = FALSE)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+        logMHR <- checkLogProb(model$calculateDiff(targetExpanded), targetExpanded)
+        if(logMHR == -Inf) {
+            jump <- FALSE
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = targetExpanded, logProb = TRUE)
+        } else {
+            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf), targetExpanded)
+            jump <- decide(logMHR)
+            if(jump) {
+                ##model$calculate(calcNodesPPomitted)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = targetExpanded, logProb = TRUE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+            } else {
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = targetExpanded, logProb = TRUE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
+            }
     },
     methods = list(
-        before_chain = function(MCMCniter = double(), MCMCnburnin = double(), MCMCchain = double()) {
-            ## issue a note if sequential draws from prior samples will have to be recycled
-            if((!randomDraws) & (MCMCniter > nSamples))   cat('  [Note] prior_samples sampler will recycle sequential draws from prior samples, since ', nSamples, ' samples were provided, and ', MCMCniter, ' MCMC iterations will be run.\n')
-        },
-        reset = function() {
-            ind <<- 0
-        }
+        reset = function() { }
     )
 )
 
