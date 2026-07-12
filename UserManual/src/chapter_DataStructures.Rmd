@@ -2,14 +2,14 @@
 
 ```{r, echo=FALSE}
 require(nimble)
-``` 
+```
 
 # Data structures in NIMBLE {#cha-data-structures}
 
 NIMBLE provides several data structures useful for programming.
 
 We'll first describe *modelValues*, which are containers designed for
-storing values for models. Then in Section \@ref(sec:nimbleLists) we'll describe *nimbleLists*, which have a similar purpose to lists in R, allowing you to store heterogeneous information in a single object. 
+storing values for models. Then in Section \@ref(sec:nimbleLists) we'll describe *nimbleLists*, which have a similar purpose to lists in R, allowing you to store heterogeneous information in a single object.
 
 modelValues can be created in either R or in nimbleFunction setup code.  nimbleLists can be created in R code, in nimbleFunction setup code, and in nimbleFunction run code, from a nimbleList definition created in R or setup code. Once created, modelValues and `nimbleLists` can then be used either in R or in nimbleFunction setup or run code.  If used in run code, they will be compiled along with the nimbleFunction.
 
@@ -31,7 +31,7 @@ will generally be used in nimbleFunctions that interact with models
 section after an initial reading of Chapter \@ref(cha-progr-with-models).]. modelValues objects can
 be defined either in setup code or separately in R (and then passed as
 an argument to setup code). The modelValues object can then used in run code of nimbleFunctions.
- 
+
 ### Creating modelValues objects
 
 Here is a simple example of creating a modelValues object:
@@ -46,17 +46,17 @@ pumpModelValues$x
 In this example, `pumpModelValues` has the same variables as
 `pumpModel`, and we set `pumpModelValues` to have `m = 2`
 rows. As you can see, the rows are stored as elements of a list.
-  
+
   Alternatively, one can define a modelValues object manually by first defining a modelValues *configuration* via the
   `modelValuesConf` function, and then creating an instance from that configuration, like this:
-<!--- %    
-%%    1. `vars`, which is a character vector of variable names, 
-%      1. `type`, which is a character vector of the data types for each variable (`double' for real numbers, `integer' for integers) and  
+<!--- %
+%%    1. `vars`, which is a character vector of variable names,
+%      1. `type`, which is a character vector of the data types for each variable (`double' for real numbers, `integer' for integers) and
 %%        1. `size`, which is a list of vectors of the sizes in each dimension of each variable. The names of the list elements must match the names provided in `vars`.   -->
 
 ```{r, mvConf}
-mvConf = modelValuesConf(vars = c('a', 'b', 'c'), 
-                         type = c('double', 'int', 'double'), 
+mvConf = modelValuesConf(vars = c('a', 'b', 'c'),
+                         type = c('double', 'int', 'double'),
                          size = list(a = 2, b =c(2,2), c = 1) )
 
 customMV = modelValues(mvConf, m = 2)
@@ -99,7 +99,7 @@ can be used as arguments to setup code in nimbleFunctions.
 
 In the example above a modelValues object is passed to setup code, but
 a modelValues configuration can also be passed, with creation of
-modelValues object(s) from the configuration done in setup code. 
+modelValues object(s) from the configuration done in setup code.
 
 ### Accessing contents of modelValues {#sec:access-cont-modelv}
 
@@ -108,22 +108,22 @@ from R, and in fewer ways from NIMBLE.
 
 ```{r, mv-access}
 # sets the first row of a to (0, 1).  R only.
-customMV[['a']][[1]] <- c(0,1)   
+customMV[['a']][[1]] <- c(0,1)
 
 # sets the second row of a to (2, 3)
-customMV['a', 2] <- c(2,3)       
+customMV['a', 2] <- c(2,3)
 
 # can access subsets of each row
 customMV['a', 2][2] <- 4
 
 # accesses all values of 'a'. Output is a list.  R only.
-customMV[['a']]                  
+customMV[['a']]
 
 # sets the first row of b to a matrix with values 1. R only.
-customMV[['b']][[1]] <- matrix(1, nrow = 2, ncol = 2)  
+customMV[['b']][[1]] <- matrix(1, nrow = 2, ncol = 2)
 
 # sets the second row of b.  R only.
-customMV[['b']][[2]] <- matrix(2, nrow = 2, ncol = 2)  
+customMV[['b']][[2]] <- matrix(2, nrow = 2, ncol = 2)
 
 # make sure the size of inputs is correct
 # customMV['a', 1] <- 1:10  "
@@ -132,13 +132,13 @@ customMV[['b']][[2]] <- matrix(2, nrow = 2, ncol = 2)
 ```
 
 Currently, only the syntax `customMV["a", 2]` works in the NIMBLE
-language, not `customMV[["a"][[2]]`. 
+language, not `customMV[["a"][[2]]`.
 
 We can query and change the number of rows using `getsize` and
 `resize`, respectively.  These work in both R and NIMBLE.  Note
 that we don't specify the variables in this case: all variables in a
 modelValues object will have the same number of rows.
-  
+
 ```{r, resize-mv}
 getsize(customMV)
 resize(customMV, 3)
@@ -156,7 +156,7 @@ names from every scalar element of variables (e.g. "b[1, 1]" ,"b[2,
 1]", etc.). The rows of the modelValues will be the rows of the
 matrix, with any matrices or arrays converted to a vector based on
 column-major ordering.
-  
+
 ```{r, as.matrix-mv}
 as.matrix(customMV, 'a')   # convert 'a'
 as.matrix(customMV)        # convert all variables
@@ -224,9 +224,9 @@ each simulation in a row of its modelValues.  `calcNodesMV` and
 nodes into the model, and then do their job of calculating or
 collecting log probabilities (densities), respectively.  Each of these
 returns a numeric vector with the summed log probabilities of the
-chosen nodes from each row. `calcNodesMV` will 
+chosen nodes from each row. `calcNodesMV` will
   save the log probabilities back into the modelValues object if
-  `saveLP = TRUE`, a run-time argument. 
+  `saveLP = TRUE`, a run-time argument.
 
 Here are some examples:
 
@@ -241,11 +241,11 @@ cCalcManyXDeps <- compileNimble(rCalcManyXDeps, project = simpleModel)
 cGetLogProbMany <- compileNimble(rGetLogProbMany, project = simpleModel)
 
 cSimManyXY$run(m = 5) # simulating 5 times
-cCalcManyXDeps$run(saveLP = TRUE) # calculating 
+cCalcManyXDeps$run(saveLP = TRUE) # calculating
 cGetLogProbMany$run() #
 result <- as.matrix(cSimManyXY$mv) # extract simulated values
 ```
-  
+
 ## The nimbleList data structure {#sec:nimbleLists}
 
 nimbleLists provide a container for storing different types of objects in NIMBLE, similar to the list data structure in R.  Before a nimbleList can be created and used, a *definition*^[The *configuration* for a modelValues object is the same concept as a *definition* here; in a future release of NIMBLE we may make the usage more consistent between modelValues and nimbleLists.] for that nimbleList must be created that provides the names, types, and dimensions of the elements in the nimbleList.  nimbleList definitions must be created in R (either in R's global environment or in setup code), but the nimbleList
@@ -290,7 +290,7 @@ mynf <- nimbleFunction(
     returnType(exampleNimListDef())
     return(vals)
   })
- 
+
 # pass exampleNimList as argument to mynf
 mynf(exampleNimList)
 
@@ -321,7 +321,7 @@ Note that definitions for inner, or nested, nimbleLists must be created before t
 
 ### Pre-defined nimbleList types {#sec:predef-nimbleLists}
 
-Several types of nimbleLists are predefined in NIMBLE for use with particular kinds of nimbleFunctions. 
+Several types of nimbleLists are predefined in NIMBLE for use with particular kinds of nimbleFunctions.
 
 - `eigenNimbleList` and `svdNimbleList` are the return types of the `eigen` and `svd` functions (Section \@ref(sec:eigen-nimFunctions}).
 - `waicNimbleList` is the type provided for WAIC output from an MCMC.
@@ -331,11 +331,11 @@ Several types of nimbleLists are predefined in NIMBLE for use with particular ki
 
 ### Using *eigen* and *svd* in nimbleFunctions {#sec:eigen-nimFunctions}
 
-NIMBLE has two linear algebra functions that return nimbleLists.  The `eigen` function takes a symmetic matrix, `x`, as an argument and returns a nimbleList of type `eigenNimbleList`. nimbleLists of type `eigenNimbleList` have two elements: `values`, a vector with the eigenvalues of `x`, and `vectors`, a square matrix with the same dimension as `x` whose columns are the eigenvectors of `x`.  The `eigen` function has two additional arguments: `symmetric` and `only.values`.  The `symmetric` argument can be used to specify if `x` is a symmetric matrix or not.  If `symmetric = FALSE` (the default value), `x` will be checked for symmetry.  Eigendecompositions in NIMBLE for symmetric matrices are both faster and more accurate.  Additionally, eigendecompostions of non-symmetric matrices can have complex entries, which are not supported by NIMBLE.  If a complex entry is detected, NIMBLE will issue a warning and that entry will be set to `NaN`.  The `only.values` arument defaults to `FALSE`.  If `only.values = TRUE`, the `eigen` function will not calculate the eigenvectors of `x`, leaving the `vectors` nimbleList element empty.  This can reduce calculation time if only the eigenvalues of `x` are needed.
+NIMBLE has two linear algebra functions that return nimbleLists.  The `eigen` function takes a symmetric matrix, `x`, as an argument and returns a nimbleList of type `eigenNimbleList`. nimbleLists of type `eigenNimbleList` have two elements: `values`, a vector with the eigenvalues of `x`, and `vectors`, a square matrix with the same dimension as `x` whose columns are the eigenvectors of `x`.  The `eigen` function has two additional arguments: `symmetric` and `only.values`.  The `symmetric` argument can be used to specify if `x` is a symmetric matrix or not.  If `symmetric = FALSE` (the default value), `x` will be checked for symmetry.  Eigendecompositions in NIMBLE for symmetric matrices are both faster and more accurate.  Additionally, eigendecompostions of non-symmetric matrices can have complex entries, which are not supported by NIMBLE.  If a complex entry is detected, NIMBLE will issue a warning and that entry will be set to `NaN`.  The `only.values` argument defaults to `FALSE`.  If `only.values = TRUE`, the `eigen` function will not calculate the eigenvectors of `x`, leaving the `vectors` nimbleList element empty.  This can reduce calculation time if only the eigenvalues of `x` are needed.
 
 
-The `svd` function takes an $n \times p$ matrix `x` as an argument, and returns a nimbleList of type `svdNimbleList`. nimbleLists of type  `svdNimbleList` have three elements: `d`, a vector with the singular values of `x`, `u` a matrix with the left singular vectors of `x`, and `v`, a matrix with the right singular vectors of `x`.  The `svd` function has an optional argument `vectors` which defaults to a value of `"full"`.  The `vectors` argument can be used to specify the number of singular vectors that are returned.  If `vectors = "full"`, `v` will be an $n \times n$ matrix and `u` will be an $p \times p$ matrix.  If `vectors = "thin"`, `v` will be an$n \times m$ matrix, where $m = \min(n,p)$, and `u` will be an $m \times p$ matrix.  If `vectors = "none"`, the `u` and `v` elements of the returned nimbleList will not be populated. 
-  
+The `svd` function takes an $n \times p$ matrix `x` as an argument, and returns a nimbleList of type `svdNimbleList`. nimbleLists of type  `svdNimbleList` have three elements: `d`, a vector with the singular values of `x`, `u` a matrix with the left singular vectors of `x`, and `v`, a matrix with the right singular vectors of `x`.  The `svd` function has an optional argument `vectors` which defaults to a value of `"full"`.  The `vectors` argument can be used to specify the number of singular vectors that are returned.  If `vectors = "full"`, `v` will be an $n \times n$ matrix and `u` will be an $p \times p$ matrix.  If `vectors = "thin"`, `v` will be an$n \times m$ matrix, where $m = \min(n,p)$, and `u` will be an $m \times p$ matrix.  If `vectors = "none"`, the `u` and `v` elements of the returned nimbleList will not be populated.
+
 
 nimbleLists created by either `eigen` or `svd` can be returned from a nimbleFunction, using `returnType(eigenNimbleList())` or `returnType(svdNimbleList())` respectively.  nimbleLists created by `eigen` and `svd` can also be used within other nimbleLists by specifying the nimbleList element types as `eigenNimbleList()` and `svdNimbleList()`.  The below example demonstrates the use of `eigen` and `svd` within a nimbleFunction.
 
@@ -343,13 +343,13 @@ nimbleLists created by either `eigen` or `svd` can be returned from a nimbleFunc
 eigenListFunctionGenerator <- nimbleFunction(
   setup = function(){
     demoMatrix <- diag(4) + 2
-    eigenAndSvdListDef <- nimbleList(demoEigenList = eigenNimbleList(), 
+    eigenAndSvdListDef <- nimbleList(demoEigenList = eigenNimbleList(),
                                      demoSvdList = svdNimbleList())
     eigenAndSvdList <- eigenAndSvdListDef$new()
   },
   run = function(){
     # we will take the eigendecomposition and svd of a symmetric matrix
-    eigenAndSvdList$demoEigenList <<- eigen(demoMatrix, symmetric = TRUE, 
+    eigenAndSvdList$demoEigenList <<- eigen(demoMatrix, symmetric = TRUE,
                                             only.values = TRUE)
     eigenAndSvdList$demoSvdList <<- svd(demoMatrix, vectors = 'none')
     returnType(eigenAndSvdListDef())
@@ -363,5 +363,3 @@ outputList$demoSvdList$d
 ```
 
 The eigenvalues and singular values returned from the above function are the same since the matrix being decomposed was symmetric.  However, note that both eigendecompositions and singular value decompositions are numerical procedures, and computed solutions may have slight differences even for a symmetric input matrix.
-
-

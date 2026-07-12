@@ -5,11 +5,11 @@
 
 ```{r, echo=FALSE}
 require(nimble)
-``` 
+```
 
 ```{r, echo=FALSE}
 read_chunk(file.path('chunks', 'programmingWithModels_chunks.R'))  # one can put code chunks here if one wants
-``` 
+```
 
 ## Introduction to simple nimbleFunctions {#sec:RC-intro}
 
@@ -31,13 +31,13 @@ extension of BUGS (Chapter \@ref(cha-user-defined)).
   least squares estimation of linear regression parameters^[Of course, in general, explicitly
   calculating the inverse is not the recommended numerical recipe for
   least squares.]:
-  
+
 ```{r, nf-RCfun, message=FALSE}
-```  
+```
 
 In this example, we fit a linear model for 100 random response values (`y`) to four columns of
 randomly generated explanatory variables (`X`).  We ran the
-nimbleFunction 
+nimbleFunction
 `solveLeastSquares` uncompiled,
 natively in R, allowing testing and debugging (Section \@ref(sec:debugging)).  Then we compiled it and showed that the compiled version does the same thing,
 but faster^[On the machine this is
@@ -73,7 +73,7 @@ The next sections cover each of these topics in turn.
 
 Often, R help pages are available for NIMBLE's versions of R functions
 using the prefix 'nim' and capitalizing the next letter.  For
-example, help on NIMBLE's version of `numeric` can be found by `help(nimNumeric)`. In some cases help is found directly using the name of the function as it appears in R. 
+example, help on NIMBLE's version of `numeric` can be found by `help(nimNumeric)`. In some cases help is found directly using the name of the function as it appears in R.
 
 ### Basic operations
 
@@ -87,22 +87,22 @@ In addition to the above functions, we provide functions `any_na()` and `any_nan
 
 Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a `nimbleRcall` (see Section \@ref(sec:calling-R-code)).
 
-Next we cover some of these functions in more detail. 
+Next we cover some of these functions in more detail.
 
 #### *numeric*, *integer*, *logical*, *matrix* and *array*
 
 `numeric`, `integer`, or `logical` will create a 1-dimensional vector of
-floating-point (or 'double' [precision]), integer, or logical values, respectively.  The `length` argument specifies the vector 
-length (default 0), and the `value` argument specifies the initial 
+floating-point (or 'double' [precision]), integer, or logical values, respectively.  The `length` argument specifies the vector
+length (default 0), and the `value` argument specifies the initial
  value either as a scalar (used for all vector elements, with default
- 0) or a vector. If a vector and its length is not equal to `length`, the remaining values will be filled by R-style recycling if the `recycle` argument is `TRUE` (which is the default). The `init` argument specifies 
+ 0) or a vector. If a vector and its length is not equal to `length`, the remaining values will be filled by R-style recycling if the `recycle` argument is `TRUE` (which is the default). The `init` argument specifies
 whether or not to initialize the elements in compiled code (default `TRUE`).  If
 first use of the variable does not rely on initial values,  using
 `init = FALSE` will yield slightly more efficient performance.
 
-`matrix` creates a 2-dimensional matrix object of either floating-point (if 
-`type = "double"`, the default), integer (if `type = "integer"`), or logical (if `type = "logical"`) values. 
-As in R, `nrow` and `ncol` arguments specify the number of rows and columns, respectively. 
+`matrix` creates a 2-dimensional matrix object of either floating-point (if
+`type = "double"`, the default), integer (if `type = "integer"`), or logical (if `type = "logical"`) values.
+As in R, `nrow` and `ncol` arguments specify the number of rows and columns, respectively.
 The `value` and `init` arguments are used in the same way as for
 `numeric`, `integer`, and `logical`.
 
@@ -127,7 +127,7 @@ for changing the size of a numeric object, are given in Section \@ref(sec:chang-
   `dim` function for matrices or arrays and like R's
   `length` function for vectors.  In other words, regardless of
   whether the number of dimensions is 1 or more, it returns a vector
-  of the sizes. 
+  of the sizes.
 
 #### Deprecated creation of non-scalar objects using *declare*
 
@@ -181,7 +181,7 @@ from nimbleFunctions (and in BUGS model code), but care is needed in the syntax,
 
   - Names of the distributions generally (but not always) match those of R, which
   sometimes differ from BUGS.  See the list below.
-  - Supported parameterizations are also indicated in the list below. 
+  - Supported parameterizations are also indicated in the list below.
   - For multivariate distributions (multivariate normal, Dirichlet, and Wishart),  'r' functions only return one random
 draw at a time, and the first argument must always be 1.
   - R's recycling rule (re-use of an argument as needed to accommodate
@@ -195,7 +195,7 @@ As in R (and nimbleFunctions), arguments are matched by order or by name
 (`log`, `log.p`, `lower.tail`) can be used and have the same
 defaults. User-defined distributions for BUGS (Chapter
 \@ref(cha-user-defined)) can also be used from
-nimbleFunctions. 
+nimbleFunctions.
 
 For standard distributions, we rely on R's regular help pages
 (e.g., `help(dgamma)`.  For distributions unique to NIMBLE
@@ -211,7 +211,7 @@ Supported distributions, listed by their 'd' function, include:
   - `dbeta(x, shape1, shape2, log)`
   - `dchisq(x, df, log)`
   - `ddexp(x, location, rate, log)`
-  - `ddexp(x, location, scale, log)`  
+  - `ddexp(x, location, scale, log)`
   - `dexp(x, rate, log)`
   - `dexp_nimble(x, rate, log)`
   - `dexp_nimble(x, scale, log)`
@@ -235,7 +235,7 @@ Supported distributions, listed by their 'd' function, include:
   - `dinvwish_chol(x, cholesky, df, scale_param, log)`
 
 
-In the last four, `cholesky` stands for Cholesky decomposition of the relevant matrix; 
+In the last four, `cholesky` stands for Cholesky decomposition of the relevant matrix;
 `prec_param` is a logical indicating whether the Cholesky is of a
 precision matrix (TRUE) or covariance matrix (FALSE)^[For the multivariate t, these are more properly termed the 'inverse scale' and 'scale' matrices]; and `scale_param` is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).
 
@@ -262,7 +262,7 @@ argument that will be displayed in an error message.
 `print`, or equivalently
 `nimPrint`, prints an arbitrary set of outputs in order and adds a
 newline character at the end.  `cat` or `nimCat` is identical,
-except without a newline at the end.  
+except without a newline at the end.
 
 ### Checking for user interrupts: *checkInterrupt* {#sec:check-user-interr}
 
@@ -290,7 +290,7 @@ another one with the additional parameters. Finally, `nimOptim` requires a
 simple R `list`. To define the `control` parameter, create a default value with
 the `nimOptimDefaultControl` function, and set any desired fields.
 
-See `help(nimOptim)` for details, including example usage. 
+See `help(nimOptim)` for details, including example usage.
 
 ### Integration: *integrate* and *nimIntegrate*
 
@@ -422,7 +422,7 @@ When a variable is first created by assignment, its type is determined
 automatically by that assignment. For example, if `x` has not appeared before, then
 ```{r, eval=FALSE}
 x <- A %*% B # assume A and B are double matrices or vectors
-``` 
+```
 
 will create `x` to be a double matrix of the correct size
 (determined during execution).
@@ -431,7 +431,7 @@ will create `x` to be a double matrix of the correct size
 
 Because NIMBLE is statically typed, you cannot use the same variable name for two objects of different types (including objects of different dimensions).
 
-Suppose we have (implicitly) created `x` as a double matrix. 
+Suppose we have (implicitly) created `x` as a double matrix.
 If `x` is used subsequently, it can
 only be used as a double matrix. This is true even if it is assigned a
 new value, which will again set its size automatically but cannot
@@ -441,7 +441,7 @@ change its type.
 x <- A %*% B # assume A and B are double matrices or vectors
 x <- nimMatrix(0, nrow = 5, ncol = 2)  # OK: 'x' is still a double matrix
 x <- rnorm(10)  # NOT OK: 'x' is a double vector
-``` 
+```
 
 
 #### When a numeric object needs to be created before being used {#sec:when-numeric-object}
@@ -456,8 +456,8 @@ contents for specific indices.
 ```{r, exampleDeclare, eval=FALSE}
 x <- numeric(10)
 
-for(i in 1:10) 
-   x[i] <- foo(y[i]) 
+for(i in 1:10)
+   x[i] <- foo(y[i])
 ```
 
 #### How NIMBLE handles `NA`
@@ -475,19 +475,19 @@ These issues arise because NIMBLE uses R's encoding of NA values in C(++) but us
 #### Changing the sizes of existing objects: *setSize* {#sec:chang-sizes-exist}
 
 `setSize` changes the size of an object, preserving its contents in
-column-major order.  
+column-major order.
 
 ```{r, exampleNumeric, eval=FALSE}
 # Example of creating and resizing a floating-point vector
-# myNumericVector will be of length 10, with all elements initialized to 2 
-myNumericVector <- numeric(10, value = 2) 
+# myNumericVector will be of length 10, with all elements initialized to 2
+myNumericVector <- numeric(10, value = 2)
 # resize this numeric vector to be length 20; last 10 elements will be 0
 setSize(myNumericVector, 20)
 ```
 
 ```{r, exampleMatrix, eval=FALSE}
 # Example of creating a 1-by-10 matrix with values 1:10 and resizing it
-myMatrix <- matrix(1:10, nrow = 1, ncol = 10) 
+myMatrix <- matrix(1:10, nrow = 1, ncol = 10)
 # resize this matrix to be a 10-by-10 matrix
 setSize(myMatrix, c(10, 10))
 # The first column will have the 1:10
@@ -509,11 +509,11 @@ myfun <- nimbleFunction(
         d <- a + b                  # double vector
         f <- c(i)                   # integer vector
     })
-``` 
+```
 
 In the line that creates `b`, the index range `i:i` is not
 evaluated until run time.  Even though `i:i` will always evaluate
-to simpy `i`, the compiler does not determine that.  Since there is
+to simply `i`, the compiler does not determine that.  Since there is
 a vector index range provided, the result of `randomValues[i:i]` is
 determined to be a vector.  The following line then creates `d` as
 a vector, because a vector plus a scalar returns a vector.  Another
@@ -525,7 +525,7 @@ illustrated in the last line.
 Consider the following code:
 ```{r, }
 myfun <- nimbleFunction(
-    run = function() { 
+    run = function() {
         A <- matrix(value = rnorm(9), nrow = 3)
         B <- rnorm(3)
         Cmatrix <- A %*% B                # double matrix, one column
@@ -533,7 +533,7 @@ myfun <- nimbleFunction(
         Cmatrix <- (A %*% B)[,1]          # error, vector assigned to matrix
         Cmatrix[,1] <- (A %*% B)[,1]      # ok, if Cmatrix is large enough
     })
-``` 
+```
 This creates a matrix `A`, a vector `B`, and matrix-multiplies
 them.  The vector `B` is automatically treated as a one-column
 matrix in matrix algebra computations.  The result of matrix multiplication is always a matrix, but
@@ -570,11 +570,11 @@ unless it is known at compile time that `M1` has 1 column, in which case
   - `v1 %*% v2` promotes `v1` to a 1-row matrix and `v2` to a
 1-column matrix, so the returned values is a 1x1 matrix with the inner
 product of `v1` and `v2`.  If you want the inner product as a scalar, use
-`inprod(v1, v2)`. 
+`inprod(v1, v2)`.
   - `asRow(v1)` explicitly promotes `v1` to a 1-row matrix.
   Therefore `v1 %*% asRow(v2)` gives the outer product of
   `v1` and `v2`.
-  - `asCol(v1)` explicitly promotes `v1` to a 1-column matrix.  
+  - `asCol(v1)` explicitly promotes `v1` to a 1-column matrix.
   - The default promotion for a vector is to a 1-column matrix.
   Therefore, `v1 %*% t(v2)` is equivalent to `v1 %*% asRow(v2)` .
   - When indexing, dimensions with scalar indices will be dropped.
@@ -585,8 +585,8 @@ product of `v1` and `v2`.  If you want the inner product as a scalar, use
   it must already be correctly sized for the result.  For example,
   `Y[5:10, 20:30] <- x` will not work -- and could crash
   your R session with a segmentation fault --  if Y is not
-  already at least 10x30 in size.  This can be done by `setSize(Y, c(10, 30))`.  See Section \@ref(sec:chang-sizes-exist) for more details.  Note that non-indexed assignment to `Y`, such as `Y <- x`, will automatically set `Y` to the necessary size. 
-  
+  already at least 10x30 in size.  This can be done by `setSize(Y, c(10, 30))`.  See Section \@ref(sec:chang-sizes-exist) for more details.  Note that non-indexed assignment to `Y`, such as `Y <- x`, will automatically set `Y` to the necessary size.
+
 
 
 Here are some examples to illustrate the above points, assuming `M2` is
@@ -626,15 +626,15 @@ As illustrated in the example in Section \@ref(sec:RC-intro),  the
 syntax for a type declaration is:
 
  `type(nDim, sizes)`
- 
-where `type` is `double`, `integer`, `logical` or `character`. 
+
+where `type` is `double`, `integer`, `logical` or `character`.
 (In more general nimbleFunction programming, a type can also be a
 nimbleList type, discussed in Section \@ref(sec:nimbleLists).)
 
 For example `run = function(x = double(1)) { ... `} sets the single argument of the run function to be a vector of numeric values of unknown size.
 
 For `type(nDim, sizes)`, `nDim` is the number of dimensions, with 0 indicating scalar and omission of `nDim` defaulting to a scalar.
-`sizes` is an optional vector of fixed, known sizes.  
+`sizes` is an optional vector of fixed, known sizes.
  For example, `double(2, c(4, 5))` declares a $4 \times 5$ matrix.  If sizes
 are omitted, they will be set either by assignment or by `setSize`.
 
@@ -645,11 +645,11 @@ provided.  For example, to provide 1.2 as a default:
 myfun <- nimbleFunction(
     run = function(x = double(0, default = 1.2)) {
 })
-``` 
+```
 
 Functions with return values must have their return type explicitly declared using `returnType`, which can occur anywhere in the run code. For example `returnType(integer(2))` declares the return type to be a matrix of integers. A return type of `void()` means there is
 no return value, which is the default if no `returnType` statement
-is included.  
+is included.
 
 Note that because all values in models are stored as doubles and because of some limitations in NIMBLE's automatic casting, non-scalar return values of user-defined distributions must be doubles.
 
@@ -658,18 +658,18 @@ Note that because all values in models are stored as doubles and because of some
 Uncompiled nimbleFunctions pass arguments like R does, by copy.  If
 `x` is passed as an argument to function `foo`, and `foo`
 modifies `x` internally, it is modifying its copy of `x`, not
-the original `x` that was passed to it.  
+the original `x` that was passed to it.
 
 Compiled nimbleFunctions pass arguments to other compiled
 nimbleFunctions by reference (or pointer).  This is very different.
 Now if `foo` modifies `x` internally, it is modifying the same
 `x` that was passed to it.  This allows much faster execution but
   is obviously a fundamentally different behavior.
-  
+
   Uncompiled execution of nimbleFunctions is primarily intended for
   debugging.  However, debugging of how nimbleFunctions interact via
   arguments requires testing the compiled versions.
-  
+
 ## Calling external compiled code {#sec:calling-external-code}
 
 If you have a function in your own compiled C or C++ code and an appropriate header file, you can generate a nimbleFunction that wraps access to that function, which can then be used in other nimbleFunctions.  See `help(nimbleExternalCall)` for an example.  This also contains an example of using an externally compiled function in the BUGS code of a model.

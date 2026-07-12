@@ -2,7 +2,7 @@
 
 ```{r, echo=FALSE}
 require(nimble)
-``` 
+```
 
 # Automatic Derivatives {#cha-AD}
 
@@ -14,7 +14,7 @@ if(!require(nimble, warn.conflicts = FALSE, quietly = TRUE)) {
 require(methods, warn.conflicts = FALSE, quietly = TRUE)  # seems to be needed, but why?
 require(igraph, warn.conflicts = FALSE, quietly = TRUE)  # same question
 eval <- TRUE
-``` 
+```
 
 As of version 1.0.0, NIMBLE can automatically provide numerically accurate derivatives of potentially arbitrary order for most calculations in models and/or nimbleFunctions. This feature enables methods such as Hamiltonian Monte Carlo (HMC, see package `nimbleHMC`), Laplace (and AGHQ) approximation, and fast optimization with methods that use function gradients.
 
@@ -248,7 +248,7 @@ Derivatives can be tracked through function calls, including from a model to a u
 
 For this situation, you can use `ADbreak` to stop derivative tracking. For example, if one has a nimbleFunction argument `x`, one would do `x_noDeriv <- ADbreak(x)` and then use `x_noDeriv` in subsequent calculations. This "breaks" derivative tracking in the sense that the derivative of `x_noDeriv` with respect to `x` is 0. However, it is important to realize that `x_noDeriv` is still a derivative-tracking type (unless it is in the `ignore` set), so it can be passed to other functions involved in the derivative-tracked operations. And, on the other hand, it can't be used as a for-loop index or as the start of end of a for-loop extent. As noted above, if the values of `x` or `x_noDeriv` are used in further calculations, their values will be "baked in" to the tape.
 
-Including `"x"` in the `ignore` set won't work in this case because, if `x` is a function argument, its type will then be changed to be a non-derivative type. If a derivative-tracking type is then passed as the value for `x` there will be a mismatch in types. Since variables passed from models always allow derivative-tracking, one should not `ignore` the corresponding function arguments. 
+Including `"x"` in the `ignore` set won't work in this case because, if `x` is a function argument, its type will then be changed to be a non-derivative type. If a derivative-tracking type is then passed as the value for `x` there will be a mismatch in types. Since variables passed from models always allow derivative-tracking, one should not `ignore` the corresponding function arguments.
 
 Note that `ADbreak` only works for scalars. If you need to break AD tracking for a non-scalar, you have to write a for-loop to apply `ADbreak` for each element. For example:
 
@@ -282,10 +282,10 @@ derivs_demo3 <- nimbleFunction(
   setup = function() {},
   run = function(d = double(), x = double(1)) {
     ans <- exp(-d*x)
-    ans <- nf_sqrt(ans) 
-    return(ans) 
+    ans <- nf_sqrt(ans)
+    return(ans)
     returnType(double(1))
-  }, 
+  },
   methods = list(
     derivsRun = function(d = double(), x = double(1)) {
       wrt <- 1:(1 + length(x)) # total length of d and x
@@ -306,11 +306,11 @@ x <- c(2.1, 2.2)
 C_my_derivs_demo3$derivsRun(d, x)$jacobian
 ```
 
-Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE`, `buildDerivs = 'run'`, or `buildDerivs = list(run = list())`. One can't take derivatives of `nf_sqrt` on its own, but it can be called by a method of a nimbleFunction that can have its derivatives taken (e.g. the `run` method of a `derivs_demo3` object). 
+Note that for a nimbleFunction without setup code, one can say `buildDerivs=TRUE`, `buildDerivs = 'run'`, or `buildDerivs = list(run = list())`. One can't take derivatives of `nf_sqrt` on its own, but it can be called by a method of a nimbleFunction that can have its derivatives taken (e.g. the `run` method of a `derivs_demo3` object).
 
 ### Understanding more about how AD works: *taping* of operations {#sec:understanding-more-AD}
 
-At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library [@bell-22]. AD methods work by following a set of calculations multiple times, sometimes in reverse order. 
+At this point, it will be helpful to grasp more of how AD works and its implementation in nimble via the CppAD library [@bell-22]. AD methods work by following a set of calculations multiple times, sometimes in reverse order.
 
 For example, the derivative of $y = \exp(x^2)$ can be calculated (by the chain rule of calculus) as the derivative of $y = \exp(z)$ (evaluated at $z = x^2$) times the derivative of $z = x^2$ (evaluated at $x$). This can be calculated by first going through the sequence of steps for the value, i.e. (i) $z = x^2$, (ii) $y = \exp(z)$, and then again for the derivatives, i.e. (i) $dz = 2x (dx)$, (ii) $dy = \exp(z) dz$. These steps determine the instantaneous change $dy$ that results from an instantaneous change $dx$. (It may be helpful to think of both values as a function of a third variable such as $t$. Then we are determining $dy/dt$ as a function of $dx/dt$.) In CppAD, the basic numeric object type (double) is replaced with a special type and corresponding versions of all the basic math operations so that those operations can track not just the values but also derivative information.
 
@@ -395,7 +395,7 @@ If you are interested in measuring the performance of AD in nimble, please remem
 
 ## Advanced uses: double taping
 
-Suppose you are interested only in the Jacobian, not in the value, and/or want only some elements of the Jacobian. You might still need the value, but obtaining the value alone from an AD tape (i.e. from `derivs`) will be slower than obtaining it by simply calling the function. On the other hand, AD methods need to calculate the value before calculating first order derivatives, so the value will be calculated anyway. However, in some cases, some of the steps of value calculations aren't really needed if one only wants, say, first-order derivatives. In addition, if not all elements of the Jacobian are wanted, then some unnecessary calculations will be done internally that one might want to avoid. 
+Suppose you are interested only in the Jacobian, not in the value, and/or want only some elements of the Jacobian. You might still need the value, but obtaining the value alone from an AD tape (i.e. from `derivs`) will be slower than obtaining it by simply calling the function. On the other hand, AD methods need to calculate the value before calculating first order derivatives, so the value will be calculated anyway. However, in some cases, some of the steps of value calculations aren't really needed if one only wants, say, first-order derivatives. In addition, if not all elements of the Jacobian are wanted, then some unnecessary calculations will be done internally that one might want to avoid.
 
 A way to cut out unnecessary calculations is to record a tape of a tape, which we call double taping. Let's see an example before explaining further.
 
@@ -411,7 +411,7 @@ derivs_demo5 <- nimbleFunction(
                          wrt = integer(1),
                          reset = logical(0, default=FALSE)) {
       ans <- derivs(run(d, x), wrt = wrt, order = 1, reset = reset)
-      jac <- ans$jacobian[,1] # derivatives wrt 'd' only 
+      jac <- ans$jacobian[,1] # derivatives wrt 'd' only
       return(jac)
       returnType(double(1))
     },
@@ -458,7 +458,7 @@ Note that in any of the methods below, when order 0 (value) is requested, then a
 
 Recall that `model$calculate(nodes)` returns the sum of the log probabilities of all stochastic nodes in `nodes`. Deterministic calculations are also executed; they contribute 0 to the sum of probabilities but may be needed for inputs to subsequent calculations. Calculations are done in the order of `nodes`, which should be a valid order for the model, often obtained from `model$getDependencies`.
 
-The simplest way to get derivatives for model calculations is to use `model$calculate` as the function taped by `derivs` (here shown by its alternative name `nimDerivs` for illustration). 
+The simplest way to get derivatives for model calculations is to use `model$calculate` as the function taped by `derivs` (here shown by its alternative name `nimDerivs` for illustration).
 
 ```{r eval=eval}
 derivs_nf <- nimbleFunction(
@@ -488,11 +488,11 @@ Now we can make an instance of `derivs_nf`, compile the model and nimbleFunction
 
 ```{r, eval=eval}
 model_code <- nimbleCode({
-  # priors 
+  # priors
   intercept ~ dnorm(0, sd = 100)
   beta ~ dnorm(0, sd = 100)
   sigma ~ dhalfflat()
-  # random effects and data  
+  # random effects and data
   for(i in 1:10) {
     # random effects
     ran_eff[i] ~ dnorm(0, sd = sigma)
@@ -524,7 +524,7 @@ derivs_result <- cDerivs_all$run(order = 0:2)
 derivs_result
 ```
 
-As above, using `order = 0:2` results in the the value (0th order),  Jacobian (1st order), and Hessian (2nd order). The function `model$calculate` is organized here to have inputs that are the current values of `intercept`, `beta`, and `sigma` in the model. It has output that is the summed log probability of the `calc_nodes`. The Jacobian columns are first derivatives with respect to `intercept`, `beta` and `sigma`, respectively. The first and second indices of the Hessian array follow the same ordering. For example `derivs_result$hessian[2,1,1]` is the second derivative with respect to `beta` (first index = 2) and `intercept` (second index = 1). 
+As above, using `order = 0:2` results in the the value (0th order),  Jacobian (1st order), and Hessian (2nd order). The function `model$calculate` is organized here to have inputs that are the current values of `intercept`, `beta`, and `sigma` in the model. It has output that is the summed log probability of the `calc_nodes`. The Jacobian columns are first derivatives with respect to `intercept`, `beta` and `sigma`, respectively. The first and second indices of the Hessian array follow the same ordering. For example `derivs_result$hessian[2,1,1]` is the second derivative with respect to `beta` (first index = 2) and `intercept` (second index = 1).
 
 In the case of `model$calculate`, the first index of the Jacobian and the last index of the Hessian are always 1 because derivatives are of the first (and only) output value.
 
@@ -542,7 +542,7 @@ We can see that all the results clearly match the compiled results to a reasonab
 
 ### Method 2: `nimDerivs` of a method that calls `model$calculate`
 
-Sometimes one needs derivatives of calculations done in a nimbleFunction as well as in a model. And sometimes one needs to change values in a model before and/or after doing model calculations and have those changes recorded in the derivative tape. 
+Sometimes one needs derivatives of calculations done in a nimbleFunction as well as in a model. And sometimes one needs to change values in a model before and/or after doing model calculations and have those changes recorded in the derivative tape.
 
 For these reasons, it is possible to take derivatives of a method that includes a call to `model$calculate`. Continuing the above example, say we want to take derivatives with respect to the log of `sigma`, so the input vector will be treated as `intercept`, `beta`, and `log(sigma)`, in that order. We will convert `log(sigma)` to `sigma` before using it in the model, and we want the derivative of that transformation included in the tape (i.e. using the chain rule).
 
@@ -556,7 +556,7 @@ derivs_nf2 <- nimbleFunction(
     derivsInfo <- makeModelDerivsInfo(model, wrt_nodes, calc_nodes)
     updateNodes <- derivsInfo$updateNodes
     constantNodes <- derivsInfo$constantNodes
-    n_wrt <- length(wrt_nodes) 
+    n_wrt <- length(wrt_nodes)
     # If wrt_nodes might contain non-scalar nodes, the more general way
     # to determine the length of all scalar elements is:
     # length(model$expandNodeNames(wrt_nodes, returnScalarComponents = TRUE))
@@ -575,7 +575,7 @@ derivs_nf2 <- nimbleFunction(
                          reset = logical(0, default=FALSE)) {
       wrt <- 1:n_wrt
       ans <- nimDerivs(run(x), wrt = wrt, order = order, reset = reset,
-                       model = model, updateNodes = updateNodes, 
+                       model = model, updateNodes = updateNodes,
                        constantNodes = constantNodes)
       return(ans)
       returnType(ADNimbleList())
@@ -617,7 +617,7 @@ In most cases, you can obtain `constantNodes` and `updateNodes` from `makeModelD
     - not in the `wrt` argument to `nimDerivs` (only relevant for Method 1), and
     - not assigned into the model using `values(model, nodes) <<- some_values` prior to `model$calculate` (only relevant for Method 2), and
     - not a deterministic node in `calc_nodes`.
-    
+
 - `updateNodes` includes node names satisfying those conditions whose values might change between uses of the tape regardless of the `reset` argument.
 - `constantNodes` includes node names satisfying those conditions whose values will be baked into the tape (will not change) until the next call with `reset=TRUE`.
 
@@ -684,7 +684,7 @@ The worked example next will illustrate use of the parameter transformation syst
 
 In this example, we will obtain maximum likelihood estimates of a Poisson GLM. It will be similar to the GLMM above, but without the random effects. Maximization of a likelihood function can be done with methods that don't require gradients, but it is much faster to use methods that do use gradients.
 
-To illustrate the parameter transformation system, we will give `p` a uniform prior, constrained to values between 0 and 1. The maximum likelihood estimation below will not use the prior probability, but nevertheless the prior will be interpreted for its constraints on valid values in this case. This need for parameter transformation is somewhat artifical in the interest of simplicity.
+To illustrate the parameter transformation system, we will give `p` a uniform prior, constrained to values between 0 and 1. The maximum likelihood estimation below will not use the prior probability, but nevertheless the prior will be interpreted for its constraints on valid values in this case. This need for parameter transformation is somewhat artificial in the interest of simplicity.
 
 ```{r eval=eval}
 model_code <- nimbleCode({
@@ -692,7 +692,7 @@ model_code <- nimbleCode({
   p ~ dunif(0, 1)
   log_p <- log(p)
   beta ~ dnorm(0, sd = 100)
-  # random effects and data  
+  # random effects and data
   for(i in 1:50) {
     # data
     y[i] ~ dpois(exp(log_p + beta*X[i]))
@@ -770,7 +770,7 @@ logLikelihood_nf <- nimbleFunction(
 )
 ```
 
-Sometimes you might want a call to `transformer$transform` or `transformer$inverseTransform` to be included in a derivative calculation. In this case, we don't. 
+Sometimes you might want a call to `transformer$transform` or `transformer$inverseTransform` to be included in a derivative calculation. In this case, we don't.
 
 Next we build and compile an instance of `logLikelihood_nf` specialized (by the `setup`` function) to our model and its parameters.
 
@@ -779,12 +779,12 @@ ll_glm <- logLikelihood_nf(model, c("p", "beta"))
 Cll_glm <- compileNimble(ll_glm, project = model)
 ```
 
-Now let's see how the parameter transformation works for this model. For `beta`, it already has an unconstrained range of valid values, so it has no transformation (i.e. it has an indentity transformation). For `p`, it is constrained beween 0 and 1, so it will be logit-transformed. 
+Now let's see how the parameter transformation works for this model. For `beta`, it already has an unconstrained range of valid values, so it has no transformation (i.e. it has an identity transformation). For `p`, it is constrained between 0 and 1, so it will be logit-transformed.
 
 ```{r eval=eval}
 Cll_glm$transform(c(0.2, 1))
 # The inverse transformation goes back to the original parameters, within rounding:
-Cll_glm$inverseTransform(c(-1.386294, 1)) 
+Cll_glm$inverseTransform(c(-1.386294, 1))
 ```
 
 Now we are ready to use the methods provided in `Cll_glm` in a call to R's `optim` to find the MLE.

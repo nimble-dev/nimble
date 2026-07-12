@@ -4,16 +4,16 @@
 
 ```{r, echo=FALSE}
 require(nimble)
-``` 
+```
 
 # Writing nimbleFunctions to interact with models {#cha-progr-with-models}
 
 ```{r, echo=FALSE}
-read_chunk(file.path('chunks', 'programmingWithModels_chunks.R')) 
-``` 
+read_chunk(file.path('chunks', 'programmingWithModels_chunks.R'))
+```
 
 
-  
+
 ## Overview {#sec:writ-nimble-funct}
 
 When you write an R function, you say what the input arguments are,
@@ -42,18 +42,18 @@ are two kinds of code and two steps of execution:
   arguments, the return value, and in some circumstances for local
   variables. There are two
   kinds of *run* code:
-  
+
       a. There is always a primary function, given as the argument `run`^[This can be omitted if you don't need it.].
       b. There can optionally be other functions, or 'methods' in the
     language of object-oriented programming, that share the same
     objects created by the *setup* function.
-  
+
 
 
 Here is a small example to fix ideas:
 
 ```{r, nf-intro}
-``` 
+```
 
 The call to the R function called `nimbleFunction` returns a
 function, similarly to defining a function in R. That function,
@@ -84,33 +84,33 @@ structure is determined, and then the `run` code can use that
 information without repeatedly, redundantly recomputing it.  A
 nimbleFunction can
 be called repeatedly (one can think of it as a generator), each time returning a specialized
-nimbleFunction. 
-  
+nimbleFunction.
+
 Readers familiar with object-oriented programming may find it useful
 to think in terms of class definitions and objects.  `nimbleFunction`
 creates a class definition.  Each specialized nimbleFunction is one object
 in the class.  The setup arguments are used to define member data in
-the object. 
+the object.
 
 ## Using and compiling nimbleFunctions {#sec:using-comp-nimbl}
 
 To compile the nimbleFunction, together with its model, we use `compileNimble`:
 
 ```{r, nf-compiling}
-``` 
+```
 
 These have been initialized with the values from their uncompiled
 versions and can be used in the same way:
 
 ```{r, nf-using}
-``` 
+```
 
 ## Writing setup code
 
 ### Useful tools for setup functions
 
 The setup function is typically used to determine information on nodes
-in a model, set up modelValues or nimbleList objects, set up (nested) nimbleFunctions 
+in a model, set up modelValues or nimbleList objects, set up (nested) nimbleFunctions
 or nimbleFunctionLists, and set up any persistent numeric objects.
 For example, the setup code of an MCMC nimbleFunction creates the
 nimbleFunctionList of sampler nimbleFunctions.  The values of numeric
@@ -125,9 +125,9 @@ Some of the useful tools and objects to create in setup functions include:
   - **modelValues objects** These are discussed in Sections \@ref(sec:modelValues-struct) and \@ref(sec:access-model-modelv).
   - **nimbleList objects**  New instances of `nimbleList`s can
   be created from a nimbleList definition in either setup or run code. See Section \@ref(sec:nimbleLists) for more information.
-<!---  Comment: It is actually sketchy that we allow a nimbleList 
+<!---  Comment: It is actually sketchy that we allow a nimbleList
   % definition to be created in setup code, because it would  have to
- be the same definition always used by all specializations.  So 
+ be the same definition always used by all specializations.  So
   % I've put the emphasis here on creating nimbleList objects. -PdV -->
   - **specializations of other nimbleFunctions** A useful NIMBLE
   programming technique is to have one nimbleFunction contain other
@@ -137,7 +137,7 @@ Some of the useful tools and objects to create in setup functions include:
   nimbleFunctions (Section \@ref(sec:virt-nimbl-nimbl)).
 
 If one wants a nimbleFunction that does get specialized but has
-empty setup code, use `setup = function() {}` or `setup = TRUE`.  
+empty setup code, use `setup = function() {}` or `setup = TRUE`.
 
 ### Accessing and modifying numeric values from setup {#sec:access-modify-numer}
 
@@ -146,10 +146,10 @@ modified^[Actually, they can be, but only for uncompiled nimbleFunctions.],
 numeric values and modelValues can be, as illustrated by extending the example from above.
 
 ```{r, nf-modifyValueToAdd}
-``` 
+```
 
 ### Determining numeric types in nimbleFunctions
-  
+
 For numeric variables from the `setup` function that
   appear in the `run` function or other member functions (or
   are declared in `setupOutputs`), the
@@ -159,7 +159,7 @@ For numeric variables from the `setup` function that
   example if `X` is created as a matrix (two-dimensional double) in one
   specialization but as a vector (one-dimensional double) in another, there
   will be a problem during compilation.  The sizes may differ in each specialization.
-  
+
    Treatment of vectors of length one presents special challenges because
   they could be treated as scalars or vectors.  Currently they are
   treated as scalars.  If you want a vector, ensure that the length is
@@ -181,13 +181,13 @@ example `X` and `Y`, simply include
 
 ```{r, eval = FALSE}
 setupOutputs(X, Y)
-``` 
+```
 
-anywhere in the setup code. 
+anywhere in the setup code.
 
 ## Writing run code {#sec:nimble-lang-comp}
 
-In Chapter \@ref(cha-RCfunctions) we described the functionality of the NIMBLE language that could be used in run code without setup code (typically in cases where no models or modelValues are needed).   Next we explain the additional features that allow use of models and modelValues in the run code. 
+In Chapter \@ref(cha-RCfunctions) we described the functionality of the NIMBLE language that could be used in run code without setup code (typically in cases where no models or modelValues are needed).   Next we explain the additional features that allow use of models and modelValues in the run code.
 
 ### Driving models: *calculate*, *calculateDiff*, *simulate*, *getLogProb* {#sec:driv-models:-calc}
 
@@ -197,7 +197,7 @@ for `getLogProb`, it is usually important for the `nodes`
 vector to be sorted in
 topological order.  Model member functions such as `getDependencies` and
 `expandNodeNames` will
-always return topoligically sorted node names.
+always return topologically sorted node names.
 
 Most R-like indexing of a node vector is allowed within the
 argument to `calculate`, `calculateDiff`, `simulate`, and `getLogProb`. For example, all of the following are allowed:
@@ -209,7 +209,7 @@ myModel$calculate(nodes[1:3])
 myModel$calculate(nodes[c(1,3)])
 myModel$calculate(nodes[2:i])
 myModel$calculate(nodes[ values(model, nodes) + 0.1 < x ])
-``` 
+```
 
 Note that in the last line of code, one must have that the length of `nodes` is
 equal to that of `values(model, nodes)`, which means that all the nodes in `nodes`
@@ -222,7 +222,7 @@ can only be indexed within a call to `calculate`, `calculateDiff`,
 ### Getting and setting variable and node values
 
 #### Using indexing with nodes
-  
+
 
 Here is an example that illustrates getting and setting of nodes,
 subsets of nodes, or variables.  Note the following:
@@ -231,7 +231,7 @@ subsets of nodes, or variables.  Note the following:
    - In `model[[v]]`, `v` can only be a single node or variable name, not a vector of multiple nodes nor an element of such a vector (`model[[ nodes[i] ]]` does not work).  The node itself may be a vector, matrix or array node.
    - In fact, `v` can be a node-name-like character string, even if it is not actually a node in the model.  See example 4 in the code below.
    - One can also use `model$varName`, with the caveat that `varName` must be a variable name.  This usage would only make sense for a nimbleFunction written for models known to have a specific variable.  (Note that if `a` is a scalar node in `model`, then `model[['a']]` will be a scalar but `model$a` will be a vector of length 1.
-   - one should use the `<<-` global assignment operator to assign into model nodes. 
+   - one should use the `<<-` global assignment operator to assign into model nodes.
 
 
 Note that NIMBLE does not allow variables to change dimensions.  Model nodes are the same, and indeed are more restricted because they can't change sizes.  In addition, NIMBLE distinguishes between scalars and vectors of length 1.  These rules, and ways to handle them correctly, are illustrated in the following code as well as in Section \@ref(sec:how-nimble-handles).
@@ -253,7 +253,7 @@ nfGen <- nimbleFunction(
     # node1 and node2 would typically be setup arguments, so they could
     # have different values for different models.  We are assigning values
     # here so the example is clearer.
-        node1 <- 'sigma'            # a scalar node 
+        node1 <- 'sigma'            # a scalar node
         node2 <- 'y[1:5]'           # a vector node
         notReallyANode <- 'y[2:4]'  # y[2:4] allowed even though not a node!
     },
@@ -264,19 +264,19 @@ nfGen <- nimbleFunction(
         tmp3 <- model[[notReallyANode]]  # 4. tmp3 will be a vector
         tmp4 <- model$y[3:4]      # 5. hard-coded access to a model variable
         # 6. node1 is scalar so can be assigned a scalar:
-        model[[node1]] <<- runif(1) 
-        model[[node2]][1] <<- runif(1) 
-                 # 7. an element of node2 can be assigned a scalar 
+        model[[node1]] <<- runif(1)
+        model[[node2]][1] <<- runif(1)
+                 # 7. an element of node2 can be assigned a scalar
         model[[node2]] <<- runif(length(model[[node2]]))
                  # 8. a vector can be assigned to the vector node2
-        model[[node2]][1:3] <<- vals[1:3] 
+        model[[node2]][1:3] <<- vals[1:3]
              # elements of node2 can be indexed as needed
         returnType(double(1))
-        out <- model[[node2]] # we can return a vector   
+        out <- model[[node2]] # we can return a vector
         return(out)
     }
     )
-    
+
 Rnf <- nfGen(m)
 Cnf <- compileNimble(Rnf)
 Cnf$run(rnorm(10))
@@ -300,7 +300,7 @@ probabilities.  This can be done using `values`:
 P <- values(model, nodes)
 # or put values from a vector into a set of model nodes
 values(model, nodes) <- P
-``` 
+```
 
 where the first line would assign the collection of values from `nodes`
 into `P`, and the second would do the inverse.  In both cases, values
@@ -311,7 +311,7 @@ column-wise order.
 vector in other expressions, e.g.,
 ```{r, eval=FALSE}
 Y <- A %*% values(model, nodes) + b
-``` 
+```
 
 One can also index elements of nodes in the argument to values, in the same manner as discussed for `calculate` and related functions in Section \@ref(sec:driv-models:-calc).
 
@@ -324,18 +324,18 @@ For example:
 
 ```{r, eval=FALSE}
 # c(rnorm(1)) creates vector of length one:
-values(model, nodes[1]) <- c(rnorm(1)) 
+values(model, nodes[1]) <- c(rnorm(1))
 # won't compile because rnorm(1) is a scalar
-# values(model, nodes[1]) <- rnorm(1)  
+# values(model, nodes[1]) <- rnorm(1)
 
 out <- values(model, nodes[1]) # out is a vector
 out2 <- values(model, nodes[1])[1] # out2 is a scalar
-``` 
+```
 
 
 ### Getting parameter values and node bounds
 
-Sections \@ref(sec:getParam)-\@ref(sec:getBound) describe how to get the parameter values for a node and the range (bounds) of possible values for the node using  `getParam` and `getBound`. Both of these can be used in run code. 
+Sections \@ref(sec:getParam)-\@ref(sec:getBound) describe how to get the parameter values for a node and the range (bounds) of possible values for the node using  `getParam` and `getBound`. Both of these can be used in run code.
 
 ### Using modelValues objects {#sec:access-model-modelv}
 
@@ -346,7 +346,7 @@ designed to easily save values from a model object during the running
 of a nimbleFunction. A modelValues object used in run code
 must always exist in the setup code, either by passing it in as a
 setup argument or creating it in the setup code.
-  
+
 To illustrate this, we will create a nimbleFunction for computing
 importance weights for importance sampling. This function will use two
 modelValues objects.  `propModelValues` will contain a set of
@@ -354,35 +354,35 @@ values simulated from the importance sampling distribution and a field `propLL`
 for their log
 probabilities (densities).  `savedWeights` will contain the
 difference in log probability (density) between the model and the
-`propLL` value provided for each set of values.   
+`propLL` value provided for each set of values.
 
 ```{r, mv-setup-code}
 ```
-  
+
   The simplest way to pass values back and forth between models and
   modelValues inside of a nimbleFunction is with `copy`, which
   has the synonym `nimCopy`. See `help(nimCopy)` for argument details.
-<!--- % This takes arguments  
-  %% 
- %   1.[`from`, `to`] which can either be models or modelValues 
+<!--- % This takes arguments
+  %%
+ %   1.[`from`, `to`] which can either be models or modelValues
   %%   1.[`row`, `rowTo`] which refers to the rows of a
- %   modelValues object, if either `from` or `to` is a 
+ %   modelValues object, if either `from` or `to` is a
   %%   modelValues. If `rowTo` is omitted, it is assumed to be equal to `row` if necessary.
- %     1.[`nodes`, `nodesTo`] which is a vector of the names of the nodes 
+ %     1.[`nodes`, `nodesTo`] which is a vector of the names of the nodes
   %%     to be copied.  The node names will be expanded when variable names are provided.  If
- %     `nodesTo` is omitted it will be set equal to `nodes`. 
-  %% 
+ %     `nodesTo` is omitted it will be set equal to `nodes`.
+  %%
    TODO: CHECK THESE USAGES -->
-  
+
   Alternatively, the values may be accessed via indexing of individual
   rows, using the notation `mv[var, i]`, where `mv` is a
   modelValues object, `var` is a variable name (not a node name),
   and `i` is a row number. Likewise, the `getsize` and
   `resize` functions can be used as discussed in Section \@ref(sec:modelValues-struct). However the function
   `as.matrix` does not work in run code.
-  
+
   Here is a run function to use these modelValues:
-  
+
 ```{r, mv-run-time}
 ```
 
@@ -391,7 +391,7 @@ using `$`, which is shown in more detail below.  In
 fact, since modelValues, like most NIMBLE objects, are reference class
 objects, one can get a reference to them before the function is
 executed and then use that reference afterwards.
-  
+
 ```{r, mv-compilation-example}
 ```
 
@@ -408,12 +408,12 @@ statements would be valid:
 
 ```{r, eval = FALSE}
 model[["x[2:8, ]"]][2:4, 1:3] %*% Z
-``` 
+```
 if Z is a vector or matrix, and
 
 ```{r, eval = FALSE}
 C[6:10] <- mv[v, i][1:5, k] + B
-``` 
+```
 if B is a vector or matrix.
 
 The NIMBLE language allows scalars, but models defined from BUGS code
@@ -432,7 +432,7 @@ setup code in just the same ways as the run function.  In
 fact, the run function is just a default main method name. Any method can then call another method.
 
 ```{r, usingMemberFunctions}
-``` 
+```
 
 ### Using other nimbleFunctions {#sec:using-other-nimbl}
 
@@ -440,10 +440,10 @@ One nimbleFunction can use another nimbleFunction that was passed to
 it as a setup argument or was created in the setup function.  This can
 be an effective way to program.  When a nimbleFunction needs to
 access a setup variable or method of another nimbleFunction, use
-`$`. 
+`$`.
 
 ```{r, owningMemberFunctions}
-``` 
+```
 <!---  CJP: doesn't seem to be an issue at the moment: Note that the output from the `print` calls in the compiled function match those from the uncompiled function when run in an R session.  It may not be shown here because this document is created with `knitr` and for some reason output printed from C++ does not make it into `knitr` output. -->
 
 ### Virtual nimbleFunctions and nimbleFunctionLists {#sec:virt-nimbl-nimbl}
@@ -464,7 +464,7 @@ simple, single-level inheritance.
 Here is how it works:
 
 ```{r, nimbleFunctionLists}
-``` 
+```
 
 
 One can also use `seq_along` with nimbleFunctionLists (and only with nimbleFunctionLists). As in R, `seq_along(myFunList)`  is equivalent to
@@ -479,7 +479,7 @@ Virtual nimbleFunctions cannot define setup values to be inherited.
 NIMBLE provides limited uses of character objects in run code.
 Character vectors created in setup code will be available in
 run code, but the only thing you can really do with them is
-include them in a `print` or `stop` statement.  
+include them in a `print` or `stop` statement.
 
 Note that character vectors of model node and variable names are
 processed during compilation.  For example, in `model[[node]]`, `node`
@@ -498,7 +498,7 @@ Before the introduction of nimbleLists in Version 0.6-4, NIMBLE did not explicit
 they are compiled using `setupOutputs`.  Here is an example:
 
 ```{r, dataStructures}
-``` 
+```
 
 You'll notice that:
 
@@ -516,7 +516,7 @@ interfaces by setting the
 `buildInterfacesForCompiledNestedNimbleFunctions` option via
 `nimbleOptions` to TRUE.  If we had left that option FALSE (its
 default value), we could still get to the values of interest using
-`valueInCompiledNimbleFunction(CmyDataNF, 'X')` 
+`valueInCompiledNimbleFunction(CmyDataNF, 'X')`
   - We need to take care that at the time of compilation, the
   `X`, `Y` and `Z` values contain doubles via
   `as.numeric` so that they are not compiled as integer objects.
@@ -526,34 +526,34 @@ default value), we could still get to the values of interest using
 
 ## Example: writing user-defined samplers to extend NIMBLE's MCMC engine {#sec:user-samplers}
 
-One important use of nimbleFunctions is to write additional samplers that can be used in NIMBLE's MCMC engine. This allows a user to write a custom sampler for one or more nodes in a model, as well as for programmers to provide general samplers for use in addition to the library of samplers provided with NIMBLE. 
+One important use of nimbleFunctions is to write additional samplers that can be used in NIMBLE's MCMC engine. This allows a user to write a custom sampler for one or more nodes in a model, as well as for programmers to provide general samplers for use in addition to the library of samplers provided with NIMBLE.
 
 The following code illustrates how a NIMBLE developer would implement and use a Metropolis-Hastings random walk sampler with fixed proposal standard deviation.
 
 ```{r, custom-sampler, eval=FALSE}
 my_RW <- nimbleFunction(
-    
+
     contains = sampler_BASE,
-    
+
     setup = function(model, mvSaved, target, control) {
         # proposal standard deviation
         scale <- if(!is.null(control$scale)) control$scale else 1
         calcNodes <- model$getDependencies(target)
     },
-    
+
     run = function() {
         # initial model logProb
-        model_lp_initial <- getLogProb(model, calcNodes) 
+        model_lp_initial <- getLogProb(model, calcNodes)
         # generate proposal
-        proposal <- rnorm(1, model[[target]], scale)     
+        proposal <- rnorm(1, model[[target]], scale)
         # store proposal into model
-        model[[target]] <<- proposal                    
+        model[[target]] <<- proposal
         # proposal model logProb
         model_lp_proposed <- model$calculate(calcNodes)
-        
+
         # log-Metropolis-Hastings ratio
         log_MH_ratio <- model_lp_proposed - model_lp_initial
-        
+
         # Metropolis-Hastings step: determine whether or
         # not to accept the newly proposed value
         u <- runif(1, 0, 1)
@@ -561,24 +561,24 @@ my_RW <- nimbleFunction(
         else                      jump <- FALSE
 
         # keep the model and mvSaved objects consistent
-        if(jump) copy(from = model, to = mvSaved, row = 1, 
+        if(jump) copy(from = model, to = mvSaved, row = 1,
                          nodes = calcNodes, logProb = TRUE)
         else     copy(from = mvSaved, to = model, row = 1,
                          nodes = calcNodes, logProb = TRUE)
     },
-    
+
     methods = list(   reset = function () {}   )
 )
-``` 
+```
 
-The name of this sampler function, for the purposes of using it in an  
-MCMC algorithm, is `my_RW`.  Thus, this sampler can be added 
-to an exisiting MCMC configuration object `conf` using:
+The name of this sampler function, for the purposes of using it in an
+MCMC algorithm, is `my_RW`.  Thus, this sampler can be added
+to an existing MCMC configuration object `conf` using:
 
 ```{r, custom-sampler-add, eval=FALSE}
 mcmcConf$addSampler(target = 'x', type = 'my_RW',
                     control = list(scale = 0.1))
-``` 
+```
 
 To be used within the MCMC engine, sampler functions definitions must
 adhere exactly to the following:
@@ -590,7 +590,7 @@ adhere exactly to the following:
         no return value.  Further, after execution it must leave the `mvSaved`
         modelValues object as an up-to-date copy of the values and
         logProb values in the model object.
-  - The nimbleFunction must have a member method called `reset`, which takes no arguments 
+  - The nimbleFunction must have a member method called `reset`, which takes no arguments
           and has no return value.
 
 
@@ -621,7 +621,7 @@ As of version 0.13.0, NIMBLE's handling of posterior predictive nodes in MCMC sa
 
  - turning off posterior predictive nodes as dependencies in the use of `getDependencies` when building an MCMC, and
  - moving all posterior predictive samplers to be last in the order of samplers used in an MCMC iteration.
- 
+
 The first change calls for careful consideration when writing new samplers. It is done by making `buildMCMC` set a NIMBLE system option (described below) that tells `getDependencies` to ignore posterior predictive nodes (defined as nodes that are themselves not data and have no data nodes in their entire downstream (descendant) dependency network) before it builds the samplers (i.e., runs the setup code of each sampler). That way, the setup code of all samplers that use `getDependencies` will automatically comply with the new system.
 
 User-defined samplers that determine dependencies using `getDependencies` should automatically work in the new system (although it is worth checking). However if a user-defined sampler manually specifies dependencies, and if those dependencies include posterior predictive nodes, the MCMC results could be incorrect. Whether incorrect results occur could depend on other parts of the model structure connected to node(s) sampled by the user-defined sampler (i.e., the target node(s)) and/or posterior predictive nodes. Therefore, it is strongly recommended that all user-defined samplers rely on `getDependencies` to determine which nodes depend on the target node(s).
@@ -629,7 +629,7 @@ User-defined samplers that determine dependencies using `getDependencies` should
 There are several new NIMBLE system options available to take control of the behavior just described.
 
  - `getDependenciesIncludesPredictiveNodes` determines whether posterior predictive nodes are included in results of `getDependencies`. This defaults to `TRUE`, so that outside of building samplers, the behavior of `getDependencies` should be identical to previous versions of NIMBLE.
- - `MCMCusePredictiveDependenciesInCalculations` gives the value to which   
+ - `MCMCusePredictiveDependenciesInCalculations` gives the value to which
    `getDependenciesIncludesPredictiveNodes` will be set while building samplers. This defaults to `FALSE`.
  - `MCMCorderPosteriorPredictiveSamplersLast` determines whether posterior predictive samplers are moved to the end of the sampler list. This default to `TRUE`. Behavior prior to version 0.13.0 corresponds to `FALSE`.
 
@@ -638,7 +638,7 @@ Here are some examples of how to use these options:
  - If you want to have MCMC samplers condition on posterior predictive nodes, do `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)`.
  - If you want to get identical MCMC samplers, including their ordering, as in versions prior to 0.13.0, do `nimbleOptions(MCMCusePredictiveDependenciesInCalculations = TRUE)` and `nimbleOptions(MCMCorderPosteriorPredictiveSamplersLast = FALSE)`.
  - If you want to experiment with the behavior of `getDependencies` when ignoring posterior predictive nodes, do `nimbleOptions(getDependenciesIncludesPredictiveNodes = FALSE)`.
-        
+
 ## Copying nimbleFunctions (and NIMBLE models)
 
 NIMBLE relies heavily on R's reference class system.  When models,
@@ -657,7 +657,7 @@ the model member function `newModel` will create a new copy of
 the model from the same model definition
 (Section \@ref(sub:multiple-instances)). This new model can then be used with
 newly instantiated nimbleFunctions.
-<!--- % ```{r, copy-model} 
+<!--- % ```{r, copy-model}
 %% newPump <- pumpModel$newModel()
 ``` -->
 
@@ -672,7 +672,7 @@ tell you during compilation that the second set of `foo` instances
 cannot be built from the previous compiled version.  A solution is to
 re-define `foo` from the beginning -- i.e. call `nimbleFunction`
 again -- and then proceed with building and compiling the algorithm
-for `model2`.  
+for `model2`.
 
 ## Debugging nimbleFunctions {#sec:debugging}
 
@@ -681,7 +681,7 @@ of each nimbleFunction is for debugging. One can call `debug` on
 nimbleFunction methods (in particular the main *run* method, e.g., `debug(mynf$run`) and
 then step through the code in R using R's debugger. One can also
 insert `browser` calls into run code and then run the
-nimbleFunction from R. 
+nimbleFunction from R.
 
 In contrast, directly debugging a compiled nimbleFunction is
 difficult, although those familiar with running R through a debugger
@@ -747,7 +747,7 @@ controlled via `nimbleOptions`.
 As noted above, the option
 `buildInterfacesForCompiledNestedNimbleFunctions` defaults to FALSE,
 which means NIMBLE will not build full interfaces to compiled
-nimbleFunctions that ony appear within other nimbleFunctions.  If you
+nimbleFunctions that only appear within other nimbleFunctions.  If you
 want access to all such nimbleFunctions, use the option
 `buildInterfacesForCompiledNestedNimbleFunctions = TRUE`.  This will
 use more memory but can be useful for debugging.
@@ -758,6 +758,5 @@ contents of an uncompiled nimbleFunction object after it has been
 compiled in an effort to free some memory.  We expect to be able to
 keep making NIMBLE more efficient -- faster execution and lower memory
 use -- in the future.
-<!--- % ### rankSample 
+<!--- % ### rankSample
 %% \label{sec:ranksample} -->
-

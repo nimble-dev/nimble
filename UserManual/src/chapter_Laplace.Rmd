@@ -4,7 +4,7 @@
 ```{r, echo=FALSE}
 require(nimble)
 require(nimbleQuad, quietly = TRUE, warn.conflicts = FALSE)
-``` 
+```
 
 # Laplace, AGHQ, and nested approximations {#cha-laplace}
 
@@ -39,11 +39,11 @@ We'll re-introduce the simple Poisson Generalized Linear Mixed Model (GLMM) exam
 
 ```{r eval=TRUE}
 model_code <- nimbleCode({
-  # priors 
+  # priors
   intercept ~ dnorm(0, sd = 100)
   beta ~ dnorm(0, sd = 100)
   sigma ~ dhalfflat()
-  # random effects and data  
+  # random effects and data
   for(i in 1:10) {
     # random effects
     ran_eff[i] ~ dnorm(0, sd = sigma)
@@ -129,7 +129,7 @@ If one wants finer grain control over using the approximation, one can use the m
 
 ```{r eval=eval}
 # Get the Laplace approximation for one set of parameter values.
-Cglmm_laplace$calcLaplace(c(0, 0, 1)) 
+Cglmm_laplace$calcLaplace(c(0, 0, 1))
 Cglmm_laplace$gr_Laplace(c(0, 0, 1)) # Get the corresponding gradient.
 MLE <- Cglmm_laplace$findMLE(c(0, 0, 1)) # Find the (approximate) MLE.
 MLE$par     # MLE parameter values
@@ -156,9 +156,9 @@ To run a regularized regression that uses the prior as a penalty but excludes th
 
 When finding the MLE via Laplace approximation or adaptive Gauss-Hermite quadrature (AGHQ), there are two numerical optimizations: (1) maximizing the joint log-likelihood of random effects and data given a set of parameter values to construct the approximation to the marginal log-likelihood at the given parameter values, and (2) maximizing the approximation to the marginal log-likelihood over the parameter values. Optimization (1) is the "inner" optimization and optimization (2) is the "outer" optimization.
 
-Finding the MLE via Laplace approximation may be sensitive to the optimization methods used, in particular the choice of optimizer for the inner optimization, and the "BFGS" optimizer available through `optim()` may not perform well for inner optimization. 
+Finding the MLE via Laplace approximation may be sensitive to the optimization methods used, in particular the choice of optimizer for the inner optimization, and the "BFGS" optimizer available through `optim()` may not perform well for inner optimization.
 
-As of version 1.3.0, the default choices for both the inner and outer optimization use R's `nlminb` optimizer. 
+As of version 1.3.0, the default choices for both the inner and outer optimization use R's `nlminb` optimizer.
 Users can choose a different optimizer for both of the optimizations.
 
 To change the inner or outer optimizers, one can use the `innerOptimMethod` and `outerOptimMethod` elements of the `control` list argument to `buildLaplace`. One can modify various settings that control the behavior of the inner and outer optimizers via `control` as well. See `help(buildLaplace)` for more details.
@@ -177,7 +177,7 @@ library(Matrix)
 ## and wraps the optimizer of interest.
 nimbleTMBnewton <- function(par, fn, gr, he, lower, upper, control, hessian) {
   ## Wrap `he` as return value needs to be of class `dsCMatrix`.
-  he_matrix <- function(p) Matrix(he(p), doDiag = FALSE, sparse = TRUE) 
+  he_matrix <- function(p) Matrix(he(p), doDiag = FALSE, sparse = TRUE)
   invalid <- function(x) is.null(x) || is.na(x) || is.infinite(x)
   if(invalid(control$trace)) control$trace <- 1
   if(invalid(control$maxit)) control$maxit <- 100
@@ -223,18 +223,18 @@ Here we list some of the similarities and differences from INLA and the ELGM app
  - For inference on the latent nodes, we provide joint simulation from a multivariate normal mixture over the (hyper)parameter grid points as done in ELGM and also available in INLA. Unlike in INLA, we do not provide univariate latent inference using deterministic nested Laplace approximation. The simulation-based approach may not be as accurate, but it allows for joint inference, including inference on quantities that depend on more than one latent node.
  - Unlike either ELGM or INLA, latent nodes are not required to have a joint normal distribution, though accuracy may be less when the latent nodes have other distributions.
  - For latent nodes whose conditional distributions factor into univariate conditionally independent sets, the Laplace approximation is a product of univariate approximations, and one can instead use NIMBLE's AGHQ approximation for higher accuracy.
- - We allow the user to choose the grid used for the (hyper)parameters. By default for $d>2$ parameters, we use the CCD grid used by INLA, but one can choose to use the AGHQ grid as used in ELGM or provide one's own grid. 
- 
+ - We allow the user to choose the grid used for the (hyper)parameters. By default for $d>2$ parameters, we use the CCD grid used by INLA, but one can choose to use the AGHQ grid as used in ELGM or provide one's own grid.
+
 
 ### Overview of the methodology
 
-NIMBLE's nested approximation consists of several pieces, with different options that allow a user to choose how the approximation is done. We briefly describe the pieces here. For simplicity, we refer to the (hyper)parameters simply as "parameters". 
+NIMBLE's nested approximation consists of several pieces, with different options that allow a user to choose how the approximation is done. We briefly describe the pieces here. For simplicity, we refer to the (hyper)parameters simply as "parameters".
 
 #### Marginalization over the latent nodes
 
-We approximately marginalize (integrate) over the latent nodes to approximate the marginal joint distribution of the parameters. This uses Laplace approximation and is sometimes referred to as the "inner" marginalization. The Laplace approximation is computed using the gradient and Hessian with respect to the latent nodes for a given set of parameter values. 
+We approximately marginalize (integrate) over the latent nodes to approximate the marginal joint distribution of the parameters. This uses Laplace approximation and is sometimes referred to as the "inner" marginalization. The Laplace approximation is computed using the gradient and Hessian with respect to the latent nodes for a given set of parameter values.
 
-In the case that the conditional distributions of the latent nodes factor into univariate conditionally-independent sets of nodes (conditional on the parameters), this approximation by default uses the product of univariate Laplace approximations and in NIMBLE can be made more accurate by using AGHQ with more than one quadrature point. 
+In the case that the conditional distributions of the latent nodes factor into univariate conditionally-independent sets of nodes (conditional on the parameters), this approximation by default uses the product of univariate Laplace approximations and in NIMBLE can be made more accurate by using AGHQ with more than one quadrature point.
 
 #### Approximating the marginal parameter density on a grid
 
@@ -244,7 +244,7 @@ NIMBLE primarily offers the options of using a CCD grid (as used by INLA) or an 
 
 For $d <= 2$ NIMBLE defaults to the AGHQ grid and otherwise uses the CCD grid.
 
-NIMBLE also allows users to provide their own grid. 
+NIMBLE also allows users to provide their own grid.
 
 #### Joint inference for latent nodes
 
@@ -284,7 +284,7 @@ Note that the treatment of fixed effects differs between the nested approximatio
 It is also possible to choose which nodes go in which set (Section \@ref(subsec:nested-node-determ)). One might choose to include fixed effects in the parameter set, akin to how Laplace approximation works. Another situation where one might configure this manually is if random effects in a model are specified in a "non-centered" parameterization such as:
 
 $$
-\eta_i = \mu + \sigma b_i 
+\eta_i = \mu + \sigma b_i
 $$
 $$
 b_i \sim \mathcal{N}(0, 1)
@@ -292,19 +292,19 @@ $$
 
 In this parameterization, the random effects, $b_i$, do not depend on any parameters because $\mu$ and $\sigma$ are involved directly in the linear predictor, $\eta_i$. This stands in contrast to the common centered parameterization,  with $b_i \sim \mathcal{N}(\mu, \sigma)$. Because each $b_i$ does not depend on any parameters, NIMBLE's nested approximation node determination algorithm would by default put the $b_i$ nodes into the parameter set, which in general would result in very slow computation (because there would be a large number of parameters). (And in reality this would generally lead to a failure to build the algorithm because there would be no latent nodes found.)
 
-One further note is that it can be advantageous computationally to have fixed effects in the parameter set. This can sometimes allow NIMBLE to set up a product of lower-dimensional Laplace approximations instead of one higher-dimensional Laplace approximation. However, the benefit of having a product of Laplace approximations trades off with the higher-dimensionality of the parameter vector, which increases computation. How these trade off in a particular modeling context can be worth experimentation by the user. 
+One further note is that it can be advantageous computationally to have fixed effects in the parameter set. This can sometimes allow NIMBLE to set up a product of lower-dimensional Laplace approximations instead of one higher-dimensional Laplace approximation. However, the benefit of having a product of Laplace approximations trades off with the higher-dimensionality of the parameter vector, which increases computation. How these trade off in a particular modeling context can be worth experimentation by the user.
 
 #### Computational bottlenecks
 
-To sample the latent nodes, the algorithm needs to find the weights and the parameters of the multivariate normal approximation to the latent nodes at each point in the grid of parameter values. For a large number of parameters this can be expensive, because Laplace approximation is done at many grid points. For a large number of latent node elements, even a single Laplace approximation at a single set of parameter values can be expensive. Computing the parameters of this approximation involves optimization over a space whose dimension is the number of latent node elements, as well as computation of the Hessian at the maximum. Furthermore, for inference, one then needs to simulate from the high-dimensional multivariate normal. 
+To sample the latent nodes, the algorithm needs to find the weights and the parameters of the multivariate normal approximation to the latent nodes at each point in the grid of parameter values. For a large number of parameters this can be expensive, because Laplace approximation is done at many grid points. For a large number of latent node elements, even a single Laplace approximation at a single set of parameter values can be expensive. Computing the parameters of this approximation involves optimization over a space whose dimension is the number of latent node elements, as well as computation of the Hessian at the maximum. Furthermore, for inference, one then needs to simulate from the high-dimensional multivariate normal.
 
-To approximate the univariate marginals for the parameters via AGHQ, this requires $d-1$-dimensional AGHQ, which can be expensive, because the number of quadrature points grows as $(d-1)^k$ where $k$ is the number of Gauss-Hermite quadrature grid points in one dimension. Often this would be chosen to be small, such as 3 or 5, but even then the computations increase rapidly in $d$. 
+To approximate the univariate marginals for the parameters via AGHQ, this requires $d-1$-dimensional AGHQ, which can be expensive, because the number of quadrature points grows as $(d-1)^k$ where $k$ is the number of Gauss-Hermite quadrature grid points in one dimension. Often this would be chosen to be small, such as 3 or 5, but even then the computations increase rapidly in $d$.
 
 ### Using NIMBLE's nested approximation
 
 Next we'll give example usage of NIMBLE's nested approximation. Further details are available in the usual R help content for the various functions.
 
-The core functions are `buildNestedApprox` and `runNestedApprox`. These are analagous to the "build" and "run" functions for MCMC and for Laplace.
+The core functions are `buildNestedApprox` and `runNestedApprox`. These are analogous to the "build" and "run" functions for MCMC and for Laplace.
 
  - `buildNestedApprox` sets up the approximation for a model of interest and allows the user to control various aspects of how the approximation is done. It returns an uncompiled nested approximation algorithm.
  - `runNestedApprox` runs the basic steps of the approximation, giving initial univariate marginal parameter inference (and optionally allowing the user to request latent node or parameter samples). It returns a nested approximation (`nestedApprox`) object.
@@ -319,7 +319,7 @@ The core functions are `buildNestedApprox` and `runNestedApprox`. These are anal
 #### Example use
 
 
-We'll use the penicillin example from the `faraway` package, which has data on penicillin production as a function of treatment (four levels) and blend (five levels). The treatment is considered as a fixed effect (note the constant, large variance/small precision for `b[i]`) while the blend/block is considered as a random effect. Note that because of the normal likelihood and normal priors for the latent nodes, the conditional distribution for the latent nodes given the data and hyperparameters is a multivariate normal, so the Laplace approximation in this case is exact (and one could also marginalize analytically before carrying out maximum likelihood estimation or MCMC). In many uses of nested approximation, the likelihood is not normal, but the latent node distribution is. 
+We'll use the penicillin example from the `faraway` package, which has data on penicillin production as a function of treatment (four levels) and blend (five levels). The treatment is considered as a fixed effect (note the constant, large variance/small precision for `b[i]`) while the blend/block is considered as a random effect. Note that because of the normal likelihood and normal priors for the latent nodes, the conditional distribution for the latent nodes given the data and hyperparameters is a multivariate normal, so the Laplace approximation in this case is exact (and one could also marginalize analytically before carrying out maximum likelihood estimation or MCMC). In many uses of nested approximation, the likelihood is not normal, but the latent node distribution is.
 
 ```{r}
 data(penicillin, package="faraway")
@@ -362,7 +362,7 @@ Next we run our nested approximation, getting back initial inference on the para
 
 ```{r}
 # To prefer fixed rather than scientific notation for easier viewing.
-options(scipen = 2)  
+options(scipen = 2)
 result <- runNestedApprox(comp_approx)
 result
 ```
@@ -550,4 +550,3 @@ approx <- buildNestedApprox(model, paramNodes = c("beta0", "beta1", "sigma"))
 ```
 
 Note the messaging indicating that 30 Laplace approximations (one for each conditionally-independent set of nodes containing a ${y_i, b_i}$ pair) were built. (In other, perhaps more common situations, one might have grouping structure such that a single random effect is associated with multiple observations such that the random effect and associated observations are conditionally independent of other random effects and observations given the parameters.)
-
