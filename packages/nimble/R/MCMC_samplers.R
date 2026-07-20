@@ -49,7 +49,7 @@ sampler_prior_samples <- nimbleFunction(
         if(any(model$getNodeType(target) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
     },
     run = function() {
-        ind <- ceiling(runif(1, 0, nSamples))   ## random draw for proposal
+        ind <- ceiling(runif(1, 0, nSamples))        ## random draw for proposal
         values(model, targetExpanded) <<- samples[ind, 1:k]
         logMHR <- checkLogProb(model$calculateDiff(targetExpanded), targetExpanded)
         if(logMHR == -Inf) {
@@ -4003,7 +4003,6 @@ sampler_partial_mvn_pp <- nimbleFunction(
 #' The prior_samples sampler accepts the following control list elements:
 #' \itemize{
 #' \item \code{samples}. A numeric vector or matrix.  When the \code{target} node is a single scalar-valued node, \code{samples} should be a numeric vector.  When the \code{target} node specifies d > 2 model dimensions, \code{samples} should be a matrix containing d columns.  The \code{samples} control argument is required.
-#' \item \code{randomDraws}. A logical argument, specifying whether to use a random draw from \code{samples} on each iteration.  If \code{samples} is a matrix, then a randomly-selected row of the \code{samples} matrix is used.  When \code{FALSE}, sequential values (or sequential matrix rows) are used (default = \code{FALSE}).
 #' }
 #'
 #' @section posterior_predictive sampler:
