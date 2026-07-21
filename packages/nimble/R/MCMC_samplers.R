@@ -37,16 +37,16 @@ sampler_prior_samples <- nimbleFunction(
         targetExpanded <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(targetExpanded, returnScalarComponents = TRUE)
         ccList <- mcmc_determineCalcAndCopyNodes(model, targetExpanded)
-        calcNodes <- ccList$calcNodes; calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
+        calcNodesNoSelf <- ccList$calcNodesNoSelf; copyNodesDeterm <- ccList$copyNodesDeterm; copyNodesStoch <- ccList$copyNodesStoch
         ## numeric value generation
         k <- length(targetAsScalar)
         if(is.null(dim(samples)))   samples <- matrix(samples, ncol = 1)    ## make vectors into 1-column array
         nSamples <- dim(samples)[1]
         ## checks
-        if(length(dim(samples)) != 2)   stop('prior_samples sampler \'samples\' control argument must be a 2-dimensional array, but value provided was a ', length(dim(samples)), '-dimensional array')
+        if(length(dim(samples)) != 2)   stop('prior_samples sampler \'samples\' control argument must be a vector or matrix, but value provided was a ', length(dim(samples)), '-dimensional array')
         if(!(storage.mode(samples) %in% c('integer', 'double')))   stop('prior_samples sampler \'samples\' control argument must be numeric or integer type')
         if(dim(samples)[2] != k)   stop('prior_samples sampler \'samples\' control argument had ', dim(samples)[2], ' columns, but target nodes have ', k, ' scalar elements. These numbers must be equal.')
-        if(any(model$getNodeType(target) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
+        if(any(model$getNodeType(targetExpanded) == 'stoch'))   messageIfVerbose('  [Note] \'prior_samples\' sampler has been assigned to one or more stochastic nodes. The prior distribution for these nodes will be overridden by the prior samples.')
     },
     run = function() {
         ind <- ceiling(runif(1, 0, nSamples))        ## random draw for proposal
@@ -59,7 +59,6 @@ sampler_prior_samples <- nimbleFunction(
             logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf), targetExpanded)
             jump <- decide(logMHR)
             if(jump) {
-                ##model$calculate(calcNodesPPomitted)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = targetExpanded, logProb = TRUE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
@@ -3990,7 +3989,7 @@ sampler_partial_mvn_pp <- nimbleFunction(
 #'
 #' @section prior_samples sampler:
 #'
-#' The prior_samples sampler uses a provided set of numeric values (\code{samples}) to define the prior distribution of one or more model nodes.  One every MCMC iteration, the prior_samples sampler takes value(s) from the numeric values provided, and stores these value(s) into the target model node(s).  This allows one to define the prior distribution of model parameters empirically, using a set of numeric \code{samples}, presumably obtained previously using MCMC.  The \code{target} node may be either a single scalar node (scalar case), or a collection of model nodes.
+#' The prior_samples sampler uses a provided set of numeric values (\code{samples}) to define the prior distribution of one or more model nodes.  Once every MCMC iteration, the prior_samples sampler randomly selects new value(s) from the numeric values provided, and probabilistically accepts these as the new values for the specific target node(s) using standard Metropolis-Hastings accept/reject.  This allows one to define the prior distribution of model parameters empirically, using a set of numeric \code{samples}, presumably obtained previously using MCMC.  The \code{target} node may be either a single scalar node (scalar case), or a collection of model nodes.
 #'
 #' The prior_samples sampler provides two options for selection of the value to use on each MCMC iteration.  The default behaviour is to take sequential values from the \code{samples} vector (scalar case), or in the case of multiple dimensions, sequential rows of the \code{samples} matrix are used.  The alternative behaviour, by setting the control argument \code{randomDraws = TRUE}, will instead use random draws from the \code{samples} vector (scalar case), or randomly selected rows of the \code{samples} matrix in the multidimensional case.
 #'
