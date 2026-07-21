@@ -51,22 +51,16 @@ sampler_prior_samples <- nimbleFunction(
     run = function() {
         ind <- ceiling(runif(1, 0, nSamples))        ## random draw for proposal
         values(model, targetExpanded) <<- samples[ind, 1:k]
-        logMHR <- checkLogProb(model$calculateDiff(targetExpanded), targetExpanded)
-        if(logMHR == -Inf) {
-            jump <- FALSE
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = targetExpanded, logProb = TRUE)
+        logMHR <- model$calculateDiff(calcNodesNoSelf)
+        jump <- decide(logMHR)
+        if(jump) {
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = targetExpanded, logProb = TRUE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         } else {
-            logMHR <- logMHR + checkLogProb(model$calculateDiff(calcNodesNoSelf), targetExpanded)
-            jump <- decide(logMHR)
-            if(jump) {
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = targetExpanded, logProb = TRUE)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
-                nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
-            } else {
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = targetExpanded, logProb = TRUE)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
-                nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
-            }
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = targetExpanded, logProb = TRUE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
         }
     },
     methods = list(
