@@ -67,6 +67,7 @@ sampler_prior_samples <- nimbleFunction(
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesDeterm, logProb = FALSE)
                 nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodesStoch, logProbOnly = TRUE)
             }
+        }
     },
     methods = list(
         reset = function() { }
