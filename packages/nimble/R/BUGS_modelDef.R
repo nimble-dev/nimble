@@ -299,7 +299,7 @@ modelDefClass$methods(assignConstants = function(constants) {
         if(!is.list(constants) || is.null(names(constants)))   stop('constants argument must be a named list')
         list2env(constants, constantsEnv)
         constantsList <<- constants
-        constantsNamesList <<- lapply(ls(constants), as.name)
+        constantsNamesList <<- lapply(ls(constants, all.names = TRUE), as.name)
         constantLengths <- unlist(lapply(constants, length))
         if(any(constantLengths > 1)) {
             iLong <- which(constantLengths > 1)
@@ -1410,7 +1410,7 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
     
     ## when done, we will have created a new environment and want to remove the constants from it
     namesToRemoveAtEnd <- ls(constantsEnv)
-    constantsEnvCopy <- list2env(as.list(constantsEnv))
+    constantsEnvCopy <- list2env(as.list(constantsEnv, all.names = TRUE))
     ## some replacements like min(j:100) should no longer be needed but are still there
 
     ## If this all works, useContext can be removed
