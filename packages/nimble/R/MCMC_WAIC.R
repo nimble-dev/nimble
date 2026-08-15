@@ -288,7 +288,7 @@ buildWAIC <- nimbleFunction(
             if(mcmcIter > 1) {
                 badpWAIC <- length(which( sspWAICmat[lengthConvCheck, ] / (mcmcIter-1) > 0.4 ))
                 if(badpWAIC) {  
-                    cat("  [Warning] There are ", badpWAIC, " individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.\n" )
+                    cat("  [Warning] There are ", badpWAIC, " individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes. To see the individual pWAIC values, use the `getWAICdetails` method of the compiled MCMC object, with argument `returnElements = TRUE`.\n" )
                 }
             }
             output <- waicNimbleList$new()
