@@ -194,7 +194,7 @@ getConditionallyIndependentSets <- function(model,
 
   if(!missing(nodes)) {
     if(missing(givenNodes))
-      givenNodesIDs <- setdiff(givenNodeIDs, nodeIDs)
+      givenNodeIDs <- setdiff(givenNodeIDs, nodeIDs)
   }
   if(!missing(givenNodes)) {
     nodeIDs <- setdiff(nodeIDs, givenNodeIDs)
