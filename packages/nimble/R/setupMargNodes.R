@@ -283,7 +283,7 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         tempDataNodesDefault <- model$getNodeNames(dataOnly = TRUE)
       if(paramsHandled)
         tempDataNodesDefault <- setdiff(tempDataNodesDefault, paramNodes)
-      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE)
+      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE, self = TRUE)
       # See comment above about why this is necessary:
       tempDataNodesDefaultParents <- setdiff(tempDataNodesDefaultParents, tempDataNodesDefault)
       reNodesDefault <- intersect(reNodesDefault, tempDataNodesDefaultParents)
@@ -292,12 +292,12 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       if(paramsHandled) { # This means reProvided OR paramsProvided. Including parents allows checking
         # of potentially missing REs.
         reNodesDefault <- intersect(reNodesDefault,
-                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE))
+                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE, self = TRUE))
       } else { # This means !paramsHandled and hence !reProvided AND !paramsProvided
         reNodesDefault <- intersect(reNodesDefault,
                                     calcNodes)
         reNodesDefault <- intersect(reNodesDefault,
-                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE))
+                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE, self = TRUE))
       }
     }
   }
