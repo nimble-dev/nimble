@@ -2671,6 +2671,7 @@ modelDefClass$methods(genVarInfo3 = function() {
     names(logProbVarInfo) <<- lapply(logProbVarInfo, `[[`, 'varName')
     
     dynamicallyIndexed <- NULL  # This is used when flagging inconsistent dimensions.
+    lhsVars <- sapply(declInfo, function(x) x$targetVarName)
         
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
@@ -2772,7 +2773,7 @@ modelDefClass$methods(genVarInfo3 = function() {
         if(!(dimVarName %in% names(varInfo))) next
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions for variable ', dimVarName)
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
-        if(!dimVarName %in% dynamicallyIndexed && any(dimensionsList[[dimVarName]] > varInfo[[dimVarName]]$maxs))
+        if((!dimVarName %in% dynamicallyIndexed || dimVarName %in% lhsVars) && any(dimensionsList[[dimVarName]] > varInfo[[dimVarName]]$maxs))
             messageIfVerbose("  [Warning] dimensions specified are larger than model specification\n",
                              "            for variable `", dimVarName, "`.")
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
