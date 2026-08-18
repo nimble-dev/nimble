@@ -245,13 +245,15 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
   if(Rf_isReal(Sn)) {
-    std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
+    if(nn > 0)
+      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
     NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<%d, double>\n",
       Rf_type2char(TYPEOF(Sn)), ndim);
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
+    if(nn > 0)
+      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
 
@@ -269,13 +271,15 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
   if(Rf_isReal(Sn)) {
-    std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
+    if(nn > 0)
+      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
     NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, int>\n",
       Rf_type2char(TYPEOF(Sn)), ndim);
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
+    if(nn > 0)
+      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
 
@@ -292,13 +296,15 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
   if(Rf_isReal(Sn)) {
-    std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
+    if(nn > 0)
+      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
     NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, bool>\n",
       Rf_type2char(TYPEOF(Sn)), ndim);
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
+    if(nn > 0)
+      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
 
