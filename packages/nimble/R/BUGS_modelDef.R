@@ -2670,6 +2670,9 @@ modelDefClass$methods(genVarInfo3 = function() {
                          anyStoch = FALSE))
     names(logProbVarInfo) <<- lapply(logProbVarInfo, `[[`, 'varName')
     
+    dynamicallyIndexed <- NULL  # This is used when flagging inconsistent dimensions.
+    lhsVars <- sapply(declInfo, function(x) x$targetVarName)
+        
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
         if(getNimbleOption('allowDynamicIndexing'))
@@ -2748,6 +2751,7 @@ modelDefClass$methods(genVarInfo3 = function() {
                         ## If the index is dynamic (marked by NA), there is nothing to learn about index range of the variable.
                         if(getNimbleOption('allowDynamicIndexing'))
                             if(isDynamicIndex(indexNamePieces)) {
+                                dynamicallyIndexed <- c(dynamicallyIndexed, rhsVar)
                                 varInfo[[rhsVar]]$mins[iDim] <<- min(varInfo[[rhsVar]]$mins[iDim], 1) ## o.w., never changed from 1e5 if only on RHS and in 'dimensions' input
                                 varInfo[[rhsVar]]$maxs[iDim] <<- max(varInfo[[rhsVar]]$maxs[iDim], 1) ## o.w., can end up with (1,0) as (min,max) before 'dimensions' are used
                                 next
@@ -2769,7 +2773,7 @@ modelDefClass$methods(genVarInfo3 = function() {
         if(!(dimVarName %in% names(varInfo))) next
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions for variable ', dimVarName)
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
-        if(any(dimensionsList[[dimVarName]] > varInfo[[dimVarName]]$maxs))
+        if((!dimVarName %in% dynamicallyIndexed || dimVarName %in% lhsVars) && any(dimensionsList[[dimVarName]] > varInfo[[dimVarName]]$maxs))
             messageIfVerbose("  [Warning] dimensions specified are larger than model specification\n",
                              "            for variable `", dimVarName, "`.")
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
