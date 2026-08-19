@@ -234,8 +234,6 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     } else {
       nodesToFindParentsFrom <- randomEffectsNodes
       paramNodes <- model$getParents(nodesToFindParentsFrom, self=FALSE, stochOnly=TRUE)
-      # self=FALSE doesn't omit if one RE node is a parent of another, so we have to do the next step
-      paramNodes <- setdiff(paramNodes, nodesToFindParentsFrom)
     }
     if(paramsHandled) {
       if(calcProvided) paramNodes <- setdiff(paramNodes, calcNodes)
@@ -306,8 +304,6 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   # and are now ready to create default paramNodes
   if(!paramsHandled) {
     paramNodes <- model$getParents(reNodesDefault, self=FALSE, stochOnly=TRUE)
-    # See comment above about why this is necessary:
-    paramNodes <- setdiff(paramNodes, reNodesDefault)
     if(calcOtherProvided) paramNodes <- setdiff(paramNodes, calcNodesOther)
   }
 
@@ -414,8 +410,6 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(!paramProvided) {
     possibleNewParamNodes <- model$getParents(calcNodes, self=FALSE, stochOnly=TRUE, includeData=FALSE)
     # includeData=FALSE as data nodes cannot be parameters
-    # self=FALSE doesn't omit if one node is a parent of another, so we have to do the next step
-    possibleNewParamNodes <- setdiff(possibleNewParamNodes, calcNodesDefault)
     paramNodes <- unique(c(paramNodes, possibleNewParamNodes))
   }
 
