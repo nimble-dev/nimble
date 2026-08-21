@@ -94,7 +94,8 @@
 #'  If \code{randomEffectsNodes} is missing, the default is a bit complicated.
 #'    It starts by considering all latent nodes as potential \code{randomEffectsNodes}.
 #'    If \code{paramNodes} is provided, only latent nodes that are downstream of
-#'    \code{paramNodes} are included. Then the set of potential nodes is filtered to
+#'    \code{paramNodes} are included in the potential nodes.
+#'    Then the set of potential nodes is filtered to
 #'    include only nodes that satisfy one of the following conditions
 #'    (only one of which will be applicable): (i) parents of data nodes
 #'    (applies only if calcNodes is missing), (ii) parents or elements of
