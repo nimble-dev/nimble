@@ -3,6 +3,12 @@
 \name{setupOutputs}
 \alias{setupOutputs}
 \title{Explicitly declare objects created in setup code to be preserved and compiled as member data}
+\usage{
+\code{setupOutputs(...)}
+}
+\arguments{
+\item{...}{An arbitrary set of names}
+}
 \description{
 Normally a nimbleFunction determines what objects from setup code need to be preserved for run code or other member functions.  \code{setupOutputs} allows explicit declaration for cases when an object created in setup code is not used in member functions.
 }
