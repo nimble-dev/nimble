@@ -91,15 +91,18 @@
 #'   \code{calcNodes}. Such deterministic nodes will be included in
 #'   calculations automatically when needed.
 #'
-#' If \code{randomEffectsNodes} is missing, the default is a bit complicated: it
-#'   includes all latent nodes that are descendants (or "downstream") of
-#'   \code{paramNodes} (if provided) and are either (i) ancestors (or
-#'   "upstream") of data nodes (if \code{calcNodes} is missing), or (ii)
-#'   ancestors or elements of \code{calcNodes} (if \code{calcNodes} and
-#'   \code{paramNodes} are provided), or (iii) elements of \code{calcNodes} (if
-#'   \code{calcNodes} is provided but \code{paramNodes} is missing). In all
-#'   cases, discrete nodes (with warning if \code{check=TRUE}), posterior
-#'   predictive nodes and \code{paramNodes} are excluded.
+#'  If \code{randomEffectsNodes} is missing, the default is a bit complicated.
+#'    It starts by considering all latent nodes as potential \code{randomEffectsNodes}.
+#'    If \code{paramNodes} is provided, only latent nodes that are downstream of
+#'    \code{paramNodes} are included. Then the set of potential nodes is filtered to
+#'    include only nodes that satisfy one of the following conditions
+#'    (only one of which will be applicable): (i) parents of data nodes
+#'    (applies only if calcNodes is missing), (ii) parents or elements of
+#'    \code{calcNodes} (applies only if \code{calcNodes} and \code{paramNodes}
+#'    are both provided), (iii) elements of calcNodes (applies if \code{calcNodes}
+#'    is provided but \code{paramNodes} is missing). In all
+#'    cases, discrete nodes (with warning if \code{check=TRUE}), posterior
+#'    predictive nodes and \code{paramNodes} are excluded.
 #'
 #' \code{randomEffectsNodes} should only include stochastic nodes.
 #'
