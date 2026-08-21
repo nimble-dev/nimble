@@ -1,3 +1,36 @@
+#              CHANGES IN VERSION 1.4.3 (August 2026)
+
+## USER LEVEL CHANGES
+
+- Improve warning message about bad pWAIC values to make clear that 
+individual pWAIC values can be obtained via `getWAICdetails` (Issue 1626).
+
+- Modify how `getParents` handles `self=FALSE` to avoid returning any of the
+input nodes. Formerly if multiple inputs were provided and one of the provided
+inputs was the parent of another, this would be returned (PR #1633).
+
+## BUG FIXES
+
+- Fix `prior_samples` MCMC sampler. Formerly this sampler gave incorrect
+results as it did not account for the density of dependent variables and
+simply iterated through the prior samples (PR #1624).
+
+- Fix/robustify dimension checking to avoid warning about dimension of 
+right-hand side-only dynamically-indexed variables (PR #1632).
+
+- Allow constants whose names start with a period (PR #1629).
+
+- Fix corner case in `getConditionallyIndepedentSets` when `nodes` is
+provided and `givenNodes` is not (Issue #1625).
+
+## DEVELOPER LEVEL CHANGES
+
+- Update handling of various cases in `setupMargNodes` to fix some 
+inconsistencies in corner cases (PR #1633).
+
+- Fix UBSAN issue as requested by CRAN, avoiding `std::copy` calls that
+make zero-length copy (PR #1627).
+
 #              CHANGES IN VERSION 1.4.2 (March 2026)
 
 ## USER LEVEL CHANGES

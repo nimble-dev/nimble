@@ -5,16 +5,6 @@
 \alias{nimbleType-class}
 \alias{nimbleType}
 \title{create a nimbleType object}
-\usage{
-nimbleType(name, type, dim = NA)
-}
-\arguments{
-\item{name}{The name of the object, given as a character string.}
-
-\item{type}{The type of the object, given as a character string.}
-
-\item{dim}{The dimension of the object, given as an integer.  This can be left blank if the object is a nimbleList.}
-}
 \description{
 Create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \code{\link{nimbleList}}.
 }
