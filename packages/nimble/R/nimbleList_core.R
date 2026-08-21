@@ -27,6 +27,8 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #'
 #' Create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \code{\link{nimbleList}}.
 #'
+#' @usage \code{nimbleType(name, type, dim = NA)}
+#'
 #' @param name The name of the object, given as a character string.
 #' @param type The type of the object, given as a character string.
 #' @param dim  The dimension of the object, given as an integer.  This can be left blank if the object is a nimbleList.
