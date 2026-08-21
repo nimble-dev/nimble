@@ -513,7 +513,7 @@ myfun <- nimbleFunction(
 
 In the line that creates `b`, the index range `i:i` is not
 evaluated until run time.  Even though `i:i` will always evaluate
-to simpy `i`, the compiler does not determine that.  Since there is
+to simply `i`, the compiler does not determine that.  Since there is
 a vector index range provided, the result of `randomValues[i:i]` is
 determined to be a vector.  The following line then creates `d` as
 a vector, because a vector plus a scalar returns a vector.  Another

@@ -254,7 +254,7 @@ The example illustrates a number of features:
 
   1. `simulate(model, nodes)` is equivalent to
   `model$simulate(nodes)`. You can use either, but the latter is
-  encouraged and the former may be deprecated inthe future.
+  encouraged and the former may be deprecated in the future.
   1. Inputs like `"y[1:3]"` are automatically expanded into
   `c("y[1]", "y[2]", "y[3]")`.  In fact, simply `"y"` will be
   expanded into all nodes within `y`.

@@ -197,7 +197,7 @@ for `getLogProb`, it is usually important for the `nodes`
 vector to be sorted in
 topological order.  Model member functions such as `getDependencies` and
 `expandNodeNames` will
-always return topoligically sorted node names.
+always return topologically sorted node names.
 
 Most R-like indexing of a node vector is allowed within the
 argument to `calculate`, `calculateDiff`, `simulate`, and `getLogProb`. For example, all of the following are allowed:
@@ -573,7 +573,7 @@ my_RW <- nimbleFunction(
 
 The name of this sampler function, for the purposes of using it in an  
 MCMC algorithm, is `my_RW`.  Thus, this sampler can be added 
-to an exisiting MCMC configuration object `conf` using:
+to an existing MCMC configuration object `conf` using:
 
 ```{r, custom-sampler-add, eval=FALSE}
 mcmcConf$addSampler(target = 'x', type = 'my_RW',
@@ -747,7 +747,7 @@ controlled via `nimbleOptions`.
 As noted above, the option
 `buildInterfacesForCompiledNestedNimbleFunctions` defaults to FALSE,
 which means NIMBLE will not build full interfaces to compiled
-nimbleFunctions that ony appear within other nimbleFunctions.  If you
+nimbleFunctions that only appear within other nimbleFunctions.  If you
 want access to all such nimbleFunctions, use the option
 `buildInterfacesForCompiledNestedNimbleFunctions = TRUE`.  This will
 use more memory but can be useful for debugging.

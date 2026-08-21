@@ -113,7 +113,7 @@ One of the advantages of BNP mixture models is that the number of clusters is tr
 
 ### Extensions {#sec:extensionscrp}
 
-The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant. 
+The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with multiple measurements over time or multiple trials per participant. 
 
 The following example illustrates how to use NIMBLE in a random effects model with repeated measurements per subject using a DP prior for the distribution of the subject's random effects. The model is given by
 
@@ -262,7 +262,7 @@ Valid initial values should be provided for all elements of the process specifie
 
 #### Sampling the random measure
 
-In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$. NIMBLE provides the `getSamplesDPmeasure` sampler to generate posterior samples of the random measure $G$ when a CRP structure is involved in the model. 
+In  BNP models, it is often of interest to make inference about the unknown measure $G$. NIMBLE provides the `getSamplesDPmeasure` sampler to generate posterior samples of the random measure $G$ when a CRP structure is involved in the model. 
 
 The `getSamplesDPmeasure` function has two arguments: `MCMC` and `epsilon`.
 

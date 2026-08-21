@@ -684,7 +684,7 @@ The worked example next will illustrate use of the parameter transformation syst
 
 In this example, we will obtain maximum likelihood estimates of a Poisson GLM. It will be similar to the GLMM above, but without the random effects. Maximization of a likelihood function can be done with methods that don't require gradients, but it is much faster to use methods that do use gradients.
 
-To illustrate the parameter transformation system, we will give `p` a uniform prior, constrained to values between 0 and 1. The maximum likelihood estimation below will not use the prior probability, but nevertheless the prior will be interpreted for its constraints on valid values in this case. This need for parameter transformation is somewhat artifical in the interest of simplicity.
+To illustrate the parameter transformation system, we will give `p` a uniform prior, constrained to values between 0 and 1. The maximum likelihood estimation below will not use the prior probability, but nevertheless the prior will be interpreted for its constraints on valid values in this case. This need for parameter transformation is somewhat artificial in the interest of simplicity.
 
 ```{r eval=eval}
 model_code <- nimbleCode({
@@ -779,7 +779,7 @@ ll_glm <- logLikelihood_nf(model, c("p", "beta"))
 Cll_glm <- compileNimble(ll_glm, project = model)
 ```
 
-Now let's see how the parameter transformation works for this model. For `beta`, it already has an unconstrained range of valid values, so it has no transformation (i.e. it has an indentity transformation). For `p`, it is constrained beween 0 and 1, so it will be logit-transformed. 
+Now let's see how the parameter transformation works for this model. For `beta`, it already has an unconstrained range of valid values, so it has no transformation (i.e. it has an identity transformation). For `p`, it is constrained between 0 and 1, so it will be logit-transformed. 
 
 ```{r eval=eval}
 Cll_glm$transform(c(0.2, 1))

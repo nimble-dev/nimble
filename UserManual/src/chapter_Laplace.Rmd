@@ -304,7 +304,7 @@ To approximate the univariate marginals for the parameters via AGHQ, this requir
 
 Next we'll give example usage of NIMBLE's nested approximation. Further details are available in the usual R help content for the various functions.
 
-The core functions are `buildNestedApprox` and `runNestedApprox`. These are analagous to the "build" and "run" functions for MCMC and for Laplace.
+The core functions are `buildNestedApprox` and `runNestedApprox`. These are analogous to the "build" and "run" functions for MCMC and for Laplace.
 
  - `buildNestedApprox` sets up the approximation for a model of interest and allows the user to control various aspects of how the approximation is done. It returns an uncompiled nested approximation algorithm.
  - `runNestedApprox` runs the basic steps of the approximation, giving initial univariate marginal parameter inference (and optionally allowing the user to request latent node or parameter samples). It returns a nested approximation (`nestedApprox`) object.
