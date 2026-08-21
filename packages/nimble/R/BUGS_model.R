@@ -959,7 +959,9 @@ Details: The upward search for dependent nodes propagates through deterministic 
   if(self)	{ # The C++ call does *not* return self nodes
     nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
     parentIDs <- sort(c(parentIDs, nodeFunIDs))
-  }
+  } else parentIDs <- setdiff(parentIDs, nodeIDs)
+
+  
   if(!includeRHSonly) parentIDs <- parentIDs[modelDef$maps$types[parentIDs] != 'RHSonly']
   if(determOnly)      parentIDs <- parentIDs[modelDef$maps$types[parentIDs] == 'determ']
   if(stochOnly)	      parentIDs <- parentIDs[modelDef$maps$types[parentIDs] == 'stoch']

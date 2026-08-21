@@ -91,15 +91,19 @@
 #'   \code{calcNodes}. Such deterministic nodes will be included in
 #'   calculations automatically when needed.
 #'
-#' If \code{randomEffectsNodes} is missing, the default is a bit complicated: it
-#'   includes all latent nodes that are descendants (or "downstream") of
-#'   \code{paramNodes} (if provided) and are either (i) ancestors (or
-#'   "upstream") of data nodes (if \code{calcNodes} is missing), or (ii)
-#'   ancestors or elements of \code{calcNodes} (if \code{calcNodes} and
-#'   \code{paramNodes} are provided), or (iii) elements of \code{calcNodes} (if
-#'   \code{calcNodes} is provided but \code{paramNodes} is missing). In all
-#'   cases, discrete nodes (with warning if \code{check=TRUE}), posterior
-#'   predictive nodes and \code{paramNodes} are excluded.
+#'  If \code{randomEffectsNodes} is missing, the default is a bit complicated.
+#'    It starts by considering all latent nodes as potential \code{randomEffectsNodes}.
+#'    If \code{paramNodes} is provided, only latent nodes that are downstream of
+#'    \code{paramNodes} are included in the potential nodes.
+#'    Then the set of potential nodes is filtered to
+#'    include only nodes that satisfy one of the following conditions
+#'    (only one of which will be applicable): (i) parents of data nodes
+#'    (applies only if calcNodes is missing), (ii) parents or elements of
+#'    \code{calcNodes} (applies only if \code{calcNodes} and \code{paramNodes}
+#'    are both provided), (iii) elements of calcNodes (applies if \code{calcNodes}
+#'    is provided but \code{paramNodes} is missing). In all
+#'    cases, discrete nodes (with warning if \code{check=TRUE}), posterior
+#'    predictive nodes and \code{paramNodes} are excluded.
 #'
 #' \code{randomEffectsNodes} should only include stochastic nodes.
 #'
@@ -234,8 +238,6 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
     } else {
       nodesToFindParentsFrom <- randomEffectsNodes
       paramNodes <- model$getParents(nodesToFindParentsFrom, self=FALSE, stochOnly=TRUE)
-      # self=FALSE doesn't omit if one RE node is a parent of another, so we have to do the next step
-      paramNodes <- setdiff(paramNodes, nodesToFindParentsFrom)
     }
     if(paramsHandled) {
       if(calcProvided) paramNodes <- setdiff(paramNodes, calcNodes)
@@ -283,21 +285,18 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         tempDataNodesDefault <- model$getNodeNames(dataOnly = TRUE)
       if(paramsHandled)
         tempDataNodesDefault <- setdiff(tempDataNodesDefault, paramNodes)
-      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE)
-      # See comment above about why this is necessary:
-      tempDataNodesDefaultParents <- setdiff(tempDataNodesDefaultParents, tempDataNodesDefault)
+      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE,
+                                                      self = FALSE)
       reNodesDefault <- intersect(reNodesDefault, tempDataNodesDefaultParents)
     } else {
       # Update reNodesDefault to exclude nodes that lack downstream connection to a calcNode
       if(paramsHandled) { # This means reProvided OR paramsProvided. Including parents allows checking
         # of potentially missing REs.
         reNodesDefault <- intersect(reNodesDefault,
-                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE))
+                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE, self = TRUE))
       } else { # This means !paramsHandled and hence !reProvided AND !paramsProvided
         reNodesDefault <- intersect(reNodesDefault,
                                     calcNodes)
-        reNodesDefault <- intersect(reNodesDefault,
-                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE))
       }
     }
   }
@@ -306,8 +305,6 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   # and are now ready to create default paramNodes
   if(!paramsHandled) {
     paramNodes <- model$getParents(reNodesDefault, self=FALSE, stochOnly=TRUE)
-    # See comment above about why this is necessary:
-    paramNodes <- setdiff(paramNodes, reNodesDefault)
     if(calcOtherProvided) paramNodes <- setdiff(paramNodes, calcNodesOther)
   }
 
@@ -414,8 +411,6 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
   if(!paramProvided) {
     possibleNewParamNodes <- model$getParents(calcNodes, self=FALSE, stochOnly=TRUE, includeData=FALSE)
     # includeData=FALSE as data nodes cannot be parameters
-    # self=FALSE doesn't omit if one node is a parent of another, so we have to do the next step
-    possibleNewParamNodes <- setdiff(possibleNewParamNodes, calcNodesDefault)
     paramNodes <- unique(c(paramNodes, possibleNewParamNodes))
   }
 

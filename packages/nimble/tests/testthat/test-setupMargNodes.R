@@ -436,7 +436,7 @@ test_that("setupMargNodes finds correct randomEffectsNodes based on calcNodes in
   })
   m <- nimbleModel(code, data = list(y = c(1, 2)))
   SMN <- setupMargNodes(m, calcNodes = c("r", "s"))
-  expect_identical(SMN$randomEffectsNodes, c("r[1]","r[2]"))
+  expect_identical(SMN$randomEffectsNodes, c("r[1]","r[2]","s[1]","s[2]"))
   expect_identical(SMN$paramNodes, c("p[1]","p[2]"))
 })
 

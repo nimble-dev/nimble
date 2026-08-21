@@ -154,12 +154,12 @@ test_that("getParents works in model with no criss-crossing dependencies", {
 
   expect_identical(m1$getParents("f1"), c("a1", "a2", "c2", "c4", "c3"))
   expect_identical(m1$getParents("f1", immediateOnly = TRUE), c("c4", "c3"))
-  expect_identical(m1$getParents(c("f1", "g1"), stochOnly = TRUE), c("a1", "a2", "f1"))
-  expect_identical(m1$getParents(c("f1", "g1"), immediateOnly = TRUE), c("c4", "c3", "f1"))
-  expect_identical(m1$getParents(c("g1", "f1"), stochOnly = TRUE), c("a1", "a2", "f1"))
+  expect_identical(m1$getParents(c("f1", "g1"), stochOnly = TRUE), c("a1", "a2"))
+  expect_identical(m1$getParents(c("f1", "g1"), immediateOnly = TRUE), c("c4", "c3"))
+  expect_identical(m1$getParents(c("g1", "f1"), stochOnly = TRUE), c("a1", "a2"))
   expect_identical(m1$getParents(c("f1", "g1"), stochOnly = TRUE, self = TRUE), c("a1", "a2", "f1", "g1"))
-  expect_identical(m1$getParents(c("c3", "c2", "e1"), stochOnly = FALSE), c("a1", "c2", "c3"))
-  expect_identical(m1$getParents(c("c3", "c2", "e1"), immediateOnly = TRUE, stochOnly = FALSE), c("a1", "c2", "c3"))
+  expect_identical(m1$getParents(c("c3", "c2", "e1"), stochOnly = FALSE), c("a1"))
+  expect_identical(m1$getParents(c("c3", "c2", "e1"), immediateOnly = TRUE, stochOnly = FALSE), c("a1"))
   expect_identical(m1$getParents("h1", includeRHSonly = TRUE, stochOnly = FALSE), c("lho"))
 })
 
