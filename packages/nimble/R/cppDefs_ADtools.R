@@ -2,10 +2,6 @@
 #'
 #' create an ADproxyModelClass object. For internal use.
 #'
-#' @usage ADproxyModelClass(Rmodel)
-#' 
-#' @param Rmodel The name of an uncompiled model
-#' 
 #' @author NIMBLE development team
 #'
 #' @details This is a proxy model for model_AD. The class needs just enough pieces to be used like a model for purposes of nodeFunction compilation. The model will contain an ADproxyModel and then the nodeFunction setup code will extract it. The model interface will population the proxy model's CobjectInterface
