@@ -285,9 +285,8 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
         tempDataNodesDefault <- model$getNodeNames(dataOnly = TRUE)
       if(paramsHandled)
         tempDataNodesDefault <- setdiff(tempDataNodesDefault, paramNodes)
-      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE, self = TRUE)
-      # See comment above about why this is necessary:
-      tempDataNodesDefaultParents <- setdiff(tempDataNodesDefaultParents, tempDataNodesDefault)
+      tempDataNodesDefaultParents <- model$getParents(tempDataNodesDefault, upstream = TRUE, stochOnly = TRUE,
+                                                      self = FALSE)
       reNodesDefault <- intersect(reNodesDefault, tempDataNodesDefaultParents)
     } else {
       # Update reNodesDefault to exclude nodes that lack downstream connection to a calcNode
