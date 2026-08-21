@@ -758,9 +758,8 @@ derived_name <- nimbleFunction(
       ## 
       ## run fuction has one argument:
       ## timesRan, which is the number of times this method has executed during
-      ##   the present MCMC chain,
-      ## including the present time.  This can be used as an index for a matrix
-      ##   of results.
+      ##   the present MCMC chain, including the present time.  This can be used
+      ##   as an index for a matrix of results.
       ## 
     },
     methods = list(
@@ -768,7 +767,7 @@ derived_name <- nimbleFunction(
           ##
           ## REQUIRED `set_interval` method, which matches the definition below
           ##   exactly.
-          ## this method is necessary, to allow the default value of 'interval' to
+          ## This method is necessary, to allow the default value of 'interval' to
           ## match the thinning interval of the MCMC.
           ## 
           interval <<- newInterval
@@ -777,7 +776,7 @@ derived_name <- nimbleFunction(
         before_chain = function(niter = double(), nburnin = double(),
                          thin = double(1), chain = double()) {
           ## 
-          ## (optional) `before_chain` method,
+          ## (optional) `before_chain` method:
           ## must have must have these arguments specifications:
           ## - niter (total number of *post-burnin* MCMC iterations)
           ## - nburnin (number of burnin iterations for this MCMC chain)
@@ -788,7 +787,7 @@ derived_name <- nimbleFunction(
         },
         after_chain = function() {
           ## 
-          ## (optional) `after_chain` method,
+          ## (optional) `after_chain` method:
           ## no arguments and no return value
           ## 
         },
@@ -808,7 +807,7 @@ derived_name <- nimbleFunction(
         },
         reset = function() {
           ## 
-          ## (optional) `reset` method
+          ## (optional) `reset` method:
           ## no arguments and no return value
           ## 
         }

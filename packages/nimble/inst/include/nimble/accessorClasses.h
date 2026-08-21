@@ -739,9 +739,10 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     NimArrVars.setSize(length_wrt);
     getValues(NimArrVars, model_wrt_accessor);
 
-    std::copy(NimArrVars.getPtr(),
-	      NimArrVars.getPtr() + length_wrt,
-	      independentVars.begin());
+    if(length_wrt > 0)
+      std::copy(NimArrVars.getPtr(),
+		NimArrVars.getPtr() + length_wrt,
+		independentVars.begin());
 
     //std::cout<<"done runTape_setInd"<<std::endl;
     // 2. Run tape

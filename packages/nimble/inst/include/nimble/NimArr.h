@@ -72,7 +72,8 @@ template<int nDim, class T, class T2>
     target.getVptrRef() = ans;
     target.mapCopy(val);
   } else {
-    std::copy(val.getConstPtr(), val.getConstPtr() + length, *ans);
+    if(length > 0)
+      std::copy(val.getConstPtr(), val.getConstPtr() + length, *ans);
   }
 }
 
@@ -172,7 +173,8 @@ class NimArr<1, T> : public NimArrBase<T> {
       if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
       NimArrBase<T>::v = nimble_malloc<T>(size1);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + size1, NimArrBase<T>::v);
+      if (size1 > 0)
+        std::copy(other.v, other.v + size1, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
     return *this;
@@ -211,7 +213,8 @@ class NimArr<1, T> : public NimArrBase<T> {
       if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
     return (*this);
@@ -238,7 +241,8 @@ class NimArr<1, T> : public NimArrBase<T> {
     } else {
       NimArrBase<T>::v = nimble_malloc<T>(size1);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + size1, NimArrBase<T>::v);
+      if (size1 > 0)
+        std::copy(other.v, other.v + size1, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
   }
@@ -421,7 +425,8 @@ class NimArr<2, T> : public NimArrBase<T> {
       if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
     return *this;
@@ -454,7 +459,8 @@ class NimArr<2, T> : public NimArrBase<T> {
     } else {
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
   }
@@ -666,7 +672,8 @@ class NimArr<3, T> : public NimArrBase<T> {
       if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
     return *this;
@@ -704,7 +711,8 @@ class NimArr<3, T> : public NimArrBase<T> {
     } else {
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
   }
@@ -949,7 +957,8 @@ class NimArr<4, T> : public NimArrBase<T> {
       if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
     return *this;
@@ -994,7 +1003,8 @@ class NimArr<4, T> : public NimArrBase<T> {
     } else {
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
   }
@@ -1270,7 +1280,8 @@ class NimArr<5, T> : public NimArrBase<T> {
       if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
     return *this;
@@ -1321,7 +1332,8 @@ class NimArr<5, T> : public NimArrBase<T> {
     } else {
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
   }
@@ -1626,7 +1638,8 @@ class NimArr<6, T> : public NimArrBase<T> {
       if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
     return *this;
@@ -1683,7 +1696,8 @@ class NimArr<6, T> : public NimArrBase<T> {
     } else {
       NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
-      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+      if (NimArrBase<T>::NAlength > 0)
+        std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
   }

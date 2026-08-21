@@ -274,7 +274,8 @@ void getDerivs_internal(vector<BASE> &independentVars,
       if (ordersFound[0]) {
         ansList->value.setSize(res_dimy_o0, false, false);
         if(outAlly_o0) {
-          std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
+          if(!value_ans.empty())
+            std::copy(value_ans.begin(), value_ans.end(), ansList->value.getPtr());
         } else {
           BASE *LHS = ansList->value.getPtr();
           for(size_t iii=0;iii<res_dimy_o0;iii++,LHS++) {
@@ -909,9 +910,10 @@ void nimbleFunctionCppADbase::getDerivs_calculate_internal(nimbleCppADinfoClass 
   NimArrVars.setSize(length_wrt);
   getValues(NimArrVars, nodes.model_wrt_accessor);
 
-  std::copy(NimArrVars.getPtr(),
-            NimArrVars.getPtr() + length_wrt,
-            ADinfo.independentVars.begin());
+  if(length_wrt > 0)
+    std::copy(NimArrVars.getPtr(),
+              NimArrVars.getPtr() + length_wrt,
+              ADinfo.independentVars.begin());
   /* set dynamic */
   // Copy extraInput (CppAD "dynamic") values from the model into the dynamicVars
   // *and* set them in the tape.
