@@ -5,6 +5,9 @@
 \alias{nimbleType-class}
 \alias{nimbleType}
 \title{create a nimbleType object}
+\usage{
+nimbleType(name, type, dim = NA)
+}
 \arguments{
 \item{name}{The name of the object, given as a character string.}
 

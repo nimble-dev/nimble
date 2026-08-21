@@ -2,6 +2,8 @@
 #'
 #' create an ADproxyModelClass object. For internal use.
 #'
+#' @usage ADproxyModelClass(Rmodel)
+#' 
 #' @param Rmodel The name of an uncompiled model
 #' 
 #' @author NIMBLE development team

@@ -3,6 +3,9 @@
 \name{setupOutputs}
 \alias{setupOutputs}
 \title{Explicitly declare objects created in setup code to be preserved and compiled as member data}
+\usage{
+setupOutputs(...)
+}
 \arguments{
 \item{...}{An arbitrary set of names}
 }
