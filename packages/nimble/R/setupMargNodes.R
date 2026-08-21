@@ -298,8 +298,6 @@ setupMargNodes <- function(model, paramNodes, randomEffectsNodes, calcNodes,
       } else { # This means !paramsHandled and hence !reProvided AND !paramsProvided
         reNodesDefault <- intersect(reNodesDefault,
                                     calcNodes)
-        reNodesDefault <- intersect(reNodesDefault,
-                                    model$getParents(calcNodes, upstream=TRUE, stochOnly = TRUE, self = TRUE))
       }
     }
   }
