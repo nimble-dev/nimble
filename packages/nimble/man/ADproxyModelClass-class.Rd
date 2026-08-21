@@ -6,7 +6,7 @@
 \alias{ADproxyModelClass}
 \title{create an ADproxyModelClass object}
 \usage{
-\code{ADproxyModelClass(Rmodel)}
+ADproxyModelClass(Rmodel)
 }
 \arguments{
 \item{Rmodel}{The name of an uncompiled model}
