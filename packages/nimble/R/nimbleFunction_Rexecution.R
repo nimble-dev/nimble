@@ -107,7 +107,7 @@ nimSeq <- function(from, to, by, length.out) { ## this creates default arguments
 #' 
 #' @name setupOutputs
 #'
-#' @usage \code{setupOutputs(...)}
+#' @usage setupOutputs(...)
 #'
 #' @param ... An arbitrary set of names
 #'
