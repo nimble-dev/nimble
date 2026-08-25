@@ -20,7 +20,7 @@ right-hand side-only dynamically-indexed variables (PR #1632).
 
 - Allow constants whose names start with a period (PR #1629).
 
-- Fix corner case in `getConditionallyIndepedentSets` when `nodes` is
+- Fix corner case in `getConditionallyIndependentSets` when `nodes` is
 provided and `givenNodes` is not (Issue #1625).
 
 ## DEVELOPER LEVEL CHANGES
