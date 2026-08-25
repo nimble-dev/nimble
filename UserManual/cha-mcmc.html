@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 7 MCMC | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.46 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 7 MCMC | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -53,8 +53,9 @@
 
 
 <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.3</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -632,7 +633,7 @@ div.csl-indent {
 <li>If a node follows an LKJ correlation distribution, then a <code>RW_block_lkj_corr_cholesky</code> sampler is assigned. This is a block random walk sampler in a transformed space where the transformation uses the signed stickbreaking approach described in Section 10.12 of <span class="citation">Stan Development Team (<a href="references.html#ref-Stan_Lang_2021">2021b</a>)</span>.</li>
 <li>If the node follows any other multivariate distribution, then a <code>RW_block</code> sampler is assigned for all elements. This is a Metropolis-Hastings adaptive random-walk sampler with a multivariate normal proposal <span class="citation">(<a href="references.html#ref-Roberts_Sahu_1997">Roberts and Sahu 1997</a>)</span>. As of NIMBLE version 1.3.0, one can instead use the <code>barker</code> sampler in this case if one sets <code>nimbleOptions(MCMCuseBarkerAsDefaultMV = TRUE)</code>.</li>
 <li>If the node is binary-valued (strictly taking values 0 or 1), then a <code>binary</code> sampler is assigned. This sampler calculates the conditional probability for both possible node values and draws the new node value from the conditional distribution, in effect making a Gibbs sampler.</li>
-<li>If the node is otherwise discrete-valued, then a <code>slice</code> sampler is assigned <span class="citation">(<a href="references.html#ref-Neal2003">R. M. Neal 2003</a>)</span>.</li>
+<li>If the node is otherwise discrete-valued, then a <code>slice</code> sampler is assigned <span class="citation">(<a href="references.html#ref-Neal2003">Neal 2003</a>)</span>.</li>
 <li>If none of the above criteria are satisfied, then a <code>RW</code> sampler is assigned. This is a Metropolis-Hastings adaptive random-walk sampler with a univariate normal proposal distribution.</li>
 </ol>
 <!-- These sampler assignment rules can be inspected, reordered, and easily modified using the system option `nimbleOptions("MCMCdefaultSamplerAssignmentRules")` and customized  `samplerAssignmentRules` objects. -->
@@ -774,7 +775,7 @@ Named elements in the <code>control</code> argument will be used for all default
 <span id="cb159-5"><a href="cha-mcmc.html#cb159-5" tabindex="-1"></a>samplerConfList[[<span class="dv">1</span>]]<span class="sc">$</span><span class="fu">setName</span>(<span class="st">&quot;newNameForThisSampler&quot;</span>)</span>
 <span id="cb159-6"><a href="cha-mcmc.html#cb159-6" tabindex="-1"></a></span>
 <span id="cb159-7"><a href="cha-mcmc.html#cb159-7" tabindex="-1"></a><span class="co"># change the sampler function of the second sampler,</span></span>
-<span id="cb159-8"><a href="cha-mcmc.html#cb159-8" tabindex="-1"></a><span class="co"># assuming existance of a nimbleFunction &#39;anotherSamplerNF&#39;,</span></span>
+<span id="cb159-8"><a href="cha-mcmc.html#cb159-8" tabindex="-1"></a><span class="co"># assuming existence of a nimbleFunction &#39;anotherSamplerNF&#39;,</span></span>
 <span id="cb159-9"><a href="cha-mcmc.html#cb159-9" tabindex="-1"></a><span class="co"># which represents a valid nimbleFunction sampler.</span></span>
 <span id="cb159-10"><a href="cha-mcmc.html#cb159-10" tabindex="-1"></a>samplerConfList[[<span class="dv">2</span>]]<span class="sc">$</span><span class="fu">setSamplerFunction</span>(anotherSamplerNF)</span>
 <span id="cb159-11"><a href="cha-mcmc.html#cb159-11" tabindex="-1"></a></span>
@@ -853,7 +854,7 @@ Named elements in the <code>control</code> argument will be used for all default
 </div>
 <div id="using-numeric-samples-to-define-a-prior-distribution" class="section level4 hasAnchor" number="7.2.2.10">
 <h4><span class="header-section-number">7.2.2.10</span> Using numeric samples to define a prior distribution<a href="cha-mcmc.html#using-numeric-samples-to-define-a-prior-distribution" class="anchor-section" aria-label="Anchor link to header"></a></h4>
-<p>A set of numeric samples, perhaps generated from another MCMC algorithm, can be used to define the prior distribution of model nodes. This is accomplished using the <code>prior_samples</code> MCMC sampler. When assigning the <code>prior_samples</code> sampler to a <code>target</code> node, you must also provide a vector of numeric values (when <code>target</code> is a scalar node), or a matrix of values in the multidimenional case. A new value (or rows of values) is selected either sequentially (or randomly) from this numeric vector/matrix, and assigned into the <code>target</code> node on each MCMC iteration. See <code>help(prior_samples)</code> for more details:</p>
+<p>A set of numeric samples, perhaps generated from another MCMC algorithm, can be used to define the prior distribution of model nodes. This is accomplished using the <code>prior_samples</code> MCMC sampler. When assigning the <code>prior_samples</code> sampler to a <code>target</code> node, you must also provide a vector of numeric values (when <code>target</code> is a scalar node), or a matrix of values in the multidimensional case. A new value (or rows of values) is selected either sequentially (or randomly) from this numeric vector/matrix, and assigned into the <code>target</code> node on each MCMC iteration. See <code>help(prior_samples)</code> for more details:</p>
 <div class="sourceCode" id="cb165"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb165-1"><a href="cha-mcmc.html#cb165-1" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(Rmodel)</span>
 <span id="cb165-2"><a href="cha-mcmc.html#cb165-2" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&#39;theta&#39;</span>, <span class="at">type =</span> <span class="st">&#39;prior_samples&#39;</span>, <span class="at">samples =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>))</span></code></pre></div>
 </div>
@@ -1163,7 +1164,7 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 <div class="sourceCode" id="cb197"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb197-1"><a href="cha-mcmc.html#cb197-1" tabindex="-1"></a>toyCode <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb197-2"><a href="cha-mcmc.html#cb197-2" tabindex="-1"></a>    mu <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">10</span>)    <span class="do">## parameter</span></span>
 <span id="cb197-3"><a href="cha-mcmc.html#cb197-3" tabindex="-1"></a>    y <span class="sc">~</span> <span class="fu">dnorm</span>(mu, <span class="dv">1</span>)     <span class="do">## data</span></span>
-<span id="cb197-4"><a href="cha-mcmc.html#cb197-4" tabindex="-1"></a>    muSq <span class="ot">&lt;-</span> mu<span class="sc">^</span><span class="dv">2</span>         <span class="do">## determistic, non-terminal predictive node</span></span>
+<span id="cb197-4"><a href="cha-mcmc.html#cb197-4" tabindex="-1"></a>    muSq <span class="ot">&lt;-</span> mu<span class="sc">^</span><span class="dv">2</span>         <span class="do">## deterministic, non-terminal predictive node</span></span>
 <span id="cb197-5"><a href="cha-mcmc.html#cb197-5" tabindex="-1"></a>    z <span class="sc">~</span> <span class="fu">dnorm</span>(muSq, <span class="dv">1</span>)   <span class="do">## stochastic, terminal predictive node</span></span>
 <span id="cb197-6"><a href="cha-mcmc.html#cb197-6" tabindex="-1"></a>})</span>
 <span id="cb197-7"><a href="cha-mcmc.html#cb197-7" tabindex="-1"></a></span>
@@ -1283,64 +1284,63 @@ These also demonstrate how the keyword <code>".all"</code> may be provided, corr
 <span id="cb206-17"><a href="cha-mcmc.html#cb206-17" tabindex="-1"></a>    },</span>
 <span id="cb206-18"><a href="cha-mcmc.html#cb206-18" tabindex="-1"></a>    <span class="at">run =</span> <span class="cf">function</span>(<span class="at">timesRan =</span> <span class="fu">double</span>()) {</span>
 <span id="cb206-19"><a href="cha-mcmc.html#cb206-19" tabindex="-1"></a>      <span class="do">## </span></span>
-<span id="cb206-20"><a href="cha-mcmc.html#cb206-20" tabindex="-1"></a>      <span class="do">## run fuction has one argument:</span></span>
+<span id="cb206-20"><a href="cha-mcmc.html#cb206-20" tabindex="-1"></a>      <span class="do">## run function has one argument:</span></span>
 <span id="cb206-21"><a href="cha-mcmc.html#cb206-21" tabindex="-1"></a>      <span class="do">## timesRan, which is the number of times this method has executed during</span></span>
-<span id="cb206-22"><a href="cha-mcmc.html#cb206-22" tabindex="-1"></a>      <span class="do">##   the present MCMC chain,</span></span>
-<span id="cb206-23"><a href="cha-mcmc.html#cb206-23" tabindex="-1"></a>      <span class="do">## including the present time.  This can be used as an index for a matrix</span></span>
-<span id="cb206-24"><a href="cha-mcmc.html#cb206-24" tabindex="-1"></a>      <span class="do">##   of results.</span></span>
-<span id="cb206-25"><a href="cha-mcmc.html#cb206-25" tabindex="-1"></a>      <span class="do">## </span></span>
-<span id="cb206-26"><a href="cha-mcmc.html#cb206-26" tabindex="-1"></a>    },</span>
-<span id="cb206-27"><a href="cha-mcmc.html#cb206-27" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
-<span id="cb206-28"><a href="cha-mcmc.html#cb206-28" tabindex="-1"></a>        <span class="at">set_interval =</span> <span class="cf">function</span>(<span class="at">newInterval =</span> <span class="fu">double</span>()) {</span>
-<span id="cb206-29"><a href="cha-mcmc.html#cb206-29" tabindex="-1"></a>          <span class="do">##</span></span>
-<span id="cb206-30"><a href="cha-mcmc.html#cb206-30" tabindex="-1"></a>          <span class="do">## REQUIRED `set_interval` method, which matches the definition below</span></span>
-<span id="cb206-31"><a href="cha-mcmc.html#cb206-31" tabindex="-1"></a>          <span class="do">##   exactly.</span></span>
-<span id="cb206-32"><a href="cha-mcmc.html#cb206-32" tabindex="-1"></a>          <span class="do">## this method is necessary, to allow the default value of &#39;interval&#39; to</span></span>
-<span id="cb206-33"><a href="cha-mcmc.html#cb206-33" tabindex="-1"></a>          <span class="do">## match the thinning interval of the MCMC.</span></span>
-<span id="cb206-34"><a href="cha-mcmc.html#cb206-34" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-35"><a href="cha-mcmc.html#cb206-35" tabindex="-1"></a>          interval <span class="ot">&lt;&lt;-</span> newInterval</span>
-<span id="cb206-36"><a href="cha-mcmc.html#cb206-36" tabindex="-1"></a>          <span class="do">##</span></span>
-<span id="cb206-37"><a href="cha-mcmc.html#cb206-37" tabindex="-1"></a>        },</span>
-<span id="cb206-38"><a href="cha-mcmc.html#cb206-38" tabindex="-1"></a>        <span class="at">before_chain =</span> <span class="cf">function</span>(<span class="at">niter =</span> <span class="fu">double</span>(), <span class="at">nburnin =</span> <span class="fu">double</span>(),</span>
-<span id="cb206-39"><a href="cha-mcmc.html#cb206-39" tabindex="-1"></a>                         <span class="at">thin =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">chain =</span> <span class="fu">double</span>()) {</span>
-<span id="cb206-40"><a href="cha-mcmc.html#cb206-40" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-41"><a href="cha-mcmc.html#cb206-41" tabindex="-1"></a>          <span class="do">## (optional) `before_chain` method,</span></span>
-<span id="cb206-42"><a href="cha-mcmc.html#cb206-42" tabindex="-1"></a>          <span class="do">## must have must have these arguments specifications:</span></span>
-<span id="cb206-43"><a href="cha-mcmc.html#cb206-43" tabindex="-1"></a>          <span class="do">## - niter (total number of *post-burnin* MCMC iterations)</span></span>
-<span id="cb206-44"><a href="cha-mcmc.html#cb206-44" tabindex="-1"></a>          <span class="do">## - nburnin (number of burnin iterations for this MCMC chain)</span></span>
-<span id="cb206-45"><a href="cha-mcmc.html#cb206-45" tabindex="-1"></a>          <span class="do">## - thin (a length=2 vector, containing the thinning intervals for</span></span>
-<span id="cb206-46"><a href="cha-mcmc.html#cb206-46" tabindex="-1"></a>          <span class="do">##     mvSamples and mvSamples2)</span></span>
-<span id="cb206-47"><a href="cha-mcmc.html#cb206-47" tabindex="-1"></a>          <span class="do">## - chain (the chain number of the current MCMC chain being run)</span></span>
-<span id="cb206-48"><a href="cha-mcmc.html#cb206-48" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-49"><a href="cha-mcmc.html#cb206-49" tabindex="-1"></a>        },</span>
-<span id="cb206-50"><a href="cha-mcmc.html#cb206-50" tabindex="-1"></a>        <span class="at">after_chain =</span> <span class="cf">function</span>() {</span>
-<span id="cb206-51"><a href="cha-mcmc.html#cb206-51" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-52"><a href="cha-mcmc.html#cb206-52" tabindex="-1"></a>          <span class="do">## (optional) `after_chain` method,</span></span>
-<span id="cb206-53"><a href="cha-mcmc.html#cb206-53" tabindex="-1"></a>          <span class="do">## no arguments and no return value</span></span>
-<span id="cb206-54"><a href="cha-mcmc.html#cb206-54" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-55"><a href="cha-mcmc.html#cb206-55" tabindex="-1"></a>        },</span>
-<span id="cb206-56"><a href="cha-mcmc.html#cb206-56" tabindex="-1"></a>        <span class="at">get_results =</span> <span class="cf">function</span>() {</span>
-<span id="cb206-57"><a href="cha-mcmc.html#cb206-57" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-58"><a href="cha-mcmc.html#cb206-58" tabindex="-1"></a>          <span class="do">## REQUIRED `get_results` method,</span></span>
-<span id="cb206-59"><a href="cha-mcmc.html#cb206-59" tabindex="-1"></a>          <span class="do">## which must return a dim=2 numeric array</span></span>
-<span id="cb206-60"><a href="cha-mcmc.html#cb206-60" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-61"><a href="cha-mcmc.html#cb206-61" tabindex="-1"></a>          <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">2</span>))</span>
-<span id="cb206-62"><a href="cha-mcmc.html#cb206-62" tabindex="-1"></a>        },</span>
-<span id="cb206-63"><a href="cha-mcmc.html#cb206-63" tabindex="-1"></a>        <span class="at">get_names =</span> <span class="cf">function</span>() {</span>
-<span id="cb206-64"><a href="cha-mcmc.html#cb206-64" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-65"><a href="cha-mcmc.html#cb206-65" tabindex="-1"></a>          <span class="do">## REQUIRED `get_names` method,</span></span>
-<span id="cb206-66"><a href="cha-mcmc.html#cb206-66" tabindex="-1"></a>          <span class="do">## which must return a dim=1 character vector</span></span>
-<span id="cb206-67"><a href="cha-mcmc.html#cb206-67" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-68"><a href="cha-mcmc.html#cb206-68" tabindex="-1"></a>          <span class="fu">returnType</span>(<span class="fu">character</span>(<span class="dv">1</span>))</span>
-<span id="cb206-69"><a href="cha-mcmc.html#cb206-69" tabindex="-1"></a>        },</span>
-<span id="cb206-70"><a href="cha-mcmc.html#cb206-70" tabindex="-1"></a>        <span class="at">reset =</span> <span class="cf">function</span>() {</span>
-<span id="cb206-71"><a href="cha-mcmc.html#cb206-71" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-72"><a href="cha-mcmc.html#cb206-72" tabindex="-1"></a>          <span class="do">## (optional) `reset` method</span></span>
-<span id="cb206-73"><a href="cha-mcmc.html#cb206-73" tabindex="-1"></a>          <span class="do">## no arguments and no return value</span></span>
-<span id="cb206-74"><a href="cha-mcmc.html#cb206-74" tabindex="-1"></a>          <span class="do">## </span></span>
-<span id="cb206-75"><a href="cha-mcmc.html#cb206-75" tabindex="-1"></a>        }</span>
-<span id="cb206-76"><a href="cha-mcmc.html#cb206-76" tabindex="-1"></a>    )</span>
-<span id="cb206-77"><a href="cha-mcmc.html#cb206-77" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb206-22"><a href="cha-mcmc.html#cb206-22" tabindex="-1"></a>      <span class="do">##   the present MCMC chain, including the present time.  This can be used</span></span>
+<span id="cb206-23"><a href="cha-mcmc.html#cb206-23" tabindex="-1"></a>      <span class="do">##   as an index for a matrix of results.</span></span>
+<span id="cb206-24"><a href="cha-mcmc.html#cb206-24" tabindex="-1"></a>      <span class="do">## </span></span>
+<span id="cb206-25"><a href="cha-mcmc.html#cb206-25" tabindex="-1"></a>    },</span>
+<span id="cb206-26"><a href="cha-mcmc.html#cb206-26" tabindex="-1"></a>    <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb206-27"><a href="cha-mcmc.html#cb206-27" tabindex="-1"></a>        <span class="at">set_interval =</span> <span class="cf">function</span>(<span class="at">newInterval =</span> <span class="fu">double</span>()) {</span>
+<span id="cb206-28"><a href="cha-mcmc.html#cb206-28" tabindex="-1"></a>          <span class="do">##</span></span>
+<span id="cb206-29"><a href="cha-mcmc.html#cb206-29" tabindex="-1"></a>          <span class="do">## REQUIRED `set_interval` method, which matches the definition below</span></span>
+<span id="cb206-30"><a href="cha-mcmc.html#cb206-30" tabindex="-1"></a>          <span class="do">##   exactly.</span></span>
+<span id="cb206-31"><a href="cha-mcmc.html#cb206-31" tabindex="-1"></a>          <span class="do">## This method is necessary, to allow the default value of &#39;interval&#39; to</span></span>
+<span id="cb206-32"><a href="cha-mcmc.html#cb206-32" tabindex="-1"></a>          <span class="do">## match the thinning interval of the MCMC.</span></span>
+<span id="cb206-33"><a href="cha-mcmc.html#cb206-33" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-34"><a href="cha-mcmc.html#cb206-34" tabindex="-1"></a>          interval <span class="ot">&lt;&lt;-</span> newInterval</span>
+<span id="cb206-35"><a href="cha-mcmc.html#cb206-35" tabindex="-1"></a>          <span class="do">##</span></span>
+<span id="cb206-36"><a href="cha-mcmc.html#cb206-36" tabindex="-1"></a>        },</span>
+<span id="cb206-37"><a href="cha-mcmc.html#cb206-37" tabindex="-1"></a>        <span class="at">before_chain =</span> <span class="cf">function</span>(<span class="at">niter =</span> <span class="fu">double</span>(), <span class="at">nburnin =</span> <span class="fu">double</span>(),</span>
+<span id="cb206-38"><a href="cha-mcmc.html#cb206-38" tabindex="-1"></a>                         <span class="at">thin =</span> <span class="fu">double</span>(<span class="dv">1</span>), <span class="at">chain =</span> <span class="fu">double</span>()) {</span>
+<span id="cb206-39"><a href="cha-mcmc.html#cb206-39" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-40"><a href="cha-mcmc.html#cb206-40" tabindex="-1"></a>          <span class="do">## (optional) `before_chain` method:</span></span>
+<span id="cb206-41"><a href="cha-mcmc.html#cb206-41" tabindex="-1"></a>          <span class="do">## must have must have these arguments specifications:</span></span>
+<span id="cb206-42"><a href="cha-mcmc.html#cb206-42" tabindex="-1"></a>          <span class="do">## - niter (total number of *post-burnin* MCMC iterations)</span></span>
+<span id="cb206-43"><a href="cha-mcmc.html#cb206-43" tabindex="-1"></a>          <span class="do">## - nburnin (number of burnin iterations for this MCMC chain)</span></span>
+<span id="cb206-44"><a href="cha-mcmc.html#cb206-44" tabindex="-1"></a>          <span class="do">## - thin (a length=2 vector, containing the thinning intervals for</span></span>
+<span id="cb206-45"><a href="cha-mcmc.html#cb206-45" tabindex="-1"></a>          <span class="do">##     mvSamples and mvSamples2)</span></span>
+<span id="cb206-46"><a href="cha-mcmc.html#cb206-46" tabindex="-1"></a>          <span class="do">## - chain (the chain number of the current MCMC chain being run)</span></span>
+<span id="cb206-47"><a href="cha-mcmc.html#cb206-47" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-48"><a href="cha-mcmc.html#cb206-48" tabindex="-1"></a>        },</span>
+<span id="cb206-49"><a href="cha-mcmc.html#cb206-49" tabindex="-1"></a>        <span class="at">after_chain =</span> <span class="cf">function</span>() {</span>
+<span id="cb206-50"><a href="cha-mcmc.html#cb206-50" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-51"><a href="cha-mcmc.html#cb206-51" tabindex="-1"></a>          <span class="do">## (optional) `after_chain` method:</span></span>
+<span id="cb206-52"><a href="cha-mcmc.html#cb206-52" tabindex="-1"></a>          <span class="do">## no arguments and no return value</span></span>
+<span id="cb206-53"><a href="cha-mcmc.html#cb206-53" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-54"><a href="cha-mcmc.html#cb206-54" tabindex="-1"></a>        },</span>
+<span id="cb206-55"><a href="cha-mcmc.html#cb206-55" tabindex="-1"></a>        <span class="at">get_results =</span> <span class="cf">function</span>() {</span>
+<span id="cb206-56"><a href="cha-mcmc.html#cb206-56" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-57"><a href="cha-mcmc.html#cb206-57" tabindex="-1"></a>          <span class="do">## REQUIRED `get_results` method,</span></span>
+<span id="cb206-58"><a href="cha-mcmc.html#cb206-58" tabindex="-1"></a>          <span class="do">## which must return a dim=2 numeric array</span></span>
+<span id="cb206-59"><a href="cha-mcmc.html#cb206-59" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-60"><a href="cha-mcmc.html#cb206-60" tabindex="-1"></a>          <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">2</span>))</span>
+<span id="cb206-61"><a href="cha-mcmc.html#cb206-61" tabindex="-1"></a>        },</span>
+<span id="cb206-62"><a href="cha-mcmc.html#cb206-62" tabindex="-1"></a>        <span class="at">get_names =</span> <span class="cf">function</span>() {</span>
+<span id="cb206-63"><a href="cha-mcmc.html#cb206-63" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-64"><a href="cha-mcmc.html#cb206-64" tabindex="-1"></a>          <span class="do">## REQUIRED `get_names` method,</span></span>
+<span id="cb206-65"><a href="cha-mcmc.html#cb206-65" tabindex="-1"></a>          <span class="do">## which must return a dim=1 character vector</span></span>
+<span id="cb206-66"><a href="cha-mcmc.html#cb206-66" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-67"><a href="cha-mcmc.html#cb206-67" tabindex="-1"></a>          <span class="fu">returnType</span>(<span class="fu">character</span>(<span class="dv">1</span>))</span>
+<span id="cb206-68"><a href="cha-mcmc.html#cb206-68" tabindex="-1"></a>        },</span>
+<span id="cb206-69"><a href="cha-mcmc.html#cb206-69" tabindex="-1"></a>        <span class="at">reset =</span> <span class="cf">function</span>() {</span>
+<span id="cb206-70"><a href="cha-mcmc.html#cb206-70" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-71"><a href="cha-mcmc.html#cb206-71" tabindex="-1"></a>          <span class="do">## (optional) `reset` method:</span></span>
+<span id="cb206-72"><a href="cha-mcmc.html#cb206-72" tabindex="-1"></a>          <span class="do">## no arguments and no return value</span></span>
+<span id="cb206-73"><a href="cha-mcmc.html#cb206-73" tabindex="-1"></a>          <span class="do">## </span></span>
+<span id="cb206-74"><a href="cha-mcmc.html#cb206-74" tabindex="-1"></a>        }</span>
+<span id="cb206-75"><a href="cha-mcmc.html#cb206-75" tabindex="-1"></a>    )</span>
+<span id="cb206-76"><a href="cha-mcmc.html#cb206-76" tabindex="-1"></a>)</span></code></pre></div>
 <p>Note that for derived quantities that record information regularly during the MCMC, one would generally need to set up a results matrix in <code>setup</code> and then put values into that matrix in <code>run</code>, indexing into the matrix using <code>timesRan</code>.</p>
 <p>When using a user-defined derived quantity function, one can pass additional arguments to <code>addDerivedQuantity</code> (similar to the use of <code>nodes</code> in the NIMBLE-provided derived quantities as seen above). These values will become part of the <code>control</code> list argument of the <code>setup</code> function, and the developer can extract such values from <code>control</code> in <code>setup</code> for later use in <code>setup</code> or use in <code>run</code> or any additional methods.</p>
 </div>
@@ -1511,13 +1511,13 @@ greatly improved performance in some cases.</p>
 <p>To enable WAIC for the first approach, the argument <code>enableWAIC = TRUE</code> must be supplied to <code>configureMCMC</code> (or to <code>buildMCMC</code> if not using <code>configureWAIC</code>), or the <code>MCMCenableWAIC</code> NIMBLE option must have been set to <code>TRUE</code>.</p>
 <p>The WAIC (as well as the pWAIC and lppd values) is extracted by the member method <code>mcmc$getWAIC</code> (see <code>help(waic)</code> in R for more details) or is available as the <code>WAIC</code> element of the <code>runMCMC</code> or <code>nimbleMCMC</code> output lists. One can use the member method <code>mcmc$getWAICdetails</code> for additional quantities related to WAIC that are discussed below.</p>
 <p>Note that there is not a unique value of WAIC for a model. WAIC is calculated from
-Equations 5, 12, and 13 in <span class="citation">Gelman, Hwang, and Vehtari (<a href="references.html#ref-Gelman_etal_2014">2014</a>)</span> (i.e., using WAIC2), as discussed in detail in <span class="citation">Hug and Paciorek (<a href="references.html#ref-Hug_Paciorek_2021">2021</a>)</span>. Therefore, NIMBLE provides
+Equations 5, 12, and 13 in <span class="citation">Gelman et al. (<a href="references.html#ref-Gelman_etal_2014">2014</a>)</span> (i.e., using WAIC2), as discussed in detail in <span class="citation">Hug and Paciorek (<a href="references.html#ref-Hug_Paciorek_2021">2021</a>)</span>. Therefore, NIMBLE provides
 user control over how WAIC is calculated in two ways.</p>
-<p>First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">Gelman, Hwang, and Vehtari (<a href="references.html#ref-Gelman_etal_2014">2014</a>)</span>. Users can request the marginal WAIC (see <span class="citation">Ariyo et al. (<a href="references.html#ref-Ariyo_etal_2019">2020</a>)</span>), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the <code>waicControl</code> list with a <code>marginalizeNodes</code> element to <code>configureMCMC</code> or <code>buildMCMC</code> (when providing a model as the argument to <code>buildMCMC</code>). See <code>help(waic)</code> for more details.</p>
+<p>First, by default NIMBLE provides the conditional WAIC, namely the version of WAIC where all parameters directly involved in the likelihood are treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">Gelman et al. (<a href="references.html#ref-Gelman_etal_2014">2014</a>)</span>. Users can request the marginal WAIC (see <span class="citation">Ariyo et al. (<a href="references.html#ref-Ariyo_etal_2019">2020</a>)</span>), namely the version of WAIC where latent variables are integrated over (i.e., using a marginal likelihood). This is done by providing the <code>waicControl</code> list with a <code>marginalizeNodes</code> element to <code>configureMCMC</code> or <code>buildMCMC</code> (when providing a model as the argument to <code>buildMCMC</code>). See <code>help(waic)</code> for more details.</p>
 <p>Second, WAIC relies on a partition of the observations, i.e., ‘pointwise’ prediction. By default, in NIMBLE the sum over log pointwise predictive density values treats each data node as contributing a single value to the sum. When a data node is multivariate, that data node contributes a single value to the sum based on the joint density of the elements in the node. If one wants to group data nodes such that the joint density within each group is used, one can provide the <code>waicControl</code> list with a <code>dataGroups</code> element to <code>configureMCMC</code> or <code>buildMCMC</code> (when providing a model as the argument to <code>buildMCMC</code>). See <code>help(waic)</code> for more details.</p>
 <p>Note that based on a limited set of simulation experiments in <span class="citation">Hug and Paciorek (<a href="references.html#ref-Hug_Paciorek_2021">2021</a>)</span>, our tentative recommendation is that users only use marginal WAIC if also using grouping.</p>
 <p>Marginal WAIC requires using Monte Carlo simulation at each iteration of the MCMC to average over draws for the latent variables. To assess the stability of the marginal WAIC to the number of Monte Carlo iterations, one can examine how the WAIC changes with increasing iterations (up to the full number of iterations specified via the <code>nItsMarginal</code> element of the <code>waicControl</code> list) based on the <code>WAIC_partialMC</code>, <code>lppd_partialMC</code>, and <code>pWAIC_partialMC</code> elements of the detailed WAIC output.</p>
-<p>For comparing WAIC between two models, <span class="citation">Vehtari, Gelman, and Gabry (<a href="references.html#ref-Vehtari_etal_2017">2017</a>)</span> discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the <code>WAIC_elements</code>, <code>lppd_elements</code>, and <code>pWAIC_elements</code> components of the detailed WAIC output.</p>
+<p>For comparing WAIC between two models, <span class="citation">Vehtari et al. (<a href="references.html#ref-Vehtari_etal_2017">2017</a>)</span> discuss using the per-observation (more generally, per-data group) contributions to the overall WAIC values to get an approximate standard error for the difference in WAIC between the models. These element-wise values are available as the <code>WAIC_elements</code>, <code>lppd_elements</code>, and <code>pWAIC_elements</code> components of the detailed WAIC output.</p>
 <p>The second overall approach to WAIC available in NIMBLE allows one to calculate WAIC post hoc after MCMC sampling using an MCMC object or matrix (or dataframe) containing posterior samples. Simply set up the MCMC and run it without enabling WAIC (but making sure to include in the monitors all stochastic parent nodes of the data nodes) and then use the function <code>calculateWAIC</code>, as shown in this example:</p>
 <div class="sourceCode" id="cb218"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb218-1"><a href="cha-mcmc.html#cb218-1" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(Cmcmc, <span class="at">niter =</span> <span class="dv">10000</span>, <span class="at">nburnin =</span> <span class="dv">1000</span>)</span>
 <span id="cb218-2"><a href="cha-mcmc.html#cb218-2" tabindex="-1"></a><span class="do">## Using calculateWAIC with an MCMC object</span></span>
@@ -1872,15 +1872,15 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 <div id="subsec:HMC" class="section level3 hasAnchor" number="7.11.2">
 <h3><span class="header-section-number">7.11.2</span> Hamiltonian Monte Carlo (HMC)<a href="cha-mcmc.html#subsec:HMC" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>As of version 1.0.0, NIMBLE provides support for automatic differentiation (AD), as described in Chapter <a href="cha-AD.html#cha-AD">17</a>. AD is needed for Hamiltonian Monte Carlo (HMC) sampling. The HMC algorithm is provided through the <code>nimbleHMC</code> package, which requires version 1.0.0 (or higher) of the <code>nimble</code> package.</p>
-<p>HMC is an MCMC sampling algorithm that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. HMC sampling can operate on any continuous-valued model dimensions, including multiple dimensions simultaneously. HMC sampling is more flexibly applicable using <code>nimbleHMC</code> than in other implementations, since HMC can be applied to some parts of a model while other samplers are used on other (potentially overlapping) parts of the same model. Indeed, <span class="citation">R. M. Neal (<a href="references.html#ref-neal-11">2011</a>)</span> discusses this mixed application of HMC with other sampling methods.</p>
+<p>HMC is an MCMC sampling algorithm that works by a physical analogy of frictionless motion on a surface that is the negative log posterior density. HMC often achieves good mixing, although at high computational cost. HMC sampling can operate on any continuous-valued model dimensions, including multiple dimensions simultaneously. HMC sampling is more flexibly applicable using <code>nimbleHMC</code> than in other implementations, since HMC can be applied to some parts of a model while other samplers are used on other (potentially overlapping) parts of the same model. Indeed, <span class="citation">Neal (<a href="references.html#ref-neal-11">2011</a>)</span> discusses this mixed application of HMC with other sampling methods.</p>
 <p>The <code>nimbleHMC</code> package provides two distinct HMC samplers, which implement two versions of No-U-Turn (NUTS) HMC sampling. HMC-NUTS sampling is a self-tuning version of standard HMC, which self-tunes the step-size and the number of integration steps used in the numeric integrator’s exploration of parameter space. The <code>NUTS_classic</code> sampler in <code>nimbleHMC</code> implements the original (“classic”) HMC-NUTS algorithm developed in <span class="citation">Hoffman and Gelman (<a href="references.html#ref-hoffman2014no">2014</a>)</span>, which was the seminal version of HMC-NUTS. The <code>NUTS</code> sampler in <code>nimbleHMC</code> is a modern version of HMC-NUTS sampling with improved adaptation routines and convergence criteria, which matches the HMC sampler available in version 2.32.2 of Stan <span class="citation">(<a href="references.html#ref-stan2023stan">Stan Development Team 2023</a>)</span>.</p>
 <p>The samplers provided in <code>nimbleHMC</code> can be used in <code>nimble</code>’s general MCMC system, and may be used in combination with other samplers provided with <code>nimble</code> operating on different (or overlapping) parts of the model. For convenience, <code>nimbleHMC</code> provides several different ways to set up and run HMC which allow different degrees of control:</p>
 <ul>
-<li><code>nimbleHMC</code> is analogous to <code>nimbleMCMC</code>: It accpets model <code>code</code>, <code>data</code>, <code>inits</code> and <code>constants</code> arguments, and performs all steps from building the model to running one or more MCMC chains. Use the <code>nimbleHMC</code> function if you want one call to apply <code>NUTS</code> sampling to all continuous-valued model dimensions, and <code>nimble</code>’s default samplers for all discrete-valued dimensions.</li>
+<li><code>nimbleHMC</code> is analogous to <code>nimbleMCMC</code>: It accepts model <code>code</code>, <code>data</code>, <code>inits</code> and <code>constants</code> arguments, and performs all steps from building the model to running one or more MCMC chains. Use the <code>nimbleHMC</code> function if you want one call to apply <code>NUTS</code> sampling to all continuous-valued model dimensions, and <code>nimble</code>’s default samplers for all discrete-valued dimensions.</li>
 <li><code>buildHMC</code> is analogous to <code>buildMCMC</code>: It accepts a model object as an argument, and builds an MCMC algorithm which applies <code>NUTS</code> sampling to all continuous-valued model dimensions, and <code>nimble</code>’s default samplers for all discrete-valued dimensions. Use <code>buildHMC</code> if you have created a model object, and want to automatically build the default HMC algorithm for your model.</li>
 <li><code>configureHMC</code> is analogous to <code>configureMCMC</code>: It accepts a model object as an argument, and sets up a default MCMC configuration containing one <code>NUTS</code> sampler operating on all continuous-valued model dimensions, and <code>nimble</code>’s default samplers for all discrete-valued dimensions. You can also specify which <code>nodes</code> should have samplers assigned. You can then modify the MCMC configuration (use <code>addSampler</code> and other methods) to further customize it before building and running the MCMC. Use <code>configureHMC</code> if you are familiar with MCMC configuration objects, and may want to further customize your MCMC using HMC or other samplers or monitors before building the MCMC.</li>
-<li><code>addHMC</code> manages use of <code>addSampler</code> to specifically add an HMC sampler for a chosen set of nodes to an exisiting MCMC configuration. It optionally removes other samplers operating on the specified nodes. Use <code>addHMC</code> to add an HMC sampler operating one or more target nodes to an exisiting MCMC configuration object.</li>
-<li>For the most fine-grained control, you can use the <code>addSampler</code> method speciying the the argument <code>type="NUTS"</code> or <code>type="NUTS_classic"</code> to add HMC sampler(s) to an MCMC configuration object.</li>
+<li><code>addHMC</code> manages use of <code>addSampler</code> to specifically add an HMC sampler for a chosen set of nodes to an existing MCMC configuration. It optionally removes other samplers operating on the specified nodes. Use <code>addHMC</code> to add an HMC sampler operating one or more target nodes to an existing MCMC configuration object.</li>
+<li>For the most fine-grained control, you can use the <code>addSampler</code> method specifying the the argument <code>type="NUTS"</code> or <code>type="NUTS_classic"</code> to add HMC sampler(s) to an MCMC configuration object.</li>
 </ul>
 <p>As of version 1.1.0, we now support the following new functionality for AD in models:</p>
 <ul>
@@ -1974,7 +1974,7 @@ All <code>control</code> elements can be scalars or vectors. A scalar values wil
 </div>
 <div id="customized-log-likelihood-evaluations-rw_llfunction-sampler" class="section level3 hasAnchor" number="7.11.4">
 <h3><span class="header-section-number">7.11.4</span> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model. For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes. Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm <span class="citation">(<a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">Andrieu, Doucet, and Holenstein 2010</a>)</span>. The <code>RW_llFunction</code> sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function. To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction. The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).</p>
+<p>Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model. For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes. Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm <span class="citation">(<a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">Andrieu et al. 2010</a>)</span>. The <code>RW_llFunction</code> sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function. To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction. The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).</p>
 <p>The <code>RW_llFunction</code> sampler can be customized using the <code>control</code> list argument to set the initial proposal distribution scale and the adaptive properties for the Metropolis-Hastings sampling. In addition, the <code>control</code> list argument must contain a named <code>llFunction</code> element. This is the specialized nimbleFunction that calculates the log-likelihood; it must accept no arguments and return a scalar double number. The return value must be the total log-likelihood of all stochastic dependents of the <code>target</code> nodes – and, if <code>includesTarget = TRUE</code>, of the target node(s) themselves – or whatever surrogate is being used for the total log-likelihood. This is a required <code>control</code> list element with no default. See <code>help(samplers)</code> for details.</p>
 <p>Here is a complete example:</p>
 <div class="sourceCode" id="cb247"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb247-1"><a href="cha-mcmc.html#cb247-1" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>

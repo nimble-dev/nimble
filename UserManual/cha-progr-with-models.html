@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 16 Writing nimbleFunctions to interact with models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.46 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 16 Writing nimbleFunctions to interact with models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -53,8 +53,9 @@
 
 
 <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.3</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -706,7 +707,7 @@ for <code>getLogProb</code>, it is usually important for the <code>nodes</code>
 vector to be sorted in
 topological order. Model member functions such as <code>getDependencies</code> and
 <code>expandNodeNames</code> will
-always return topoligically sorted node names.</p>
+always return topologically sorted node names.</p>
 <p>Most R-like indexing of a node vector is allowed within the
 argument to <code>calculate</code>, <code>calculateDiff</code>, <code>simulate</code>, and <code>getLogProb</code>. For example, all of the following are allowed:</p>
 <div class="sourceCode" id="cb567"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb567-1"><a href="cha-progr-with-models.html#cb567-1" tabindex="-1"></a>myModel<span class="sc">$</span><span class="fu">calculate</span>(nodes)</span>
@@ -1100,7 +1101,7 @@ and return types of methods: virtual nimbleFunctions created by
 <code>nimbleFunctionVirtual</code>. Other nimbleFunctions can inherit from
 virtual nimbleFunctions, which in R is called ‘containing’ them.
 Readers familiar with object oriented programming will recognize this
-as a simple class inheritance system. In Version 1.4.2 it is limited to
+as a simple class inheritance system. In Version 1.4.3 it is limited to
 simple, single-level inheritance.</p>
 <p>Here is how it works:</p>
 <div class="sourceCode" id="cb599"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb599-1"><a href="cha-progr-with-models.html#cb599-1" tabindex="-1"></a>baseClass <span class="ot">&lt;-</span> <span class="fu">nimbleFunctionVirtual</span>(</span>
@@ -1314,7 +1315,7 @@ provided it as a setup argument to illustrate that option.</li>
 <span id="cb617-38"><a href="cha-progr-with-models.html#cb617-38" tabindex="-1"></a>)</span></code></pre></div>
 <p>The name of this sampler function, for the purposes of using it in an<br />
 MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added
-to an exisiting MCMC configuration object <code>conf</code> using:</p>
+to an existing MCMC configuration object <code>conf</code> using:</p>
 <div class="sourceCode" id="cb618"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb618-1"><a href="cha-progr-with-models.html#cb618-1" tabindex="-1"></a>mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&#39;x&#39;</span>, <span class="at">type =</span> <span class="st">&#39;my_RW&#39;</span>,</span>
 <span id="cb618-2"><a href="cha-progr-with-models.html#cb618-2" tabindex="-1"></a>                    <span class="at">control =</span> <span class="fu">list</span>(<span class="at">scale =</span> <span class="fl">0.1</span>))</span></code></pre></div>
 <p>To be used within the MCMC engine, sampler functions definitions must
@@ -1466,7 +1467,7 @@ controlled via <code>nimbleOptions</code>.</p>
 <p>As noted above, the option
 <code>buildInterfacesForCompiledNestedNimbleFunctions</code> defaults to FALSE,
 which means NIMBLE will not build full interfaces to compiled
-nimbleFunctions that ony appear within other nimbleFunctions. If you
+nimbleFunctions that only appear within other nimbleFunctions. If you
 want access to all such nimbleFunctions, use the option
 <code>buildInterfacesForCompiledNestedNimbleFunctions = TRUE</code>. This will
 use more memory but can be useful for debugging.</p>

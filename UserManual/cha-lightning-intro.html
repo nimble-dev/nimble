@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 2 Lightning introduction | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.46 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 2 Lightning introduction | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -53,8 +53,9 @@
 
 
 <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.3</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -678,7 +679,7 @@ return samples, summary statistics, and WAIC values:</p>
 <span id="cb37-3"><a href="cha-lightning-intro.html#cb37-3" tabindex="-1"></a>                       <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">niter =</span> <span class="dv">10000</span>,</span>
 <span id="cb37-4"><a href="cha-lightning-intro.html#cb37-4" tabindex="-1"></a>                       <span class="at">summary =</span> <span class="cn">TRUE</span>, <span class="at">WAIC =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb37-5"><a href="cha-lightning-intro.html#cb37-5" tabindex="-1"></a>                       <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))</span></code></pre></div>
-<pre><code>##   [Warning] There are 7 individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes.</code></pre>
+<pre><code>##   [Warning] There are 7 individual pWAIC values that are greater than 0.4. This may indicate that the WAIC estimate is unstable (Vehtari et al., 2017), at least in cases without grouping of data nodes or multivariate data nodes. To see the individual pWAIC values, use the `getWAICdetails` method of the compiled MCMC object, with argument `returnElements = TRUE`.</code></pre>
 <div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="cha-lightning-intro.html#cb39-1" tabindex="-1"></a><span class="fu">names</span>(mcmc.out)</span></code></pre></div>
 <pre><code>## [1] &quot;samples&quot; &quot;summary&quot; &quot;WAIC&quot;</code></pre>
 <div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="cha-lightning-intro.html#cb41-1" tabindex="-1"></a>mcmc.out<span class="sc">$</span>summary</span></code></pre></div>
@@ -775,10 +776,10 @@ to try on our model, let’s use NIMBLE’s default MCMC. Note that conjugate re
 <span id="cb49-14"><a href="cha-lightning-intro.html#cb49-14" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(beta))</span>
 <span id="cb49-15"><a href="cha-lightning-intro.html#cb49-15" tabindex="-1"></a><span class="fu">plot</span>(samples[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
 <span id="cb49-16"><a href="cha-lightning-intro.html#cb49-16" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(theta[<span class="dv">1</span>]))</span></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-1.png" width="672" /></p>
+<p><img src="NimbleUserManual_files/figure-html/mcmcPump-1.png" alt="" width="672" /></p>
 <div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="cha-lightning-intro.html#cb50-1" tabindex="-1"></a><span class="fu">acf</span>(samples[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></span>
 <span id="cb50-2"><a href="cha-lightning-intro.html#cb50-2" tabindex="-1"></a><span class="fu">acf</span>(samples[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></span></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-2.png" width="672" /></p>
+<p><img src="NimbleUserManual_files/figure-html/mcmcPump-2.png" alt="" width="672" /></p>
 <p>Notice the posterior correlation between <code>alpha</code> and <code>beta</code>.
 A measure of the mixing for each is the
 autocorrelation for each parameter, shown by the <code>acf</code> plots.</p>
@@ -810,10 +811,10 @@ improves the mixing.</p>
 <span id="cb51-20"><a href="cha-lightning-intro.html#cb51-20" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(beta))</span>
 <span id="cb51-21"><a href="cha-lightning-intro.html#cb51-21" tabindex="-1"></a><span class="fu">plot</span>(samplesNew[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="at">type =</span> <span class="st">&quot;l&quot;</span>, <span class="at">xlab =</span> <span class="st">&quot;iteration&quot;</span>,</span>
 <span id="cb51-22"><a href="cha-lightning-intro.html#cb51-22" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(theta[<span class="dv">1</span>]))</span></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-1.png" width="672" /></p>
+<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-1.png" alt="" width="672" /></p>
 <div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="cha-lightning-intro.html#cb52-1" tabindex="-1"></a><span class="fu">acf</span>(samplesNew[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span></span>
 <span id="cb52-2"><a href="cha-lightning-intro.html#cb52-2" tabindex="-1"></a><span class="fu">acf</span>(samplesNew[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></span></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-2.png" width="672" /></p>
+<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-2.png" alt="" width="672" /></p>
 <p>We can see that the block sampler has decreased the
 autocorrelation for both <code>alpha</code> and <code>beta</code>. Of course these
 are just short runs, and what we are really interested in is the
@@ -896,7 +897,7 @@ include them. The entire system is written in nimbleFunctions.</p>
 <div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="cha-lightning-intro.html#cb55-1" tabindex="-1"></a>pumpMLE<span class="sc">$</span>par</span></code></pre></div>
 <pre><code>## [1] 0.8229682 1.2625259</code></pre>
 <p>Both estimates are within 0.01 of the values reported by
-<span class="citation">George, Makov, and Smith (<a href="references.html#ref-George_Makov_Smith_1993">1993</a>)</span><a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.
+<span class="citation">George et al. (<a href="references.html#ref-George_Makov_Smith_1993">1993</a>)</span><a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.
 <!---
 [George, E.I., Makov, U.E. \& Smith,
 A.F.M. 1993. Conjugate likelihood

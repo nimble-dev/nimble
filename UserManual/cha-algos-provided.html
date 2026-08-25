@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 8 Particle Filters, PMCMC, and MCEM | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.46 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 8 Particle Filters, PMCMC, and MCEM | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -53,8 +53,9 @@
 
 
 <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.3</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -710,7 +711,7 @@ div.csl-indent {
 <p>Particle MCMC (PMCMC) is a method that uses MCMC for top-level model
 parameters and uses a particle filter to approximate the time-series
 likelihood for use in determining MCMC acceptance probabilities
-<span class="citation">(<a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">Andrieu, Doucet, and Holenstein 2010</a>)</span>. NIMBLE implements PMCMC by
+<span class="citation">(<a href="references.html#ref-Andrieu_Doucet_Holenstein_2010">Andrieu et al. 2010</a>)</span>. NIMBLE implements PMCMC by
 providing random-walk Metropolis-Hastings samplers for model
 parameters that make use of particle filters in this way. These
 samplers can use NIMBLE’s bootstrap filter or auxiliary particle
@@ -756,7 +757,7 @@ list entry. The <code>pfType</code> entry can be set either to
 <code>'bootstrap'</code> (the default), <code>'auxiliary'</code>, or the name of a
 user-defined nimbleFunction that returns a likelihood approximation.</p>
 <p>Any user-defined filtering nimbleFunction named in the <code>pfType</code>
-control list entry must satsify the following:</p>
+control list entry must satisfy the following:</p>
 <ol style="list-style-type: decimal">
 <li><p>The nimbleFunction must be the result of a call to
 <code>nimbleFunction()</code>.</p></li>
@@ -773,7 +774,7 @@ over to estimate the log-likelihood function.</li>
 or arguments that the custom filter may require.</li>
 </ul></li>
 <li><p>The <code>nimbleFunction</code> must have a <code>run</code> function that
-accepts a single integer arugment (the number of particles to use),
+accepts a single integer argument (the number of particles to use),
 and returns a scalar double (the log-likelihood estimate).</p></li>
 <li><p>The <code>nimbleFunction</code> must define, in setup code, a
 <code>modelValues</code> object named <code>mvEWSamples</code> that is used to
@@ -797,7 +798,7 @@ conditional distributions cannot be directly sampled from) at each iteration.
 MCEM can be slow but is also a general workhorse method that is applicable to
 a wide range of problems.</p>
 <p><code>buildMCEM</code> provides an (optionally) ascent-based MCEM algorithm based on
-<span class="citation">Caffo, Jank, and Jones (<a href="references.html#ref-Caffo_etal_2005">2005</a>)</span>. <code>buildMCEM</code> was re-written for nimble version 1.2.0 and is
+<span class="citation">Caffo et al. (<a href="references.html#ref-Caffo_etal_2005">2005</a>)</span>. <code>buildMCEM</code> was re-written for nimble version 1.2.0 and is
 not compatible with previous versions. For the E (expectation) step,
 <code>buildMCEM</code> uses an MCMC for the latent states given the data and current
 parameters. For the M (maximization) step, <code>buildMCEM</code> uses <code>optim</code>.</p>

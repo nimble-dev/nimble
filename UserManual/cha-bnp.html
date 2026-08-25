@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 11 Bayesian nonparametric models | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.46 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 11 Bayesian nonparametric models | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -53,8 +53,9 @@
 
 
 <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.3</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -574,7 +575,7 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 </div>
 <div id="sec:extensionscrp" class="section level3 hasAnchor" number="11.2.3">
 <h3><span class="header-section-number">11.2.3</span> Extensions<a href="cha-bnp.html#sec:extensionscrp" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with mutiple measurements over time or multiple trials per participant.</p>
+<p>The BNP functionality in NIMBLE was extended in version 0.10.0 to more general models. These extensions enable users, for instance, to use a DP or DPM prior for the distribution of the random effects in a generalized linear mixed effects model with multiple measurements over time or multiple trials per participant.</p>
 <p>The following example illustrates how to use NIMBLE in a random effects model with repeated measurements per subject using a DP prior for the distribution of the subject’s random effects. The model is given by</p>
 <p><span class="math display">\[ y_{i,j} \mid \tilde{\boldsymbol{\theta}}, z_i, \sigma^2 \ {\sim}\ N(\tilde{\boldsymbol{\theta}}_{z_i}, {\sigma}^2), \hspace{0.5cm} i = 1, \ldots, N,\hspace{0.5cm} j = 1, \ldots, J, \]</span></p>
 <p><span class="math display">\[ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), \]</span></p>
@@ -668,7 +669,7 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 </div>
 <div id="mcmc-sampling-of-bnp-models" class="section level2 hasAnchor" number="11.4">
 <h2><span class="header-section-number">11.4</span> MCMC sampling of BNP models<a href="cha-bnp.html#mcmc-sampling-of-bnp-models" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">11.2.2</a> and <a href="cha-bnp.html#sec:exsb">11.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(<a href="references.html#ref-neal_2000">R. Neal 2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Hemant Ishwaran and James (<a href="references.html#ref-ishwaran_2001">2001</a>)</span> and <span class="citation">H. Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002">2002</a>)</span>.</p>
+<p>BNP models can be specified in different, yet equivalent, manners. Examples <a href="cha-bnp.html#sec:excrp">11.2.2</a> and <a href="cha-bnp.html#sec:exsb">11.3.2</a> are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler <span class="citation">(<a href="references.html#ref-neal_2000">Neal 2000</a>)</span> is assigned. Under this specification, the random measure <span class="math inline">\(G\)</span> is integrated out from the model. When a stick-breaking representation is used, a blocked Gibbs sampler is assigned, see <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_2001">2001</a>)</span> and <span class="citation">Ishwaran and James (<a href="references.html#ref-ishwaran_james_2002">2002</a>)</span>.</p>
 <div id="sec:mcmcdcrp" class="section level3 hasAnchor" number="11.4.1">
 <h3><span class="header-section-number">11.4.1</span> Sampling CRP models<a href="cha-bnp.html#sec:mcmcdcrp" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>NIMBLE’s MCMC engine provides specialized samplers for the <code>dCRP</code> distribution, updating each component of the membership vector sequentially. Internally, the sampler is assigned based on inspection of the model structure, evaluating conjugacy between the mixture kernel and the baseline distribution, as follows:</p>
@@ -804,7 +805,7 @@ where <span class="math inline">\(\mbox{CRP}(\alpha)\)</span> denotes the CRP di
 </div>
 <div id="sampling-the-random-measure" class="section level4 hasAnchor" number="11.4.1.2">
 <h4><span class="header-section-number">11.4.1.2</span> Sampling the random measure<a href="cha-bnp.html#sampling-the-random-measure" class="anchor-section" aria-label="Anchor link to header"></a></h4>
-<p>In BNP models, it is oftenly of interest to make inference about the unknown measure <span class="math inline">\(G\)</span>. NIMBLE provides the <code>getSamplesDPmeasure</code> sampler to generate posterior samples of the random measure <span class="math inline">\(G\)</span> when a CRP structure is involved in the model.</p>
+<p>In BNP models, it is often of interest to make inference about the unknown measure <span class="math inline">\(G\)</span>. NIMBLE provides the <code>getSamplesDPmeasure</code> sampler to generate posterior samples of the random measure <span class="math inline">\(G\)</span> when a CRP structure is involved in the model.</p>
 <p>The <code>getSamplesDPmeasure</code> function has two arguments: <code>MCMC</code> and <code>epsilon</code>.</p>
 <p>The <code>MCMC</code> argument is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (or clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the <code>monitors</code> argument when configuring the MCMC to ensure these variables are monitored.</p>
 <p>The <code>epsilon</code> argument is used to determine the truncation level of the representation of the random measure. Its default value is <span class="math inline">\(1e-04\)</span>.</p>

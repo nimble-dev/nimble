@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 15 Data structures in NIMBLE | NimbleUserManual.knit</title>
   <meta name="description" content="This is the NIMBLE User Manual." />
-  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.46 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 15 Data structures in NIMBLE | NimbleUserManual.knit" />
   <meta property="og:type" content="book" />
@@ -53,8 +53,9 @@
 
 
 <style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -159,7 +160,7 @@ div.csl-indent {
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.2</a></li>
+<li><a href="./cha-welcome-nimble.html">NIMBLE User Manual, Version 1.4.3</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -845,7 +846,7 @@ instances can be created in run code.</p>
 </div>
 <div id="sec:eigen-nimFunctions" class="section level3 hasAnchor" number="15.2.2">
 <h3><span class="header-section-number">15.2.2</span> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions<a href="cha-data-structures.html#sec:eigen-nimFunctions" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>NIMBLE has two linear algebra functions that return nimbleLists. The <code>eigen</code> function takes a symmetic matrix, <code>x</code>, as an argument and returns a nimbleList of type <code>eigenNimbleList</code>. nimbleLists of type <code>eigenNimbleList</code> have two elements: <code>values</code>, a vector with the eigenvalues of <code>x</code>, and <code>vectors</code>, a square matrix with the same dimension as <code>x</code> whose columns are the eigenvectors of <code>x</code>. The <code>eigen</code> function has two additional arguments: <code>symmetric</code> and <code>only.values</code>. The <code>symmetric</code> argument can be used to specify if <code>x</code> is a symmetric matrix or not. If <code>symmetric = FALSE</code> (the default value), <code>x</code> will be checked for symmetry. Eigendecompositions in NIMBLE for symmetric matrices are both faster and more accurate. Additionally, eigendecompostions of non-symmetric matrices can have complex entries, which are not supported by NIMBLE. If a complex entry is detected, NIMBLE will issue a warning and that entry will be set to <code>NaN</code>. The <code>only.values</code> arument defaults to <code>FALSE</code>. If <code>only.values = TRUE</code>, the <code>eigen</code> function will not calculate the eigenvectors of <code>x</code>, leaving the <code>vectors</code> nimbleList element empty. This can reduce calculation time if only the eigenvalues of <code>x</code> are needed.</p>
+<p>NIMBLE has two linear algebra functions that return nimbleLists. The <code>eigen</code> function takes a symmetric matrix, <code>x</code>, as an argument and returns a nimbleList of type <code>eigenNimbleList</code>. nimbleLists of type <code>eigenNimbleList</code> have two elements: <code>values</code>, a vector with the eigenvalues of <code>x</code>, and <code>vectors</code>, a square matrix with the same dimension as <code>x</code> whose columns are the eigenvectors of <code>x</code>. The <code>eigen</code> function has two additional arguments: <code>symmetric</code> and <code>only.values</code>. The <code>symmetric</code> argument can be used to specify if <code>x</code> is a symmetric matrix or not. If <code>symmetric = FALSE</code> (the default value), <code>x</code> will be checked for symmetry. Eigendecompositions in NIMBLE for symmetric matrices are both faster and more accurate. Additionally, eigendecompostions of non-symmetric matrices can have complex entries, which are not supported by NIMBLE. If a complex entry is detected, NIMBLE will issue a warning and that entry will be set to <code>NaN</code>. The <code>only.values</code> arument defaults to <code>FALSE</code>. If <code>only.values = TRUE</code>, the <code>eigen</code> function will not calculate the eigenvectors of <code>x</code>, leaving the <code>vectors</code> nimbleList element empty. This can reduce calculation time if only the eigenvalues of <code>x</code> are needed.</p>
 <p>The <code>svd</code> function takes an <span class="math inline">\(n \times p\)</span> matrix <code>x</code> as an argument, and returns a nimbleList of type <code>svdNimbleList</code>. nimbleLists of type <code>svdNimbleList</code> have three elements: <code>d</code>, a vector with the singular values of <code>x</code>, <code>u</code> a matrix with the left singular vectors of <code>x</code>, and <code>v</code>, a matrix with the right singular vectors of <code>x</code>. The <code>svd</code> function has an optional argument <code>vectors</code> which defaults to a value of <code>"full"</code>. The <code>vectors</code> argument can be used to specify the number of singular vectors that are returned. If <code>vectors = "full"</code>, <code>v</code> will be an <span class="math inline">\(n \times n\)</span> matrix and <code>u</code> will be an <span class="math inline">\(p \times p\)</span> matrix. If <code>vectors = "thin"</code>, <code>v</code> will be an<span class="math inline">\(n \times m\)</span> matrix, where <span class="math inline">\(m = \min(n,p)\)</span>, and <code>u</code> will be an <span class="math inline">\(m \times p\)</span> matrix. If <code>vectors = "none"</code>, the <code>u</code> and <code>v</code> elements of the returned nimbleList will not be populated.</p>
 <p>nimbleLists created by either <code>eigen</code> or <code>svd</code> can be returned from a nimbleFunction, using <code>returnType(eigenNimbleList())</code> or <code>returnType(svdNimbleList())</code> respectively. nimbleLists created by <code>eigen</code> and <code>svd</code> can also be used within other nimbleLists by specifying the nimbleList element types as <code>eigenNimbleList()</code> and <code>svdNimbleList()</code>. The below example demonstrates the use of <code>eigen</code> and <code>svd</code> within a nimbleFunction.</p>
 <div class="sourceCode" id="cb535"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb535-1"><a href="cha-data-structures.html#cb535-1" tabindex="-1"></a>eigenListFunctionGenerator <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
