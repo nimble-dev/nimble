@@ -251,7 +251,7 @@ Make a qmd file with a blog post about the release in `blog`. Format similar to 
 
 It's best to point with a hyperlink to the info on versions/news on webpage not to NEWS file.
 
-Add the new post info to `_quarto.yml`.
+Add the new post info to `_quarto.yml` (both in navbar and sidebar areas).
 
 Git add and commit the files.
 
