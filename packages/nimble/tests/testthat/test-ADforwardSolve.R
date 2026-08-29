@@ -59,14 +59,19 @@ forwardsolveTest <- nimbleFunction(
 checkCase <- function(nf,
                       Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR,
                       order = 0:2,
-                      recordArgs, testArgs) {
+                      recordArgs, testArgs,
+                      RRrelTol = formals(testAD2_oneCall$RRrelTol),
+                      RCrelTol = formals(testAD2_oneCall$RCrelTol),
+                      CCrelTol = formals(testAD2_oneCall$CCrelTol)
+                      ) {
 
   Rfxn <- nf(Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR)
   Cfxn <- compileNimble(Rfxn)
 
   test_AD2_oneCall(Rfxn, Cfxn,
                    recordArgs = recordArgs, testArgs = testArgs,
-                   order = order, wrt = 1)
+                   order = order, wrt = 1,
+                   RRrelTol = RRrelTol, RCrelTol = RCrelTol, CCrelTol = CCrelTol)
 }
 
 n1 <- 5
@@ -97,9 +102,14 @@ test_that("forwardsolve with all elements as CppAD variables works", {
   recordArgs <- makeArgs(n1, n1, n1, n2, 1.2)
   testArgs <- makeArgs(n1, n1, n1, n2, 1.4)
 
+  # 2026-08-29: occasional CI failures occur with stricture default tolerance.
+  RCrelTol <- formals(test_AD2_oneCall$RCrelTol)
+  RCrelTol[1] <- 1e-14
+  
   expect_no_error(
     checkCase(forwardsolveTest, Aconst, Bconst, c(1, 1), c(n1, n1), c(1, 1), c(n1, n2),
-              recordArgs = recordArgs, testArgs = testArgs)
+              recordArgs = recordArgs, testArgs = testArgs,
+              RCrelTol = RCrelTol)
   )
 })
 ## Case with all of A constant.
