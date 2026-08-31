@@ -60,9 +60,9 @@ checkCase <- function(nf,
                       Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR,
                       order = 0:2,
                       recordArgs, testArgs,
-                      RRrelTol = formals(test_AD2_oneCall)$RRrelTol,
-                      RCrelTol = formals(test_AD2_oneCall)$RCrelTol,
-                      CCrelTol = formals(test_AD2_oneCall)$CCrelTol
+                      RRrelTol = eval(formals(test_AD2_oneCall)$RRrelTol),
+                      RCrelTol = eval(formals(test_AD2_oneCall)$RCrelTol),
+                      CCrelTol = eval(formals(test_AD2_oneCall)$CCrelTol)
                       ) {
 
   Rfxn <- nf(Aconst, Bconst, A_UL, A_LR,  B_UL, B_LR)
@@ -103,7 +103,7 @@ test_that("forwardsolve with all elements as CppAD variables works", {
   testArgs <- makeArgs(n1, n1, n1, n2, 1.4)
 
   # 2026-08-29: occasional CI failures occur with stricture default tolerance.
-  RCrelTol <- formals(test_AD2_oneCall)$RCrelTol
+  RCrelTol <- eval(formals(test_AD2_oneCall)$RCrelTol)
   RCrelTol[1] <- 1e-14
   
   expect_no_error(
